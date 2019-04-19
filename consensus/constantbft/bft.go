@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/constant-money/constant-chain/common"
 
 	"github.com/constant-money/constant-chain/wire"
@@ -34,16 +32,18 @@ type BFTProtocol struct {
 	}
 	multiSigScheme *multiSigScheme
 
-	proposeCh   chan wire.Message
-	desyncMsgCh chan wire.Message
+	proposeCh  chan wire.Message
+	earlyMsgCh chan wire.Message
 
 	startTime time.Time
 }
 
 func (protocol *BFTProtocol) Start() (interface{}, error) {
+	protocol.cQuit = make(chan struct{})
 	protocol.proposeCh = make(chan wire.Message)
-	protocol.desyncMsgCh = make(chan wire.Message)
+	protocol.earlyMsgCh = make(chan wire.Message)
 	protocol.phase = PBFT_LISTEN
+	defer close(protocol.cQuit)
 	if protocol.RoundData.IsProposer {
 		protocol.phase = PBFT_PROPOSE
 	}
@@ -55,7 +55,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	go protocol.earlyMsgHandler()
 	//    single-node start    //
 	// go protocol.CreateBlockMsg()
 	// <-protocol.proposeCh
@@ -69,29 +69,24 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 		protocol.startTime = time.Now()
 		fmt.Println("BFT: New Phase", time.Since(protocol.startTime).Seconds())
 		protocol.cTimeout = make(chan struct{})
-		select {
-		case <-protocol.cQuit:
-			return nil, errors.New("Consensus quit")
-		default:
-			switch protocol.phase {
-			case PBFT_PROPOSE:
-				if err := protocol.phasePropose(); err != nil {
-					return nil, err
-				}
-			case PBFT_LISTEN:
-				if err := protocol.phaseListen(); err != nil {
-					return nil, err
-				}
-			case PBFT_PREPARE:
-				if err := protocol.phasePrepare(); err != nil {
-					return nil, err
-				}
-			case PBFT_COMMIT:
-				if err := protocol.phaseCommit(); err != nil {
-					return nil, err
-				}
-				return protocol.pendingBlock, nil
+		switch protocol.phase {
+		case PBFT_PROPOSE:
+			if err := protocol.phasePropose(); err != nil {
+				return nil, err
 			}
+		case PBFT_LISTEN:
+			if err := protocol.phaseListen(); err != nil {
+				return nil, err
+			}
+		case PBFT_PREPARE:
+			if err := protocol.phasePrepare(); err != nil {
+				return nil, err
+			}
+		case PBFT_COMMIT:
+			if err := protocol.phaseCommit(); err != nil {
+				return nil, err
+			}
+			return protocol.pendingBlock, nil
 		}
 	}
 }
@@ -199,6 +194,44 @@ func (protocol *BFTProtocol) closeProposeCh() {
 	}
 }
 
-func (protocol *BFTProtocol) RoundDesyncDetector() {
+func (protocol *BFTProtocol) earlyMsgHandler() {
+	var prepareMsgs []wire.Message
+	var commitMsgs []wire.Message
+	go func() {
+		for {
+			select {
+			case <-protocol.cQuit:
+				return
+			default:
+				if protocol.phase == PBFT_PREPARE {
+					for _, msg := range prepareMsgs {
+						protocol.cBFTMsg <- msg
+					}
+				}
+				if protocol.phase == PBFT_COMMIT {
+					for _, msg := range commitMsgs {
+						protocol.cBFTMsg <- msg
+					}
+				}
+			}
+		}
+	}()
 
+	for {
+		select {
+		case <-protocol.cQuit:
+			return
+		case earlyMsg := <-protocol.earlyMsgCh:
+			switch earlyMsg.MessageType() {
+			case wire.CmdBFTPrepare:
+				if protocol.phase == PBFT_LISTEN {
+					prepareMsgs = append(prepareMsgs, earlyMsg)
+				}
+			case wire.CmdBFTCommit:
+				if protocol.phase == PBFT_PREPARE {
+					commitMsgs = append(commitMsgs, earlyMsg)
+				}
+			}
+		}
+	}
 }
