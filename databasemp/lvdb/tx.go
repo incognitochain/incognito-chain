@@ -7,14 +7,19 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-func (db *db) AddTransaction(txHash *common.Hash, value []byte) error {
+// Key: tx-{type}-{txHash}
+// Value: transaction(byte value)-Splitter-otherDescValue(byte Value)
+func (db *db) AddTransaction(txHash *common.Hash, txType string, valueTx []byte, valueDesc []byte) error {
 	key := db.GetKey(txHash)
+	value := append([]byte(txType),Splitter...)
+	value = append(value, valueTx...)
+	value = append(value, Splitter...)
+	value = append(value, valueDesc...)
 	if err := db.lvdb.Put(key,value, nil); err != nil {
 		return databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
 	}
 	return nil
 }
-
 func (db *db) RemoveTransaction(txHash *common.Hash) error {
 	key := db.GetKey(txHash)
 	if err := db.lvdb.Delete(key, nil); err != nil {

@@ -12,10 +12,12 @@ type db struct {
 }
 var (
 	txKeyPrefix = []byte("tx-")
+	Splitter    = []byte("-[-]-")
 )
-func (db db) GetKey(key interface{}) []byte {
+
+func (db *db) GetKey(key interface{}) []byte {
 	var dbkey []byte
-		dbkey = append(txKeyPrefix, key.(*common.Hash)[:]...)
+	dbkey = append(txKeyPrefix, key.(*common.Hash)[:]...)
 	return dbkey
 }
 
