@@ -1,22 +1,21 @@
 package lvdb
 
 import (
-	"errors"
-	
-	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/pkg/errors"
 )
 
 func init() {
-	driver := database.Driver{
-		DbType: "leveldb",
+	driver := databasemp.Driver{
+		DbType: "leveldbmempool",
 		Open:   openDriver,
 	}
-	if err := database.RegisterDriver(driver); err != nil {
+	if err := databasemp.RegisterDriver(driver); err != nil {
 		panic("failed to register db driver")
 	}
 }
 
-func openDriver(args ...interface{}) (database.DatabaseInterface, error) {
+func openDriver(args ...interface{}) (databasemp.DatabaseInterface, error) {
 	if len(args) != 1 {
 		return nil, errors.New("invalid arguments")
 	}
@@ -26,3 +25,4 @@ func openDriver(args ...interface{}) (database.DatabaseInterface, error) {
 	}
 	return open(dbPath)
 }
+
