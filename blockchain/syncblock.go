@@ -76,7 +76,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			case <-blockchain.cQuitSync:
 				return
 			case <-insertPoolTicker.C:
-				go blockchain.InsertBlockFromPool()
+				blockchain.InsertBlockFromPool()
 			}
 		}
 	}()
