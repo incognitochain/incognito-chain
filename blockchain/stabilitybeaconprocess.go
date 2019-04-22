@@ -439,7 +439,7 @@ func (bc *BlockChain) updateDCBBuyBondInfo(bondID *common.Hash, bondAmount uint6
 	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
 	amountAvail += bondAmount
 	cstPaid += price * bondAmount
-	return bc.config.DataBase.StoreDCBBondInfo(bondID)
+	return bc.config.DataBase.StoreDCBBondInfo(bondID, amountAvail, cstPaid)
 }
 
 func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint64) error {
