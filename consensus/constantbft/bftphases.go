@@ -183,7 +183,9 @@ phase:
 						}
 					}()
 				} else {
-					protocol.earlyMsgCh <- msg
+					go func() {
+						protocol.earlyMsgCh <- msg
+					}()
 				}
 			}
 
@@ -232,7 +234,9 @@ phase:
 					}
 				}
 			} else {
-				protocol.earlyMsgCh <- msg
+				go func() {
+					protocol.earlyMsgCh <- msg
+				}()
 			}
 		case <-protocol.cTimeout:
 			//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
