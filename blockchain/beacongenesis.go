@@ -215,24 +215,20 @@ func createDCBGenesisParamsInst() []string {
 	sellBondSaleID := [32]byte{2}
 	saleData := []component.SaleData{
 		component.SaleData{
-			SaleID:           buyBondSaleID[:],
-			EndBlock:         1000,
-			BuyingAsset:      *bondID,
-			BuyingAmount:     100, // 100 bonds
-			DefaultBuyPrice:  100, // 100 cent per bond
-			SellingAsset:     common.ConstantID,
-			SellingAmount:    15000, // 150 CST in Nano
-			DefaultSellPrice: 100,   // 100 cent per CST
+			SaleID:   buyBondSaleID[:],
+			EndBlock: 1000,
+			BondID:   bondID,
+			Amount:   100,  // 100 bonds
+			Price:    100,  // 100 cent Constant per bond
+			Buy:      true, // 100 cent per CST
 		},
 		component.SaleData{
-			SaleID:           sellBondSaleID[:],
-			EndBlock:         2000,
-			BuyingAsset:      common.ConstantID,
-			BuyingAmount:     25000, // 250 CST in Nano
-			DefaultBuyPrice:  100,   // 100 cent per CST
-			SellingAsset:     *bondID,
-			SellingAmount:    200, // 200 bonds
-			DefaultSellPrice: 100, // 100 cent per bond
+			SaleID:   sellBondSaleID[:],
+			EndBlock: 2000,
+			BondID:   bondID,
+			Amount:   200,   // 100 bonds
+			Price:    100,   // 100 cent Constant per bond
+			Buy:      false, // 100 cent per CST
 		},
 	}
 
