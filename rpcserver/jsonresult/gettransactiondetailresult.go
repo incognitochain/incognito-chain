@@ -40,7 +40,9 @@ type ProofDetail struct {
 func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 	proofDetail.InputCoins = make([]*CoinDetail, 0)
 	for _, input := range proof.InputCoins {
-		in := CoinDetail{}
+		in := CoinDetail{
+			CoinDetails: Coin{},
+		}
 		if input.CoinDetails != nil {
 			in.CoinDetails.Value = input.CoinDetails.Value
 			in.CoinDetails.Info = input.CoinDetails.Info
@@ -54,7 +56,9 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 	}
 
 	for _, output := range proof.OutputCoins {
-		out := CoinDetail{}
+		out := CoinDetail{
+			CoinDetails: Coin{},
+		}
 		if output.CoinDetails != nil {
 			out.CoinDetails.Value = output.CoinDetails.Value
 			out.CoinDetails.Info = output.CoinDetails.Info
