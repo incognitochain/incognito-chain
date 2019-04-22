@@ -71,6 +71,7 @@ var (
 
 	// crowdsale
 	crowdsalePrefix       = []byte("crowdsale-")
+	dcbBondInfoPrefix     = []byte("dcbBondInfo-")
 	tradeActivationPrefix = []byte("tradeAct-")
 
 	Unreward   = []byte("unreward")
