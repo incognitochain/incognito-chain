@@ -200,11 +200,11 @@ func (blockchain *BlockChain) GetDCBAvailableAsset(assetID *common.Hash) uint64 
 
 	sales, _ := blockchain.GetAllSaleData()
 	for _, sale := range sales {
-		if sale.SellingAsset.IsEqual(assetID) && sale.EndBlock < blockchain.GetBeaconHeight() {
-			if sale.SellingAmount >= tokenLeft {
+		if !sale.Buy && sale.BondID.IsEqual(assetID) && sale.EndBlock < blockchain.GetBeaconHeight() {
+			if sale.Amount >= tokenLeft {
 				tokenLeft = 0
 			} else {
-				tokenLeft -= sale.SellingAmount
+				tokenLeft -= sale.Amount
 			}
 		}
 	}

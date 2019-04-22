@@ -36,7 +36,7 @@ func buildInstructionsForCrowdsaleRequest(
 	var saleData *component.SaleData
 	ok := false
 	if saleData, ok = accumulativeValues.saleDataMap[key]; !ok {
-		saleData, err := bc.config.DataBase.GetSaleData(saleID)
+		saleData, err = bc.GetSaleData(saleID)
 		if err != nil {
 			// fmt.Printf("[db] saleid not exist: %x\n", saleID)
 			return nil, fmt.Errorf("saleID not exist: %x", saleID)
@@ -76,9 +76,10 @@ func buildPaymentInstructionForCrowdsale(
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
+	paymentAmount := uint64(0)
 	if saleData.Buy {
 		// Number of Constant must send to user
-		paymentAmount := sentAmount * price
+		paymentAmount = sentAmount * price
 
 		// Check if there's still enough bond to buy
 		if sentAmount > saleData.Amount {
@@ -91,7 +92,7 @@ func buildPaymentInstructionForCrowdsale(
 
 	} else {
 		// Number of Bond must send to user
-		paymentAmount := sentAmount / price
+		paymentAmount = sentAmount / price
 
 		// Check if there's still enough asset to trade
 		if paymentAmount > saleData.Amount {
