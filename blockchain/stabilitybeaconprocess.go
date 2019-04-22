@@ -108,6 +108,9 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 
 	case strconv.Itoa(metadata.UpdatingOracleBoardMeta):
 		return bsb.processUpdatingOracleBoardInstruction(inst)
+
+	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
+		err = bsb.processCrowdsalePaymentProfit(inst)
 	}
 	return nil
 }
@@ -413,6 +416,25 @@ func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconin
 	return nil
 }
 
+func (bsb *BestStateBeacon) processCrowdsalePaymentProfit(inst []string) error {
+	fmt.Printf("[db] bsb.processStabilityInst found: %+v\n", inst)
+	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
+	if err != nil || !paymentInst.UpdateSale {
+		return err
+	}
+
+	sale, err := bc.config.DataBase.GetSaleData(paymentInst.SaleID)
+	if err != nil {
+		fmt.Printf("[db] error get sale data: %+v\n", err)
+		return err
+	}
+	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
+	avgPrice := cstPaid / amountAvail
+	profit := paymentInst.SentAmount - avgPrice*paymentInst.Amount
+	bsb.BankFund += profit
+	return nil
+}
+
 func (bc *BlockChain) updateDCBBuyBondInfo(bondID *common.Hash, bondAmount uint64, price uint64) error {
 	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
 	amountAvail += bondAmount
@@ -438,7 +460,7 @@ func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint
 }
 
 func (bc *BlockChain) processCrowdsalePaymentInstruction(inst []string) error {
-	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
+	fmt.Printf("[db] updateLocalState found inst: %+v\n", inst)
 	// All shards update, only DCB shard creates payment txs
 	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
 	if err != nil || !paymentInst.UpdateSale {
