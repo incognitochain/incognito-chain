@@ -111,6 +111,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 							fmt.Println("Beacon block insert", newBlk.Header.Height)
 							err = blockchain.InsertBeaconBlock(newBlk, false)
 							if err != nil {
+								Logger.log.Error(err)
 								return
 							}
 						}
