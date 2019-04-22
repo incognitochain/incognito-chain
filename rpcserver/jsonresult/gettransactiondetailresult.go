@@ -45,8 +45,8 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			in.CoinDetails.Value = input.CoinDetails.Value
 			in.CoinDetails.Info = input.CoinDetails.Info
 			in.CoinDetails.CoinCommitment = input.CoinDetails.CoinCommitment.Compress()
-			in.CoinDetails.Randomness = input.CoinDetails.Randomness
-			in.CoinDetails.SNDerivator = input.CoinDetails.SNDerivator
+			in.CoinDetails.Randomness = *input.CoinDetails.Randomness
+			in.CoinDetails.SNDerivator = *input.CoinDetails.SNDerivator
 			in.CoinDetails.SerialNumber = input.CoinDetails.SerialNumber.Compress()
 			in.CoinDetails.PublicKey = input.CoinDetails.PublicKey.Compress()
 		}
