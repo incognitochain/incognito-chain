@@ -201,7 +201,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			newInst, err = buildInstructionsForBuyGOVTokensReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		case metadata.CrowdsaleRequestMeta:
-			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues)
+			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues, blockChain)
 
 		case metadata.TradeActivationMeta:
 			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr)
