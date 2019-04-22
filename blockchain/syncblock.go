@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/constant-money/constant-chain/common"
@@ -541,11 +542,10 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 
 var lasttime = time.Now()
 var currentInsert = struct {
-	Beacon bool
-	Shards map[byte]bool
+	Beacon sync.Mutex
+	Shards map[byte]*sync.Mutex
 }{
-	Beacon: false,
-	Shards: make(map[byte]bool),
+	Shards: make(map[byte]*sync.Mutex),
 }
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
@@ -557,7 +557,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 		return
 	}
 
-	blockchain.InsertBeaconBlockFromPool()
+	go blockchain.InsertBeaconBlockFromPool()
 	blockchain.syncStatus.Lock()
 	for shardID := range blockchain.syncStatus.Shards {
 		go func(shardID byte) {
@@ -569,13 +569,8 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 }
 
 func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
-	if currentInsert.Beacon {
-		return
-	}
-	currentInsert.Beacon = true
-	defer func() {
-		currentInsert.Beacon = false
-	}()
+	currentInsert.Beacon.Lock()
+	defer currentInsert.Beacon.Unlock()
 	blks := blockchain.config.BeaconPool.GetValidBlock()
 	for _, newBlk := range blks {
 		// fmt.Println("Insert beacon blk", newBlk.Header.Height)
@@ -589,18 +584,11 @@ func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
 
 func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
 	if _, ok := currentInsert.Shards[shardID]; !ok {
-		currentInsert.Shards[shardID] = false
+		currentInsert.Shards[shardID] = &sync.Mutex{}
 	}
-	if currentInsert.Shards[shardID] {
-		return
-	} else {
-		currentInsert.Shards[shardID] = true
-		defer func() {
-			currentInsert.Shards[shardID] = false
-		}()
-	}
+	currentInsert.Shards[shardID].Lock()
+	defer currentInsert.Shards[shardID].Unlock()
 	blks := blockchain.config.ShardPool[shardID].GetValidBlock()
-	//fmt.Println("GetShardValidBlock", len(blks))
 	for _, newBlk := range blks {
 		err := blockchain.InsertShardBlock(newBlk, false)
 		if err != nil {
