@@ -3,7 +3,6 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/constant-money/constant-chain/common"
@@ -541,6 +540,13 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 }
 
 var lasttime = time.Now()
+var currentInsert = struct {
+	Beacon bool
+	Shards map[byte]bool
+}{
+	Beacon: false,
+	Shards: make(map[byte]bool),
+}
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
 	// fmt.Println("InsertBlockFromPool")
@@ -550,6 +556,26 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	} else {
 		return
 	}
+
+	blockchain.InsertBeaconBlockFromPool()
+	blockchain.syncStatus.Lock()
+	for shardID := range blockchain.syncStatus.Shards {
+		go func(shardID byte) {
+			blockchain.InsertShardBlockFromPool(shardID)
+		}(shardID)
+
+	}
+	blockchain.syncStatus.Unlock()
+}
+
+func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
+	if currentInsert.Beacon {
+		return
+	}
+	currentInsert.Beacon = true
+	defer func() {
+		currentInsert.Beacon = false
+	}()
 	blks := blockchain.config.BeaconPool.GetValidBlock()
 	for _, newBlk := range blks {
 		// fmt.Println("Insert beacon blk", newBlk.Header.Height)
@@ -559,30 +585,27 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 			Logger.log.Error(err)
 		}
 	}
-	var wg sync.WaitGroup
-	blockchain.syncStatus.Lock()
-	for shardID := range blockchain.syncStatus.Shards {
-		// fmt.Println("Get shard valid blks ", blks)
+}
 
-		wg.Add(1)
-		go func(shardID byte) {
-			blks := blockchain.config.ShardPool[shardID].GetValidBlock()
-			//fmt.Println("GetShardValidBlock", len(blks))
-			for _, newBlk := range blks {
-				//time1 := time.Now()
-				err := blockchain.InsertShardBlock(newBlk, false)
-				if err != nil {
-					Logger.log.Error(err)
-					break
-				}
-				//fmt.Println("Insert Shard blk time: ", newBlk.Header.Height, time.Since(time1).Seconds())
-			}
-
-			wg.Done()
-		}(shardID)
-
+func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
+	if _, ok := currentInsert.Shards[shardID]; !ok {
+		currentInsert.Shards[shardID] = false
 	}
-
-	blockchain.syncStatus.Unlock()
-	wg.Wait()
+	if currentInsert.Shards[shardID] {
+		return
+	} else {
+		currentInsert.Shards[shardID] = true
+		defer func() {
+			currentInsert.Shards[shardID] = false
+		}()
+	}
+	blks := blockchain.config.ShardPool[shardID].GetValidBlock()
+	//fmt.Println("GetShardValidBlock", len(blks))
+	for _, newBlk := range blks {
+		err := blockchain.InsertShardBlock(newBlk, false)
+		if err != nil {
+			Logger.log.Error(err)
+			break
+		}
+	}
 }
