@@ -17,6 +17,7 @@ type TransactionDetail struct {
 	Fee         uint64 `json:"Fee"` // Fee applies: always consant
 	Image       string `json:"Image"`
 
+	IsPrivacy       bool              `json:"IsPrivacy"`
 	Proof           *zkp.PaymentProof `json:"Proof"`
 	ProofDetail     ProofDetail       `json:"ProofDetail"`
 	InputCoinPubKey string            `json:"InputCoinPubKey"`
