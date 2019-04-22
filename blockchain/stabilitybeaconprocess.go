@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
+func (bsb *BestStateBeacon) processStabilityInstruction(inst []string, bc *BlockChain) error {
 	if inst[0] == InitAction {
 		// init data for network
 		switch inst[1] {
@@ -110,7 +110,7 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		return bsb.processUpdatingOracleBoardInstruction(inst)
 
 	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
-		err = bsb.processCrowdsalePaymentProfit(inst)
+		return bsb.processCrowdsalePaymentProfit(inst, bc)
 	}
 	return nil
 }
@@ -416,22 +416,17 @@ func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconin
 	return nil
 }
 
-func (bsb *BestStateBeacon) processCrowdsalePaymentProfit(inst []string) error {
+func (bsb *BestStateBeacon) processCrowdsalePaymentProfit(inst []string, bc *BlockChain) error {
 	fmt.Printf("[db] bsb.processStabilityInst found: %+v\n", inst)
 	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
 	if err != nil || !paymentInst.UpdateSale {
 		return err
 	}
 
-	sale, err := bc.config.DataBase.GetSaleData(paymentInst.SaleID)
-	if err != nil {
-		fmt.Printf("[db] error get sale data: %+v\n", err)
-		return err
-	}
-	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
+	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&paymentInst.AssetID)
 	avgPrice := cstPaid / amountAvail
 	profit := paymentInst.SentAmount - avgPrice*paymentInst.Amount
-	bsb.BankFund += profit
+	bsb.StabilityInfo.BankFund += profit
 	return nil
 }
 
@@ -456,7 +451,7 @@ func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint
 	}
 	cstPaid -= principleCovered
 
-	return bc.config.DataBase.StoreDCBBondInfo(bondID)
+	return bc.config.DataBase.StoreDCBBondInfo(bondID, amountAvail, cstPaid)
 }
 
 func (bc *BlockChain) processCrowdsalePaymentInstruction(inst []string) error {
@@ -467,7 +462,7 @@ func (bc *BlockChain) processCrowdsalePaymentInstruction(inst []string) error {
 		return err
 	}
 
-	sale, err := bc.config.DataBase.GetSaleData(paymentInst.SaleID)
+	sale, err := bc.GetSaleData(paymentInst.SaleID)
 	if err != nil {
 		fmt.Printf("[db] error get sale data: %+v\n", err)
 		return err
@@ -600,7 +595,7 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 	return nil
 }
 
-func (bc *BlockChain) storeSaleData(saleData SaleData) error {
+func (bc *BlockChain) storeSaleData(saleData *component.SaleData) error {
 	var saleRaw []byte
 	var err error
 	if saleRaw, err = json.Marshal(saleData); err == nil {
@@ -612,7 +607,7 @@ func (bc *BlockChain) storeSaleData(saleData SaleData) error {
 func (bc *BlockChain) storeListSaleData(dcbParams component.DCBParams) error {
 	// Store saledata in state
 	for _, data := range dcbParams.ListSaleData {
-		if err := bc.storeSaleData(data); err != nil {
+		if err := bc.storeSaleData(&data); err != nil {
 			return err
 		}
 	}
