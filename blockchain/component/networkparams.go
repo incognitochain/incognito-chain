@@ -122,7 +122,7 @@ type SaleData struct {
 	BondID *common.Hash
 	Price  uint64 // price per bond (in Constant)
 	Amount uint64 // number of bond to buy/sell
-	Buy    bool
+	Buy    bool   // buying or selling bond
 
 	proposalTxHash common.Hash // Temp storage; stored permanent in db, not in proposal
 }

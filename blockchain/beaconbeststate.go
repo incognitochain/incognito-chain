@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/binary"
-	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -334,13 +333,4 @@ func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint6
 		}
 	}
 	return price
-}
-
-// GetSaleData returns latest data of a crowdsale
-func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*component.SaleData, error) {
-	key := getSaleDataKeyBeacon(saleID)
-	if value, ok := bestStateBeacon.Params[key]; ok {
-		return parseSaleDataValueBeacon(value)
-	}
-	return nil, fmt.Errorf("failed getting SaleData from BSB")
 }
