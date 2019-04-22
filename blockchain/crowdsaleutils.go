@@ -216,7 +216,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 func generateCrowdsalePaymentInstruction(
 	paymentAddress privacy.PaymentAddress,
 	amount uint64,
-	assetID common.Hash,
+	assetID *common.Hash,
 	saleID []byte,
 	sentAmount uint64,
 	updateSale bool,
@@ -224,7 +224,7 @@ func generateCrowdsalePaymentInstruction(
 	inst := &CrowdsalePaymentInstruction{
 		PaymentAddress: paymentAddress,
 		Amount:         amount,
-		AssetID:        assetID,
+		AssetID:        *assetID,
 		SaleID:         saleID,
 		SentAmount:     sentAmount,
 		UpdateSale:     updateSale,
