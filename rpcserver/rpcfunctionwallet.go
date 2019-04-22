@@ -167,7 +167,6 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
 	}
 	// param #1: private key of sender
-	log.Println("importing")
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	log.Println(err)
