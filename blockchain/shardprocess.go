@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	
+
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -132,13 +132,15 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 
 	//Update Cross shard pool: remove invalid block
-	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
-	expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
-	for fromShardID, height := range expectedHeight {
-		if height != 0 {
-			blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+	go func() {
+		blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
+		expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
+		for fromShardID, height := range expectedHeight {
+			if height != 0 {
+				blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+			}
 		}
-	}
+	}()
 
 	// Process stability tx
 	err = blockchain.ProcessLoanForBlock(block)
