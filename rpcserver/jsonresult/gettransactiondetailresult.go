@@ -59,8 +59,8 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			out.CoinDetails.Value = output.CoinDetails.Value
 			out.CoinDetails.Info = output.CoinDetails.Info
 			out.CoinDetails.CoinCommitment = output.CoinDetails.CoinCommitment.Compress()
-			out.CoinDetails.Randomness = output.CoinDetails.Randomness
-			out.CoinDetails.SNDerivator = output.CoinDetails.SNDerivator
+			out.CoinDetails.Randomness = *output.CoinDetails.Randomness
+			out.CoinDetails.SNDerivator = *output.CoinDetails.SNDerivator
 			out.CoinDetails.SerialNumber = output.CoinDetails.SerialNumber.Compress()
 			out.CoinDetails.PublicKey = output.CoinDetails.PublicKey.Compress()
 			out.CoinDetailsEncrypted = output.CoinDetailsEncrypted.Bytes()
@@ -70,16 +70,16 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 }
 
 type CoinDetail struct {
-	CoinDetails          *Coin
+	CoinDetails          Coin
 	CoinDetailsEncrypted []byte
 }
 
 type Coin struct {
 	PublicKey      []byte
 	CoinCommitment []byte
-	SNDerivator    *big.Int
+	SNDerivator    big.Int
 	SerialNumber   []byte
-	Randomness     *big.Int
+	Randomness     big.Int
 	Value          uint64
 	Info           []byte
 }
