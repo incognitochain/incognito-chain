@@ -66,20 +66,16 @@ func (db *db) AddVoteBoard(
 
 	// add to list voter new voter base on count as index
 	key = GetKeyVoteBoardList(boardType, boardIndex, &CandidatePaymentAddress, &VoterPaymentAddress)
-	oldAmountInByte, err := db.Get(key)
-	oldAmount := uint64(0)
-	if err == nil {
-		oldAmount = ParseValueVoteBoardList(oldAmountInByte)
+	fmt.Printf("[ndh] Board Type: %+v, Board Index: %+v, key: %+v\n", boardType, boardIndex, key)
+	amountInByte := GetValueVoteBoardList(amount)
+	err = db.Put(key, amountInByte)
+	if err != nil {
+		fmt.Printf("[ndh] - - - Error when put key %+v\n", err)
+	} else {
+		vl, _ := db.Get(key)
+		fmt.Printf("[ndh] - - - - - - - - Value %+v \n", vl)
 	}
-	newAmount := oldAmount + amount
-	newAmountInByte := GetValueVoteBoardList(newAmount)
-	err = db.Put(key, newAmountInByte)
-	// gg := ViewDBByPrefix(db, VoteBoardListPrefix)
-	// fmt.Println("[ndh] - START watch db when add Vote:")
-	// for key, value := range gg {
-	// 	fmt.Println("[ndh] - ", key, value)
-	// }
-	// fmt.Println("[ndh] - END watch db when add Vote:")
+
 	return err
 }
 
@@ -239,14 +235,18 @@ func (db *db) SetEncryptionLastBlockHeight(boardType common.BoardType, height ui
 
 func (db *db) SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddresseses []privacy.PaymentAddress) error {
 	key := GetKeyWinningVoter(boardType, constitutionIndex)
+	fmt.Printf("[ndh] Set New Proposal WinningVoter: BoardType: %+v; constitutionIndex: %+v\n", boardType, constitutionIndex)
 	value := concatListPaymentAddresses(paymentAddresseses)
+	fmt.Printf("[ndh] Set New Proposal WinningVoter: Value: %+v\n", value)
 	db.Put(key, value)
 	return nil
 }
 
 func (db *db) GetCurrentProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32) ([]privacy.PaymentAddress, error) {
 	key := GetKeyWinningVoter(boardType, constitutionIndex)
+	fmt.Printf("[ndh] Get New Proposal WinningVoter: BoardType: %+v; constitutionIndex: %+v\n", boardType, constitutionIndex)
 	value, err := db.Get(key)
+	fmt.Printf("[ndh] Get New Proposal WinningVoter: Value: %+v\n", value)
 	if err != nil {
 		return nil, err
 	}
@@ -370,8 +370,8 @@ func decompListPaymentAddressesByte(paymentAddressesByte []byte) ([]privacy.Paym
 		return nil, errors.New("Wrong payment address length")
 	}
 	res := make([]privacy.PaymentAddress, len(paymentAddressesByte)/common.PaymentAddressLength)
-	for i, paymentAddress := range res {
-		(&paymentAddress).SetBytes(paymentAddressesByte[i*common.PaymentAddressLength : (i+1)*common.PaymentAddressLength])
+	for i, _ := range res {
+		res[i].SetBytes(paymentAddressesByte[i*common.PaymentAddressLength : (i+1)*common.PaymentAddressLength])
 	}
 	return res, nil
 }
