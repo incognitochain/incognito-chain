@@ -131,6 +131,8 @@ func (protocol *BFTProtocol) phaseListen() error {
 phase:
 	for {
 		select {
+		case <-protocol.cTimeout:
+			return errors.New("Listen phase timeout")
 		case msg := <-protocol.cBFTMsg:
 			if msg.MessageType() == wire.CmdBFTPropose {
 				fmt.Println("BFT: Propose block received", time.Since(protocol.startTime).Seconds())
@@ -188,9 +190,6 @@ phase:
 					}()
 				}
 			}
-
-		case <-protocol.cTimeout:
-			return errors.New("Listen phase timeout")
 		}
 	}
 
@@ -219,6 +218,20 @@ func (protocol *BFTProtocol) phasePrepare() error {
 phase:
 	for {
 		select {
+		case <-protocol.cTimeout:
+			//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
+			// then sig block with this r
+			if len(collectedRiList) < (len(protocol.RoundData.Committee) >> 1) {
+				fmt.Println("BFT: Didn't receive enough Ri to continue", time.Since(protocol.startTime).Seconds())
+				return errors.New("Didn't receive enough Ri to continue")
+			}
+			err := protocol.multiSigScheme.SignData(collectedRiList)
+			if err != nil {
+				return err
+			}
+
+			protocol.phase = PBFT_COMMIT
+			break phase
 		case msg := <-protocol.cBFTMsg:
 			if msg.MessageType() == wire.CmdBFTPrepare {
 				fmt.Println("BFT: Prepare msg received", time.Since(protocol.startTime).Seconds())
@@ -238,20 +251,6 @@ phase:
 					protocol.earlyMsgCh <- msg
 				}()
 			}
-		case <-protocol.cTimeout:
-			//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
-			// then sig block with this r
-			if len(collectedRiList) < (len(protocol.RoundData.Committee) >> 1) {
-				fmt.Println("BFT: Didn't receive enough Ri to continue", time.Since(protocol.startTime).Seconds())
-				return errors.New("Didn't receive enough Ri to continue")
-			}
-			err := protocol.multiSigScheme.SignData(collectedRiList)
-			if err != nil {
-				return err
-			}
-
-			protocol.phase = PBFT_COMMIT
-			break phase
 		}
 	}
 
