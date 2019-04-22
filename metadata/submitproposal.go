@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
@@ -92,7 +91,7 @@ func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) err
 	}
 
 	// Valid bondID
-	if !common.IsBondAsset(&sale.BondID) {
+	if !common.IsBondAsset(sale.BondID) {
 		return errors.Errorf("bondID incorrect")
 	}
 
@@ -107,24 +106,24 @@ func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) err
 	}
 
 	// Check if DCB has enough bond
-	if !sale.Buy && bcr.GetDCBAvailableAsset(&sale.BondID) < sale.Amount {
+	if !sale.Buy && bcr.GetDCBAvailableAsset(sale.BondID) < sale.Amount {
 		return errors.Errorf("crowdsale: not enough selling asset")
 	}
 
 	if !sale.Buy {
 		// Cannot buy and sell the same type of bond at the same time
-		oldSales := bc.GetAllCrowdsales()
+		oldSales := bcr.GetAllCrowdsales()
 		for _, oldSale := range oldSales {
 			if oldSale.EndBlock >= bcr.GetBeaconHeight() {
 				continue // sale ended
 			}
-			if oldSale.Buy && bytes.Equal(sale.BondID, oldSale.BondID) {
+			if oldSale.Buy && sale.BondID.IsEqual(oldSale.BondID) {
 				return errors.Errorf("cannot buy and sell the same bond at the same time")
 			}
 		}
 
 		// Sell price (in Constant) must be higher than average buy price
-		amount, paid := bc.config.DataBase.GetDCBBondInfo(sale.BondID)
+		amount, paid := bcr.GetDCBBondInfo(sale.BondID)
 		if paid > amount*sale.Price {
 			return fmt.Errorf("bond sell price is too low, got %d expected at least %d", sale.Price, paid/amount)
 		}
@@ -145,8 +144,8 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 	// TODO(@0xbunyip): validate DCBParams: LoanParams, etc
 
 	// Validate Crowdsale data
-	for _, sale := range listSaleData {
-		err := validateCrowdsaleData(submitDCBProposalMetadata.DCBParams.ListSaleData)
+	for _, sale := range submitDCBProposalMetadata.DCBParams.ListSaleData {
+		err := validateCrowdsaleData(sale, br)
 		if err != nil {
 			return false, err
 		}

@@ -60,7 +60,7 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 		Type             string
 	}
 	result := []CrowdsaleInfo{}
-	saleDataList, err := rpcServer.config.BlockChain.GetAllCrowdsales()
+	saleDataList := rpcServer.config.BlockChain.GetAllCrowdsales()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Error querying crowdsales"))
 	}

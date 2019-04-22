@@ -48,13 +48,13 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists and ongoing
-	saleData, err := bcr.GetProposedCrowdsale(csReq.SaleID)
+	sale, err := bcr.GetSaleData(csReq.SaleID) // okay to use unsync data since we only use immutable fields
 	if err != nil {
 		return false, err
 	}
 
 	beaconHeight := bcr.GetBeaconHeight()
-	if beaconHeight >= saleData.EndBlock {
+	if beaconHeight >= sale.EndBlock {
 		return false, errors.Errorf("crowdsale ended")
 	}
 
@@ -65,7 +65,7 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	}
 
 	// Check if asset is sent to correct address
-	if !saleData.Buy {
+	if !sale.Buy {
 		keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 		unique, pubkey, _ := txr.GetUniqueReceiver()
 		if !unique || !bytes.Equal(pubkey, keyWalletBurnAccount.KeySet.PaymentAddress.Pk[:]) {
@@ -122,7 +122,7 @@ func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRe
 
 func getCrowdsaleRequestActionValue(csReq *CrowdsaleRequest, txr Transaction, bcr BlockchainRetriever) (string, error) {
 	// Calculate value of asset sent in request tx
-	saleData, err := bcr.GetProposedCrowdsale(csReq.SaleID)
+	sale, err := bcr.GetSaleData(csReq.SaleID)
 	if err != nil {
 		return "", err
 	}
@@ -146,7 +146,7 @@ func ParseCrowdsaleRequestActionValue(value string) ([]byte, privacy.PaymentAddr
 	action := &CrowdsaleRequestAction{}
 	err := json.Unmarshal([]byte(value), action)
 	if err != nil {
-		return nil, 0, false, privacy.PaymentAddress{}, 0, err
+		return nil, privacy.PaymentAddress{}, 0, err
 	}
 	return action.SaleID, action.PaymentAddress, action.SentAmount, nil
 }
