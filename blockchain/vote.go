@@ -71,7 +71,7 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 	gg := lvdb.ViewDBByPrefix(db, lvdb.VoteProposalPrefix)
 	_ = gg
 	boardType := helper.GetBoardType()
-	begin := lvdb.GetKeyVoteProposal(boardType, 0, nil)
+	begin := lvdb.GetKeyVoteProposal(boardType, nextConstitutionIndex, nil)
 	// +1 to search in that range
 	end := lvdb.GetKeyVoteProposal(boardType, 1+nextConstitutionIndex, nil)
 
@@ -89,10 +89,6 @@ func (self *BlockChain) BuildVoteTableAndPunishTransaction(
 		fmt.Printf("[ndh] ==> constitution Index: %+v; voterPayment: %+v; rightIndex: %+v\n", constitutionIndex, voterPayment, rightIndex)
 		if err != nil {
 			return nil, nil, err
-		}
-		if constitutionIndex != uint32(rightIndex) {
-			db.Delete(key)
-			continue
 		}
 
 		//Accumulate count vote
@@ -134,11 +130,12 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 			bestProposal.NumberOfVote = CountVote[txId]
 		}
 	}
-	if bestProposal.NumberOfVote == 0 {
+	if (bestProposal.NumberOfVote == 0) && (helper.GetConstitutionInfo(self).ConstitutionIndex == 0) {
 		fmt.Printf("[ndh] - Number of vote is zero \n")
 		return resIns, nil
 	}
-
+	// if (bestProposal.)
+	//>>>>>>>>>>>>>>>>>>>>>
 	err = db.DeleteAnyProposalButThisDB(helper.GetBoardType(), nextConstitutionIndex, bestProposal.TxId.GetBytes())
 	byteTemp, err0 := db.GetProposalSubmitterByConstitutionIndexDB(helper.GetBoardType(), nextConstitutionIndex)
 	if err0 != nil {
@@ -148,7 +145,9 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
 	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
 	resIns = append(resIns, acceptedProposalIns)
+	//<<<<<<<<<<<<<<<<<<<<<<
 	totalReward := helper.GetBoardReward(self)
+	fmt.Printf("[ndh] - totalReward: %+v\n", totalReward)
 	if totalReward > 0 {
 		boardType := helper.GetBoardType()
 		boardIndex := helper.GetBoard(self).GetBoardIndex()
@@ -165,6 +164,8 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 			submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
 			if submitterPaymentAddress != nil {
 				rewardForProposalSubmitterIns, err1 := helper.NewRewardProposalSubmitterIns(self, submitterPaymentAddress, submitterRewardAmount)
+				stringTest, _ := rewardForProposalSubmitterIns.GetStringFormat()
+				fmt.Printf("[ndh] - reward for submitter instruction: %+v\n", stringTest)
 				if err1 == nil {
 					resIns = append(resIns, rewardForProposalSubmitterIns)
 				}
@@ -179,6 +180,8 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 				shareRewardIns := self.CreateShareRewardOldBoardIns(helper, listVotersOfCurrentProposal[i], supporterRewardAmount, voterAndAmount[i])
 				resIns = append(resIns, shareRewardIns...)
 				rewardForVoter := frombeaconins.NewRewardProposalVoterIns(&voter, submitterRewardAmount, helper.GetBoardType())
+				stringTest, _ := rewardForVoter.GetStringFormat()
+				fmt.Printf("[ndh] - reward for voter instruction: %+v\n", stringTest)
 				if rewardForVoter != nil {
 					resIns = append(resIns, rewardForVoter)
 				}
@@ -222,15 +225,6 @@ func (stateBeacon *BestStateBeacon) UpdateGOVBoard(ins frombeaconins.AcceptGOVBo
 	stateBeacon.StabilityInfo.GOVGovernor.StartAmountToken = ins.StartAmountToken
 	return nil
 }
-
-//????
-// func (blockchain *BlockChain) UpdateDCBFund(tx metadata.Transaction) {
-// 	blockchain.BestState.Beacon.StabilityInfo.BankFund -= common.RewardProposalSubmitter
-// }
-
-// func (blockchain *BlockChain) UpdateGOVFund(tx metadata.Transaction) {
-// 	blockchain.BestState.Beacon.StabilityInfo.SalaryFund -= common.RewardProposalSubmitter
-// }
 
 func createSendBackTokenVoteFailIns(
 	boardType common.BoardType,
@@ -475,14 +469,17 @@ func (chain *BlockChain) neededFirstNewGovernor(helper ConstitutionHelper) bool 
 }
 
 func (chain *BlockChain) neededNewConstitution(helper ConstitutionHelper) bool {
-	// todo: hyyyyyyyyyyyy
 	currentBoardIndex := chain.GetCurrentBoardIndex(helper)
 	if currentBoardIndex == 1 {
 		return false
 	}
 	endBlock := helper.GetConstitutionEndedBlockHeight(chain)
 	fmt.Println("[ndh] - neededNewConstitution: ", endBlock, chain.BestState.Beacon.BeaconHeight)
-	if chain.BestState.Beacon.BeaconHeight >= endBlock {
+	if chain.BestState.Beacon.BeaconHeight < endBlock {
+		return false
+	}
+	if (chain.BestState.Beacon.BeaconHeight-endBlock)%ExtendDurationForFirstBoard == 0 {
+		fmt.Println("[ndh] - neededNewConstitution!!!!!!!!!!!!!!!!!!")
 		return true
 	}
 	return false
