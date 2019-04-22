@@ -39,7 +39,7 @@ type Config struct {
 	MaxTx uint64
 	
 	//Reset mempool database when run node
-	Reset bool
+	IsLoadFromMempool bool
 }
 
 // TxDesc is transaction message in mempool
@@ -80,7 +80,7 @@ type TxPool struct {
 	TxLifeTime uint
 	
 	//Reset mempool database
-	Reset bool
+	IsLoadFromMempool bool
 }
 
 /*
@@ -97,10 +97,10 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.cMtx = sync.RWMutex{}
 	tp.maxTx = cfg.MaxTx
 	tp.TxLifeTime = cfg.TxLifeTime
-	tp.Reset = cfg.Reset
+	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
 }
 func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
-	if tp.Reset {
+	if !tp.IsLoadFromMempool {
 		err := tp.ResetDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
@@ -190,17 +190,15 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		} else {
 			Logger.log.Criticalf("Add tx %+v to mempool database success \n", *txHash)
 		}
-		txDesc, err := tp.GetTransactionFromDatabaseMP(txD.Desc.Tx.Hash())
+		_, err = tp.GetTransactionFromDatabaseMP(txD.Desc.Tx.Hash())
 		if err != nil {
 			Logger.log.Error("Fail To Get Transaction from DBMP ", err)
 		} else {
 			//Logger.log.Criticalf("Tx %+v from Pool Desc %+v \n", *txD.Desc.Tx.Hash(), txD)
 			//Logger.log.Criticalf("Success Get Transaction %+v from DBMP %+v \n", *txDesc.Desc.Tx.Hash(), txDesc)
 		}
-		tp.pool[*tx.Hash()] = &txDesc
-	} else {
-		tp.pool[*tx.Hash()] = txD
 	}
+		tp.pool[*tx.Hash()] = txD
 	//==================================================
 	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())

@@ -123,7 +123,7 @@ type config struct {
 	TxPoolTTL   uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
 	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
 
-	ResetMempool bool `long:"resetmempool" description:"Reset Mempool database"`
+	LoadMempool bool `long:"loadmempool" description:"Load transactions from Mempool database"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
