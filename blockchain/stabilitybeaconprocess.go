@@ -385,6 +385,7 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconins.UpdateDCBConstitutionIns) error {
 	dcbParams := ins.DCBParams
 	oldConstitution := bsb.StabilityInfo.DCBConstitution
+	fmt.Printf("[ndh] - - - - - - - - - - - - old Constitution Index %+v \n", oldConstitution)
 	bsb.StabilityInfo.DCBConstitution = DCBConstitution{
 		ConstitutionInfo: ConstitutionInfo{
 			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
@@ -396,7 +397,9 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
 		DCBParams:                 dcbParams,
 	}
-
+	if ins.SubmitProposalInfo.ConstitutionIndex == 0 {
+		bsb.StabilityInfo.DCBConstitution.ConstitutionIndex = 0
+	}
 	// Store saledata in state
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
@@ -410,7 +413,8 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 }
 
 func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconins.UpdateGOVConstitutionIns) error {
-	oldConstitution := bsb.StabilityInfo.DCBConstitution
+	oldConstitution := bsb.StabilityInfo.GOVConstitution
+	fmt.Printf("[ndh] - - - - - - - - - - - - old Constitution Index %+v \n", oldConstitution)
 	bsb.StabilityInfo.GOVConstitution = GOVConstitution{
 		ConstitutionInfo: ConstitutionInfo{
 			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
@@ -421,6 +425,9 @@ func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconin
 		},
 		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
 		GOVParams:                 ins.GOVParams,
+	}
+	if ins.SubmitProposalInfo.ConstitutionIndex == 0 {
+		bsb.StabilityInfo.GOVConstitution.ConstitutionIndex = 0
 	}
 	return nil
 }
