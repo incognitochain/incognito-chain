@@ -212,7 +212,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
-			Logger.log.Error(err)
 			engine.currentBFTRound++
 			engine.prevRoundUserLayer = engine.userLayer
 		}
