@@ -1,6 +1,7 @@
 package jsonresult
 
 import (
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
@@ -17,6 +18,7 @@ type TransactionDetail struct {
 	Image       string `json:"Image"`
 
 	Proof           *zkp.PaymentProof `json:"Proof"`
+	ProofDetail     ProofDetail       `json:"ProofDetail"`
 	InputCoinPubKey string            `json:"InputCoinPubKey"`
 	SigPubKey       []byte            `json:"SigPubKey,omitempty"` // 64 bytes
 	Sig             []byte            `json:"Sig,omitempty"`       // 64 bytes
@@ -27,4 +29,9 @@ type TransactionDetail struct {
 
 	IsInMempool bool `json:"IsInMempool"`
 	IsInBlock   bool `json:"IsInBlock"`
+}
+
+type ProofDetail struct {
+	InputCoins  []*privacy.InputCoin
+	OutputCoins []*privacy.OutputCoin
 }
