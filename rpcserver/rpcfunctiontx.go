@@ -239,6 +239,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				Type:        tempTx.Type,
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
+				IsPrivacy:   tempTx.IsPrivacy(),
 				Proof:       tempTx.Proof,
 				ProofDetail: jsonresult.ProofDetail{
 					OutputCoins: tempTx.Proof.OutputCoins,
