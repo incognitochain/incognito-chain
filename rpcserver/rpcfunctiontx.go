@@ -240,8 +240,12 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				ProofDetail: jsonresult.ProofDetail{
+					OutputCoins: tempTx.Proof.OutputCoins,
+					InputCoins:  tempTx.Proof.InputCoins,
+				},
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
 			}
 			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
@@ -265,8 +269,12 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				ProofDetail: jsonresult.ProofDetail{
+					OutputCoins: tempTx.Proof.OutputCoins,
+					InputCoins:  tempTx.Proof.InputCoins,
+				},
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
@@ -292,8 +300,12 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				ProofDetail: jsonresult.ProofDetail{
+					OutputCoins: tempTx.Proof.OutputCoins,
+					InputCoins:  tempTx.Proof.InputCoins,
+				},
+				SigPubKey: tempTx.SigPubKey,
+				Sig:       tempTx.Sig,
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
