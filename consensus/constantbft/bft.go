@@ -208,11 +208,13 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 					for _, msg := range prepareMsgs {
 						protocol.cBFTMsg <- msg
 					}
+					prepareMsgs = []wire.Message{}
 				}
 				if protocol.phase == PBFT_COMMIT {
 					for _, msg := range commitMsgs {
 						protocol.cBFTMsg <- msg
 					}
+					commitMsgs = []wire.Message{}
 				}
 				time.Sleep(10 * time.Millisecond)
 			}
