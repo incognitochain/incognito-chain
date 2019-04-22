@@ -240,7 +240,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		TxLifeTime:      cfg.TxPoolTTL,
 		MaxTx:           cfg.TxPoolMaxTx,
 		DataBaseMempool: dbmp,
-		Reset: cfg.ResetMempool,
+		IsLoadFromMempool: cfg.LoadMempool,
 	})
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
