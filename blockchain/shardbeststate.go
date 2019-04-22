@@ -90,8 +90,8 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 	return res
 }
 func (bestStateShard *BestStateShard) Hash() common.Hash {
-	bestStateShard.lock.Lock()
-	defer bestStateShard.lock.Unlock()
+	// bestStateShard.lock.Lock()
+	// defer bestStateShard.lock.Unlock()
 	return common.HashH(bestStateShard.GetBytes())
 }
 func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffset int) string {
