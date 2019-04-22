@@ -18,7 +18,7 @@ type CrowdsalePayment struct {
 
 func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists
-	saleData, err := bcr.GetProposedCrowdsale(csRes.SaleID)
+	sale, err := bcr.GetSaleData(csRes.SaleID) // okay to use unsynced data since we only use immutable fields
 	if err != nil {
 		return false, err
 	}
@@ -30,7 +30,7 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	}
 
 	// TODO(@0xbunyip): check double spending for coinbase CST tx?
-	if common.IsBondAsset(&saleData.SellingAsset) {
+	if !sale.Buy {
 		// Check if sent from DCB address
 		// check double spending if selling bond
 		return true, nil

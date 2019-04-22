@@ -147,11 +147,21 @@ func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.
 }
 
 // GetProposedCrowdsale returns SaleData from BeaconBestState; BuyingAmount and SellingAmount might be outdated, the rest is ok to use
-func (blockchain *BlockChain) GetProposedCrowdsale(saleID []byte) (*component.SaleData, error) {
-	return blockchain.BestState.Beacon.GetSaleData(saleID)
+func (blockchain *BlockChain) GetSaleData(saleID []byte) (*component.SaleData, error) {
+	saleRaw, err := blockchain.config.DataBase.GetSaleData(saleID)
+	if err != nil {
+		return nil, err
+	}
+	var sale *component.SaleData
+	err := json.Unmarshal(saleRaw, sale)
+	return sale, err
 }
 
-func (blockchain *BlockChain) GetAllCrowdsales() ([]*component.SaleData, error) {
+func (blockchain *BlockChain) GetDCBBondInfo(bondID *common.Hash) (uint64, uint64) {
+	return blockchain.config.DataBase.GetDCBBondInfo(bondID)
+}
+
+func (blockchain *BlockChain) GetAllCrowdsales() []*component.SaleData {
 	saleDataList := []*component.SaleData{}
 	for key, value := range blockchain.BestState.Beacon.Params {
 		if key[:len(saleDataPrefix)] == saleDataPrefix {
@@ -160,7 +170,7 @@ func (blockchain *BlockChain) GetAllCrowdsales() ([]*component.SaleData, error) 
 			}
 		}
 	}
-	return saleDataList, nil
+	return saleDataList
 }
 
 func (blockchain *BlockChain) CrowdsaleExisted(saleID []byte) bool {
@@ -183,7 +193,7 @@ func (blockchain *BlockChain) GetDCBAvailableAsset(assetID *common.Hash) uint64 
 		tokenLeft += vout.Value
 	}
 
-	sales, _ := blockchain.GetAllCrowdsales()
+	sales := blockchain.GetAllCrowdsales()
 	for _, sale := range sales {
 		if sale.SellingAsset.IsEqual(assetID) && sale.EndBlock < blockchain.GetBeaconHeight() {
 			if sale.SellingAmount >= tokenLeft {
