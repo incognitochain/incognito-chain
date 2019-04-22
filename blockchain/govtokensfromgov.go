@@ -75,6 +75,7 @@ func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
 	instType string,
 	contentStr string,
 	blkProducerPrivateKey *privacy.PrivateKey,
+	shardID byte,
 ) ([]metadata.Transaction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -106,28 +107,41 @@ func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
 	} else if instType == "accepted" {
 		govTokenID := reqMeta.TokenID
 		buyGOVTokensRes := metadata.NewResponseBase(txReqID, metadata.ResponseBaseMeta)
+
 		txTokenVout := transaction.TxTokenVout{
 			Value:          reqMeta.Amount,
 			PaymentAddress: reqMeta.BuyerAddress,
 		}
 		var propertyID [common.HashSize]byte
 		copy(propertyID[:], govTokenID[:])
-		txTokenData := transaction.TxTokenData{
-			Type:       transaction.CustomTokenInit,
-			Mintable:   true,
-			Amount:     reqMeta.Amount,
-			PropertyID: common.Hash(propertyID),
-			Vins:       []transaction.TxTokenVin{},
-			Vouts:      []transaction.TxTokenVout{txTokenVout},
+		propID := common.Hash(propertyID)
+		tokenParams := &transaction.CustomTokenParamTx{
+			PropertyID:     propID.String(),
+			PropertyName:   propID.String(),
+			PropertySymbol: propID.String(),
+			Amount:         reqMeta.Amount,
+			// TokenTxType:    transaction.CustomTokenMint,
+			TokenTxType: transaction.CustomTokenInit,
+			Receiver:    []transaction.TxTokenVout{txTokenVout},
+			Mintable:    true,
 		}
-		txTokenData.PropertyName = txTokenData.PropertyID.String()
-		txTokenData.PropertySymbol = txTokenData.PropertyID.String()
 
-		resTx := &transaction.TxCustomToken{
-			TxTokenData: txTokenData,
+		resTx := &transaction.TxCustomToken{}
+		initErr := resTx.Init(
+			blkProducerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			blockgen.chain.config.DataBase,
+			buyGOVTokensRes,
+			false,
+			shardID,
+		)
+		if initErr != nil {
+			Logger.log.Error(err)
+			return nil, initErr
 		}
-		resTx.Type = common.TxCustomTokenType
-		resTx.SetMetadata(buyGOVTokensRes)
 		return []metadata.Transaction{resTx}, nil
 	}
 	return []metadata.Transaction{}, nil

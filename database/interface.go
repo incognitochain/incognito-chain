@@ -179,5 +179,6 @@ type DatabaseInterface interface {
 	// bond
 	StoreSoldBondTypes(*common.Hash, []byte) error
 	GetSoldBondTypes() ([][]byte, error)
+	GetSoldBondTypeByID(*common.Hash) ([]byte, error)
 	Close() error
 }
