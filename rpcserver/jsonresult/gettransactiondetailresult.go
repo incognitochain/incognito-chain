@@ -46,11 +46,17 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 		if input.CoinDetails != nil {
 			in.CoinDetails.Value = input.CoinDetails.Value
 			in.CoinDetails.Info = input.CoinDetails.Info
-			in.CoinDetails.CoinCommitment = input.CoinDetails.CoinCommitment.Compress()
+			if input.CoinDetails.CoinCommitment != nil {
+				in.CoinDetails.CoinCommitment = input.CoinDetails.CoinCommitment.Compress()
+			}
 			in.CoinDetails.Randomness = *input.CoinDetails.Randomness
 			in.CoinDetails.SNDerivator = *input.CoinDetails.SNDerivator
-			in.CoinDetails.SerialNumber = input.CoinDetails.SerialNumber.Compress()
-			in.CoinDetails.PublicKey = input.CoinDetails.PublicKey.Compress()
+			if input.CoinDetails.SerialNumber != nil {
+				in.CoinDetails.SerialNumber = input.CoinDetails.SerialNumber.Compress()
+			}
+			if input.CoinDetails.PublicKey != nil {
+				in.CoinDetails.PublicKey = input.CoinDetails.PublicKey.Compress()
+			}
 		}
 		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
 	}
@@ -62,12 +68,20 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 		if output.CoinDetails != nil {
 			out.CoinDetails.Value = output.CoinDetails.Value
 			out.CoinDetails.Info = output.CoinDetails.Info
-			out.CoinDetails.CoinCommitment = output.CoinDetails.CoinCommitment.Compress()
+			if output.CoinDetails.CoinCommitment != nil {
+				out.CoinDetails.CoinCommitment = output.CoinDetails.CoinCommitment.Compress()
+			}
 			out.CoinDetails.Randomness = *output.CoinDetails.Randomness
 			out.CoinDetails.SNDerivator = *output.CoinDetails.SNDerivator
-			out.CoinDetails.SerialNumber = output.CoinDetails.SerialNumber.Compress()
-			out.CoinDetails.PublicKey = output.CoinDetails.PublicKey.Compress()
-			out.CoinDetailsEncrypted = output.CoinDetailsEncrypted.Bytes()
+			if output.CoinDetails.SerialNumber != nil {
+				out.CoinDetails.SerialNumber = output.CoinDetails.SerialNumber.Compress()
+			}
+			if output.CoinDetails.PublicKey != nil {
+				out.CoinDetails.PublicKey = output.CoinDetails.PublicKey.Compress()
+			}
+			if output.CoinDetailsEncrypted != nil {
+				out.CoinDetailsEncrypted = output.CoinDetailsEncrypted.Bytes()
+			}
 		}
 		proofDetail.OutputCoins = append(proofDetail.OutputCoins, &out)
 	}
