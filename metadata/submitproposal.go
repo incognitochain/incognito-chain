@@ -112,7 +112,10 @@ func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) err
 
 	if !sale.Buy {
 		// Cannot buy and sell the same type of bond at the same time
-		oldSales := bcr.GetAllCrowdsales()
+		oldSales, err := bcr.GetAllSaleData()
+		if err != nil {
+			return err
+		}
 		for _, oldSale := range oldSales {
 			if oldSale.EndBlock >= bcr.GetBeaconHeight() {
 				continue // sale ended
