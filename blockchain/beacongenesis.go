@@ -166,7 +166,7 @@ func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 	govAddress := keyWalletGOVAccount.KeySet.PaymentAddress
 	govUpdateInst := &frombeaconins.UpdateGOVConstitutionIns{
 		SubmitProposalInfo: component.SubmitProposalInfo{
-			ExecuteDuration:   0,
+			ExecuteDuration:   EndOfFirstBoard + ExtendDurationForFirstBoard,
 			Explanation:       "Genesis GOV proposal",
 			PaymentAddress:    govAddress,
 			ConstitutionIndex: 0,
@@ -304,7 +304,7 @@ func createDCBGenesisParamsInst() []string {
 	dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
 	dcbUpdateInst := &frombeaconins.UpdateDCBConstitutionIns{
 		SubmitProposalInfo: component.SubmitProposalInfo{
-			ExecuteDuration:   0,
+			ExecuteDuration:   EndOfFirstBoard + ExtendDurationForFirstBoard,
 			Explanation:       "Genesis DCB proposal",
 			PaymentAddress:    dcbAddress,
 			ConstitutionIndex: 0,
