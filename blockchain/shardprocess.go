@@ -23,8 +23,8 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	//========Verify block only
 	Logger.log.Infof("SHARD %+v | Verify block for signing process %d, with hash %+v", shardID, block.Header.Height, *block.Hash())
 	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, true); err != nil {
@@ -78,10 +78,9 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	@Notice: this block must have full information (complete block)
 */
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer bool) error {
-	//#slow why we need chainLock here?
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v at hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBlock(block.Hash())
 	if isExist {
@@ -578,9 +577,6 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 		Swap shard committee if detect new epoch of beacon
 */
 func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
-	bestStateShard.Lock.Lock()
-	defer bestStateShard.Lock.Unlock()
-
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
 		err                   error
