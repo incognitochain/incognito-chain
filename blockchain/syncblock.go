@@ -262,7 +262,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 
 				for peerID := range blockchain.syncStatus.PeersState {
 					if shardState, ok := blockchain.syncStatus.PeersState[peerID].Shard[shardID]; ok {
-						// fmt.Println("SyncShard 123 ", shardState)
+						fmt.Println("SyncShard 123 ", shardState.Height, shardID)
 						if shardState.Height >= currentShardReqHeight {
 							if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
 								// fmt.Println("SyncShard 1234 ")
