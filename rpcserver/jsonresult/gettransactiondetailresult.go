@@ -1,8 +1,8 @@
 package jsonresult
 
 import (
-	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"math/big"
 )
 
 type TransactionDetail struct {
@@ -33,6 +33,49 @@ type TransactionDetail struct {
 }
 
 type ProofDetail struct {
-	InputCoins  []*privacy.InputCoin
-	OutputCoins []*privacy.OutputCoin
+	InputCoins  []*CoinDetail
+	OutputCoins []*CoinDetail
+}
+
+func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
+	proofDetail.InputCoins = make([]*CoinDetail, 0)
+	for _, input := range proof.InputCoins {
+		in := CoinDetail{}
+		in.CoinDetails.Value = input.CoinDetails.Value
+		in.CoinDetails.Info = input.CoinDetails.Info
+		in.CoinDetails.CoinCommitment = input.CoinDetails.CoinCommitment.Compress()
+		in.CoinDetails.Randomness = input.CoinDetails.Randomness
+		in.CoinDetails.SNDerivator = input.CoinDetails.SNDerivator
+		in.CoinDetails.SerialNumber = input.CoinDetails.SerialNumber.Compress()
+		in.CoinDetails.PublicKey = input.CoinDetails.PublicKey.Compress()
+		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
+	}
+
+	for _, output := range proof.OutputCoins {
+		out := CoinDetail{}
+		out.CoinDetails.Value = output.CoinDetails.Value
+		out.CoinDetails.Info = output.CoinDetails.Info
+		out.CoinDetails.CoinCommitment = output.CoinDetails.CoinCommitment.Compress()
+		out.CoinDetails.Randomness = output.CoinDetails.Randomness
+		out.CoinDetails.SNDerivator = output.CoinDetails.SNDerivator
+		out.CoinDetails.SerialNumber = output.CoinDetails.SerialNumber.Compress()
+		out.CoinDetails.PublicKey = output.CoinDetails.PublicKey.Compress()
+		out.CoinDetailsEncrypted = output.CoinDetailsEncrypted.Bytes()
+		proofDetail.OutputCoins = append(proofDetail.OutputCoins, &out)
+	}
+}
+
+type CoinDetail struct {
+	CoinDetails          *Coin
+	CoinDetailsEncrypted []byte
+}
+
+type Coin struct {
+	PublicKey      []byte
+	CoinCommitment []byte
+	SNDerivator    *big.Int
+	SerialNumber   []byte
+	Randomness     *big.Int
+	Value          uint64
+	Info           []byte
 }
