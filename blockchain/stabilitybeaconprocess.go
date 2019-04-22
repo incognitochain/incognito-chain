@@ -88,9 +88,6 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		}
 		bsb.UpdateGOVFund(-int64(rewardGOVProposalSubmitterIns.Amount))
 
-	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
-		return bsb.processCrowdsalePaymentInstruction(inst)
-
 	case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
 		return bsb.processBuyFromGOVReqInstruction(inst)
 
@@ -416,27 +413,65 @@ func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconin
 	return nil
 }
 
-func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) error {
+func (bc *BlockChain) updateDCBBuyBondInfo(bondID *common.Hash, bondAmount uint64, price uint64) error {
+	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
+	amountAvail += bondAmount
+	cstPaid += price * bondAmount
+	return bc.config.DataBase.StoreDCBBondInfo(bondID)
+}
+
+func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint64) error {
+	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
+	avgPrice := cstPaid / amountAvail
+	if amountAvail < bondAmount {
+		return fmt.Errorf("invalid crowdsale payment inst, amount available lower than payment: %d, %d", amountAvail, bondAmount)
+	}
+	amountAvail -= bondAmount
+
+	principleCovered := bondAmount * avgPrice
+	if cstPaid < principleCovered {
+		principleCovered = cstPaid
+	}
+	cstPaid -= principleCovered
+
+	return bc.config.DataBase.StoreDCBBondInfo(bondID)
+}
+
+func (bc *BlockChain) processCrowdsalePaymentInstruction(inst []string) error {
 	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
-	// All shard update bsb, only DCB shard creates payment txs
+	// All shards update, only DCB shard creates payment txs
 	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
+	if err != nil || !paymentInst.UpdateSale {
+		return err
+	}
+
+	sale, err := bc.config.DataBase.GetSaleData(paymentInst.SaleID)
+	if err != nil {
+		fmt.Printf("[db] error get sale data: %+v\n", err)
+		return err
+	}
+
+	bondAmount := paymentInst.Amount
+	if sale.Buy {
+		bondAmount = paymentInst.SentAmount
+	}
+	if sale.Amount < bondAmount {
+		return fmt.Errorf("invalid crowdsale payment inst, reached limit: %d, %d", sale.Amount, bondAmount)
+	}
+
+	// Update average price per bond
+	if sale.Buy {
+		err = bc.updateDCBSellBondInfo(sale.BondID, bondAmount)
+	} else {
+		err = bc.updateDCBBuyBondInfo(sale.BondID, bondAmount, sale.Price)
+	}
 	if err != nil {
 		return err
 	}
-	if paymentInst.UpdateSale {
-		saleData, err := bsb.GetSaleData(paymentInst.SaleID)
-		if err != nil {
-			fmt.Printf("[db] error get sale data: %+v\n", err)
-			return err
-		}
-		saleData.BuyingAmount -= paymentInst.SentAmount
-		saleData.SellingAmount -= paymentInst.Amount
 
-		key := getSaleDataKeyBeacon(paymentInst.SaleID)
-		bsb.Params[key] = getSaleDataValueBeacon(saleData)
-		fmt.Printf("[db] updated crowdsale: %s\n", bsb.Params[key])
-	}
-	return nil
+	// Update crowdsale amount left
+	sale.Amount -= bondAmount
+	return bc.storeSaleData(sale)
 }
 
 func (bc *BlockChain) processLoanWithdrawInstruction(inst []string) error {
@@ -531,6 +566,9 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 			err = bc.processUpdateDCBConstitutionIns(inst)
 		case strconv.Itoa(component.UpdateGOVConstitutionIns):
 			err = bc.processUpdateGOVConstitutionIns(inst)
+
+		case strconv.Itoa(metadata.CrowdsalePaymentMeta):
+			err = bc.processCrowdsalePaymentInstruction(inst)
 		}
 
 		if err != nil {
@@ -540,15 +578,19 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 	return nil
 }
 
+func (bc *BlockChain) storeSaleData(saleData SaleData) error {
+	var saleRaw []byte
+	var err error
+	if saleRaw, err = json.Marshal(saleData); err == nil {
+		err = bc.config.DataBase.StoreSaleData(saleData.SaleID, saleRaw)
+	}
+	return err
+}
+
 func (bc *BlockChain) storeListSaleData(dcbParams component.DCBParams) error {
 	// Store saledata in state
 	for _, data := range dcbParams.ListSaleData {
-		var saleRaw []byte
-		var err error
-		if saleRaw, err = json.Marshal(data); err == nil {
-			err = bc.config.DataBase.StoreSaleData(data.SaleID, saleRaw)
-		}
-		if err != nil {
+		if err := bc.storeSaleData(data); err != nil {
 			return err
 		}
 	}
