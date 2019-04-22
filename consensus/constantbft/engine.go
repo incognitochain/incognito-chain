@@ -229,7 +229,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 	}
 	if err == nil {
 		shardBlk := resBlk.(*blockchain.ShardBlock)
-		fmt.Println("========NEW SHARD BLOCK=======", shardBlk.Header.Height)
+		Logger.log.Critical("===============NEW SHARD BLOCK==============")
+		Logger.log.Critical("Shard Block Height", shardBlk.Header.Height)
 		isProducer := false
 		if strings.Compare(engine.config.UserKeySet.GetPublicKeyB58(), base58.Base58Check{}.Encode(shardBlk.Header.ProducerAddress.Pk, common.ZeroByte)) == 0 {
 			isProducer = true
@@ -241,16 +242,16 @@ func (engine *Engine) execShardRole(shardID byte) {
 		}
 		go func() {
 			//PUSH SHARD TO BEACON
-			fmt.Println("Create And Push Shard To Beacon Block")
+			//fmt.Println("Create And Push Shard To Beacon Block")
 			newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock(engine.config.BlockChain)
 			newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
 			if err == nil {
 				go engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
 			}
-			fmt.Println("Create and Push all Cross Shard Block")
+			//fmt.Println("Create and Push all Cross Shard Block")
 			//PUSH CROSS-SHARD
 			newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock(engine.config.BlockChain.BestState.Beacon.ActiveShards)
-			fmt.Println("New Cross Shard Blocks ", newCrossShardBlocks, shardBlk.Header.Height, shardBlk.Header.CrossShards)
+			//fmt.Println("New Cross Shard Blocks ", newCrossShardBlocks, shardBlk.Header.Height, shardBlk.Header.CrossShards)
 
 			for sID, newCrossShardBlock := range newCrossShardBlocks {
 				newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
