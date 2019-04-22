@@ -172,10 +172,10 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
-	if err != nil {
-		return nil, NewRPCError(ErrSendTxData, err)
+	if err == nil {
+		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	}
-
+	
 	txID := tx.Hash().String()
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
@@ -421,8 +421,11 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	}
 
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
-	rpcServer.config.Server.PushMessageToAll(txMsg)
-
+	err = rpcServer.config.Server.PushMessageToAll(txMsg)
+	//Mark Fowarded transaction
+	if err == nil {
+		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	}
 	return tx.Hash(), nil
 }
 
@@ -873,16 +876,18 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-
-	// broadcast message
+	
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
-	rpcServer.config.Server.PushMessageToAll(txMsg)
-
+	err = rpcServer.config.Server.PushMessageToAll(txMsg)
+	//Mark forwarded message
+	if err == nil {
+		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	}
 	return tx.Hash(), nil
 }
 
