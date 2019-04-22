@@ -51,6 +51,10 @@ func (db *db) GetSaleData(saleID []byte) ([]byte, error) {
 	return nil, nil
 }
 
+func (db *db) GetAllSaleData() ([][]byte, error) {
+	return nil, nil
+}
+
 func (db *db) StoreDCBBondInfo(bondID *common.Hash, amountAvail, cstPaid uint64) error {
 	return nil
 }
