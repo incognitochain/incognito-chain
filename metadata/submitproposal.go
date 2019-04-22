@@ -85,7 +85,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
 	return [][]string{instStr}, nil
 }
 
-func validateCrowdsaleData(sale SaleData, bcr BlockchainRetriever) error {
+func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) error {
 	// No crowdsale existed with the same id
 	if bcr.CrowdsaleExisted(sale.SaleID) {
 		return errors.Errorf("crowdsale with the same ID existed")
@@ -102,7 +102,7 @@ func validateCrowdsaleData(sale SaleData, bcr BlockchainRetriever) error {
 	}
 
 	// Amount and DefaultPrice must be set
-	if sale.Amount * sale.Price {
+	if sale.Amount*sale.Price == 0 {
 		return errors.Errorf("crowdsale asset amount and price must be set")
 	}
 
@@ -124,7 +124,7 @@ func validateCrowdsaleData(sale SaleData, bcr BlockchainRetriever) error {
 		}
 
 		// Sell price (in Constant) must be higher than average buy price
-		amount, paid := bc.config.DataBase.GetDCBBondInfo(&sale.BondID)
+		amount, paid := bc.config.DataBase.GetDCBBondInfo(sale.BondID)
 		if paid > amount*sale.Price {
 			return fmt.Errorf("bond sell price is too low, got %d expected at least %d", sale.Price, paid/amount)
 		}
