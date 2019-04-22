@@ -1405,13 +1405,18 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 
 func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 	updateConstitutionIns, err := frombeaconins.NewUpdateDCBConstitutionInsFromStr(inst)
-	fmt.Printf("[ndh] Update DCB constitution instrucstion %+v\n", updateConstitutionIns)
 	if err != nil {
+		fmt.Printf("[ndh] - Error here, don't know why. %+v\n", err)
 		return err
 	}
 	boardType := common.DCBBoard
 	constitution := bc.GetConstitution(boardType)
 	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
+	fmt.Printf("[ndh] - Board Index: %+v; constitution Index: %+v \n", bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex, constitution.GetConstitutionIndex())
+	if (bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex == 1) && (constitution.GetConstitutionIndex() == 0) {
+		nextConstitutionIndex = 0
+	}
+	fmt.Printf("[ndh] Update DCB constitution instrucstion [%+v] %+v\n", nextConstitutionIndex, updateConstitutionIns)
 	err = bc.GetDatabase().SetNewProposalWinningVoter(
 		boardType,
 		nextConstitutionIndex,
@@ -1430,13 +1435,18 @@ func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
 
 func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	updateConstitutionIns, err := frombeaconins.NewUpdateGOVConstitutionInsFromStr(inst)
-	fmt.Printf("[ndh] Update DCB constitution instrucstion %+v\n", updateConstitutionIns)
 	if err != nil {
+		fmt.Printf("[ndh] - Error here, don't know why. %+v\n", err)
 		return err
 	}
 	boardType := common.GOVBoard
 	constitution := bc.GetConstitution(boardType)
 	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
+	fmt.Printf("[ndh] - Board Index: %+v; constitution Index: %+v \n", bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex, constitution.GetConstitutionIndex())
+	if (bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex == 1) && (constitution.GetConstitutionIndex() == 0) {
+		nextConstitutionIndex = 0
+	}
+	fmt.Printf("[ndh] Update GOV constitution instrucstion [%+v] %+v\n", nextConstitutionIndex, updateConstitutionIns)
 	err = bc.GetDatabase().SetNewProposalWinningVoter(
 		boardType,
 		nextConstitutionIndex,
@@ -1452,3 +1462,7 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.SalaryFund)
 	return nil
 }
+
+// func (bc *BlockChain) processKeepOldDCBConstitutionIns(ints []string) error {
+
+// }
