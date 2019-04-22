@@ -137,21 +137,17 @@ func (sd *SaleData) GetProposalTxHash() common.Hash {
 
 func NewSaleData(
 	endBlock uint64,
-	buyingAsset *common.Hash,
-	buyingAmount uint64,
-	defaultBuyPrice uint64,
-	sellingAsset *common.Hash,
-	sellingAmount uint64,
-	defaultSellPrice uint64,
+	bondID *common.Hash,
+	price uint64,
+	amount uint64,
+	buy bool,
 ) *SaleData {
 	return &SaleData{
-		EndBlock:         endBlock,
-		BuyingAsset:      *buyingAsset,
-		BuyingAmount:     buyingAmount,
-		DefaultBuyPrice:  defaultBuyPrice,
-		SellingAsset:     *sellingAsset,
-		SellingAmount:    sellingAmount,
-		DefaultSellPrice: defaultSellPrice,
+		EndBlock: endBlock,
+		BondID:   bondID,
+		Price:    price,
+		Amount:   amount,
+		Buy:      buy,
 	}
 }
 
@@ -159,24 +155,19 @@ func NewSaleDataFromJson(data interface{}) *SaleData {
 	if data == nil {
 		return nil
 	}
-	saleDataData := data.(map[string]interface{})
-	buyingAssetStr := saleDataData["BuyingAsset"].(string)
-	buyingAsset, errBuy := common.Hash{}.NewHashFromStr(buyingAssetStr)
-
-	sellingAssetStr := saleDataData["SellingAsset"].(string)
-	sellingAsset, errSell := common.Hash{}.NewHashFromStr(sellingAssetStr)
-	if errBuy != nil || errSell != nil {
+	saleDataRaw := data.(map[string]interface{})
+	bondIDRaw := saleDataRaw["BondID"].(string)
+	bondID, err := common.Hash{}.NewHashFromStr(bondIDRaw)
+	if err != nil {
 		return nil
 	}
 
 	saleData := NewSaleData(
-		uint64(saleDataData["EndBlock"].(float64)),
-		buyingAsset,
-		uint64(saleDataData["BuyingAmount"].(float64)),
-		uint64(saleDataData["DefaultBuyPrice"].(float64)),
-		sellingAsset,
-		uint64(saleDataData["SellingAmount"].(float64)),
-		uint64(saleDataData["DefaultSellPrice"].(float64)),
+		uint64(saleDataRaw["EndBlock"].(float64)),
+		bondID,
+		uint64(saleDataRaw["Price"].(float64)),
+		uint64(saleDataRaw["Amount"].(float64)),
+		saleDataRaw["Buy"].(bool),
 	)
 
 	// Generate SaleID randomly
@@ -373,12 +364,10 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 
 func (saleData *SaleData) PartialHash() *common.Hash {
 	record := string(saleData.EndBlock)
-	record += saleData.BuyingAsset.String()
-	record += string(saleData.BuyingAmount)
-	record += string(saleData.DefaultBuyPrice)
-	record += saleData.SellingAsset.String()
-	record += string(saleData.SellingAmount)
-	record += string(saleData.DefaultSellPrice)
+	record += saleData.BondID.String()
+	record += string(saleData.Amount)
+	record += string(saleData.Price)
+	record += strconv.FormatBool(saleData.Buy)
 	hash := common.HashH([]byte(record))
 	return &hash
 }
