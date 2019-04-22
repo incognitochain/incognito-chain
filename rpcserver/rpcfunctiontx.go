@@ -175,7 +175,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	if err == nil {
 		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	}
-	
+
 	txID := tx.Hash().String()
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
@@ -246,8 +246,10 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
-			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-			result.Metadata = string(metaData)
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
 		}
 	case common.TxCustomTokenType:
 		{
@@ -876,7 +878,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	
+
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
