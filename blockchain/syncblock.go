@@ -560,6 +560,9 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	go blockchain.InsertBeaconBlockFromPool()
 	blockchain.syncStatus.Lock()
 	for shardID := range blockchain.syncStatus.Shards {
+		if _, ok := currentInsert.Shards[shardID]; !ok {
+			currentInsert.Shards[shardID] = &sync.Mutex{}
+		}
 		go func(shardID byte) {
 			blockchain.InsertShardBlockFromPool(shardID)
 		}(shardID)
@@ -583,9 +586,7 @@ func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
 }
 
 func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
-	if _, ok := currentInsert.Shards[shardID]; !ok {
-		currentInsert.Shards[shardID] = &sync.Mutex{}
-	}
+
 	currentInsert.Shards[shardID].Lock()
 	defer currentInsert.Shards[shardID].Unlock()
 	blks := blockchain.config.ShardPool[shardID].GetValidBlock()
