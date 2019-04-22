@@ -51,7 +51,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.syncStatus.Unlock()
 
 	broadcastTicker := time.NewTicker(defaultBroadcastStateTime)
-	insertPoolTicker := time.NewTicker(time.Millisecond * 100)
+	insertPoolTicker := time.NewTicker(time.Millisecond * 200)
 	peersProcessTicker := time.NewTicker(defaultProcessPeerStateTime)
 
 	defer func() {
