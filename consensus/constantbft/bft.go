@@ -1,6 +1,7 @@
 package constantbft
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -213,6 +214,7 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 						protocol.cBFTMsg <- msg
 					}
 				}
+				time.Sleep(10 * time.Millisecond)
 			}
 		}
 	}()
@@ -225,11 +227,21 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			switch earlyMsg.MessageType() {
 			case wire.CmdBFTPrepare:
 				if protocol.phase == PBFT_LISTEN {
-					prepareMsgs = append(prepareMsgs, earlyMsg)
+					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], earlyMsg.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
+						prepareMsgs = append(prepareMsgs, earlyMsg)
+					}
 				}
 			case wire.CmdBFTCommit:
 				if protocol.phase == PBFT_PREPARE {
-					commitMsgs = append(commitMsgs, earlyMsg)
+					newSig := bftCommittedSig{
+						ValidatorsIdxR: earlyMsg.(*wire.MessageBFTCommit).ValidatorsIdx,
+						Sig:            earlyMsg.(*wire.MessageBFTCommit).CommitSig,
+					}
+					R := earlyMsg.(*wire.MessageBFTCommit).R
+					err := protocol.multiSigScheme.VerifyCommitSig(earlyMsg.(*wire.MessageBFTCommit).Pubkey, newSig.Sig, R, newSig.ValidatorsIdxR)
+					if err == nil {
+						commitMsgs = append(commitMsgs, earlyMsg)
+					}
 				}
 			}
 		}
