@@ -132,9 +132,9 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 			pendingPoolHeight[shardID] = append(pendingPoolHeight[shardID], block.Header.Height)
 		}
 	}
-	fmt.Println("CrossShardPool/getNextCrossShardHeight, NEXT Height", expectedHeight)
-	fmt.Println("CrossShardPool/Current VALID Cross Shard Pool", validPoolHeight)
-	fmt.Println("CrossShardPool/Current PENDING Cross Shard Pool", pendingPoolHeight)
+	//fmt.Println("CrossShardPool/getNextCrossShardHeight, NEXT Height", expectedHeight)
+	//fmt.Println("CrossShardPool/Current VALID Cross Shard Pool", validPoolHeight)
+	//fmt.Println("CrossShardPool/Current PENDING Cross Shard Pool", pendingPoolHeight)
 	return expectedHeight, nil
 }
 
