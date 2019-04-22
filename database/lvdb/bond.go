@@ -37,3 +37,15 @@ func (db *db) GetSoldBondTypes() ([][]byte, error) {
 	}
 	return results, nil
 }
+
+func (db *db) GetSoldBondTypeByID(bondID *common.Hash) ([]byte, error) {
+	key := append(bondTypePrefix, bondID[:]...)
+	bondTypeBytes, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		if err != lvdberr.ErrNotFound {
+			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return []byte{}, nil
+	}
+	return bondTypeBytes, nil
+}
