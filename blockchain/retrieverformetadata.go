@@ -153,7 +153,7 @@ func (blockchain *BlockChain) GetSaleData(saleID []byte) (*component.SaleData, e
 		return nil, err
 	}
 	var sale *component.SaleData
-	err := json.Unmarshal(saleRaw, sale)
+	err = json.Unmarshal(saleRaw, sale)
 	return sale, err
 }
 
