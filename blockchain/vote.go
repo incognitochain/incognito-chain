@@ -148,7 +148,7 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 	//<<<<<<<<<<<<<<<<<<<<<<
 	totalReward := helper.GetBoardReward(self)
 	fmt.Printf("[ndh] - totalReward: %+v\n", totalReward)
-	if totalReward > 0 {
+	if (totalReward > 0) && (currentConstitutionIndex > 0) {
 		boardType := helper.GetBoardType()
 		boardIndex := helper.GetBoard(self).GetBoardIndex()
 		listVotersOfCurrentProposal, err := db.GetCurrentProposalWinningVoter(boardType, currentConstitutionIndex)
@@ -175,6 +175,7 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 				listSupporters := self.config.DataBase.GetBoardVoterList(boardType, voter, boardIndex)
 				voterAndAmount[i] = 0
 				for _, supporter := range listSupporters {
+					fmt.Printf("[ndh] Voter: %+v; Supporter: %+v\n", voter.Bytes(), supporter.Bytes())
 					voterAndAmount[i] += helper.GetAmountOfVoteToBoard(self, voter, supporter, boardIndex)
 				}
 				shareRewardIns := self.CreateShareRewardOldBoardIns(helper, listVotersOfCurrentProposal[i], supporterRewardAmount, voterAndAmount[i])
@@ -516,9 +517,8 @@ func (self *BlockChain) generateVotingInstructionWOIns(helper ConstitutionHelper
 			if err != nil {
 				return nil, err
 			}
-			fmt.Println("[ndh] - updateProposalInstruction : ", updateProposalInstruction)
 			if len(updateProposalInstruction) != 0 {
-				fmt.Println("[ndh] - updateProposalInstruction ok: ", updateProposalInstruction)
+				fmt.Println("[ndh] - updateProposalInstruction ok.")
 				instructions = append(instructions, updateProposalInstruction...)
 			}
 			//============================ VOTE BOARD
