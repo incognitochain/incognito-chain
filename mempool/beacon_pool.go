@@ -112,10 +112,17 @@ func (self *BeaconPool) AddBeaconBlock(blk *blockchain.BeaconBlock) error {
 
 func (self *BeaconPool) updateLatestBeaconState() {
 	lastHeight := self.latestValidHeight
-	for _, blk := range self.pool {
+	for i, blk := range self.pool {
 		if blk.Header.Height > lastHeight && lastHeight+1 != blk.Header.Height {
 			break
 		}
+		if i == len(self.pool)-1 {
+			break
+		}
+		if self.pool[i+1].Header.PrevBlockHash != *blk.Hash() {
+			break
+		}
+
 		lastHeight = blk.Header.Height
 	}
 	self.latestValidHeight = lastHeight
@@ -154,11 +161,8 @@ func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
 	self.poolMu.RLock()
 	defer self.poolMu.RUnlock()
 	finalBlocks := []*blockchain.BeaconBlock{}
-	for i, blk := range self.pool {
+	for _, blk := range self.pool {
 		if blk.Header.Height > self.latestValidHeight {
-			break
-		}
-		if i == len(self.pool)-1 {
 			break
 		}
 		finalBlocks = append(finalBlocks, blk)

@@ -118,8 +118,14 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 
 func (self *ShardPool) updateLatestShardState() {
 	lastHeight := self.latestValidHeight
-	for _, blk := range self.pool {
+	for i, blk := range self.pool {
 		if lastHeight+1 != blk.Header.Height {
+			break
+		}
+		if i == len(self.pool)-1 {
+			break
+		}
+		if self.pool[i+1].Header.PrevBlockHash != *blk.Hash() {
 			break
 		}
 		lastHeight = blk.Header.Height
