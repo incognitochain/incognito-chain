@@ -423,6 +423,12 @@ func (bsb *BestStateBeacon) processCrowdsalePaymentProfit(inst []string, bc *Blo
 		return err
 	}
 
+	// Add profit only when selling bonds
+	sale, err := bc.GetSaleData(paymentInst.SaleID)
+	if err != nil || sale.Buy {
+		return err
+	}
+
 	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&paymentInst.AssetID)
 	avgPrice := cstPaid / amountAvail
 	profit := paymentInst.SentAmount - avgPrice*paymentInst.Amount
