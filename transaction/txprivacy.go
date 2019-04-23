@@ -42,7 +42,7 @@ type Tx struct {
 	cachedHash *common.Hash // cached hash data of tx
 }
 
-func (tx *Tx) GetAmountOfVote() (uint64, error) {
+func (tx *Tx) GetAmountOfVote(common.BoardType) (uint64, error) {
 	return 0, errors.New("wrong type of tx")
 }
 
@@ -1168,4 +1168,8 @@ func (tx Tx) ValidateTxSalary(
 func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.Metadata, error) {
 	// implement this func if needed
 	return nil, nil
+}
+
+func (tx Tx) GetTokenID() *common.Hash {
+	return nil
 }

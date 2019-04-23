@@ -194,9 +194,3 @@ const (
 	// utils
 	HashToIdenticon = "hashtoidenticon"
 )
-
-//Fee of specific transaction
-const (
-	FeeSubmitProposal = 100
-	FeeVote           = 100
-)

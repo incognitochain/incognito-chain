@@ -145,6 +145,14 @@ func ParseValueVoteBoardList(value []byte) uint64 {
 	return common.BytesToUint64(value)
 }
 
+func GetKeyBoardFund(boardType common.BoardType, constitutionIndex uint32) []byte {
+	return GetKeyFromVariadic(BoardFundPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex))
+}
+
+func GetKeyConstantsPrice(constitutionIndex uint32) []byte {
+	return GetKeyFromVariadic(ConstantPricePrefix, common.Uint32ToBytes(constitutionIndex))
+}
+
 func GetKeyVoteProposal(boardType common.BoardType, constitutionIndex uint32, voterPayment *privacy.PaymentAddress) []byte {
 	b := make([]byte, common.PaymentAddressLength)
 	if voterPayment != nil {
@@ -157,6 +165,26 @@ func GetKeyVoteProposal(boardType common.BoardType, constitutionIndex uint32, vo
 func GetKeySubmitProposal(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) []byte {
 	key := GetKeyFromVariadic(SubmitProposalPrefix, boardType.Bytes(), common.Uint32ToBytes(constitutionIndex), proposalTxID)
 	return key
+}
+
+func ParseKeySubmitProposal(key []byte) (
+	boardType common.BoardType,
+	constitutionIndex uint32,
+	proposalTxID []byte,
+	err error,
+) {
+	length := []int{len(SubmitProposalPrefix), 1, 4, common.HashSize}
+	elements, err := ParseKeyToSlice(key, length)
+	if err != nil {
+		return 0, 0, nil, err
+	}
+	index := 1
+
+	boardType = common.BoardType(elements[iPlusPlus(&index)][0])
+	constitutionIndex = common.BytesToUint32(elements[iPlusPlus(&index)])
+
+	proposalTxID = (elements[iPlusPlus(&index)])
+	return boardType, constitutionIndex, proposalTxID, nil
 }
 
 func ParseKeyVoteProposal(key []byte) (
