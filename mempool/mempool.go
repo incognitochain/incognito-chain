@@ -8,7 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -23,7 +23,7 @@ type Config struct {
 	BlockChain *blockchain.BlockChain
 
 	DataBase database.DatabaseInterface
-	
+
 	DataBaseMempool databasemp.DatabaseInterface
 
 	ChainParams *blockchain.Params
@@ -37,7 +37,7 @@ type Config struct {
 
 	//Max transaction pool may have
 	MaxTx uint64
-	
+
 	//Reset mempool database when run node
 	IsLoadFromMempool bool
 }
@@ -49,7 +49,7 @@ type TxDesc struct {
 
 	//Unix Time that transaction enter mempool
 	StartTime time.Time
-	
+
 	IsFowardMessage bool
 }
 
@@ -78,7 +78,7 @@ type TxPool struct {
 
 	//Time to live for all transaction
 	TxLifeTime uint
-	
+
 	//Reset mempool database
 	IsLoadFromMempool bool
 }
@@ -177,6 +177,7 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *Tx
 	}
 	return txDesc
 }
+
 /*
 // add transaction into pool
 */
@@ -184,7 +185,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	Logger.log.Info(tx.Hash().String())
-	
+
 	if isStore {
 		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
 		if err != nil {
@@ -200,7 +201,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 			//Logger.log.Criticalf("Success Get Transaction %+v from DBMP %+v \n", *txDesc.Desc.Tx.Hash(), txDesc)
 		}
 	}
-		tp.pool[*tx.Hash()] = txD
+	tp.pool[*tx.Hash()] = txD
 	//==================================================
 	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
@@ -218,7 +219,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	if txHash != nil {
 		tp.AddTxCoinHashH(*txHash)
 	}
-	
+
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -264,7 +265,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return err
 	}
-	
+
 	// check version
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
@@ -272,7 +273,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
 		return err
 	}
-	
+
 	// check actual size
 	actualSize := tx.GetTxActualSize()
 	fmt.Printf("Transaction %+v's size %+v \n", txHash, actualSize)
@@ -281,7 +282,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return err
 	}
-	
+
 	// check fee of tx
 	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
@@ -292,7 +293,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		return err
 	}
 	// end check with policy
-	
+
 	ok = tx.ValidateType()
 	if !ok {
 		return err
@@ -302,14 +303,14 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// sanity data
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
 		err := MempoolTxError{}
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return err
 	}
-	
+
 	// ValidateTransaction tx by it self // TODO validate performance later 0xkraken
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
@@ -318,14 +319,14 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidTx, errors.New("invalid tx"))
 		return err
 	}
-	
+
 	// validate tx with data of blockchain
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
 	// err = tp.ValidateTxWithBlockChain(tx, shardID)
 	if err != nil {
 		return err
 	}
-	
+
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
@@ -341,14 +342,14 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 			}
 		}
 	}
-	
+
 	// A standalone transaction must not be a salary transaction.
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return err
 	}
-	
+
 	// check duplicate stake public key ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -418,6 +419,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
 	tp.pool[txHash].IsFowardMessage = true
 }
+
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
@@ -534,6 +536,17 @@ func (tp *TxPool) ListTxs() []string {
 	result := make([]string, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx.Hash().String())
+	}
+	return result
+}
+
+/*
+List all tx ids in mempool
+*/
+func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
+	result := make([]metadata.Transaction, 0)
+	for _, tx := range tp.pool {
+		result = append(result, tx.Desc.Tx)
 	}
 	return result
 }
@@ -655,4 +668,3 @@ func (tp *TxPool) EmptyPool() bool {
 	}
 	return false
 }
-
