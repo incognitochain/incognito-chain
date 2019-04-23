@@ -97,11 +97,11 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			)
 			if blockchain.config.UserKeySet != nil {
 				userPK = blockchain.config.UserKeySet.GetPublicKeyB58()
-				userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
+				userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(userPK, blockchain.BestState.Beacon.BestBlock.Header.Round)
 				blockchain.syncShard(userShardID)
 				blockchain.stopSyncUnnecessaryShard()
 				// blockchain.startSyncRelayShards()
-				userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+				userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(userPK, blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 			}
 
 			RCS := reportedChainState{
