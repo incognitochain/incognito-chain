@@ -590,7 +590,6 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.Value), randOutputValue[i], privacy.VALUE)
 		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
 
-		//TODO: refactor this hardcode, shardnum
 		receiverShardID := common.GetShardIDFromLastByte(outputCoins[i].CoinDetails.GetPubKeyLastByte())
 		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(receiverShardID)), randOutputShardID[i], privacy.SHARDID)
 
