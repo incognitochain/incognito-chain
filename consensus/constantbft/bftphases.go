@@ -35,9 +35,7 @@ func (protocol *BFTProtocol) phasePropose() error {
 	var readyMsgs map[string]*wire.MessageBFTReady
 	readyMsgs = make(map[string]*wire.MessageBFTReady)
 
-	fmt.Println()
 	fmt.Println("BFT: Listen for ready msg", time.Since(protocol.startTime).Seconds())
-	fmt.Println()
 phase:
 	for {
 		select {
