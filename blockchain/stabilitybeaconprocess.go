@@ -612,6 +612,73 @@ func (bc *BlockChain) processLoanPaymentInstruction(inst []string) error {
 	return bc.processLoanPayment(loanID, amountSent, interestRate, maturity, beaconHeight)
 }
 
+func (bc *BlockChain) updateDCBBondBoughtFromGOV(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+
+	// accepted
+	contentStr := inst[3]
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		return err
+	}
+	var buySellReqAction BuySellReqAction
+	err = json.Unmarshal(contentBytes, &buySellReqAction)
+	if err != nil {
+		return err
+	}
+
+	md := buySellReqAction.Meta
+	if md.TradeID == nil {
+		return nil
+	}
+
+	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&md.TokenID)
+	amountAvail += md.Amount
+	cstPaid += md.BuyPrice * md.Amount
+	return bc.config.DataBase.StoreDCBBondInfo(&md.TokenID, amountAvail, cstPaid)
+}
+
+func (bc *BlockChain) updateDCBBondSoldToGOV(inst []string) error {
+	instType := inst[2]
+	if instType == "refund" {
+		return nil
+	}
+	// accepted
+	buyBackInfoStr := inst[3]
+	var buyBackInfo BuyBackInfo
+	err := json.Unmarshal([]byte(buyBackInfoStr), &buyBackInfo)
+	if err != nil {
+		return err
+	}
+
+	if buyBackInfo.TradeID == nil {
+		return nil
+	}
+
+	bondAmount := buyBackInfo.Value
+	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&buyBackInfo.BondID)
+	if amountAvail < bondAmount {
+		return fmt.Errorf("invalid trade bond buy back, amount available lower than payment: %d, %d", amountAvail, bondAmount)
+	}
+	amountAvail -= bondAmount
+
+	avgPrice := uint64(0)
+	if amountAvail > 0 {
+		avgPrice = cstPaid / amountAvail
+	}
+
+	principleCovered := bondAmount * avgPrice
+	if cstPaid < principleCovered {
+		principleCovered = cstPaid
+	}
+	cstPaid -= principleCovered
+
+	return bc.config.DataBase.StoreDCBBondInfo(&buyBackInfo.BondID, amountAvail, cstPaid)
+}
+
 func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 	for _, inst := range block.Body.Instructions {
 		var err error
@@ -628,6 +695,12 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 
 		case strconv.Itoa(metadata.CrowdsalePaymentMeta):
 			err = bc.processCrowdsalePaymentInstruction(inst)
+
+		case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
+			err = bc.updateDCBBondBoughtFromGOV(inst)
+
+		case strconv.Itoa(metadata.BuyBackRequestMeta):
+			err = bc.updateDCBBondSoldToGOV(inst)
 		}
 
 		if err != nil {
