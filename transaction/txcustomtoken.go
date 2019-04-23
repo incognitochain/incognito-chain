@@ -13,7 +13,7 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -463,25 +463,34 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 			})
 
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
-			hashInitToken, err := txCustomToken.TxTokenData.Hash()
-			if err != nil {
-				return NewTransactionErr(WrongTokenTxType, err)
+			if tokenParams.Mintable {
+				propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+				if err != nil {
+					return NewTransactionErr(UnexpectedErr, err)
+				}
+				txCustomToken.TxTokenData.PropertyID = *propertyID
+
+			} else {
+				hashInitToken, err := txCustomToken.TxTokenData.Hash()
+				if err != nil {
+					return NewTransactionErr(WrongTokenTxType, err)
+				}
+				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
+				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
+				fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
+				//for customTokenID := range listCustomTokens {
+				//	if newHashInitToken.String() == customTokenID.String() {
+				//		fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
+				//		return NewTransactionErr(CustomTokenExisted, nil)
+				//	}
+				//}
+				existed := db.CustomTokenIDExisted(&newHashInitToken)
+				if existed {
+					Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
+					return NewTransactionErr(CustomTokenExisted, nil)
+				}
+				txCustomToken.TxTokenData.PropertyID = newHashInitToken
 			}
-			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
-			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
-			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
-			//for customTokenID := range listCustomTokens {
-			//	if newHashInitToken.String() == customTokenID.String() {
-			//		fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
-			//		return NewTransactionErr(CustomTokenExisted, nil)
-			//	}
-			//}
-			existed := db.CustomTokenIDExisted(&newHashInitToken)
-			if existed {
-				Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
-				return NewTransactionErr(CustomTokenExisted, nil)
-			}
-			txCustomToken.TxTokenData.PropertyID = newHashInitToken
 		}
 	case CustomTokenTransfer:
 		handled = true
@@ -667,4 +676,8 @@ func (tx *TxCustomToken) IsCoinsBurning() bool {
 		}
 	}
 	return true
+}
+
+func (tx *TxCustomToken) GetTokenID() *common.Hash {
+	return &tx.TxTokenData.PropertyID
 }

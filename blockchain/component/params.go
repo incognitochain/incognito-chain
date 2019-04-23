@@ -286,7 +286,6 @@ func (govParams GOVParams) ValidateSanityData() bool {
 			return false
 		}
 	}
-
 	return true
 }
 

@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/constant-money/constant-chain/transaction"
 	"log"
 	"net"
 	"os"
@@ -118,7 +120,7 @@ func (serverObj *Server) setupRPCListeners() ([]net.Listener, error) {
 /*
 NewServer - create server object which control all process of node
 */
-func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
+func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInterface, dbmp databasemp.DatabaseInterface, chainParams *blockchain.Params, protocolVer string, interrupt <-chan struct{}) error {
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
 	serverObj.chainParams = chainParams
@@ -231,12 +233,14 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	// create mempool tx
 	serverObj.memPool = &mempool.TxPool{}
 	serverObj.memPool.Init(&mempool.Config{
-		BlockChain:   serverObj.blockChain,
-		DataBase:     serverObj.dataBase,
-		ChainParams:  chainParams,
-		FeeEstimator: serverObj.feeEstimator,
-		TxLifeTime:   cfg.TxPoolTTL,
-		MaxTx:        cfg.TxPoolMaxTx,
+		BlockChain:      serverObj.blockChain,
+		DataBase:        serverObj.dataBase,
+		ChainParams:     chainParams,
+		FeeEstimator:    serverObj.feeEstimator,
+		TxLifeTime:      cfg.TxPoolTTL,
+		MaxTx:           cfg.TxPoolMaxTx,
+		DataBaseMempool: dbmp,
+		IsLoadFromMempool: cfg.LoadMempool,
 	})
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
@@ -278,7 +282,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
 		BlockChain: serverObj.blockChain,
 		ChainParam: chainParams,
-		MemTxPool:  serverObj.memPool,
+		TxMemPool:  serverObj.memPool,
 		Server:     serverObj,
 		Consensus:  serverObj.consensusEngine,
 
@@ -518,7 +522,55 @@ func (serverObj Server) Start() {
 		}
 	}
 
-	if serverObj.tempMemPool != nil {
+	if serverObj.memPool != nil {
+		txDescs := serverObj.memPool.LoadOrResetDatabaseMP()
+		for _, txDesc := range txDescs {
+			<-time.Tick(50*time.Millisecond)
+			if !txDesc.IsFowardMessage {
+				tx := txDesc.Desc.Tx
+				switch tx.GetType(){
+				case common.TxNormalType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+						if err != nil {
+							continue
+						}
+						normalTx := tx.(*transaction.Tx)
+						txMsg.(*wire.MessageTx).Transaction = normalTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
+						}
+					}
+				case common.TxCustomTokenType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
+						if err != nil {
+							continue
+						}
+						customTokenTx := tx.(*transaction.TxCustomToken)
+						txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
+						}
+					}
+				case common.TxCustomTokenPrivacyType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+						if err != nil {
+							continue
+						}
+						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
+						}
+					}
+				}
+			}
+		}
 		go mempool.TxPoolMainLoop(serverObj.memPool)
 	}
 }

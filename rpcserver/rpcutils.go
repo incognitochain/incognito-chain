@@ -184,8 +184,11 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-	rpcServer.config.Server.PushMessageToAll(txMsg)
-
+	err = rpcServer.config.Server.PushMessageToAll(txMsg)
+	if err == nil {
+		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	}
+	rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
 	}
@@ -222,8 +225,11 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 	}
 
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
-	rpcServer.config.Server.PushMessageToAll(txMsg)
-
+	err = rpcServer.config.Server.PushMessageToAll(txMsg)
+	if err == nil {
+		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	}
+	rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
 	}
