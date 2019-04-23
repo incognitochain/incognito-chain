@@ -199,4 +199,5 @@ type Transaction interface {
 	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
+	GetTokenID() *common.Hash
 }
