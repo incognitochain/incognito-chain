@@ -72,8 +72,8 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				return
 			} else {
 				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 && blockchain.config.UserKeySet != nil {
+					userRole := blockchain.BestState.Shard[newBlk.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 					if !blockchain.ConsensusOngoing {
-						userRole := blockchain.BestState.Shard[newBlk.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 							fmt.Println("Shard block insert", newBlk.Header.Height)
 							err = blockchain.InsertShardBlock(newBlk, false)
@@ -81,6 +81,10 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 								Logger.log.Error(err)
 								return
 							}
+						}
+					} else {
+						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+							return
 						}
 					}
 				}
