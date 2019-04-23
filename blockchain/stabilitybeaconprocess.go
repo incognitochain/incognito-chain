@@ -270,22 +270,6 @@ func (bsb *BestStateBeacon) processBuyGOVTokenReqInstruction(inst []string) erro
 	return nil
 }
 
-func (bsb *BestStateBeacon) updateDCBBuyBackProfit(buyBackInfo BuyBackInfo, bc *BlockChain) error {
-	if len(buyBackInfo.TradeID) == 0 {
-		return nil
-	}
-
-	_, buy, _, _, err := bc.config.DataBase.GetTradeActivation(buyBackInfo.TradeID)
-	if err != nil || buy {
-		// Add profit only when selling bonds
-		return err
-	}
-
-	profit := bc.updateDCBSellBondProfit(&buyBackInfo.BondID, buyBackInfo.Value*buyBackInfo.BuyBackPrice, buyBackInfo.Value)
-	fmt.Printf("[db] DCBBuyBack added profit: %d\n", profit)
-	return nil
-}
-
 func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string, bc *BlockChain) error {
 	instType := inst[2]
 	if instType == "refund" {
@@ -299,9 +283,7 @@ func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string, bc *Bloc
 		return err
 	}
 	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value * buyBackInfo.BuyBackPrice)
-
-	// Add selling bonds profit to BankFund
-	return bsb.updateDCBBuyBackProfit(buyBackInfo, bc)
+	return nil
 }
 
 func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error {
@@ -441,9 +423,8 @@ func (bc *BlockChain) updateDCBBuyBondInfo(bondID *common.Hash, bondAmount uint6
 func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint64) error {
 	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
 	if amountAvail < bondAmount {
-		return fmt.Errorf("invalid crowdsale payment inst, amount available lower than payment: %d, %d", amountAvail, bondAmount)
+		return fmt.Errorf("invalid sell bond info update, amount available lower than payment: %d, %d", amountAvail, bondAmount)
 	}
-	amountAvail -= bondAmount
 
 	avgPrice := uint64(0)
 	if amountAvail > 0 {
@@ -454,6 +435,7 @@ func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint
 	if cstPaid < principleCovered {
 		principleCovered = cstPaid
 	}
+	amountAvail -= bondAmount
 	cstPaid -= principleCovered
 
 	return bc.config.DataBase.StoreDCBBondInfo(bondID, amountAvail, cstPaid)
@@ -623,6 +605,22 @@ func (bc *BlockChain) updateDCBBondBoughtFromGOV(inst []string) error {
 	return bc.config.DataBase.StoreDCBBondInfo(&md.TokenID, amountAvail, cstPaid)
 }
 
+func (bc *BlockChain) updateDCBBuyBackProfit(buyBackInfo BuyBackInfo) error {
+	if len(buyBackInfo.TradeID) == 0 {
+		return nil
+	}
+
+	_, buy, _, _, err := bc.config.DataBase.GetTradeActivation(buyBackInfo.TradeID)
+	if err != nil || buy {
+		// Add profit only when selling bonds
+		return err
+	}
+
+	profit := bc.updateDCBSellBondProfit(&buyBackInfo.BondID, buyBackInfo.Value*buyBackInfo.BuyBackPrice, buyBackInfo.Value)
+	fmt.Printf("[db] DCBBuyBack added profit: %d\n", profit)
+	return nil
+}
+
 func (bc *BlockChain) updateDCBBondSoldToGOV(inst []string) error {
 	instType := inst[2]
 	if instType == "refund" {
@@ -641,24 +639,18 @@ func (bc *BlockChain) updateDCBBondSoldToGOV(inst []string) error {
 	}
 
 	bondAmount := buyBackInfo.Value
-	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&buyBackInfo.BondID)
+	amountAvail, _ := bc.config.DataBase.GetDCBBondInfo(&buyBackInfo.BondID)
 	if amountAvail < bondAmount {
 		return fmt.Errorf("invalid trade bond buy back, amount available lower than payment: %d, %d", amountAvail, bondAmount)
 	}
-	amountAvail -= bondAmount
 
-	avgPrice := uint64(0)
-	if amountAvail > 0 {
-		avgPrice = cstPaid / amountAvail
+	// Update profit first to prevent average price per bond changes
+	err = bc.updateDCBBuyBackProfit(buyBackInfo)
+	if err != nil {
+		return err
 	}
 
-	principleCovered := bondAmount * avgPrice
-	if cstPaid < principleCovered {
-		principleCovered = cstPaid
-	}
-	cstPaid -= principleCovered
-
-	return bc.config.DataBase.StoreDCBBondInfo(&buyBackInfo.BondID, amountAvail, cstPaid)
+	return bc.updateDCBSellBondInfo(&buyBackInfo.BondID, bondAmount)
 }
 
 func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
