@@ -171,7 +171,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 
-	fmt.Printf("[db] building stability instructions\n")
 	for _, inst := range shardBlockInstructions {
 		if len(inst) == 0 {
 			continue
