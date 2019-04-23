@@ -18,6 +18,7 @@ import (
 type ConstitutionHelper interface {
 	CheckSubmitProposalType(tx metadata.Transaction) bool
 	NewAcceptProposalIns(txId *common.Hash, voter []privacy.PaymentAddress, shardID byte) frombeaconins.InstructionFromBeacon
+	NewKeepOldProposalIns() frombeaconins.InstructionFromBeacon
 	GetBoardType() common.BoardType
 	GetConstitutionEndedBlockHeight(chain *BlockChain) uint64
 	NewRewardProposalSubmitterIns(blockgen *BlockChain, receiverAddress *privacy.PaymentAddress, amount uint64) (instruction frombeaconins.InstructionFromBeacon, err error)
@@ -134,18 +135,34 @@ func (self *BlockChain) createAcceptConstitutionAndRewardSubmitter(
 		fmt.Printf("[ndh] - Number of vote is zero \n")
 		return resIns, nil
 	}
-	// if (bestProposal.)
-	//>>>>>>>>>>>>>>>>>>>>>
-	err = db.DeleteAnyProposalButThisDB(helper.GetBoardType(), nextConstitutionIndex, bestProposal.TxId.GetBytes())
-	byteTemp, err0 := db.GetProposalSubmitterByConstitutionIndexDB(helper.GetBoardType(), nextConstitutionIndex)
-	if err0 != nil {
-		return resIns, nil
+	if bestProposal.NumberOfVote == 0 {
+		currentProposalTxID, err := db.GetProposalTXIDByConstitutionIndex(helper.GetBoardType(), currentConstitutionIndex)
+		if err != nil {
+			fmt.Printf("[ndh] - - can not get proposal txId by constitution index! Error: %+v\n", err.Error())
+			return resIns, err
+		}
+		submitterOfCurrentProposal, err := db.GetSubmitProposalDB(helper.GetBoardType(), currentConstitutionIndex, currentProposalTxID)
+		if err != nil {
+			fmt.Printf("[ndh] - - can not get submitter of current proposal! Error: %+v\n", err.Error())
+			return resIns, err
+		}
+		err = db.AddSubmitProposalDB(helper.GetBoardType(), currentConstitutionIndex+1, currentProposalTxID, submitterOfCurrentProposal)
+		if err != nil {
+			fmt.Printf("[ndh] - - can not add submit proposal! Error: %+v\n", err.Error())
+			return resIns, err
+		}
+		resIns = append(resIns, helper.NewKeepOldProposalIns())
+	} else {
+		err = db.DeleteAnyProposalButThisDB(helper.GetBoardType(), nextConstitutionIndex, bestProposal.TxId.GetBytes())
+		byteTemp, err0 := db.GetProposalSubmitterByConstitutionIndexDB(helper.GetBoardType(), nextConstitutionIndex)
+		if err0 != nil {
+			return resIns, nil
+		}
+		submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
+		shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
+		acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
+		resIns = append(resIns, acceptedProposalIns)
 	}
-	submitterPaymentAddress := privacy.NewPaymentAddressFromByte(byteTemp)
-	shardID := frombeaconins.GetShardIDFromPaymentAddressBytes(*submitterPaymentAddress)
-	acceptedProposalIns := helper.NewAcceptProposalIns(&bestProposal.TxId, VoteTable[bestProposal.TxId], shardID)
-	resIns = append(resIns, acceptedProposalIns)
-	//<<<<<<<<<<<<<<<<<<<<<<
 	totalReward := helper.GetBoardReward(self)
 	fmt.Printf("[ndh] - totalReward: %+v\n", totalReward)
 	if (totalReward > 0) && (currentConstitutionIndex > 0) {

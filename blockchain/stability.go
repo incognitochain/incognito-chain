@@ -107,7 +107,7 @@ func buildStabilityActions(
 				}
 				var newIns []string
 				if metaType != 37 {
-					fmt.Println("[ndh] - instructions metaType: ", metaType, component.AcceptDCBProposalIns)
+					fmt.Printf("[ndh] - instructions from beacon to shard metaType: %+v\n", l)
 				}
 				switch metaType {
 				case component.AcceptDCBProposalIns:
@@ -444,7 +444,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					txs = append(txs, tx)
 
 				case component.ShareRewardOldDCBBoardSupportterIns, component.ShareRewardOldGOVBoardSupportterIns:
-					fmt.Println("[ndh]-ShareRewardOldDCBBoardSupportterIns ok, tx:", tx.GetMetadata())
+					fmt.Printf("[ndh]-ShareRewardOldBoardSupportterIns ok, tx: %+v\n", tx)
+					fmt.Printf("[ndh]-ShareRewardOldBoardSupportterIns ok, Ins: %+v\n", l)
 					shareRewardOldBoard := frombeaconins.ShareRewardOldBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {
