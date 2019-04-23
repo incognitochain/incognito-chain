@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/constant-money/constant-chain/common"
@@ -50,9 +51,14 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.syncStatus.Unlock()
 
 	broadcastTicker := time.NewTicker(defaultBroadcastStateTime)
-	insertPoolTicker := time.NewTicker(time.Millisecond * 100)
+	insertPoolTicker := time.NewTicker(time.Millisecond * 80)
 	peersProcessTicker := time.NewTicker(defaultProcessPeerStateTime)
 
+	defer func() {
+		broadcastTicker.Stop()
+		insertPoolTicker.Stop()
+		peersProcessTicker.Stop()
+	}()
 	go func() {
 		for {
 			select {
@@ -94,7 +100,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
 				blockchain.syncShard(userShardID)
 				blockchain.stopSyncUnnecessaryShard()
-				blockchain.startSyncRelayShards()
+				// blockchain.startSyncRelayShards()
 				userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 			}
 
@@ -183,14 +189,12 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				}
 
 				if userRole == common.SHARD_ROLE && RCS.ClosestBeaconState.Height-1 <= blockchain.BestState.Beacon.BeaconHeight {
-					for shardID := range blockchain.syncStatus.Shards {
-						if RCS.ClosestShardsState[shardID].Height == GetBestStateShard(shardID).ShardHeight && RCS.ClosestShardsState[shardID].Height >= GetBestStateBeacon().BestShardHeight[shardID] {
-							blockchain.SetReadyState(false, 0, true)
-							blockchain.SetReadyState(true, shardID, true)
-						} else {
-							blockchain.SetReadyState(false, 0, false)
-							blockchain.SetReadyState(true, shardID, false)
-						}
+					if RCS.ClosestShardsState[userShardID].Height == GetBestStateShard(userShardID).ShardHeight && RCS.ClosestShardsState[userShardID].Height >= GetBestStateBeacon().BestShardHeight[userShardID] {
+						blockchain.SetReadyState(false, 0, true)
+						blockchain.SetReadyState(true, userShardID, true)
+					} else {
+						blockchain.SetReadyState(false, 0, false)
+						blockchain.SetReadyState(true, userShardID, false)
 					}
 				}
 			}
@@ -256,7 +260,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 
 				for peerID := range blockchain.syncStatus.PeersState {
 					if shardState, ok := blockchain.syncStatus.PeersState[peerID].Shard[shardID]; ok {
-						// fmt.Println("SyncShard 123 ", shardState)
+						fmt.Println("SyncShard 123 ", shardState.Height, shardID)
 						if shardState.Height >= currentShardReqHeight {
 							if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
 								// fmt.Println("SyncShard 1234 ")
@@ -535,14 +539,15 @@ func (blockchain *BlockChain) SyncBlkCrossShard(getFromPool bool, byHash bool, b
 }
 
 var lasttime = time.Now()
+var currentInsert = struct {
+	Beacon sync.Mutex
+	Shards map[byte]*sync.Mutex
+}{
+	Shards: make(map[byte]*sync.Mutex),
+}
 
 func (blockchain *BlockChain) InsertBlockFromPool() {
 	// fmt.Println("InsertBlockFromPool")
-	blockchain.syncStatus.Lock()
-	defer func() {
-		blockchain.syncStatus.Unlock()
-		// fmt.Println("InsertBlockFromPool unlock")
-	}()
 
 	if time.Since(lasttime) >= 30*time.Millisecond {
 		lasttime = time.Now()
@@ -550,6 +555,23 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 		return
 	}
 
+	go blockchain.InsertBeaconBlockFromPool()
+	blockchain.syncStatus.Lock()
+	for shardID := range blockchain.syncStatus.Shards {
+		if _, ok := currentInsert.Shards[shardID]; !ok {
+			currentInsert.Shards[shardID] = &sync.Mutex{}
+		}
+		go func(shardID byte) {
+			blockchain.InsertShardBlockFromPool(shardID)
+		}(shardID)
+
+	}
+	blockchain.syncStatus.Unlock()
+}
+
+func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
+	currentInsert.Beacon.Lock()
+	defer currentInsert.Beacon.Unlock()
 	blks := blockchain.config.BeaconPool.GetValidBlock()
 	for _, newBlk := range blks {
 		// fmt.Println("Insert beacon blk", newBlk.Header.Height)
@@ -559,22 +581,18 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 			Logger.log.Error(err)
 		}
 	}
+}
 
-	for shardID := range blockchain.syncStatus.Shards {
-		// fmt.Println("Get shard valid blks ", blks)
-		go func(shardID byte) {
-			blks := blockchain.config.ShardPool[shardID].GetValidBlock()
-			//fmt.Println("GetShardValidBlock", len(blks))
-			for _, newBlk := range blks {
-				//time1 := time.Now()
-				err := blockchain.InsertShardBlock(newBlk, false)
-				if err != nil {
-					Logger.log.Error(err)
-					break
-				}
-				//fmt.Println("Insert Shard blk time: ", newBlk.Header.Height, time.Since(time1).Seconds())
-			}
-		}(shardID)
+func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
 
+	currentInsert.Shards[shardID].Lock()
+	defer currentInsert.Shards[shardID].Unlock()
+	blks := blockchain.config.ShardPool[shardID].GetValidBlock()
+	for _, newBlk := range blks {
+		err := blockchain.InsertShardBlock(newBlk, false)
+		if err != nil {
+			Logger.log.Error(err)
+			break
+		}
 	}
 }

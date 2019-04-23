@@ -19,14 +19,15 @@ const (
 
 // for mining consensus
 const (
-	DurationOfDCBBoard = 6    //number of block one DCB board in charge
-	DurationOfGOVBoard = 1000 //number of block one GOV board in charge
-	MaxBlockSize       = 2000 //unit kilobytes = 2 Megabyte
-	MaxTxsInBlock      = 1000
-	MinTxsInBlock      = 10                   // minium txs for block to get immediate process (meaning no wait time)
-	MinBlockWaitTime   = 2                    // second
-	MaxBlockWaitTime   = 4 - MinBlockWaitTime // second
-	MinBlkInterval     = 10 * time.Second      //second
+	DurationOfDCBBoard   = 6    //number of block one DCB board in charge
+	DurationOfGOVBoard   = 1000 //number of block one GOV board in charge
+	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
+	MaxTxsInBlock        = 1000
+	MinTxsInBlock        = 10                      // minium txs for block to get immediate process (meaning no wait time)
+	MinBlockWaitTime     = 2                       // second
+	MaxBlockWaitTime     = 4 - MinBlockWaitTime    // second
+	MinBeaconBlkInterval = 3 * time.Second         //second
+	MinShardBlkInterval  = 1500 * time.Millisecond //second
 )
 
 // for voting parameter
