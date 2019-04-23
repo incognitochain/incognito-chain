@@ -175,7 +175,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	if err == nil {
 		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	}
-	
+
 	txID := tx.Hash().String()
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
@@ -239,6 +239,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				Type:        tempTx.Type,
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
+				IsPrivacy:   tempTx.IsPrivacy(),
 				Proof:       tempTx.Proof,
 				SigPubKey:   tempTx.SigPubKey,
 				Sig:         tempTx.Sig,
@@ -246,8 +247,11 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
-			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-			result.Metadata = string(metaData)
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
+			result.ProofDetail.ConvertFromProof(result.Proof)
 		}
 	case common.TxCustomTokenType:
 		{
@@ -275,6 +279,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
 			}
+			result.ProofDetail.ConvertFromProof(result.Proof)
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
@@ -302,6 +307,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
 			}
+			result.ProofDetail.ConvertFromProof(result.Proof)
 		}
 	default:
 		{
@@ -876,7 +882,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	}
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
-	
+
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
