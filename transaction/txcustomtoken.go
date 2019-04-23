@@ -546,7 +546,7 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 	return keyset.Sign(buff.Bytes())
 }
 
-func (tx *TxCustomToken) GetAmountOfVote() (uint64, error) {
+func (tx *TxCustomToken) GetAmountOfVote(boardType common.BoardType) (uint64, error) {
 	sum := uint64(0)
 	for _, vout := range tx.TxTokenData.Vouts {
 		keyWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
@@ -554,7 +554,13 @@ func (tx *TxCustomToken) GetAmountOfVote() (uint64, error) {
 		paymentAddress := keyset.PaymentAddress
 		pubKey := string(paymentAddress.Pk)
 		if string(vout.PaymentAddress.Pk) == string(pubKey) {
-			sum += vout.Value
+			if (boardType == common.DCBBoard) && (common.DCBTokenID.Cmp(&vout.txCustomTokenID) == 0) {
+				sum += vout.Value
+			} else {
+				if (boardType == common.GOVBoard) && (common.GOVTokenID.Cmp(&vout.txCustomTokenID) == 0) {
+					sum += vout.Value
+				}
+			}
 		}
 	}
 	return sum, nil
