@@ -108,9 +108,6 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string, bc *Block
 
 	case strconv.Itoa(metadata.UpdatingOracleBoardMeta):
 		return bsb.processUpdatingOracleBoardInstruction(inst)
-
-	case strconv.Itoa(metadata.CrowdsalePaymentMeta):
-		return bsb.processCrowdsalePaymentProfit(inst, bc)
 	}
 	return nil
 }
@@ -284,16 +281,8 @@ func (bsb *BestStateBeacon) updateDCBBuyBackProfit(buyBackInfo BuyBackInfo, bc *
 		return err
 	}
 
-	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&buyBackInfo.BondID)
-	avgPrice := uint64(0)
-	if amountAvail > 0 {
-		avgPrice = cstPaid / amountAvail
-	}
-	profit := uint64(0)
-	if buyBackInfo.BuyBackPrice >= avgPrice {
-		profit = buyBackInfo.Value * (buyBackInfo.BuyBackPrice - avgPrice)
-	}
-	bsb.StabilityInfo.BankFund += profit
+	profit := bc.updateDCBSellBondProfit(&buyBackInfo.BondID, buyBackInfo.Value*buyBackInfo.BuyBackPrice, buyBackInfo.Value)
+	fmt.Printf("[db] DCBBuyBack added profit: %d\n", profit)
 	return nil
 }
 
@@ -442,32 +431,6 @@ func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconin
 	return nil
 }
 
-func (bsb *BestStateBeacon) processCrowdsalePaymentProfit(inst []string, bc *BlockChain) error {
-	fmt.Printf("[db] bsb.processStabilityInst found: %+v\n", inst)
-	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
-	if err != nil || !paymentInst.UpdateSale {
-		return err
-	}
-
-	// Add profit only when selling bonds
-	sale, err := bc.GetSaleData(paymentInst.SaleID)
-	if err != nil || sale.Buy {
-		return err
-	}
-
-	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&paymentInst.AssetID)
-	avgPrice := uint64(0)
-	if amountAvail > 0 {
-		avgPrice = cstPaid / amountAvail
-	}
-	profit := uint64(0)
-	if paymentInst.SentAmount > avgPrice*paymentInst.Amount {
-		profit = paymentInst.SentAmount - avgPrice*paymentInst.Amount
-	}
-	bsb.StabilityInfo.BankFund += profit
-	return nil
-}
-
 func (bc *BlockChain) updateDCBBuyBondInfo(bondID *common.Hash, bondAmount uint64, price uint64) error {
 	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
 	amountAvail += bondAmount
@@ -496,9 +459,23 @@ func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint
 	return bc.config.DataBase.StoreDCBBondInfo(bondID, amountAvail, cstPaid)
 }
 
+func (bc *BlockChain) updateDCBSellBondProfit(bondID *common.Hash, soldValue, soldBonds uint64) uint64 {
+	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
+	avgPrice := uint64(0)
+	if amountAvail > 0 {
+		avgPrice = cstPaid / amountAvail
+	}
+	profit := uint64(0)
+	if soldValue > avgPrice*soldBonds {
+		profit = soldValue - avgPrice*soldBonds
+	}
+	bc.BestState.Beacon.StabilityInfo.BankFund += profit
+	return profit
+}
+
 func (bc *BlockChain) processCrowdsalePaymentInstruction(inst []string) error {
-	fmt.Printf("[db] updateLocalState found inst: %+v\n", inst)
 	// All shards update, only DCB shard creates payment txs
+	fmt.Printf("[db] updateLocalState found inst: %+v\n", inst)
 	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
 	if err != nil || !paymentInst.UpdateSale {
 		return err
@@ -506,10 +483,10 @@ func (bc *BlockChain) processCrowdsalePaymentInstruction(inst []string) error {
 
 	sale, err := bc.GetSaleData(paymentInst.SaleID)
 	if err != nil {
-		fmt.Printf("[db] error get sale data: %+v\n", err)
 		return err
 	}
 
+	// Trading amount should always be lower or equal to sale amount
 	bondAmount := paymentInst.Amount
 	if sale.Buy {
 		bondAmount = paymentInst.SentAmount
@@ -518,12 +495,17 @@ func (bc *BlockChain) processCrowdsalePaymentInstruction(inst []string) error {
 		return fmt.Errorf("invalid crowdsale payment inst, reached limit: %d, %d", sale.Amount, bondAmount)
 	}
 
-	// Update average price per bond
 	if sale.Buy {
-		err = bc.updateDCBSellBondInfo(sale.BondID, bondAmount)
-	} else {
+		// Update average price per bond
 		err = bc.updateDCBBuyBondInfo(sale.BondID, bondAmount, sale.Price)
+	} else {
+		// Add profit only when selling bonds
+		bc.updateDCBSellBondProfit(&paymentInst.AssetID, paymentInst.SentAmount, bondAmount)
+
+		// Update average price per bond
+		err = bc.updateDCBSellBondInfo(sale.BondID, bondAmount)
 	}
+
 	if err != nil {
 		return err
 	}
