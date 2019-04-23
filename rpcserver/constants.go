@@ -190,6 +190,9 @@ const (
 	DefragmentAccount              = "defragmentaccount"
 
 	GetStackingAmount = "getstackingamount"
+
+	// utils
+	HashToIdenticon = "hashtoidenticon"
 )
 
 //Fee of specific transaction
