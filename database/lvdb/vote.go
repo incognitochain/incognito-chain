@@ -254,6 +254,25 @@ func (db *db) GetCurrentProposalWinningVoter(boardType common.BoardType, constit
 	return res, err1
 }
 
+func (db *db) GetProposalTXIDByConstitutionIndex(boardType common.BoardType, constitutionIndex uint32) ([]byte, error) {
+	begin := GetKeySubmitProposal(boardType, constitutionIndex, nil)
+	end := GetKeySubmitProposal(boardType, constitutionIndex+1, nil)
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchRange, nil)
+	for iter.Next() {
+		key := iter.Key()
+		_, _, proposalTxIDTemp, err := ParseKeySubmitProposal(key)
+		if err != nil {
+			return nil, err
+		}
+		return proposalTxIDTemp, nil
+	}
+	return nil, errors.New("lvdb not found")
+}
+
 func (db *db) GetBoardVoterList(boardType common.BoardType, candidatePaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress {
 	begin := GetKeyVoteBoardList(boardType, boardIndex, &candidatePaymentAddress, nil)
 	end := GetKeyVoteBoardList(boardType, boardIndex, &candidatePaymentAddress, nil)
@@ -374,4 +393,21 @@ func decompListPaymentAddressesByte(paymentAddressesByte []byte) ([]privacy.Paym
 		res[i].SetBytes(paymentAddressesByte[i*common.PaymentAddressLength : (i+1)*common.PaymentAddressLength])
 	}
 	return res, nil
+}
+
+func ViewDBByPrefix(db database.DatabaseInterface, prefix []byte) map[string]string {
+	begin := prefix
+	// +1 to search in that range
+	end := common.BytesPlusOne(prefix)
+
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchRange, nil)
+	res := make(map[string]string)
+	for iter.Next() {
+		res[string(iter.Key())] = string(iter.Value())
+	}
+	return res
 }

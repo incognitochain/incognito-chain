@@ -116,6 +116,14 @@ func (helper GOVConstitutionHelper) NewAcceptProposalIns(
 	return ins
 }
 
+func (helper DCBConstitutionHelper) NewKeepOldProposalIns() frombeaconins.InstructionFromBeacon {
+	return frombeaconins.NewKeepOldProposalIns(common.DCBBoard)
+}
+
+func (helper GOVConstitutionHelper) NewKeepOldProposalIns() frombeaconins.InstructionFromBeacon {
+	return frombeaconins.NewKeepOldProposalIns(common.GOVBoard)
+}
+
 func (helper DCBConstitutionHelper) GetBoardType() common.BoardType {
 	return common.DCBBoard
 }
@@ -247,6 +255,7 @@ func (helper DCBConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, ca
 }
 func (helper GOVConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
 	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
+	fmt.Printf("[ndh] Board Type: %+v, Board Index: %+v, key: %+v\n", helper.GetBoardType(), boardIndex, key)
 	value, err := chain.config.DataBase.Get(key)
 	if err != nil {
 		fmt.Printf("[ndh] - value: %+v - error: %+v", value, err)
