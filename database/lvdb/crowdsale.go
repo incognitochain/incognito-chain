@@ -61,7 +61,7 @@ func (db *db) GetDCBBondInfo(bondID *common.Hash) (uint64, uint64) {
 	key := getDCBBondInfoKey(bondID[:])
 	value, err := db.Get(key)
 	if err != nil {
-		return 1, 0 // Dummy amount to prevent divide by zero
+		return 0, 0 // Dummy amount to prevent divide by zero
 	}
 	return parseDCBBondInfoValue(value)
 }
