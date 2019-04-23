@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/constant-money/constant-chain/databasemp"
+
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -23,6 +25,8 @@ type Config struct {
 
 	DataBase database.DatabaseInterface
 
+	DataBaseMempool databasemp.DatabaseInterface
+
 	ChainParams *blockchain.Params
 
 	// FeeEstimatator provides a feeEstimator. If it is not nil, the mempool
@@ -34,6 +38,9 @@ type Config struct {
 
 	//Max transaction pool may have
 	MaxTx uint64
+
+	//Reset mempool database when run node
+	IsLoadFromMempool bool
 }
 
 // TxDesc is transaction message in mempool
@@ -43,6 +50,8 @@ type TxDesc struct {
 
 	//Unix Time that transaction enter mempool
 	StartTime time.Time
+
+	IsFowardMessage bool
 }
 
 // TxPool is transaction pool
@@ -70,6 +79,9 @@ type TxPool struct {
 
 	//Time to live for all transaction
 	TxLifeTime uint
+
+	//Reset mempool database
+	IsLoadFromMempool bool
 }
 
 /*
@@ -86,33 +98,49 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.cMtx = sync.RWMutex{}
 	tp.maxTx = cfg.MaxTx
 	tp.TxLifeTime = cfg.TxLifeTime
+	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
 }
-
+func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
+	if !tp.IsLoadFromMempool {
+		err := tp.ResetDatabaseMP()
+		if err != nil {
+			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
+		} else {
+			Logger.log.Critical("Successfully Reset from database")
+		}
+		return []TxDesc{}
+	} else {
+		txDescs, err := tp.LoadDatabaseMP()
+		if err != nil {
+			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
+		} else {
+			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
+		}
+		return txDescs
+	}
+}
 func TxPoolMainLoop(tp *TxPool) {
 	if tp.TxLifeTime == 0 {
 		return
 	}
+	scanInterval := time.NewTicker(TXPOOL_SCAN_TIME * time.Second)
+	defer scanInterval.Stop()
 	for {
-		<-time.Tick(TXPOOL_SCAN_TIME * time.Second)
+		<-scanInterval.C
 		ttl := time.Duration(tp.TxLifeTime) * time.Second
 		txsToBeRemoved := []common.Hash{}
 		for _, tx := range tp.pool {
-			Logger.log.Criticalf("Tx Start Time %+v \n", time.Since(tx.StartTime))
-			Logger.log.Criticalf("TTL of Pool %+v", ttl)
 			if time.Since(tx.StartTime) > ttl {
 				txsToBeRemoved = append(txsToBeRemoved, *tx.Desc.Tx.Hash())
 			}
 		}
-		Logger.log.Criticalf("Begin Remove Timeout Transaction, number of tx in pool %+v \n", len(tp.pool))
 		for _, txHash := range txsToBeRemoved {
-			Logger.log.Infof("Remove Transaction %+v after %+v \n", txHash, time.Since(tp.pool[txHash].StartTime))
 			delete(tp.pool, txHash)
 			delete(tp.poolSerialNumbers, txHash)
 			delete(tp.txCoinHashHPool, txHash)
 			delete(tp.CandidatePool, txHash)
 			delete(tp.TokenIDPool, txHash)
 		}
-		Logger.log.Criticalf("Finish Remove Timeout Transaction, number of tx in pool %+v \n", len(tp.pool))
 	}
 }
 
@@ -139,21 +167,43 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	return false
 }
 
-/*
-// add transaction into pool
-*/
-func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxDesc {
-	txD := &TxDesc{
+func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *TxDesc {
+	txDesc := &TxDesc{
 		Desc: metadata.TxDesc{
 			Tx:     tx,
-			Added:  time.Now(),
 			Height: height,
 			Fee:    fee,
 		},
 		StartTime: time.Now(),
 	}
+	return txDesc
+}
+
+/*
+// add transaction into pool
+*/
+func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
+	tx := txD.Desc.Tx
+	txHash := tx.Hash()
 	Logger.log.Info(tx.Hash().String())
+
+	if isStore {
+		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
+		if err != nil {
+			Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
+		} else {
+			Logger.log.Criticalf("Add tx %+v to mempool database success \n", *txHash)
+		}
+		_, err = tp.GetTransactionFromDatabaseMP(txD.Desc.Tx.Hash())
+		if err != nil {
+			Logger.log.Error("Fail To Get Transaction from DBMP ", err)
+		} else {
+			//Logger.log.Criticalf("Tx %+v from Pool Desc %+v \n", *txD.Desc.Tx.Hash(), txD)
+			//Logger.log.Criticalf("Success Get Transaction %+v from DBMP %+v \n", *txDesc.Desc.Tx.Hash(), txDesc)
+		}
+	}
 	tp.pool[*tx.Hash()] = txD
+	//==================================================
 	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 
@@ -167,10 +217,10 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 
 		}
 	}
-	txHash := tx.Hash()
 	if txHash != nil {
 		tp.AddTxCoinHashH(*txHash)
 	}
+
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -185,7 +235,6 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 			tp.AddTokenIDToList(*txHash, tokenID)
 		}
 	}
-	return txD
 }
 
 /*
@@ -203,32 +252,27 @@ func (tp *TxPool) addTx(tx metadata.Transaction, height uint64, fee uint64) *TxD
 8. Check tx existed in mempool
 9. Not accept a salary tx
 10. Check Duplicate stake public key in pool ONLY with staking transaction
-*/
-func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
-	txHash := tx.Hash()
 
+Param#2: isStore: store transaction to persistence storage only work for transaction come from user (not for validation process)
+*/
+func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
+	var shardID byte
+	var err error
+	txHash := tx.Hash()
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
 		err := MempoolTxError{}
 		err.Init(RejectDuplicateTx, errors.New(str))
-		return nil, nil, err
+		return err
 	}
 
-	// that make sure transaction is accepted when passed any rules
-	var shardID byte
-	var err error
-
-	// get shardID of tx
-	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
-	// nextBlockHeight := bestHeight + 1
 	// check version
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
-		return nil, nil, err
+		return err
 	}
 
 	// check actual size
@@ -237,7 +281,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if actualSize >= common.MaxBlockSize || actualSize >= common.MaxTxSize {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
-		return nil, nil, err
+		return err
 	}
 
 	// check fee of tx
@@ -247,40 +291,41 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx*tx.GetTxActualSize()))
-		return nil, nil, err
+		return err
 	}
 	// end check with policy
 
 	ok = tx.ValidateType()
 	if !ok {
-		return nil, nil, errors.New("wrong tx type")
+		return err
 	}
 	// check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
 	// sanity data
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
 		err := MempoolTxError{}
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
-		return nil, nil, err
+		return err
 	}
 
 	// ValidateTransaction tx by it self // TODO validate performance later 0xkraken
+	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("invalid tx"))
-		return nil, nil, err
+		return err
 	}
 
 	// validate tx with data of blockchain
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
 	// err = tp.ValidateTxWithBlockChain(tx, shardID)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 
 	if tx.GetType() == common.TxCustomTokenType {
@@ -294,7 +339,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 				str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
 				err := MempoolTxError{}
 				err.Init(RejectDuplicateInitTokenTx, errors.New(str))
-				return nil, nil, err
+				return err
 			}
 		}
 	}
@@ -303,7 +348,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
-		return nil, nil, err
+		return err
 	}
 
 	// check duplicate stake public key ONLY with staking transaction
@@ -317,12 +362,22 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
 				err := MempoolTxError{}
 				err.Init(RejectDuplicateStakeTx, errors.New(str))
-				return nil, nil, err
+				return err
 			}
 		}
 	}
-
-	txD := tp.addTx(tx, bestHeight, txFee)
+	return nil
+}
+func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool) (*common.Hash, *TxDesc, error) {
+	err := tp.ValidateTransaction(tx)
+	if err != nil {
+		return nil, nil, err
+	}
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
+	txFee := tx.GetTxFee()
+	txD := createTxDescMempool(tx, bestHeight, txFee)
+	tp.addTx(txD, isStore)
 	return tx.Hash(), txD, nil
 }
 
@@ -336,7 +391,6 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 	} else {
 		return errors.New("not exist tx in pool")
 	}
-	return nil
 }
 
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
@@ -356,7 +410,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if uint64(len(tp.pool)) >= tp.maxTx {
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx)
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, true)
 	fmt.Printf("[db] maybeAccept: %h, %+v\n", hash, err)
 	if err != nil {
 		Logger.log.Error(err)
@@ -364,12 +418,15 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 
 	return hash, txDesc, err
 }
+func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
+	tp.pool[txHash].IsFowardMessage = true
+}
 
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptTransaction(tx)
+	_, txDesc, err := tp.maybeAcceptTransaction(tx, false)
 	if err != nil {
 		Logger.log.Error(err)
 		fmt.Printf("[db] maybe err: %+v\n", tx.GetMetadataType())
@@ -382,10 +439,9 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 // RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
-	// fmt.Println("...................................")
-	// fmt.Println("txHash To Be Remove", tx.Hash())
-	// fmt.Println("...................................")
-	err := tp.removeTx(&tx)
+	// remove transaction from database mempool
+	err := tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+	err = tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
 	if txHash != nil {
@@ -411,9 +467,6 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 // // MiningDescs returns a slice of mining descriptors for all the transactions
 // // in the pool.
 func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
-	fmt.Println()
-	fmt.Println("Current Transaction in pool", tp.pool)
-	fmt.Println()
 	descs := []*metadata.TxDesc{}
 	tp.mtx.Lock()
 	for _, desc := range tp.pool {
