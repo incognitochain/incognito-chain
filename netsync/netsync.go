@@ -1,7 +1,6 @@
 package netsync
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -365,9 +364,7 @@ func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 }
 
 func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
-	fmt.Println()
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlockBeacon)
-	fmt.Println()
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)

@@ -51,7 +51,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 	blockchain.syncStatus.Unlock()
 
 	broadcastTicker := time.NewTicker(defaultBroadcastStateTime)
-	insertPoolTicker := time.NewTicker(time.Millisecond * 80)
+	insertPoolTicker := time.NewTicker(time.Millisecond * 100)
 	peersProcessTicker := time.NewTicker(defaultProcessPeerStateTime)
 
 	defer func() {
@@ -205,8 +205,11 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			}
 			for peerID := range blockchain.syncStatus.PeersState {
 				if currentBcnReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestBeaconState.Height {
+					fmt.Println("SyncBlk1:", currentBcnReqHeight, RCS.ClosestBeaconState.Height)
 					blockchain.SyncBlkBeacon(false, false, nil, currentBcnReqHeight, RCS.ClosestBeaconState.Height, peerID)
+					break
 				} else {
+					fmt.Println("SyncBlk2:", currentBcnReqHeight, currentBcnReqHeight+defaultMaxBlkReqPerPeer-1)
 					blockchain.SyncBlkBeacon(false, false, nil, currentBcnReqHeight, currentBcnReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
 					currentBcnReqHeight += defaultMaxBlkReqPerPeer - 1
 				}
@@ -265,6 +268,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 							if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
 								// fmt.Println("SyncShard 1234 ")
 								blockchain.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+								break
 							} else {
 								// fmt.Println("SyncShard 12345")
 								blockchain.SyncBlkShard(shardID, false, false, nil, currentShardReqHeight, currentShardReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
@@ -556,6 +560,7 @@ func (blockchain *BlockChain) InsertBlockFromPool() {
 	}
 
 	go blockchain.InsertBeaconBlockFromPool()
+
 	blockchain.syncStatus.Lock()
 	for shardID := range blockchain.syncStatus.Shards {
 		if _, ok := currentInsert.Shards[shardID]; !ok {
@@ -573,12 +578,14 @@ func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
 	currentInsert.Beacon.Lock()
 	defer currentInsert.Beacon.Unlock()
 	blks := blockchain.config.BeaconPool.GetValidBlock()
+	fmt.Println("GetValidBlock", len(blks))
 	for _, newBlk := range blks {
-		// fmt.Println("Insert beacon blk", newBlk.Header.Height)
+		time1 := time.Now()
 		err := blockchain.InsertBeaconBlock(newBlk, false)
-		// fmt.Println("Insert beacon blk finish", newBlk.Header.Height)
+		fmt.Println("Insert beacon blk finish", newBlk.Header.Height, time.Since(time1).Seconds())
 		if err != nil {
 			Logger.log.Error(err)
+			break
 		}
 	}
 }
