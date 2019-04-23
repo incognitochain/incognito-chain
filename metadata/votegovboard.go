@@ -54,7 +54,7 @@ func (voteGOVBoardMetadata *VoteGOVBoardMetadata) BuildReqActions(tx Transaction
 	if err != nil {
 		return nil, err
 	}
-	amountOfVote, err := tx.GetAmountOfVote()
+	amountOfVote, err := tx.GetAmountOfVote(common.GOVBoard)
 	if err != nil {
 		return nil, err
 	}

@@ -42,7 +42,7 @@ type Tx struct {
 	cachedHash *common.Hash // cached hash data of tx
 }
 
-func (tx *Tx) GetAmountOfVote() (uint64, error) {
+func (tx *Tx) GetAmountOfVote(common.BoardType) (uint64, error) {
 	return 0, errors.New("wrong type of tx")
 }
 

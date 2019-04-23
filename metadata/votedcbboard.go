@@ -36,7 +36,7 @@ func NewVoteDCBBoardMetadataFromRPC(data map[string]interface{}) (Metadata, erro
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	voteAmount, err := txr.GetAmountOfVote()
+	voteAmount, err := txr.GetAmountOfVote(common.DCBBoard)
 	if err != nil {
 		return false, err
 	}
@@ -69,7 +69,7 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) BuildReqActions(tx Transaction
 	if err != nil {
 		return nil, err
 	}
-	amountOfVote, err := tx.GetAmountOfVote()
+	amountOfVote, err := tx.GetAmountOfVote(common.DCBBoard)
 	if err != nil {
 		return nil, err
 	}
