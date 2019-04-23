@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/constant-money/constant-chain/common"
-	"github.com/pkg/errors"
 
 	"github.com/constant-money/constant-chain/wire"
 )
@@ -59,12 +58,12 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	}
 	go protocol.earlyMsgHandler()
 	//    single-node start    //
-	go protocol.CreateBlockMsg()
-	<-protocol.proposeCh
-	if protocol.pendingBlock != nil {
-		return protocol.pendingBlock, nil
-	}
-	return nil, errors.New("can't produce block")
+	// go protocol.CreateBlockMsg()
+	// <-protocol.proposeCh
+	// if protocol.pendingBlock != nil {
+	// 	return protocol.pendingBlock, nil
+	// }
+	// return nil, errors.New("can't produce block")
 	//    single-node end    //
 
 	for {
