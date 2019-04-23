@@ -733,10 +733,9 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("wrong tx version")
 	}
 	// check LockTime before now
-	//TODO: 0xKraken uncomment dis
-	// if int64(txN.LockTime) > time.Now().Unix() {
-	// 	return false, errors.New("wrong tx locktime")
-	// }
+	if int64(txN.LockTime) > time.Now().Unix() {
+		return false, errors.New("wrong tx locktime")
+	}
 
 	// check tx size
 	if tx.GetTxActualSize() > common.MaxTxSize {
