@@ -92,7 +92,7 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string, bc *Block
 		return bsb.processBuyFromGOVReqInstruction(inst)
 
 	case strconv.Itoa(metadata.BuyBackRequestMeta):
-		return bsb.processBuyBackReqInstruction(inst)
+		return bsb.processBuyBackReqInstruction(inst, bc)
 
 	case strconv.Itoa(metadata.BuyGOVTokenRequestMeta):
 		return bsb.processBuyGOVTokenReqInstruction(inst)
@@ -273,7 +273,31 @@ func (bsb *BestStateBeacon) processBuyGOVTokenReqInstruction(inst []string) erro
 	return nil
 }
 
-func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string) error {
+func (bsb *BestStateBeacon) updateDCBBuyBackProfit(buyBackInfo BuyBackInfo, bc *BlockChain) error {
+	if len(buyBackInfo.TradeID) == 0 {
+		return nil
+	}
+
+	_, buy, _, _, err := bc.config.DataBase.GetTradeActivation(buyBackInfo.TradeID)
+	if err != nil || buy {
+		// Add profit only when selling bonds
+		return err
+	}
+
+	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&buyBackInfo.BondID)
+	avgPrice := uint64(0)
+	if amountAvail > 0 {
+		avgPrice = cstPaid / amountAvail
+	}
+	profit := uint64(0)
+	if buyBackInfo.BuyBackPrice >= avgPrice {
+		profit = buyBackInfo.Value * (buyBackInfo.BuyBackPrice - avgPrice)
+	}
+	bsb.StabilityInfo.BankFund += profit
+	return nil
+}
+
+func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string, bc *BlockChain) error {
 	instType := inst[2]
 	if instType == "refund" {
 		return nil
@@ -286,7 +310,9 @@ func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string) error {
 		return err
 	}
 	bsb.StabilityInfo.SalaryFund -= (buyBackInfo.Value * buyBackInfo.BuyBackPrice)
-	return nil
+
+	// Add selling bonds profit to BankFund
+	return bsb.updateDCBBuyBackProfit(buyBackInfo, bc)
 }
 
 func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error {
@@ -430,8 +456,14 @@ func (bsb *BestStateBeacon) processCrowdsalePaymentProfit(inst []string, bc *Blo
 	}
 
 	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(&paymentInst.AssetID)
-	avgPrice := cstPaid / amountAvail
-	profit := paymentInst.SentAmount - avgPrice*paymentInst.Amount
+	avgPrice := uint64(0)
+	if amountAvail > 0 {
+		avgPrice = cstPaid / amountAvail
+	}
+	profit := uint64(0)
+	if paymentInst.SentAmount > avgPrice*paymentInst.Amount {
+		profit = paymentInst.SentAmount - avgPrice*paymentInst.Amount
+	}
 	bsb.StabilityInfo.BankFund += profit
 	return nil
 }
