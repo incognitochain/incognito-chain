@@ -215,7 +215,17 @@ func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-
 	result.Size = rpcServer.config.TxMemPool.Count()
 	result.Bytes = rpcServer.config.TxMemPool.Size()
 	result.MempoolMaxFee = rpcServer.config.TxMemPool.MaxFee()
-	result.ListTxs = rpcServer.config.TxMemPool.ListTxs()
+	listTxsDetail := rpcServer.config.TxMemPool.ListTxsDetail()
+	if len(listTxsDetail) > 0 {
+		result.ListTxs = make([]jsonresult.GetMempoolInfoTx, 0)
+		for _, tx := range listTxsDetail {
+			item := jsonresult.GetMempoolInfoTx{
+				LockTime: tx.GetLockTime(),
+				TxID:     tx.Hash().String(),
+			}
+			result.ListTxs = append(result.ListTxs, item)
+		}
+	}
 	return result, nil
 }
 
