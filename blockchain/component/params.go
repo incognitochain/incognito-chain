@@ -246,7 +246,40 @@ func (dcbParams DCBParams) ValidateSanityData() bool {
 	return true
 }
 
-func (GOVParams GOVParams) ValidateSanityData() bool {
-	// Todo: @0xankylosaurus
+func (govParams GOVParams) ValidateSanityData() bool {
+	// validation for selling bonds params
+	sellingBonds := govParams.SellingBonds
+	if sellingBonds != nil {
+		if sellingBonds.TotalIssue == 0 || sellingBonds.BondsToSell == 0 ||
+			sellingBonds.BondPrice == 0 || sellingBonds.Maturity == 0 ||
+			sellingBonds.BuyBackPrice == 0 || sellingBonds.SellingWithin == 0 {
+			return false
+		}
+		if sellingBonds.TotalIssue != sellingBonds.BondsToSell {
+			return false
+		}
+	}
+
+	// validation for selling gov tokens params
+	sellingGOVTokens := govParams.SellingGOVTokens
+	if sellingGOVTokens != nil {
+		if sellingGOVTokens.TotalIssue == 0 || sellingGOVTokens.GOVTokensToSell == 0 ||
+			sellingGOVTokens.GOVTokenPrice == 0 || sellingGOVTokens.SellingWithin == 0 {
+			return false
+		}
+
+		if sellingGOVTokens.TotalIssue != sellingGOVTokens.GOVTokensToSell {
+			return false
+		}
+	}
+
+	// validation for oracle network
+	oracleNetwork := govParams.OracleNetwork
+	if oracleNetwork != nil {
+		if oracleNetwork.WrongTimesAllowed == 0 || oracleNetwork.Quorum == 0 ||
+			oracleNetwork.AcceptableErrorMargin == 0 || oracleNetwork.UpdateFrequency == 0 {
+			return false
+		}
+	}
 	return true
 }

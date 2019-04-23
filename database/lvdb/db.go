@@ -69,6 +69,9 @@ var (
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
 
+	// bond type
+	bondTypePrefix = []byte("bondtype-")
+
 	// crowdsale
 	crowdsalePrefix       = []byte("crowdsale-")
 	dcbBondInfoPrefix     = []byte("dcbBondInfo-")
