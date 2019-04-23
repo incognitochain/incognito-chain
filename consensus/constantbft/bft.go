@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/constant-money/constant-chain/common"
+	"github.com/pkg/errors"
 
 	"github.com/constant-money/constant-chain/wire"
 )
