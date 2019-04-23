@@ -122,6 +122,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
 	GetListDCBProposalBuyingAssets:        RpcServer.handleGetListDCBProposalBuyingAssets,
 	GetListDCBProposalSellingAssets:       RpcServer.handleGetListDCBProposalSellingAssets,
+	GetDCBBondInfo:                        RpcServer.handleGetDCBBondInfo,
 
 	// Trade bonds with GOV
 	CreateAndSendTradeActivation: RpcServer.handleCreateAndSendTradeActivation,
