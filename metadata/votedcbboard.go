@@ -1,6 +1,8 @@
 package metadata
 
 import (
+	"errors"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata/fromshardins"
@@ -34,6 +36,13 @@ func NewVoteDCBBoardMetadataFromRPC(data map[string]interface{}) (Metadata, erro
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+	voteAmount, err := txr.GetAmountOfVote()
+	if err != nil {
+		return false, err
+	}
+	if voteAmount == 0 {
+		return false, errors.New("Amount of vote must large than zero!")
+	}
 	return true, nil
 }
 
@@ -45,6 +54,9 @@ func (voteDCBBoardMetadata *VoteDCBBoardMetadata) Hash() *common.Hash {
 }
 
 func (voteDCBBoardMetadata *VoteDCBBoardMetadata) ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error) {
+	if voteDCBBoardMetadata.VoteBoardMetadata.BoardIndex != bcr.GetGovernor(common.DCBBoard).GetBoardIndex()+1 {
+		return true, false, errors.New("Wrong board index!")
+	}
 	return true, true, nil
 }
 
