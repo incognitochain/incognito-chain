@@ -1,11 +1,10 @@
 package constantbft
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/constant-money/constant-chain/common"
 
@@ -34,16 +33,18 @@ type BFTProtocol struct {
 	}
 	multiSigScheme *multiSigScheme
 
-	proposeCh   chan wire.Message
-	desyncMsgCh chan wire.Message
+	proposeCh  chan wire.Message
+	earlyMsgCh chan wire.Message
 
 	startTime time.Time
 }
 
 func (protocol *BFTProtocol) Start() (interface{}, error) {
+	protocol.cQuit = make(chan struct{})
 	protocol.proposeCh = make(chan wire.Message)
-	protocol.desyncMsgCh = make(chan wire.Message)
+	protocol.earlyMsgCh = make(chan wire.Message)
 	protocol.phase = PBFT_LISTEN
+	defer close(protocol.cQuit)
 	if protocol.RoundData.IsProposer {
 		protocol.phase = PBFT_PROPOSE
 	}
@@ -55,7 +56,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	go protocol.earlyMsgHandler()
 	//    single-node start    //
 	go protocol.CreateBlockMsg()
 	<-protocol.proposeCh
@@ -69,29 +70,24 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 		protocol.startTime = time.Now()
 		fmt.Println("BFT: New Phase", time.Since(protocol.startTime).Seconds())
 		protocol.cTimeout = make(chan struct{})
-		select {
-		case <-protocol.cQuit:
-			return nil, errors.New("Consensus quit")
-		default:
-			switch protocol.phase {
-			case PBFT_PROPOSE:
-				if err := protocol.phasePropose(); err != nil {
-					return nil, err
-				}
-			case PBFT_LISTEN:
-				if err := protocol.phaseListen(); err != nil {
-					return nil, err
-				}
-			case PBFT_PREPARE:
-				if err := protocol.phasePrepare(); err != nil {
-					return nil, err
-				}
-			case PBFT_COMMIT:
-				if err := protocol.phaseCommit(); err != nil {
-					return nil, err
-				}
-				return protocol.pendingBlock, nil
+		switch protocol.phase {
+		case PBFT_PROPOSE:
+			if err := protocol.phasePropose(); err != nil {
+				return nil, err
 			}
+		case PBFT_LISTEN:
+			if err := protocol.phaseListen(); err != nil {
+				return nil, err
+			}
+		case PBFT_PREPARE:
+			if err := protocol.phasePrepare(); err != nil {
+				return nil, err
+			}
+		case PBFT_COMMIT:
+			if err := protocol.phaseCommit(); err != nil {
+				return nil, err
+			}
+			return protocol.pendingBlock, nil
 		}
 	}
 }
@@ -102,15 +98,15 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
-
+		go common.SendMetricDataToGrafana(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()), "BeaconBlock")
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
 		} else {
 			timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
-			if timeSinceLastBlk < common.MinBlkInterval {
-				fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-				time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
+			if timeSinceLastBlk < common.MinBeaconBlkInterval {
+				fmt.Println("BFT: Wait for ", (common.MinBeaconBlkInterval - timeSinceLastBlk).Seconds())
+				time.Sleep(common.MinBeaconBlkInterval - timeSinceLastBlk)
 			}
 
 			err = protocol.EngineCfg.BlockGen.FinalizeBeaconBlock(newBlock, protocol.EngineCfg.UserKeySet)
@@ -133,15 +129,15 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	} else {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
-
+		go common.SendMetricDataToGrafana(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()), "ShardBlock")
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
 		} else {
 			timeSinceLastBlk := time.Since(time.Unix(protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].BestBlock.Header.Timestamp, 0))
-			if timeSinceLastBlk < common.MinBlkInterval {
-				fmt.Println("BFT: Wait for ", (common.MinBlkInterval - timeSinceLastBlk).Seconds())
-				time.Sleep(common.MinBlkInterval - timeSinceLastBlk)
+			if timeSinceLastBlk < common.MinShardBlkInterval {
+				fmt.Println("BFT: Wait for ", (common.MinShardBlkInterval - timeSinceLastBlk).Seconds())
+				time.Sleep(common.MinShardBlkInterval - timeSinceLastBlk)
 			}
 
 			err = protocol.EngineCfg.BlockGen.FinalizeShardBlock(newBlock, protocol.EngineCfg.UserKeySet)
@@ -199,6 +195,57 @@ func (protocol *BFTProtocol) closeProposeCh() {
 	}
 }
 
-func (protocol *BFTProtocol) RoundDesyncDetector() {
+func (protocol *BFTProtocol) earlyMsgHandler() {
+	var prepareMsgs []wire.Message
+	var commitMsgs []wire.Message
+	go func() {
+		for {
+			select {
+			case <-protocol.cQuit:
+				return
+			default:
+				if protocol.phase == PBFT_PREPARE {
+					for _, msg := range prepareMsgs {
+						protocol.cBFTMsg <- msg
+					}
+					prepareMsgs = []wire.Message{}
+				}
+				if protocol.phase == PBFT_COMMIT {
+					for _, msg := range commitMsgs {
+						protocol.cBFTMsg <- msg
+					}
+					commitMsgs = []wire.Message{}
+				}
+				time.Sleep(10 * time.Millisecond)
+			}
+		}
+	}()
 
+	for {
+		select {
+		case <-protocol.cQuit:
+			return
+		case earlyMsg := <-protocol.earlyMsgCh:
+			switch earlyMsg.MessageType() {
+			case wire.CmdBFTPrepare:
+				if protocol.phase == PBFT_LISTEN {
+					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], earlyMsg.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
+						prepareMsgs = append(prepareMsgs, earlyMsg)
+					}
+				}
+			case wire.CmdBFTCommit:
+				if protocol.phase == PBFT_PREPARE {
+					newSig := bftCommittedSig{
+						ValidatorsIdxR: earlyMsg.(*wire.MessageBFTCommit).ValidatorsIdx,
+						Sig:            earlyMsg.(*wire.MessageBFTCommit).CommitSig,
+					}
+					R := earlyMsg.(*wire.MessageBFTCommit).R
+					err := protocol.multiSigScheme.VerifyCommitSig(earlyMsg.(*wire.MessageBFTCommit).Pubkey, newSig.Sig, R, newSig.ValidatorsIdxR)
+					if err == nil {
+						commitMsgs = append(commitMsgs, earlyMsg)
+					}
+				}
+			}
+		}
+	}
 }
