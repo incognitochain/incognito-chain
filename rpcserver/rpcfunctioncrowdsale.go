@@ -93,7 +93,7 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 }
 
 func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// TODO(@0xankylosaurus): call get list bonds
+	// TODO(@0xbunyip): call get list bonds
 	buyingAssets := map[string]string{
 		"Bond 1":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
 		"Constant": common.ConstantID.String(),
@@ -102,7 +102,7 @@ func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface
 }
 
 func (rpcServer RpcServer) handleGetListDCBProposalSellingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// TODO(@0xankylosaurus): call get list bonds
+	// TODO(@0xbunyip): call get list bonds
 	sellingAssets := map[string]string{
 		"Constant": common.ConstantID.String(),
 		"Bond 2":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",

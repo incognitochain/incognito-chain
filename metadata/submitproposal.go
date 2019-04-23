@@ -77,7 +77,7 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
 	inst := fromshardins.NewSubmitProposalIns(common.DCBBoard, submitProposal)
 
 	instStr, err := inst.GetStringFormat()
-	fmt.Println("[voting] - submitDCBProposalMetadata BuildReqActions: ", instStr)
+	fmt.Println("[ndh] - submitDCBProposalMetadata BuildReqActions: ", instStr)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) BuildReqActions(
 	inst := fromshardins.NewSubmitProposalIns(common.GOVBoard, submitProposal)
 
 	instStr, err := inst.GetStringFormat()
-	fmt.Println("[voting] - submitGOVProposalMetadata BuildReqActions: ", instStr)
+	fmt.Println("[ndh] - submitGOVProposalMetadata BuildReqActions: ", instStr)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,25 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 	return &hash
 }
 
-func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
+func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(tx Transaction, br BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+	beaconHeight := br.GetBeaconHeight()
+	govParams := submitGOVProposalMetadata.GOVParams
+	sellingBonds := govParams.SellingBonds
+	if sellingBonds != nil {
+		if sellingBonds.StartSellingAt+sellingBonds.Maturity < beaconHeight {
+			return false, nil
+		}
+		if sellingBonds.StartSellingAt+sellingBonds.SellingWithin < beaconHeight {
+			return false, nil
+		}
+	}
+
+	sellingGOVTokens := govParams.SellingGOVTokens
+	if sellingGOVTokens != nil {
+		if sellingGOVTokens.StartSellingAt+sellingGOVTokens.SellingWithin < beaconHeight {
+			return false, nil
+		}
+	}
 	return true, nil
 }
 
