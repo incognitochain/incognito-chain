@@ -445,11 +445,15 @@ func (bc *BlockChain) updateDCBBuyBondInfo(bondID *common.Hash, bondAmount uint6
 
 func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint64) error {
 	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
-	avgPrice := cstPaid / amountAvail
 	if amountAvail < bondAmount {
 		return fmt.Errorf("invalid crowdsale payment inst, amount available lower than payment: %d, %d", amountAvail, bondAmount)
 	}
 	amountAvail -= bondAmount
+
+	avgPrice := uint64(0)
+	if amountAvail > 0 {
+		avgPrice = cstPaid / amountAvail
+	}
 
 	principleCovered := bondAmount * avgPrice
 	if cstPaid < principleCovered {
