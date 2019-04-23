@@ -2,14 +2,12 @@ package metadata
 
 import (
 	"encoding/json"
-	"strconv"
-	"time"
-
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
-	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"strconv"
 )
 
 type MetadataBase struct {
@@ -80,9 +78,6 @@ func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever Bl
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
 	Tx Transaction
-
-	// Added is the time when the entry was added to the source pool.
-	Added time.Time
 
 	// Height is the best block's height when the entry was added to the the source pool.
 	Height uint64
@@ -203,4 +198,5 @@ type Transaction interface {
 	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
+	GetTokenID() *common.Hash
 }

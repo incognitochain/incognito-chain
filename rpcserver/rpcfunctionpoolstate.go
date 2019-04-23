@@ -65,7 +65,7 @@ func (rpcServer RpcServer) handleGetBeaconPoolState(params interface{}, closeCha
 	if beaconPool == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Beacon Pool not init"))
 	}
-	result := beaconPool.GetAllBlockHeight()
+	result := beaconPool.GetPoolLen()
 	// result.BestBlock = nil
 	return result, nil
 }
