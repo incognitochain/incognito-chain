@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	MAX_VALID_SHARD_BLK_IN_POOL   = 1000
-	MAX_PENDING_SHARD_BLK_IN_POOL = 2000
+	MAX_VALID_SHARD_BLK_IN_POOL   = 10000
+	MAX_PENDING_SHARD_BLK_IN_POOL = 10000
 )
 
 type ShardPool struct {
@@ -49,10 +49,11 @@ func (self *ShardPool) SetShardState(lastestShardHeight uint64) {
 	self.poolMu.Lock()
 	defer self.poolMu.Unlock()
 	self.latestValidHeight = lastestShardHeight
-
+	if self.latestValidHeight < lastestShardHeight {
+		self.latestValidHeight = lastestShardHeight
+	}
 	//Remove pool base on new shardstate
 	self.removeBlock(lastestShardHeight)
-	self.updateLatestShardState()
 }
 
 func (self *ShardPool) GetShardState() uint64 {
@@ -119,6 +120,9 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 func (self *ShardPool) updateLatestShardState() {
 	lastHeight := self.latestValidHeight
 	for i, blk := range self.pool {
+		if blk.Header.Height <= lastHeight {
+			continue
+		}
 		if lastHeight+1 != blk.Header.Height {
 			break
 		}
