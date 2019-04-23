@@ -10,6 +10,8 @@ import (
 
 	"github.com/constant-money/constant-chain/database"
 	_ "github.com/constant-money/constant-chain/database/lvdb"
+	"github.com/constant-money/constant-chain/databasemp"
+	_ "github.com/constant-money/constant-chain/databasemp/lvdb"
 	"github.com/constant-money/constant-chain/limits"
 	"github.com/constant-money/constant-chain/wallet"
 )
@@ -35,7 +37,6 @@ func mainMaster(serverChan chan<- *Server) error {
 		return err
 	}
 	cfg = tempConfig
-	fmt.Printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB: %+v", cfg)
 	// Get a channel that will be closed when a shutdown signal has been
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
 	// another subsystem such as the RPC server.
@@ -51,8 +52,15 @@ func mainMaster(serverChan chan<- *Server) error {
 		return nil
 	}
 
-	// Create db and use it.
 	db, err := database.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
+	// Create db and use it.
+	if err != nil {
+		Logger.log.Error("could not open connection to leveldb")
+		Logger.log.Error(err)
+		panic(err)
+	}
+	// Create db mempool and use it
+	dbmp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, cfg.DatabaseMempoolDir))
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb")
 		Logger.log.Error(err)
@@ -87,7 +95,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	err = server.NewServer(cfg.Listener, db, activeNetParams.Params, version, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)
