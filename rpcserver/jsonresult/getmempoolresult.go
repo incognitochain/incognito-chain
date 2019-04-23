@@ -13,8 +13,8 @@ type GetMempoolInfo struct {
 }
 
 type GetMempoolInfoTx struct {
-	TxID     string
-	LockTime int64 `json:"LockTime"`
+	TxID     string `json:"TxID"`
+	LockTime int64  `json:"LockTime"`
 }
 
 type GetRawMempoolResult struct {
