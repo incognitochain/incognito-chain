@@ -491,7 +491,7 @@ func (db *db) CleanFeeEstimator() error {
 	for iter.Next() {
 		err := db.lvdb.Delete(iter.Key(), nil)
 		if err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 		}
 	}
 	iter.Release()
