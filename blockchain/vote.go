@@ -321,6 +321,24 @@ func (self *BlockChain) createSendBackTokenAfterVoteFailIns(
 				return nil, err
 			}
 		}
+		if boardIndex == currentBoardIndex {
+			inst := frombeaconins.NewSendBackTokenVoteFailIns(
+				boardType,
+				*voterPaymentAddress,
+				amountOfToken,
+				propertyID,
+			)
+			listNewIns = append(
+				listNewIns,
+				inst,
+			)
+			instString, _ := inst.GetStringFormat()
+			fmt.Println("[ndh]-SendBackIns: ", instString)
+			err := self.config.DataBase.Delete(key)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 	fmt.Println("[ndh]- createSendBackTokenAfterVoteFailIns ok", listNewIns)
 	return listNewIns, nil
