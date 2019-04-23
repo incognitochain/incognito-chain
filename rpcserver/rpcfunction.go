@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"fmt"
+	"github.com/ninjadotorg/constant-api-service/service/3rd/identicon"
 	"log"
 	"net"
 	"os"
@@ -194,6 +195,8 @@ var RpcHandler = map[string]commandHandler{
 	DefragmentAccount:              RpcServer.handleDefragmentAccount,
 
 	GetStackingAmount: RpcServer.handleGetStakingAmount,
+
+	HashToIdenticon: RpcServer.handleHashToIdenticon,
 }
 
 // Commands that are available to a limited user
@@ -607,4 +610,17 @@ func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan 
 		amount = metadata.GetShardStateAmount()
 	}
 	return amount, nil
+}
+
+func (rpcServer RpcServer) handleHashToIdenticon(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	result := make([]string, 0)
+	for _, hash := range arrayParams {
+		temp, err := common.Hash{}.NewHashFromStr(hash.(string))
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, errors.New("Hash string is invalid"))
+		}
+		result = append(result, identicon.Render(temp.GetBytes()))
+	}
+	return result, nil
 }
