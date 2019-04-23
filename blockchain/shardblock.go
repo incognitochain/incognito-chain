@@ -158,7 +158,7 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 		shardID := common.GetShardIDFromLastByte(byte(i))
 		if shardID != blk.Header.ShardID {
 			crossShard, err := blk.CreateCrossShardBlock(shardID)
-			fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, shardID, crossShard)
+			//fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, shardID, crossShard)
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
 			}
@@ -172,7 +172,7 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossOutputCoin, crossTxTokenData, crossCustomTokenPrivacyData := getCrossShardData(block.Body.Transactions, shardID)
 	// Return nothing if nothing to cross
 	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 && len(crossCustomTokenPrivacyData) == 0 {
-		fmt.Println("CreateCrossShardBlock no crossshard", block.Header.Height)
+		//fmt.Println("CreateCrossShardBlock no crossshard", block.Header.Height)
 		return nil, NewBlockChainError(CrossShardBlockError, errors.New("No cross outputcoin"))
 	}
 	merklePathShard, merkleShardRoot := GetMerklePathCrossShard2(block.Body.Transactions, shardID)

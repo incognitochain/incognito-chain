@@ -23,8 +23,11 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
+	if block.Header.ShardID != shardID {
+		return errors.New("wrong shard")
+	}
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	//========Verify block only
 	Logger.log.Infof("SHARD %+v | Verify block for signing process %d, with hash %+v", shardID, block.Header.Height, *block.Hash())
 	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, true); err != nil {
@@ -58,13 +61,9 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 		return err
 	}
 	//========Update best state with new block
-	// fmt.Println("|=========================================================|")
-	// fmt.Println("Shard Process/Insert Shard Block: BEFORE", shardBestState)
-	// fmt.Println("|=========================================================|")
 	if err := shardBestState.Update(block, beaconBlocks); err != nil {
 		return err
 	}
-	// fmt.Println("Shard Process/Insert Shard Block: AFTER", shardBestState)
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
@@ -78,9 +77,9 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	@Notice: this block must have full information (complete block)
 */
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer bool) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v at hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBlock(block.Hash())
 	if isExist {
@@ -137,13 +136,15 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 
 	//Update Cross shard pool: remove invalid block
-	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
-	expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
-	for fromShardID, height := range expectedHeight {
-		if height != 0 {
-			blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+	go func() {
+		blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
+		expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
+		for fromShardID, height := range expectedHeight {
+			if height != 0 {
+				blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+			}
 		}
-	}
+	}()
 
 	// Process stability tx
 	err = blockchain.ProcessLoanForBlock(block)
@@ -168,7 +169,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	}
 
 	// Process stability stand-alone instructions
-	// fmt.Printf("[db] processing stand alone inst: %+v\n", block.Body.Instructions)
 	err = blockchain.ProcessStandAloneInstructions(block)
 	if err != nil {
 		return err
@@ -206,9 +206,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.TxPool.RemoveCandidateList(candidates)
 	blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 	//Remove tx out of pool
-	for _, tx := range block.Body.Transactions {
-		blockchain.config.TxPool.RemoveTx(tx)
-	}
+	go func() {
+		for _, tx := range block.Body.Transactions {
+			blockchain.config.TxPool.RemoveTx(tx)
+		}
+	}()
 
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.ProcessStoreShardBlock(block)
@@ -228,7 +230,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 */
 func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	blockHash := block.Hash().String()
-	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 
 	if err := blockchain.StoreShardBlock(block); err != nil {
 		return err
@@ -343,14 +345,11 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	}
 
 	if !bytes.Equal(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
-		a, _ := json.Marshal(block.Body.Transactions[0])
-		fmt.Println(block.Header.TxRoot.GetBytes(), txRoot.GetBytes(), block.Body.Transactions, string(a))
 		return NewBlockChainError(HashError, errors.New("can't Verify Transaction Root"))
 	}
 	// Verify ShardTx Root
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
 	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]
-	fmt.Println("ShardProcess/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
 	if !bytes.Equal(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
 		return NewBlockChainError(HashError, errors.New("can't Verify CrossShardTransaction Root"))
 	}
@@ -390,8 +389,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	}
 	isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
 	if !isOk {
-		res, _ := GenerateHashFromStringArray(totalInstructions)
-		fmt.Println("VerifyHashFromStringArray", totalInstructions, res, block.Header.InstructionsRoot)
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
 	}
 	//Get beacon hash by height in db
@@ -475,9 +472,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 						shardCommittee := make(map[byte][]string)
 						json.Unmarshal(temp, &shardCommittee)
 						err = toShardCrossShardBlock.VerifyCrossShardBlock(shardCommittee[toShardCrossShardBlock.Header.ShardID])
-						fmt.Println("ShardProducer/VerifyCrossShardBlock", err == nil)
 						if err != nil {
-							fmt.Println("Shard Producer/FAIL TO Verify Crossshard block", err)
 							return NewBlockChainError(CrossShardBlockError, err)
 						}
 						compareCrossTransaction := CrossTransaction{
@@ -545,7 +540,6 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		if len(bestStateShard.ShardCommittee) > 3 && len(block.ValidatorsIdx[1]) < (len(bestStateShard.ShardCommittee)>>1) {
-			fmt.Println(bestStateShard.ShardCommittee)
 			return NewBlockChainError(SignatureError, errors.New("block validators and Shard committee is not compatible"))
 		}
 		ValidateAggSignature(block.ValidatorsIdx, bestStateShard.ShardCommittee, block.AggregatedSig, block.R, block.Hash())
@@ -575,9 +569,6 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 		Swap shard committee if detect new epoch of beacon
 */
 func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
-	bestStateShard.Lock.Lock()
-	defer bestStateShard.Lock.Unlock()
-
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
 		err                   error
@@ -618,7 +609,6 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 
 	// Add pending validator
 	for _, beaconBlock := range beaconBlocks {
-		fmt.Println("ShardProcess/Update: BeaconBlock Height", beaconBlock.Header.Height)
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == "assign" && l[2] == "shard" {
 				if l[3] == strconv.Itoa(int(block.Header.ShardID)) {
@@ -634,10 +624,7 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	}
 	// Swap committee
 	for _, l := range block.Body.Instructions {
-		fmt.Println("Shard Process/Update: Instruction", l)
 		if l[0] == "swap" {
-			fmt.Println("Shard Process/Update: ShardPendingValidator", bestStateShard.ShardPendingValidator)
-			fmt.Println("Shard Process/Update: ShardCommittee", bestStateShard.ShardCommittee)
 			bestStateShard.ShardPendingValidator, bestStateShard.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(bestStateShard.ShardPendingValidator, bestStateShard.ShardCommittee, bestStateShard.ShardCommitteeSize, common.OFFSET)
 			if err != nil {
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -710,7 +697,6 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 	}
 	index := 0
 	salaryCount := 0
-	// fmt.Println("TempTxPool", blockChain.config.TempTxPool)
 
 	for _, tx := range txs {
 		if !tx.IsSalaryTx() {
@@ -727,7 +713,6 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 			}
 			index++
 		} else {
-			//TODO: verify salary transaction
 			salaryCount++
 		}
 	}

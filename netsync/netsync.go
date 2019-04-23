@@ -1,7 +1,6 @@
 package netsync
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -26,7 +25,7 @@ type NetSync struct {
 type NetSyncConfig struct {
 	BlockChain        *blockchain.BlockChain
 	ChainParam        *blockchain.Params
-	MemTxPool         *mempool.TxPool
+	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool blockchain.ShardToBeaconPool
 	CrossShardPool    map[byte]blockchain.CrossShardPool
 	Server            interface {
@@ -213,7 +212,7 @@ func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTx
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
-	hash, _, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -224,6 +223,8 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		err := netSync.config.Server.PushMessageToAll(msg)
 		if err != nil {
 			Logger.log.Error(err)
+		} else {
+			netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
 		}
 	}
 }
@@ -231,7 +232,7 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 	Logger.log.Info("Handling new message tx")
-	hash, _, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -241,6 +242,8 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 		err := netSync.config.Server.PushMessageToAll(msg)
 		if err != nil {
 			Logger.log.Error(err)
+		} else {
+			netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
 		}
 	}
 }
@@ -248,7 +251,7 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken) {
 	Logger.log.Info("Handling new message tx")
-	hash, _, err := netSync.config.MemTxPool.MaybeAcceptTransaction(msg.Transaction)
+	hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 
 	if err != nil {
 		Logger.log.Error(err)
@@ -259,6 +262,8 @@ func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 		err := netSync.config.Server.PushMessageToAll(msg)
 		if err != nil {
 			Logger.log.Error(err)
+		} else {
+			netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
 		}
 	}
 }
@@ -359,9 +364,7 @@ func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 }
 
 func (netSync *NetSync) HandleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
-	fmt.Println()
 	Logger.log.Info("Handling new message - " + wire.CmdGetBlockBeacon)
-	fmt.Println()
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
 	if err != nil {
 		Logger.log.Error(err)
