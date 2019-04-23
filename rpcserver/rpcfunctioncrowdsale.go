@@ -2,8 +2,10 @@ package rpcserver
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 )
 
@@ -86,6 +88,36 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 		result = append(result, info)
 	}
 	return result, nil
+}
+
+func (rpcServer RpcServer) handleGetDCBBondInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	type dcbBondInfo struct {
+		AmountAvailable   uint64
+		TotalConstantPaid uint64
+	}
+	infos := map[string]dcbBondInfo{}
+	db := *rpcServer.config.Database
+	soldBondTypesBytesArr, err := db.GetSoldBondTypes()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	for _, soldBondTypesBytes := range soldBondTypesBytesArr {
+		var bondInfo component.SellingBonds
+		err = json.Unmarshal(soldBondTypesBytes, &bondInfo)
+		if err != nil {
+			continue
+		}
+		bondIDStr := bondInfo.GetID().String()
+		amountAvail, cstPaid := db.GetDCBBondInfo(bondInfo.GetID())
+		if amountAvail > 0 {
+			infos[bondIDStr] = dcbBondInfo{
+				AmountAvailable:   amountAvail,
+				TotalConstantPaid: cstPaid,
+			}
+		}
+	}
+	return infos, nil
 }
 
 func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
