@@ -34,7 +34,7 @@ every beststate present for a best block in every chain
 type BlockChain struct {
 	BestState *BestState
 	config    Config
-	chainLock sync.RWMutex
+	chainLock sync.Mutex
 	//channel
 	cQuitSync  chan struct{}
 	syncStatus struct {
@@ -59,6 +59,7 @@ type BlockChain struct {
 			Shards map[byte]bool
 		}
 	}
+	ConsensusOngoing bool
 	// knownChainState struct {
 	// 	Shards map[byte]ChainState
 	// 	Beacon ChainState
@@ -957,8 +958,8 @@ in case payment-address: return all outputcoin tx with no amount value
 */
 func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
 	// lock chain
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 
 	outCointsInBytes, err := blockchain.config.DataBase.GetOutcoinsByPubkey(tokenID, keyset.PaymentAddress.Pk[:], shardID)
 	if err != nil {
@@ -1440,14 +1441,15 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 		return err
 	}
 	boardType := common.GOVBoard
-	constitution := bc.GetConstitution(boardType)
+	constitution := bc.GetConstitution(boardType) // last constitution
 	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
 	fmt.Printf("[ndh] - Board Index: %+v; constitution Index: %+v \n", bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex, constitution.GetConstitutionIndex())
 	if (bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex == 1) && (constitution.GetConstitutionIndex() == 0) {
 		nextConstitutionIndex = 0
 	}
 	fmt.Printf("[ndh] Update GOV constitution instrucstion [%+v] %+v\n", nextConstitutionIndex, updateConstitutionIns)
-	err = bc.GetDatabase().SetNewProposalWinningVoter(
+	db := bc.GetDatabase()
+	err = db.SetNewProposalWinningVoter(
 		boardType,
 		nextConstitutionIndex,
 		updateConstitutionIns.Voters,
@@ -1455,6 +1457,21 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 	if err != nil {
 		return err
 	}
+
+	// store unique info of bonds to db if any
+	sellingBondsParams := updateConstitutionIns.GOVParams.SellingBonds
+	if sellingBondsParams != nil {
+		bondID := sellingBondsParams.GetID()
+		sellingBondsParamsBytes, err := json.Marshal(sellingBondsParams)
+		if err != nil {
+			return err
+		}
+		err = db.StoreSoldBondTypes(bondID, sellingBondsParamsBytes)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
 	if err != nil {
 		return err

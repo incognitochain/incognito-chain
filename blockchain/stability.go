@@ -405,16 +405,15 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				case metadata.BuyFromGOVRequestMeta:
 					contentStr := l[3]
 					sellingBondsParamsStr := l[4]
-					txs, err = blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey)
+					txs, err = blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey, shardID)
 
 				case metadata.BuyGOVTokenRequestMeta:
 					contentStr := l[3]
-					txs, err = blockgen.buildBuyGOVTokensRes(l[2], contentStr, producerPrivateKey)
+					txs, err = blockgen.buildBuyGOVTokensRes(l[2], contentStr, producerPrivateKey, shardID)
 
 				case metadata.BuyBackRequestMeta:
 					buyBackInfoStr := l[3]
-					prevBuySellResMetaStr := l[4]
-					txs, err = blockgen.buildBuyBackRes(l[2], buyBackInfoStr, prevBuySellResMetaStr, producerPrivateKey)
+					txs, err = blockgen.buildBuyBackRes(l[2], buyBackInfoStr, producerPrivateKey, shardID)
 
 				case component.SendBackTokenVoteBoardFailIns:
 					fmt.Println("[ndh]-SendBackTokenVoteBoardFailIns")
