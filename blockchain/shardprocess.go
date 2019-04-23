@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	
+
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -22,8 +22,11 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
+	if block.Header.ShardID != shardID {
+		return errors.New("wrong shard")
+	}
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	//========Verify block only
 	Logger.log.Infof("SHARD %+v | Verify block for signing process %d, with hash %+v", shardID, block.Header.Height, *block.Hash())
 	if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, true); err != nil {
@@ -73,9 +76,9 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	@Notice: this block must have full information (complete block)
 */
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer bool) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
 	shardID := block.Header.ShardID
+	blockchain.BestState.Shard[shardID].lock.Lock()
+	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v at hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBlock(block.Hash())
 	if isExist {
@@ -132,13 +135,15 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 
 	//Update Cross shard pool: remove invalid block
-	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
-	expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
-	for fromShardID, height := range expectedHeight {
-		if height != 0 {
-			blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+	go func() {
+		blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
+		expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
+		for fromShardID, height := range expectedHeight {
+			if height != 0 {
+				blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+			}
 		}
-	}
+	}()
 
 	// Process stability tx
 	err = blockchain.ProcessLoanForBlock(block)
@@ -200,9 +205,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	blockchain.config.TxPool.RemoveCandidateList(candidates)
 	blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 	//Remove tx out of pool
-	for _, tx := range block.Body.Transactions {
-		blockchain.config.TxPool.RemoveTx(tx)
-	}
+	go func() {
+		for _, tx := range block.Body.Transactions {
+			blockchain.config.TxPool.RemoveTx(tx)
+		}
+	}()
 
 	//========Store new  Shard block and new shard bestState
 	err = blockchain.ProcessStoreShardBlock(block)
@@ -561,9 +568,6 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 		Swap shard committee if detect new epoch of beacon
 */
 func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
-	bestStateShard.Lock.Lock()
-	defer bestStateShard.Lock.Unlock()
-
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
 		err                   error
