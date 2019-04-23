@@ -1163,3 +1163,7 @@ func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.M
 	// implement this func if needed
 	return nil, nil
 }
+
+func (tx Tx) GetTokenID() *common.Hash {
+	return nil
+}
