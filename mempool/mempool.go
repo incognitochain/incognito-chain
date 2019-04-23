@@ -310,8 +310,8 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return err
 	}
-
-	// ValidateTransaction tx by it self // TODO validate performance later 0xkraken
+	
+	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
