@@ -162,8 +162,14 @@ type DatabaseInterface interface {
 	GetKey(string, interface{}) []byte
 	AddListVoterOfProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
 	AddSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, submitter []byte) error
+	GetProposalTXIDByConstitutionIndex(boardType common.BoardType, constitutionIndex uint32) ([]byte, error)
 	GetSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) ([]byte, error)
+	DeleteAnyProposalButThisDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) error
+	GetProposalSubmitterByConstitutionIndexDB(boardType common.BoardType, constitutionIndex uint32) ([]byte, error)
 	AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
+	AddBoardFundDB(boardType common.BoardType, constitutionIndex uint32, amountOfBoardFund uint64) error
+	GetBoardFundDB(boardType common.BoardType, constitutionIndex uint32) (uint64, error)
+	AddConstantsPriceDB(constitutionIndex uint32, price uint64) error
 	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddresses []privacy.PaymentAddress) error
 	GetCurrentProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32) ([]privacy.PaymentAddress, error)
 	GetEncryptFlag(boardType common.BoardType) (byte, error)
@@ -176,5 +182,9 @@ type DatabaseInterface interface {
 	GetMultiSigsRegistration([]byte) ([]byte, error)
 	GetBoardVoterList(boardType common.BoardType, chairPaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress
 
+	// bond
+	StoreSoldBondTypes(*common.Hash, []byte) error
+	GetSoldBondTypes() ([][]byte, error)
+	GetSoldBondTypeByID(*common.Hash) ([]byte, error)
 	Close() error
 }

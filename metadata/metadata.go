@@ -2,12 +2,13 @@ package metadata
 
 import (
 	"encoding/json"
+	"strconv"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
-	"strconv"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {
@@ -194,8 +195,9 @@ type Transaction interface {
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
-	GetAmountOfVote() (uint64, error)
+	GetAmountOfVote(common.BoardType) (uint64, error)
 	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
+	GetTokenID() *common.Hash
 }

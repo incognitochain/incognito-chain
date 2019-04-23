@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
@@ -16,33 +18,45 @@ import (
 	"github.com/constant-money/constant-chain/wallet"
 )
 
-func (rpcServer RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	tempRes1 := jsonresult.GetBondTypeResultItem{
-		StartSellingAt: 0,
-		EndSellingAt:   500,
-		Maturity:       700,
-		BuyBackPrice:   110, // in constant
-		BuyPrice:       105, // in constant
-		TotalIssue:     1000,
-		Available:      800,
+func (rpcServer RpcServer) getBondTypes() (*jsonresult.GetBondTypeResult, error) {
+	db := *rpcServer.config.Database
+	soldBondTypesBytesArr, err := db.GetSoldBondTypes()
+	if err != nil {
+		return nil, err
 	}
-	tempRes2 := jsonresult.GetBondTypeResultItem{
-		StartSellingAt: 0,
-		EndSellingAt:   500,
-		Maturity:       700,
-		BuyBackPrice:   130, // in constant
-		BuyPrice:       110, // in constant
-		TotalIssue:     2000,
-		Available:      800,
-	}
-	result := jsonresult.GetBondTypeResult{
+
+	result := &jsonresult.GetBondTypeResult{
 		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
 	}
+	for _, soldBondTypesBytes := range soldBondTypesBytesArr {
+		var bondInfo component.SellingBonds
+		err = json.Unmarshal(soldBondTypesBytes, &bondInfo)
+		if err != nil {
+			return nil, err
+		}
+		bondIDStr := bondInfo.GetID().String()
+		bondType := jsonresult.GetBondTypeResultItem{
+			BondName:       bondInfo.BondName,
+			BondSymbol:     bondInfo.BondSymbol,
+			BondID:         bondIDStr,
+			StartSellingAt: bondInfo.StartSellingAt,
+			EndSellingAt:   bondInfo.StartSellingAt + bondInfo.SellingWithin,
+			Maturity:       bondInfo.Maturity,
+			BuyBackPrice:   bondInfo.BuyBackPrice,
+			BuyPrice:       bondInfo.BondPrice,
+			TotalIssue:     bondInfo.TotalIssue,
+			Available:      bondInfo.BondsToSell,
+		}
+		result.BondTypes[bondIDStr] = bondType
+	}
+	return result, nil
+}
 
-	result.BondTypes["fc8bbbd183f97ff6cc55a62b2ddceade8e93eed5cdf1240b42e223d589b29645"] = tempRes1
-
-	result.BondTypes["fe7d3d124cf0309d8f1575982842b57266951a37a717a4d332a69eb176c409fa"] = tempRes2
-
+func (rpcServer RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	result, err := rpcServer.getBondTypes()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	return result, nil
 }
 
@@ -244,8 +258,10 @@ func (rpcServer RpcServer) handleCreateRawVoteGOVBoardTransaction(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *RPCError) {
-	params = setBuildRawBurnTransactionParams(params, FeeVote)
-	return rpcServer.createRawCustomTokenTxWithMetadata(params, closeChan, metadata.NewVoteGOVBoardMetadataFromRPC)
+	// params = setBuildRawBurnTransactionParams(params, FeeVote)
+	arrayParams := common.InterfaceSlice(params)
+	arrayParams[1] = nil
+	return rpcServer.createRawCustomTokenTxWithMetadata(arrayParams, closeChan, metadata.NewVoteGOVBoardMetadataFromRPC)
 }
 
 func (rpcServer RpcServer) handleCreateAndSendVoteGOVBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

@@ -82,6 +82,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
 	beaconBlock.Header.Round = proposerOffset + 1
+	fmt.Printf("[ndh] =================== Creating beacon block[%+v] =====================\n", beaconBlock.Header.Height)
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		beaconBlock.Header.Epoch++
@@ -146,19 +147,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 	//===============End Create Header
-
-	go func() {
-		//TODO: @someone will remove right?
-		fmt.Println("[voting] - Beaconblock[", beaconBlock.Header.Height, "] body")
-		for _, inst := range beaconBlock.Body.Instructions {
-			if len(inst) != 0 {
-				if inst[0] != "37" {
-					fmt.Println("[voting] - - - > ", inst)
-				}
-			}
-		}
-	}()
-
 	return beaconBlock, nil
 }
 
@@ -237,7 +225,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	}
 	votingInstruction, err := blkTmplGenerator.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
 	if err != nil {
-		fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
+		fmt.Println("[ndh]-Build DCB voting instruction failed: ", err)
 	} else {
 		if len(votingInstruction) != 0 {
 			stabilityInstructions = append(stabilityInstructions, votingInstruction...)
@@ -245,7 +233,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	}
 	votingInstruction, err = blkTmplGenerator.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
 	if err != nil {
-		fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
+		fmt.Println("[ndh]-Build GOV voting instruction failed: ", err)
 	} else {
 		if len(votingInstruction) != 0 {
 			stabilityInstructions = append(stabilityInstructions, votingInstruction...)

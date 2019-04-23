@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/constant-money/constant-chain/privacy"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
@@ -28,43 +30,88 @@ var metaConstructors = map[string]metaConstructorType{
 	CreateAndSendVoteProposal:             metadata.NewVoteProposalMetadataFromRPC,
 }
 
+func isTxForVoting(meta metadata.Metadata) bool {
+	if (meta.GetType() < metadata.SubmitDCBProposalMeta) || (meta.GetType() > metadata.SendBackTokenToOldSupporterMeta) {
+		return false
+	}
+	return true
+}
+
+// func (rpcServer RpcServer) handleGovernorVoter(senderPrivateKey string, meta metadata.Metadata) *RPCError {
+// 	var listBoardPayment []privacy.PaymentAddress
+// 	if meta.GetType() == metadata.DCBVoteProposalMeta {
+// 		listBoardPayment = rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
+// 	} else {
+// 		listBoardPayment = rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress
+// 	}
+// 	keySet, errParseKey := rpcServer.GetKeySetFromPrivateKeyParams(senderPrivateKey)
+// 	if errParseKey != nil {
+// 		return NewRPCError(ErrUnexpected, errParseKey)
+// 	}
+// 	res := false
+// 	for _, address := range listBoardPayment {
+// 		if keySet.PaymentAddress.String() == address.String() {
+// 			res = true
+// 			break
+// 		}
+// 	}
+// 	if !res {
+// 		return NewRPCError(ErrCreateTxData, errors.New("Vote proposal is a feature just for governors"))
+// 	}
+// 	return nil
+// }
+
+func (rpcServer RpcServer) handleProposalVoter(senderPrivateKey string, meta metadata.Metadata) *RPCError {
+	var listBoardPayment []privacy.PaymentAddress
+	if meta.GetType() == metadata.DCBVoteProposalMeta {
+		listBoardPayment = rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
+	} else {
+		listBoardPayment = rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress
+	}
+	keySet, errParseKey := rpcServer.GetKeySetFromPrivateKeyParams(senderPrivateKey)
+	if errParseKey != nil {
+		return NewRPCError(ErrUnexpected, errParseKey)
+	}
+	res := false
+	for _, address := range listBoardPayment {
+		if keySet.PaymentAddress.String() == address.String() {
+			res = true
+			break
+		}
+	}
+	if !res {
+		return NewRPCError(ErrCreateTxData, errors.New("Vote proposal is a feature just for governors"))
+	}
+	return nil
+}
+
+func (rpcServer RpcServer) handleVoter(senderPrivateKey string, meta metadata.Metadata) *RPCError {
+	if (meta.GetType() > metadata.VoteGOVBoardMeta) && (meta.GetType() < metadata.DCBVoteProposalMeta) {
+		return NewRPCError(ErrRPCInvalidMethodPermission, errors.New("You can not create transactions with this metadata!"))
+	}
+	if (meta.GetType() == metadata.DCBVoteProposalMeta) || (meta.GetType() == metadata.GOVVoteProposalMeta) {
+		errVote := rpcServer.handleProposalVoter(senderPrivateKey, meta)
+		return errVote
+	}
+	return nil
+}
+
 func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	meta, errCons := metaConstructorType(metaRaw)
-	keySet, errParseKey := rpcServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
-	if errParseKey != nil {
-		return nil, NewRPCError(ErrUnexpected, errParseKey)
-	}
-	if meta.GetType() == metadata.DCBVoteProposalMeta {
-		found := false
-		for _, address := range rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress {
-			if keySet.PaymentAddress.String() == address.String() {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, NewRPCError(ErrCreateTxData, errors.New("Vote proposal is a feature just for governors"))
-		}
-	} else {
-		if meta.GetType() == metadata.GOVVoteProposalMeta {
-			found := false
-			for _, address := range rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress {
-				if keySet.PaymentAddress.String() == address.String() {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return nil, NewRPCError(ErrCreateTxData, errors.New("Vote proposal is a feature just for governors"))
-			}
-		}
-	}
 	if errCons != nil {
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
+
+	if isTxForVoting(meta) {
+		errVote := rpcServer.handleVoter(arrayParams[0].(string), meta)
+		if errVote != nil {
+			return nil, errVote
+		}
+	}
+
 	tx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		return nil, err
