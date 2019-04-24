@@ -199,7 +199,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
 	Logger.log.Info("Finish Insert new block , with hash", block.Header.Height, *block.Hash())
-	fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
+	if block.Header.Height%50 == 0 {
+		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
+	}
 	return nil
 }
 

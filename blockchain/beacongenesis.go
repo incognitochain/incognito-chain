@@ -227,7 +227,7 @@ func createDCBGenesisParamsInst() []string {
 			EndBlock: 2000,
 			BondID:   bondID,
 			Amount:   200,   // 100 bonds
-			Price:    100,   // 100 cent Constant per bond
+			Price:    150,   // 150 cent Constant per bond
 			Buy:      false, // 100 cent per CST
 		},
 	}

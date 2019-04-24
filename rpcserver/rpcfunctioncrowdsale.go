@@ -91,6 +91,13 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 }
 
 func (rpcServer RpcServer) handleGetDCBBondInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	//p := params.([]interface{})
+	//saleID, _ := hex.DecodeString(p[0].(string))
+	//fmt.Println("[db] saleID", saleID)
+	//saleData, err := rpcServer.config.BlockChain.GetSaleData(saleID)
+	//fmt.Println("[db] saleData", saleData, err)
+	//return saleData, nil
+
 	type dcbBondInfo struct {
 		AmountAvailable   uint64
 		TotalConstantPaid uint64
