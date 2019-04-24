@@ -107,7 +107,7 @@ func buildStabilityActions(
 				}
 				var newIns []string
 				if metaType != 37 {
-					fmt.Println("[ndh] - instructions metaType: ", metaType, component.AcceptDCBProposalIns)
+					fmt.Printf("[ndh] - instructions from beacon to shard metaType: %+v\n", l)
 				}
 				switch metaType {
 				case component.AcceptDCBProposalIns:
@@ -405,16 +405,15 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				case metadata.BuyFromGOVRequestMeta:
 					contentStr := l[3]
 					sellingBondsParamsStr := l[4]
-					txs, err = blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey)
+					txs, err = blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey, shardID)
 
 				case metadata.BuyGOVTokenRequestMeta:
 					contentStr := l[3]
-					txs, err = blockgen.buildBuyGOVTokensRes(l[2], contentStr, producerPrivateKey)
+					txs, err = blockgen.buildBuyGOVTokensRes(l[2], contentStr, producerPrivateKey, shardID)
 
 				case metadata.BuyBackRequestMeta:
 					buyBackInfoStr := l[3]
-					prevBuySellResMetaStr := l[4]
-					txs, err = blockgen.buildBuyBackRes(l[2], buyBackInfoStr, prevBuySellResMetaStr, producerPrivateKey)
+					txs, err = blockgen.buildBuyBackRes(l[2], buyBackInfoStr, producerPrivateKey, shardID)
 
 				case component.SendBackTokenVoteBoardFailIns:
 					fmt.Println("[ndh]-SendBackTokenVoteBoardFailIns")
@@ -444,7 +443,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					txs = append(txs, tx)
 
 				case component.ShareRewardOldDCBBoardSupportterIns, component.ShareRewardOldGOVBoardSupportterIns:
-					fmt.Println("[ndh]-ShareRewardOldDCBBoardSupportterIns ok, tx:", tx.GetMetadata())
+					fmt.Printf("[ndh]-ShareRewardOldBoardSupportterIns ok, tx: %+v\n", tx)
+					fmt.Printf("[ndh]-ShareRewardOldBoardSupportterIns ok, Ins: %+v\n", l)
 					shareRewardOldBoard := frombeaconins.ShareRewardOldBoardIns{}
 					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
 					if err != nil {

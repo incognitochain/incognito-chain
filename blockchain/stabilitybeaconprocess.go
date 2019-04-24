@@ -385,6 +385,7 @@ func (bsb *BestStateBeacon) processLoanResponseInstruction(inst []string) error 
 func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconins.UpdateDCBConstitutionIns) error {
 	dcbParams := ins.DCBParams
 	oldConstitution := bsb.StabilityInfo.DCBConstitution
+	fmt.Printf("[ndh] - - - - - - - - - - - - old Constitution Index %+v \n", oldConstitution)
 	bsb.StabilityInfo.DCBConstitution = DCBConstitution{
 		ConstitutionInfo: ConstitutionInfo{
 			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
@@ -396,7 +397,9 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
 		DCBParams:                 dcbParams,
 	}
-
+	if ins.SubmitProposalInfo.ConstitutionIndex == 0 {
+		bsb.StabilityInfo.DCBConstitution.ConstitutionIndex = 0
+	}
 	// Store saledata in state
 	for _, data := range dcbParams.ListSaleData {
 		key := getSaleDataKeyBeacon(data.SaleID)
@@ -409,8 +412,29 @@ func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconin
 	return nil
 }
 
-func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconins.UpdateGOVConstitutionIns) error {
+func (bsb *BestStateBeacon) processKeepOldDCBProposalInstruction(ins frombeaconins.KeepOldProposalIns) error {
+	if ins.BoardType != common.DCBBoard {
+		return errors.New("Wrong board type!")
+	}
 	oldConstitution := bsb.StabilityInfo.DCBConstitution
+	bsb.StabilityInfo.DCBConstitution = DCBConstitution{
+		ConstitutionInfo: ConstitutionInfo{
+			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
+			StartedBlockHeight: bsb.BestBlock.Header.Height,
+			ExecuteDuration:    oldConstitution.ExecuteDuration,
+			Explanation:        oldConstitution.Explanation,
+			Voters:             oldConstitution.Voters,
+		},
+		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
+		DCBParams:                 oldConstitution.DCBParams,
+	}
+	//TODO @dbchiem
+	return nil
+}
+
+func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconins.UpdateGOVConstitutionIns) error {
+	oldConstitution := bsb.StabilityInfo.GOVConstitution
+	fmt.Printf("[ndh] - - - - - - - - - - - - old Constitution Index %+v \n", oldConstitution)
 	bsb.StabilityInfo.GOVConstitution = GOVConstitution{
 		ConstitutionInfo: ConstitutionInfo{
 			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
@@ -421,6 +445,29 @@ func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconin
 		},
 		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
 		GOVParams:                 ins.GOVParams,
+	}
+	if ins.SubmitProposalInfo.ConstitutionIndex == 0 {
+		bsb.StabilityInfo.GOVConstitution.ConstitutionIndex = 0
+	}
+	return nil
+}
+
+func (bsb *BestStateBeacon) processKeepOldGOVProposalInstruction(ins frombeaconins.KeepOldProposalIns) error {
+	if ins.BoardType != common.GOVBoard {
+		return errors.New("Wrong board type!")
+	}
+	oldConstitution := bsb.StabilityInfo.GOVConstitution
+	fmt.Printf("[ndh] - - - - - - - - - - - - old Constitution Index %+v \n", oldConstitution)
+	bsb.StabilityInfo.GOVConstitution = GOVConstitution{
+		ConstitutionInfo: ConstitutionInfo{
+			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
+			StartedBlockHeight: bsb.BestBlock.Header.Height,
+			ExecuteDuration:    oldConstitution.ExecuteDuration,
+			Explanation:        oldConstitution.Explanation,
+			Voters:             oldConstitution.Voters,
+		},
+		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
+		GOVParams:                 oldConstitution.GOVParams,
 	}
 	return nil
 }
@@ -540,6 +587,11 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 			err = bc.processUpdateDCBConstitutionIns(inst)
 		case strconv.Itoa(component.UpdateGOVConstitutionIns):
 			err = bc.processUpdateGOVConstitutionIns(inst)
+
+		case strconv.Itoa(component.KeepOldDCBProposalIns):
+			err = bc.processKeepOldDCBConstitutionIns(inst)
+		case strconv.Itoa(component.KeepOldGOVProposalIns):
+			err = bc.processKeepOldGOVConstitutionIns(inst)
 		}
 
 		if err != nil {

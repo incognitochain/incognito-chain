@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/constant-money/constant-chain/databasemp"
 	"os"
 	"path/filepath"
 
@@ -35,6 +36,7 @@ var (
 	netsyncLogger     = backendLog.Logger("Netsync Log", true)
 	peerLogger        = backendLog.Logger("Peer Log", true)
 	dbLogger          = backendLog.Logger("Database Log", false)
+	dbmpLogger        = backendLog.Logger("Mempool Persistence DB Log", false)
 	walletLogger      = backendLog.Logger("Wallet log", false)
 	blockchainLogger  = backendLog.Logger("BlockChain log", false)
 	consensusLogger   = backendLog.Logger("Consensus log", false)
@@ -72,6 +74,7 @@ func init() {
 	btcapi.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
 	privacy.Logger.Init(privacyLogger)
+	databasemp.Logger.Init(dbmpLogger)
 
 }
 
@@ -92,6 +95,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"RAND": randomLogger,
 	"TRAN": transactionLogger,
 	"PRIV": privacyLogger,
+	"DBMP": dbmpLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
