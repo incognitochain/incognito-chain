@@ -10,7 +10,21 @@ import (
 	"time"
 )
 
-func SendMetricDataToGrafana(id string, value float64, metric string) {
+// list metric
+const (
+	BeaconBlock = "BeaconBlock"
+	ShardBlock  = "ShardBlock"
+)
+
+func AnalyzeTimeSeriesBeaconBlockMetric(paymentAddress string, value float64) {
+	sendMetricDataToGrafana(paymentAddress, value, BeaconBlock)
+}
+
+func AnalyzeTimeSeriesShardBlockMetric(paymentAddress string, value float64) {
+	go sendMetricDataToGrafana(paymentAddress, value, ShardBlock)
+}
+
+func sendMetricDataToGrafana(id string, value float64, metric string) {
 
 	grafanaURL := os.Getenv("GrafanaURL")
 	if grafanaURL == "" {
