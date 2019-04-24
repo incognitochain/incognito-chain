@@ -20,54 +20,9 @@ type IssuingReqAction struct {
 	Meta            metadata.IssuingRequest `json:"meta"`
 }
 
-type IssuingInfo struct {
-	ReceiverAddress privacy.PaymentAddress
-	Amount          uint64
-	RequestedTxID   common.Hash
-	TokenID         common.Hash
-	CurrencyType    common.Hash
-}
-
-func parseIssuingInfo(issuingInfoRaw string) (*IssuingInfo, error) {
-	var issuingInfo IssuingInfo
-	err := json.Unmarshal([]byte(issuingInfoRaw), &issuingInfo)
-	if err != nil {
-		return nil, err
-	}
-	return &issuingInfo, nil
-}
-
-func (info *IssuingInfo) Compare(info2 *IssuingInfo) bool {
-	return bytes.Equal(info.ReceiverAddress.Pk, info2.ReceiverAddress.Pk) &&
-		info.Amount == info2.Amount &&
-		info.TokenID.IsEqual(&info2.TokenID)
-}
-
 type ContractingReqAction struct {
 	TxReqID common.Hash                 `json:"txReqId"`
 	Meta    metadata.ContractingRequest `json:"meta"`
-}
-
-type ContractingInfo struct {
-	BurnerAddress     privacy.PaymentAddress
-	BurnedConstAmount uint64
-	RedeemAmount      uint64
-	RequestedTxID     common.Hash
-	CurrencyType      common.Hash
-}
-
-func parseContractingInfo(contractingInfoRaw string) (*ContractingInfo, error) {
-	var contractingInfo ContractingInfo
-	err := json.Unmarshal([]byte(contractingInfoRaw), &contractingInfo)
-	if err != nil {
-		return nil, err
-	}
-	return &contractingInfo, nil
-}
-
-func (info *ContractingInfo) Compare(info2 *ContractingInfo) bool {
-	return bytes.Equal(info.BurnerAddress.Pk, info2.BurnerAddress.Pk) &&
-		info.BurnedConstAmount == info2.BurnedConstAmount
 }
 
 func buildInstTypeAndAmountForContractingAction(
@@ -128,7 +83,7 @@ func buildInstructionsForContractingReq(
 	instructions := [][]string{}
 	instType, redeemAmount := buildInstTypeAndAmountForContractingAction(beaconBestState, &md, accumulativeValues)
 
-	cInfo := ContractingInfo{
+	cInfo := component.ContractingInfo{
 		BurnerAddress:     md.BurnerAddress,
 		BurnedConstAmount: md.BurnedConstAmount,
 		RedeemAmount:      redeemAmount,
@@ -156,7 +111,7 @@ func (blockgen *BlkTmplGenerator) buildContractingRes(
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] buildContractingRes: %s\n", contractingInfoStr)
-	var contractingInfo ContractingInfo
+	var contractingInfo component.ContractingInfo
 	err := json.Unmarshal([]byte(contractingInfoStr), &contractingInfo)
 	if err != nil {
 		return nil, err
@@ -165,7 +120,7 @@ func (blockgen *BlkTmplGenerator) buildContractingRes(
 	if instType == "accepted" {
 		return []metadata.Transaction{}, nil
 	} else if instType == "refund" {
-		meta := metadata.NewResponseBase(txReqID, metadata.ContractingResponseMeta)
+		meta := metadata.NewContractingResponse(txReqID, metadata.ContractingResponseMeta)
 		tx := new(transaction.Tx)
 		err := tx.InitTxSalary(
 			contractingInfo.BurnedConstAmount,
@@ -189,7 +144,7 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 	blkProducerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
-	var issuingInfo IssuingInfo
+	var issuingInfo component.IssuingInfo
 	fmt.Printf("[db] buildIssuingRes %s\n", issuingInfoStr)
 	err := json.Unmarshal([]byte(issuingInfoStr), &issuingInfo)
 	if err != nil {
@@ -321,7 +276,7 @@ func buildInstructionsForIssuingReq(
 	instructions := [][]string{}
 	instType, reqAmt := buildInstTypeAndAmountForIssuingAction(beaconBestState, &md, accumulativeValues)
 
-	iInfo := IssuingInfo{
+	iInfo := component.IssuingInfo{
 		ReceiverAddress: md.ReceiverAddress,
 		Amount:          reqAmt,
 		RequestedTxID:   reqTxID,
