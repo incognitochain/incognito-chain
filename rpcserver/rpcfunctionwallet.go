@@ -4,15 +4,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"math/rand"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
-
+	
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
@@ -512,7 +511,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
+	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
@@ -553,7 +552,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	// START create tx
 	// missing flag for privacy
 	// false by default
-	fmt.Printf("#inputCoins: %d\n", len(inputCoins))
+	//fmt.Printf("#inputCoins: %d\n", len(inputCoins))
 	tx := transaction.Tx{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
