@@ -14,8 +14,15 @@ import (
 const (
 	BeaconBlock = "BeaconBlock"
 	ShardBlock  = "ShardBlock"
+	TxPoolValidated  = "TxPoolValidated"
+	TxPoolAdded  = "TxPoolAdded"
 )
-
+func AnalyzeTimeSeriesTxPoolValidatedMetric(txHash string, value float64){
+	sendTimeSeriesMetricDataInfluxDB(txHash, TxPoolValidated, value)
+}
+func AnalyzeTimeSeriesTxPoolAddedMetric(txHash string, value float64){
+	sendTimeSeriesMetricDataInfluxDB(txHash, TxPoolAdded, value)
+}
 func AnalyzeTimeSeriesBeaconBlockMetric(paymentAddress string, value float64) {
 	sendTimeSeriesMetricDataInfluxDB(paymentAddress, BeaconBlock, value)
 }
@@ -26,6 +33,7 @@ func AnalyzeTimeSeriesShardBlockMetric(paymentAddress string, value float64) {
 
 func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64) {
 
+	os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GrafanaURL")
 	if databaseUrl == "" {
 		return
