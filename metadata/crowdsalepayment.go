@@ -1,13 +1,10 @@
 package metadata
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/wallet"
 )
 
 type CrowdsalePayment struct {
@@ -23,11 +20,11 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 		return false, err
 	}
 
-	// Check if sending address is DCB's
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
-		return false, fmt.Errorf("Crowdsale payment must send asset from DCB address")
-	}
+	// TODO(@0xbunyip): check if sending address is DCB's
+	//keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	//if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
+	//	return false, fmt.Errorf("Crowdsale payment must send asset from DCB address")
+	//}
 
 	// TODO(@0xbunyip): check double spending for coinbase CST tx?
 	if !sale.Buy {
