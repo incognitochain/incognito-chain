@@ -151,12 +151,13 @@ func TxPoolMainLoop(tp *TxPool) {
 		}
 		for _, txDesc := range txsToBeRemoved {
 			txHash := *txDesc.Desc.Tx.Hash()
+			startTime := txDesc.StartTime
 			delete(tp.pool, txHash)
 			delete(tp.poolSerialNumbers, txHash)
 			delete(tp.txCoinHashHPool, txHash)
 			delete(tp.CandidatePool, txHash)
 			delete(tp.TokenIDPool, txHash)
-			go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(txDesc.StartTime)))
+			go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(startTime).Seconds()))
 		}
 	}
 }
@@ -462,6 +463,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 	tp.mtx.Lock()
 	// remove transaction from database mempool
 	txDesc := tp.pool[*tx.Hash()]
+	startTime := txDesc.StartTime
 	tp.RemoveTransactionFromDatabaseMP(tx.Hash())
 	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
@@ -470,7 +472,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 		tp.RemoveTxCoinHashH(*txHash)
 	}
 	if isInBlock {
-		go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, float64(time.Since(txDesc.StartTime)))
+		go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, float64(time.Since(startTime).Seconds()))
 	}
 	tp.mtx.Unlock()
 	return err
