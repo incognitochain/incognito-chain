@@ -384,7 +384,9 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	return nil
 }
 func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool) (*common.Hash, *TxDesc, error) {
+	startValidate := time.Now()
 	err := tp.ValidateTransaction(tx)
+	go common.AnalyzeTimeSeriesTxPoolValidatedMetric(tx.Hash().String(), float64(time.Since(startValidate).Seconds()))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -425,7 +427,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if uint64(len(tp.pool)) >= tp.maxTx {
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
+	startAdd := time.Now()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool)
+	go common.AnalyzeTimeSeriesTxPoolAddedMetric(tx.Hash().String(), float64(time.Since(startAdd).Seconds()))
 	if err != nil {
 		Logger.log.Error(err)
 	}
