@@ -324,7 +324,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	tradeActivated := map[string]bool{}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
-		fmt.Println("[db] - beaconBlock[", beaconBlock.Header.Height, "]")
 		for _, l := range beaconBlock.Body.Instructions {
 			// TODO: will improve the condition later
 			if l[0] == StakeAction || l[0] == "swap" || l[0] == RandomAction {

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/constant-money/constant-chain/common"
-	"github.com/pkg/errors"
 
 	"github.com/constant-money/constant-chain/wire"
 )
@@ -58,14 +57,15 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 		return nil, err
 	}
 	go protocol.earlyMsgHandler()
-	//    single-node start    //
-	go protocol.CreateBlockMsg()
-	<-protocol.proposeCh
-	if protocol.pendingBlock != nil {
-		return protocol.pendingBlock, nil
-	}
-	return nil, errors.New("can't produce block")
-	//    single-node end    //
+	////    single-node start    //
+	//fmt.Println("[db] Start CreateBlockMsg")
+	//go protocol.CreateBlockMsg()
+	//<-protocol.proposeCh
+	//if protocol.pendingBlock != nil {
+	//	return protocol.pendingBlock, nil
+	//}
+	//return nil, errors.New("can't produce block")
+	////    single-node end    //
 
 	for {
 		protocol.startTime = time.Now()
@@ -96,6 +96,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
 	var msg wire.Message
+	fmt.Println("[db] CreateBlockMsg")
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)

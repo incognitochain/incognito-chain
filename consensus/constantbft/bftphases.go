@@ -12,6 +12,7 @@ import (
 )
 
 func (protocol *BFTProtocol) phasePropose() error {
+	fmt.Println("[db] phasePropose")
 	go protocol.CreateBlockMsg()
 	timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 		fmt.Println("BFT: Propose phase timeout", time.Since(protocol.startTime).Seconds())
