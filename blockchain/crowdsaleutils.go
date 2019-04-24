@@ -43,9 +43,13 @@ func transferTxToken(
 	tokenID common.Hash,
 	receiverAddress privacy.PaymentAddress,
 	meta metadata.Metadata,
+	producerPrivateKey *privacy.PrivateKey,
+	db database.DatabaseInterface,
+	shardID byte,
 ) (*transaction.TxCustomToken, int, error) {
 	sumTokens := uint64(0)
 	usedID := 0
+	// Choose input token UTXO
 	for _, out := range unspentTxTokenOuts {
 		usedID += 1
 		sumTokens += out.Value
@@ -58,6 +62,7 @@ func transferTxToken(
 		return nil, 0, errors.New("not enough tokens to pay in this block")
 	}
 
+	// Build list of inputs and outputs
 	txTokenIns := []transaction.TxTokenVin{}
 	for i := 0; i < usedID; i += 1 {
 		out := unspentTxTokenOuts[i]
@@ -84,17 +89,44 @@ func transferTxToken(
 		})
 	}
 
-	txToken := &transaction.TxCustomToken{
-		TxTokenData: transaction.TxTokenData{
-			Type:       transaction.CustomTokenTransfer,
-			Amount:     sumTokens,
-			PropertyID: tokenID,
-			Vins:       txTokenIns,
-			Vouts:      txTokenOuts,
-		},
+	// Build token params
+	tokenParams := &transaction.CustomTokenParamTx{
+		PropertyID:  tokenID.String(),
+		TokenTxType: transaction.CustomTokenTransfer,
+		Amount:      sumTokens,
+		Receiver:    txTokenOuts,
 	}
-	txToken.Metadata = meta
-	txToken.Type = common.TxCustomTokenType
+	tokenParams.SetVins(txTokenIns)
+	tokenParams.SetVinsAmount(sumTokens)
+
+	// Build TxCustomToken from token params
+	txToken := &transaction.TxCustomToken{}
+	err := txToken.Init(
+		producerPrivateKey,
+		nil,
+		nil,
+		0,
+		tokenParams,
+		db,
+		meta,
+		false,
+		shardID,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	//txToken := &transaction.TxCustomToken{
+	//	TxTokenData: transaction.TxTokenData{
+	//		Type:       transaction.CustomTokenTransfer,
+	//		Amount:     sumTokens,
+	//		PropertyID: tokenID,
+	//		Vins:       txTokenIns,
+	//		Vouts:      txTokenOuts,
+	//	},
+	//}
+	//txToken.Metadata = meta
+	//txToken.Type = common.TxCustomTokenType
 	return txToken, usedID, nil
 }
 
@@ -131,6 +163,9 @@ func buildPaymentForToken(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	saleID []byte,
 	mint bool,
+	producerPrivateKey *privacy.PrivateKey,
+	db database.DatabaseInterface,
+	shardID byte,
 ) (*transaction.TxCustomToken, error) {
 	var txToken *transaction.TxCustomToken
 	var err error
@@ -149,7 +184,16 @@ func buildPaymentForToken(
 		txToken = mintTxToken(tokenAmount, tokenID, receiverAddress, metaPay)
 	} else {
 		// fmt.Printf("[db] transferTxToken with unspentTxTokenOuts && tokenAmount: %+v %d\n", unspentTxTokenOuts, tokenAmount)
-		txToken, usedID, err = transferTxToken(tokenAmount, unspentTxTokenOuts, tokenID, receiverAddress, metaPay)
+		txToken, usedID, err = transferTxToken(
+			tokenAmount,
+			unspentTxTokenOuts,
+			tokenID,
+			receiverAddress,
+			metaPay,
+			producerPrivateKey,
+			db,
+			shardID,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -167,6 +211,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	inst string,
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
 ) ([]metadata.Transaction, error) {
 	paymentInst, err := ParseCrowdsalePaymentInstruction(inst)
 	if err != nil {
@@ -205,6 +250,9 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			unspentTokens,
 			saleID,
 			mint,
+			producerPrivateKey,
+			blockgen.chain.GetDatabase(),
+			shardID,
 		)
 	}
 	if err != nil {
