@@ -207,7 +207,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		for _, shardBlocks := range shardBlocks {
 			fmt.Printf(" %+v ", shardBlocks.Header.Height)
 		}
-		fmt.Println()
 		//=======
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.ShardCommittee[shardID]
@@ -225,7 +224,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		}
 		fmt.Printf("Beacon Producer/ AFTER FILTER, ONLY GET %+v block \n", totalBlock)
 		fmt.Println("Beacon Producer/ FILTER and ONLY GET These Block from pool")
-		fmt.Println()
 		if totalBlock > 49 {
 			totalBlock = 49
 		}

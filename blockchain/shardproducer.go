@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -23,8 +22,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 
 	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
 	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
-	// fmt.Println("Shard Producer/NewBlockShard, Beacon Height", beaconHeight)
-	// fmt.Println("Shard Producer/NewBlockShard, Beacon Hash", beaconHash)
 	epoch := blockgen.chain.BestState.Beacon.Epoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
@@ -35,12 +32,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		copy(beaconHash[:], newBeaconHash.GetBytes())
 		epoch = blockgen.chain.BestState.Shard[shardID].Epoch + 1
 	}
-	fmt.Println("Shard Producer/NewBlockShard, Beacon Height", beaconHeight)
-	fmt.Println("Shard Producer/NewBlockShard, Beacon Hash", beaconHash)
-	fmt.Println("Shard Producer/NewBlockShard, Beacon Epoch", epoch)
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockgen.chain.config.DataBase, blockgen.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
-	// fmt.Println("[voting] - newshard", blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -78,7 +71,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize)
 			Logger.log.Critical("shardID", shardID)
 			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize, shardID)
-			fmt.Println("Shard Producer: swapInstruction", swapInstruction)
 			if err != nil {
 				Logger.log.Error(err)
 				return nil, err
@@ -131,7 +123,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Printf("[db] buildActionReq to get hash for new shard block\n")
 	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockgen.chain, shardID, &producerKeySet.PaymentAddress, prevBlock.Header.Height+1, beaconBlocks, beaconHeight)
 	if err != nil {
 		return nil, err
@@ -156,7 +147,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		return nil, NewBlockChainError(HashError, err)
 	}
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
-	// fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1])
 	block.Header = ShardHeader{
 		ProducerAddress:      producerKeySet.PaymentAddress,
 		ShardID:              shardID,
@@ -175,7 +165,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		Epoch:                epoch,
 		Round:                proposerOffset + 1,
 	}
-	// fmt.Println("ShardProducer/Shard Tx Root", shardTxMerkleData[len(shardTxMerkleData)-1], block.Header.CrossShards)
 	return block, nil
 }
 
@@ -214,15 +203,6 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 		return nil, err
 	}
 	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
-
-	// Process stability instructions, create response txs if needed
-	//fmt.Printf("[db] start build resp from inst with %d beaconBlocks\n", len(beaconBlocks))
-	//for _, b := range beaconBlocks {
-	//	if len(b.Body.Instructions) > 0 {
-	//		fmt.Printf("[db] b height: %d\n", b.Header.Height)
-	//		fmt.Printf("[db] b inst: %+v\n", b.Body.Instructions)
-	//	}
-	//}
 	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, err
@@ -261,7 +241,6 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 	// get cross shard block
 
 	allCrossShardBlock := blockgen.crossShardPool[shardID].GetValidBlock(crossShards)
-	fmt.Println("ShardProducer/AllCrosshardblock", allCrossShardBlock, crossShards)
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
@@ -289,9 +268,7 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 			shardCommittee := make(map[byte][]string)
 			json.Unmarshal(temp, &shardCommittee)
 			err = blk.VerifyCrossShardBlock(shardCommittee[blk.Header.ShardID])
-			fmt.Println("ShardProducer/VerifyCrossShardBlock", err == nil)
 			if err != nil {
-				fmt.Println("Shard Producer/FAIL TO Verify Crossshard block", err)
 				break
 			}
 			indexs = append(indexs, index)
@@ -324,11 +301,6 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 			return crossTransaction[i].BlockHeight < crossTransaction[j].BlockHeight
 		})
 	}
-	fmt.Println("ShardProducer/Get data from cross shard block to shard ", shardID)
-	fmt.Println("ShardProducer/crossTransactions Number of cross transaction", len(crossTransactions[shardID]))
-	// fmt.Println("ShardProducer/crossTransactions", crossTransactions)
-	fmt.Println("ShardProducer/crossTxTokenData Number of cross custom tx token", len(crossTxTokenData[shardID]))
-	// fmt.Println("ShardProducer/crossTxTokenData", crossTxTokenData)
 	return crossTransactions, crossTxTokenData
 }
 
@@ -401,9 +373,9 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 			break
 		}
 		// Time bound condition for block creation
-		//if time for getting transaction exceed half of MinBlkInterval then break
+		//if time for getting transaction exceed half of MinShardBlkInterval then break
 		elasped := time.Since(startTime)
-		if elasped >= common.MinBlkInterval/2 {
+		if elasped >= common.MinShardBlkInterval/2 {
 			break
 		}
 	}
@@ -466,10 +438,8 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 						shardID,
 					)
 					if err != nil {
-						fmt.Printf("Fail to create Transaction for Cross Shard Tx Token, err %+v \n", err)
 						panic("")
 					}
-					fmt.Println("CreateCustomTokenTxForCrossShard/ tx", tx)
 					txs = append(txs, tx)
 				} else {
 					tempTxTokenData := cloneTxTokenDataForCrossShard(txTokenData)
