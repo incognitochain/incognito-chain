@@ -192,7 +192,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	// Remove unrelated shard tx
 	go func() {
 		for _, tx := range txToRemove {
-			blockgen.txPool.RemoveTx(tx)
+			blockgen.txPool.RemoveTx(tx, false)
 		}
 	}()
 
