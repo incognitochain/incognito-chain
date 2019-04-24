@@ -172,8 +172,8 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
-	if err != nil {
-		return nil, NewRPCError(ErrSendTxData, err)
+	if err == nil {
+		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	}
 
 	txID := tx.Hash().String()
@@ -215,7 +215,17 @@ func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-
 	result.Size = rpcServer.config.TxMemPool.Count()
 	result.Bytes = rpcServer.config.TxMemPool.Size()
 	result.MempoolMaxFee = rpcServer.config.TxMemPool.MaxFee()
-	result.ListTxs = rpcServer.config.TxMemPool.ListTxs()
+	listTxsDetail := rpcServer.config.TxMemPool.ListTxsDetail()
+	if len(listTxsDetail) > 0 {
+		result.ListTxs = make([]jsonresult.GetMempoolInfoTx, 0)
+		for _, tx := range listTxsDetail {
+			item := jsonresult.GetMempoolInfoTx{
+				LockTime: tx.GetLockTime(),
+				TxID:     tx.Hash().String(),
+			}
+			result.ListTxs = append(result.ListTxs, item)
+		}
+	}
 	return result, nil
 }
 
@@ -239,6 +249,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				Type:        tempTx.Type,
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
+				IsPrivacy:   tempTx.IsPrivacy(),
 				Proof:       tempTx.Proof,
 				SigPubKey:   tempTx.SigPubKey,
 				Sig:         tempTx.Sig,
@@ -246,8 +257,11 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
-			metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-			result.Metadata = string(metaData)
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
+			result.ProofDetail.ConvertFromProof(result.Proof)
 		}
 	case common.TxCustomTokenType:
 		{
@@ -275,6 +289,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
 			}
+			result.ProofDetail.ConvertFromProof(result.Proof)
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
@@ -302,6 +317,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
 			}
+			result.ProofDetail.ConvertFromProof(result.Proof)
 		}
 	default:
 		{
@@ -421,8 +437,11 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	}
 
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
-	rpcServer.config.Server.PushMessageToAll(txMsg)
-
+	err = rpcServer.config.Server.PushMessageToAll(txMsg)
+	//Mark Fowarded transaction
+	if err == nil {
+		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	}
 	return tx.Hash(), nil
 }
 
@@ -874,15 +893,17 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 
 	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
 
-	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
-	rpcServer.config.Server.PushMessageToAll(txMsg)
-
+	err = rpcServer.config.Server.PushMessageToAll(txMsg)
+	//Mark forwarded message
+	if err == nil {
+		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	}
 	return tx.Hash(), nil
 }
 

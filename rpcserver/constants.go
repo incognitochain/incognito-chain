@@ -190,4 +190,7 @@ const (
 	DefragmentAccount              = "defragmentaccount"
 
 	GetStackingAmount = "getstackingamount"
+
+	// utils
+	HashToIdenticon = "hashtoidenticon"
 )
