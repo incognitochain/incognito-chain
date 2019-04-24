@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"fmt"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database/lvdb"
@@ -114,6 +116,14 @@ func (helper GOVConstitutionHelper) NewAcceptProposalIns(
 	return ins
 }
 
+func (helper DCBConstitutionHelper) NewKeepOldProposalIns() frombeaconins.InstructionFromBeacon {
+	return frombeaconins.NewKeepOldProposalIns(common.DCBBoard)
+}
+
+func (helper GOVConstitutionHelper) NewKeepOldProposalIns() frombeaconins.InstructionFromBeacon {
+	return frombeaconins.NewKeepOldProposalIns(common.GOVBoard)
+}
+
 func (helper DCBConstitutionHelper) GetBoardType() common.BoardType {
 	return common.DCBBoard
 }
@@ -182,14 +192,13 @@ func (helper GOVConstitutionHelper) GetBoardFund(chain *BlockChain) uint64 {
 
 func (helper DCBConstitutionHelper) GetBoardReward(chain *BlockChain) uint64 {
 	constitutionIndex := helper.GetConstitutionInfo(chain).ConstitutionIndex
-	total, err := chain.GetDatabase().GetBoardFundDB(common.DCBBoard, constitutionIndex)
-	if err != nil {
-		return 0
-	}
+	total := chain.BestState.Beacon.StabilityInfo.BankFund
 	if constitutionIndex == 0 {
 		return total
 	}
 	preFund, err := chain.GetDatabase().GetBoardFundDB(common.DCBBoard, constitutionIndex-1)
+	//TODO remove debugging mode
+	return common.DCBRewardPercent * preFund / 100
 	if err != nil {
 		return 0
 	}
@@ -200,14 +209,14 @@ func (helper DCBConstitutionHelper) GetBoardReward(chain *BlockChain) uint64 {
 }
 func (helper GOVConstitutionHelper) GetBoardReward(chain *BlockChain) uint64 {
 	constitutionIndex := helper.GetConstitutionInfo(chain).ConstitutionIndex
-	total, err := chain.GetDatabase().GetBoardFundDB(common.DCBBoard, constitutionIndex)
-	if err != nil {
-		return 0
-	}
+	total := chain.BestState.Beacon.StabilityInfo.SalaryFund
 	if constitutionIndex == 0 {
 		return total
 	}
-	preFund, err := chain.GetDatabase().GetBoardFundDB(common.DCBBoard, constitutionIndex-1)
+	preFund, err := chain.GetDatabase().GetBoardFundDB(common.GOVBoard, constitutionIndex-1)
+	fmt.Printf("[ndh] - preFund: %+v; total: %+v;\n", preFund, total)
+	//TODO remove debugging mode
+	return common.GOVRewardPercent * preFund / 100
 	if err != nil {
 		return 0
 	}
@@ -237,13 +246,20 @@ func (helper GOVConstitutionHelper) GetBoard(chain *BlockChain) metadata.Governo
 
 func (helper DCBConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
 	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
-	value, _ := chain.config.DataBase.Get(key)
+	value, err := chain.config.DataBase.Get(key)
+	if err != nil {
+		fmt.Printf("[ndh] - value: %+v - error: %+v", value, err)
+	}
 	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount
 }
 func (helper GOVConstitutionHelper) GetAmountOfVoteToBoard(chain *BlockChain, candidatePaymentAddress privacy.PaymentAddress, voterPaymentAddress privacy.PaymentAddress, boardIndex uint32) uint64 {
 	key := lvdb.GetKeyVoteBoardList(helper.GetBoardType(), boardIndex, &candidatePaymentAddress, &voterPaymentAddress)
-	value, _ := chain.config.DataBase.Get(key)
+	fmt.Printf("[ndh] Board Type: %+v, Board Index: %+v, key: %+v\n", helper.GetBoardType(), boardIndex, key)
+	value, err := chain.config.DataBase.Get(key)
+	if err != nil {
+		fmt.Printf("[ndh] - value: %+v - error: %+v", value, err)
+	}
 	amount := lvdb.ParseValueVoteBoardList(value)
 	return amount
 }

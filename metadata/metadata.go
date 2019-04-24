@@ -3,7 +3,6 @@ package metadata
 import (
 	"encoding/json"
 	"strconv"
-	"time"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
@@ -75,9 +74,6 @@ func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever Bl
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
 	Tx Transaction
-
-	// Added is the time when the entry was added to the source pool.
-	Added time.Time
 
 	// Height is the best block's height when the entry was added to the the source pool.
 	Height uint64
@@ -193,8 +189,9 @@ type Transaction interface {
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
-	GetAmountOfVote() (uint64, error)
+	GetAmountOfVote(common.BoardType) (uint64, error)
 	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
+	GetTokenID() *common.Hash
 }

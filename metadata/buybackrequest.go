@@ -78,12 +78,11 @@ func (bbReq *BuyBackRequest) ValidateSanityData(
 		return false, false, errors.New("Must send bonds to burning address")
 	}
 	if txr.CalculateTxValue() < bbReq.Amount {
-		return false, false, errors.New("Burning bond amount in Vouts should be equal metadata's amount")
+		return false, false, errors.New("Burning bond amount in Vouts should be equal to metadata's amount")
 	}
 	if !bytes.Equal(txr.GetSigPubKey()[:], bbReq.PaymentAddress.Pk[:]) {
 		return false, false, errors.New("PaymentAddress in metadata is not matched to sender address")
 	}
-
 	return true, true, nil
 }
 
@@ -102,15 +101,11 @@ func (bbReq *BuyBackRequest) Hash() *common.Hash {
 }
 
 func (bbReq *BuyBackRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	prevMeta, err := tx.GetMetadataFromVinsTx(bcr)
-	if err != nil {
-		return [][]string{}, err
-	}
-
+	bondID := tx.GetTokenID()
 	actionContent := map[string]interface{}{
 		"txReqId":        *(tx.Hash()),
 		"buyBackReqMeta": bbReq,
-		"prevMeta":       prevMeta,
+		"bondId":         *bondID,
 	}
 
 	actionContentBytes, err := json.Marshal(actionContent)
