@@ -417,6 +417,7 @@ func (bc *BlockChain) updateDCBBuyBondInfo(bondID *common.Hash, bondAmount uint6
 	amountAvail, cstPaid := bc.config.DataBase.GetDCBBondInfo(bondID)
 	amountAvail += bondAmount
 	cstPaid += price * bondAmount
+	fmt.Println("[db] updateDCBBuyBond:", amountAvail, cstPaid)
 	return bc.config.DataBase.StoreDCBBondInfo(bondID, amountAvail, cstPaid)
 }
 
@@ -438,6 +439,7 @@ func (bc *BlockChain) updateDCBSellBondInfo(bondID *common.Hash, bondAmount uint
 	amountAvail -= bondAmount
 	cstPaid -= principleCovered
 
+	fmt.Println("[db] updateDCBSellBond:", amountAvail, cstPaid, principleCovered)
 	return bc.config.DataBase.StoreDCBBondInfo(bondID, amountAvail, cstPaid)
 }
 
@@ -452,6 +454,7 @@ func (bc *BlockChain) updateDCBSellBondProfit(bondID *common.Hash, soldValue, so
 		profit = soldValue - avgPrice*soldBonds
 	}
 	bc.BestState.Beacon.StabilityInfo.BankFund += profit
+	fmt.Println("[db] update DCB Profit:", profit, soldValue, soldBonds)
 	return profit
 }
 

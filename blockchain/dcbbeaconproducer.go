@@ -50,6 +50,7 @@ func buildInstructionsForCrowdsaleRequest(
 		beaconBestState,
 		saleData,
 	)
+	fmt.Println("[db] built crowdsale payment inst:", inst, err)
 	if err != nil {
 		return nil, err
 	}

@@ -61,3 +61,8 @@ func (csRes *CrowdsalePayment) Hash() *common.Hash {
 func (csRes *CrowdsalePayment) CalculateSize() uint64 {
 	return calculateSize(csRes)
 }
+
+func (csRes *CrowdsalePayment) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+	// no need to have fee for this tx
+	return true
+}
