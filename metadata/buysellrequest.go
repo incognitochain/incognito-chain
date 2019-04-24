@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
@@ -130,4 +132,55 @@ func (bsReq *BuySellRequest) BuildReqActions(tx Transaction, bcr BlockchainRetri
 
 func (bsReq *BuySellRequest) CalculateSize() uint64 {
 	return calculateSize(bsReq)
+}
+
+func (bsReq *BuySellRequest) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instUsed []int,
+	shardID byte,
+	tx Transaction,
+	bcr BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	meta := bsReq
+	if len(meta.TradeID) == 0 {
+		return true, nil
+	}
+
+	fmt.Printf("[db] verifying buy from GOV Request tx\n")
+	idx := -1
+	for i, inst := range insts {
+		if instUsed[i] > 0 || inst[0] != strconv.Itoa(TradeActivationMeta) || inst[1] != strconv.Itoa(int(shardID)) {
+			continue
+		}
+		td, err := bcr.CalcTradeData(inst[2])
+		if err != nil || !bytes.Equal(meta.TradeID, td.TradeID) {
+			continue
+		}
+
+		// PaymentAddress is validated in metadata's ValidateWithBlockChain
+		txData := &component.TradeData{
+			TradeID:   meta.TradeID,
+			BondID:    &meta.TokenID,
+			Buy:       true,
+			Activated: false,
+			Amount:    td.Amount, // no need to check
+			ReqAmount: meta.Amount,
+		}
+
+		buyPrice := bcr.GetSellBondPrice(txData.BondID)
+		if td.Compare(txData) && meta.BuyPrice == buyPrice {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		return false, errors.Errorf("no instruction found for BuySellRequest tx %s", tx.Hash().String())
+	}
+
+	instUsed[idx] += 1
+	accumulatedData.TradeActivated[string(meta.TradeID)] = true
+	fmt.Printf("[db] inst %d matched\n", idx)
+	return true, nil
 }

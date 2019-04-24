@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -680,4 +681,26 @@ func (tx *TxCustomToken) IsCoinsBurning() bool {
 
 func (tx *TxCustomToken) GetTokenID() *common.Hash {
 	return &tx.TxTokenData.PropertyID
+}
+
+func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instsUsed []int,
+	shardID byte,
+	bcr metadata.BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	if !tx.TxTokenData.Mintable {
+		return true, nil
+	}
+	meta := tx.Metadata
+	if meta == nil {
+		Logger.log.Error("Mintable custom token must contain metadata")
+		return false, nil
+	}
+	// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
+	// if !meta.IsMinerCreatedMetaType() {
+	// 	return false, nil
+	// }
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr, accumulatedData)
 }
