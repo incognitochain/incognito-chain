@@ -183,14 +183,14 @@ func (self *BeaconPool) removeBlock(lastBlockHeight uint64) {
 }
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
-	time1 := time.Now()
+	//time1 := time.Now()
 	self.poolMu.RLock()
 	defer func() {
 
 		if len(self.pool) > 2 {
-			fmt.Println("BP: GetValidBlock", time.Since(time1).Seconds(), self.latestValidHeight, self.pool[0].Header.Height, self.pool[1].Header.Height)
+			//fmt.Println("BP: GetValidBlock", time.Since(time1).Seconds(), self.latestValidHeight, self.pool[0].Header.Height, self.pool[1].Header.Height)
 		} else {
-			fmt.Println("BP: GetValidBlock", time.Since(time1).Seconds(), self.latestValidHeight)
+			//fmt.Println("BP: GetValidBlock", time.Since(time1).Seconds(), self.latestValidHeight)
 		}
 		self.poolMu.RUnlock()
 	}()
