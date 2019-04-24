@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
@@ -119,4 +121,54 @@ func (bbReq *BuyBackRequest) BuildReqActions(tx Transaction, bcr BlockchainRetri
 
 func (bbReq *BuyBackRequest) CalculateSize() uint64 {
 	return calculateSize(bbReq)
+}
+
+func (bbReq *BuyBackRequest) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instUsed []int,
+	shardID byte,
+	tx Transaction,
+	bcr BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	meta := bbReq
+	if len(meta.TradeID) == 0 {
+		return true, nil
+	}
+	fmt.Printf("[db] verifying buy back GOV Request tx\n")
+
+	bondID := tx.GetTokenID()
+	idx := -1
+	for i, inst := range insts {
+		if instUsed[i] > 0 || inst[0] != strconv.Itoa(TradeActivationMeta) || inst[1] != strconv.Itoa(int(shardID)) {
+			continue
+		}
+		td, err := bcr.CalcTradeData(inst[2])
+		if err != nil || !bytes.Equal(meta.TradeID, td.TradeID) {
+			continue
+		}
+
+		// PaymentAddress is validated in metadata's ValidateWithBlockChain
+		txData := &component.TradeData{
+			TradeID:   meta.TradeID,
+			BondID:    td.BondID, // not available for BuyBackRequest meta
+			Buy:       false,
+			Activated: false,
+			Amount:    td.Amount, // no need to check
+			ReqAmount: meta.Amount,
+		}
+
+		if td.Compare(txData) && bondID.IsEqual(td.BondID) {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		return false, errors.Errorf("no instruction found for BuyBackRequest tx %s", tx.Hash().String())
+	}
+
+	instUsed[idx] += 1
+	fmt.Printf("[db] inst %d matched\n", idx)
+	return true, nil
 }

@@ -1,11 +1,17 @@
 package metadata
 
 import (
-	"errors"
+	"bytes"
+	"encoding/json"
 
+	// "errors"
+	"strconv"
+
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
+	"github.com/pkg/errors"
 )
 
 type ShardBlockSalaryRes struct {
@@ -13,6 +19,14 @@ type ShardBlockSalaryRes struct {
 	ShardBlockHeight         uint64
 	ProducerAddress          privacy.PaymentAddress
 	ShardBlockSalaryInfoHash common.Hash
+}
+
+type ShardBlockSalaryInfo struct {
+	ShardBlockSalary uint64
+	ShardBlockFee    uint64
+	PayToAddress     *privacy.PaymentAddress
+	ShardBlockHeight uint64
+	InfoHash         *common.Hash
 }
 
 func NewShardBlockSalaryRes(
@@ -69,4 +83,55 @@ func (sbsRes *ShardBlockSalaryRes) Hash() *common.Hash {
 	record += sbsRes.MetadataBase.Hash().String()
 	hash := common.HashH([]byte(record))
 	return &hash
+}
+
+func (sbsRes *ShardBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instUsed []int,
+	shardID byte,
+	tx Transaction,
+	bcr BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	instIdx := -1
+	var shardBlockSalaryInfo ShardBlockSalaryInfo
+	for i, inst := range insts {
+		if instUsed[i] > 0 {
+			continue
+		}
+		if inst[0] != strconv.Itoa(ShardBlockSalaryRequestMeta) {
+			continue
+		}
+		if inst[1] != strconv.Itoa(int(shardID)) {
+			continue
+		}
+		if inst[2] != "accepted" {
+			continue
+		}
+		contentStr := inst[3]
+		err := json.Unmarshal([]byte(contentStr), &shardBlockSalaryInfo)
+		if err != nil {
+			return false, err
+		}
+		if !bytes.Equal(shardBlockSalaryInfo.InfoHash[:], sbsRes.ShardBlockSalaryInfoHash[:]) {
+			continue
+		}
+		instIdx = i
+		instUsed[i] += 1
+		break
+	}
+	if instIdx == -1 {
+		return false, errors.Errorf("no instruction found for ShardBlockSalaryRes tx %s", tx.Hash().String())
+	}
+	if (!bytes.Equal(shardBlockSalaryInfo.PayToAddress.Pk[:], sbsRes.ProducerAddress.Pk[:])) ||
+		(!bytes.Equal(shardBlockSalaryInfo.PayToAddress.Tk[:], sbsRes.ProducerAddress.Tk[:])) {
+		return false, errors.Errorf("Producer address in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+	}
+	if shardBlockSalaryInfo.ShardBlockHeight != sbsRes.ShardBlockHeight {
+		return false, errors.Errorf("ShardBlockHeight in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+	}
+	if shardBlockSalaryInfo.ShardBlockSalary != tx.CalculateTxValue() {
+		return false, errors.Errorf("Salary amount in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+	}
+	return true, nil
 }

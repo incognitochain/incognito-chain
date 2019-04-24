@@ -2,12 +2,16 @@ package metadata
 
 import (
 	"bytes"
-	"errors"
+	// "errors"
 	"fmt"
+	"strconv"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 type CrowdsalePayment struct {
@@ -60,4 +64,46 @@ func (csRes *CrowdsalePayment) Hash() *common.Hash {
 
 func (csRes *CrowdsalePayment) CalculateSize() uint64 {
 	return calculateSize(csRes)
+}
+
+func (csRes *CrowdsalePayment) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instUsed []int,
+	shardID byte,
+	tx Transaction,
+	bcr BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	fmt.Printf("[db] verifying crowdsale payment tx\n")
+	idx := -1
+	for i, inst := range insts {
+		if instUsed[i] > 0 || inst[0] != strconv.Itoa(CrowdsalePaymentMeta) || inst[1] != strconv.Itoa(int(shardID)) {
+			continue
+		}
+		cpi, err := component.ParseCrowdsalePaymentInstruction(inst[2])
+		if err != nil {
+			continue
+		}
+		unique, pk, amount, assetID := tx.GetTransferData()
+		txData := component.CrowdsalePaymentInstruction{
+			PaymentAddress: privacy.PaymentAddress{Pk: pk},
+			Amount:         amount,
+			AssetID:        *assetID,
+			SaleID:         nil, // no need to check these last fields
+			SentAmount:     0,
+			UpdateSale:     false,
+		}
+		if unique && txData.Compare(cpi) {
+			idx = i
+			break
+		}
+	}
+
+	if idx == -1 {
+		return false, errors.Errorf("no instruction found for CrowdsalePayment tx %s", tx.Hash().String())
+	}
+
+	instUsed[idx] += 1
+	fmt.Printf("[db] inst %d matched\n", idx)
+	return true, nil
 }
