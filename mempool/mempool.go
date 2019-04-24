@@ -143,18 +143,20 @@ func TxPoolMainLoop(tp *TxPool) {
 	for {
 		<-scanInterval.C
 		ttl := time.Duration(tp.TxLifeTime) * time.Second
-		txsToBeRemoved := []common.Hash{}
-		for _, tx := range tp.pool {
-			if time.Since(tx.StartTime) > ttl {
-				txsToBeRemoved = append(txsToBeRemoved, *tx.Desc.Tx.Hash())
+		txsToBeRemoved := []*TxDesc{}
+		for _, txDesc := range tp.pool {
+			if time.Since(txDesc.StartTime) > ttl {
+				txsToBeRemoved = append(txsToBeRemoved, txDesc)
 			}
 		}
-		for _, txHash := range txsToBeRemoved {
+		for _, txDesc := range txsToBeRemoved {
+			txHash := *txDesc.Desc.Tx.Hash()
 			delete(tp.pool, txHash)
 			delete(tp.poolSerialNumbers, txHash)
 			delete(tp.txCoinHashHPool, txHash)
 			delete(tp.CandidatePool, txHash)
 			delete(tp.TokenIDPool, txHash)
+			go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(txDesc.StartTime)))
 		}
 	}
 }
@@ -386,7 +388,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool) (*common.Hash, *TxDesc, error) {
 	startValidate := time.Now()
 	err := tp.ValidateTransaction(tx)
-	go common.AnalyzeTimeSeriesTxPoolValidatedMetric(tx.Hash().String(), float64(time.Since(startValidate).Seconds()))
+	go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolValidated, float64(time.Since(startValidate).Seconds()))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -394,7 +396,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool) 
 	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	txFee := tx.GetTxFee()
 	txD := createTxDescMempool(tx, bestHeight, txFee)
+	startAdd := time.Now()
 	tp.addTx(txD, isStore)
+	go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
 	return tx.Hash(), txD, nil
 }
 
@@ -429,7 +433,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	startAdd := time.Now()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool)
-	go common.AnalyzeTimeSeriesTxPoolAddedMetric(tx.Hash().String(), float64(time.Since(startAdd).Seconds()))
+	go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolEntered, float64(time.Since(startAdd).Seconds()))
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -454,16 +458,19 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
+func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 	tp.mtx.Lock()
 	// remove transaction from database mempool
+	txDesc := tp.pool[*tx.Hash()]
 	tp.RemoveTransactionFromDatabaseMP(tx.Hash())
-	
 	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
 	if txHash != nil {
 		tp.RemoveTxCoinHashH(*txHash)
+	}
+	if isInBlock {
+		go common.AnalyzeTimeSeriesTxPoolMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, float64(time.Since(txDesc.StartTime)))
 	}
 	tp.mtx.Unlock()
 	return err

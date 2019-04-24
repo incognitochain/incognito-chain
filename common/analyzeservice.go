@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -14,24 +15,28 @@ import (
 const (
 	BeaconBlock = "BeaconBlock"
 	ShardBlock  = "ShardBlock"
+	
+	TxPoolMetric = "TxPoolMetric"
+	
 	TxPoolValidated  = "TxPoolValidated"
-	TxPoolAdded  = "TxPoolAdded"
+	TxPoolEntered  = "TxPoolEntered"
+	TxPoolAddedAfterValidation  = "TxPoolAddedAfterValidation"
+	TxPoolRemoveAfterInBlock = "TxPoolRemoveAfterInBlock"
+	TxPoolRemoveAfterLifeTime = "TxPoolRemoveAfterLifeTime"
+	
 )
-func AnalyzeTimeSeriesTxPoolValidatedMetric(txHash string, value float64){
-	sendTimeSeriesMetricDataInfluxDB(txHash, TxPoolValidated, value)
-}
-func AnalyzeTimeSeriesTxPoolAddedMetric(txHash string, value float64){
-	sendTimeSeriesMetricDataInfluxDB(txHash, TxPoolAdded, value)
+func AnalyzeTimeSeriesTxPoolMetric(txSize string, metric string, value float64){
+	sendTimeSeriesMetricDataInfluxDB(TxPoolMetric, txSize, metric, value)
 }
 func AnalyzeTimeSeriesBeaconBlockMetric(paymentAddress string, value float64) {
-	sendTimeSeriesMetricDataInfluxDB(paymentAddress, BeaconBlock, value)
+	sendTimeSeriesMetricDataInfluxDB(EmptyString, paymentAddress, BeaconBlock, value)
 }
 
 func AnalyzeTimeSeriesShardBlockMetric(paymentAddress string, value float64) {
-	go sendTimeSeriesMetricDataInfluxDB(paymentAddress, ShardBlock, value)
+	go sendTimeSeriesMetricDataInfluxDB(EmptyString, paymentAddress, ShardBlock, value)
 }
 
-func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64) {
+func sendTimeSeriesMetricDataInfluxDB(metricType string, id string, metric string, value ...float64) {
 
 	os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GrafanaURL")
@@ -49,7 +54,11 @@ func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64
 
 	dataBinary := ""
 	if len(value) == 1 {
-		dataBinary = fmt.Sprintf("%s,node=%s value=%f %d000000000", metric, nodeName, value[0], time.Now().Unix())
+		if strings.Compare(TxPoolMetric, metricType) == 0{
+			dataBinary = fmt.Sprintf("%s,txsize=%s value=%f %d000000000", metric, nodeName, value[0], time.Now().Unix())
+		} else {
+			dataBinary = fmt.Sprintf("%s,node=%s value=%f %d000000000", metric, nodeName, value[0], time.Now().Unix())
+		}
 	} else {
 		dataBinary = fmt.Sprintf("%s,node=%s ", metric, nodeName)
 		for i, value := range value {
@@ -68,9 +77,11 @@ func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64
 	req = req.WithContext(ctx)
 
 	client := &http.Client{}
-	_, err = client.Do(req)
+	//res, err := client.Do(req)
+	_,err = client.Do(req)
 	if err != nil {
 		log.Println("Push to Grafana error:", err)
 		return
 	}
+	//fmt.Println("Grafana Response: ", res)
 }

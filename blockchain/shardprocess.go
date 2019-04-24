@@ -207,7 +207,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	//Remove tx out of pool
 	go func() {
 		for _, tx := range block.Body.Transactions {
-			blockchain.config.TxPool.RemoveTx(tx)
+			blockchain.config.TxPool.RemoveTx(tx, true)
 		}
 	}()
 
