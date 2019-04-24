@@ -244,12 +244,8 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// Process transaction db
-	if len(block.Body.Transactions) < 1 {
-		Logger.log.Infof("No transaction in this block")
-	} else {
-		Logger.log.Criticalf("Found %d transactions in block height %+v", len(block.Body.Transactions), block.Header.Height)
-	}
-
+	Logger.log.Criticalf("Found %d transactions in block height %+v", len(block.Body.Transactions), block.Header.Height)
+	
 	if len(block.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("ProcessStoreShardBlock/CrossTransactions	", block.Body.CrossTransactions)
 	}
