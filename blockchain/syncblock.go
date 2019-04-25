@@ -205,11 +205,11 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			}
 			for peerID := range blockchain.syncStatus.PeersState {
 				if currentBcnReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestBeaconState.Height {
-					fmt.Println("SyncBlk1:", currentBcnReqHeight, RCS.ClosestBeaconState.Height)
+					//fmt.Println("SyncBlk1:", currentBcnReqHeight, RCS.ClosestBeaconState.Height)
 					blockchain.SyncBlkBeacon(false, false, nil, currentBcnReqHeight, RCS.ClosestBeaconState.Height, peerID)
 					break
 				} else {
-					fmt.Println("SyncBlk2:", currentBcnReqHeight, currentBcnReqHeight+defaultMaxBlkReqPerPeer-1)
+					//fmt.Println("SyncBlk2:", currentBcnReqHeight, currentBcnReqHeight+defaultMaxBlkReqPerPeer-1)
 					blockchain.SyncBlkBeacon(false, false, nil, currentBcnReqHeight, currentBcnReqHeight+defaultMaxBlkReqPerPeer-1, peerID)
 					currentBcnReqHeight += defaultMaxBlkReqPerPeer - 1
 				}
@@ -263,7 +263,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 
 				for peerID := range blockchain.syncStatus.PeersState {
 					if shardState, ok := blockchain.syncStatus.PeersState[peerID].Shard[shardID]; ok {
-						fmt.Println("SyncShard 123 ", shardState.Height, shardID)
+						//fmt.Println("SyncShard 123 ", shardState.Height, shardID)
 						if shardState.Height >= currentShardReqHeight {
 							if currentShardReqHeight+defaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
 								// fmt.Println("SyncShard 1234 ")
@@ -428,10 +428,10 @@ func (blockchain *BlockChain) SyncBlkShard(shardID byte, byHash bool, getFromPoo
 		blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID].DeleteExpired()
 		cacheItems := blockchain.syncStatus.CurrentlySyncShardBlkByHeight[shardID].Items()
 		blkBatchsNeedToGet := getBlkNeedToGetByHeight(from, to, cacheItems, peerID)
-		fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
+		//fmt.Println("SyncBlkShard", from, to, blkBatchsNeedToGet)
 		if len(blkBatchsNeedToGet) > 0 {
 			for fromHeight, toHeight := range blkBatchsNeedToGet {
-				fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
+				//fmt.Println("SyncBlkShard", shardID, fromHeight, toHeight, peerID)
 				go blockchain.config.Server.PushMessageGetBlockShardByHeight(shardID, fromHeight, toHeight, peerID)
 			}
 		}
