@@ -255,6 +255,9 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		}
 	}
 	// update component in beststate
+
+	//TODO: build salary for beacon
+
 	return instructions, nil
 }
 
