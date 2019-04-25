@@ -40,6 +40,8 @@ type Config struct {
 
 	//Reset mempool database when run node
 	IsLoadFromMempool bool
+	
+	PersistMempool bool
 }
 
 // TxDesc is transaction message in mempool
@@ -81,6 +83,8 @@ type TxPool struct {
 
 	//Reset mempool database
 	IsLoadFromMempool bool
+	
+	PersistMempool bool
 }
 
 /*
@@ -98,25 +102,37 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.maxTx = cfg.MaxTx
 	tp.TxLifeTime = cfg.TxLifeTime
 	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
+	tp.PersistMempool = cfg.PersistMempool
+}
+func (tp *TxPool)InitDatabaseMempool(db databasemp.DatabaseInterface){
+	tp.config.DataBaseMempool = db
+}
+func (tp *TxPool)AnnouncePersisDatabaseMempool(){
+	if tp.PersistMempool {
+		Logger.log.Critical("Turn on Mempool Persistence Database")
+	} else {
+		Logger.log.Critical("Turn off Mempool Persistence Database")
+	}
 }
 func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
-	if !tp.IsLoadFromMempool {
-		err := tp.ResetDatabaseMP()
-		if err != nil {
-			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
+		if !tp.IsLoadFromMempool {
+			err := tp.ResetDatabaseMP()
+			if err != nil {
+				Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
+			} else {
+				Logger.log.Critical("Successfully Reset from database")
+			}
+			return []TxDesc{}
 		} else {
-			Logger.log.Critical("Successfully Reset from database")
-		}
-		return []TxDesc{}
-	} else {
-		txDescs, err := tp.LoadDatabaseMP()
-		if err != nil {
-			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
-		} else {
-			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
-		}
-		return txDescs
-	}
+			txDescs, err := tp.LoadDatabaseMP()
+			if err != nil {
+				Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
+			} else {
+				Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
+			}
+			return txDescs
+			}
+	//return []TxDesc{}
 }
 func TxPoolMainLoop(tp *TxPool) {
 	if tp.TxLifeTime == 0 {
@@ -184,7 +200,6 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *Tx
 func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
-	Logger.log.Info(tx.Hash().String())
 
 	if isStore {
 		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
@@ -193,13 +208,13 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		} else {
 			Logger.log.Criticalf("Add tx %+v to mempool database success \n", *txHash)
 		}
-		_, err = tp.GetTransactionFromDatabaseMP(txD.Desc.Tx.Hash())
-		if err != nil {
-			Logger.log.Error("Fail To Get Transaction from DBMP ", err)
-		} else {
-			//Logger.log.Criticalf("Tx %+v from Pool Desc %+v \n", *txD.Desc.Tx.Hash(), txD)
-			//Logger.log.Criticalf("Success Get Transaction %+v from DBMP %+v \n", *txDesc.Desc.Tx.Hash(), txDesc)
-		}
+		//_, err = tp.GetTransactionFromDatabaseMP(txD.Desc.Tx.Hash())
+		//if err != nil {
+		//	Logger.log.Error("Fail To Get Transaction from DBMP ", err)
+		//} else {
+		//	Logger.log.Criticalf("Tx %+v from Pool Desc %+v \n", *txD.Desc.Tx.Hash(), txD)
+		//	Logger.log.Criticalf("Success Get Transaction %+v from DBMP %+v \n", *txDesc.Desc.Tx.Hash(), txDesc)
+		//}
 	}
 	tp.pool[*tx.Hash()] = txD
 	//==================================================
@@ -234,6 +249,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 			tp.AddTokenIDToList(*txHash, tokenID)
 		}
 	}
+	Logger.log.Infof("Add Transaction %+v Successs \n", tx.Hash().String())
 }
 
 /*
@@ -276,7 +292,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 
 	// check actual size
 	actualSize := tx.GetTxActualSize()
-	fmt.Printf("Transaction %+v's size %+v \n", txHash, actualSize)
+	Logger.log.Debugf("Transaction %+v 's size %+v \n", *txHash, actualSize)
 	if actualSize >= common.MaxBlockSize || actualSize >= common.MaxTxSize {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
@@ -409,7 +425,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if uint64(len(tp.pool)) >= tp.maxTx {
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, true)
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -437,8 +453,9 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
 	// remove transaction from database mempool
-	err := tp.RemoveTransactionFromDatabaseMP(tx.Hash())
-	err = tp.removeTx(&tx)
+	tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+	
+	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
 	if txHash != nil {

@@ -45,6 +45,7 @@ const (
 	defaultTxPoolMaxTx            = uint64(20000)
 	// For wallet
 	defaultWalletName = "wallet"
+	defaultPersistMempool = false
 )
 
 var (
@@ -124,6 +125,7 @@ type config struct {
 	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
 
 	LoadMempool bool `long:"loadmempool" description:"Load transactions from Mempool database"`
+	PersistMempool bool `long:"persistmempool" description:"Persistence transaction in memepool database"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -298,6 +300,7 @@ func loadConfig() (*config, []string, error) {
 		FastStartup:          defaultFastStartup,
 		TxPoolTTL:            defaultTxPoolTTL,
 		TxPoolMaxTx:          defaultTxPoolMaxTx,
+		PersistMempool:       defaultPersistMempool,
 	}
 
 	// Service options which are only added on Windows.
