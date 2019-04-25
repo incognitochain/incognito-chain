@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/ninjadotorg/constant-api-service/service/3rd/identicon"
 	"log"
 	"net"
 	"os"
@@ -620,7 +619,7 @@ func (rpcServer RpcServer) handleHashToIdenticon(params interface{}, closeChan <
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, errors.New("Hash string is invalid"))
 		}
-		result = append(result, identicon.Render(temp.GetBytes()))
+		result = append(result, common.Render(temp.GetBytes()))
 	}
 	return result, nil
 }
