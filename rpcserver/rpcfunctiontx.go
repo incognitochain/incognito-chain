@@ -136,7 +136,7 @@ Parameter #2–whether to allow high fees
 Result—a TXID or error Message
 */
 func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
+	Logger.log.Debug(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
@@ -162,7 +162,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("New transaction hash: %+v \n", *hash)
 
 	// broadcast Message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
