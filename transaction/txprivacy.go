@@ -87,7 +87,7 @@ func (tx *Tx) Init(
 	metaData metadata.Metadata,
 ) *TransactionError {
 
-	Logger.log.Infof("CREATING TX........\n")
+	Logger.log.Debugf("CREATING TX........\n")
 	tx.Version = TxVersion
 	var err error
 
@@ -133,7 +133,7 @@ func (tx *Tx) Init(
 
 	// set tx type
 	tx.Type = common.TxNormalType
-	Logger.log.Infof("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
+	Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
 		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
@@ -180,7 +180,7 @@ func (tx *Tx) Init(
 	for _, coin := range inputCoins {
 		sumInputValue += coin.CoinDetails.Value
 	}
-	Logger.log.Infof("sumInputValue: %d\n", sumInputValue)
+	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 
 	// Calculate over balance, it will be returned to sender
 	overBalance := int(sumInputValue - sumOutputValue - fee)
@@ -273,7 +273,7 @@ func (tx *Tx) Init(
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 
-	Logger.log.Infof("DONE PROVING........\n")
+	Logger.log.Debugf("DONE PROVING........\n")
 
 	// set private key for signing tx
 	if hasPrivacy {
@@ -314,8 +314,8 @@ func (tx *Tx) Init(
 
 	elapsedPrivacy := time.Since(startPrivacy)
 	elapsed := time.Since(start)
-	Logger.log.Infof("Creating payment proof time %s", elapsedPrivacy)
-	Logger.log.Infof("Creating normal tx time %s", elapsed)
+	Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
+	Logger.log.Infof("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 	return nil
 }
 
@@ -407,7 +407,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
-	Logger.log.Infof("VALIDATING TX........\n")
+	Logger.log.Debugf("VALIDATING TX........\n")
 	start := time.Now()
 	// Verify tx signature
 	Logger.log.Debugf("tx.GetType(): %v\n", tx.GetType())
@@ -421,9 +421,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	valid, err = tx.verifySigTx()
 	if !valid {
 		if err != nil {
-			Logger.log.Errorf("[PRIVACY LOG] - Error verifying signature of tx: %+v", err)
+			Logger.log.Errorf("Error verifying signature of tx: %+v \n", err)
 		}
-		Logger.log.Errorf("[PRIVACY LOG] - FAILED VERIFICATION SIGNATURE")
+		//Logger.log.Error("FAILED VERIFICATION SIGNATURE")
 		return false
 	}
 
@@ -483,16 +483,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		// Verify the payment proof
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
-		Logger.log.Infof("proof valid: %v\n", valid)
+		Logger.log.Debugf("proof valid: %v\n", valid)
 		if !valid {
-			Logger.log.Infof("[PRIVACY LOG] - FAILED VERIFICATION PAYMENT PROOF")
+			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
 			return false
 		} else {
-			Logger.log.Infof("[PRIVACY LOG] - SUCCESSED VERIFICATION PAYMENT PROOF")
+			Logger.log.Debug("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
 	elapsed := time.Since(start)
-	Logger.log.Infof("Validation normal tx time %s", elapsed)
+	Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
 	return true
 }
@@ -908,16 +908,16 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 }
 
 func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
-	Logger.log.Infof("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
+	Logger.log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
-		Logger.log.Info("tx.Metadata.ValidateSanityData")
+		Logger.log.Debug("tx.Metadata.ValidateSanityData")
 		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
-		Logger.log.Info("END tx.Metadata.ValidateSanityData")
+		Logger.log.Debug("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
 	}
-	Logger.log.Infof("\n\n\n END sanity data of metadata%+v\n\n\n")
+	Logger.log.Debugf("\n\n\n END sanity data of metadata%+v\n\n\n")
 	return tx.validateNormalTxSanityData()
 }
 

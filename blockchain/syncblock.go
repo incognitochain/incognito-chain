@@ -578,9 +578,9 @@ func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
 	currentInsert.Beacon.Lock()
 	defer currentInsert.Beacon.Unlock()
 	blks := blockchain.config.BeaconPool.GetValidBlock()
-	fmt.Println("GetValidBlock", len(blks))
+	//fmt.Println("GetValidBlock", len(blks))
 	for _, newBlk := range blks {
-		time1 := time.Now()
+		//time1 := time.Now()
 		err := blockchain.InsertBeaconBlock(newBlk, false)
 		if err != nil {
 			Logger.log.Error(err)
