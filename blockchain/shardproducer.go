@@ -329,8 +329,8 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	}
 	currentSize := uint64(0)
 	startTime := time.Now()
-	for i, txDesc := range sourceTxns {
-		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
+	for _, txDesc := range sourceTxns {
+		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if txShardID != shardID {
