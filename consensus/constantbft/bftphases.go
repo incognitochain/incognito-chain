@@ -289,7 +289,7 @@ phase:
 			var szRCombined string
 			szRCombined = "1"
 			for szR := range phaseData.Sigs {
-				if len(phaseData.Sigs[szR]) > (len(protocol.RoundData.Committee) >> 1) {
+				if len(phaseData.Sigs[szR]) > (2 * len(protocol.RoundData.Committee) / 3) {
 					if len(szRCombined) == 1 {
 						szRCombined = szR
 					} else {
