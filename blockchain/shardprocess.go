@@ -694,33 +694,41 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
-	index := 0
-	salaryCount := 0
 
-	for _, tx := range txs {
-		if !tx.IsSalaryTx() {
-			if tx.GetType() == common.TxCustomTokenType {
-				customTokenTx := tx.(*transaction.TxCustomToken)
-				if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-					salaryCount++
-					continue
-				}
-			}
-			_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
-			if err != nil {
-				return err
-			}
-			index++
-		} else {
-			salaryCount++
-		}
-	}
+	err := blockChain.config.TempTxPool.ValidateTxList(txs)
 	blockChain.config.TempTxPool.EmptyPool()
-	if index == len(txs)-salaryCount {
-		return nil
-	} else {
+	if err != nil {
 		return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid"))
 	}
+	return nil
+
+	// index := 0
+	// salaryCount := 0
+
+	// for _, tx := range txs {
+	// 	if !tx.IsSalaryTx() {
+	// 		if tx.GetType() == common.TxCustomTokenType {
+	// 			customTokenTx := tx.(*transaction.TxCustomToken)
+	// 			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+	// 				salaryCount++
+	// 				continue
+	// 			}
+	// 		}
+	// 		_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		index++
+	// 	} else {
+	// 		salaryCount++
+	// 	}
+	// }
+	// blockChain.config.TempTxPool.EmptyPool()
+	// if index == len(txs)-salaryCount {
+	// 	return nil
+	// } else {
+	// 	return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid"))
+	// }
 }
 func (blockchain *BlockChain) VerifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
 	txTokenDataListFromTxs := []transaction.TxTokenData{}

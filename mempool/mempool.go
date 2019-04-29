@@ -3,11 +3,12 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/databasemp"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/constant-money/constant-chain/databasemp"
 
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
@@ -40,7 +41,7 @@ type Config struct {
 
 	//Reset mempool database when run node
 	IsLoadFromMempool bool
-	
+
 	PersistMempool bool
 }
 
@@ -83,7 +84,7 @@ type TxPool struct {
 
 	//Reset mempool database
 	IsLoadFromMempool bool
-	
+
 	PersistMempool bool
 }
 
@@ -104,10 +105,10 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
 	tp.PersistMempool = cfg.PersistMempool
 }
-func (tp *TxPool)InitDatabaseMempool(db databasemp.DatabaseInterface){
+func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
 	tp.config.DataBaseMempool = db
 }
-func (tp *TxPool)AnnouncePersisDatabaseMempool(){
+func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
 	} else {
@@ -115,23 +116,23 @@ func (tp *TxPool)AnnouncePersisDatabaseMempool(){
 	}
 }
 func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
-		if !tp.IsLoadFromMempool {
-			err := tp.ResetDatabaseMP()
-			if err != nil {
-				Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
-			} else {
-				Logger.log.Critical("Successfully Reset from database")
-			}
-			return []TxDesc{}
+	if !tp.IsLoadFromMempool {
+		err := tp.ResetDatabaseMP()
+		if err != nil {
+			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
 		} else {
-			txDescs, err := tp.LoadDatabaseMP()
-			if err != nil {
-				Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
-			} else {
-				Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
-			}
-			return txDescs
-			}
+			Logger.log.Critical("Successfully Reset from database")
+		}
+		return []TxDesc{}
+	} else {
+		txDescs, err := tp.LoadDatabaseMP()
+		if err != nil {
+			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
+		} else {
+			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
+		}
+		return txDescs
+	}
 	//return []TxDesc{}
 }
 func TxPoolMainLoop(tp *TxPool) {
@@ -326,7 +327,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return err
 	}
-	
+
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
@@ -338,7 +339,6 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 
 	// validate tx with data of blockchain
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
-	// err = tp.ValidateTxWithBlockChain(tx, shardID)
 	if err != nil {
 		return err
 	}
@@ -454,7 +454,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
 	tp.mtx.Lock()
 	// remove transaction from database mempool
 	tp.RemoveTransactionFromDatabaseMP(tx.Hash())
-	
+
 	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
