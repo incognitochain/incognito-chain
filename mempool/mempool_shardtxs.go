@@ -25,9 +25,6 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 					if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
 						errCh <- nil
 						return
-					} else {
-						err := tp.validateTxIndependProperties(tx)
-						errCh <- err
 					}
 				case common.TxSalaryType:
 					if tx.IsSalaryTx() {
@@ -39,10 +36,9 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 						}
 					}
 					errCh <- errors.New("salary tx invalid")
-				default:
-					err := tp.validateTxIndependProperties(tx)
-					errCh <- err
 				}
+				err := tp.validateTxIndependProperties(tx)
+				errCh <- err
 			}(tx)
 		}
 	}()
