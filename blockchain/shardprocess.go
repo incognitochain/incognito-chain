@@ -690,6 +690,9 @@ func (blockchain *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlo
 	11. Check duplicate Init Custom Token in block
 */
 func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Transaction) error {
+	if len(txs) == 0 {
+		return nil
+	}
 	isEmpty := blockChain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
