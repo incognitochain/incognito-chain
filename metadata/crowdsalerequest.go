@@ -25,7 +25,6 @@ type CrowdsaleRequest struct {
 }
 
 func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
-	errSaver := &ErrorSaver{}
 	saleIDStr, okID := csReqData["SaleID"].(string)
 	saleID, errSale := hex.DecodeString(saleIDStr)
 	priceLimit, okPrice := csReqData["PriceLimit"].(float64)
@@ -37,8 +36,8 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 	if !okID || !okPrice || !okValid || !okAddr || !okLimit {
 		return nil, errors.Errorf("Error parsing crowdsale request data")
 	}
-	if errSaver.Save(errSale, errPayment) != nil {
-		return nil, errSaver.Get()
+	if err := common.CheckError(errSale, errPayment); err != nil {
+		return nil, err
 	}
 
 	result := &CrowdsaleRequest{

@@ -34,8 +34,8 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	meta, errCons := metaConstructorType(metaRaw)
 	keySet, errParseKey := rpcServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
-	if errParseKey != nil {
-		return nil, NewRPCError(ErrUnexpected, errParseKey)
+	if err := common.CheckError(errCons, errParseKey); err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	if meta.GetType() == metadata.DCBVoteProposalMeta {
 		found := false
@@ -61,9 +61,6 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 				return nil, NewRPCError(ErrCreateTxData, errors.New("Vote proposal is a feature just for governors"))
 			}
 		}
-	}
-	if errCons != nil {
-		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 	tx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
