@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/pkg/errors"
 )
@@ -40,11 +41,10 @@ func parseLoanRespData(data string) (*LoanRespData, error) {
 	if len(s) != 2 {
 		return nil, errors.Errorf("Error parsing loan response data")
 	}
-	errSaver := &metadata.ErrorSaver{}
 	sender, errSender := base64.StdEncoding.DecodeString(s[0])
 	response, errResp := strconv.Atoi(s[1])
-	if errSaver.Save(errSender, errResp) != nil {
-		return nil, errSaver.Get()
+	if err := common.CheckError(errSender, errResp); err != nil {
+		return nil, err
 	}
 	lrd := &LoanRespData{
 		SenderPubkey: sender,
