@@ -10,7 +10,20 @@ import (
 	"time"
 )
 
-// list metric
+// Measurement
+const (
+	TxPoolValidated  = "TxPoolValidated"
+	TxPoolEntered  = "TxPoolEntered"
+	TxPoolAddedAfterValidation  = "TxPoolAddedAfterValidation"
+	TxPoolRemoveAfterInBlock = "TxPoolRemoveAfterInBlock"
+	TxPoolRemoveAfterLifeTime = "TxPoolRemoveAfterLifeTime"
+	TxAddedIntoPoolType = "TxAddedIntoPoolType"
+	TxPoolPrivacyOrNot = "TxAddedIntoPoolType"
+	PoolSize = "PoolSize"
+	TxValidateByItSelfInPoolType = "TxValidateByItSelfInPoolType"
+	TxInOneBlock = "TxInOneBlock"
+)
+// tag
 const (
 	BeaconBlock = "BeaconBlock"
 	ShardBlock  = "ShardBlock"
@@ -18,29 +31,32 @@ const (
 	TxSizeMetric = "txsize"
 	PoolSizeMetric = "poolsize"
 	TxTypeMetic = "txtype"
-	TxPrivacyOrNotMetic = "txprivacyornot"
+	VTBITxTypeMetic = "vtbitxtype"
+	TxPrivacyOrNotMetric = "txprivacyornot"
+	BlockHeight = "blockheight"
 	
-	TxPoolValidated  = "TxPoolValidated"
-	TxPoolEntered  = "TxPoolEntered"
-	TxPoolAddedAfterValidation  = "TxPoolAddedAfterValidation"
-	TxPoolRemoveAfterInBlock = "TxPoolRemoveAfterInBlock"
-	TxPoolRemoveAfterLifeTime = "TxPoolRemoveAfterLifeTime"
-	TxPoolType = "TxAddedIntoPoolType"
-	TxPoolPrivacyOrNot = "TxAddedIntoPoolType"
-	PoolSize = "PoolSize"
-	
-	TxPrivacy = "Privacy"
-	TxNoPrivacy = "No Privacy"
-	
+)
+//Tag value
+const (
+	TxPrivacy = "privacy"
+	TxNormalPrivacy = "normaltxprivacy"
+	TxNoPrivacy = "noprivacy"
+	TxNormalNoPrivacy = "normaltxnoprivacy"
 )
 func AnalyzeTimeSeriesTxSizeMetric(txSize string, metric string, value float64){
 	sendTimeSeriesTransactionMetricDataInfluxDB(TxSizeMetric, txSize, metric, value)
 }
+func AnalyzeTimeSeriesTxsInOneBlockMetric(blockHeight string, value float64){
+	sendTimeSeriesTransactionMetricDataInfluxDB(BlockHeight, blockHeight, TxInOneBlock, value)
+}
 func AnalyzeTimeSeriesTxTypeMetric(txType string, value float64){
-	sendTimeSeriesTransactionMetricDataInfluxDB(TxTypeMetic, txType, TxPoolType, value)
+	sendTimeSeriesTransactionMetricDataInfluxDB(TxTypeMetic, txType, TxAddedIntoPoolType, value)
 }
 func AnalyzeTimeSeriesTxPrivacyOrNotMetric(txType string, value float64){
-	sendTimeSeriesTransactionMetricDataInfluxDB(TxPrivacyOrNotMetic, txType, TxPoolPrivacyOrNot, value)
+	sendTimeSeriesTransactionMetricDataInfluxDB(TxPrivacyOrNotMetric, txType, TxPoolPrivacyOrNot, value)
+}
+func AnalyzeTimeSeriesVTBITxTypeMetric(txType string, value float64){
+	sendTimeSeriesTransactionMetricDataInfluxDB(VTBITxTypeMetic, txType, TxValidateByItSelfInPoolType, value)
 }
 func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64){
 	sendTimeSeriesTransactionMetricDataInfluxDB(PoolSizeMetric, numOfTxs, PoolSize, value)
