@@ -228,10 +228,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		shardBlk := resBlk.(*blockchain.ShardBlock)
 		Logger.log.Critical("===============NEW SHARD BLOCK==============")
 		Logger.log.Critical("Shard Block Height", shardBlk.Header.Height)
-		// isProducer := false
-		// if strings.Compare(engine.config.UserKeySet.GetPublicKeyB58(), base58.Base58Check{}.Encode(shardBlk.Header.ProducerAddress.Pk, common.ZeroByte)) == 0 {
-		// 	isProducer = true
-		// }
+
 		err = engine.config.BlockChain.InsertShardBlock(shardBlk, true)
 		if err != nil {
 			Logger.log.Error("Insert shard block error", err)
