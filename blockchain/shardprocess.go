@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -420,9 +421,12 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	for _, beaconBlock := range beaconBlocks {
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
-	err = blockchain.verifyStabilityTransactionsForNewBlock(instsForValidations, block)
+	invalidTxs, err := blockchain.verifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, block.Body.Transactions, shardID)
 	if err != nil {
 		return NewBlockChainError(TransactionError, err)
+	}
+	if len(invalidTxs) > 0 {
+		return NewBlockChainError(TransactionError, errors.New(fmt.Sprintf("There are %d invalid txs...", len(invalidTxs))))
 	}
 
 	// Get cross shard block from pool

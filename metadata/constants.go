@@ -74,4 +74,13 @@ const (
 	Remove
 )
 
+var minerCreatedMetaTypes = []int{
+	BuyFromGOVRequestMeta,
+	BuyBackRequestMeta,
+	ShardBlockSalaryResponseMeta,
+	CrowdsalePaymentMeta,
+	IssuingResponseMeta,
+	ContractingResponseMeta,
+}
+
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

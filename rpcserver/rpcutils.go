@@ -105,6 +105,11 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 
+	_, errParseKey := rpcServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
+	if err := common.CheckError(errCons, errParseKey); err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
 	if isTxForVoting(meta) {
 		errVote := rpcServer.handleVoter(arrayParams[0].(string), meta)
 		if errVote != nil {

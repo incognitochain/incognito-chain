@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
 // TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -320,4 +321,14 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, 
 
 func (tx *TxCustomTokenPrivacy) GetProof() *zkp.PaymentProof {
 	return tx.Proof
+}
+
+func (tx *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instsUsed []int,
+	shardID byte,
+	bcr metadata.BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	return true, nil
 }

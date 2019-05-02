@@ -3,6 +3,7 @@ package blockchain
 import (
 	"strconv"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
@@ -168,7 +169,7 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.PrivateKey,
 ) ([]metadata.Transaction, error) {
-	paymentInst, err := ParseCrowdsalePaymentInstruction(inst)
+	paymentInst, err := component.ParseCrowdsalePaymentInstruction(inst)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +222,7 @@ func generateCrowdsalePaymentInstruction(
 	sentAmount uint64,
 	updateSale bool,
 ) ([][]string, error) {
-	inst := &CrowdsalePaymentInstruction{
+	inst := &component.CrowdsalePaymentInstruction{
 		PaymentAddress: paymentAddress,
 		Amount:         amount,
 		AssetID:        assetID,

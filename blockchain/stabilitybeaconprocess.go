@@ -199,7 +199,7 @@ func (bsb *BestStateBeacon) processContractingReqInstruction(inst []string) erro
 	}
 	// accepted
 	cInfoStr := inst[3]
-	var cInfo ContractingInfo
+	var cInfo component.ContractingInfo
 	err := json.Unmarshal([]byte(cInfoStr), &cInfo)
 	if err != nil {
 		return err
@@ -229,7 +229,7 @@ func (bsb *BestStateBeacon) processIssuingReqInstruction(inst []string) error {
 	}
 	// accepted
 	iInfoStr := inst[3]
-	var iInfo IssuingInfo
+	var iInfo component.IssuingInfo
 	err := json.Unmarshal([]byte(iInfoStr), &iInfo)
 	if err != nil {
 		return err
@@ -475,7 +475,7 @@ func (bsb *BestStateBeacon) processKeepOldGOVProposalInstruction(ins frombeaconi
 func (bsb *BestStateBeacon) processCrowdsalePaymentInstruction(inst []string) error {
 	fmt.Printf("[db] beaconProcess found inst: %+v\n", inst)
 	// All shard update bsb, only DCB shard creates payment txs
-	paymentInst, err := ParseCrowdsalePaymentInstruction(inst[2])
+	paymentInst, err := component.ParseCrowdsalePaymentInstruction(inst[2])
 	if err != nil {
 		return err
 	}

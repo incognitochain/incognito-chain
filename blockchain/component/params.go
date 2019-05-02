@@ -1,6 +1,8 @@
 package component
 
 import (
+	"fmt"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/pkg/errors"
 )
@@ -34,17 +36,17 @@ func NewLoanParamsFromJson(data interface{}) *LoanParams {
 	return loanParams
 }
 
-func NewListLoanParamsFromJson(data interface{}) []LoanParams {
+func NewListLoanParamsFromJson(data interface{}) ([]LoanParams, error) {
 	listLoanParamsData := common.InterfaceSlice(data)
 	if listLoanParamsData == nil {
-		panic("listLoanParamsData")
+		return nil, fmt.Errorf("ListLoanParams must be a slice")
 	}
 	listLoanParams := make([]LoanParams, 0)
 
 	for _, loanParamsData := range listLoanParamsData {
 		listLoanParams = append(listLoanParams, *NewLoanParamsFromJson(loanParamsData))
 	}
-	return listLoanParams
+	return listLoanParams, nil
 }
 
 type DCBParams struct {
@@ -83,16 +85,16 @@ func NewDCBParams(
 	}
 }
 
-func NewListSaleDataFromJson(data interface{}) []SaleData {
+func NewListSaleDataFromJson(data interface{}) ([]SaleData, error) {
 	listSaleDataData := common.InterfaceSlice(data)
 	if listSaleDataData == nil {
-		panic("list sale data")
+		return nil, fmt.Errorf("ListSaleData must be a slice")
 	}
 	listSaleData := make([]SaleData, 0)
 	for _, i := range listSaleDataData {
 		listSaleData = append(listSaleData, *NewSaleDataFromJson(i))
 	}
-	return listSaleData
+	return listSaleData, nil
 }
 
 func NewTradeBondsFromJson(data interface{}) ([]*TradeBondWithGOV, error) {
@@ -114,20 +116,20 @@ func NewTradeBondsFromJson(data interface{}) ([]*TradeBondWithGOV, error) {
 func NewDCBParamsFromJson(rawData interface{}) (*DCBParams, error) {
 	DCBParams := rawData.(map[string]interface{})
 
-	listSaleData := NewListSaleDataFromJson(DCBParams["ListSaleData"])
-	tradeBonds, errTrade := NewTradeBondsFromJson(DCBParams["TradeBonds"])
-	if errTrade != nil {
-		return nil, errTrade
-	}
 	minLoanResponseRequire := uint8(DCBParams["MinLoanResponseRequire"].(float64))
 	minCMBApprovalRequire := uint8(DCBParams["MinCMBApprovalRequire"].(float64))
 	lateWithdrawResponseFine := uint64(DCBParams["LateWithdrawResponseFine"].(float64))
 	dividendAmount := uint64(DCBParams["DividendAmount"].(float64))
-
 	raiseReserveData := NewRaiseReserveDataFromJson(DCBParams["RaiseReserveData"])
 	spendReserveData := NewSpendReserveDataFromJson(DCBParams["SpendReserveData"])
 
-	listLoanParams := NewListLoanParamsFromJson(DCBParams["ListLoanParams"])
+	listSaleData, errSale := NewListSaleDataFromJson(DCBParams["ListSaleData"])
+	tradeBonds, errTrade := NewTradeBondsFromJson(DCBParams["TradeBonds"])
+	listLoanParams, errLoan := NewListLoanParamsFromJson(DCBParams["ListLoanParams"])
+	if err := common.CheckError(errSale, errTrade, errLoan); err != nil {
+		return nil, err
+	}
+
 	return NewDCBParams(
 		listSaleData,
 		tradeBonds,
