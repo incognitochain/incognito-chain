@@ -27,7 +27,7 @@ const (
 	MinBlockWaitTime     = 2                       // second
 	MaxBlockWaitTime     = 4 - MinBlockWaitTime    // second
 	MinBeaconBlkInterval = 3 * time.Second         //second
-	MinShardBlkInterval  = 1500 * time.Millisecond //second
+	MinShardBlkInterval  = 5 * time.Millisecond //second
 )
 
 // for voting parameter

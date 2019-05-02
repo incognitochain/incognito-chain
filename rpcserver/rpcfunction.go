@@ -67,7 +67,11 @@ var RpcHandler = map[string]commandHandler{
 	RandomCommitments:               RpcServer.handleRandomCommitments,
 	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
 	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
-
+	
+	//======Testing and Benchmark======
+	GetAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
+	//=================================
+	
 	//pool
 
 	// Beststate
