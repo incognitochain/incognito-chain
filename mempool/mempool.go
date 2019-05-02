@@ -334,8 +334,6 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	startValidate := time.Now()
-	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -344,6 +342,8 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 			txType = common.TxNormalNoPrivacy
 		}
 	}
+	startValidate := time.Now()
+	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	go common.AnalyzeTimeSeriesVTBITxTypeMetric(txType, float64(time.Since(startValidate).Seconds()))
 	if !validated {
 		err := MempoolTxError{}
@@ -399,11 +399,21 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	return nil
 }
 func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool) (*common.Hash, *TxDesc, error) {
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		if tx.IsPrivacy() {
+			txType = common.TxNormalPrivacy
+		} else {
+			txType = common.TxNormalNoPrivacy
+		}
+	}
 	startValidate := time.Now()
 	err := tp.ValidateTransaction(tx)
-	if isNewTransaction {
-		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolValidated, float64(time.Since(startValidate).Seconds()))
-	}
+	elapsed := float64(time.Since(startValidate).Seconds())
+	//if isNewTransaction {
+		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolValidated, elapsed)
+		go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolValidatedWithType, elapsed)
+	//}
 	if err != nil {
 		return nil, nil, err
 	}
@@ -445,12 +455,24 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		if tx.IsPrivacy() {
+			txType = common.TxNormalPrivacy
+		} else {
+			txType = common.TxNormalNoPrivacy
+		}
+	}
 	if uint64(len(tp.pool)) >= tp.maxTx {
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
 	startAdd := time.Now()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool, true)
-	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolEntered, float64(time.Since(startAdd).Seconds()))
+	elapsed := float64(time.Since(startAdd).Seconds())
+	
+	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolEntered, elapsed)
+	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()),common.TxPoolEnteredWithType, elapsed)
+	
 	size := tp.CalPoolSize()
 	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 	go common.AnalyzeTimeSeriesTxTypeMetric(tx.GetType(), float64(1))
@@ -499,7 +521,17 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 		tp.RemoveTxCoinHashH(*txHash)
 	}
 	if isInBlock {
-		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, float64(time.Since(startTime).Seconds()))
+		txType := tx.GetType()
+		if txType == common.TxNormalType {
+			if tx.IsPrivacy() {
+				txType = common.TxNormalPrivacy
+			} else {
+				txType = common.TxNormalNoPrivacy
+			}
+		}
+		elapsed := float64(time.Since(startTime).Seconds())
+		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
+		go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()),common.TxPoolRemoveAfterInBlockWithType, elapsed)
 	}
 	size := tp.CalPoolSize()
 	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
