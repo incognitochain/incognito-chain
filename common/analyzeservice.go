@@ -13,9 +13,12 @@ import (
 // Measurement
 const (
 	TxPoolValidated  = "TxPoolValidated"
+	TxPoolValidatedWithType  = "TxPoolValidatedWithType"
 	TxPoolEntered  = "TxPoolEntered"
+	TxPoolEnteredWithType  = "TxPoolEnteredWithType"
 	TxPoolAddedAfterValidation  = "TxPoolAddedAfterValidation"
 	TxPoolRemoveAfterInBlock = "TxPoolRemoveAfterInBlock"
+	TxPoolRemoveAfterInBlockWithType = "TxPoolRemoveAfterInBlockWithType"
 	TxPoolRemoveAfterLifeTime = "TxPoolRemoveAfterLifeTime"
 	TxAddedIntoPoolType = "TxAddedIntoPoolType"
 	TxPoolPrivacyOrNot = "TxAddedIntoPoolType"
@@ -29,6 +32,7 @@ const (
 	ShardBlock  = "ShardBlock"
 	
 	TxSizeMetric = "txsize"
+	TxSizeWithTypeMetric = "txsizewithtype"
 	PoolSizeMetric = "poolsize"
 	TxTypeMetic = "txtype"
 	VTBITxTypeMetic = "vtbitxtype"
@@ -46,6 +50,9 @@ const (
 func AnalyzeTimeSeriesTxSizeMetric(txSize string, metric string, value float64){
 	sendTimeSeriesTransactionMetricDataInfluxDB(TxSizeMetric, txSize, metric, value)
 }
+func AnalyzeTimeSeriesTxSizeWithTypeMetric(txSizeWithType string, metric string, value float64){
+	sendTimeSeriesTransactionMetricDataInfluxDB(TxSizeWithTypeMetric, txSizeWithType, metric, value)
+}
 func AnalyzeTimeSeriesTxsInOneBlockMetric(blockHeight string, value float64){
 	sendTimeSeriesTransactionMetricDataInfluxDB(BlockHeight, blockHeight, TxInOneBlock, value)
 }
@@ -62,7 +69,7 @@ func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64){
 	sendTimeSeriesTransactionMetricDataInfluxDB(PoolSizeMetric, numOfTxs, PoolSize, value)
 }
 func sendTimeSeriesTransactionMetricDataInfluxDB(metricTag string, tagValue string, metric string, value ...float64) {
-	os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
+	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GrafanaURL")
 	if databaseUrl == "" {
 		return
