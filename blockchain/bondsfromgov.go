@@ -217,7 +217,7 @@ func (blockgen *BlkTmplGenerator) buildBuyBackRes(
 			blockgen.chain.GetDatabase(),
 			buyBackRes,
 		)
-		buyBackResTx.Type = common.TxNormalType
+		// buyBackResTx.Type = common.TxNormalType // NOTE: keep it as salary/coinbase type in order to bypass validation
 		if err != nil {
 			return nil, err
 		}
