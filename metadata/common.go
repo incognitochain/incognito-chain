@@ -76,6 +76,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 
 	case ShardBlockSalaryResponseMeta:
 		md = &ShardBlockSalaryRes{}
+	case BeaconSalaryResponseMeta:
+		md = &BeaconBlockSalaryRes{}
 
 	case LoanRequestMeta:
 		md = &LoanRequest{}

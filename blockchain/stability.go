@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
@@ -27,6 +28,8 @@ type accumulativeValues struct {
 	buyBackCoins         uint64
 	totalFee             uint64
 	totalSalary          uint64
+	totalBeaconSalary    uint64
+	totalShardSalary     uint64
 	totalRefundAmt       uint64
 	totalOracleRewards   uint64
 	saleDataMap          map[string]*component.SaleData
@@ -84,12 +87,15 @@ func buildStabilityActions(
 	// build salary update action
 	totalFee := getShardBlockFee(txs)
 	totalSalary, err := getShardBlockSalary(txs, bc, beaconHeight)
+	shardSalary := math.Ceil(float64(totalSalary) / 2)
+	beaconSalary := math.Floor(float64(totalSalary) / 2)
+
 	if err != nil {
 		return nil, err
 	}
 
 	if totalFee != 0 || totalSalary != 0 {
-		salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(totalSalary, totalFee, producerAddress, shardBlockHeight)
+		salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(uint64(beaconSalary), uint64(shardSalary), totalFee, producerAddress, shardBlockHeight)
 		actions = append(actions, salaryUpdateActions...)
 	}
 
@@ -255,8 +261,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		}
 	}
 	// update component in beststate
-
-	//TODO: build salary for beacon
 
 	return instructions, nil
 }
@@ -447,6 +451,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				case metadata.ShardBlockSalaryRequestMeta:
 					salaryReqInfoStr := l[3]
 					txs, err = blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
+				case metadata.BeaconSalaryRequestMeta:
+					txs, err = blockgen.buildBeaconSalaryRes(l[2], l[3], producerPrivateKey)
 				}
 
 				if err != nil {

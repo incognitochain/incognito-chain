@@ -234,7 +234,18 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
 			stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
 		}
+
+		if accumulativeValues.totalBeaconSalary > 0 {
+			newInst, err := buildInstForBeaconSalary(accumulativeValues.totalBeaconSalary, beaconBestState.BeaconHeight+1, &blkTmplGenerator.chain.config.UserKeySet.PaymentAddress)
+			if err != nil {
+				Logger.log.Error(err)
+			}
+			if len(newInst) > 0 {
+				stabilityInstructions = append(stabilityInstructions, newInst)
+			}
+		}
 	}
+
 	votingInstruction, err := blkTmplGenerator.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
 	if err != nil {
 		fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
