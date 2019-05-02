@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -185,11 +186,10 @@ func (blockgen *BlkTmplGenerator) FinalizeShardBlock(blk *ShardBlock, producerKe
 	Get Transaction For new Block
 */
 func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, error) {
-	txsToAdd, txToRemove, _ := blockgen.getPendingTransaction(shardID)
+	txsToAdd, txToRemove, _ := blockgen.getPendingTransaction(shardID, beaconBlocks)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
-	// Remove unrelated shard tx
 	go func() {
 		for _, tx := range txToRemove {
 			blockgen.txPool.RemoveTx(tx)
@@ -321,7 +321,10 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 	10. Check duplicate staker public key in block
 	11. Check duplicate Init Custom Token in block
 */
-func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+func (blockgen *BlkTmplGenerator) getPendingTransaction(
+	shardID byte,
+	beaconBlocks []*BeaconBlock,
+) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.txPool.MiningDescs()
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
@@ -329,6 +332,16 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 	}
 	currentSize := uint64(0)
 	startTime := time.Now()
+
+	instsForValidations := [][]string{}
+	for _, beaconBlock := range beaconBlocks {
+		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
+	}
+	instUsed := make([]int, len(instsForValidations))
+	accumulatedData := component.UsedInstData{
+		TradeActivated: map[string]bool{},
+	}
+
 	for i, txDesc := range sourceTxns {
 		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
@@ -341,6 +354,12 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain, &accumulatedData)
+		if err != nil || !ok {
+			txToRemove = append(txToRemove, tx)
+			continue
+		}
+
 		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
 

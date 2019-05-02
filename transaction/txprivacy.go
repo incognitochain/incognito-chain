@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -1172,4 +1173,31 @@ func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.M
 
 func (tx Tx) GetTokenID() *common.Hash {
 	return nil
+}
+
+func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instsUsed []int,
+	shardID byte,
+	bcr metadata.BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	if tx.IsPrivacy() {
+		return true, nil
+	}
+
+	meta := tx.Metadata
+	if tx.Proof != nil && len(tx.Proof.InputCoins) == 0 && len(tx.Proof.OutputCoins) > 0 { // coinbase tx
+		if meta == nil {
+			return false, nil
+		}
+		// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
+		// if !meta.IsMinerCreatedMetaType() {
+		// 	return false, nil
+		// }
+	}
+	if meta != nil {
+		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr, accumulatedData)
+	}
+	return true, nil
 }
