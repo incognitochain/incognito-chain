@@ -71,7 +71,11 @@ const (
 	HasSnDerivators                            = "hassnderivators"
 
 	CreateAndSendStakingTransaction = "createandsendstakingtransaction"
-
+	
+	//===========For Testing and Benchmark==============
+	GetAndSendTxsFromFile = "getandsendtxsfromfile"
+	//==================================================
+	
 	GetShardBestState  = "getshardbeststate"
 	GetBeaconBestState = "getbeaconbeststate"
 

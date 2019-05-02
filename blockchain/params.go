@@ -61,7 +61,8 @@ var genesisParamsTestnetNew = GenesisParams{
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
-	InitialConstant: append(TestnetInitConstant, InitTxsShard0...),
+	//@Notice: InitTxsForBenchmark is for testing and benchmark only
+	InitialConstant: append(TestnetInitConstant, append(InitTxsShard0, InitTxsForBenchmark...)...),
 }
 
 var ChainTestParam = Params{
