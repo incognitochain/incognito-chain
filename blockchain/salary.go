@@ -11,12 +11,27 @@ import (
 	"github.com/pkg/errors"
 )
 
+type BeaconSalaryInfo struct {
+	BeaconSalary      uint64
+	PayToAddress      *privacy.PaymentAddress
+	BeaconBlockHeight uint64
+	InfoHash          *common.Hash
+}
+
+func (s *BeaconSalaryInfo) hash() *common.Hash {
+	record := string(s.BeaconSalary) + string(s.BeaconBlockHeight)
+	record += s.PayToAddress.String()
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
 type ShardBlockSalaryInfo struct {
-	ShardBlockSalary uint64
-	ShardBlockFee    uint64
-	PayToAddress     *privacy.PaymentAddress
-	ShardBlockHeight uint64
-	InfoHash         *common.Hash
+	BeaconBlockSalary uint64
+	ShardBlockSalary  uint64
+	ShardBlockFee     uint64
+	PayToAddress      *privacy.PaymentAddress
+	ShardBlockHeight  uint64
+	InfoHash          *common.Hash
 }
 
 func getShardBlockFee(txs []metadata.Transaction) uint64 {
@@ -48,12 +63,13 @@ func getShardBlockSalary(txs []metadata.Transaction, bc *BlockChain, beaconHeigh
 }
 
 func hashShardBlockSalaryInfo(
+	beaconBlockSalary uint64,
 	shardBlockSalary uint64,
 	shardBlockFee uint64,
 	payToAddress *privacy.PaymentAddress,
 	shardBlockHeight uint64,
 ) *common.Hash {
-	record := string(shardBlockSalary) + string(shardBlockFee) + string(shardBlockHeight)
+	record := string(shardBlockSalary) + string(shardBlockFee) + string(shardBlockHeight) + string(beaconBlockSalary)
 	record += payToAddress.String()
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -62,18 +78,20 @@ func hashShardBlockSalaryInfo(
 // Type Content
 // Content: shardBlockSalaryInfo
 func createShardBlockSalaryUpdateAction(
+	beaconBlockSalary uint64,
 	shardBlockSalary uint64,
 	shardBlockFee uint64,
 	payToAddress *privacy.PaymentAddress,
 	shardBlockHeight uint64,
 ) ([][]string, error) {
-	infoHash := hashShardBlockSalaryInfo(shardBlockSalary, shardBlockFee, payToAddress, shardBlockHeight)
+	infoHash := hashShardBlockSalaryInfo(beaconBlockSalary, shardBlockSalary, shardBlockFee, payToAddress, shardBlockHeight)
 	shardBlockSalaryInfo := ShardBlockSalaryInfo{
-		ShardBlockSalary: shardBlockSalary,
-		ShardBlockFee:    shardBlockFee,
-		PayToAddress:     payToAddress,
-		ShardBlockHeight: shardBlockHeight,
-		InfoHash:         infoHash,
+		BeaconBlockSalary: beaconBlockSalary,
+		ShardBlockSalary:  shardBlockSalary,
+		ShardBlockFee:     shardBlockFee,
+		PayToAddress:      payToAddress,
+		ShardBlockHeight:  shardBlockHeight,
+		InfoHash:          infoHash,
 	}
 	shardBlockSalaryInfoBytes, err := json.Marshal(shardBlockSalaryInfo)
 	if err != nil {
@@ -81,6 +99,30 @@ func createShardBlockSalaryUpdateAction(
 	}
 	action := []string{strconv.Itoa(metadata.ShardBlockSalaryRequestMeta), string(shardBlockSalaryInfoBytes)}
 	return [][]string{action}, nil
+}
+
+func buildInstForBeaconSalary(salary, beaconHeight uint64, payToAddress *privacy.PaymentAddress) ([]string, error) {
+
+	beaconSalaryInfo := BeaconSalaryInfo{
+		BeaconBlockHeight: beaconHeight,
+		PayToAddress:      payToAddress,
+		BeaconSalary:      salary,
+	}
+	beaconSalaryInfo.InfoHash = beaconSalaryInfo.hash()
+
+	contentStr, err := json.Marshal(beaconSalaryInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	returnedInst := []string{
+		strconv.Itoa(metadata.BeaconSalaryRequestMeta),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(payToAddress.Bytes()[len(payToAddress.Bytes())-1]))),
+		"beaconSalaryInst",
+		string(contentStr),
+	}
+
+	return returnedInst, nil
 }
 
 func buildInstForShardBlockSalaryReq(
@@ -97,13 +139,18 @@ func buildInstForShardBlockSalaryReq(
 	instructions := [][]string{}
 	instType := string("")
 	accumulativeValues.totalFee += shardBlockSalaryInfo.ShardBlockFee
-	if !isGOVFundEnough(beaconBestState, accumulativeValues, shardBlockSalaryInfo.ShardBlockSalary) {
+	accumulativeValues.totalBeaconSalary += shardBlockSalaryInfo.BeaconBlockSalary
+
+	if !isGOVFundEnough(beaconBestState, accumulativeValues, shardBlockSalaryInfo.ShardBlockSalary+shardBlockSalaryInfo.BeaconBlockSalary) {
 		instType = "fundNotEnough"
 	} else if shardBlockSalaryInfo.ShardBlockSalary == 0 {
 		instType = "zeroSalaryAmount"
 	} else {
 		instType = "accepted"
 		accumulativeValues.totalSalary += shardBlockSalaryInfo.ShardBlockSalary
+		accumulativeValues.totalSalary += shardBlockSalaryInfo.BeaconBlockSalary
+
+		accumulativeValues.totalShardSalary += shardBlockSalaryInfo.ShardBlockSalary
 	}
 	returnedInst := []string{
 		strconv.Itoa(metadata.ShardBlockSalaryRequestMeta),
@@ -113,6 +160,43 @@ func buildInstForShardBlockSalaryReq(
 	}
 	instructions = append(instructions, returnedInst)
 	return instructions, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
+	instType string,
+	contentStr string,
+	blkProducerPrivateKey *privacy.PrivateKey,
+) ([]metadata.Transaction, error) {
+	//TODO: create tx for return beacon salary
+	var beaconSalaryInfo BeaconSalaryInfo
+	err := json.Unmarshal([]byte(contentStr), &beaconSalaryInfo)
+	if err != nil {
+		return nil, err
+	}
+	if beaconSalaryInfo.PayToAddress == nil || beaconSalaryInfo.InfoHash == nil {
+		return nil, errors.Errorf("Can not Parse from contentStr")
+	}
+
+	salaryResMeta := metadata.NewBeaconBlockSalaryRes(
+		beaconSalaryInfo.BeaconBlockHeight,
+		*beaconSalaryInfo.PayToAddress,
+		*beaconSalaryInfo.InfoHash,
+		metadata.BeaconSalaryResponseMeta,
+	)
+
+	salaryResTx := new(transaction.Tx)
+	err = salaryResTx.InitTxSalary(
+		beaconSalaryInfo.BeaconSalary,
+		beaconSalaryInfo.PayToAddress,
+		blkProducerPrivateKey,
+		blockgen.chain.GetDatabase(),
+		salaryResMeta,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return []metadata.Transaction{salaryResTx}, nil
+
 }
 
 func (blockgen *BlkTmplGenerator) buildSalaryRes(
@@ -131,7 +215,7 @@ func (blockgen *BlkTmplGenerator) buildSalaryRes(
 	if shardBlockSalaryInfo.PayToAddress == nil || shardBlockSalaryInfo.InfoHash == nil {
 		return nil, errors.Errorf("Can not Parse from contentStr")
 	}
-	salaryResMeta := metadata.NewShardBlockSalaryRes(
+	beaconSalaryResMeta := metadata.NewShardBlockSalaryRes(
 		shardBlockSalaryInfo.ShardBlockHeight,
 		*shardBlockSalaryInfo.PayToAddress,
 		*shardBlockSalaryInfo.InfoHash,
@@ -143,7 +227,7 @@ func (blockgen *BlkTmplGenerator) buildSalaryRes(
 		shardBlockSalaryInfo.PayToAddress,
 		blkProducerPrivateKey,
 		blockgen.chain.GetDatabase(),
-		salaryResMeta,
+		beaconSalaryResMeta,
 	)
 	if err != nil {
 		return nil, err

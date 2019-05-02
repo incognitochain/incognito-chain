@@ -188,6 +188,7 @@ func (bsb *BestStateBeacon) processSalaryUpdateInstruction(inst []string) error 
 		stabilityInfo.SalaryFund = 0
 	} else {
 		stabilityInfo.SalaryFund -= shardBlockSalaryInfo.ShardBlockSalary
+		stabilityInfo.SalaryFund -= shardBlockSalaryInfo.BeaconBlockSalary
 	}
 	return nil
 }
