@@ -217,7 +217,8 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			// Bond sent from DCB can be created by anyone but only with
 			// appropriate metadata and instruction
 			if bytes.Equal(vin.PaymentAddress.Pk, dcbPk) {
-				if tx.GetMetadataType() != metadata.CrowdsalePaymentMeta {
+				metaType := tx.GetMetadataType()
+				if metaType != metadata.CrowdsalePaymentMeta && metaType != metadata.BuyBackRequestMeta {
 					return false
 				}
 				continue
