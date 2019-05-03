@@ -149,13 +149,12 @@ func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.
 // GetProposedCrowdsale returns SaleData from BeaconBestState; BuyingAmount and SellingAmount might be outdated, the rest is ok to use
 func (blockchain *BlockChain) GetSaleData(saleID []byte) (*component.SaleData, error) {
 	saleRaw, err := blockchain.config.DataBase.GetSaleData(saleID)
-	fmt.Printf("[db] GetSaleData saleRaw: %s %v\n", saleRaw, err)
 	if err != nil {
 		return nil, err
 	}
-	var sale component.SaleData
+	sale := &component.SaleData{}
 	err = json.Unmarshal(saleRaw, &sale)
-	return &sale, err
+	return sale, err
 }
 
 func (blockchain *BlockChain) GetDCBBondInfo(bondID *common.Hash) (uint64, uint64) {
@@ -169,7 +168,7 @@ func (blockchain *BlockChain) GetAllSaleData() ([]*component.SaleData, error) {
 	}
 	sales := []*component.SaleData{}
 	for _, saleRaw := range data {
-		var sale *component.SaleData
+		sale := &component.SaleData{}
 		err := json.Unmarshal(saleRaw, sale)
 		if err != nil {
 			return nil, err

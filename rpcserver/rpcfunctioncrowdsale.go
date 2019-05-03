@@ -3,7 +3,6 @@ package rpcserver
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
@@ -62,7 +61,7 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 	result := []CrowdsaleInfo{}
 	saleDataList, err := rpcServer.config.BlockChain.GetAllSaleData()
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Error querying crowdsales"))
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	beaconHeight := rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
 	for _, saleData := range saleDataList {
