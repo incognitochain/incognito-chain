@@ -186,6 +186,7 @@ const (
 	CreateAndSendTxWithSenderAddress       = "createandsendtxwithsenderaddress"
 	CreateAndSendTxWithBuyGOVTokensRequest = "createandsendtxwithbuygovtokensrequest"
 	GetCurrentSellingGOVTokens             = "getcurrentsellinggovtokens"
+	GetAssetPrice                          = "getassetprice"
 
 	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
