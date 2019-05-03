@@ -80,11 +80,11 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	if txr.CalculateTxValue() < bsReq.BuyPrice*bsReq.Amount {
 		return false, false, errors.New("Sending constant amount is not enough for buying bonds.")
 	}
-	if len(bsReq.TradeID) == 0 && !txr.IsCoinsBurning() {
+	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
 	}
 
-	// For DCB trading bods with GOV
+	// For DCB trading bonds with GOV
 	if len(bsReq.TradeID) > 0 {
 		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 		dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
