@@ -986,10 +986,13 @@ func (tx *Tx) ValidateType() bool {
 }
 
 func (tx *Tx) IsCoinsBurning() bool {
-	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 || len(tx.Proof.OutputCoins) == 0 {
+	if tx.Proof == nil || len(tx.Proof.OutputCoins) == 0 {
 		return false
 	}
-	senderPKBytes := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	senderPKBytes := []byte{}
+	if len(tx.Proof.InputCoins) > 0 {
+		senderPKBytes = tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	}
 	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
