@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -387,7 +387,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	}
 	sort.Ints(keys)
 
-	//	0xBahamoot optimize using waitgroup
+	//	0xmerman optimize using waitgroup
 	// var wg sync.WaitGroup
 
 	for _, fromShardID := range keys {
@@ -431,6 +431,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 			}
 		}
 	}
+
 	return txs, txTokenDataList
 }
 
