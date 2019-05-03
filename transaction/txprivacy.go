@@ -408,7 +408,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	//hasPrivacy = false
 	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	Logger.log.Debugf("VALIDATING TX........\n")
-	start := time.Now()
+	// start := time.Now()
 	// Verify tx signature
 	Logger.log.Debugf("tx.GetType(): %v\n", tx.GetType())
 	if tx.GetType() == common.TxSalaryType {
@@ -491,8 +491,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Debug("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
-	elapsed := time.Since(start)
-	Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
+	//@UNCOMMENT: metric time
+	//elapsed := time.Since(start)
+	//Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
 	return true
 }
