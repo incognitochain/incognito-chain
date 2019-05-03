@@ -172,6 +172,7 @@ var RpcHandler = map[string]commandHandler{
 	GetGOVBoardIndex:   RpcServer.handleGetGOVBoardIndex,
 	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
 	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
+	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
 
 	// gov
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
