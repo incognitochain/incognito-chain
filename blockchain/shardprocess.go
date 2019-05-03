@@ -701,7 +701,7 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 	err := blockChain.config.TempTxPool.ValidateTxList(txs)
 	blockChain.config.TempTxPool.EmptyPool()
 	if err != nil {
-		return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid"))
+		return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid "+err.Error()))
 	}
 	return nil
 
