@@ -9,7 +9,14 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/transaction"
 )
-
+/*
+	Verify Transaction with these condition:
+	1. Validate with current mempool:
+	2. Validate Init Custom Token
+	3. Check tx existed in block
+	4. Check duplicate staker public key in block
+	5. Check duplicate Init Custom Token in block
+*/
 func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 	var errCh chan error
 	errCh = make(chan error)
@@ -19,24 +26,6 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 	go func() {
 		for _, tx := range txs {
 			go func(tx metadata.Transaction) {
-				switch tx.GetType() {
-				case common.TxCustomTokenType:
-					customTokenTx := tx.(*transaction.TxCustomToken)
-					if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-						errCh <- nil
-						return
-					}
-				case common.TxSalaryType:
-					if tx.IsSalaryTx() {
-						shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-						if isValid := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID); isValid {
-							// salaryTxCount++
-							errCh <- nil
-							return
-						}
-					}
-					errCh <- errors.New("salary tx invalid")
-				}
 				err := tp.validateTxIndependProperties(tx)
 				errCh <- err
 			}(tx)
@@ -53,11 +42,6 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 			break
 		}
 	}
-
-	// if salaryTxCount > 1 {
-	// 	return errors.New("there can be only one salary tx")
-	// }
-
 	//validate txs list
 	for _, tx := range txs {
 		txHash := tx.Hash()
@@ -115,12 +99,24 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 
 	return nil
 }
-
+/*
+SKIP salary transaction
+Verify Transaction with these condition:
+	1. Validate tx version
+	2. Validate fee with tx size
+	3. Validate type of tx
+	4. Validate sanity data of tx
+	5. Validate By it self (data in tx): privacy proof, metadata,...
+	6. Validate tx with blockchain: douple spend, ...
+*/
 func (tp *TxPool) validateTxIndependProperties(tx metadata.Transaction) error {
 	var shardID byte
 	var err error
 	txHash := tx.Hash()
 
+	if tx.IsSalaryTx() {
+		return nil
+	}
 	// check version
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
@@ -151,12 +147,6 @@ func (tp *TxPool) validateTxIndependProperties(tx metadata.Transaction) error {
 
 	ok = tx.ValidateType()
 	if !ok {
-		return err
-	}
-	// A standalone transaction must not be a salary transaction.
-	if tx.IsSalaryTx() {
-		err := MempoolTxError{}
-		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return err
 	}
 
