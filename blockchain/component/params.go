@@ -245,11 +245,6 @@ func (govParams *GOVParams) Hash() *common.Hash {
 }
 
 func (dcbParams DCBParams) ValidateSanityData() bool {
-	for _, saleData := range dcbParams.ListSaleData {
-		if !validAssetPair(saleData.BuyingAsset, saleData.SellingAsset) {
-			return false
-		}
-	}
 	return true
 }
 
@@ -289,14 +284,4 @@ func (govParams GOVParams) ValidateSanityData() bool {
 		}
 	}
 	return true
-}
-
-func validAssetPair(buyingAsset common.Hash, sellingAsset common.Hash) bool {
-	// DCB Bond crowdsales
-	if common.IsBondAsset(&buyingAsset) && common.IsConstantAsset(&sellingAsset) {
-		return true
-	} else if common.IsConstantAsset(&buyingAsset) && common.IsBondAsset(&sellingAsset) {
-		return true
-	}
-	return false
 }

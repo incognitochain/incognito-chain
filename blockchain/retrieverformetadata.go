@@ -147,25 +147,41 @@ func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.
 }
 
 // GetProposedCrowdsale returns SaleData from BeaconBestState; BuyingAmount and SellingAmount might be outdated, the rest is ok to use
-func (blockchain *BlockChain) GetProposedCrowdsale(saleID []byte) (*component.SaleData, error) {
-	return blockchain.BestState.Beacon.GetSaleData(saleID)
+func (blockchain *BlockChain) GetSaleData(saleID []byte) (*component.SaleData, error) {
+	saleRaw, err := blockchain.config.DataBase.GetSaleData(saleID)
+	fmt.Printf("[db] GetSaleData saleRaw: %s %v\n", saleRaw, err)
+	if err != nil {
+		return nil, err
+	}
+	var sale component.SaleData
+	err = json.Unmarshal(saleRaw, &sale)
+	return &sale, err
 }
 
-func (blockchain *BlockChain) GetAllCrowdsales() ([]*component.SaleData, error) {
-	saleDataList := []*component.SaleData{}
-	for key, value := range blockchain.BestState.Beacon.Params {
-		if key[:len(saleDataPrefix)] == saleDataPrefix {
-			if saleData, err := parseSaleDataValueBeacon(value); err == nil {
-				saleDataList = append(saleDataList, saleData)
-			}
-		}
+func (blockchain *BlockChain) GetDCBBondInfo(bondID *common.Hash) (uint64, uint64) {
+	return blockchain.config.DataBase.GetDCBBondInfo(bondID)
+}
+
+func (blockchain *BlockChain) GetAllSaleData() ([]*component.SaleData, error) {
+	data, err := blockchain.config.DataBase.GetAllSaleData()
+	if err != nil {
+		return nil, err
 	}
-	return saleDataList, nil
+	sales := []*component.SaleData{}
+	for _, saleRaw := range data {
+		var sale *component.SaleData
+		err := json.Unmarshal(saleRaw, sale)
+		if err != nil {
+			return nil, err
+		}
+		sales = append(sales, sale)
+	}
+	return sales, nil
 }
 
 func (blockchain *BlockChain) CrowdsaleExisted(saleID []byte) bool {
-	key := getSaleDataKeyBeacon(saleID)
-	if _, ok := blockchain.BestState.Beacon.Params[key]; ok {
+	_, err := blockchain.config.DataBase.GetSaleData(saleID)
+	if err != nil {
 		return true
 	}
 	return false
@@ -183,13 +199,13 @@ func (blockchain *BlockChain) GetDCBAvailableAsset(assetID *common.Hash) uint64 
 		tokenLeft += vout.Value
 	}
 
-	sales, _ := blockchain.GetAllCrowdsales()
+	sales, _ := blockchain.GetAllSaleData()
 	for _, sale := range sales {
-		if sale.SellingAsset.IsEqual(assetID) && sale.EndBlock < blockchain.GetBeaconHeight() {
-			if sale.SellingAmount >= tokenLeft {
+		if !sale.Buy && sale.BondID.IsEqual(assetID) && sale.EndBlock < blockchain.GetBeaconHeight() {
+			if sale.Amount >= tokenLeft {
 				tokenLeft = 0
 			} else {
-				tokenLeft -= sale.SellingAmount
+				tokenLeft -= sale.Amount
 			}
 		}
 	}

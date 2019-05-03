@@ -199,6 +199,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
 	Logger.log.Info("Finish Insert new block , with hash", block.Header.Height, *block.Hash())
+	if block.Header.Height%50 == 0 {
+		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
+	}
 	return nil
 }
 
@@ -602,7 +605,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			continue
 		}
 		// For stability instructions
-		err := bestStateBeacon.processStabilityInstruction(l)
+		err := bestStateBeacon.processStabilityInstruction(l, chain)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)

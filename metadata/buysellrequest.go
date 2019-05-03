@@ -65,7 +65,7 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	if len(bsReq.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
-	if len(bsReq.PaymentAddress.Tk) == 0 {
+	if len(bsReq.TradeID) == 0 && len(bsReq.PaymentAddress.Tk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
 	if bsReq.BuyPrice == 0 {
@@ -80,11 +80,8 @@ func (bsReq *BuySellRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tra
 	if txr.CalculateTxValue() < bsReq.BuyPrice*bsReq.Amount {
 		return false, false, errors.New("Sending constant amount is not enough for buying bonds.")
 	}
-	if !txr.IsCoinsBurning() {
+	if len(bsReq.TradeID) == 0 && !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
-	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], bsReq.PaymentAddress.Pk[:]) {
-		return false, false, errors.New("PaymentAddress in metadata is not matched to sender address")
 	}
 
 	// For DCB trading bods with GOV
@@ -183,4 +180,14 @@ func (bsReq *BuySellRequest) VerifyMinerCreatedTxBeforeGettingInBlock(
 	accumulatedData.TradeActivated[string(meta.TradeID)] = true
 	fmt.Printf("[db] inst %d matched\n", idx)
 	return true, nil
+}
+
+func (bsReq *BuySellRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+	if len(bsReq.TradeID) > 0 {
+		// no need to have fee for this tx
+		return true
+	}
+	txFee := tr.GetTxFee()
+	fullFee := minFee * tr.GetTxActualSize()
+	return !(txFee < fullFee)
 }
