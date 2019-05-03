@@ -20,8 +20,15 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	data := txs{}
 	count := 0
 	_ = json.Unmarshal([]byte(file), &data)
-	for _, txBase58Data := range data.Txs {
+	for index, txBase58Data := range data.Txs {
+		if index <= 200 {
+			continue
+		}
+		Logger.log.Critical("Number of Transaction: ", index)
 		<-time.Tick(500*time.Millisecond)
+		if index == 300 {
+			break
+		}
 		rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58Data)
 		if err != nil {
 			return nil, NewRPCError(ErrSendTxData, err)
