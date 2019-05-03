@@ -72,8 +72,8 @@ func buildPaymentInstructionForCrowdsale(
 	// Get price for asset
 	buyingAsset := saleData.BuyingAsset
 	sellingAsset := saleData.SellingAsset
-	buyPrice := beaconBestState.getAssetPrice(buyingAsset)
-	sellPrice := beaconBestState.getAssetPrice(sellingAsset)
+	buyPrice := beaconBestState.GetAssetPrice(buyingAsset)
+	sellPrice := beaconBestState.GetAssetPrice(sellingAsset)
 	if buyPrice == 0 {
 		buyPrice = saleData.DefaultBuyPrice
 	}
