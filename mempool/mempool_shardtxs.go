@@ -14,7 +14,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 	var errCh chan error
 	errCh = make(chan error)
 	validTxCount := 0
-	salaryTxCount := 0
+	// salaryTxCount := 0
 	//validate individual tx
 	go func() {
 		for _, tx := range txs {
@@ -30,7 +30,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 					if tx.IsSalaryTx() {
 						shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 						if isValid := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID); isValid {
-							salaryTxCount++
+							// salaryTxCount++
 							errCh <- nil
 							return
 						}
@@ -46,16 +46,18 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 	for {
 		err := <-errCh
 		if err != nil {
-			return errors.New("some Transactions in new Block maybe invalid")
+			return errors.New("tx in new block error:" + err.Error())
 		}
 		validTxCount++
 		if validTxCount == len(txs) {
 			break
 		}
 	}
-	if salaryTxCount > 1 {
-		return errors.New("there can be only one salary tx")
-	}
+
+	// if salaryTxCount > 1 {
+	// 	return errors.New("there can be only one salary tx")
+	// }
+
 	//validate txs list
 	for _, tx := range txs {
 		txHash := tx.Hash()
