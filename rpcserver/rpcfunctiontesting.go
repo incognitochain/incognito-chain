@@ -5,7 +5,6 @@ import (
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/transaction"
 	"io/ioutil"
-	"time"
 )
 
 type txs struct {
@@ -21,14 +20,11 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	count := 0
 	_ = json.Unmarshal([]byte(file), &data)
 	for index, txBase58Data := range data.Txs {
-		if index <= 200 {
-			continue
-		}
+		//if index <= 200 {
+		//	continue
+		//}
 		Logger.log.Critical("Number of Transaction: ", index)
-		<-time.Tick(500*time.Millisecond)
-		if index == 300 {
-			break
-		}
+		//<-time.Tick(50*time.Millisecond)
 		rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58Data)
 		if err != nil {
 			return nil, NewRPCError(ErrSendTxData, err)
