@@ -12,6 +12,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -70,7 +71,7 @@ func (bbReq *BuyBackRequest) ValidateSanityData(
 	if len(bbReq.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
-	if len(bbReq.PaymentAddress.Tk) == 0 {
+	if len(bbReq.TradeID) == 0 && len(bbReq.PaymentAddress.Tk) == 0 {
 		return false, false, errors.New("Wrong request info's payment address")
 	}
 	if bbReq.Amount == 0 {
@@ -82,8 +83,14 @@ func (bbReq *BuyBackRequest) ValidateSanityData(
 	if txr.CalculateTxValue() < bbReq.Amount {
 		return false, false, errors.New("Burning bond amount in Vouts should be equal to metadata's amount")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], bbReq.PaymentAddress.Pk[:]) {
-		return false, false, errors.New("PaymentAddress in metadata is not matched to sender address")
+
+	// For DCB trading bonds with GOV
+	if len(bbReq.TradeID) > 0 {
+		keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+		dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
+		if !bytes.Equal(dcbAddress.Pk, bbReq.PaymentAddress.Pk) {
+			return false, false, errors.New("buy back request with TradeID must send assets to DCB's address")
+		}
 	}
 	return true, true, nil
 }
@@ -171,4 +178,14 @@ func (bbReq *BuyBackRequest) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instUsed[idx] += 1
 	fmt.Printf("[db] inst %d matched\n", idx)
 	return true, nil
+}
+
+func (bbReq *BuyBackRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+	if len(bbReq.TradeID) > 0 {
+		// no need to have fee for this tx
+		return true
+	}
+	txFee := tr.GetTxFee()
+	fullFee := minFee * tr.GetTxActualSize()
+	return !(txFee < fullFee)
 }
