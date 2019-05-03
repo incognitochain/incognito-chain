@@ -123,17 +123,17 @@ func createGOVGenesisBoardInst() []string {
 
 func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 	// Bond
-	// sellingBonds := &component.SellingBonds{
-	// 	BondName:       "Bond 1000 blocks",
-	// 	BondSymbol:     "BND1000",
-	// 	TotalIssue:     1000,
-	// 	BondsToSell:    1000,
-	// 	BondPrice:      100, // 1 constant
-	// 	Maturity:       3,
-	// 	BuyBackPrice:   120, // 1.2 constant
-	// 	StartSellingAt: 0,
-	// 	SellingWithin:  100000,
-	// }
+	sellingBonds := &component.SellingBonds{
+		BondName:       "Bond 1000 blocks",
+		BondSymbol:     "BND1000",
+		TotalIssue:     1000,
+		BondsToSell:    1000,
+		BondPrice:      100, // 1 constant
+		Maturity:       3,
+		BuyBackPrice:   120, // 1.2 constant
+		StartSellingAt: 0,
+		SellingWithin:  100000,
+	}
 	// sellingGOVTokens := &component.SellingGOVTokens{
 	// 	TotalIssue:      1000,
 	// 	GOVTokensToSell: 1000,
@@ -155,7 +155,7 @@ func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 		SalaryPerTx:      uint64(genesisParams.SalaryPerTx),
 		BasicSalary:      uint64(genesisParams.BasicSalary),
 		FeePerKbTx:       uint64(genesisParams.FeePerTxKb),
-		SellingBonds:     nil,
+		SellingBonds:     sellingBonds,
 		SellingGOVTokens: nil,
 		RefundInfo:       nil,
 		OracleNetwork:    oracleNetwork,
@@ -194,10 +194,10 @@ func createDCBGenesisInsts() [][]string {
 func createDCBGenesisBoardInst() []string {
 	boardAddress := []privacy.PaymentAddress{
 		// Payment4: 112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy
-		// privacy.PaymentAddress{
-		// 	Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
-		// 	Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
-		// },
+		privacy.PaymentAddress{
+			Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
+			Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
+		},
 	}
 
 	dcbBoardInst := &frombeaconins.AcceptDCBBoardIns{
@@ -209,32 +209,26 @@ func createDCBGenesisBoardInst() []string {
 }
 
 func createDCBGenesisParamsInst() []string {
-	return nil
-
 	// Crowdsale bonds
 	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
 	buyBondSaleID := [32]byte{1}
 	sellBondSaleID := [32]byte{2}
 	saleData := []component.SaleData{
 		component.SaleData{
-			SaleID:           buyBondSaleID[:],
-			EndBlock:         1000,
-			BuyingAsset:      *bondID,
-			BuyingAmount:     100, // 100 bonds
-			DefaultBuyPrice:  100, // 100 cent per bond
-			SellingAsset:     common.ConstantID,
-			SellingAmount:    15000, // 150 CST in Nano
-			DefaultSellPrice: 100,   // 100 cent per CST
+			SaleID:   buyBondSaleID[:],
+			EndBlock: 1000,
+			BondID:   bondID,
+			Amount:   100,  // 100 bonds
+			Price:    100,  // 100 cent Constant per bond
+			Buy:      true, // 100 cent per CST
 		},
 		component.SaleData{
-			SaleID:           sellBondSaleID[:],
-			EndBlock:         2000,
-			BuyingAsset:      common.ConstantID,
-			BuyingAmount:     25000, // 250 CST in Nano
-			DefaultBuyPrice:  100,   // 100 cent per CST
-			SellingAsset:     *bondID,
-			SellingAmount:    200, // 200 bonds
-			DefaultSellPrice: 100, // 100 cent per bond
+			SaleID:   sellBondSaleID[:],
+			EndBlock: 2000,
+			BondID:   bondID,
+			Amount:   200,   // 100 bonds
+			Price:    150,   // 150 cent Constant per bond
+			Buy:      false, // 100 cent per CST
 		},
 	}
 

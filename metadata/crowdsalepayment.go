@@ -1,8 +1,6 @@
 package metadata
 
 import (
-	"bytes"
-	// "errors"
 	"fmt"
 	"strconv"
 
@@ -10,7 +8,6 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -22,19 +19,19 @@ type CrowdsalePayment struct {
 
 func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists
-	saleData, err := bcr.GetProposedCrowdsale(csRes.SaleID)
+	sale, err := bcr.GetSaleData(csRes.SaleID) // okay to use unsynced data since we only use immutable fields
 	if err != nil {
 		return false, err
 	}
 
-	// Check if sending address is DCB's
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
-		return false, fmt.Errorf("Crowdsale payment must send asset from DCB address")
-	}
+	// TODO(@0xbunyip): check if sending address is DCB's
+	//keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	//if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
+	//	return false, fmt.Errorf("Crowdsale payment must send asset from DCB address")
+	//}
 
 	// TODO(@0xbunyip): check double spending for coinbase CST tx?
-	if common.IsBondAsset(&saleData.SellingAsset) {
+	if !sale.Buy {
 		// Check if sent from DCB address
 		// check double spending if selling bond
 		return true, nil
@@ -106,4 +103,9 @@ func (csRes *CrowdsalePayment) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instUsed[idx] += 1
 	fmt.Printf("[db] inst %d matched\n", idx)
 	return true, nil
+}
+
+func (csRes *CrowdsalePayment) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+	// no need to have fee for this tx
+	return true
 }

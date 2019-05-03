@@ -414,7 +414,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 
-	// TODO(@0xbunyip): move to inside isPresig when running validator's node
 	// Verify stability transactions
 	instsForValidations := [][]string{}
 	instsForValidations = append(instsForValidations, block.Body.Instructions...)

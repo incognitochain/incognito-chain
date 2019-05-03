@@ -46,6 +46,7 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.PrivateKey,
 	tradeActivated map[string]bool,
+	shardID byte,
 ) ([]metadata.Transaction, error) {
 	data, err := blockgen.chain.CalcTradeData(inst)
 	if err != nil {
@@ -65,7 +66,7 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	if data.Buy {
 		txs, err = blockgen.buildTradeBuySellRequestTx(data.TradeID, data.BondID, data.ReqAmount, producerPrivateKey)
 	} else {
-		txs, err = blockgen.buildTradeBuyBackRequestTx(data.TradeID, data.BondID, data.ReqAmount, unspentTokens, producerPrivateKey)
+		txs, err = blockgen.buildTradeBuyBackRequestTx(data.TradeID, data.BondID, data.ReqAmount, unspentTokens, producerPrivateKey, shardID)
 	}
 
 	if err != nil {
@@ -108,7 +109,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 		// Skip building tx buyback/buysell if error (retry later)
 		return nil, nil
 	}
-	fmt.Printf("[db] built buy sell req: %d\n", cstAmount)
+	fmt.Printf("[db] built buy sell req: %d %v\n", cstAmount, keyWalletDCBAccount.KeySet.PaymentAddress)
 	return []metadata.Transaction{txs[0]}, nil
 }
 
@@ -118,6 +119,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	amount uint64,
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] building buyback request tx: %d %h\n", amount, bondID)
 	// Build metadata to send to GOV
@@ -147,6 +149,9 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		*bondID,
 		keyWalletBurnAccount.KeySet.PaymentAddress,
 		buyBackMeta,
+		producerPrivateKey,
+		blockgen.chain.GetDatabase(),
+		shardID,
 	)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)

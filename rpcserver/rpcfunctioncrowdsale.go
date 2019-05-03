@@ -2,8 +2,10 @@ package rpcserver
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 )
 
@@ -49,18 +51,16 @@ func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestConstant(params in
 func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// Get all ongoing crowdsales for that chain
 	type CrowdsaleInfo struct {
-		SaleID           string
-		EndBlock         uint64
-		BuyingAsset      string
-		BuyingAmount     uint64
-		DefaultBuyPrice  uint64
-		SellingAsset     string
-		SellingAmount    uint64
-		DefaultSellPrice uint64
-		Type             string
+		SaleID   string
+		EndBlock uint64
+		BondID   string
+		Amount   uint64
+		Price    uint64
+		Buy      bool
+		Type     string
 	}
 	result := []CrowdsaleInfo{}
-	saleDataList, err := rpcServer.config.BlockChain.GetAllCrowdsales()
+	saleDataList, err := rpcServer.config.BlockChain.GetAllSaleData()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Error querying crowdsales"))
 	}
@@ -72,24 +72,59 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 
 		// Add type for better ux, not blockchain-related
 		crowdsaleType := "buyable"
-		if saleData.SellingAsset.IsEqual(&common.ConstantID) {
+		if saleData.Buy {
 			crowdsaleType = "sellable"
 		}
 
 		info := CrowdsaleInfo{
-			SaleID:           hex.EncodeToString(saleData.SaleID),
-			EndBlock:         saleData.EndBlock,
-			BuyingAsset:      saleData.BuyingAsset.String(),
-			BuyingAmount:     saleData.BuyingAmount,
-			DefaultBuyPrice:  saleData.DefaultBuyPrice,
-			SellingAsset:     saleData.SellingAsset.String(),
-			SellingAmount:    saleData.SellingAmount,
-			DefaultSellPrice: saleData.DefaultSellPrice,
-			Type:             crowdsaleType,
+			SaleID:   hex.EncodeToString(saleData.SaleID),
+			EndBlock: saleData.EndBlock,
+			BondID:   saleData.BondID.String(),
+			Amount:   saleData.Amount,
+			Price:    saleData.Price,
+			Buy:      saleData.Buy,
+			Type:     crowdsaleType,
 		}
 		result = append(result, info)
 	}
 	return result, nil
+}
+
+func (rpcServer RpcServer) handleGetDCBBondInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	//p := params.([]interface{})
+	//saleID, _ := hex.DecodeString(p[0].(string))
+	//fmt.Println("[db] saleID", saleID)
+	//saleData, err := rpcServer.config.BlockChain.GetSaleData(saleID)
+	//fmt.Println("[db] saleData", saleData, err)
+	//return saleData, nil
+
+	type dcbBondInfo struct {
+		AmountAvailable   uint64
+		TotalConstantPaid uint64
+	}
+	infos := map[string]dcbBondInfo{}
+	db := *rpcServer.config.Database
+	soldBondTypesBytesArr, err := db.GetSoldBondTypes()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	for _, soldBondTypesBytes := range soldBondTypesBytesArr {
+		var bondInfo component.SellingBonds
+		err = json.Unmarshal(soldBondTypesBytes, &bondInfo)
+		if err != nil {
+			continue
+		}
+		bondIDStr := bondInfo.GetID().String()
+		amountAvail, cstPaid := db.GetDCBBondInfo(bondInfo.GetID())
+		if amountAvail > 0 {
+			infos[bondIDStr] = dcbBondInfo{
+				AmountAvailable:   amountAvail,
+				TotalConstantPaid: cstPaid,
+			}
+		}
+	}
+	return infos, nil
 }
 
 func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

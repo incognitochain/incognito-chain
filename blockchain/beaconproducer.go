@@ -88,9 +88,10 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 		beaconBlock.Header.Epoch++
 	}
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
+	//fmt.Println("[db] NewBlockBeacon GetShardState")
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
-	fmt.Println("BeaconProducer/tempInstruction", tempInstruction)
+	//fmt.Println("BeaconProducer/tempInstruction", tempInstruction)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
@@ -98,7 +99,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	//============Process new block with beststate
 	fmt.Println("Beacon Candidate", beaconBestState.CandidateBeaconWaitingForCurrentRandom)
 	if len(beaconBlock.Body.Instructions) != 0 {
-		Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+		//Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
 	}
 	beaconBestState.Update(beaconBlock, blkTmplGenerator.chain)
 	//============End Process new block with beststate
@@ -185,6 +186,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
+	//fmt.Printf("[db] in GetShardState\n")
 	for _, value := range keys {
 		shardID := byte(value)
 		shardBlocks := allShardBlocks[shardID]

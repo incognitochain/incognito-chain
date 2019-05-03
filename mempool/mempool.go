@@ -3,11 +3,12 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/databasemp"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/constant-money/constant-chain/databasemp"
 
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
@@ -310,7 +311,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return err
 	}
-	
+
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
@@ -410,6 +411,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, true)
+	fmt.Printf("[db] maybeAccept: %h, %+v\n", hash, err)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -427,6 +429,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	_, txDesc, err := tp.maybeAcceptTransaction(tx, false)
 	if err != nil {
 		Logger.log.Error(err)
+		fmt.Printf("[db] maybe err: %+v\n", tx.GetMetadataType())
 		return nil, err
 	}
 	tempTxDesc := &txDesc.Desc

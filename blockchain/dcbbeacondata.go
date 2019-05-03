@@ -1,14 +1,15 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
 
@@ -69,51 +70,33 @@ func parseLoanResponseValueBeacon(data string) ([]*LoanRespData, error) {
 }
 
 //// Crowdsale bond
-func getSaleDataKeyBeacon(saleID []byte) string {
-	return saleDataPrefix + string(saleID)
+type CrowdsalePaymentInstruction struct {
+	PaymentAddress privacy.PaymentAddress
+	Amount         uint64
+	AssetID        common.Hash
+
+	// Data for updating crowdsale on beacon component
+	SaleID     []byte
+	SentAmount uint64
+	UpdateSale bool
 }
 
-func getSaleDataValueBeacon(data *component.SaleData) string {
-	value, _ := json.Marshal(data)
-	return string(value)
+func (inst *CrowdsalePaymentInstruction) String() (string, error) {
+	data, err := json.Marshal(inst)
+	return string(data), err
 }
 
-func parseSaleDataValueBeacon(value string) (*component.SaleData, error) {
-	data := &component.SaleData{}
-	err := json.Unmarshal([]byte(value), data)
+func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction, error) {
+	inst := &CrowdsalePaymentInstruction{}
+	err := json.Unmarshal([]byte(data), inst)
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	return inst, nil
 }
 
-// type CrowdsalePaymentInstruction struct {
-// 	PaymentAddress privacy.PaymentAddress
-// 	Amount         uint64
-// 	AssetID        common.Hash
-
-// 	// Data for updating crowdsale on beacon component
-// 	SaleID     []byte
-// 	SentAmount uint64
-// 	UpdateSale bool
-// }
-
-// func (inst *CrowdsalePaymentInstruction) String() (string, error) {
-// 	data, err := json.Marshal(inst)
-// 	return string(data), err
-// }
-
-// func ParseCrowdsalePaymentInstruction(data string) (*CrowdsalePaymentInstruction, error) {
-// 	inst := &CrowdsalePaymentInstruction{}
-// 	err := json.Unmarshal([]byte(data), inst)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return inst, nil
-// }
-
-// func (inst *CrowdsalePaymentInstruction) Compare(inst2 *CrowdsalePaymentInstruction) bool {
-// 	return bytes.Equal(inst.PaymentAddress.Pk, inst2.PaymentAddress.Pk) &&
-// 		inst.Amount == inst2.Amount &&
-// 		inst.AssetID.IsEqual(&inst2.AssetID)
-// }
+func (inst *CrowdsalePaymentInstruction) Compare(inst2 *CrowdsalePaymentInstruction) bool {
+	return bytes.Equal(inst.PaymentAddress.Pk, inst2.PaymentAddress.Pk) &&
+		inst.Amount == inst2.Amount &&
+		inst.AssetID.IsEqual(&inst2.AssetID)
+}
