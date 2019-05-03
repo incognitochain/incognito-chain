@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/constant-money/constant-chain/wallet"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -196,7 +197,56 @@ func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
 		return nil, err
 	}
 	return []metadata.Transaction{salaryResTx}, nil
+}
 
+func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
+	validators []string,
+	txs []string,
+	blkProducerPrivateKey *privacy.PrivateKey,
+) ([]metadata.Transaction, error) {
+	returnStakingTxs := []metadata.Transaction{}
+	for _, tx := range txs {
+		var txHash = &common.Hash{}
+		(&common.Hash{}).Decode(txHash, tx)
+
+		blockHash, index, err := blockgen.chain.config.DataBase.GetTransactionIndexById(txHash)
+		if err != nil {
+			abc := NewBlockChainError(UnExpectedError, err)
+			Logger.log.Error(abc)
+			return nil, abc
+		}
+		block, err1, _ := blockgen.chain.GetShardBlockByHash(blockHash)
+		if err1 != nil {
+			Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
+			return nil, NewBlockChainError(UnExpectedError, err1)
+		}
+
+		txData := block.Body.Transactions[index]
+
+		keyWallet, _ := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress)
+
+		returnStakingMeta := metadata.NewReturnStaking(
+			tx,
+			keyWallet.KeySet.PaymentAddress,
+			metadata.ReturnStakingMetaID,
+		)
+
+		returnStakingTx := new(transaction.Tx)
+		err1 = returnStakingTx.InitTxSalary(
+			txData.CalculateTxValue(),
+			&keyWallet.KeySet.PaymentAddress,
+			blkProducerPrivateKey,
+			blockgen.chain.GetDatabase(),
+			returnStakingMeta,
+		)
+
+		if err1 != nil {
+			return nil, err1
+		}
+		returnStakingTxs = append(returnStakingTxs, returnStakingTx)
+	}
+
+	return returnStakingTxs, nil
 }
 
 func (blockgen *BlkTmplGenerator) buildSalaryRes(

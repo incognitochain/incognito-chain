@@ -40,6 +40,7 @@ type BestStateBeacon struct {
 	CandidateBeaconWaitingForNextRandom    []string             `json:"CandidateBeaconWaitingForNextRandom"`
 	ShardCommittee                         map[byte][]string    `json:"ShardCommittee"`        // current committee and validator of all shard
 	ShardPendingValidator                  map[byte][]string    `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
+	StakingTx                              map[string]string    `json:"StakingTx"`
 	CurrentRandomNumber                    int64                `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                 `json:"IsGetRandomNumber"`
@@ -128,6 +129,7 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	bestStateBeacon.CandidateBeaconWaitingForNextRandom = []string{}
 	bestStateBeacon.ShardCommittee = make(map[byte][]string)
 	bestStateBeacon.ShardPendingValidator = make(map[byte][]string)
+	bestStateBeacon.StakingTx = make(map[string]string)
 	bestStateBeacon.Params = make(map[string]string)
 	bestStateBeacon.CurrentRandomNumber = -1
 	bestStateBeacon.StabilityInfo = StabilityInfo{}
@@ -207,6 +209,17 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 			res = append(res, []byte(value)...)
 		}
 	}
+
+	keystr := []string{}
+	for _, k := range bestStateBeacon.StakingTx {
+		keystr = append(keystr, k)
+	}
+	sort.Strings(keystr)
+	for key, value := range bestStateBeacon.StakingTx {
+		res = append(res, []byte(key)...)
+		res = append(res, []byte(value)...)
+	}
+
 	randomNumBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(randomNumBytes, uint64(bestStateBeacon.CurrentRandomNumber))
 	res = append(res, randomNumBytes...)

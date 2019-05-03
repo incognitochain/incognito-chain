@@ -130,6 +130,8 @@ func CreateShardInstructionsFromTransactionAndIns(
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
+	stakeShardTxID := []string{}
+	stakeBeaconTxID := []string{}
 	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks, beaconHeight)
 	if err != nil {
 		fmt.Println("[voting] - wtf err???", err)
@@ -145,19 +147,21 @@ func CreateShardInstructionsFromTransactionAndIns(
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeShardPubKey = append(stakeShardPubKey, pkb58)
+			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 		case metadata.BeaconStakingMeta:
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
+			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 		}
 	}
 
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
-		instruction := []string{StakeAction, strings.Join(stakeShardPubKey, ","), "shard"}
+		instruction := []string{StakeAction, strings.Join(stakeShardPubKey, ","), "shard", strings.Join(stakeShardTxID, ",")}
 		instructions = append(instructions, instruction)
 	}
 	if !reflect.DeepEqual(stakeBeaconPubKey, []string{}) {
-		instruction := []string{StakeAction, strings.Join(stakeBeaconPubKey, ","), "beacon"}
+		instruction := []string{StakeAction, strings.Join(stakeBeaconPubKey, ","), "beacon", strings.Join(stakeBeaconTxID, ",")}
 		instructions = append(instructions, instruction)
 	}
 

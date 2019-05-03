@@ -393,6 +393,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 
 	instructions := shardBlock.Instructions
 	Logger.log.Critical(instructions)
+
 	// Validate swap instruction => for testing
 	for _, l := range shardBlock.Instructions {
 		if len(l) > 0 {
@@ -403,6 +404,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 			}
 		}
 	}
+
 	if len(instructions) != 0 {
 		Logger.log.Criticalf("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
 	}
@@ -418,6 +420,8 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 
 	stakeBeacon := []string{}
 	stakeShard := []string{}
+	stakeBeaconTx := []string{}
+	stakeShardTx := []string{}
 	if len(stakers) != 0 {
 		Logger.log.Critical("Beacon Producer/ Process Stakers List", stakers)
 	}
@@ -440,19 +444,31 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 		tempStaker = blockChain.BestState.Beacon.GetValidStakers(tempStaker)
 		tempStaker = metadata.GetValidStaker(stakeShard, tempStaker)
 		tempStaker = metadata.GetValidStaker(stakeBeacon, tempStaker)
+
 		if len(tempStaker) > 0 {
 			if assignShard {
 				stakeShard = append(stakeShard, tempStaker...)
+				for i, v := range strings.Split(staker[1], ",") {
+					if common.IndexOfStr(v, stakeShard) > -1 {
+						stakeShardTx = append(stakeShardTx, strings.Split(staker[3], ",")[i])
+					}
+				}
 			} else {
 				stakeBeacon = append(stakeBeacon, tempStaker...)
+				for i, v := range strings.Split(staker[1], ",") {
+					if common.IndexOfStr(v, stakeBeacon) > -1 {
+						stakeBeaconTx = append(stakeBeaconTx, strings.Split(staker[3], ",")[i])
+					}
+				}
 			}
 		}
 	}
+
 	if len(stakeShard) > 0 {
-		validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeShard, ","), "shard"})
+		validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeShard, ","), "shard", strings.Join(stakeShardTx, ",")})
 	}
 	if len(stakeBeacon) > 0 {
-		validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeBeacon, ","), "beacon"})
+		validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeBeacon, ","), "beacon", strings.Join(stakeBeaconTx, ",")})
 	}
 	// Validate swap instruction => extract only valid swap instruction
 	for _, swap := range swapers {
