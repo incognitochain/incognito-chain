@@ -139,6 +139,13 @@ type DatabaseInterface interface {
 	GetLoanWithdrawed(loanID []byte) (bool, error)
 	StoreLoanWithdrawed(loanID []byte) error
 
+	// Crowdsale
+	StoreSaleData(saleID, data []byte) error
+	GetSaleData(saleID []byte) ([]byte, error)
+	GetAllSaleData() ([][]byte, error)
+	StoreDCBBondInfo(bondID *common.Hash, amountAvail, cstPaid uint64) error
+	GetDCBBondInfo(bondID *common.Hash) (uint64, uint64)
+
 	// DCB trade bonds with GOV
 	StoreTradeActivation(tradeID []byte, bondID *common.Hash, buy bool, activated bool, amount uint64) error
 	GetTradeActivation(tradeID []byte) (*common.Hash, bool, bool, uint64, error)

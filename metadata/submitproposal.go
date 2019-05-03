@@ -84,6 +84,56 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
 	return [][]string{instStr}, nil
 }
 
+func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) error {
+	// No crowdsale existed with the same id
+	if bcr.CrowdsaleExisted(sale.SaleID) {
+		return errors.Errorf("crowdsale with the same ID existed")
+	}
+
+	// Valid bondID
+	if !common.IsBondAsset(sale.BondID) {
+		return errors.Errorf("bondID incorrect")
+	}
+
+	// EndBlock is valid
+	if sale.EndBlock <= bcr.GetBeaconHeight() {
+		return errors.Errorf("crowdsale EndBlock must be higher than current beacon height")
+	}
+
+	// Amount and DefaultPrice must be set
+	if sale.Amount*sale.Price == 0 {
+		return errors.Errorf("crowdsale asset amount and price must be set")
+	}
+
+	// Check if DCB has enough bond
+	if !sale.Buy && bcr.GetDCBAvailableAsset(sale.BondID) < sale.Amount {
+		return errors.Errorf("crowdsale: not enough selling asset")
+	}
+
+	if !sale.Buy {
+		// Cannot buy and sell the same type of bond at the same time
+		oldSales, err := bcr.GetAllSaleData()
+		if err != nil {
+			return err
+		}
+		for _, oldSale := range oldSales {
+			if oldSale.EndBlock >= bcr.GetBeaconHeight() {
+				continue // sale ended
+			}
+			if oldSale.Buy && sale.BondID.IsEqual(oldSale.BondID) {
+				return errors.Errorf("cannot buy and sell the same bond at the same time")
+			}
+		}
+
+		// Sell price (in Constant) must be higher than average buy price
+		amount, paid := bcr.GetDCBBondInfo(sale.BondID)
+		if paid > amount*sale.Price {
+			return fmt.Errorf("bond sell price is too low, got %d expected at least %d", sale.Price, paid/amount)
+		}
+	}
+	return nil
+}
+
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(
 	tx Transaction,
 	br BlockchainRetriever,
@@ -98,29 +148,9 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 
 	// Validate Crowdsale data
 	for _, sale := range submitDCBProposalMetadata.DCBParams.ListSaleData {
-		// No crowdsale existed with the same id
-		if br.CrowdsaleExisted(sale.SaleID) {
-			return false, errors.Errorf("crowdsale with the same ID existed")
-		}
-
-		// Valid asset pair
-		if !(common.IsBondAsset(&sale.BuyingAsset) && common.IsConstantAsset(&sale.SellingAsset)) && (common.IsConstantAsset(&sale.BuyingAsset) && common.IsBondAsset(&sale.SellingAsset)) {
-			return false, errors.Errorf("crowdsale asset pair must be bond and Constant")
-		}
-
-		// EndBlock is valid
-		if sale.EndBlock <= br.GetBeaconHeight() {
-			return false, errors.Errorf("crowdsale EndBlock must be higher than current beacon height")
-		}
-
-		// Amount and DefaultPrice must be set
-		if sale.BuyingAmount*sale.DefaultBuyPrice*sale.SellingAmount*sale.DefaultSellPrice == 0 {
-			return false, errors.Errorf("crowdsale asset amounts and prices must be set")
-		}
-
-		// Check if DCB has enough SellingAsset
-		if common.IsBondAsset(&sale.SellingAsset) && br.GetDCBAvailableAsset(&sale.SellingAsset) < sale.SellingAmount {
-			return false, errors.Errorf("crowdsale: not enough selling asset")
+		err := validateCrowdsaleData(sale, br)
+		if err != nil {
+			return false, err
 		}
 	}
 

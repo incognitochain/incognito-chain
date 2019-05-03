@@ -71,8 +71,8 @@ const (
 
 	//board and proposal parameters
 	TestnetSalaryPerTx                = 1
-	TestnetBasicSalary                = 1
-	TestnetInitFundSalary             = 1000000
+	TestnetBasicSalary                = 100
+	TestnetInitFundSalary             = 100000
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
 	TestnetInitCmBToken               = 0

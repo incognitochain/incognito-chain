@@ -131,6 +131,7 @@ const (
 	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
 	GetListDCBProposalBuyingAssets        = "getlistdcbproposalbuyingassets"
 	GetListDCBProposalSellingAssets       = "getlistdcbproposalsellingassets"
+	GetDCBBondInfo                        = "getdcbbondinfo"
 
 	// trade bonds with gov
 	CreateAndSendTradeActivation = "createandsendtradeactivation"

@@ -15,11 +15,9 @@ import (
 
 // CrowdsaleRequest represents a buying request created by user to send to DCB
 type CrowdsaleRequest struct {
-	SaleID                 []byte
-	PriceLimit             uint64 // max price set by user
-	LimitSellingAssetPrice bool   // PriceLimit is in selling asset: i.e., tx is valid only when price(SellingAsset)/price(BuyingAsset) <= PriceLimit
+	SaleID []byte
 
-	ValidUntil     uint64 // in original shard, not beacon or payment shard, 0 for not limit
+	ValidUntil     uint64 // in originated shard, not beacon or payment shard, 0 for not limit
 	PaymentAddress privacy.PaymentAddress
 	MetadataBase
 }
@@ -27,13 +25,11 @@ type CrowdsaleRequest struct {
 func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 	saleIDStr, okID := csReqData["SaleID"].(string)
 	saleID, errSale := hex.DecodeString(saleIDStr)
-	priceLimit, okPrice := csReqData["PriceLimit"].(float64)
 	validUntil, okValid := csReqData["ValidUntil"].(float64)
 	paymentAddressStr, okAddr := csReqData["PaymentAddress"].(string)
-	limitSellingAsset, okLimit := csReqData["LimitSellingAssetPrice"].(bool)
 	keyWallet, errPayment := wallet.Base58CheckDeserialize(paymentAddressStr)
 
-	if !okID || !okPrice || !okValid || !okAddr || !okLimit {
+	if !okID || !okValid || !okAddr {
 		return nil, errors.Errorf("Error parsing crowdsale request data")
 	}
 	if err := common.CheckError(errSale, errPayment); err != nil {
@@ -41,11 +37,9 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 	}
 
 	result := &CrowdsaleRequest{
-		PaymentAddress:         keyWallet.KeySet.PaymentAddress,
-		SaleID:                 saleID,
-		PriceLimit:             uint64(priceLimit),
-		ValidUntil:             uint64(validUntil),
-		LimitSellingAssetPrice: limitSellingAsset,
+		PaymentAddress: keyWallet.KeySet.PaymentAddress,
+		SaleID:         saleID,
+		ValidUntil:     uint64(validUntil),
 	}
 	result.Type = CrowdsaleRequestMeta
 	return result, nil
@@ -53,13 +47,13 @@ func NewCrowdsaleRequest(csReqData map[string]interface{}) (Metadata, error) {
 
 func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sale exists and ongoing
-	saleData, err := bcr.GetProposedCrowdsale(csReq.SaleID)
+	sale, err := bcr.GetSaleData(csReq.SaleID) // okay to use unsync data since we only use immutable fields
 	if err != nil {
 		return false, err
 	}
 
 	beaconHeight := bcr.GetBeaconHeight()
-	if beaconHeight >= saleData.EndBlock {
+	if beaconHeight >= sale.EndBlock {
 		return false, errors.Errorf("crowdsale ended")
 	}
 
@@ -70,7 +64,7 @@ func (csReq *CrowdsaleRequest) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	}
 
 	// Check if asset is sent to correct address
-	if common.IsConstantAsset(&saleData.BuyingAsset) {
+	if !sale.Buy {
 		keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 		unique, pubkey, _ := txr.GetUniqueReceiver()
 		if !unique || !bytes.Equal(pubkey, keyWalletBurnAccount.KeySet.PaymentAddress.Pk[:]) {
@@ -102,9 +96,7 @@ func (csReq *CrowdsaleRequest) ValidateMetadataByItself() bool {
 func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 	record := csReq.PaymentAddress.String()
 	record += string(csReq.SaleID)
-	record += string(csReq.PriceLimit)
 	record += string(csReq.ValidUntil)
-	record += strconv.FormatBool(csReq.LimitSellingAssetPrice)
 
 	// final hash
 	record += csReq.MetadataBase.Hash().String()
@@ -114,8 +106,6 @@ func (csReq *CrowdsaleRequest) Hash() *common.Hash {
 
 type CrowdsaleRequestAction struct {
 	SaleID         []byte
-	PriceLimit     uint64
-	LimitSell      bool
 	PaymentAddress privacy.PaymentAddress
 	SentAmount     uint64
 }
@@ -131,21 +121,19 @@ func (csReq *CrowdsaleRequest) BuildReqActions(txr Transaction, bcr BlockchainRe
 
 func getCrowdsaleRequestActionValue(csReq *CrowdsaleRequest, txr Transaction, bcr BlockchainRetriever) (string, error) {
 	// Calculate value of asset sent in request tx
-	saleData, err := bcr.GetProposedCrowdsale(csReq.SaleID)
+	sale, err := bcr.GetSaleData(csReq.SaleID)
 	if err != nil {
 		return "", err
 	}
 	sentAmount := uint64(0)
-	if common.IsConstantAsset(&saleData.BuyingAsset) {
+	if !sale.Buy {
 		_, _, sentAmount = txr.GetUniqueReceiver()
-	} else if common.IsBondAsset(&saleData.BuyingAsset) {
+	} else {
 		_, _, sentAmount = txr.GetTokenUniqueReceiver()
 	}
 
 	action := &CrowdsaleRequestAction{
 		SaleID:         csReq.SaleID,
-		PriceLimit:     csReq.PriceLimit,
-		LimitSell:      csReq.LimitSellingAssetPrice,
 		PaymentAddress: csReq.PaymentAddress,
 		SentAmount:     sentAmount,
 	}
@@ -153,13 +141,13 @@ func getCrowdsaleRequestActionValue(csReq *CrowdsaleRequest, txr Transaction, bc
 	return string(value), err
 }
 
-func ParseCrowdsaleRequestActionValue(value string) ([]byte, uint64, bool, privacy.PaymentAddress, uint64, error) {
+func ParseCrowdsaleRequestActionValue(value string) ([]byte, privacy.PaymentAddress, uint64, error) {
 	action := &CrowdsaleRequestAction{}
 	err := json.Unmarshal([]byte(value), action)
 	if err != nil {
-		return nil, 0, false, privacy.PaymentAddress{}, 0, err
+		return nil, privacy.PaymentAddress{}, 0, err
 	}
-	return action.SaleID, action.PriceLimit, action.LimitSell, action.PaymentAddress, action.SentAmount, nil
+	return action.SaleID, action.PaymentAddress, action.SentAmount, nil
 }
 
 func (csReq *CrowdsaleRequest) CalculateSize() uint64 {
