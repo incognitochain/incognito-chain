@@ -27,7 +27,7 @@ func (protocol *BFTProtocol) phasePropose() error {
 		} else {
 			msgReq, _ := MakeMsgBFTReq(protocol.RoundData.BestStateHash, protocol.RoundData.ProposerOffset, protocol.EngineCfg.UserKeySet)
 			if err := protocol.EngineCfg.Server.PushMessageToShard(msgReq, protocol.RoundData.ShardID); err != nil {
-				fmt.Println("BFT: no beacon", err)
+				fmt.Println("BFT: no shard", err)
 			}
 		}
 	})
@@ -85,7 +85,7 @@ phase:
 					return errors.New("Failed to propose block")
 				}
 				protocol.forwardMsg(msg)
-				protocol.phase = PBFT_PREPARE
+				protocol.phase = BFT_PREPARE
 				protocol.closeProposeCh()
 			} else {
 				protocol.closeProposeCh()
@@ -158,7 +158,7 @@ phase:
 					protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 				}
 				fmt.Println("BFT: Forward propose message", time.Since(protocol.startTime).Seconds())
-				protocol.phase = PBFT_PREPARE
+				protocol.phase = BFT_PREPARE
 				timeout.Stop()
 				break phase
 			} else {
@@ -228,7 +228,7 @@ phase:
 				return err
 			}
 
-			protocol.phase = PBFT_COMMIT
+			protocol.phase = BFT_COMMIT
 			break phase
 		case msg := <-protocol.cBFTMsg:
 			if msg.MessageType() == wire.CmdBFTPrepare {
@@ -289,7 +289,7 @@ phase:
 			var szRCombined string
 			szRCombined = "1"
 			for szR := range phaseData.Sigs {
-				if len(phaseData.Sigs[szR]) > (len(protocol.RoundData.Committee) >> 1) {
+				if len(phaseData.Sigs[szR]) > (2 * len(protocol.RoundData.Committee) / 3) {
 					if len(szRCombined) == 1 {
 						szRCombined = szR
 					} else {

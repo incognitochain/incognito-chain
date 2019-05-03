@@ -8,8 +8,8 @@ const (
 )
 
 const (
-	PBFT_LISTEN  = "listen"
-	PBFT_PROPOSE = "propose"
-	PBFT_PREPARE = "prepare"
-	PBFT_COMMIT  = "commit"
+	BFT_LISTEN  = "listen"
+	BFT_PROPOSE = "propose"
+	BFT_PREPARE = "prepare"
+	BFT_COMMIT  = "commit"
 )
