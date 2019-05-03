@@ -41,6 +41,7 @@ const (
 	ShardBlockSalaryResponseMeta = 38
 	BeaconSalaryRequestMeta      = 39
 	BeaconSalaryResponseMeta     = 40
+	ReturnStakingMetaID          = 41
 
 	SubmitDCBProposalMeta          = 43
 	VoteDCBBoardMeta               = 44

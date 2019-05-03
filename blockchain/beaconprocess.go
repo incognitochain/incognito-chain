@@ -625,6 +625,10 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			fmt.Println("SWAP l2", l[2])
 			fmt.Println("SWAP inPubkeys", inPubkeys)
 			fmt.Println("SWAP outPubkeys", outPubkeys)
+			for _, v := range outPubkeys {
+				delete(bestStateBeacon.StakingTx, v)
+			}
+
 			if l[3] == "shard" {
 				temp, err := strconv.Atoi(l[4])
 				if err != nil {
@@ -690,12 +694,19 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		if l[0] == StakeAction && l[2] == "beacon" {
 			beacon := strings.Split(l[1], ",")
 			newBeaconCandidate = append(newBeaconCandidate, beacon...)
+			for i, v := range strings.Split(l[3], ",") {
+				bestStateBeacon.StakingTx[newBeaconCandidate[i]] = v
+			}
 		}
 		if l[0] == StakeAction && l[2] == "shard" {
 			shard := strings.Split(l[1], ",")
 			newShardCandidate = append(newShardCandidate, shard...)
+			for i, v := range strings.Split(l[3], ",") {
+				bestStateBeacon.StakingTx[newBeaconCandidate[i]] = v
+			}
 		}
 	}
+
 	if bestStateBeacon.BeaconHeight == 1 {
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")

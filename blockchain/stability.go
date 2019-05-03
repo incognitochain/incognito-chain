@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
@@ -335,7 +336,16 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 		fmt.Println("[db] - beaconBlock[", beaconBlock.Header.Height, "]")
 		for _, l := range beaconBlock.Body.Instructions {
 			// TODO: will improve the condition later
-			if l[0] == StakeAction || l[0] == "swap" || l[0] == RandomAction {
+			var tx metadata.Transaction
+			var err error
+			txs := []metadata.Transaction{}
+
+			if l[0] == SwapAction {
+				txs, err = blockgen.buildReturnStakingAmountTx(strings.Split(l[1], ","), strings.Split(l[3], ","), producerPrivateKey)
+				resTxs = append(resTxs, txs...)
+			}
+
+			if l[0] == StakeAction || l[0] == RandomAction {
 				continue
 			}
 			if len(l) <= 2 {
@@ -352,8 +362,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				}
 				Logger.log.Warn("Metadata type:", metaType, "\n")
 
-				var tx metadata.Transaction
-				txs := []metadata.Transaction{}
 				switch metaType {
 				case component.RewardDCBProposalSubmitterIns:
 					fmt.Println("[voting]-RewardDCBProposalSubmitterIns")
