@@ -106,6 +106,7 @@ const (
 	GetDCBConstitution                   = "getdcbconstitution"
 	GetDCBBoardIndex                     = "getdcbboardindex"
 	GetGOVBoardIndex                     = "getgovboardindex"
+	GetConstantCirculating               = "getconstantcirculating"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
 
