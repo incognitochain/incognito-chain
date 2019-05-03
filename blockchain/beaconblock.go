@@ -72,6 +72,7 @@ type BeaconBlock struct {
 func NewBeaconBlock() BeaconBlock {
 	return BeaconBlock{}
 }
+
 func (beaconBlock *BeaconBlock) Hash() *common.Hash {
 	hash := beaconBlock.Header.Hash()
 	return &hash

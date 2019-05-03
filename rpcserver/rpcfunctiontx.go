@@ -923,16 +923,23 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// get component
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) < 5 {
+	if len(paramsArray) < 6 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type component"))
 	}
 	stakingType, ok := paramsArray[4].(float64)
+
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type component"))
 	}
 
+	paymentAddress, ok := paramsArray[5].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid payment address"))
+	}
+
 	var err error
-	metadata, err := metadata.NewStakingMetadata(int(stakingType))
+	metadata, err := metadata.NewStakingMetadata(int(stakingType), paymentAddress)
+
 	tx, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
