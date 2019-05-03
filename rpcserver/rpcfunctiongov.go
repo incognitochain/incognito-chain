@@ -684,3 +684,13 @@ func (rpcServer RpcServer) handleSignUpdatingOracleBoardContent(params interface
 	signStr := hex.EncodeToString(signatureBytes)
 	return signStr, nil
 }
+
+func (rpcServer RpcServer) handleGetAssetPrice(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	assetIDRaw := arrayParams[0].(string)
+	assetID, err := common.NewHashFromStr(assetIDRaw)
+	if err != nil {
+		return uint64(0), nil
+	}
+	return rpcServer.config.BlockChain.BestState.Beacon.GetAssetPrice(*assetID), nil
+}
