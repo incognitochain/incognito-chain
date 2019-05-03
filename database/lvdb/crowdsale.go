@@ -25,7 +25,10 @@ func (db *db) GetAllSaleData() ([][]byte, error) {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	data := [][]byte{}
 	for iter.Next() {
-		data = append(data, iter.Value())
+		value := iter.Value()
+		d := make([]byte, len(value))
+		copy(d, value)
+		data = append(data, d)
 	}
 	return data, nil
 }
