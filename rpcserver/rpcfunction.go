@@ -189,6 +189,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithSenderAddress:       RpcServer.handleCreateAndSendTxWithSenderAddress,
 	CreateAndSendTxWithBuyGOVTokensRequest: RpcServer.handleCreateAndSendTxWithBuyGOVTokensRequest,
 	GetCurrentSellingGOVTokens:             RpcServer.handleGetCurrentSellingGOVTokens,
+	GetAssetPrice:                          RpcServer.handleGetAssetPrice,
 
 	// wallet
 	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,

@@ -198,7 +198,7 @@ func (blockchain *BlockChain) GetDCBAvailableAsset(assetID *common.Hash) uint64 
 
 //// Reserve
 func (blockchain *BlockChain) GetAssetPrice(assetID *common.Hash) uint64 {
-	return blockchain.BestState.Beacon.getAssetPrice(*assetID)
+	return blockchain.BestState.Beacon.GetAssetPrice(*assetID)
 }
 
 //// Trade bonds
