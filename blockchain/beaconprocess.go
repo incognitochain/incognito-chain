@@ -737,14 +737,14 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			// snapshot candidate list
 			bestStateBeacon.CandidateShardWaitingForCurrentRandom = bestStateBeacon.CandidateShardWaitingForNextRandom
 			bestStateBeacon.CandidateBeaconWaitingForCurrentRandom = bestStateBeacon.CandidateBeaconWaitingForNextRandom
-			fmt.Println("==================Beacon Process: Snapshot candidate====================")
-			fmt.Println("Beacon Process: CandidateShardWaitingForCurrentRandom: ", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
-			fmt.Println("Beacon Process: CandidateBeaconWaitingForCurrentRandom: ", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
+			Logger.log.Critical("==================Beacon Process: Snapshot candidate====================")
+			Logger.log.Critical("Beacon Process: CandidateShardWaitingForCurrentRandom: ", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			Logger.log.Critical("Beacon Process: CandidateBeaconWaitingForCurrentRandom: ", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
 			// reset candidate list
 			bestStateBeacon.CandidateShardWaitingForNextRandom = []string{}
 			bestStateBeacon.CandidateBeaconWaitingForNextRandom = []string{}
-			fmt.Println("Beacon Process/After: CandidateShardWaitingForNextRandom: ", bestStateBeacon.CandidateShardWaitingForNextRandom)
-			fmt.Println("Beacon Process/After: CandidateBeaconWaitingForCurrentRandom: ", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
+			Logger.log.Critical("Beacon Process/After: CandidateShardWaitingForNextRandom: ", bestStateBeacon.CandidateShardWaitingForNextRandom)
+			Logger.log.Critical("Beacon Process/After: CandidateBeaconWaitingForCurrentRandom: ", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
 			// assign random timestamp
 			bestStateBeacon.CurrentRandomTimeStamp = newBlock.Header.Timestamp
 		}
@@ -753,11 +753,11 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
 			bestStateBeacon.IsGetRandomNumber = true
-			fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
-			Logger.log.Critical("bestStateBeacon.ShardPendingValidator", bestStateBeacon.ShardPendingValidator)
-			Logger.log.Critical("bestStateBeacon.CandidateShardWaitingForCurrentRandom", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
-			Logger.log.Critical("bestStateBeacon.CurrentRandomNumber", bestStateBeacon.CurrentRandomNumber)
-			Logger.log.Critical("bestStateBeacon.ActiveShards", bestStateBeacon.ActiveShards)
+			//fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			//Logger.log.Critical("bestStateBeacon.ShardPendingValidator", bestStateBeacon.ShardPendingValidator)
+			//Logger.log.Critical("bestStateBeacon.CandidateShardWaitingForCurrentRandom", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			//Logger.log.Critical("bestStateBeacon.CurrentRandomNumber", bestStateBeacon.CurrentRandomNumber)
+			//Logger.log.Critical("bestStateBeacon.ActiveShards", bestStateBeacon.ActiveShards)
 			err := AssignValidatorShard(bestStateBeacon.ShardPendingValidator, bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber, bestStateBeacon.ActiveShards)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -765,19 +765,19 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			}
 			// delete CandidateShardWaitingForCurrentRandom list
 			bestStateBeacon.CandidateShardWaitingForCurrentRandom = []string{}
-			fmt.Println("Beacon Process/Update/RandomFalg: Shard Pending Validator", bestStateBeacon.ShardPendingValidator)
+			//fmt.Println("Beacon Process/Update/RandomFalg: Shard Pending Validator", bestStateBeacon.ShardPendingValidator)
 			// Shuffle candidate
 			// shuffle CandidateBeaconWaitingForCurrentRandom with current random number
-			fmt.Println("Beacon Process/Update/RandomFlag: Beacon Candidate Waiting for Current Random Number", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
+			//fmt.Println("Beacon Process/Update/RandomFlag: Beacon Candidate Waiting for Current Random Number", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
 			newBeaconPendingValidator, err := ShuffleCandidate(bestStateBeacon.CandidateBeaconWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber)
-			fmt.Println("Beacon Process/Update/RandomFalg: NewBeaconPendingValidator", newBeaconPendingValidator)
+			//fmt.Println("Beacon Process/Update/RandomFalg: NewBeaconPendingValidator", newBeaconPendingValidator)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
 			}
 			bestStateBeacon.CandidateBeaconWaitingForCurrentRandom = []string{}
 			bestStateBeacon.BeaconPendingValidator = append(bestStateBeacon.BeaconPendingValidator, newBeaconPendingValidator...)
-			fmt.Println("Beacon Process/Update/RandomFalg: Beacon Pending Validator", bestStateBeacon.BeaconPendingValidator)
+			//fmt.Println("Beacon Process/Update/RandomFalg: Beacon Pending Validator", bestStateBeacon.BeaconPendingValidator)
 			if err != nil {
 				return err
 			}
