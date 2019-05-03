@@ -35,7 +35,7 @@ type BestStateShard struct {
 	TotalTxns              uint64          `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64          `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int             `json:"ActiveShards"`
-	lock                   sync.Mutex
+	lock                   sync.RWMutex
 }
 
 // Get role of a public key base on best state shard
@@ -90,8 +90,8 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 	return res
 }
 func (bestStateShard *BestStateShard) Hash() common.Hash {
-	// bestStateShard.lock.Lock()
-	// defer bestStateShard.lock.Unlock()
+	bestStateShard.lock.RLock()
+	defer bestStateShard.lock.RUnlock()
 	return common.HashH(bestStateShard.GetBytes())
 }
 func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffset int) string {
