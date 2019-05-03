@@ -138,7 +138,7 @@ func CreateShardInstructionsFromTransactionAndIns(
 
 	for _, tx := range transactions {
 		if tx.GetMetadataType() != 38 {
-			fmt.Println("[voting] - CreateShardInstructionsFromTransactionAndIns: ", tx.GetMetadataType())
+			//fmt.Println("[voting] - CreateShardInstructionsFromTransactionAndIns: ", tx.GetMetadataType())
 		}
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:

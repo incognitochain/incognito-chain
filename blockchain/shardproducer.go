@@ -355,8 +355,12 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(shardID byte) (txsToAdd 
 		}
 		// Time bound condition for block creation
 		//if time for getting transaction exceed half of MinShardBlkInterval then break
-		elasped := time.Since(startTime)
-		if elasped >= common.MinShardBlkInterval/2 {
+		elasped := time.Since(startTime).Nanoseconds()
+		Logger.log.Critical("Shard Producer/Elapsed: ", elasped)
+		Logger.log.Critical("Shard Producer/MinShardBlkInterval: ", common.MinShardBlkInterval.Nanoseconds())
+		Logger.log.Critical("Shard Producer/MinShardBlkInterval/2: ", common.MinShardBlkInterval.Nanoseconds()/2)
+		if elasped >= common.MinShardBlkInterval.Nanoseconds()/2 {
+			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
 	}
