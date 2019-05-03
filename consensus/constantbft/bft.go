@@ -43,10 +43,10 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	protocol.cQuit = make(chan struct{})
 	protocol.proposeCh = make(chan wire.Message)
 	protocol.earlyMsgCh = make(chan wire.Message)
-	protocol.phase = PBFT_LISTEN
+	protocol.phase = BFT_LISTEN
 	defer close(protocol.cQuit)
 	if protocol.RoundData.IsProposer {
-		protocol.phase = PBFT_PROPOSE
+		protocol.phase = BFT_PROPOSE
 	}
 
 	Logger.log.Info("Starting PBFT protocol for " + protocol.RoundData.Layer)
@@ -71,19 +71,19 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 		fmt.Println("BFT: New Phase", time.Since(protocol.startTime).Seconds())
 		protocol.cTimeout = make(chan struct{})
 		switch protocol.phase {
-		case PBFT_PROPOSE:
+		case BFT_PROPOSE:
 			if err := protocol.phasePropose(); err != nil {
 				return nil, err
 			}
-		case PBFT_LISTEN:
+		case BFT_LISTEN:
 			if err := protocol.phaseListen(); err != nil {
 				return nil, err
 			}
-		case PBFT_PREPARE:
+		case BFT_PREPARE:
 			if err := protocol.phasePrepare(); err != nil {
 				return nil, err
 			}
-		case PBFT_COMMIT:
+		case BFT_COMMIT:
 			if err := protocol.phaseCommit(); err != nil {
 				return nil, err
 			}
@@ -204,13 +204,13 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			case <-protocol.cQuit:
 				return
 			default:
-				if protocol.phase == PBFT_PREPARE {
+				if protocol.phase == BFT_PREPARE {
 					for _, msg := range prepareMsgs {
 						protocol.cBFTMsg <- msg
 					}
 					prepareMsgs = []wire.Message{}
 				}
-				if protocol.phase == PBFT_COMMIT {
+				if protocol.phase == BFT_COMMIT {
 					for _, msg := range commitMsgs {
 						protocol.cBFTMsg <- msg
 					}
@@ -228,13 +228,13 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 		case earlyMsg := <-protocol.earlyMsgCh:
 			switch earlyMsg.MessageType() {
 			case wire.CmdBFTPrepare:
-				if protocol.phase == PBFT_LISTEN {
+				if protocol.phase == BFT_LISTEN {
 					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], earlyMsg.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
 						prepareMsgs = append(prepareMsgs, earlyMsg)
 					}
 				}
 			case wire.CmdBFTCommit:
-				if protocol.phase == PBFT_PREPARE {
+				if protocol.phase == BFT_PREPARE {
 					newSig := bftCommittedSig{
 						ValidatorsIdxR: earlyMsg.(*wire.MessageBFTCommit).ValidatorsIdx,
 						Sig:            earlyMsg.(*wire.MessageBFTCommit).CommitSig,

@@ -6,6 +6,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"sort"
 	"sync"
+	"time"
 )
 
 const (
@@ -21,6 +22,17 @@ type ShardPool struct {
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
+
+func init() {
+	go func() {
+		ticker := time.Tick(5 * time.Second)
+		for _ = range ticker {
+			for k, _ := range shardPoolMap {
+				GetShardPool(k).RemoveBlock(blockchain.GetBestStateShard(k).ShardHeight)
+			}
+		}
+	}()
+}
 
 func InitShardPool(pool map[byte]blockchain.ShardPool) {
 	for i := 0; i < 255; i++ {
@@ -46,14 +58,9 @@ func GetShardPool(shardID byte) *ShardPool {
 }
 
 func (self *ShardPool) SetShardState(lastestShardHeight uint64) {
-	self.poolMu.Lock()
-	defer self.poolMu.Unlock()
-	self.latestValidHeight = lastestShardHeight
 	if self.latestValidHeight < lastestShardHeight {
 		self.latestValidHeight = lastestShardHeight
 	}
-	//Remove pool base on new shardstate
-	self.removeBlock(lastestShardHeight)
 }
 
 func (self *ShardPool) GetShardState() uint64 {
@@ -164,6 +171,9 @@ func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
 	defer self.poolMu.RUnlock()
 	finalBlocks := []*blockchain.ShardBlock{}
 	for _, blk := range self.pool {
+		if blk.Header.Height <= blockchain.GetBestStateShard(self.shardID).ShardHeight {
+			continue
+		}
 		if blk.Header.Height > self.latestValidHeight {
 			break
 		}
