@@ -9,12 +9,13 @@ import (
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/pkg/errors"
 )
 
-func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
+func (bsb *BestStateBeacon) processStabilityInstruction(inst []string, db database.DatabaseInterface) error {
 	if inst[0] == InitAction {
 		// init data for network
 		switch inst[1] {
@@ -92,7 +93,7 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string) error {
 		return bsb.processCrowdsalePaymentInstruction(inst)
 
 	case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
-		return bsb.processBuyFromGOVReqInstruction(inst)
+		return bsb.processBuyFromGOVReqInstruction(inst, db)
 
 	case strconv.Itoa(metadata.BuyBackRequestMeta):
 		return bsb.processBuyBackReqInstruction(inst)
@@ -289,7 +290,7 @@ func (bsb *BestStateBeacon) processBuyBackReqInstruction(inst []string) error {
 	return nil
 }
 
-func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error {
+func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string, db database.DatabaseInterface) error {
 	instType := inst[2]
 	if instType == "refund" {
 		return nil
@@ -310,6 +311,15 @@ func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string) error
 	sellingBondsParams := stabilityInfo.GOVConstitution.GOVParams.SellingBonds
 	if sellingBondsParams != nil {
 		sellingBondsParams.BondsToSell -= md.Amount
+		sellingBondsParamsBytes, err := json.Marshal(sellingBondsParams)
+		if err != nil {
+			return err
+		}
+		bondID := sellingBondsParams.GetID()
+		err = db.StoreSoldBondTypes(bondID, sellingBondsParamsBytes)
+		if err != nil {
+			return err
+		}
 		stabilityInfo.SalaryFund += (md.Amount * md.BuyPrice)
 	}
 	return nil
