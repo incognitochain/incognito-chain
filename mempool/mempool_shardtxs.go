@@ -26,6 +26,13 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 	go func() {
 		for _, tx := range txs {
 			go func(tx metadata.Transaction) {
+				if tx.GetType() == common.TxCustomTokenType {
+					customTokenTx := tx.(*transaction.TxCustomToken)
+						if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+							errCh <- nil
+							return
+							}
+					}
 				err := tp.validateTxIndependProperties(tx)
 				errCh <- err
 			}(tx)

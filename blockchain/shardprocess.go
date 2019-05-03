@@ -694,41 +694,30 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
-
+	defer blockChain.config.TempTxPool.EmptyPool()
+	
 	err := blockChain.config.TempTxPool.ValidateTxList(txs)
-	blockChain.config.TempTxPool.EmptyPool()
 	if err != nil {
-		return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid"))
+		Logger.log.Critical("ERORORORORORO", err)
+		return NewBlockChainError(TransactionError, errors.New("Some Transactions in New Block IS invalid"))
 	}
 	return nil
 
-	// index := 0
-	// salaryCount := 0
-
-	// for _, tx := range txs {
-	// 	if !tx.IsSalaryTx() {
-	// 		if tx.GetType() == common.TxCustomTokenType {
-	// 			customTokenTx := tx.(*transaction.TxCustomToken)
-	// 			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-	// 				salaryCount++
-	// 				continue
-	// 			}
-	// 		}
-	// 		_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		index++
-	// 	} else {
-	// 		salaryCount++
-	// 	}
-	// }
-	// blockChain.config.TempTxPool.EmptyPool()
-	// if index == len(txs)-salaryCount {
-	// 	return nil
-	// } else {
-	// 	return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid"))
-	// }
+	//for _, tx := range txs {
+	//	if !tx.IsSalaryTx() {
+	//		if tx.GetType() == common.TxCustomTokenType {
+	//			customTokenTx := tx.(*transaction.TxCustomToken)
+	//			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+	//				continue
+	//			}
+	//		}
+	//		_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//}
+	return nil
 }
 func (blockchain *BlockChain) VerifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
 	txTokenDataListFromTxs := []transaction.TxTokenData{}
