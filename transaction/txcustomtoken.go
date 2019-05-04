@@ -156,13 +156,6 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata
 		if len(vin.PaymentAddress.Pk) == 0 {
 			return false, NewTransactionErr(WrongInput, nil)
 		}
-		// TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata's logic
-		// dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-		// if bytes.Equal(vin.PaymentAddress.Pk, dbcAccount.KeySet.PaymentAddress.Pk) {
-		// 	if !allowToUseDCBFund {
-		// 		return false, errors.New("Cannot use DCB's fund here")
-		// 	}
-		// }
 		if vin.Signature == "" {
 			return false, NewTransactionErr(WrongSig, nil)
 		}
@@ -482,6 +475,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 					return NewTransactionErr(UnexpectedErr, err)
 				}
 				txCustomToken.TxTokenData.PropertyID = *propertyID
+				txCustomToken.TxTokenData.Mintable = true
 
 			} else {
 				hashInitToken, err := txCustomToken.TxTokenData.Hash()
@@ -518,6 +512,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 			PropertySymbol: tokenParams.PropertySymbol,
 			Vins:           nil,
 			Vouts:          nil,
+			Mintable:       true,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 		//if _, ok := listCustomTokens[*propertyID]; !ok {
