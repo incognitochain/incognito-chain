@@ -660,12 +660,6 @@ func (bc *BlockChain) updateDCBBuyBackProfit(buyBackInfo BuyBackInfo) error {
 		return nil
 	}
 
-	_, buy, _, _, err := bc.config.DataBase.GetTradeActivation(buyBackInfo.TradeID)
-	if err != nil || buy {
-		// Add profit only when selling bonds
-		return err
-	}
-
 	profit := bc.updateDCBSellBondProfit(&buyBackInfo.BondID, buyBackInfo.Value*buyBackInfo.BuyBackPrice, buyBackInfo.Value)
 	fmt.Printf("[db] DCBBuyBack added profit: %d\n", profit)
 	return nil

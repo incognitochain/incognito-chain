@@ -411,7 +411,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, true)
-	fmt.Printf("[db] maybeAccept: %h, %+v\n", hash, err)
+	// fmt.Printf("[db] pool maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), hash, err)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -427,6 +427,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	_, txDesc, err := tp.maybeAcceptTransaction(tx, false)
+	// fmt.Printf("[db] pool bp maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), tx.Hash(), err)
 	if err != nil {
 		Logger.log.Error(err)
 		fmt.Printf("[db] maybe err: %+v\n", tx.GetMetadataType())
