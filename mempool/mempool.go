@@ -252,25 +252,25 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	Logger.log.Infof("Add Transaction %+v Successs \n", tx.Hash().String())
 }
-
 /*
 // maybeAcceptTransaction is the internal function which implements the public
 // See the comment for MaybeAcceptTransaction for more details.
 // This function MUST be called with the mempool lock held (for writes).
 1. Validate tx version
 2.1 Validate size of transaction (can't greater than max size of block)
-2.2 Validate fee with tx size
+2.2 Not accept a salary tx
+2.3 Validate fee with tx size
 3. Validate type of tx
 4. Validate with other txs in mempool
 5. Validate sanity data of tx
 6. Validate data in tx: privacy proof, metadata,...
 7. Validate tx with blockchain: douple spend, ...
 8. Check tx existed in mempool
-9. Not accept a salary tx
 10. Check Duplicate stake public key in pool ONLY with staking transaction
 
 Param#2: isStore: store transaction to persistence storage only work for transaction come from user (not for validation process)
 */
+
 func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	var shardID byte
 	var err error
@@ -299,7 +299,14 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return err
 	}
-
+	
+	// A standalone transaction must not be a salary transaction.
+	if tx.IsSalaryTx() {
+		err := MempoolTxError{}
+		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
+		return err
+	}
+	
 	// check fee of tx
 	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
@@ -357,13 +364,6 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 				return err
 			}
 		}
-	}
-
-	// A standalone transaction must not be a salary transaction.
-	if tx.IsSalaryTx() {
-		err := MempoolTxError{}
-		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
-		return err
 	}
 
 	// check duplicate stake public key ONLY with staking transaction

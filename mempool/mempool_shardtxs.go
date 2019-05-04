@@ -19,24 +19,13 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 	go func() {
 		for _, tx := range txs {
 			go func(tx metadata.Transaction) {
-				switch tx.GetType() {
-				case common.TxCustomTokenType:
+				if tx.GetType() == common.TxCustomTokenType {
 					customTokenTx := tx.(*transaction.TxCustomToken)
-					if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-						errCh <- nil
-						return
-					}
-				case common.TxSalaryType:
-					if tx.IsSalaryTx() {
-						shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-						if isValid := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID); isValid {
-							// salaryTxCount++
+						if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
 							errCh <- nil
 							return
-						}
+							}
 					}
-					errCh <- errors.New("salary tx invalid")
-				}
 				err := tp.validateTxIndependProperties(tx)
 				errCh <- err
 			}(tx)
