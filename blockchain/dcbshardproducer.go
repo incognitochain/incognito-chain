@@ -43,7 +43,6 @@ func buildBuyBackConfirmInst(inst []string, shardID byte) []string {
 		strconv.Itoa(int(shardID)),
 		inst[2],
 		inst[3],
-		inst[4],
 	}
 }
 
