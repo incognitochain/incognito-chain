@@ -4,7 +4,9 @@ import (
 	"strconv"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
@@ -67,10 +69,19 @@ func transferTxToken(
 	txTokenIns := []transaction.TxTokenVin{}
 	for i := 0; i < usedID; i += 1 {
 		out := unspentTxTokenOuts[i]
+
+		// Sign dummy signature using miner's key
+		keySet := &cashec.KeySet{PrivateKey: *producerPrivateKey}
+		signature, err := keySet.Sign(out.Hash()[:])
+		if err != nil {
+			return nil, 0, err
+		}
+
 		item := transaction.TxTokenVin{
 			PaymentAddress:  out.PaymentAddress,
 			TxCustomTokenID: out.GetTxCustomTokenID(),
 			VoutIndex:       out.GetIndex(),
+			Signature:       base58.Base58Check{}.Encode(signature, 0),
 		}
 
 		// No need for signature to spend tokens in DCB's account
@@ -96,6 +107,7 @@ func transferTxToken(
 		TokenTxType: transaction.CustomTokenTransfer,
 		Amount:      sumTokens,
 		Receiver:    txTokenOuts,
+		Mintable:    true,
 	}
 	tokenParams.SetVins(txTokenIns)
 	tokenParams.SetVinsAmount(sumTokens)
