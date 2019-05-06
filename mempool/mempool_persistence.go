@@ -128,8 +128,11 @@ func (tp *TxPool) LoadDatabaseMP() ([]TxDesc,error) {
 	return txDescs, nil
 }
 func (tp *TxPool) RemoveTransactionFromDatabaseMP(txHash *common.Hash) (error){
-	err := tp.config.DataBaseMempool.RemoveTransaction(txHash)
-	return err
+	if has, _ := tp.config.DataBaseMempool.HasTransaction(txHash); has {
+		err := tp.config.DataBaseMempool.RemoveTransaction(txHash)
+		return err
+	}
+	return nil
 }
 
 func UmmarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byte) (TxDesc, error) {

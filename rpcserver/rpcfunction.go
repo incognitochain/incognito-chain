@@ -1,11 +1,10 @@
 package rpcserver
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os"
-
+	
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
@@ -68,7 +67,11 @@ var RpcHandler = map[string]commandHandler{
 	RandomCommitments:               RpcServer.handleRandomCommitments,
 	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
 	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
-
+	
+	//======Testing and Benchmark======
+	GetAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
+	//=================================
+	
 	//pool
 
 	// Beststate
@@ -489,7 +492,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
+	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
