@@ -1475,6 +1475,11 @@ func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
 		if err != nil {
 			return err
 		}
+		// set default price to oracle for the newly created bond
+		if bc.BestState.Beacon.StabilityInfo.Oracle.Bonds == nil {
+			bc.BestState.Beacon.StabilityInfo.Oracle.Bonds = map[string]uint64{}
+		}
+		bc.BestState.Beacon.StabilityInfo.Oracle.Bonds[bondID.String()] = sellingBondsParams.BondPrice
 	}
 
 	err = bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
