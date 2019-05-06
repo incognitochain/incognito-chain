@@ -605,7 +605,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			continue
 		}
 		// For stability instructions
-		err := bestStateBeacon.processStabilityInstruction(l, chain)
+		err := bestStateBeacon.processStabilityInstruction(l, chain.config.DataBase)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)

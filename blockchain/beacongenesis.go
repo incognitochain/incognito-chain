@@ -90,7 +90,7 @@ func createGOVGenesisSalaryFund(genesisParams GenesisParams) []string {
 func createGOVGenesisOracleInst() []string {
 	initialPrices := component.Oracle{
 		DCBToken: 1000,   // $10
-		GOVToken: 2000,   // $20
+		GOVToken: 500,    // $5
 		Constant: 100,    // $1
 		ETH:      15000,  // $150
 		BTC:      400000, // $4000
@@ -134,13 +134,13 @@ func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 		StartSellingAt: 0,
 		SellingWithin:  100000,
 	}
-	// sellingGOVTokens := &component.SellingGOVTokens{
-	// 	TotalIssue:      1000,
-	// 	GOVTokensToSell: 1000,
-	// 	GOVTokenPrice:   500, // 5 constant
-	// 	StartSellingAt:  0,
-	// 	SellingWithin:   10000,
-	// }
+	sellingGOVTokens := &component.SellingGOVTokens{
+		TotalIssue:      1000,
+		GOVTokensToSell: 1000,
+		GOVTokenPrice:   500, // 5 constant
+		StartSellingAt:  0,
+		SellingWithin:   10000,
+	}
 
 	oracleNetwork := &component.OracleNetwork{
 		OraclePubKeys:          []string{"039f022a16a3c3dd811fd9859510446c2ac03a5f27cc3f44cb84dd30b58328bd00"},
@@ -156,7 +156,7 @@ func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 		BasicSalary:      uint64(genesisParams.BasicSalary),
 		FeePerKbTx:       uint64(genesisParams.FeePerTxKb),
 		SellingBonds:     sellingBonds,
-		SellingGOVTokens: nil,
+		SellingGOVTokens: sellingGOVTokens,
 		RefundInfo:       nil,
 		OracleNetwork:    oracleNetwork,
 	}
