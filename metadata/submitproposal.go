@@ -106,8 +106,9 @@ func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) err
 	}
 
 	// Check if DCB has enough bond
-	if !sale.Buy && bcr.GetDCBAvailableAsset(sale.BondID) < sale.Amount {
-		return errors.Errorf("crowdsale: not enough selling asset")
+	freeAmount := bcr.GetDCBFreeBond(sale.BondID)
+	if !sale.Buy && freeAmount < sale.Amount {
+		return errors.Errorf("crowdsale not enough asset, free %d, sell %d", freeAmount, sale.Amount)
 	}
 
 	if !sale.Buy {

@@ -10,7 +10,6 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	privacy "github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -186,29 +185,37 @@ func (blockchain *BlockChain) CrowdsaleExisted(saleID []byte) bool {
 	return false
 }
 
-// GetDCBAvailableAsset returns number of token left accounted for all on-going crowdsales
-func (blockchain *BlockChain) GetDCBAvailableAsset(assetID *common.Hash) uint64 {
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	vouts, err := blockchain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, assetID)
-	if err != nil {
-		return 0
-	}
-	tokenLeft := uint64(0)
-	for _, vout := range vouts {
-		tokenLeft += vout.Value
-	}
+// GetDCBBondInfo returns amount of bonds owned by DCB that is free to trade
+// (not being hold up in other trades/crowdsales)
+func (blockchain *BlockChain) GetDCBFreeBond(bondID *common.Hash) uint64 {
+	amount, _ := blockchain.GetDCBBondInfo(bondID)
 
+	// Subtract amounts from ongoing crowdsales that are selling the same bond
 	sales, _ := blockchain.GetAllSaleData()
 	for _, sale := range sales {
-		if !sale.Buy && sale.BondID.IsEqual(assetID) && sale.EndBlock < blockchain.GetBeaconHeight() {
-			if sale.Amount >= tokenLeft {
-				tokenLeft = 0
-			} else {
-				tokenLeft -= sale.Amount
-			}
+		if sale.Buy || !sale.BondID.IsEqual(bondID) || sale.EndBlock < blockchain.GetBeaconHeight() {
+			continue
+		}
+		if sale.Amount >= amount {
+			amount = 0
+		} else {
+			amount -= sale.Amount
 		}
 	}
-	return tokenLeft
+
+	// Subtract amounts from ongoing trades that proposed selling the same bonds to GOV
+	trades := blockchain.GetAllTrades()
+	for _, t := range trades {
+		if t.Buy || !t.BondID.IsEqual(bondID) {
+			continue
+		}
+		if t.Amount >= amount {
+			amount = 0
+		} else {
+			amount -= t.Amount
+		}
+	}
+	return amount
 }
 
 //// Reserve
