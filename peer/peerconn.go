@@ -6,14 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 	"sync"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
 )
 
 type PeerConn struct {
@@ -169,7 +168,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 				}
 
 				if len(jsonDecodeBytes) > message.MaxPayloadLength(1) {
-					Logger.log.Error(fmt.Printf("Msg size exceed MsgType %s max size, size %v | max allow is", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1)))
+					Logger.log.Errorf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
 					return
 				}
 				// check forward

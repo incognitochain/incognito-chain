@@ -54,7 +54,7 @@ type BestStateBeacon struct {
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 
 	ShardHandle map[byte]bool `json:"ShardHandle"` // lock sync.RWMutex
-	LockMu      sync.RWMutex
+	lockMu      sync.RWMutex
 }
 
 type StabilityInfo struct {
@@ -76,18 +76,18 @@ func (si StabilityInfo) GetBytes() []byte {
 	return common.GetBytes(si)
 }
 
-func (self *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
+func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
 	res := make(map[byte]uint64)
-	for index, element := range self.BestShardHeight {
+	for index, element := range bestStateBeacon.BestShardHeight {
 		res[index] = element
 	}
 	return res
 }
 
-func (self *BestStateBeacon) GetBestHeightOfShard(shardID byte) uint64 {
-	self.LockMu.RLock()
-	defer self.LockMu.RUnlock()
-	return self.BestShardHeight[shardID]
+func (bestStateBeacon *BestStateBeacon) GetBestHeightOfShard(shardID byte) uint64 {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return bestStateBeacon.BestShardHeight[shardID]
 }
 
 func (bsb *BestStateBeacon) GetCurrentShard() byte {
@@ -271,8 +271,8 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	return res
 }
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
-	bestStateBeacon.LockMu.Lock()
-	defer bestStateBeacon.LockMu.Unlock()
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	return common.HashH(bestStateBeacon.GetBytes())
 }
 

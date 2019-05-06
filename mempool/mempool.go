@@ -3,11 +3,12 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/databasemp"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/constant-money/constant-chain/databasemp"
 
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
@@ -40,7 +41,7 @@ type Config struct {
 
 	//Reset mempool database when run node
 	IsLoadFromMempool bool
-	
+
 	PersistMempool bool
 }
 
@@ -83,7 +84,7 @@ type TxPool struct {
 
 	//Reset mempool database
 	IsLoadFromMempool bool
-	
+
 	PersistMempool bool
 }
 
@@ -104,10 +105,10 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
 	tp.PersistMempool = cfg.PersistMempool
 }
-func (tp *TxPool)InitDatabaseMempool(db databasemp.DatabaseInterface){
+func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
 	tp.config.DataBaseMempool = db
 }
-func (tp *TxPool)AnnouncePersisDatabaseMempool(){
+func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
 	} else {
@@ -115,23 +116,23 @@ func (tp *TxPool)AnnouncePersisDatabaseMempool(){
 	}
 }
 func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
-		if !tp.IsLoadFromMempool {
-			err := tp.ResetDatabaseMP()
-			if err != nil {
-				Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
-			} else {
-				Logger.log.Critical("Successfully Reset from database")
-			}
-			return []TxDesc{}
+	if !tp.IsLoadFromMempool {
+		err := tp.ResetDatabaseMP()
+		if err != nil {
+			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
 		} else {
-			txDescs, err := tp.LoadDatabaseMP()
-			if err != nil {
-				Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
-			} else {
-				Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
-			}
-			return txDescs
-			}
+			Logger.log.Critical("Successfully Reset from database")
+		}
+		return []TxDesc{}
+	} else {
+		txDescs, err := tp.LoadDatabaseMP()
+		if err != nil {
+			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
+		} else {
+			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
+		}
+		return txDescs
+	}
 	//return []TxDesc{}
 }
 func TxPoolMainLoop(tp *TxPool) {
@@ -143,18 +144,23 @@ func TxPoolMainLoop(tp *TxPool) {
 	for {
 		<-scanInterval.C
 		ttl := time.Duration(tp.TxLifeTime) * time.Second
-		txsToBeRemoved := []common.Hash{}
-		for _, tx := range tp.pool {
-			if time.Since(tx.StartTime) > ttl {
-				txsToBeRemoved = append(txsToBeRemoved, *tx.Desc.Tx.Hash())
+		txsToBeRemoved := []*TxDesc{}
+		for _, txDesc := range tp.pool {
+			if time.Since(txDesc.StartTime) > ttl {
+				txsToBeRemoved = append(txsToBeRemoved, txDesc)
 			}
 		}
-		for _, txHash := range txsToBeRemoved {
+		for _, txDesc := range txsToBeRemoved {
+			txHash := *txDesc.Desc.Tx.Hash()
+			startTime := txDesc.StartTime
 			delete(tp.pool, txHash)
 			delete(tp.poolSerialNumbers, txHash)
 			delete(tp.txCoinHashHPool, txHash)
 			delete(tp.CandidatePool, txHash)
 			delete(tp.TokenIDPool, txHash)
+			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(startTime).Seconds()))
+			size := tp.CalPoolSize()
+			go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 		}
 	}
 }
@@ -249,27 +255,27 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 			tp.AddTokenIDToList(*txHash, tokenID)
 		}
 	}
-	Logger.log.Infof("Add Transaction %+v Successs \n", tx.Hash().String())
+	//Logger.log.Infof("Add Transaction %+v Successs \n", tx.Hash().String())
 }
-
 /*
 // maybeAcceptTransaction is the internal function which implements the public
 // See the comment for MaybeAcceptTransaction for more details.
 // This function MUST be called with the mempool lock held (for writes).
 1. Validate tx version
 2.1 Validate size of transaction (can't greater than max size of block)
-2.2 Validate fee with tx size
+2.2 Not accept a salary tx
+2.3 Validate fee with tx size
 3. Validate type of tx
 4. Validate with other txs in mempool
 5. Validate sanity data of tx
 6. Validate data in tx: privacy proof, metadata,...
 7. Validate tx with blockchain: douple spend, ...
 8. Check tx existed in mempool
-9. Not accept a salary tx
 10. Check Duplicate stake public key in pool ONLY with staking transaction
 
 Param#2: isStore: store transaction to persistence storage only work for transaction come from user (not for validation process)
 */
+
 func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	var shardID byte
 	var err error
@@ -298,7 +304,14 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return err
 	}
-
+	
+	// A standalone transaction must not be a salary transaction.
+	if tx.IsSalaryTx() {
+		err := MempoolTxError{}
+		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
+		return err
+	}
+	
 	// check fee of tx
 	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
@@ -326,10 +339,20 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return err
 	}
-	
+
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		if tx.IsPrivacy() {
+			txType = common.TxNormalPrivacy
+		} else {
+			txType = common.TxNormalNoPrivacy
+		}
+	}
+	startValidate := time.Now()
 	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
+	go common.AnalyzeTimeSeriesVTBITxTypeMetric(txType, float64(time.Since(startValidate).Seconds()))
 	if !validated {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("invalid tx"))
@@ -338,7 +361,6 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 
 	// validate tx with data of blockchain
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
-	// err = tp.ValidateTxWithBlockChain(tx, shardID)
 	if err != nil {
 		return err
 	}
@@ -359,13 +381,6 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		}
 	}
 
-	// A standalone transaction must not be a salary transaction.
-	if tx.IsSalaryTx() {
-		err := MempoolTxError{}
-		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
-		return err
-	}
-
 	// check duplicate stake public key ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -383,8 +398,22 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	}
 	return nil
 }
-func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool) (*common.Hash, *TxDesc, error) {
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		if tx.IsPrivacy() {
+			txType = common.TxNormalPrivacy
+		} else {
+			txType = common.TxNormalNoPrivacy
+		}
+	}
+	startValidate := time.Now()
 	err := tp.ValidateTransaction(tx)
+	elapsed := float64(time.Since(startValidate).Seconds())
+	//if isNewTransaction {
+	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolValidated, elapsed)
+	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolValidatedWithType, elapsed)
+	//}
 	if err != nil {
 		return nil, nil, err
 	}
@@ -392,13 +421,17 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool) 
 	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	txFee := tx.GetTxFee()
 	txD := createTxDescMempool(tx, bestHeight, txFee)
+	startAdd := time.Now()
 	tp.addTx(txD, isStore)
+	if isNewTransaction {
+		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
+	}
 	return tx.Hash(), txD, nil
 }
 
 // remove transaction for pool
 func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
-	Logger.log.Infof((*tx).Hash().String())
+	//Logger.log.Infof((*tx).Hash().String())
 	if _, exists := tp.pool[*(*tx).Hash()]; exists {
 		delete(tp.pool, *(*tx).Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
@@ -422,14 +455,37 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		if tx.IsPrivacy() {
+			txType = common.TxNormalPrivacy
+		} else {
+			txType = common.TxNormalNoPrivacy
+		}
+	}
 	if uint64(len(tp.pool)) >= tp.maxTx {
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool)
+	startAdd := time.Now()
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool, true)
+	elapsed := float64(time.Since(startAdd).Seconds())
+	
+	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolEntered, elapsed)
+	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()),common.TxPoolEnteredWithType, elapsed)
+	
+	size := tp.CalPoolSize()
+	
+	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
+	go common.AnalyzeTimeSeriesTxTypeMetric(tx.GetType(), float64(1))
+	
+	if tx.IsPrivacy() {
+		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxPrivacy, float64(1))
+	} else {
+		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxNoPrivacy, float64(1))
+	}
 	if err != nil {
 		Logger.log.Error(err)
 	}
-
 	return hash, txDesc, err
 }
 func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
@@ -440,7 +496,7 @@ func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptTransaction(tx, false)
+	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -450,27 +506,47 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(tx metadata.Transaction) error {
+func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
 	// remove transaction from database mempool
+	txDesc,ok := tp.pool[*tx.Hash()]
+	if !ok {
+		return nil
+	}
+	startTime := txDesc.StartTime
 	tp.RemoveTransactionFromDatabaseMP(tx.Hash())
-	
 	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
 	if txHash != nil {
 		tp.RemoveTxCoinHashH(*txHash)
 	}
-	tp.mtx.Unlock()
+	if isInBlock {
+		txType := tx.GetType()
+		if txType == common.TxNormalType {
+			if tx.IsPrivacy() {
+				txType = common.TxNormalPrivacy
+			} else {
+				txType = common.TxNormalNoPrivacy
+			}
+		}
+		elapsed := float64(time.Since(startTime).Seconds())
+		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
+		go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()),common.TxPoolRemoveAfterInBlockWithType, elapsed)
+	}
+	size := tp.CalPoolSize()
+	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
+	
 	return err
 }
 
 // GetTx get transaction info by hash
 func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
 	Logger.log.Info(txHash.String())
 	txDesc, exists := tp.pool[*txHash]
-	tp.mtx.Unlock()
 	if exists {
 		return txDesc.Desc.Tx, nil
 	}
@@ -481,13 +557,12 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 // // MiningDescs returns a slice of mining descriptors for all the transactions
 // // in the pool.
 func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
-	descs := []*metadata.TxDesc{}
 	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+	descs := []*metadata.TxDesc{}
 	for _, desc := range tp.pool {
 		descs = append(descs, &desc.Desc)
 	}
-	tp.mtx.Unlock()
-
 	return descs
 }
 
@@ -502,26 +577,24 @@ Sum of all transactions sizes
 */
 func (tp *TxPool) Size() uint64 {
 	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	size := uint64(0)
 	for _, tx := range tp.pool {
 		size += tx.Desc.Tx.GetTxActualSize()
 	}
-	tp.mtx.RUnlock()
-
 	return size
 }
 
 // Get Max fee
 func (tp *TxPool) MaxFee() uint64 {
 	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	fee := uint64(0)
 	for _, tx := range tp.pool {
 		if tx.Desc.Fee > fee {
 			fee = tx.Desc.Fee
 		}
 	}
-	tp.mtx.RUnlock()
-
 	return fee
 }
 
@@ -532,7 +605,6 @@ func (tp *TxPool) MaxFee() uint64 {
 func (tp *TxPool) LastUpdated() time.Time {
 	return time.Unix(tp.lastUpdated, 0)
 }
-
 /*
 // HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
@@ -540,9 +612,8 @@ func (tp *TxPool) LastUpdated() time.Time {
 func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	// Protect concurrent access.
 	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	haveTx := tp.isTxInPool(hash)
-	tp.mtx.RUnlock()
-
 	return haveTx
 }
 
@@ -670,7 +741,6 @@ func (tp *TxPool) EmptyPool() bool {
 	defer tp.cMtx.Unlock()
 	defer tp.candidateMtx.Unlock()
 	defer tp.tokenIDMtx.Unlock()
-
 	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
 		return true
 	}
@@ -684,4 +754,13 @@ func (tp *TxPool) EmptyPool() bool {
 		return true
 	}
 	return false
+}
+
+func (tp *TxPool) CalPoolSize() uint64{
+	var totalSize uint64
+	for _, txDesc := range tp.pool {
+		size := txDesc.Desc.Tx.GetTxActualSize()
+		totalSize += size
+	}
+	return totalSize
 }
