@@ -49,6 +49,7 @@ func buildInstructionsForCrowdsaleRequest(
 		sentAmount,
 		beaconBestState,
 		saleData,
+		bc,
 	)
 	fmt.Println("[db] built crowdsale payment inst:", inst, err)
 	if err != nil {
@@ -62,6 +63,7 @@ func buildPaymentInstructionForCrowdsale(
 	sentAmount uint64,
 	beaconBestState *BestStateBeacon,
 	saleData *component.SaleData,
+	bc *BlockChain,
 ) ([][]string, error) {
 	bondID := saleData.BondID
 	price := saleData.Price
@@ -96,7 +98,8 @@ func buildPaymentInstructionForCrowdsale(
 		paymentAmount = sentAmount / price
 
 		// Check if there's still enough asset to trade
-		if paymentAmount > saleData.Amount {
+		dcbBondAmount, _ := bc.GetDCBBondInfo(sellingAsset)
+		if paymentAmount > saleData.Amount || paymentAmount > dcbBondAmount {
 			// fmt.Printf("[db] Crowdsale reached limit\n")
 			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 		}
