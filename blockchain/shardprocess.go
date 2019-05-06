@@ -698,7 +698,7 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 	
 	err := blockChain.config.TempTxPool.ValidateTxList(txs)
 	if err != nil {
-		Logger.log.Critical("ERORORORORORO", err)
+		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
 		return NewBlockChainError(TransactionError, errors.New("Some Transactions in New Block IS invalid"))
 	}
 	return nil
