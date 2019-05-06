@@ -69,7 +69,6 @@ func (bc *BlockChain) verifyUnusedInstructions(
 
 		var err error
 		switch inst[0] {
-		// TODO(@0xbunyip): review other insts
 		case strconv.Itoa(metadata.TradeActivationMeta):
 			err = bc.verifyUnusedTradeActivationInst(inst, shardID, accumulatedData)
 
@@ -78,6 +77,8 @@ func (bc *BlockChain) verifyUnusedInstructions(
 
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			err = bc.verifyUnusedContractingRequestInst(inst, shardID)
+
+			// TODO(@0xbunyip): metadata.CrowdsalePaymentMeta
 		}
 
 		if err != nil {
