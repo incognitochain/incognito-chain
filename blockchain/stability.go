@@ -509,7 +509,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 		return nil, err
 	}
 
-	// TODO(@0xbunyip): remove tx from txsToAdd?
 	return respTxs, nil
 }
 
