@@ -8,27 +8,9 @@ import (
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/transaction"
 	"github.com/pkg/errors"
 )
 
-func (bc *BlockChain) ProcessLoanForBlock(block *ShardBlock) error {
-	for _, tx := range block.Body.Transactions {
-		switch tx.GetMetadataType() {
-		case metadata.LoanUnlockMeta:
-			{
-				// Confirm that loan is withdrawed
-				tx := tx.(*transaction.Tx)
-				meta := tx.GetMetadata().(*metadata.LoanUnlock)
-				err := bc.config.DataBase.StoreLoanWithdrawed(meta.LoanID)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
-	return nil
-}
 func (bc *BlockChain) StoreMetadataInstructions(inst []string, shardID byte) error {
 	if len(inst) < 2 {
 		return nil // Not error, just not stability instruction

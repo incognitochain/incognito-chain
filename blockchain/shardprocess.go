@@ -147,11 +147,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}()
 
 	// Process stability tx
-	err = blockchain.ProcessLoanForBlock(block)
-	if err != nil {
-		return err
-	}
-
 	err = blockchain.processTradeBondTx(block)
 	if err != nil {
 		return err
@@ -697,7 +692,7 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 		panic("TempTxPool Is not Empty")
 	}
 	defer blockChain.config.TempTxPool.EmptyPool()
-	
+
 	err := blockChain.config.TempTxPool.ValidateTxList(txs)
 	if err != nil {
 		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)

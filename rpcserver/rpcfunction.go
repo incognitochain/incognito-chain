@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
-	
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
@@ -67,11 +67,11 @@ var RpcHandler = map[string]commandHandler{
 	RandomCommitments:               RpcServer.handleRandomCommitments,
 	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
 	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
-	
+
 	//======Testing and Benchmark======
 	GetAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
 	//=================================
-	
+
 	//pool
 
 	// Beststate
@@ -102,18 +102,6 @@ var RpcHandler = map[string]commandHandler{
 	ListPrivacyCustomToken:                     RpcServer.handleListPrivacyCustomToken,
 	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
 	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
-
-	// Loan tx
-	GetLoanParams:             RpcServer.handleGetLoanParams,
-	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,
-	CreateAndSendLoanResponse: RpcServer.handleCreateAndSendLoanResponse,
-	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
-	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
-	GetLoanResponseApproved:   RpcServer.handleGetLoanResponseApproved,
-	GetLoanResponseRejected:   RpcServer.handleGetLoanResponseRejected,
-	GetLoanPaymentInfo:        RpcServer.handleGetLoanPaymentInfo,
-	GetBankFund:               RpcServer.handleGetBankFund,
-	GetLoanRequestTxStatus:    RpcServer.handleGetLoanRequestTxStatus,
 
 	// Crowdsale
 	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
@@ -177,6 +165,7 @@ var RpcHandler = map[string]commandHandler{
 	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
 	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
 	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
+	GetBankFund:            RpcServer.handleGetBankFund,
 
 	// gov
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
