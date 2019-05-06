@@ -23,6 +23,14 @@ func (bc *BlockChain) CalcTradeData(inst string) (*component.TradeData, error) {
 		return nil, fmt.Errorf("failed getting latest trade: %v", err)
 	}
 
+	// Check amount of bonds owned by DCB
+	if !buy {
+		dcbBondAmount, _ := bc.GetDCBBondInfo(bondID)
+		if dcbBondAmount < amount {
+			amount = dcbBondAmount // Cannot sell more than amount owned
+		}
+	}
+
 	return &component.TradeData{
 		TradeID:   tradeID,
 		BondID:    bondID,
