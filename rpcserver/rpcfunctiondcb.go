@@ -115,3 +115,10 @@ func (rpcServer RpcServer) handleCreateAndSendSubmitDCBProposalTransaction(param
 		RpcServer.handleSendRawTransaction,
 	)
 }
+
+func (rpcServer RpcServer) handleGetConstantCirculating(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	type result struct {
+		Total uint64
+	}
+	return result{Total: uint64(0)}, nil
+}
