@@ -408,7 +408,7 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
-	start := time.Now()
+	// start := time.Now()
 	// Verify tx signature
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
@@ -488,8 +488,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Debug("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
-	elapsed := time.Since(start)
-	Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
+	//@UNCOMMENT: metric time
+	//elapsed := time.Since(start)
+	//Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
 	return true
 }
@@ -676,9 +677,9 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 }
 
 func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	if tx.Type == common.TxSalaryType {
-		return errors.New("can not receive a salary tx from other node, this is a violation")
-	}
+	//if tx.Type == common.TxSalaryType {
+	//	return errors.New("can not receive a salary tx from other node, this is a violation")
+	//}
 	poolNullifiers := mr.GetSerialNumbers()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
 }

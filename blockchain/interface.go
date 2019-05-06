@@ -68,7 +68,7 @@ type TxPool interface {
 	HaveTransaction(hash *common.Hash) bool
 
 	// RemoveTx remove tx from tx resource
-	RemoveTx(tx metadata.Transaction) error
+	RemoveTx(tx metadata.Transaction, isInBlock bool) error
 
 	RemoveCandidateList([]string)
 
@@ -77,6 +77,7 @@ type TxPool interface {
 	EmptyPool() bool
 
 	MaybeAcceptTransactionForBlockProducing(metadata.Transaction) (*metadata.TxDesc, error)
+	ValidateTxList(txs []metadata.Transaction) error
 	//CheckTransactionFee
 	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
 
