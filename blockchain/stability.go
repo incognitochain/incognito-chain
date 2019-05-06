@@ -13,7 +13,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata/fromshardins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
-	"github.com/pkg/errors"
 )
 
 type accumulativeValues struct {
@@ -190,9 +189,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		contentStr := inst[1]
 		newInst := [][]string{}
 		switch metaType {
-		case metadata.LoanRequestMeta, metadata.LoanResponseMeta, metadata.LoanWithdrawMeta, metadata.LoanPaymentMeta:
-			newInst, err = buildPassThroughInstruction(metaType, contentStr)
-
 		case metadata.BuyFromGOVRequestMeta:
 			newInst, err = buildInstructionsForBuyBondsFromGOVReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
@@ -288,30 +284,6 @@ func buildUpdateConstitutionIns(inst string, boardType common.BoardType) ([][]st
 		}
 	}
 	return [][]string{newInst}, nil
-}
-
-func (blockgen *BlkTmplGenerator) buildLoanResponseTx(tx metadata.Transaction, producerPrivateKey *privacy.PrivateKey) (metadata.Transaction, error) {
-	// Get loan request
-	withdrawMeta := tx.GetMetadata().(*metadata.LoanWithdraw)
-	meta, err := blockgen.chain.GetLoanRequestMeta(withdrawMeta.LoanID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Build loan unlock tx
-	unlockMeta := &metadata.LoanUnlock{
-		LoanID:       make([]byte, len(withdrawMeta.LoanID)),
-		MetadataBase: metadata.MetadataBase{Type: metadata.LoanUnlockMeta},
-	}
-	copy(unlockMeta.LoanID, withdrawMeta.LoanID)
-	unlockMetaList := []metadata.Metadata{unlockMeta}
-	amounts := []uint64{meta.LoanAmount}
-	txNormals, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{meta.ReceiveAddress}, amounts, producerPrivateKey, blockgen.chain.GetDatabase(), unlockMetaList)
-	if err != nil {
-		return nil, errors.Errorf("Error building unlock tx for loan id %x", withdrawMeta.LoanID)
-	}
-	fmt.Printf("[db] success build LoanUnlock with amount %d\n", meta.LoanAmount)
-	return txNormals[0], nil
 }
 
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
@@ -490,8 +462,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 		var err error
 
 		switch tx.GetMetadataType() {
-		case metadata.LoanWithdrawMeta:
-			respTx, err = blockgen.buildLoanResponseTx(tx, producerPrivateKey)
 		case metadata.MultiSigsRegistrationMeta:
 			multisigsRegTxs = append(multisigsRegTxs, tx)
 		}

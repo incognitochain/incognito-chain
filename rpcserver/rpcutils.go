@@ -18,10 +18,6 @@ import (
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
 
 var metaConstructors = map[string]metaConstructorType{
-	CreateAndSendLoanRequest:              metadata.NewLoanRequest,
-	CreateAndSendLoanResponse:             metadata.NewLoanResponse,
-	CreateAndSendLoanWithdraw:             metadata.NewLoanWithdraw,
-	CreateAndSendLoanPayment:              metadata.NewLoanPayment,
 	CreateAndSendCrowdsaleRequestToken:    metadata.NewCrowdsaleRequest,
 	CreateAndSendCrowdsaleRequestConstant: metadata.NewCrowdsaleRequest,
 	CreateAndSendIssuingRequest:           metadata.NewIssuingRequestFromMap,
@@ -151,7 +147,7 @@ func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}
 		// return hex for a new tx
 		return nil, NewRPCError(ErrUnexpected, errMarshal)
 	}
-	fmt.Printf("Created raw loan tx: %+v\n", tx)
+	fmt.Printf("Created raw tx: %+v\n", tx)
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
