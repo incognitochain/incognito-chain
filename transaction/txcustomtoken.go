@@ -512,7 +512,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 			PropertySymbol: tokenParams.PropertySymbol,
 			Vins:           nil,
 			Vouts:          nil,
-			Mintable:       true,
+			Mintable:       tokenParams.Mintable,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 		//if _, ok := listCustomTokens[*propertyID]; !ok {
