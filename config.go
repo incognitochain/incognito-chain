@@ -44,7 +44,7 @@ const (
 	defaultTxPoolTTL              = uint(86400) * 10 // in second
 	defaultTxPoolMaxTx            = uint64(20000)
 	// For wallet
-	defaultWalletName = "wallet"
+	defaultWalletName     = "wallet"
 	defaultPersistMempool = false
 )
 
@@ -124,7 +124,7 @@ type config struct {
 	TxPoolTTL   uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
 	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
 
-	LoadMempool bool `long:"loadmempool" description:"Load transactions from Mempool database"`
+	LoadMempool    bool `long:"loadmempool" description:"Load transactions from Mempool database"`
 	PersistMempool bool `long:"persistmempool" description:"Persistence transaction in memepool database"`
 }
 
