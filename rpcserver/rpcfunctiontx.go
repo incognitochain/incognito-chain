@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -922,8 +923,10 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 */
 func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// get component
+
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) < 6 {
+	//var err error
+	if len(paramsArray) < 5 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type component"))
 	}
 	stakingType, ok := paramsArray[4].(float64)
@@ -932,13 +935,15 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type component"))
 	}
 
-	paymentAddress, ok := paramsArray[5].(string)
-	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid payment address"))
+	senderKeyParam := paramsArray[0]
+	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
 	}
 
-	var err error
-	metadata, err := metadata.NewStakingMetadata(int(stakingType), paymentAddress)
+	paymentAddress := senderKeySet.PaymentAddress
+	fmt.Println("SA: staking from", paymentAddress.String())
+	metadata, err := metadata.NewStakingMetadata(int(stakingType), paymentAddress.String())
 
 	tx, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {

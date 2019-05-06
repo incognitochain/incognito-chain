@@ -694,15 +694,19 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		if l[0] == StakeAction && l[2] == "beacon" {
 			beacon := strings.Split(l[1], ",")
 			newBeaconCandidate = append(newBeaconCandidate, beacon...)
-			for i, v := range strings.Split(l[3], ",") {
-				bestStateBeacon.StakingTx[newBeaconCandidate[i]] = v
+			if len(l) == 4 {
+				for i, v := range strings.Split(l[3], ",") {
+					bestStateBeacon.StakingTx[newBeaconCandidate[i]] = v
+				}
 			}
 		}
 		if l[0] == StakeAction && l[2] == "shard" {
 			shard := strings.Split(l[1], ",")
 			newShardCandidate = append(newShardCandidate, shard...)
-			for i, v := range strings.Split(l[3], ",") {
-				bestStateBeacon.StakingTx[newBeaconCandidate[i]] = v
+			if len(l) == 4 {
+				for i, v := range strings.Split(l[3], ",") {
+					bestStateBeacon.StakingTx[newShardCandidate[i]] = v
+				}
 			}
 		}
 	}
