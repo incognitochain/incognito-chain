@@ -94,11 +94,29 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 }
 
 func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// TODO(@0xbunyip): call get list bonds
-	buyingAssets := map[string]string{
-		"Bond 1":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
-		"Constant": common.ConstantID.String(),
-	} // From asset name to asset id
+	bonds, err := rpcServer.getBondTypes()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	type buyAssetInfo struct {
+		TokenID   string
+		MaxAmount uint64
+	}
+
+	buyingAssets := map[string]buyAssetInfo{} // From asset name to info
+	for _, b := range bonds.BondTypes {
+		buyingAssets[b.BondName] = buyAssetInfo{
+			TokenID:   b.BondID,
+			MaxAmount: b.TotalIssue - b.Available,
+		}
+	}
+
+	// Add dummy Constant token
+	buyingAssets["Constant"] = buyAssetInfo{
+		TokenID:   common.ConstantID.String(),
+		MaxAmount: 1000000,
+	}
 	return buyingAssets, nil
 }
 
@@ -112,13 +130,6 @@ func (rpcServer RpcServer) handleGetListDCBProposalSellingAssets(params interfac
 }
 
 func (rpcServer RpcServer) handleGetDCBBondInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	//p := params.([]interface{})
-	//saleID, _ := hex.DecodeString(p[0].(string))
-	//fmt.Println("[db] saleID", saleID)
-	//saleData, err := rpcServer.config.BlockChain.GetSaleData(saleID)
-	//fmt.Println("[db] saleData", saleData, err)
-	//return saleData, nil
-
 	type dcbBondInfo struct {
 		AmountAvailable   uint64
 		TotalConstantPaid uint64
