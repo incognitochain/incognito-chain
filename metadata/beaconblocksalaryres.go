@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	// "errors"
 	"strconv"
@@ -22,7 +23,7 @@ type BeaconBlockSalaryRes struct {
 }
 
 type BeaconBlockSalaryInfo struct {
-	BeaconBlockSalary uint64
+	BeaconSalary      uint64
 	PayToAddress      *privacy.PaymentAddress
 	BeaconBlockHeight uint64
 	InfoHash          *common.Hash
@@ -129,8 +130,10 @@ func (sbsRes *BeaconBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
 	if beaconBlockSalaryInfo.BeaconBlockHeight != sbsRes.BeaconBlockHeight {
 		return false, errors.Errorf("ShardBlockHeight in BeaconBlockSalaryResponse tx %s is not matched to instruction's", tx.Hash().String())
 	}
-	if beaconBlockSalaryInfo.BeaconBlockSalary != tx.CalculateTxValue() {
-		return false, errors.Errorf("Salary amount in BeaconBlockSalaryResponse tx %s is not matched to instruction's", tx.Hash().String())
+
+	if beaconBlockSalaryInfo.BeaconSalary != tx.CalculateTxValue() {
+		fmt.Println("SA: beacon salary info", beaconBlockSalaryInfo)
+		return false, errors.Errorf("Salary amount in BeaconBlockSalaryResponse tx %s is not matched to instruction's %d %d", tx.Hash().String(), beaconBlockSalaryInfo.BeaconSalary, tx.CalculateTxValue())
 	}
 
 	return true, nil

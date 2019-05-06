@@ -113,6 +113,6 @@ func GetBeaconStakeAmount() uint64 {
 }
 
 func GetShardStateAmount() uint64 {
-	const STAKE_SHARD_AMOUNT = 10000
+	const STAKE_SHARD_AMOUNT = 100
 	return STAKE_SHARD_AMOUNT
 }
