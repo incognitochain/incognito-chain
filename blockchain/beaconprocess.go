@@ -74,21 +74,23 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	return nil
 }
 
-func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee bool) error {
+func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated bool) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 
 	Logger.log.Infof("Check block existence for insert process %d, with hash %+v", block.Header.Height, *block.Hash())
 	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Hash())
 	if isExist {
-		//return nil
 		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("Begin Insert new block %d, with hash %+v \n", block.Header.Height, *block.Hash())
-	// fmt.Printf("Beacon block %+v \n", block)
-	Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", *block.Hash())
-	if err := blockchain.VerifyPreProcessingBeaconBlock(block, isCommittee); err != nil {
-		return err
+	if !isValidated {
+		Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", *block.Hash())
+		if err := blockchain.VerifyPreProcessingBeaconBlock(block, false); err != nil {
+			return err
+		}
+	} else {
+		Logger.log.Infof("BEACON %+v | SKIP Verify Pre Processing Block %+v \n", *block.Hash())
 	}
 	//========Verify block with previous best state
 	// check with current final best state
@@ -97,10 +99,14 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// fmt.Printf("BeaconBest state %+v \n", blockchain.BestState.Beacon)
-	Logger.log.Infof("Verify BestState with Beacon Block %+v \n", *block.Hash())
-	// Verify block with previous best state
-	if err := blockchain.BestState.Beacon.VerifyBestStateWithBeaconBlock(block, true); err != nil {
-		return err
+	if !isValidated {
+		Logger.log.Infof("Verify BestState with Beacon Block %+v \n", *block.Hash())
+		// Verify block with previous best state
+		if err := blockchain.BestState.Beacon.VerifyBestStateWithBeaconBlock(block, true); err != nil {
+			return err
+		}
+	} else {
+		Logger.log.Infof("BEACON %+v | SKIP Verify BestState with Block %+v \n", *block.Hash())
 	}
 	Logger.log.Infof("Update BestState with Beacon Block %+v \n", *block.Hash())
 	//========Update best state with new block
@@ -108,10 +114,14 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	if err := blockchain.BestState.Beacon.Update(block, blockchain); err != nil {
 		return err
 	}
-	Logger.log.Infof("Verify Post Processing Beacon Block %+v \n", *block.Hash())
-	//========Post verififcation: verify new beaconstate with corresponding block
-	if err := blockchain.BestState.Beacon.VerifyPostProcessingBeaconBlock(block, snapShotBeaconCommittee); err != nil {
-		return err
+	if !isValidated {
+		Logger.log.Infof("Verify Post Processing Beacon Block %+v \n", *block.Hash())
+		//========Post verififcation: verify new beaconstate with corresponding block
+		if err := blockchain.BestState.Beacon.VerifyPostProcessingBeaconBlock(block, snapShotBeaconCommittee); err != nil {
+			return err
+		}
+	} else {
+		Logger.log.Infof("BEACON %+v | SKIP Verify Post Processing Block %+v \n", *block.Hash())
 	}
 
 	for shardID, shardStates := range block.Body.ShardState {
@@ -139,34 +149,37 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isCommittee 
 	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
-	GetBestStateBeacon().LockMu.Lock()
+	GetBestStateBeacon().lockMu.Lock()
 	if block.Body.ShardState != nil {
 		for fromShard, shardBlocks := range block.Body.ShardState {
-			for _, shardBlock := range shardBlocks {
-				for _, toShard := range shardBlock.CrossShard {
-					if fromShard == toShard {
-						continue
+
+			go func(fromShard byte, shardBlocks []ShardState) {
+				for _, shardBlock := range shardBlocks {
+					for _, toShard := range shardBlock.CrossShard {
+						if fromShard == toShard {
+							continue
+						}
+						if lastCrossShardState[fromShard] == nil {
+							lastCrossShardState[fromShard] = make(map[byte]uint64)
+						}
+						lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
+						waitHeight := shardBlock.Height
+						// fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
+						blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
+						//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
+						//dont care overwrite this value
+						blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, waitHeight, 0)
+						if lastCrossShardState[fromShard] == nil {
+							lastCrossShardState[fromShard] = make(map[byte]uint64)
+						}
+						lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
 					}
-					if lastCrossShardState[fromShard] == nil {
-						lastCrossShardState[fromShard] = make(map[byte]uint64)
-					}
-					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
-					waitHeight := shardBlock.Height
-					// fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
-					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
-					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
-					//dont care overwrite this value
-					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, waitHeight, 0)
-					if lastCrossShardState[fromShard] == nil {
-						lastCrossShardState[fromShard] = make(map[byte]uint64)
-					}
-					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
 				}
-			}
-			blockchain.config.CrossShardPool[fromShard].UpdatePool()
+				blockchain.config.CrossShardPool[fromShard].UpdatePool()
+			}(fromShard, shardBlocks)
 		}
 	}
-	GetBestStateBeacon().LockMu.Unlock()
+	GetBestStateBeacon().lockMu.Unlock()
 	// Process instructions and store stability data
 	if err := blockchain.updateStabilityLocalState(block); err != nil {
 		return err
@@ -538,8 +551,8 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	Update Beststate with new Block
 */
 func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *BlockChain) error {
-	bestStateBeacon.LockMu.Lock()
-	defer bestStateBeacon.LockMu.Unlock()
+	bestStateBeacon.lockMu.Lock()
+	defer bestStateBeacon.lockMu.Unlock()
 
 	newBeaconCandidate := []string{}
 	newShardCandidate := []string{}
@@ -724,14 +737,14 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			// snapshot candidate list
 			bestStateBeacon.CandidateShardWaitingForCurrentRandom = bestStateBeacon.CandidateShardWaitingForNextRandom
 			bestStateBeacon.CandidateBeaconWaitingForCurrentRandom = bestStateBeacon.CandidateBeaconWaitingForNextRandom
-			fmt.Println("==================Beacon Process: Snapshot candidate====================")
-			fmt.Println("Beacon Process: CandidateShardWaitingForCurrentRandom: ", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
-			fmt.Println("Beacon Process: CandidateBeaconWaitingForCurrentRandom: ", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
+			Logger.log.Critical("==================Beacon Process: Snapshot candidate====================")
+			Logger.log.Critical("Beacon Process: CandidateShardWaitingForCurrentRandom: ", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			Logger.log.Critical("Beacon Process: CandidateBeaconWaitingForCurrentRandom: ", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
 			// reset candidate list
 			bestStateBeacon.CandidateShardWaitingForNextRandom = []string{}
 			bestStateBeacon.CandidateBeaconWaitingForNextRandom = []string{}
-			fmt.Println("Beacon Process/After: CandidateShardWaitingForNextRandom: ", bestStateBeacon.CandidateShardWaitingForNextRandom)
-			fmt.Println("Beacon Process/After: CandidateBeaconWaitingForCurrentRandom: ", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
+			Logger.log.Critical("Beacon Process/After: CandidateShardWaitingForNextRandom: ", bestStateBeacon.CandidateShardWaitingForNextRandom)
+			Logger.log.Critical("Beacon Process/After: CandidateBeaconWaitingForCurrentRandom: ", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
 			// assign random timestamp
 			bestStateBeacon.CurrentRandomTimeStamp = newBlock.Header.Timestamp
 		}
@@ -740,11 +753,11 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		// assign CandidateShardWaitingForCurrentRandom to ShardPendingValidator with CurrentRandom
 		if randomFlag {
 			bestStateBeacon.IsGetRandomNumber = true
-			fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
-			Logger.log.Critical("bestStateBeacon.ShardPendingValidator", bestStateBeacon.ShardPendingValidator)
-			Logger.log.Critical("bestStateBeacon.CandidateShardWaitingForCurrentRandom", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
-			Logger.log.Critical("bestStateBeacon.CurrentRandomNumber", bestStateBeacon.CurrentRandomNumber)
-			Logger.log.Critical("bestStateBeacon.ActiveShards", bestStateBeacon.ActiveShards)
+			//fmt.Println("Beacon Process/Update/RandomFlag: Shard Candidate Waiting for Current Random Number", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			//Logger.log.Critical("bestStateBeacon.ShardPendingValidator", bestStateBeacon.ShardPendingValidator)
+			//Logger.log.Critical("bestStateBeacon.CandidateShardWaitingForCurrentRandom", bestStateBeacon.CandidateShardWaitingForCurrentRandom)
+			//Logger.log.Critical("bestStateBeacon.CurrentRandomNumber", bestStateBeacon.CurrentRandomNumber)
+			//Logger.log.Critical("bestStateBeacon.ActiveShards", bestStateBeacon.ActiveShards)
 			err := AssignValidatorShard(bestStateBeacon.ShardPendingValidator, bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber, bestStateBeacon.ActiveShards)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
@@ -752,19 +765,19 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			}
 			// delete CandidateShardWaitingForCurrentRandom list
 			bestStateBeacon.CandidateShardWaitingForCurrentRandom = []string{}
-			fmt.Println("Beacon Process/Update/RandomFalg: Shard Pending Validator", bestStateBeacon.ShardPendingValidator)
+			//fmt.Println("Beacon Process/Update/RandomFalg: Shard Pending Validator", bestStateBeacon.ShardPendingValidator)
 			// Shuffle candidate
 			// shuffle CandidateBeaconWaitingForCurrentRandom with current random number
-			fmt.Println("Beacon Process/Update/RandomFlag: Beacon Candidate Waiting for Current Random Number", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
+			//fmt.Println("Beacon Process/Update/RandomFlag: Beacon Candidate Waiting for Current Random Number", bestStateBeacon.CandidateBeaconWaitingForCurrentRandom)
 			newBeaconPendingValidator, err := ShuffleCandidate(bestStateBeacon.CandidateBeaconWaitingForCurrentRandom, bestStateBeacon.CurrentRandomNumber)
-			fmt.Println("Beacon Process/Update/RandomFalg: NewBeaconPendingValidator", newBeaconPendingValidator)
+			//fmt.Println("Beacon Process/Update/RandomFalg: NewBeaconPendingValidator", newBeaconPendingValidator)
 			if err != nil {
 				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
 			}
 			bestStateBeacon.CandidateBeaconWaitingForCurrentRandom = []string{}
 			bestStateBeacon.BeaconPendingValidator = append(bestStateBeacon.BeaconPendingValidator, newBeaconPendingValidator...)
-			fmt.Println("Beacon Process/Update/RandomFalg: Beacon Pending Validator", bestStateBeacon.BeaconPendingValidator)
+			//fmt.Println("Beacon Process/Update/RandomFalg: Beacon Pending Validator", bestStateBeacon.BeaconPendingValidator)
 			if err != nil {
 				return err
 			}

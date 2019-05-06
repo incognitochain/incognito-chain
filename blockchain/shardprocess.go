@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -75,7 +76,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	Insert Shard Block into blockchain
 	@Notice: this block must have full information (complete block)
 */
-func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer bool) error {
+func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bool) error {
 	shardID := block.Header.ShardID
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
@@ -86,7 +87,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
-	if !isProducer {
+	if !isValidated {
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing  Block %+v \n", block.Header.ShardID, *block.Hash())
 		if err := blockchain.VerifyPreProcessingShardBlock(block, shardID, false); err != nil {
 			return err
@@ -102,7 +103,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	}
 
 	// Verify block with previous best state
-	if !isProducer {
+	if !isValidated {
 		Logger.log.Infof("SHARD %+v | Verify BestState with Block %+v \n", block.Header.ShardID, *block.Hash())
 		if err := blockchain.BestState.Shard[shardID].VerifyBestStateWithShardBlock(block, true, shardID); err != nil {
 			return err
@@ -122,7 +123,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	}
 
 	//========Post verififcation: verify new beaconstate with corresponding block
-	if !isProducer {
+	if !isValidated {
 		Logger.log.Infof("SHARD %+v | Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
 		if err := blockchain.BestState.Shard[shardID].VerifyPostProcessingShardBlock(block, shardID); err != nil {
 			return err
@@ -207,7 +208,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 	//Remove tx out of pool
 	go func() {
 		for _, tx := range block.Body.Transactions {
-			blockchain.config.TxPool.RemoveTx(tx)
+			blockchain.config.TxPool.RemoveTx(tx, true)
 		}
 	}()
 
@@ -244,12 +245,8 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// Process transaction db
-	if len(block.Body.Transactions) < 1 {
-		Logger.log.Infof("No transaction in this block")
-	} else {
-		Logger.log.Criticalf("Found %d transactions in block height %+v", len(block.Body.Transactions), block.Header.Height)
-	}
-
+	Logger.log.Criticalf("Found %d transactions in block height %+v", len(block.Body.Transactions), block.Header.Height)
+	go common.AnalyzeTimeSeriesTxsInOneBlockMetric(fmt.Sprintf("%d", block.Header.Height), float64(len(block.Body.Transactions)))
 	if len(block.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("ProcessStoreShardBlock/CrossTransactions	", block.Body.CrossTransactions)
 	}
@@ -690,36 +687,35 @@ func (blockchain *BestStateShard) VerifyPostProcessingShardBlock(block *ShardBlo
 	11. Check duplicate Init Custom Token in block
 */
 func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Transaction) error {
+	if len(txs) == 0 {
+		return nil
+	}
 	isEmpty := blockChain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
-	index := 0
-	salaryCount := 0
-
-	for _, tx := range txs {
-		if !tx.IsSalaryTx() {
-			if tx.GetType() == common.TxCustomTokenType {
-				customTokenTx := tx.(*transaction.TxCustomToken)
-				if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-					salaryCount++
-					continue
-				}
-			}
-			_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
-			if err != nil {
-				return err
-			}
-			index++
-		} else {
-			salaryCount++
-		}
+	defer blockChain.config.TempTxPool.EmptyPool()
+	
+	err := blockChain.config.TempTxPool.ValidateTxList(txs)
+	if err != nil {
+		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
+		return NewBlockChainError(TransactionError, errors.New("Some Transactions in New Block IS invalid"))
 	}
-	blockChain.config.TempTxPool.EmptyPool()
-	//if index == len(txs)-salaryCount {
-	//	return nil
-	//} else {
-	//	return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid"))
+	return nil
+
+	//for _, tx := range txs {
+	//	if !tx.IsSalaryTx() {
+	//		if tx.GetType() == common.TxCustomTokenType {
+	//			customTokenTx := tx.(*transaction.TxCustomToken)
+	//			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+	//				continue
+	//			}
+	//		}
+	//		_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
 	//}
 	return nil
 }

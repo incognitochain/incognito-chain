@@ -233,20 +233,20 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	// create mempool tx
 	serverObj.memPool = &mempool.TxPool{}
 	serverObj.memPool.Init(&mempool.Config{
-		BlockChain:      serverObj.blockChain,
-		DataBase:        serverObj.dataBase,
-		ChainParams:     chainParams,
-		FeeEstimator:    serverObj.feeEstimator,
-		TxLifeTime:      cfg.TxPoolTTL,
-		MaxTx:           cfg.TxPoolMaxTx,
-		DataBaseMempool: dbmp,
+		BlockChain:        serverObj.blockChain,
+		DataBase:          serverObj.dataBase,
+		ChainParams:       chainParams,
+		FeeEstimator:      serverObj.feeEstimator,
+		TxLifeTime:        cfg.TxPoolTTL,
+		MaxTx:             cfg.TxPoolMaxTx,
+		DataBaseMempool:   dbmp,
 		IsLoadFromMempool: cfg.LoadMempool,
-		PersistMempool: cfg.PersistMempool,
+		PersistMempool:    cfg.PersistMempool,
 	})
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-	
+
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
@@ -527,10 +527,10 @@ func (serverObj Server) Start() {
 	if serverObj.memPool != nil {
 		txDescs := serverObj.memPool.LoadOrResetDatabaseMP()
 		for _, txDesc := range txDescs {
-			<-time.Tick(50*time.Millisecond)
+			<-time.Tick(50 * time.Millisecond)
 			if !txDesc.IsFowardMessage {
 				tx := txDesc.Desc.Tx
-				switch tx.GetType(){
+				switch tx.GetType() {
 				case common.TxNormalType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
