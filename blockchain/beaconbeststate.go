@@ -309,8 +309,8 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, proposerOff
 	return common.EmptyString, 0
 }
 
-// getAssetPrice returns price stored in Oracle
-func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
+// GetAssetPrice returns price stored in Oracle
+func (bestStateBeacon *BestStateBeacon) GetAssetPrice(assetID common.Hash) uint64 {
 	price := uint64(0)
 	if common.IsBondAsset(&assetID) {
 		if bestStateBeacon.StabilityInfo.Oracle.Bonds != nil {
