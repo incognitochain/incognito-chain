@@ -52,6 +52,53 @@ func (rpcServer RpcServer) getBondTypes() (*jsonresult.GetBondTypeResult, error)
 	return result, nil
 }
 
+func (rpcServer RpcServer) handleGetOracleTokenIDs(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	bondTypesRes, err := rpcServer.getBondTypes()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	oracleBonds := make([]*jsonresult.OracleToken, len(bondTypesRes.BondTypes))
+	i := 0
+	for _, bondType := range bondTypesRes.BondTypes {
+		oracleBonds[i] = &jsonresult.OracleToken{
+			TokenID:   bondType.BondID,
+			TokenName: bondType.BondName,
+		}
+		i += 1
+	}
+	oracleTokens := []*jsonresult.OracleToken{
+		&jsonresult.OracleToken{
+			TokenID:   common.USDAssetID.String(),
+			TokenName: "USD",
+		},
+		&jsonresult.OracleToken{
+			TokenID:   common.ETHAssetID.String(),
+			TokenName: "ETH",
+		},
+		&jsonresult.OracleToken{
+			TokenID:   common.BTCAssetID.String(),
+			TokenName: "BTC",
+		},
+		&jsonresult.OracleToken{
+			TokenID:   common.ConstantID.String(),
+			TokenName: "Constant",
+		},
+		&jsonresult.OracleToken{
+			TokenID:   common.GOVTokenID.String(),
+			TokenName: "GOV",
+		},
+		&jsonresult.OracleToken{
+			TokenID:   common.DCBTokenID.String(),
+			TokenName: "DCB",
+		},
+	}
+	oracleTokens = append(oracleTokens, oracleBonds...)
+	result := &jsonresult.GetOracleTokensResult{
+		OracleTokens: oracleTokens,
+	}
+	return result, nil
+}
+
 func (rpcServer RpcServer) handleGetBondTypes(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result, err := rpcServer.getBondTypes()
 	if err != nil {
@@ -638,4 +685,14 @@ func (rpcServer RpcServer) handleSignUpdatingOracleBoardContent(params interface
 	signatureBytes := signature.Bytes()
 	signStr := hex.EncodeToString(signatureBytes)
 	return signStr, nil
+}
+
+func (rpcServer RpcServer) handleGetAssetPrice(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	assetIDRaw := arrayParams[0].(string)
+	assetID, err := common.NewHashFromStr(assetIDRaw)
+	if err != nil {
+		return uint64(0), nil
+	}
+	return rpcServer.config.BlockChain.BestState.Beacon.GetAssetPrice(*assetID), nil
 }
