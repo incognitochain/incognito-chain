@@ -50,13 +50,14 @@ func (rpcServer RpcServer) handleCreateAndSendCrowdsaleRequestConstant(params in
 func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// Get all ongoing crowdsales for that chain
 	type CrowdsaleInfo struct {
-		SaleID   string
-		EndBlock uint64
-		BondID   string
-		Amount   uint64
-		Price    uint64
-		Buy      bool
-		Type     string
+		SaleID        string
+		EndBlock      uint64
+		BuyingAsset   string
+		BuyingAmount  uint64
+		SellingAsset  string
+		SellingAmount uint64
+		Price         uint64
+		Type          string
 	}
 	result := []CrowdsaleInfo{}
 	saleDataList, err := rpcServer.config.BlockChain.GetAllSaleData()
@@ -69,24 +70,45 @@ func (rpcServer RpcServer) handleGetListOngoingCrowdsale(params interface{}, clo
 			continue
 		}
 
-		// Add type for better ux, not blockchain-related
-		crowdsaleType := "buyable"
-		if saleData.Buy {
-			crowdsaleType = "sellable"
-		}
-
 		info := CrowdsaleInfo{
 			SaleID:   hex.EncodeToString(saleData.SaleID),
 			EndBlock: saleData.EndBlock,
-			BondID:   saleData.BondID.String(),
-			Amount:   saleData.Amount,
 			Price:    saleData.Price,
-			Buy:      saleData.Buy,
-			Type:     crowdsaleType,
 		}
+
+		if saleData.Buy {
+			info.Type = "sellable" // Users sell bonds to DCB
+			info.BuyingAsset = saleData.BondID.String()
+			info.SellingAsset = common.ConstantID.String()
+			info.BuyingAmount = saleData.Amount
+		} else {
+			info.Type = "buyable" // Users buy bonds from DCB
+			info.BuyingAsset = common.ConstantID.String()
+			info.SellingAsset = saleData.BondID.String()
+			info.SellingAmount = saleData.Amount
+		}
+
 		result = append(result, info)
 	}
 	return result, nil
+}
+
+func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// TODO(@0xbunyip): call get list bonds
+	buyingAssets := map[string]string{
+		"Bond 1":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
+		"Constant": common.ConstantID.String(),
+	} // From asset name to asset id
+	return buyingAssets, nil
+}
+
+func (rpcServer RpcServer) handleGetListDCBProposalSellingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// TODO(@0xbunyip): call get list bonds
+	sellingAssets := map[string]string{
+		"Constant": common.ConstantID.String(),
+		"Bond 2":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
+	} // From asset name to asset id
+	return sellingAssets, nil
 }
 
 func (rpcServer RpcServer) handleGetDCBBondInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -124,22 +146,4 @@ func (rpcServer RpcServer) handleGetDCBBondInfo(params interface{}, closeChan <-
 		}
 	}
 	return infos, nil
-}
-
-func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// TODO(@0xbunyip): call get list bonds
-	buyingAssets := map[string]string{
-		"Bond 1":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
-		"Constant": common.ConstantID.String(),
-	} // From asset name to asset id
-	return buyingAssets, nil
-}
-
-func (rpcServer RpcServer) handleGetListDCBProposalSellingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// TODO(@0xbunyip): call get list bonds
-	sellingAssets := map[string]string{
-		"Constant": common.ConstantID.String(),
-		"Bond 2":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
-	} // From asset name to asset id
-	return sellingAssets, nil
 }
