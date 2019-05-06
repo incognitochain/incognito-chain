@@ -344,3 +344,8 @@ func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*component.S
 	}
 	return nil, fmt.Errorf("failed getting SaleData from BSB")
 }
+
+//This only happen if user is a beacon committee member.
+func (blockchain *BlockChain) RevertBeaconState() {
+
+}
