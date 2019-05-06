@@ -98,7 +98,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
-		go common.SendMetricDataToGrafana(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()), "BeaconBlock")
+		go common.AnalyzeTimeSeriesBeaconBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
@@ -129,7 +129,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	} else {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
-		go common.SendMetricDataToGrafana(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()), "ShardBlock")
+		go common.AnalyzeTimeSeriesShardBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()

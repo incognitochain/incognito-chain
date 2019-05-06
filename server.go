@@ -241,10 +241,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxTx:           cfg.TxPoolMaxTx,
 		DataBaseMempool: dbmp,
 		IsLoadFromMempool: cfg.LoadMempool,
+		PersistMempool: cfg.PersistMempool,
 	})
+	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-
+	
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
