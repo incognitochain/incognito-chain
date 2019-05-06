@@ -3,10 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"math"
-	"strconv"
-	"strings"
-
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database/lvdb"
@@ -16,6 +12,8 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/pkg/errors"
+	"math"
+	"strconv"
 )
 
 type accumulativeValues struct {
@@ -90,7 +88,7 @@ func buildStabilityActions(
 	totalSalary, err := getShardBlockSalary(txs, bc, beaconHeight)
 	shardSalary := math.Ceil(float64(totalSalary) / 2)
 	beaconSalary := math.Floor(float64(totalSalary) / 2)
-
+	fmt.Println("SA: fee&salary", totalFee, totalSalary, shardSalary, beaconSalary)
 	if err != nil {
 		return nil, err
 	}
@@ -341,8 +339,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			txs := []metadata.Transaction{}
 
 			if l[0] == SwapAction {
-				txs, err = blockgen.buildReturnStakingAmountTx(strings.Split(l[1], ","), strings.Split(l[3], ","), producerPrivateKey)
-				resTxs = append(resTxs, txs...)
+				fmt.Println("SA: swap instruction ", l)
+				//txs, err = blockgen.buildReturnStakingAmountTx(strings.Split(l[1], ","), strings.Split(l[3], ","), producerPrivateKey)
+				//resTxs = append(resTxs, txs...)
 			}
 
 			if l[0] == StakeAction || l[0] == RandomAction {

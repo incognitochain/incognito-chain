@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/constant-money/constant-chain/wallet"
 	"strconv"
 
@@ -109,6 +110,7 @@ func buildInstForBeaconSalary(salary, beaconHeight uint64, payToAddress *privacy
 		PayToAddress:      payToAddress,
 		BeaconSalary:      salary,
 	}
+	fmt.Println("SA: beaconSalaryInfo", beaconSalaryInfo)
 	beaconSalaryInfo.InfoHash = beaconSalaryInfo.hash()
 
 	contentStr, err := json.Marshal(beaconSalaryInfo)
@@ -140,7 +142,6 @@ func buildInstForShardBlockSalaryReq(
 	instructions := [][]string{}
 	instType := string("")
 	accumulativeValues.totalFee += shardBlockSalaryInfo.ShardBlockFee
-	accumulativeValues.totalBeaconSalary += shardBlockSalaryInfo.BeaconBlockSalary
 
 	if !isGOVFundEnough(beaconBestState, accumulativeValues, shardBlockSalaryInfo.ShardBlockSalary+shardBlockSalaryInfo.BeaconBlockSalary) {
 		instType = "fundNotEnough"
@@ -150,7 +151,7 @@ func buildInstForShardBlockSalaryReq(
 		instType = "accepted"
 		accumulativeValues.totalSalary += shardBlockSalaryInfo.ShardBlockSalary
 		accumulativeValues.totalSalary += shardBlockSalaryInfo.BeaconBlockSalary
-
+		accumulativeValues.totalBeaconSalary += shardBlockSalaryInfo.BeaconBlockSalary
 		accumulativeValues.totalShardSalary += shardBlockSalaryInfo.ShardBlockSalary
 	}
 	returnedInst := []string{
@@ -193,6 +194,7 @@ func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
 		blockgen.chain.GetDatabase(),
 		salaryResMeta,
 	)
+	fmt.Println("SA: beacon salary", beaconSalaryInfo, salaryResTx.CalculateTxValue(), salaryResTx.Hash().String())
 	if err != nil {
 		return nil, err
 	}
