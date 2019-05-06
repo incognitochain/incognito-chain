@@ -121,11 +121,34 @@ func (rpcServer RpcServer) handleGetListDCBProposalBuyingAssets(params interface
 }
 
 func (rpcServer RpcServer) handleGetListDCBProposalSellingAssets(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// TODO(@0xbunyip): call get list bonds
-	sellingAssets := map[string]string{
-		"Constant": common.ConstantID.String(),
-		"Bond 2":   "4c420b974449ac188c155a7029706b8419a591ee398977d00000000000000000",
-	} // From asset name to asset id
+	bonds, err := rpcServer.getBondTypes()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	type sellAssetInfo struct {
+		TokenID   string
+		MaxAmount uint64
+	}
+
+	sellingAssets := map[string]sellAssetInfo{} // From asset name to info
+	for _, b := range bonds.BondTypes {
+		bondID, err := common.NewHashFromStr(b.BondID)
+		if err != nil {
+			continue
+		}
+		amount := rpcServer.config.BlockChain.GetDCBFreeBond(bondID)
+		sellingAssets[b.BondName] = sellAssetInfo{
+			TokenID:   b.BondID,
+			MaxAmount: amount,
+		}
+	}
+
+	// Add dummy Constant token
+	sellingAssets["Constant"] = sellAssetInfo{
+		TokenID:   common.ConstantID.String(),
+		MaxAmount: 1000000,
+	}
 	return sellingAssets, nil
 }
 
