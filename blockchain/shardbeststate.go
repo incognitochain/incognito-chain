@@ -153,3 +153,8 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 
 	return bestStateShard
 }
+
+//This only happen if user is a shard committee member.
+func (blockchain *BlockChain) RevertShardState(shardID byte) {
+
+}
