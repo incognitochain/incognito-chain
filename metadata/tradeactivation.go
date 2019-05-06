@@ -65,9 +65,9 @@ func (act *TradeActivation) ValidateTxWithBlockChain(txr Transaction, bcr Blockc
 
 	// Check if balance is enough in case of selling bonds
 	if !trade.Buy {
-		avail := bcr.GetDCBAvailableAsset(trade.BondID)
-		if avail < act.Amount {
-			return false, errors.Errorf("not enough asset to trade, have %d, need %d\n", avail, act.Amount)
+		free := bcr.GetDCBFreeBond(trade.BondID)
+		if free < act.Amount {
+			return false, errors.Errorf("not enough asset to trade, have %d, need %d", free, act.Amount)
 		}
 	}
 
