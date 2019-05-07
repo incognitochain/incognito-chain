@@ -98,9 +98,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 			Transactions:      make([]metadata.Transaction, 0),
 		},
 	}
-	for i, tx1 := range txsToAdd {
-		Logger.log.Warn(i, tx1.GetType(), tx1.GetMetadata(), "\n")
-	}
+	//for i, tx1 := range txsToAdd {
+	//	Logger.log.Warn(i, tx1.GetType(), tx1.GetMetadata(), "\n")
+	//}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
@@ -192,7 +192,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	}
 	go func() {
 		for _, tx := range txToRemove {
-			blockgen.txPool.RemoveTx(tx)
+			blockgen.txPool.RemoveTx(tx, false)
 		}
 	}()
 
@@ -342,8 +342,8 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 		TradeActivated: map[string]bool{},
 	}
 
-	for i, txDesc := range sourceTxns {
-		Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
+	for _, txDesc := range sourceTxns {
+		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		tx := txDesc.Tx
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if txShardID != shardID {
@@ -374,11 +374,16 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 		}
 		// Time bound condition for block creation
 		//if time for getting transaction exceed half of MinShardBlkInterval then break
-		elasped := time.Since(startTime)
-		if elasped >= common.MinShardBlkInterval/2 {
+		elasped := time.Since(startTime).Nanoseconds()
+		//Logger.log.Critical("Shard Producer/Elapsed: ", elasped)
+		//Logger.log.Critical("Shard Producer/MinShardBlkInterval: ", common.MinShardBlkInterval.Nanoseconds())
+		//Logger.log.Critical("Shard Producer/MinShardBlkInterval/2: ", common.MinShardBlkInterval.Nanoseconds()/2)
+		if elasped >= (common.MinShardBlkInterval.Nanoseconds()/2) * 3 {
+			//Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
 	}
+	Logger.log.Criticalf("☭ %+v transactions for New Block from pool \n", len(txsToAdd))
 	blockgen.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
 }

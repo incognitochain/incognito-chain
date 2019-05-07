@@ -77,55 +77,6 @@ func (blockchain *BlockChain) GetGOVParams() component.GOVParams {
 	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
-//// Loan
-func (blockchain *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
-	key := getLoanRequestKeyBeacon(loanID)
-	reqHash, ok := blockchain.BestState.Beacon.Params[key]
-	if !ok {
-		return nil, errors.Errorf("Loan request with ID %x not found", loanID)
-	}
-	return common.NewHashFromStr(reqHash)
-}
-
-// GetLoanResps returns all responses of a given loanID
-func (blockchain *BlockChain) GetLoanResps(loanID []byte) ([][]byte, []metadata.ValidLoanResponse, error) {
-	key := getLoanResponseKeyBeacon(loanID)
-	senders := [][]byte{}
-	responses := []metadata.ValidLoanResponse{}
-	if data, ok := blockchain.BestState.Beacon.Params[key]; ok {
-		lrds, err := parseLoanResponseValueBeacon(data)
-		if err != nil {
-			return nil, nil, err
-		}
-		for _, lrd := range lrds {
-			senders = append(senders, lrd.SenderPubkey)
-			responses = append(responses, lrd.Response)
-		}
-	}
-	return senders, responses, nil
-}
-
-func (blockchain *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
-	return blockchain.config.DataBase.GetLoanPayment(loanID)
-}
-
-func (blockchain *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
-	reqHash, err := blockchain.GetLoanReq(loanID)
-	if err != nil {
-		return nil, err
-	}
-	_, _, _, txReq, err := blockchain.GetTransactionByHash(reqHash)
-	if err != nil {
-		return nil, err
-	}
-	requestMeta := txReq.GetMetadata().(*metadata.LoanRequest)
-	return requestMeta, nil
-}
-
-func (blockchain *BlockChain) GetLoanWithdrawed(loanID []byte) (bool, error) {
-	return blockchain.config.DataBase.GetLoanWithdrawed(loanID)
-}
-
 //// Crowdsales
 func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *component.SaleData {
 	var saleData *component.SaleData

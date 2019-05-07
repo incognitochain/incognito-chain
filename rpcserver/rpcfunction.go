@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -69,6 +68,10 @@ var RpcHandler = map[string]commandHandler{
 	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
 	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
 
+	//======Testing and Benchmark======
+	GetAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
+	//=================================
+
 	//pool
 
 	// Beststate
@@ -99,18 +102,6 @@ var RpcHandler = map[string]commandHandler{
 	ListPrivacyCustomToken:                     RpcServer.handleListPrivacyCustomToken,
 	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
 	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
-
-	// Loan tx
-	GetLoanParams:             RpcServer.handleGetLoanParams,
-	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,
-	CreateAndSendLoanResponse: RpcServer.handleCreateAndSendLoanResponse,
-	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
-	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
-	GetLoanResponseApproved:   RpcServer.handleGetLoanResponseApproved,
-	GetLoanResponseRejected:   RpcServer.handleGetLoanResponseRejected,
-	GetLoanPaymentInfo:        RpcServer.handleGetLoanPaymentInfo,
-	GetBankFund:               RpcServer.handleGetBankFund,
-	GetLoanRequestTxStatus:    RpcServer.handleGetLoanRequestTxStatus,
 
 	// Crowdsale
 	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
@@ -167,13 +158,12 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawSubmitGOVProposalTx:     RpcServer.handleCreateRawSubmitGOVProposalTransaction,
 
 	// dcb
-	GetDCBParams:       RpcServer.handleGetDCBParams,
-	GetDCBConstitution: RpcServer.handleGetDCBConstitution,
-	GetDCBBoardIndex:   RpcServer.handleGetDCBBoardIndex,
-	GetGOVBoardIndex:   RpcServer.handleGetGOVBoardIndex,
-	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
-	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
+	GetDCBParams:           RpcServer.handleGetDCBParams,
+	GetDCBConstitution:     RpcServer.handleGetDCBConstitution,
+	GetDCBBoardIndex:       RpcServer.handleGetDCBBoardIndex,
+	GetGOVBoardIndex:       RpcServer.handleGetGOVBoardIndex,
 	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
+	GetBankFund:            RpcServer.handleGetBankFund,
 
 	// gov
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
@@ -489,7 +479,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
+	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
