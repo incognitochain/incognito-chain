@@ -18,12 +18,12 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	Logger.log.Critical("Getting Transactions from file")
 	file, err := ioutil.ReadFile("./utility/txs-shard0-5000.json")
 	if err != nil {
-		Logger.log.Error("Fail to get Transactions from file")
+		Logger.log.Error("Fail to get Transactions from file: ", err)
 	}
 	data := txs{}
 	count := 0
 	_ = json.Unmarshal([]byte(file), &data)
-	Logger.log.Critical("Get %+v Transactions from file \n", len(data.Txs))
+	Logger.log.Criticalf("Get %+v Transactions from file \n", len(data.Txs))
 	for index, txBase58Data := range data.Txs {
 		//if index <= 200 {
 		//	continue
