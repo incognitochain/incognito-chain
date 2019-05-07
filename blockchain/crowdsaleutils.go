@@ -30,10 +30,14 @@ func buildPaymentForCoin(
 	copy(metaPay.SaleID, saleID)
 	metaPayList := []metadata.Metadata{metaPay}
 
-	// fmt.Printf("[db] build CST payment: %d\n", amount)
-
 	amounts := []uint64{amount}
-	txs, err := transaction.BuildCoinbaseTxs([]*privacy.PaymentAddress{&receiverAddress}, amounts, producerPrivateKey, db, metaPayList) // There's only one tx in txs
+	txs, err := transaction.BuildCoinbaseTxs(
+		[]*privacy.PaymentAddress{&receiverAddress},
+		amounts,
+		producerPrivateKey,
+		db,
+		metaPayList,
+	)
 	if err != nil {
 		return nil, err
 	}
