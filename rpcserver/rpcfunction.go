@@ -158,12 +158,10 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawSubmitGOVProposalTx:     RpcServer.handleCreateRawSubmitGOVProposalTransaction,
 
 	// dcb
-	GetDCBParams:       RpcServer.handleGetDCBParams,
-	GetDCBConstitution: RpcServer.handleGetDCBConstitution,
-	GetDCBBoardIndex:   RpcServer.handleGetDCBBoardIndex,
-	GetGOVBoardIndex:   RpcServer.handleGetGOVBoardIndex,
-	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
-	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
+	GetDCBParams:           RpcServer.handleGetDCBParams,
+	GetDCBConstitution:     RpcServer.handleGetDCBConstitution,
+	GetDCBBoardIndex:       RpcServer.handleGetDCBBoardIndex,
+	GetGOVBoardIndex:       RpcServer.handleGetGOVBoardIndex,
 	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
 	GetBankFund:            RpcServer.handleGetBankFund,
 

@@ -44,12 +44,6 @@ var (
 	TokenPaymentAddressPrefix    = []byte("token-paymentaddress-")
 	tokenInitPrefix              = []byte("token-init-")
 	privacyTokenInitPrefix       = []byte("privacy-token-init-")
-	loanIDKeyPrefix              = []byte("loanID-")
-	loanTxKeyPrefix              = []byte("loanTx-")
-	loanPaymentKeyPrefix         = []byte("loanPayment-")
-	loanWithdrawedPrefix         = []byte("loanWithdrawed-")
-	loanRequestPostfix           = []byte("-req")
-	loanResponsePostfix          = []byte("-res")
 	rewared                      = []byte("reward")
 
 	//vote prefix

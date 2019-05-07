@@ -71,11 +71,11 @@ const (
 	HasSnDerivators                            = "hassnderivators"
 
 	CreateAndSendStakingTransaction = "createandsendstakingtransaction"
-	
+
 	//===========For Testing and Benchmark==============
 	GetAndSendTxsFromFile = "getandsendtxsfromfile"
 	//==================================================
-	
+
 	GetShardBestState  = "getshardbeststate"
 	GetBeaconBestState = "getbeaconbeststate"
 
@@ -113,18 +113,6 @@ const (
 	GetConstantCirculating               = "getconstantcirculating"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
-
-	// dcb loan
-	CreateAndSendLoanRequest  = "createandsendloanrequest"
-	CreateAndSendLoanResponse = "createandsendloanresponse"
-	CreateAndSendLoanPayment  = "createandsendloanpayment"
-	CreateAndSendLoanWithdraw = "createandsendloanwithdraw"
-	GetLoanResponseApproved   = "getloanresponseapproved"
-	GetLoanResponseRejected   = "getloanresponserejected"
-	GetLoanParams             = "loanparams"
-	GetLoanPaymentInfo        = "getloanpaymentinfo"
-	GetBankFund               = "getbankfund"
-	GetLoanRequestTxStatus    = "getloanrequesttxstatus"
 
 	// crowdsale
 	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"
@@ -174,8 +162,7 @@ const (
 	SendRawSubmitGOVProposalTx       = "sendrawsubmitgovproposaltx"
 
 	// dcb
-	// CreateAndSendTxWithIssuingRequest     = "createandsendtxwithissuingrequest"
-	// CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
+	GetBankFund = "getbankfund"
 
 	// gov
 	GetBondTypes                           = "getbondtypes"
