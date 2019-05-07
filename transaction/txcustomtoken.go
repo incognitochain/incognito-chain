@@ -590,6 +590,13 @@ func (tx *TxCustomToken) GetProof() *zkp.PaymentProof {
 	return tx.Proof
 }
 
+func (tx *TxCustomToken) GetSender() []byte {
+	if len(tx.TxTokenData.Vins) == 0 {
+		return nil
+	}
+	return tx.TxTokenData.Vins[0].PaymentAddress.Pk[:]
+}
+
 func (tx *TxCustomToken) GetTokenReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
