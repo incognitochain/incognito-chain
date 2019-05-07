@@ -48,7 +48,7 @@ func (bc *BlockChain) storeIssuingResponseInstruction(inst []string, shardID byt
 		return nil
 	}
 
-	issuingInfo := &IssuingInfo{}
+	issuingInfo := &component.IssuingInfo{}
 	err := json.Unmarshal([]byte(inst[3]), issuingInfo)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (bc *BlockChain) storeContractingResponseInstruction(inst []string, shardID
 		return nil
 	}
 
-	contractingInfo := &ContractingInfo{}
+	contractingInfo := &component.ContractingInfo{}
 	err := json.Unmarshal([]byte(inst[3]), contractingInfo)
 	if err != nil {
 		return err

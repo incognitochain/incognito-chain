@@ -49,6 +49,8 @@ const (
 	RewardGOVProposalSubmitterMeta = 49
 	ShareRewardOldDCBBoardMeta     = 50
 	ShareRewardOldGOVBoardMeta     = 51
+	RewardDCBProposalVoterMeta     = 52
+	RewardGOVProposalVoterMeta     = 53
 	SendBackTokenVoteBoardFailMeta = 54
 	DCBVoteProposalMeta            = 55
 	GOVVoteProposalMeta            = 56
@@ -71,5 +73,14 @@ const (
 	Add = iota + 1
 	Remove
 )
+
+var minerCreatedMetaTypes = []int{
+	BuyFromGOVRequestMeta,
+	BuyBackRequestMeta,
+	ShardBlockSalaryResponseMeta,
+	CrowdsalePaymentMeta,
+	IssuingResponseMeta,
+	ContractingResponseMeta,
+}
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
