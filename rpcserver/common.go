@@ -1,9 +1,8 @@
 package rpcserver
 
 import (
-	"fmt"
 	"sort"
-
+	
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -108,7 +107,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
+	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	// param #2: list receiver
 	receiversPaymentAddressStrParam := make(map[string]interface{})
@@ -149,7 +148,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	// START create tx
 	// missing flag for privacy
 	// false by default
-	fmt.Printf("#inputCoins: %d\n", len(inputCoins))
+	//fmt.Printf("#inputCoins: %d\n", len(inputCoins))
 	tx := transaction.Tx{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,

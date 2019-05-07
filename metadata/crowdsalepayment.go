@@ -30,7 +30,6 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 	//	return false, fmt.Errorf("Crowdsale payment must send asset from DCB address")
 	//}
 
-	// TODO(@0xbunyip): check double spending for coinbase CST tx?
 	if !sale.Buy {
 		// Check if sent from DCB address
 		// check double spending if selling bond

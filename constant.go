@@ -111,7 +111,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	if serverChan != nil {
 		serverChan <- &server
 	}
-
+	Logger.log.Criticalf("Metric Server: %+v", os.Getenv("GrafanaURL"))
 	// Wait until the interrupt signal is received from an OS signal or
 	// shutdown is requested through one of the subsystems such as the RPC
 	// server.
