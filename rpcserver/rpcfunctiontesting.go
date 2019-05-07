@@ -30,10 +30,10 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	_ = json.Unmarshal([]byte(file), &data)
 	Logger.log.Criticalf("Get %+v Transactions from file \n", len(data.Txs))
 	for index, txBase58Data := range data.Txs {
-		<-time.Tick(500*time.Microsecond)
-		//if index <= 200 {
-		//	continue
-		//}
+		<-time.Tick(50*time.Millisecond)
+		if index % 500 == 0 {
+			<-time.Tick(2 * time.Second)
+		}
 		Logger.log.Critical("Number of Transaction: ", index)
 		//<-time.Tick(50*time.Millisecond)
 		rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58Data)
@@ -45,9 +45,10 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 		if err != nil {
 			return nil, NewRPCError(ErrSendTxData, err)
 		}
-		if isSent {
+		if !isSent {
 			_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 		} else {
+			_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 			txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 			if err != nil {
 				return nil, NewRPCError(ErrSendTxData, err)
