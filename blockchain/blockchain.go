@@ -67,10 +67,8 @@ type BlockChain struct {
 	// PeerStateCh chan *peerState
 }
 type BestState struct {
-	Beacon          *BestStateBeacon
-	Shard           map[byte]*BestStateShard
-	prevBeaconState string
-	prevShardState  map[byte]string
+	Beacon *BestStateBeacon
+	Shard  map[byte]*BestStateShard
 }
 
 // config is a descriptor which specifies the blockchain instance configuration.

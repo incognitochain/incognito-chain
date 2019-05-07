@@ -242,7 +242,8 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
 	//verify producer
-	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIdx + block.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
+	proposerOffset := (block.Header.Round - 1) % len(blockchain.BestState.Beacon.BeaconCommittee)
+	producerPosition := blockchain.BestState.Beacon.BeaconProposerIdx + proposerOffset
 	tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))

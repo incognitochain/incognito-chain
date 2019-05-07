@@ -339,3 +339,8 @@ func (bestStateBeacon *BestStateBeacon) GetAssetPrice(assetID common.Hash) uint6
 func (blockchain *BlockChain) RevertBeaconState() {
 
 }
+
+func (blockchain *BlockChain) SaveCurrentBeaconState(block *BeaconBlock) error {
+
+	return nil
+}

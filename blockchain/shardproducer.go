@@ -17,7 +17,7 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, proposerOffset int, crossShards map[byte]uint64) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64) (*ShardBlock, error) {
 	//============Build body=============
 	// Fetch Beacon information
 	fmt.Printf("[ndh] ========================== Creating shard block[%+v] ==============================", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
@@ -163,7 +163,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		BeaconHeight:         beaconHeight,
 		BeaconHash:           beaconHash,
 		Epoch:                epoch,
-		Round:                proposerOffset + 1,
+		Round:                round,
 	}
 	return block, nil
 }
@@ -378,7 +378,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 		//Logger.log.Critical("Shard Producer/Elapsed: ", elasped)
 		//Logger.log.Critical("Shard Producer/MinShardBlkInterval: ", common.MinShardBlkInterval.Nanoseconds())
 		//Logger.log.Critical("Shard Producer/MinShardBlkInterval/2: ", common.MinShardBlkInterval.Nanoseconds()/2)
-		if elasped >= (common.MinShardBlkInterval.Nanoseconds()/2) * 3 {
+		if elasped >= (common.MinShardBlkInterval.Nanoseconds()/2)*3 {
 			//Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
