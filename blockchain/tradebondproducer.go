@@ -1,9 +1,9 @@
 package blockchain
 
 import (
-	"bytes"
 	"fmt"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
@@ -11,25 +11,7 @@ import (
 	"github.com/constant-money/constant-chain/wallet"
 )
 
-type tradeData struct {
-	tradeID   []byte
-	bondID    *common.Hash
-	buy       bool
-	activated bool
-	amount    uint64
-	reqAmount uint64
-}
-
-func (td *tradeData) Compare(td2 *tradeData) bool {
-	return bytes.Equal(td.tradeID, td2.tradeID) &&
-		td.bondID.IsEqual(td2.bondID) &&
-		td.buy == td2.buy &&
-		td.activated == td2.activated &&
-		td.amount == td2.amount &&
-		td.reqAmount == td2.reqAmount
-}
-
-func (bc *BlockChain) calcTradeData(inst string) (*tradeData, error) {
+func (bc *BlockChain) CalcTradeData(inst string) (*component.TradeData, error) {
 	tradeID, reqAmount, err := metadata.ParseTradeActivationActionValue(inst)
 	if err != nil {
 		return nil, fmt.Errorf("failed parsing ta action: %v", err)
@@ -41,17 +23,25 @@ func (bc *BlockChain) calcTradeData(inst string) (*tradeData, error) {
 		return nil, fmt.Errorf("failed getting latest trade: %v", err)
 	}
 
-	return &tradeData{
-		tradeID:   tradeID,
-		bondID:    bondID,
-		buy:       buy,
-		activated: activated,
-		amount:    amount,
-		reqAmount: reqAmount,
+	// Check amount of bonds owned by DCB
+	if !buy {
+		dcbBondAmount, _ := bc.GetDCBBondInfo(bondID)
+		if dcbBondAmount < amount {
+			amount = dcbBondAmount // Cannot sell more than amount owned
+		}
+	}
+
+	return &component.TradeData{
+		TradeID:   tradeID,
+		BondID:    bondID,
+		Buy:       buy,
+		Activated: activated,
+		Amount:    amount,
+		ReqAmount: reqAmount,
 	}, nil
 }
 
-func (bc *BlockChain) getSellBondPrice(bondID *common.Hash) uint64 {
+func (bc *BlockChain) GetSellBondPrice(bondID *common.Hash) uint64 {
 	buyPrice := bc.BestState.Beacon.StabilityInfo.Oracle.Bonds[bondID.String()]
 	if buyPrice == 0 {
 		buyPrice = bc.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.SellingBonds.BondPrice
@@ -64,33 +54,34 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.PrivateKey,
 	tradeActivated map[string]bool,
+	shardID byte,
 ) ([]metadata.Transaction, error) {
-	data, err := blockgen.chain.calcTradeData(inst)
+	data, err := blockgen.chain.CalcTradeData(inst)
 	if err != nil {
 		fmt.Printf("[db] calcTradeData err: %+v\n", err)
 		return nil, nil // Skip activation
 	}
 
 	// Ignore activation request if params are unsynced
-	activatedInBlock := tradeActivated[string(data.tradeID)]
-	if data.activated || data.reqAmount > data.amount || activatedInBlock {
-		fmt.Printf("[db] skip building buy sell tx: %t %t %d %d\n", data.activated, activatedInBlock, data.reqAmount, data.amount)
+	activatedInBlock := tradeActivated[string(data.TradeID)]
+	if data.Activated || data.ReqAmount > data.Amount || activatedInBlock {
+		fmt.Printf("[db] skip building buy sell tx: %t %t %d %d\n", data.Activated, activatedInBlock, data.ReqAmount, data.Amount)
 		return nil, nil
 	}
 
-	fmt.Printf("[db] trade act tx data: %h %t %d\n", data.bondID, data.buy, data.reqAmount)
+	fmt.Printf("[db] trade act tx data: %h %t %d\n", data.BondID, data.Buy, data.ReqAmount)
 	txs := []metadata.Transaction{}
-	if data.buy {
-		txs, err = blockgen.buildTradeBuySellRequestTx(data.tradeID, data.bondID, data.reqAmount, producerPrivateKey)
+	if data.Buy {
+		txs, err = blockgen.buildTradeBuySellRequestTx(data.TradeID, data.BondID, data.ReqAmount, producerPrivateKey)
 	} else {
-		txs, err = blockgen.buildTradeBuyBackRequestTx(data.tradeID, data.bondID, data.reqAmount, unspentTokens, producerPrivateKey)
+		txs, err = blockgen.buildTradeBuyBackRequestTx(data.TradeID, data.BondID, data.ReqAmount, unspentTokens, producerPrivateKey, shardID)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	tradeActivated[string(data.tradeID)] = true
+	tradeActivated[string(data.TradeID)] = true
 	fmt.Printf("[db] done built trade act tx\n")
 	return txs, nil
 }
@@ -103,7 +94,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 ) ([]metadata.Transaction, error) {
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-	buyPrice := blockgen.chain.getSellBondPrice(bondID)
+	buyPrice := blockgen.chain.GetSellBondPrice(bondID)
 
 	buySellMeta := &metadata.BuySellRequest{
 		PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
@@ -126,7 +117,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 		// Skip building tx buyback/buysell if error (retry later)
 		return nil, nil
 	}
-	fmt.Printf("[db] built buy sell req: %d\n", cstAmount)
+	fmt.Printf("[db] built buy sell req: %d %v\n", cstAmount, keyWalletDCBAccount.KeySet.PaymentAddress)
 	return []metadata.Transaction{txs[0]}, nil
 }
 
@@ -136,6 +127,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	amount uint64,
 	unspentTokens map[string]([]transaction.TxTokenVout),
 	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] building buyback request tx: %d %h\n", amount, bondID)
 	// Build metadata to send to GOV
@@ -165,6 +157,9 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		*bondID,
 		keyWalletBurnAccount.KeySet.PaymentAddress,
 		buyBackMeta,
+		producerPrivateKey,
+		blockgen.chain.GetDatabase(),
+		shardID,
 	)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)

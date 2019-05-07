@@ -77,11 +77,62 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
 	inst := fromshardins.NewSubmitProposalIns(common.DCBBoard, submitProposal)
 
 	instStr, err := inst.GetStringFormat()
-	fmt.Println("[voting] - submitDCBProposalMetadata BuildReqActions: ", instStr)
+	fmt.Println("[ndh] - submitDCBProposalMetadata BuildReqActions: ", instStr)
 	if err != nil {
 		return nil, err
 	}
 	return [][]string{instStr}, nil
+}
+
+func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) error {
+	// No crowdsale existed with the same id
+	if bcr.CrowdsaleExisted(sale.SaleID) {
+		return errors.Errorf("crowdsale with the same ID existed")
+	}
+
+	// Valid bondID
+	if !common.IsBondAsset(sale.BondID) {
+		return errors.Errorf("bondID incorrect")
+	}
+
+	// EndBlock is valid
+	if sale.EndBlock <= bcr.GetBeaconHeight() {
+		return errors.Errorf("crowdsale EndBlock must be higher than current beacon height")
+	}
+
+	// Amount and DefaultPrice must be set
+	if sale.Amount*sale.Price == 0 {
+		return errors.Errorf("crowdsale asset amount and price must be set")
+	}
+
+	// Check if DCB has enough bond
+	freeAmount := bcr.GetDCBFreeBond(sale.BondID)
+	if !sale.Buy && freeAmount < sale.Amount {
+		return errors.Errorf("crowdsale not enough asset, free %d, sell %d", freeAmount, sale.Amount)
+	}
+
+	if !sale.Buy {
+		// Cannot buy and sell the same type of bond at the same time
+		oldSales, err := bcr.GetAllSaleData()
+		if err != nil {
+			return err
+		}
+		for _, oldSale := range oldSales {
+			if oldSale.EndBlock >= bcr.GetBeaconHeight() {
+				continue // sale ended
+			}
+			if oldSale.Buy && sale.BondID.IsEqual(oldSale.BondID) {
+				return errors.Errorf("cannot buy and sell the same bond at the same time")
+			}
+		}
+
+		// Sell price (in Constant) must be higher than average buy price
+		amount, paid := bcr.GetDCBBondInfo(sale.BondID)
+		if paid > amount*sale.Price {
+			return fmt.Errorf("bond sell price is too low, got %d expected at least %d", sale.Price, paid/amount)
+		}
+	}
+	return nil
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(
@@ -98,29 +149,9 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 
 	// Validate Crowdsale data
 	for _, sale := range submitDCBProposalMetadata.DCBParams.ListSaleData {
-		// No crowdsale existed with the same id
-		if br.CrowdsaleExisted(sale.SaleID) {
-			return false, errors.Errorf("crowdsale with the same ID existed")
-		}
-
-		// Valid asset pair
-		if !(common.IsBondAsset(&sale.BuyingAsset) && common.IsConstantAsset(&sale.SellingAsset)) && (common.IsConstantAsset(&sale.BuyingAsset) && common.IsBondAsset(&sale.SellingAsset)) {
-			return false, errors.Errorf("crowdsale asset pair must be bond and Constant")
-		}
-
-		// EndBlock is valid
-		if sale.EndBlock <= br.GetBeaconHeight() {
-			return false, errors.Errorf("crowdsale EndBlock must be higher than current beacon height")
-		}
-
-		// Amount and DefaultPrice must be set
-		if sale.BuyingAmount*sale.DefaultBuyPrice*sale.SellingAmount*sale.DefaultSellPrice == 0 {
-			return false, errors.Errorf("crowdsale asset amounts and prices must be set")
-		}
-
-		// Check if DCB has enough SellingAsset
-		if common.IsBondAsset(&sale.SellingAsset) && br.GetDCBAvailableAsset(&sale.SellingAsset) < sale.SellingAmount {
-			return false, errors.Errorf("crowdsale: not enough selling asset")
+		err := validateCrowdsaleData(sale, br)
+		if err != nil {
+			return false, err
 		}
 	}
 
@@ -175,7 +206,7 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) BuildReqActions(
 	inst := fromshardins.NewSubmitProposalIns(common.GOVBoard, submitProposal)
 
 	instStr, err := inst.GetStringFormat()
-	fmt.Println("[voting] - submitGOVProposalMetadata BuildReqActions: ", instStr)
+	fmt.Println("[ndh] - submitGOVProposalMetadata BuildReqActions: ", instStr)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +251,25 @@ func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) Hash() *common.Hash 
 	return &hash
 }
 
-func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(Transaction, BlockchainRetriever, byte, database.DatabaseInterface) (bool, error) {
+func (submitGOVProposalMetadata *SubmitGOVProposalMetadata) ValidateTxWithBlockChain(tx Transaction, br BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+	beaconHeight := br.GetBeaconHeight()
+	govParams := submitGOVProposalMetadata.GOVParams
+	sellingBonds := govParams.SellingBonds
+	if sellingBonds != nil {
+		if sellingBonds.StartSellingAt+sellingBonds.Maturity < beaconHeight {
+			return false, nil
+		}
+		if sellingBonds.StartSellingAt+sellingBonds.SellingWithin < beaconHeight {
+			return false, nil
+		}
+	}
+
+	sellingGOVTokens := govParams.SellingGOVTokens
+	if sellingGOVTokens != nil {
+		if sellingGOVTokens.StartSellingAt+sellingGOVTokens.SellingWithin < beaconHeight {
+			return false, nil
+		}
+	}
 	return true, nil
 }
 

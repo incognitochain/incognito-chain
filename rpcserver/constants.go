@@ -110,6 +110,7 @@ const (
 	GetDCBConstitution                   = "getdcbconstitution"
 	GetDCBBoardIndex                     = "getdcbboardindex"
 	GetGOVBoardIndex                     = "getgovboardindex"
+	GetConstantCirculating               = "getconstantcirculating"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
 
@@ -135,6 +136,7 @@ const (
 	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
 	GetListDCBProposalBuyingAssets        = "getlistdcbproposalbuyingassets"
 	GetListDCBProposalSellingAssets       = "getlistdcbproposalsellingassets"
+	GetDCBBondInfo                        = "getdcbbondinfo"
 
 	// trade bonds with gov
 	CreateAndSendTradeActivation = "createandsendtradeactivation"
@@ -179,6 +181,7 @@ const (
 	GetBondTypes                           = "getbondtypes"
 	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
 	GetCurrentStabilityInfo                = "getcurrentstabilityinfo"
+	GetOracleTokenIDs                      = "getoracletokenids"
 	GetCurrentOracleNetworkParams          = "getcurrentoraclenetworkparams"
 	SignUpdatingOracleBoardContent         = "signupdatingoracleboardcontent"
 	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
@@ -188,6 +191,7 @@ const (
 	CreateAndSendTxWithSenderAddress       = "createandsendtxwithsenderaddress"
 	CreateAndSendTxWithBuyGOVTokensRequest = "createandsendtxwithbuygovtokensrequest"
 	GetCurrentSellingGOVTokens             = "getcurrentsellinggovtokens"
+	GetAssetPrice                          = "getassetprice"
 
 	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
@@ -197,10 +201,4 @@ const (
 
 	// utils
 	HashToIdenticon = "hashtoidenticon"
-)
-
-//Fee of specific transaction
-const (
-	FeeSubmitProposal = 100
-	FeeVote           = 100
 )
