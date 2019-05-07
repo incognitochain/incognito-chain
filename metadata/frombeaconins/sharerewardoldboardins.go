@@ -2,8 +2,9 @@ package frombeaconins
 
 import (
 	"encoding/json"
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"strconv"
+
+	"github.com/constant-money/constant-chain/blockchain/component"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -27,9 +28,9 @@ func (shareRewardOldBoardIns *ShareRewardOldBoardIns) GetStringFormat() ([]strin
 	shardID := GetShardIDFromPaymentAddressBytes(shareRewardOldBoardIns.VoterPaymentAddress)
 	var metadataType int
 	if shareRewardOldBoardIns.BoardType == common.DCBBoard {
-		metadataType = component.ShareRewardOldDCBBoardIns
+		metadataType = component.ShareRewardOldDCBBoardSupportterIns
 	} else {
-		metadataType = component.ShareRewardOldGOVBoardIns
+		metadataType = component.ShareRewardOldGOVBoardSupportterIns
 	}
 	return []string{
 		strconv.Itoa(metadataType),

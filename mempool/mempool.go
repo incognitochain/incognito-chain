@@ -257,6 +257,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	//Logger.log.Infof("Add Transaction %+v Successs \n", tx.Hash().String())
 }
+
 /*
 // maybeAcceptTransaction is the internal function which implements the public
 // See the comment for MaybeAcceptTransaction for more details.
@@ -304,14 +305,14 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return err
 	}
-	
+
 	// A standalone transaction must not be a salary transaction.
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return err
 	}
-	
+
 	// check fee of tx
 	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
 	txFee := tx.GetTxFee()
@@ -411,8 +412,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	err := tp.ValidateTransaction(tx)
 	elapsed := float64(time.Since(startValidate).Seconds())
 	//if isNewTransaction {
-	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolValidated, elapsed)
-	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolValidatedWithType, elapsed)
+	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolValidated, elapsed)
+	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolValidatedWithType, elapsed)
 	//}
 	if err != nil {
 		return nil, nil, err
@@ -424,7 +425,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	startAdd := time.Now()
 	tp.addTx(txD, isStore)
 	if isNewTransaction {
-		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
+		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
 	}
 	return tx.Hash(), txD, nil
 }
@@ -468,16 +469,17 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	startAdd := time.Now()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool, true)
+	// fmt.Printf("[db] pool maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), hash, err)
 	elapsed := float64(time.Since(startAdd).Seconds())
-	
-	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d",tx.GetTxActualSize()), common.TxPoolEntered, elapsed)
-	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()),common.TxPoolEnteredWithType, elapsed)
-	
+
+	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolEntered, elapsed)
+	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolEnteredWithType, elapsed)
+
 	size := tp.CalPoolSize()
-	
+
 	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 	go common.AnalyzeTimeSeriesTxTypeMetric(tx.GetType(), float64(1))
-	
+
 	if tx.IsPrivacy() {
 		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxPrivacy, float64(1))
 	} else {
@@ -497,8 +499,10 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
+	// fmt.Printf("[db] pool bp maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), tx.Hash(), err)
 	if err != nil {
 		Logger.log.Error(err)
+		fmt.Printf("[db] maybe err: %+v\n", tx.GetMetadataType())
 		return nil, err
 	}
 	tempTxDesc := &txDesc.Desc
@@ -510,7 +514,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	// remove transaction from database mempool
-	txDesc,ok := tp.pool[*tx.Hash()]
+	txDesc, ok := tp.pool[*tx.Hash()]
 	if !ok {
 		return nil
 	}
@@ -533,11 +537,11 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 		}
 		elapsed := float64(time.Since(startTime).Seconds())
 		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
-		go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType + ":" + fmt.Sprintf("%d",tx.GetTxActualSize()),common.TxPoolRemoveAfterInBlockWithType, elapsed)
+		go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
 	}
 	size := tp.CalPoolSize()
 	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
-	
+
 	return err
 }
 
@@ -605,6 +609,7 @@ func (tp *TxPool) MaxFee() uint64 {
 func (tp *TxPool) LastUpdated() time.Time {
 	return time.Unix(tp.lastUpdated, 0)
 }
+
 /*
 // HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
@@ -756,7 +761,7 @@ func (tp *TxPool) EmptyPool() bool {
 	return false
 }
 
-func (tp *TxPool) CalPoolSize() uint64{
+func (tp *TxPool) CalPoolSize() uint64 {
 	var totalSize uint64
 	for _, txDesc := range tp.pool {
 		size := txDesc.Desc.Tx.GetTxActualSize()

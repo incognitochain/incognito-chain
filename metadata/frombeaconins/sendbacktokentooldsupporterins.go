@@ -77,13 +77,13 @@ func NewSendBackTokenToOldSupporterTx(
 
 	//create token params
 	customTokenParamTx := mintDCBTokenParam
+	if boardType == common.GOVBoard {
+		customTokenParamTx = mintGOVTokenParam
+	}
 	customTokenParamTx.Receiver = []transaction.TxTokenVout{{
 		Value:          amount,
 		PaymentAddress: paymentAddress,
 	}}
-	if boardType == common.GOVBoard {
-		customTokenParamTx = mintGOVTokenParam
-	}
 	customTokenParamTx.Amount = amount
 
 	//CALL DB
@@ -107,6 +107,5 @@ func NewSendBackTokenToOldSupporterTx(
 	if err1 != nil {
 		return nil, err1
 	}
-	txCustom.Type = common.TxCustomTokenType
 	return txCustom, nil
 }

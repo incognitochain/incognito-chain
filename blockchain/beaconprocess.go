@@ -212,6 +212,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
 	Logger.log.Info("Finish Insert new block , with hash", block.Header.Height, *block.Hash())
+	if block.Header.Height%50 == 0 {
+		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
+	}
 	return nil
 }
 
@@ -370,7 +373,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		}
 		votingInstructionDCB, err := blockchain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
 		if err != nil {
-			fmt.Println("[voting]-Build DCB voting instruction failed: ", err)
+			fmt.Println("[ndh]-Build DCB voting instruction failed: ", err)
 		} else {
 			if len(votingInstructionDCB) != 0 {
 				stabilityInstructions = append(stabilityInstructions, votingInstructionDCB...)
@@ -378,7 +381,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		}
 		votingInstructionGOV, err := blockchain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
 		if err != nil {
-			fmt.Println("[voting]-Build GOV voting instruction failed: ", err)
+			fmt.Println("[ndh]-Build GOV voting instruction failed: ", err)
 		} else {
 			if len(votingInstructionGOV) != 0 {
 				stabilityInstructions = append(stabilityInstructions, votingInstructionGOV...)
@@ -615,7 +618,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			continue
 		}
 		// For stability instructions
-		err := bestStateBeacon.processStabilityInstruction(l)
+		err := bestStateBeacon.processStabilityInstruction(l, chain.config.DataBase)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)

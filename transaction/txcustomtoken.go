@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 	"github.com/constant-money/constant-chain/wallet"
 )
 
@@ -155,13 +156,6 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata
 		if len(vin.PaymentAddress.Pk) == 0 {
 			return false, NewTransactionErr(WrongInput, nil)
 		}
-		// TODO: @0xbunyip - should move logic below to BuySellDCBResponse metadata's logic
-		// dbcAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-		// if bytes.Equal(vin.PaymentAddress.Pk, dbcAccount.KeySet.PaymentAddress.Pk) {
-		// 	if !allowToUseDCBFund {
-		// 		return false, errors.New("Cannot use DCB's fund here")
-		// 	}
-		// }
 		if vin.Signature == "" {
 			return false, NewTransactionErr(WrongSig, nil)
 		}
@@ -200,6 +194,8 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	// validate for normal tx
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	if tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
 		if len(tx.listUtxo) == 0 {
 			return false
@@ -210,6 +206,16 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
+
+			// Bond sent from DCB can be created by anyone but only with
+			// appropriate metadata and instruction
+			if bytes.Equal(vin.PaymentAddress.Pk, dcbPk) {
+				metaType := tx.GetMetadataType()
+				if metaType != metadata.CrowdsalePaymentMeta && metaType != metadata.BuyBackRequestMeta {
+					return false
+				}
+				continue
+			}
 
 			// get data from utxo
 			utxo := tx.listUtxo[vin.TxCustomTokenID]
@@ -463,25 +469,35 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 			})
 
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
-			hashInitToken, err := txCustomToken.TxTokenData.Hash()
-			if err != nil {
-				return NewTransactionErr(WrongTokenTxType, err)
+			if tokenParams.Mintable {
+				propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+				if err != nil {
+					return NewTransactionErr(UnexpectedErr, err)
+				}
+				txCustomToken.TxTokenData.PropertyID = *propertyID
+				txCustomToken.TxTokenData.Mintable = true
+
+			} else {
+				hashInitToken, err := txCustomToken.TxTokenData.Hash()
+				if err != nil {
+					return NewTransactionErr(WrongTokenTxType, err)
+				}
+				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
+				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
+				fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
+				//for customTokenID := range listCustomTokens {
+				//	if newHashInitToken.String() == customTokenID.String() {
+				//		fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
+				//		return NewTransactionErr(CustomTokenExisted, nil)
+				//	}
+				//}
+				existed := db.CustomTokenIDExisted(&newHashInitToken)
+				if existed {
+					Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
+					return NewTransactionErr(CustomTokenExisted, nil)
+				}
+				txCustomToken.TxTokenData.PropertyID = newHashInitToken
 			}
-			//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
-			newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
-			fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
-			//for customTokenID := range listCustomTokens {
-			//	if newHashInitToken.String() == customTokenID.String() {
-			//		fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())
-			//		return NewTransactionErr(CustomTokenExisted, nil)
-			//	}
-			//}
-			existed := db.CustomTokenIDExisted(&newHashInitToken)
-			if existed {
-				Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
-				return NewTransactionErr(CustomTokenExisted, nil)
-			}
-			txCustomToken.TxTokenData.PropertyID = newHashInitToken
 		}
 	case CustomTokenTransfer:
 		handled = true
@@ -496,6 +512,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 			PropertySymbol: tokenParams.PropertySymbol,
 			Vins:           nil,
 			Vouts:          nil,
+			Mintable:       tokenParams.Mintable,
 		}
 		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 		//if _, ok := listCustomTokens[*propertyID]; !ok {
@@ -537,7 +554,7 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 	return keyset.Sign(buff.Bytes())
 }
 
-func (tx *TxCustomToken) GetAmountOfVote() (uint64, error) {
+func (tx *TxCustomToken) GetAmountOfVote(boardType common.BoardType) (uint64, error) {
 	sum := uint64(0)
 	for _, vout := range tx.TxTokenData.Vouts {
 		keyWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
@@ -545,7 +562,13 @@ func (tx *TxCustomToken) GetAmountOfVote() (uint64, error) {
 		paymentAddress := keyset.PaymentAddress
 		pubKey := string(paymentAddress.Pk)
 		if string(vout.PaymentAddress.Pk) == string(pubKey) {
-			sum += vout.Value
+			if (boardType == common.DCBBoard) && (common.DCBTokenID.Cmp(&vout.txCustomTokenID) == 0) {
+				sum += vout.Value
+			} else {
+				if (boardType == common.GOVBoard) && (common.GOVTokenID.Cmp(&vout.txCustomTokenID) == 0) {
+					sum += vout.Value
+				}
+			}
 		}
 	}
 	return sum, nil
@@ -667,4 +690,30 @@ func (tx *TxCustomToken) IsCoinsBurning() bool {
 		}
 	}
 	return true
+}
+
+func (tx *TxCustomToken) GetTokenID() *common.Hash {
+	return &tx.TxTokenData.PropertyID
+}
+
+func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instsUsed []int,
+	shardID byte,
+	bcr metadata.BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	if !tx.TxTokenData.Mintable {
+		return true, nil
+	}
+	meta := tx.Metadata
+	if meta == nil {
+		Logger.log.Error("Mintable custom token must contain metadata")
+		return false, nil
+	}
+	// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
+	// if !meta.IsMinerCreatedMetaType() {
+	// 	return false, nil
+	// }
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr, accumulatedData)
 }
