@@ -11,6 +11,7 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	privacy "github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 func (blockchain *BlockChain) GetDatabase() database.DatabaseInterface {
@@ -113,9 +114,12 @@ func (blockchain *BlockChain) GetDCBBondInfo(bondID *common.Hash) (uint64, uint6
 
 func (blockchain *BlockChain) GetAllSaleData() ([]*component.SaleData, error) {
 	data, err := blockchain.config.DataBase.GetAllSaleData()
-	if err != nil {
+	if err == lvdberr.ErrNotFound {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
+
 	sales := []*component.SaleData{}
 	for _, saleRaw := range data {
 		sale := &component.SaleData{}
