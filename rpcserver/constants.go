@@ -18,6 +18,7 @@ const (
 
 	GetMiningInfo                 = "getmininginfo"
 	GetRawMempool                 = "getrawmempool"
+	GetNumberOfTxsInMempool = "getnumberoftxsinmempool"
 	GetMempoolEntry               = "getmempoolentry"
 	GetBeaconPoolState            = "getbeaconpoolstate"
 	GetShardPoolState             = "getshardpoolstate"
