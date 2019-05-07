@@ -110,7 +110,7 @@ func buildInstForBeaconSalary(salary, beaconHeight uint64, payToAddress *privacy
 		PayToAddress:      payToAddress,
 		BeaconSalary:      salary,
 	}
-	fmt.Println("SA: beaconSalaryInfo", beaconSalaryInfo)
+	//fmt.Println("SA: beaconSalaryInfo", beaconSalaryInfo)
 	beaconSalaryInfo.InfoHash = beaconSalaryInfo.hash()
 
 	contentStr, err := json.Marshal(beaconSalaryInfo)
@@ -194,7 +194,7 @@ func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
 		blockgen.chain.GetDatabase(),
 		salaryResMeta,
 	)
-	fmt.Println("SA: beacon salary", beaconSalaryInfo, salaryResTx.CalculateTxValue(), salaryResTx.Hash().String())
+	//fmt.Println("SA: beacon salary", beaconSalaryInfo, salaryResTx.CalculateTxValue(), salaryResTx.Hash().String())
 	if err != nil {
 		return nil, err
 	}
@@ -202,53 +202,62 @@ func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
 }
 
 func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
-	validators []string,
-	txs []string,
+	swaperPubKey string,
 	blkProducerPrivateKey *privacy.PrivateKey,
-) ([]metadata.Transaction, error) {
-	returnStakingTxs := []metadata.Transaction{}
-	for _, tx := range txs {
-		var txHash = &common.Hash{}
-		(&common.Hash{}).Decode(txHash, tx)
-
-		blockHash, index, err := blockgen.chain.config.DataBase.GetTransactionIndexById(txHash)
-		if err != nil {
-			abc := NewBlockChainError(UnExpectedError, err)
-			Logger.log.Error(abc)
-			return nil, abc
-		}
-		block, err1, _ := blockgen.chain.GetShardBlockByHash(blockHash)
-		if err1 != nil {
-			Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
-			return nil, NewBlockChainError(UnExpectedError, err1)
-		}
-
-		txData := block.Body.Transactions[index]
-
-		keyWallet, _ := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress)
-
-		returnStakingMeta := metadata.NewReturnStaking(
-			tx,
-			keyWallet.KeySet.PaymentAddress,
-			metadata.ReturnStakingMetaID,
-		)
-
-		returnStakingTx := new(transaction.Tx)
-		err1 = returnStakingTx.InitTxSalary(
-			txData.CalculateTxValue(),
-			&keyWallet.KeySet.PaymentAddress,
-			blkProducerPrivateKey,
-			blockgen.chain.GetDatabase(),
-			returnStakingMeta,
-		)
-
-		if err1 != nil {
-			return nil, err1
-		}
-		returnStakingTxs = append(returnStakingTxs, returnStakingTx)
+) (metadata.Transaction, error) {
+	addressBytes := blockgen.chain.config.UserKeySet.PaymentAddress.Pk
+	shardID := common.GetShardIDFromLastByte(addressBytes[len(addressBytes)-1])
+	fmt.Println("SA: get tx for ", swaperPubKey, blockgen.chain.BestState.Shard[shardID].StakingTx)
+	tx, ok := blockgen.chain.BestState.Shard[shardID].StakingTx[swaperPubKey]
+	if !ok {
+		return nil, NewBlockChainError(UnExpectedError, errors.New("No staking tx in best state"))
 	}
 
-	return returnStakingTxs, nil
+	var txHash = &common.Hash{}
+	(&common.Hash{}).Decode(txHash, tx)
+
+	blockHash, index, err := blockgen.chain.config.DataBase.GetTransactionIndexById(txHash)
+	if err != nil {
+		abc := NewBlockChainError(UnExpectedError, err)
+		Logger.log.Error(abc)
+		return nil, abc
+	}
+	block, err1, _ := blockgen.chain.GetShardBlockByHash(blockHash)
+	if err1 != nil {
+		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
+		return nil, NewBlockChainError(UnExpectedError, err1)
+	}
+
+	txData := block.Body.Transactions[index]
+
+	fmt.Println("SA:", txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress)
+	keyWallet, _ := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress)
+
+	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
+	if paymentShardID != shardID {
+		return nil, NewBlockChainError(UnExpectedError, errors.New("Not from this shard"))
+	}
+
+	returnStakingMeta := metadata.NewReturnStaking(
+		tx,
+		keyWallet.KeySet.PaymentAddress,
+		metadata.ReturnStakingMeta,
+	)
+
+	returnStakingTx := new(transaction.Tx)
+	err1 = returnStakingTx.InitTxSalary(
+		txData.CalculateTxValue(),
+		&keyWallet.KeySet.PaymentAddress,
+		blkProducerPrivateKey,
+		blockgen.chain.GetDatabase(),
+		returnStakingMeta,
+	)
+
+	if err1 != nil {
+		return nil, err1
+	}
+	return returnStakingTx, nil
+
 }
 
 func (blockgen *BlkTmplGenerator) buildSalaryRes(
