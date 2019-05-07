@@ -58,6 +58,8 @@ var (
 	VoteBoardListPrefix          = []byte("votelistboard-")
 	threePhraseCryptoOwnerPrefix = []byte("threephrasecryptoownerprefix-")
 	VoteProposalPrefix           = []byte("voteproposalprefix-")
+	BoardFundPrefix              = []byte("boardfundprefix-")
+	ConstantPricePrefix          = []byte("constantspriceprefix-")
 	listVoterOfProposalPrefix    = []byte("listvoterofproposalprefix-")
 	SubmitProposalPrefix         = []byte("submitproposalprefix-")
 	threePhraseVoteValuePrefix   = []byte("threephrasevotevalueprefix-")
@@ -69,8 +71,12 @@ var (
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
 
+	// bond type
+	bondTypePrefix = []byte("bondtype-")
+
 	// crowdsale
 	crowdsalePrefix       = []byte("crowdsale-")
+	dcbBondInfoPrefix     = []byte("dcbBondInfo-")
 	tradeActivationPrefix = []byte("tradeAct-")
 
 	Unreward   = []byte("unreward")

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 )
@@ -123,11 +124,6 @@ func (uob UpdatingOracleBoard) CalculateSize() uint64 {
 	return calculateSize(uob)
 }
 
-func (uob UpdatingOracleBoard) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
-	// TODO: 0xjackalope
-	return true
-}
-
 func (uob UpdatingOracleBoard) VerifyMultiSigs(
 	tx Transaction,
 	db database.DatabaseInterface,
@@ -137,4 +133,25 @@ func (uob UpdatingOracleBoard) VerifyMultiSigs(
 
 func (uob UpdatingOracleBoard) ProcessWhenInsertBlockShard(tx Transaction, retriever BlockchainRetriever) error {
 	return nil
+}
+
+func (uob UpdatingOracleBoard) IsMinerCreatedMetaType() bool {
+	metaType := uob.GetType()
+	for _, mType := range minerCreatedMetaTypes {
+		if metaType == mType {
+			return true
+		}
+	}
+	return false
+}
+
+func (uob UpdatingOracleBoard) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instsUsed []int,
+	shardID byte,
+	txr Transaction,
+	bcr BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	return true, nil
 }

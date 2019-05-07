@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
@@ -43,11 +42,10 @@ func parseLoanRespData(data string) (*LoanRespData, error) {
 	if len(s) != 2 {
 		return nil, errors.Errorf("Error parsing loan response data")
 	}
-	errSaver := &metadata.ErrorSaver{}
 	sender, errSender := base64.StdEncoding.DecodeString(s[0])
 	response, errResp := strconv.Atoi(s[1])
-	if errSaver.Save(errSender, errResp) != nil {
-		return nil, errSaver.Get()
+	if err := common.CheckError(errSender, errResp); err != nil {
+		return nil, err
 	}
 	lrd := &LoanRespData{
 		SenderPubkey: sender,
@@ -72,24 +70,6 @@ func parseLoanResponseValueBeacon(data string) ([]*LoanRespData, error) {
 }
 
 //// Crowdsale bond
-func getSaleDataKeyBeacon(saleID []byte) string {
-	return saleDataPrefix + string(saleID)
-}
-
-func getSaleDataValueBeacon(data *component.SaleData) string {
-	value, _ := json.Marshal(data)
-	return string(value)
-}
-
-func parseSaleDataValueBeacon(value string) (*component.SaleData, error) {
-	data := &component.SaleData{}
-	err := json.Unmarshal([]byte(value), data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
 type CrowdsalePaymentInstruction struct {
 	PaymentAddress privacy.PaymentAddress
 	Amount         uint64
