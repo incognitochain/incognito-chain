@@ -2,9 +2,12 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wire"
 	"io/ioutil"
+	"time"
 )
 
 type txs struct {
@@ -17,6 +20,8 @@ For testing and benchmark only
 func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Critical("Getting Transactions from file")
 	file, err := ioutil.ReadFile("./utility/txs-shard0-5000.json")
+	arrayParams := common.InterfaceSlice(params)
+	isSent := arrayParams[0].(bool)
 	if err != nil {
 		Logger.log.Error("Fail to get Transactions from file: ", err)
 	}
@@ -25,6 +30,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	_ = json.Unmarshal([]byte(file), &data)
 	Logger.log.Criticalf("Get %+v Transactions from file \n", len(data.Txs))
 	for index, txBase58Data := range data.Txs {
+		<-time.Tick(500*time.Microsecond)
 		//if index <= 200 {
 		//	continue
 		//}
@@ -39,9 +45,20 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 		if err != nil {
 			return nil, NewRPCError(ErrSendTxData, err)
 		}
-		_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+		if isSent {
+			_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+		} else {
+			txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+			if err != nil {
+				return nil, NewRPCError(ErrSendTxData, err)
+			}
+			
+			txMsg.(*wire.MessageTx).Transaction = &tx
+			err = rpcServer.config.Server.PushMessageToAll(txMsg)
+		}
 		if err == nil {
 			count++
+			// broadcast Message
 		}
 	}
 	return count, nil
