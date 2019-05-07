@@ -2,12 +2,13 @@ package metadata
 
 import (
 	"encoding/json"
+	"strconv"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
-	"strconv"
+	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {
@@ -24,6 +25,16 @@ func calculateSize(meta Metadata) uint64 {
 		return 0
 	}
 	return uint64(len(metaBytes))
+}
+
+func (mb *MetadataBase) IsMinerCreatedMetaType() bool {
+	metaType := mb.GetType()
+	for _, mType := range minerCreatedMetaTypes {
+		if metaType == mType {
+			return true
+		}
+	}
+	return false
 }
 
 func (mb *MetadataBase) CalculateSize() uint64 {
@@ -48,11 +59,6 @@ func (mb *MetadataBase) Hash() *common.Hash {
 	return &hash
 }
 
-func (mb *MetadataBase) ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool {
-	// TODO: 0xjackalope
-	return true
-}
-
 func (mb *MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64) bool {
 	txFee := tx.GetTxFee()
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
@@ -72,6 +78,17 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever,
 
 func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever BlockchainRetriever) error {
 	return nil
+}
+
+func (mb *MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instsUsed []int,
+	shardID byte,
+	txr Transaction,
+	bcr BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	return true, nil
 }
 
 // This is tx struct which is really saved in tx mempool
@@ -123,9 +140,11 @@ type BlockchainRetriever interface {
 	GetLoanWithdrawed(loanID []byte) (bool, error)
 
 	// For validating crowdsale
-	GetProposedCrowdsale([]byte) (*component.SaleData, error)
+	GetSaleData([]byte) (*component.SaleData, error)
+	GetAllSaleData() ([]*component.SaleData, error)
 	CrowdsaleExisted(saleID []byte) bool
-	GetDCBAvailableAsset(assetID *common.Hash) uint64
+	GetDCBBondInfo(bondID *common.Hash) (uint64, uint64)
+	GetDCBFreeBond(bondID *common.Hash) uint64
 
 	// For validating reserve
 	GetAssetPrice(assetID *common.Hash) uint64
@@ -138,6 +157,8 @@ type BlockchainRetriever interface {
 	GetConstitution(boardType common.BoardType) ConstitutionInterface
 	// UpdateDCBFund(transaction Transaction)
 	GetGovernor(boardType common.BoardType) GovernorInterface
+	CalcTradeData(string) (*component.TradeData, error)
+	GetSellBondPrice(*common.Hash) uint64
 }
 
 // Interface for all types of metadata in tx
@@ -149,11 +170,12 @@ type Metadata interface {
 	// isContinue, ok, err
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool // TODO: need to define the method for metadata
-	ValidateBeforeNewBlock(tx Transaction, bcr BlockchainRetriever, shardID byte) bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 	CalculateSize() uint64
+	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, Transaction, BlockchainRetriever, *component.UsedInstData) (bool, error)
+	IsMinerCreatedMetaType() bool
 }
 
 // Interface for all type of transaction
@@ -194,8 +216,10 @@ type Transaction interface {
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
-	GetAmountOfVote() (uint64, error)
+	GetAmountOfVote(common.BoardType) (uint64, error)
 	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
+	GetTokenID() *common.Hash
+	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, BlockchainRetriever, *component.UsedInstData) (bool, error)
 }

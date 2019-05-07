@@ -23,24 +23,21 @@ func buildInstructionsForCrowdsaleRequest(
 	contentStr string,
 	beaconBestState *BestStateBeacon,
 	accumulativeValues *accumulativeValues,
+	bc *BlockChain,
 ) ([][]string, error) {
-	saleID, priceLimit, limitSell, paymentAddress, sentAmount, err := metadata.ParseCrowdsaleRequestActionValue(contentStr)
+	saleID, paymentAddress, sentAmount, err := metadata.ParseCrowdsaleRequestActionValue(contentStr)
 	if err != nil {
 		// fmt.Printf("[db] error parsing action: %+v\n", err)
 		return nil, err
 	}
 
 	// Get data of current crowdsale
-	key := getSaleDataKeyBeacon(saleID)
+	key := string(saleID)
 	var saleData *component.SaleData
 	ok := false
 	if saleData, ok = accumulativeValues.saleDataMap[key]; !ok {
-		if value, ok := beaconBestState.Params[key]; ok {
-			saleData, err = parseSaleDataValueBeacon(value)
-			if err != nil {
-				return nil, fmt.Errorf("fail parsing SaleData: %v", err)
-			}
-		} else {
+		saleData, err = bc.GetSaleData(saleID)
+		if err != nil {
 			// fmt.Printf("[db] saleid not exist: %x\n", saleID)
 			return nil, fmt.Errorf("saleID not exist: %x", saleID)
 		}
@@ -48,13 +45,13 @@ func buildInstructionsForCrowdsaleRequest(
 	accumulativeValues.saleDataMap[key] = saleData
 
 	inst, err := buildPaymentInstructionForCrowdsale(
-		priceLimit,
-		limitSell,
 		paymentAddress,
 		sentAmount,
 		beaconBestState,
 		saleData,
+		bc,
 	)
+	fmt.Println("[db] built crowdsale payment inst:", inst, err)
 	if err != nil {
 		return nil, err
 	}
@@ -62,37 +59,19 @@ func buildInstructionsForCrowdsaleRequest(
 }
 
 func buildPaymentInstructionForCrowdsale(
-	priceLimit uint64,
-	limitSell bool,
 	paymentAddress privacy.PaymentAddress,
 	sentAmount uint64,
 	beaconBestState *BestStateBeacon,
 	saleData *component.SaleData,
+	bc *BlockChain,
 ) ([][]string, error) {
-	// Get price for asset
-	buyingAsset := saleData.BuyingAsset
-	sellingAsset := saleData.SellingAsset
-	buyPrice := beaconBestState.getAssetPrice(buyingAsset)
-	sellPrice := beaconBestState.getAssetPrice(sellingAsset)
-	if buyPrice == 0 {
-		buyPrice = saleData.DefaultBuyPrice
-	}
-	if sellPrice == 0 {
-		sellPrice = saleData.DefaultSellPrice
-	}
-	if buyPrice == 0 || sellPrice == 0 {
-		// fmt.Printf("[db] asset price is 0: %d %d\n", buyPrice, sellPrice)
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
-	}
-	// fmt.Printf("[db] buy and sell price: %d %d\n", buyPrice, sellPrice)
-
-	// Check if price limit is not violated
-	if limitSell && sellPrice > priceLimit {
-		// fmt.Printf("[db] Price limit violated: %d %d\n", sellPrice, priceLimit)
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
-	} else if !limitSell && buyPrice < priceLimit {
-		// fmt.Printf("[db] Price limit violated: %d %d\n", buyPrice, priceLimit)
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
+	bondID := saleData.BondID
+	price := saleData.Price
+	buyingAsset := &common.ConstantID
+	sellingAsset := bondID
+	if saleData.Buy {
+		buyingAsset = bondID
+		sellingAsset = &common.ConstantID
 	}
 
 	// Check if sale is on-going
@@ -100,30 +79,36 @@ func buildPaymentInstructionForCrowdsale(
 		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
 	}
 
-	// Calculate value of asset sent in request tx
-	sentAssetValue := sentAmount * buyPrice // in cent
-	if common.IsConstantAsset(&saleData.BuyingAsset) {
-		sentAssetValue /= 100 // Nano to CST
-	}
+	paymentAmount := uint64(0)
+	if saleData.Buy {
+		// Number of Constant must send to user
+		paymentAmount = sentAmount * price
 
-	// Number of asset must pay to user
-	paymentAmount := sentAssetValue / sellPrice
-	if common.IsConstantAsset(&saleData.SellingAsset) {
-		paymentAmount *= 100 // CST to Nano
-	}
+		// Check if there's still enough bond to buy
+		if sentAmount > saleData.Amount {
+			// fmt.Printf("[db] Crowdsale reached limit\n")
+			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
+		}
 
-	// Check if there's still enough asset to trade
-	if sentAmount > saleData.BuyingAmount || paymentAmount > saleData.SellingAmount {
-		// fmt.Printf("[db] Crowdsale reached limit\n")
-		return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
-	}
+		// Update amount of buying/selling asset of the crowdsale
+		saleData.Amount -= sentAmount
 
-	// Update amount of buying/selling asset of the crowdsale
-	saleData.BuyingAmount -= sentAmount
-	saleData.SellingAmount -= paymentAmount
+	} else {
+		// Number of Bond must send to user
+		paymentAmount = sentAmount / price
+
+		// Check if there's still enough asset to trade
+		dcbBondAmount, _ := bc.GetDCBBondInfo(sellingAsset)
+		if paymentAmount > saleData.Amount || paymentAmount > dcbBondAmount {
+			// fmt.Printf("[db] Crowdsale reached limit\n")
+			return generateCrowdsalePaymentInstruction(paymentAddress, sentAmount, buyingAsset, saleData.SaleID, 0, false) // refund
+		}
+
+		// Update amount of buying/selling asset of the crowdsale
+		saleData.Amount -= paymentAmount
+	}
 
 	// fmt.Printf("[db] sentValue, payAmount, buyLeft, sellLeft: %d %d %d %d\n", sentAssetValue, paymentAmount, saleData.BuyingAmount, saleData.SellingAmount)
-
 	// Build instructions
 	return generateCrowdsalePaymentInstruction(paymentAddress, paymentAmount, sellingAsset, saleData.SaleID, sentAmount, true)
 }

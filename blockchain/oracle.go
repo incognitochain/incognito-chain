@@ -119,7 +119,8 @@ func groupOracleFeedTxsByOracleType(
 					return nil, err
 				}
 				oracleFeed := oracleFeedAction.Meta
-				assetTypeStr := string(oracleFeed.AssetType[:])
+				// assetTypeStr := string(oracleFeed.AssetType[:])
+				assetTypeStr := oracleFeed.AssetType.String()
 				_, existed := instsByOracleType[assetTypeStr]
 				if !existed {
 					instsByOracleType[assetTypeStr] = [][]string{inst}
@@ -193,24 +194,25 @@ func updateOracleValues(
 ) {
 	oracleValues := &bestStateBeacon.StabilityInfo.Oracle
 	for oracleType, value := range updatedValues {
-		oracleTypeBytes := []byte(oracleType)
-		if bytes.Equal(oracleTypeBytes, common.DCBTokenID[:]) {
+		// oracleTypeBytes := []byte(oracleType)
+		oracleTypeBytes, _ := common.Hash{}.NewHashFromStr(oracleType)
+		if bytes.Equal(oracleTypeBytes[:], common.DCBTokenID[:]) {
 			oracleValues.DCBToken = value
 			continue
 		}
-		if bytes.Equal(oracleTypeBytes, common.GOVTokenID[:]) {
+		if bytes.Equal(oracleTypeBytes[:], common.GOVTokenID[:]) {
 			oracleValues.GOVToken = value
 			continue
 		}
-		if bytes.Equal(oracleTypeBytes, common.ConstantID[:]) {
+		if bytes.Equal(oracleTypeBytes[:], common.ConstantID[:]) {
 			oracleValues.Constant = value
 			continue
 		}
-		if bytes.Equal(oracleTypeBytes, common.ETHAssetID[:]) {
+		if bytes.Equal(oracleTypeBytes[:], common.ETHAssetID[:]) {
 			oracleValues.ETH = value
 			continue
 		}
-		if bytes.Equal(oracleTypeBytes, common.BTCAssetID[:]) {
+		if bytes.Equal(oracleTypeBytes[:], common.BTCAssetID[:]) {
 			oracleValues.BTC = value
 			continue
 		}

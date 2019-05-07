@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/json"
 	"strconv"
 
@@ -152,56 +151,56 @@ func (blockgen *BlkTmplGenerator) buildSalaryRes(
 	return []metadata.Transaction{salaryResTx}, nil
 }
 
-func (bc *BlockChain) verifyShardBlockSalaryResTx(
-	tx metadata.Transaction,
-	insts [][]string,
-	instUsed []int,
-	shardID byte,
-) error {
-	meta, ok := tx.GetMetadata().(*metadata.ShardBlockSalaryRes)
-	if !ok {
-		return errors.Errorf("Could not parse ShardBlockSalaryRes metadata of tx %s", tx.Hash().String())
-	}
+// func (bc *BlockChain) verifyShardBlockSalaryResTx(
+// 	tx metadata.Transaction,
+// 	insts [][]string,
+// 	instUsed []int,
+// 	shardID byte,
+// ) error {
+// 	meta, ok := tx.GetMetadata().(*metadata.ShardBlockSalaryRes)
+// 	if !ok {
+// 		return errors.Errorf("Could not parse ShardBlockSalaryRes metadata of tx %s", tx.Hash().String())
+// 	}
 
-	instIdx := -1
-	var shardBlockSalaryInfo ShardBlockSalaryInfo
-	for i, inst := range insts {
-		if instUsed[i] > 0 {
-			continue
-		}
-		if inst[0] != strconv.Itoa(metadata.ShardBlockSalaryRequestMeta) {
-			continue
-		}
-		if inst[1] != strconv.Itoa(int(shardID)) {
-			continue
-		}
-		if inst[2] != "accepted" {
-			continue
-		}
-		contentStr := inst[3]
-		err := json.Unmarshal([]byte(contentStr), &shardBlockSalaryInfo)
-		if err != nil {
-			return err
-		}
-		if !bytes.Equal(shardBlockSalaryInfo.InfoHash[:], meta.ShardBlockSalaryInfoHash[:]) {
-			continue
-		}
-		instIdx = i
-		instUsed[i] += 1
-		break
-	}
-	if instIdx == -1 {
-		return errors.Errorf("no instruction found for ShardBlockSalaryRes tx %s", tx.Hash().String())
-	}
-	if (!bytes.Equal(shardBlockSalaryInfo.PayToAddress.Pk[:], meta.ProducerAddress.Pk[:])) ||
-		(!bytes.Equal(shardBlockSalaryInfo.PayToAddress.Tk[:], meta.ProducerAddress.Tk[:])) {
-		return errors.Errorf("Producer address in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
-	}
-	if shardBlockSalaryInfo.ShardBlockHeight != meta.ShardBlockHeight {
-		return errors.Errorf("ShardBlockHeight in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
-	}
-	if shardBlockSalaryInfo.ShardBlockSalary != tx.CalculateTxValue() {
-		return errors.Errorf("Salary amount in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
-	}
-	return nil
-}
+// 	instIdx := -1
+// 	var shardBlockSalaryInfo ShardBlockSalaryInfo
+// 	for i, inst := range insts {
+// 		if instUsed[i] > 0 {
+// 			continue
+// 		}
+// 		if inst[0] != strconv.Itoa(metadata.ShardBlockSalaryRequestMeta) {
+// 			continue
+// 		}
+// 		if inst[1] != strconv.Itoa(int(shardID)) {
+// 			continue
+// 		}
+// 		if inst[2] != "accepted" {
+// 			continue
+// 		}
+// 		contentStr := inst[3]
+// 		err := json.Unmarshal([]byte(contentStr), &shardBlockSalaryInfo)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		if !bytes.Equal(shardBlockSalaryInfo.InfoHash[:], meta.ShardBlockSalaryInfoHash[:]) {
+// 			continue
+// 		}
+// 		instIdx = i
+// 		instUsed[i] += 1
+// 		break
+// 	}
+// 	if instIdx == -1 {
+// 		return errors.Errorf("no instruction found for ShardBlockSalaryRes tx %s", tx.Hash().String())
+// 	}
+// 	if (!bytes.Equal(shardBlockSalaryInfo.PayToAddress.Pk[:], meta.ProducerAddress.Pk[:])) ||
+// 		(!bytes.Equal(shardBlockSalaryInfo.PayToAddress.Tk[:], meta.ProducerAddress.Tk[:])) {
+// 		return errors.Errorf("Producer address in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+// 	}
+// 	if shardBlockSalaryInfo.ShardBlockHeight != meta.ShardBlockHeight {
+// 		return errors.Errorf("ShardBlockHeight in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+// 	}
+// 	if shardBlockSalaryInfo.ShardBlockSalary != tx.CalculateTxValue() {
+// 		return errors.Errorf("Salary amount in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
+// 	}
+// 	return nil
+// }
