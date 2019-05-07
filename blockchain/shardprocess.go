@@ -301,7 +301,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
 	//verify producer
-	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + block.Header.Round) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
+	proposerOffset := (block.Header.Round - 1) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
+	producerPosition := blockchain.BestState.Shard[shardID].ShardProposerIdx + proposerOffset
 	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
@@ -697,7 +698,7 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 		panic("TempTxPool Is not Empty")
 	}
 	defer blockChain.config.TempTxPool.EmptyPool()
-	
+
 	err := blockChain.config.TempTxPool.ValidateTxList(txs)
 	if err != nil {
 		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)

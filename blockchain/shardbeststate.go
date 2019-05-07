@@ -158,3 +158,8 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 func (blockchain *BlockChain) RevertShardState(shardID byte) {
 
 }
+
+func (blockchain *BlockChain) SaveCurrentShardState(block *ShardBlock) error {
+
+	return nil
+}
