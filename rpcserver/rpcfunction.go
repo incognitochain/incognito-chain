@@ -125,6 +125,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
 	GetListDCBProposalBuyingAssets:        RpcServer.handleGetListDCBProposalBuyingAssets,
 	GetListDCBProposalSellingAssets:       RpcServer.handleGetListDCBProposalSellingAssets,
+	GetDCBBondInfo:                        RpcServer.handleGetDCBBondInfo,
 
 	// Trade bonds with GOV
 	CreateAndSendTradeActivation: RpcServer.handleCreateAndSendTradeActivation,
@@ -175,11 +176,13 @@ var RpcHandler = map[string]commandHandler{
 	GetGOVBoardIndex:   RpcServer.handleGetGOVBoardIndex,
 	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
 	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
+	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
 
 	// gov
 	GetBondTypes:                           RpcServer.handleGetBondTypes,
 	GetCurrentSellingBondTypes:             RpcServer.handleGetCurrentSellingBondTypes,
 	GetCurrentStabilityInfo:                RpcServer.handleGetCurrentStabilityInfo,
+	GetOracleTokenIDs:                      RpcServer.handleGetOracleTokenIDs,
 	GetCurrentOracleNetworkParams:          RpcServer.handleGetCurrentOracleNetworkParams,
 	SignUpdatingOracleBoardContent:         RpcServer.handleSignUpdatingOracleBoardContent,
 	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
@@ -191,6 +194,7 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithSenderAddress:       RpcServer.handleCreateAndSendTxWithSenderAddress,
 	CreateAndSendTxWithBuyGOVTokensRequest: RpcServer.handleCreateAndSendTxWithBuyGOVTokensRequest,
 	GetCurrentSellingGOVTokens:             RpcServer.handleGetCurrentSellingGOVTokens,
+	GetAssetPrice:                          RpcServer.handleGetAssetPrice,
 
 	// wallet
 	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,

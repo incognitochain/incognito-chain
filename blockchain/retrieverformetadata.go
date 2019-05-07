@@ -10,7 +10,6 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	privacy "github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -147,58 +146,81 @@ func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.
 }
 
 // GetProposedCrowdsale returns SaleData from BeaconBestState; BuyingAmount and SellingAmount might be outdated, the rest is ok to use
-func (blockchain *BlockChain) GetProposedCrowdsale(saleID []byte) (*component.SaleData, error) {
-	return blockchain.BestState.Beacon.GetSaleData(saleID)
+func (blockchain *BlockChain) GetSaleData(saleID []byte) (*component.SaleData, error) {
+	saleRaw, err := blockchain.config.DataBase.GetSaleData(saleID)
+	if err != nil {
+		return nil, err
+	}
+	sale := &component.SaleData{}
+	err = json.Unmarshal(saleRaw, &sale)
+	return sale, err
 }
 
-func (blockchain *BlockChain) GetAllCrowdsales() ([]*component.SaleData, error) {
-	saleDataList := []*component.SaleData{}
-	for key, value := range blockchain.BestState.Beacon.Params {
-		if key[:len(saleDataPrefix)] == saleDataPrefix {
-			if saleData, err := parseSaleDataValueBeacon(value); err == nil {
-				saleDataList = append(saleDataList, saleData)
-			}
-		}
+func (blockchain *BlockChain) GetDCBBondInfo(bondID *common.Hash) (uint64, uint64) {
+	return blockchain.config.DataBase.GetDCBBondInfo(bondID)
+}
+
+func (blockchain *BlockChain) GetAllSaleData() ([]*component.SaleData, error) {
+	data, err := blockchain.config.DataBase.GetAllSaleData()
+	if err != nil {
+		return nil, err
 	}
-	return saleDataList, nil
+	sales := []*component.SaleData{}
+	for _, saleRaw := range data {
+		sale := &component.SaleData{}
+		err := json.Unmarshal(saleRaw, sale)
+		if err != nil {
+			return nil, err
+		}
+		sales = append(sales, sale)
+	}
+	return sales, nil
 }
 
 func (blockchain *BlockChain) CrowdsaleExisted(saleID []byte) bool {
-	key := getSaleDataKeyBeacon(saleID)
-	if _, ok := blockchain.BestState.Beacon.Params[key]; ok {
+	_, err := blockchain.config.DataBase.GetSaleData(saleID)
+	if err != nil {
 		return true
 	}
 	return false
 }
 
-// GetDCBAvailableAsset returns number of token left accounted for all on-going crowdsales
-func (blockchain *BlockChain) GetDCBAvailableAsset(assetID *common.Hash) uint64 {
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	vouts, err := blockchain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, assetID)
-	if err != nil {
-		return 0
-	}
-	tokenLeft := uint64(0)
-	for _, vout := range vouts {
-		tokenLeft += vout.Value
-	}
+// GetDCBBondInfo returns amount of bonds owned by DCB that is free to trade
+// (not being hold up in other trades/crowdsales)
+func (blockchain *BlockChain) GetDCBFreeBond(bondID *common.Hash) uint64 {
+	amount, _ := blockchain.GetDCBBondInfo(bondID)
 
-	sales, _ := blockchain.GetAllCrowdsales()
+	// Subtract amounts from ongoing crowdsales that are selling the same bond
+	sales, _ := blockchain.GetAllSaleData()
 	for _, sale := range sales {
-		if sale.SellingAsset.IsEqual(assetID) && sale.EndBlock < blockchain.GetBeaconHeight() {
-			if sale.SellingAmount >= tokenLeft {
-				tokenLeft = 0
-			} else {
-				tokenLeft -= sale.SellingAmount
-			}
+		if sale.Buy || !sale.BondID.IsEqual(bondID) || sale.EndBlock < blockchain.GetBeaconHeight() {
+			continue
+		}
+		if sale.Amount >= amount {
+			amount = 0
+		} else {
+			amount -= sale.Amount
 		}
 	}
-	return tokenLeft
+
+	// Subtract amounts from ongoing trades that proposed selling the same bonds to GOV
+	trades := blockchain.GetAllTrades()
+	for _, t := range trades {
+		if t.Buy || !t.BondID.IsEqual(bondID) {
+			continue
+		}
+		if t.Amount >= amount {
+			amount = 0
+		} else {
+			amount -= t.Amount
+		}
+	}
+	return amount
 }
 
 //// Reserve
 func (blockchain *BlockChain) GetAssetPrice(assetID *common.Hash) uint64 {
-	return blockchain.BestState.Beacon.getAssetPrice(*assetID)
+	return blockchain.BestState.Beacon.GetAssetPrice(*assetID)
 }
 
 //// Trade bonds
