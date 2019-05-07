@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"math"
 	"strconv"
+	"strings"
 )
 
 type accumulativeValues struct {
@@ -88,7 +89,7 @@ func buildStabilityActions(
 	totalSalary, err := getShardBlockSalary(txs, bc, beaconHeight)
 	shardSalary := math.Ceil(float64(totalSalary) / 2)
 	beaconSalary := math.Floor(float64(totalSalary) / 2)
-	fmt.Println("SA: fee&salary", totalFee, totalSalary, shardSalary, beaconSalary)
+	//fmt.Println("SA: fee&salary", totalFee, totalSalary, shardSalary, beaconSalary)
 	if err != nil {
 		return nil, err
 	}
@@ -339,9 +340,16 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			txs := []metadata.Transaction{}
 
 			if l[0] == SwapAction {
-				fmt.Println("SA: swap instruction ", l)
-				//txs, err = blockgen.buildReturnStakingAmountTx(strings.Split(l[1], ","), strings.Split(l[3], ","), producerPrivateKey)
-				//resTxs = append(resTxs, txs...)
+				fmt.Println("SA: swap instruction ", l, beaconBlock.Header.Height, blockgen.chain.BestState.Beacon.ShardCommittee)
+				for _, v := range strings.Split(l[2], ",") {
+					tx, err := blockgen.buildReturnStakingAmountTx(v, producerPrivateKey)
+					if err != nil {
+						Logger.log.Error("SA:", err)
+						continue
+					}
+					resTxs = append(resTxs, tx)
+				}
+
 			}
 
 			if l[0] == StakeAction || l[0] == RandomAction {

@@ -63,7 +63,7 @@ func (self *ShardPool) GetShardState() uint64 {
 }
 
 func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
-	//TODO: validate aggregated signature
+
 	self.poolMu.Lock()
 	defer self.poolMu.Unlock()
 

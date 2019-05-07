@@ -236,7 +236,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		}
 
 		if accumulativeValues.totalBeaconSalary > 0 {
-			fmt.Println("SA: build beacon salary", accumulativeValues.totalBeaconSalary)
+			//fmt.Println("SA: build beacon salary", accumulativeValues.totalBeaconSalary)
 			newInst, err := buildInstForBeaconSalary(accumulativeValues.totalBeaconSalary, beaconBestState.BeaconHeight+1, &blkTmplGenerator.chain.config.UserKeySet.PaymentAddress)
 
 			if err != nil {
