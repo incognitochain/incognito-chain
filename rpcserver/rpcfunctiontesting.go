@@ -15,10 +15,15 @@ type txs struct {
 For testing and benchmark only
 */
 func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	file, _ := ioutil.ReadFile("./utility/txs-shard0-5000.json")
+	Logger.log.Critical("Getting Transactions from file")
+	file, err := ioutil.ReadFile("./utility/txs-shard0-5000.json")
+	if err != nil {
+		Logger.log.Error("Fail to get Transactions from file")
+	}
 	data := txs{}
 	count := 0
 	_ = json.Unmarshal([]byte(file), &data)
+	Logger.log.Critical("Get %+v Transactions from file \n", len(data.Txs))
 	for index, txBase58Data := range data.Txs {
 		//if index <= 200 {
 		//	continue

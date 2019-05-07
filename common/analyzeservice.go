@@ -70,7 +70,7 @@ func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64){
 }
 func sendTimeSeriesTransactionMetricDataInfluxDB(metricTag string, tagValue string, metric string, value ...float64) {
 	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
-	databaseUrl := os.Getenv("GrafanaURL")
+	databaseUrl := os.Getenv("GRAFANAURL")
 	if databaseUrl == "" {
 		return
 	}
