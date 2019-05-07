@@ -134,10 +134,7 @@ func (blockchain *BlockChain) GetAllSaleData() ([]*component.SaleData, error) {
 
 func (blockchain *BlockChain) CrowdsaleExisted(saleID []byte) bool {
 	_, err := blockchain.config.DataBase.GetSaleData(saleID)
-	if err != nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 // GetDCBBondInfo returns amount of bonds owned by DCB that is free to trade
