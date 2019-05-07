@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -207,7 +208,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	//Remove tx out of pool
 	go func() {
 		for _, tx := range block.Body.Transactions {
-			blockchain.config.TxPool.RemoveTx(tx)
+			blockchain.config.TxPool.RemoveTx(tx, true)
 		}
 	}()
 
@@ -244,12 +245,8 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// Process transaction db
-	if len(block.Body.Transactions) < 1 {
-		Logger.log.Infof("No transaction in this block")
-	} else {
-		Logger.log.Criticalf("Found %d transactions in block height %+v", len(block.Body.Transactions), block.Header.Height)
-	}
-
+	Logger.log.Criticalf("Found %d transactions in block height %+v", len(block.Body.Transactions), block.Header.Height)
+	go common.AnalyzeTimeSeriesTxsInOneBlockMetric(fmt.Sprintf("%d", block.Header.Height), float64(len(block.Body.Transactions)))
 	if len(block.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("ProcessStoreShardBlock/CrossTransactions	", block.Body.CrossTransactions)
 	}
@@ -413,16 +410,18 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 
-	// TODO(@0xbunyip): move to inside isPresig when running validator's node
 	// Verify stability transactions
 	instsForValidations := [][]string{}
 	instsForValidations = append(instsForValidations, block.Body.Instructions...)
 	for _, beaconBlock := range beaconBlocks {
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
-	err = blockchain.verifyStabilityTransactionsForNewBlock(instsForValidations, block)
+	invalidTxs, err := blockchain.verifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, block.Body.Transactions, shardID)
 	if err != nil {
 		return NewBlockChainError(TransactionError, err)
+	}
+	if len(invalidTxs) > 0 {
+		return NewBlockChainError(TransactionError, errors.New(fmt.Sprintf("There are %d invalid txs...", len(invalidTxs))))
 	}
 
 	// Get cross shard block from pool
@@ -701,7 +700,8 @@ func (blockChain *BlockChain) VerifyTransactionFromNewBlock(txs []metadata.Trans
 	
 	err := blockChain.config.TempTxPool.ValidateTxList(txs)
 	if err != nil {
-		return NewBlockChainError(TransactionError, errors.New("Some Transactions in new Block maybe invalid "+err.Error()))
+		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
+		return NewBlockChainError(TransactionError, errors.New("Some Transactions in New Block IS invalid"))
 	}
 	return nil
 

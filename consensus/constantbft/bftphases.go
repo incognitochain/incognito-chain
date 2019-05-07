@@ -12,6 +12,7 @@ import (
 )
 
 func (protocol *BFTProtocol) phasePropose() error {
+	//fmt.Println("[db] phasePropose")
 	go protocol.CreateBlockMsg()
 	timeout := time.AfterFunc(ListenTimeout*time.Second, func() {
 		fmt.Println("BFT: Propose phase timeout", time.Since(protocol.startTime).Seconds())
@@ -300,6 +301,8 @@ phase:
 				}
 			}
 			if len(szRCombined) == 1 {
+				fmt.Println("PhaseData.Sigs: ", phaseData.Sigs)
+				fmt.Println("Length of phaseData.Sigs: ", len(phaseData.Sigs))
 				fmt.Println("BFT: Not enough sigs to combine", time.Since(protocol.startTime).Seconds())
 				return errors.New("Not enough sigs to combine")
 			}
@@ -335,7 +338,6 @@ phase:
 			break phase
 		case msgCommit := <-protocol.cBFTMsg:
 			if msgCommit.MessageType() == wire.CmdBFTCommit {
-				fmt.Println("BFT: Commit msg received", time.Since(protocol.startTime).Seconds())
 				newSig := bftCommittedSig{
 					ValidatorsIdxR: msgCommit.(*wire.MessageBFTCommit).ValidatorsIdx,
 					Sig:            msgCommit.(*wire.MessageBFTCommit).CommitSig,
@@ -346,6 +348,7 @@ phase:
 					Logger.log.Error(err)
 					continue
 				}
+				fmt.Println("BFT: Commit msg received", time.Since(protocol.startTime).Seconds())
 				if _, ok := phaseData.Sigs[R]; !ok {
 					phaseData.Sigs[R] = make(map[string]bftCommittedSig)
 				}

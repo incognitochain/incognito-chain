@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/binary"
-	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -310,8 +309,8 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, proposerOff
 	return common.EmptyString, 0
 }
 
-// getAssetPrice returns price stored in Oracle
-func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint64 {
+// GetAssetPrice returns price stored in Oracle
+func (bestStateBeacon *BestStateBeacon) GetAssetPrice(assetID common.Hash) uint64 {
 	price := uint64(0)
 	if common.IsBondAsset(&assetID) {
 		if bestStateBeacon.StabilityInfo.Oracle.Bonds != nil {
@@ -334,15 +333,6 @@ func (bestStateBeacon *BestStateBeacon) getAssetPrice(assetID common.Hash) uint6
 		}
 	}
 	return price
-}
-
-// GetSaleData returns latest data of a crowdsale
-func (bestStateBeacon *BestStateBeacon) GetSaleData(saleID []byte) (*component.SaleData, error) {
-	key := getSaleDataKeyBeacon(saleID)
-	if value, ok := bestStateBeacon.Params[key]; ok {
-		return parseSaleDataValueBeacon(value)
-	}
-	return nil, fmt.Errorf("failed getting SaleData from BSB")
 }
 
 //This only happen if user is a beacon committee member.
