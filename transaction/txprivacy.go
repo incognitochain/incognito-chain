@@ -607,6 +607,13 @@ func (tx *Tx) IsSalaryTx() bool {
 	return false
 }
 
+func (tx *Tx) GetSender() []byte {
+	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 {
+		return nil
+	}
+	return tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+}
+
 func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}

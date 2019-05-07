@@ -194,6 +194,7 @@ type Transaction interface {
 	GetInfo() []byte
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
+	GetSender() []byte
 	GetSigPubKey() []byte
 	IsPrivacy() bool
 	IsCoinsBurning() bool
