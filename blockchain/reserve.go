@@ -203,7 +203,6 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		fmt.Printf("[db] build issuing resp success: %h\n", txCustom.Hash())
 		return []metadata.Transaction{txCustom}, nil
 	}
-	// TODO(@0xbunyip): fail to issue/refund
 	return []metadata.Transaction{}, nil
 }
 
