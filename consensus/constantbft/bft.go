@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/common"
-	
 	"github.com/constant-money/constant-chain/wire"
 )
 
@@ -94,6 +93,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
 	var msg wire.Message
+	//fmt.Println("[db] CreateBlockMsg")
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.ProposerOffset, protocol.RoundData.ClosestPoolState)
@@ -228,7 +228,7 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			switch earlyMsg.MessageType() {
 			case wire.CmdBFTPrepare:
 				if protocol.phase == BFT_LISTEN {
-					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0  {
+					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 {
 						prepareMsgs = append(prepareMsgs, earlyMsg)
 					}
 				}
