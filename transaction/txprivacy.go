@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -42,7 +43,7 @@ type Tx struct {
 	cachedHash *common.Hash // cached hash data of tx
 }
 
-func (tx *Tx) GetAmountOfVote() (uint64, error) {
+func (tx *Tx) GetAmountOfVote(common.BoardType) (uint64, error) {
 	return 0, errors.New("wrong type of tx")
 }
 
@@ -406,11 +407,9 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // - Verify the payment proof
 func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	//hasPrivacy = false
-	Logger.log.Debugf("[db] Validating Transaction tx\n")
 	Logger.log.Debugf("VALIDATING TX........\n")
-	start := time.Now()
+	// start := time.Now()
 	// Verify tx signature
-	Logger.log.Debugf("tx.GetType(): %v\n", tx.GetType())
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
 	}
@@ -446,7 +445,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 	}
 
-	// Logger.log.Infof("[db]tx.Proof: %+v\n", tx.Proof)
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
@@ -483,7 +481,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		// Verify the payment proof
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
-		Logger.log.Debugf("proof valid: %v\n", valid)
 		if !valid {
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
 			return false
@@ -491,8 +488,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Debug("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
-	elapsed := time.Since(start)
-	Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
+	//@UNCOMMENT: metric time
+	//elapsed := time.Since(start)
+	//Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
 	return true
 }
@@ -930,16 +928,13 @@ func (tx *Tx) ValidateTxByItself(
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-	Logger.log.Debugf("[db]ok validatetxbyitself: %v\n", ok)
 	if !ok {
 		return false
 	}
 	if tx.Metadata != nil {
 		if hasPrivacy {
-			Logger.log.Infof("[db]validatetxbyitself metadata: Transaction with metadata should not enable privacy feature.")
 			return false
 		}
-		Logger.log.Debugf("[db]validatetxbyitself metadata: %v\n", tx.Metadata.ValidateMetadataByItself())
 		return tx.Metadata.ValidateMetadataByItself()
 	}
 	return true
@@ -992,10 +987,13 @@ func (tx *Tx) ValidateType() bool {
 }
 
 func (tx *Tx) IsCoinsBurning() bool {
-	if tx.Proof == nil || len(tx.Proof.InputCoins) == 0 || len(tx.Proof.OutputCoins) == 0 {
+	if tx.Proof == nil || len(tx.Proof.OutputCoins) == 0 {
 		return false
 	}
-	senderPKBytes := tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	senderPKBytes := []byte{}
+	if len(tx.Proof.InputCoins) > 0 {
+		senderPKBytes = tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	}
 	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
@@ -1168,4 +1166,35 @@ func (tx Tx) ValidateTxSalary(
 func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.Metadata, error) {
 	// implement this func if needed
 	return nil, nil
+}
+
+func (tx Tx) GetTokenID() *common.Hash {
+	return nil
+}
+
+func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
+	insts [][]string,
+	instsUsed []int,
+	shardID byte,
+	bcr metadata.BlockchainRetriever,
+	accumulatedData *component.UsedInstData,
+) (bool, error) {
+	if tx.IsPrivacy() {
+		return true, nil
+	}
+
+	meta := tx.Metadata
+	if tx.Proof != nil && len(tx.Proof.InputCoins) == 0 && len(tx.Proof.OutputCoins) > 0 { // coinbase tx
+		if meta == nil {
+			return false, nil
+		}
+		// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
+		// if !meta.IsMinerCreatedMetaType() {
+		// 	return false, nil
+		// }
+	}
+	if meta != nil {
+		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr, accumulatedData)
+	}
+	return true, nil
 }
