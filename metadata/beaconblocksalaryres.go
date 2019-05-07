@@ -3,8 +3,6 @@ package metadata
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-
 	// "errors"
 	"strconv"
 
@@ -132,7 +130,7 @@ func (sbsRes *BeaconBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 
 	if beaconBlockSalaryInfo.BeaconSalary != tx.CalculateTxValue() {
-		fmt.Println("SA: beacon salary info", beaconBlockSalaryInfo)
+		//fmt.Println("SA: beacon salary info", beaconBlockSalaryInfo)
 		return false, errors.Errorf("Salary amount in BeaconBlockSalaryResponse tx %s is not matched to instruction's %d %d", tx.Hash().String(), beaconBlockSalaryInfo.BeaconSalary, tx.CalculateTxValue())
 	}
 

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -19,22 +20,23 @@ import (
 // shared by all callers.
 
 type BestStateShard struct {
-	BestBlockHash          common.Hash     `json:"BestBlockHash"` // hash of block.
-	BestBlock              *ShardBlock     `json:"BestBlock"`     // block data
-	BestBeaconHash         common.Hash     `json:"BestBeaconHash"`
-	BeaconHeight           uint64          `json:"BeaconHeight"`
-	ShardID                byte            `json:"ShardID"`
-	Epoch                  uint64          `json:"Epoch"`
-	ShardHeight            uint64          `json:"ShardHeight"`
-	ShardCommitteeSize     int             `json:"ShardCommitteeSize"`
-	ShardProposerIdx       int             `json:"ShardProposerIdx"`
-	ShardCommittee         []string        `json:"ShardCommittee"`
-	ShardPendingValidator  []string        `json:"ShardPendingValidator"`
-	BestCrossShard         map[byte]uint64 `json:"BestCrossShard"`         // Best cross shard block by heigh
-	NumTxns                uint64          `json:"NumTxns"`                // The number of txns in the block.
-	TotalTxns              uint64          `json:"TotalTxns"`              // The total number of txns in the chain.
-	TotalTxnsExcludeSalary uint64          `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
-	ActiveShards           int             `json:"ActiveShards"`
+	BestBlockHash          common.Hash       `json:"BestBlockHash"` // hash of block.
+	BestBlock              *ShardBlock       `json:"BestBlock"`     // block data
+	BestBeaconHash         common.Hash       `json:"BestBeaconHash"`
+	BeaconHeight           uint64            `json:"BeaconHeight"`
+	ShardID                byte              `json:"ShardID"`
+	Epoch                  uint64            `json:"Epoch"`
+	ShardHeight            uint64            `json:"ShardHeight"`
+	ShardCommitteeSize     int               `json:"ShardCommitteeSize"`
+	ShardProposerIdx       int               `json:"ShardProposerIdx"`
+	ShardCommittee         []string          `json:"ShardCommittee"`
+	ShardPendingValidator  []string          `json:"ShardPendingValidator"`
+	BestCrossShard         map[byte]uint64   `json:"BestCrossShard"` // Best cross shard block by heigh
+	StakingTx              map[string]string `json:"StakingTx"`
+	NumTxns                uint64            `json:"NumTxns"`                // The number of txns in the block.
+	TotalTxns              uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
+	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
+	ActiveShards           int               `json:"ActiveShards"`
 	lock                   sync.Mutex
 }
 
@@ -66,6 +68,7 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 	for _, value := range bestStateShard.ShardPendingValidator {
 		res = append(res, []byte(value)...)
 	}
+
 	keys := []int{}
 	for k := range bestStateShard.BestCrossShard {
 		keys = append(keys, int(k))
@@ -77,6 +80,17 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 		binary.LittleEndian.PutUint64(valueBytes, value)
 		res = append(res, valueBytes...)
 	}
+
+	keystr := []string{}
+	for _, k := range bestStateShard.StakingTx {
+		keystr = append(keystr, k)
+	}
+	sort.Strings(keystr)
+	for key, value := range bestStateShard.StakingTx {
+		res = append(res, []byte(key)...)
+		res = append(res, []byte(value)...)
+	}
+
 	numTxnsBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(numTxnsBytes, bestStateShard.NumTxns)
 	res = append(res, numTxnsBytes...)
@@ -97,7 +111,7 @@ func (bestStateShard *BestStateShard) Hash() common.Hash {
 func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffset int) string {
 	// fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
 	found := common.IndexOfStr(pubkey, bestStateShard.ShardCommittee)
-	// fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
+	fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
 	if found > -1 {
 		tmpID := (bestStateShard.ShardProposerIdx + proposerOffset + 1) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
@@ -147,7 +161,7 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 	bestStateShard.ShardPendingValidator = []string{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
-
+	bestStateShard.StakingTx = make(map[string]string)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
 

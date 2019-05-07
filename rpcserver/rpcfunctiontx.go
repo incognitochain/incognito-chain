@@ -936,14 +936,15 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 	}
 
 	senderKeyParam := paramsArray[0]
-	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
 	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
+	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	paymentAddress := senderKeySet.PaymentAddress
-	fmt.Println("SA: staking from", paymentAddress.String())
-	metadata, err := metadata.NewStakingMetadata(int(stakingType), paymentAddress.String())
+	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
 	tx, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {
@@ -958,7 +959,7 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, common.ZeroByte),
 		ShardID:         txShardID,
 	}
 	return result, nil
