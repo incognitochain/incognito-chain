@@ -7,6 +7,13 @@ const (
 	PaymentAddressLength = 66
 	ZeroByte             = byte(0x00)
 	DateOutputFormat     = "2006-01-02T15:04:05.999999"
+	DateInputFormat      = "2006-01-02T15:04:05.999999"
+	NextForceUpdate      = "2019-06-15T23:59:00.000000"
+)
+
+const (
+	ExitCodeUnknow = iota
+	ExitCodeForceUpdate
 )
 
 const (
