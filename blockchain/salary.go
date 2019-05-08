@@ -207,11 +207,11 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) (metadata.Transaction, error) {
 	addressBytes := blockgen.chain.config.UserKeySet.PaymentAddress.Pk
-	shardID := common.GetShardIDFromLastByte(addressBytes[len(addressBytes)-1])
+	//shardID := common.GetShardIDFromLastByte(addressBytes[len(addressBytes)-1])
 	_, committeeShardID := blockgen.chain.BestState.Beacon.GetPubkeyRole(base58.Base58Check{}.Encode(addressBytes, 0x00), 0)
 
-	fmt.Println("SA: get tx for ", swaperPubKey, blockgen.chain.BestState.Shard[committeeShardID].StakingTx, committeeShardID)
-	tx, ok := blockgen.chain.BestState.Shard[shardID].StakingTx[swaperPubKey]
+	fmt.Println("SA: get tx for ", swaperPubKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
+	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swaperPubKey]
 	if !ok {
 		return nil, NewBlockChainError(UnExpectedError, errors.New("No staking tx in best state"))
 	}
