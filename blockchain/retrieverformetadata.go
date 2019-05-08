@@ -18,6 +18,38 @@ func (blockchain *BlockChain) GetDatabase() database.DatabaseInterface {
 	return blockchain.config.DataBase
 }
 
+func (blockchain *BlockChain) GetShardIDFromTx(txid string) (byte, error) {
+	var txHash = &common.Hash{}
+	(&common.Hash{}).Decode(txHash, txid)
+
+	blockHash, index, err := blockchain.config.DataBase.GetTransactionIndexById(txHash)
+	if err != nil {
+		return 0, NewBlockChainError(UnExpectedError, err)
+	}
+	block, err1, _ := blockchain.GetShardBlockByHash(blockHash)
+	if err1 != nil {
+		return 0, NewBlockChainError(UnExpectedError, err1)
+	}
+
+	return block.Header.ShardID, nil
+}
+
+func (blockchain *BlockChain) GetTxValue(txid string) (uint64, error) {
+	var txHash = &common.Hash{}
+	(&common.Hash{}).Decode(txHash, txid)
+
+	blockHash, index, err := blockchain.config.DataBase.GetTransactionIndexById(txHash)
+	if err != nil {
+		return 0, NewBlockChainError(UnExpectedError, err)
+	}
+	block, err1, _ := blockchain.GetShardBlockByHash(blockHash)
+	if err1 != nil {
+		return 0, NewBlockChainError(UnExpectedError, err1)
+	}
+	txData := block.Body.Transactions[index]
+	return txData.CalculateTxValue(), nil
+}
+
 func (blockchain *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64, error) {
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	return blockchain.GetChainHeight(shardID), nil

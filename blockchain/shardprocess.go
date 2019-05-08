@@ -132,6 +132,16 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isProducer boo
 		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
 	}
 
+	//remove staking txid in beststate shard
+	for _, l := range block.Body.Instructions {
+		if l[0] == SwapAction {
+			swapedCommittees := strings.Split(l[2], ",")
+			for _, v := range swapedCommittees {
+				delete(GetBestStateShard(shardID).StakingTx, v)
+			}
+		}
+	}
+
 	//=========Remove invalid shard block in pool
 	blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 
@@ -659,6 +669,11 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 			}
 			swapedCommittees := strings.Split(l[2], ",")
 			newCommittees := strings.Split(l[1], ",")
+
+			for _, v := range swapedCommittees {
+				delete(GetBestStateShard(bestStateShard.ShardID).StakingTx, v)
+			}
+
 			if !reflect.DeepEqual(swapedCommittees, shardSwapedCommittees) {
 				return NewBlockChainError(SwapError, errors.New("invalid shard swapped committees"))
 			}

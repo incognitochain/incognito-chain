@@ -227,7 +227,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 		blockHashStr = blockHash.String()
 	}
 	switch tx.GetType() {
-	case common.TxNormalType, common.TxSalaryType:
+	case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = &jsonresult.TransactionDetail{
@@ -976,6 +976,7 @@ func (rpcServer RpcServer) handleCreateAndSendStakingTx(params interface{}, clos
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
+
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)

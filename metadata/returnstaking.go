@@ -1,17 +1,20 @@
 package metadata
 
 import (
+	"fmt"
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 type ReturnStakingMetadata struct {
 	MetadataBase
-	TxID            string
-	ProducerAddress privacy.PaymentAddress
+	TxID          string
+	StakerAddress privacy.PaymentAddress
 }
 
 func NewReturnStaking(
@@ -23,9 +26,9 @@ func NewReturnStaking(
 		Type: metaType,
 	}
 	return &ReturnStakingMetadata{
-		TxID:            txID,
-		ProducerAddress: producerAddress,
-		MetadataBase:    metadataBase,
+		TxID:          txID,
+		StakerAddress: producerAddress,
+		MetadataBase:  metadataBase,
 	}
 }
 
@@ -40,10 +43,10 @@ func (sbsRes *ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, b
 }
 
 func (sbsRes *ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	if len(sbsRes.ProducerAddress.Pk) == 0 {
+	if len(sbsRes.StakerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
-	if len(sbsRes.ProducerAddress.Tk) == 0 {
+	if len(sbsRes.StakerAddress.Tk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
 	// if sbsRes.ShardBlockHeight == 0 {
@@ -58,7 +61,7 @@ func (sbsRes *ReturnStakingMetadata) ValidateMetadataByItself() bool {
 }
 
 func (sbsRes *ReturnStakingMetadata) Hash() *common.Hash {
-	record := sbsRes.ProducerAddress.String()
+	record := sbsRes.StakerAddress.String()
 	record += sbsRes.TxID
 
 	// final hash
@@ -76,9 +79,51 @@ func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 	bcr BlockchainRetriever,
 	accumulatedData *component.UsedInstData,
 ) (bool, error) {
-	//TODO: check if tx staking is existed
-	// check if producer is swap
-	// check if producer is in trhis shard
+
+	if len(insts) == 0 {
+		return false, errors.Errorf("no instruction found for BeaconBlockSalaryResponse tx %s", tx.Hash().String())
+	}
+
+	// check if tx staking is existed
+	txValue, err := bcr.GetTxValue(sbsRes.TxID)
+	if err != nil {
+		return false, err // not exist
+	}
+	if txValue != tx.CalculateTxValue() {
+		return false, errors.New("Not return correct amount")
+	}
+
+	// check if swaper is in this shard
+	sa := sbsRes.StakerAddress
+	spa := base58.Base58Check{}.Encode(sa.Pk[:], 0x00)
+
+	txShardID, err := bcr.GetShardIDFromTx(sbsRes.TxID)
+	if err != nil {
+		return false, err // not exist
+	}
+
+	if common.GetShardIDFromLastByte(spa[len(spa)-1]) != txShardID {
+		return false, errors.New(fmt.Sprintf("SA: Not for this shard", txShardID, common.GetShardIDFromLastByte(spa[len(spa)-1])))
+	}
+
+	// check if return public address is swaper
+	inSwapper := false
+	for i, inst := range insts {
+		if instUsed[i] == 0 { // not used before
+			if inst[0] == "swap" { // is swap action
+				if strings.Index(inst[2], spa) != -1 { // in swaper list
+					inSwapper = true
+					instUsed[i] += 1
+					break
+				}
+			}
+		}
+	}
+
+	if !inSwapper {
+		fmt.Println("SA: swaper public address", spa, insts[2])
+		return false, errors.Errorf("Public address is not in swap instruction")
+	}
 
 	return true, nil
 }

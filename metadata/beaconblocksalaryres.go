@@ -111,6 +111,7 @@ func (sbsRes *BeaconBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
 		if err != nil {
 			return false, err
 		}
+
 		if !bytes.Equal(beaconBlockSalaryInfo.InfoHash[:], sbsRes.InfoHash[:]) {
 			continue
 		}
