@@ -102,8 +102,8 @@ func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 		return false, err // not exist
 	}
 
-	if common.GetShardIDFromLastByte(spa[len(spa)-1]) != txShardID {
-		return false, errors.New(fmt.Sprintf("SA: Not for this shard", txShardID, common.GetShardIDFromLastByte(spa[len(spa)-1])))
+	if common.GetShardIDFromLastByte(sa.Pk[len(sa.Pk)-1]) != txShardID {
+		return false, errors.New(fmt.Sprint("SA: Not for this shard ", txShardID, common.GetShardIDFromLastByte(sa.Pk[len(sa.Pk)-1])))
 	}
 
 	// check if return public address is swaper
