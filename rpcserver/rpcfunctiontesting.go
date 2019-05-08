@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/transaction"
@@ -18,10 +19,19 @@ type txs struct {
 For testing and benchmark only
 */
 func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Critical("Getting Transactions from file")
-	file, err := ioutil.ReadFile("./utility/txs-shard0-5000.json")
 	arrayParams := common.InterfaceSlice(params)
-	isSent := arrayParams[0].(bool)
+	shardIDParam := int(arrayParams[0].(float64))
+	isPrivacy := arrayParams[1].(bool)
+	isSent := arrayParams[2].(bool)
+	datadir := "./utility/"
+	filename := ""
+	if isPrivacy {
+		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-5000.json"
+	} else {
+		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-5000.json"
+	}
+	Logger.log.Critical("Getting Transactions from file: ", datadir+filename)
+	file, err := ioutil.ReadFile(datadir+filename)
 	if err != nil {
 		Logger.log.Error("Fail to get Transactions from file: ", err)
 	}
@@ -31,9 +41,6 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	Logger.log.Criticalf("Get %+v Transactions from file \n", len(data.Txs))
 	for index, txBase58Data := range data.Txs {
 		<-time.Tick(50*time.Millisecond)
-		if index % 500 == 0 {
-			<-time.Tick(2 * time.Second)
-		}
 		Logger.log.Critical("Number of Transaction: ", index)
 		//<-time.Tick(50*time.Millisecond)
 		rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58Data)
