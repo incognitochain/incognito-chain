@@ -18,6 +18,10 @@ type txs struct {
 /*
 For testing and benchmark only
 */
+type CountResult struct {
+	Success int
+	Fail int
+}
 func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	shardIDParam := int(arrayParams[0].(float64))
@@ -25,6 +29,8 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	isSent := arrayParams[2].(bool)
 	datadir := "./utility/"
 	filename := ""
+	success := 0
+	fail := 0
 	if isPrivacy {
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-5000.json"
 	} else {
@@ -45,30 +51,47 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 		//<-time.Tick(50*time.Millisecond)
 		rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58Data)
 		if err != nil {
-			return nil, NewRPCError(ErrSendTxData, err)
+			fail++
+			continue
 		}
 		var tx transaction.Tx
 		err = json.Unmarshal(rawTxBytes, &tx)
 		if err != nil {
-			return nil, NewRPCError(ErrSendTxData, err)
+			fail++
+			continue
 		}
 		if !isSent {
 			_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+			if err != nil {
+				fail++
+				continue
+			} else {
+				success++
+				continue
+			}
 		} else {
 			_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+			if err != nil {
+				fail++
+				continue
+			}
 			txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 			if err != nil {
-				return nil, NewRPCError(ErrSendTxData, err)
+				fail++
+				continue
 			}
-			
 			txMsg.(*wire.MessageTx).Transaction = &tx
 			err = rpcServer.config.Server.PushMessageToAll(txMsg)
+			if err != nil {
+				fail++
+				continue
+			}
 		}
 		if err == nil {
 			count++
-			// broadcast Message
+			success++
 		}
 	}
-	return count, nil
+	return CountResult{Success: success, Fail:fail}, nil
 }
 
