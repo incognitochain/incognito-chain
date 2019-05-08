@@ -145,33 +145,32 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 			}
 		}
 	}()
+	var errCh chan error
+	var processed int
+	errCh = make(chan error)
 
-	// Process stability tx
-	err = blockchain.ProcessLoanForBlock(block)
-	if err != nil {
-		return err
-	}
+	go func() {
+		errCh <- blockchain.ProcessLoanForBlock(block)
+	}()
 
-	err = blockchain.processTradeBondTx(block)
-	if err != nil {
-		return err
-	}
+	go func() {
+		errCh <- blockchain.processTradeBondTx(block)
+	}()
 
-	for _, tx := range block.Body.Transactions {
-		meta := tx.GetMetadata()
-		if meta == nil {
-			continue
-		}
-		err := meta.ProcessWhenInsertBlockShard(tx, blockchain)
+	go func() {
+		// Process stability stand-alone instructions
+		errCh <- blockchain.ProcessStandAloneInstructions(block)
+	}()
+
+	for {
+		err := <-errCh
 		if err != nil {
-			return err
+			return errors.New("Process stability error: " + err.Error())
 		}
-	}
-
-	// Process stability stand-alone instructions
-	err = blockchain.ProcessStandAloneInstructions(block)
-	if err != nil {
-		return err
+		processed++
+		if processed == 3 {
+			break
+		}
 	}
 
 	// Store metadata instruction to local state
@@ -185,9 +184,10 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		}
 	}
 
-	//Remove Candidate In pool
-	candidates := []string{}
-	tokenIDs := []string{}
+	go func() {
+		//Remove Candidate In pool
+		candidates := []string{}
+		tokenIDs := []string{}
 	for _, tx := range block.Body.Transactions {
 		if tx.GetMetadata() != nil {
 			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -202,11 +202,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 				tokenIDs = append(tokenIDs, tokenID)
 			}
 		}
-	}
-	blockchain.config.TxPool.RemoveCandidateList(candidates)
-	blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
-	//Remove tx out of pool
-	go func() {
+		}
+		blockchain.config.TxPool.RemoveCandidateList(candidates)
+		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
+
+		//Remove tx out of pool
 		for _, tx := range block.Body.Transactions {
 			blockchain.config.TxPool.RemoveTx(tx, true)
 		}
