@@ -176,6 +176,7 @@ const (
 	GetBondTypes                           = "getbondtypes"
 	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
 	GetCurrentStabilityInfo                = "getcurrentstabilityinfo"
+	GetOracleTokenIDs                      = "getoracletokenids"
 	GetCurrentOracleNetworkParams          = "getcurrentoraclenetworkparams"
 	SignUpdatingOracleBoardContent         = "signupdatingoracleboardcontent"
 	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
