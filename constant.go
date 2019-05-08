@@ -138,7 +138,7 @@ func main() {
 	// Up some limits.
 	if err := limits.SetLimits(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to set limits: %+v\n", err)
-		os.Exit(1)
+		os.Exit(common.ExitByOs)
 	}
 
 	// Call serviceMain on Windows to handle running as a service.  When
@@ -148,7 +148,7 @@ func main() {
 		isService, err := winServiceMain()
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			os.Exit(common.ExitByOs)
 		}
 		if isService {
 			os.Exit(common.ExitCodeUnknow)
@@ -157,6 +157,6 @@ func main() {
 
 	// Work around defer not working after os.Exit()
 	if err := mainMaster(nil); err != nil {
-		os.Exit(1)
+		os.Exit(common.ExitByOs)
 	}
 }
