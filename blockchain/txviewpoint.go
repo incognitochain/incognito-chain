@@ -144,35 +144,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for indexTx, tx := range transactions {
 		switch tx.GetType() {
-		case common.TxNormalType:
-			{
-				normalTx := tx.(*transaction.Tx)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, constantTokenID)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
-				for pubkey, data := range commitments {
-					if acceptedCommitments[pubkey] == nil {
-						acceptedCommitments[pubkey] = make([][]byte, 0)
-					}
-					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
-				}
-				for pubkey, data := range outCoins {
-					if acceptedOutputcoins[pubkey] == nil {
-						acceptedOutputcoins[pubkey] = make([]privacy.OutputCoin, 0)
-					}
-					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
-				}
-				for pubkey, data := range snDs {
-					if snDs[pubkey] == nil {
-						snDs[pubkey] = make([]big.Int, 0)
-					}
-					snDs[pubkey] = append(snDs[pubkey], data...)
-				}
-				// acceptedSnD = append(acceptedSnD, snDs...)
-			}
-		case common.TxSalaryType:
+		case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
 			{
 				normalTx := tx.(*transaction.Tx)
 				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, constantTokenID)

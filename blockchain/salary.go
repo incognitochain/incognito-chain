@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/wallet"
 	"strconv"
 
@@ -207,7 +208,9 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 ) (metadata.Transaction, error) {
 	addressBytes := blockgen.chain.config.UserKeySet.PaymentAddress.Pk
 	shardID := common.GetShardIDFromLastByte(addressBytes[len(addressBytes)-1])
-	fmt.Println("SA: get tx for ", swaperPubKey, blockgen.chain.BestState.Shard[shardID].StakingTx)
+	_, committeeShardID := blockgen.chain.BestState.Beacon.GetPubkeyRole(base58.Base58Check{}.Encode(addressBytes, 0x00), 0)
+
+	fmt.Println("SA: get tx for ", swaperPubKey, blockgen.chain.BestState.Shard[committeeShardID].StakingTx, committeeShardID)
 	tx, ok := blockgen.chain.BestState.Shard[shardID].StakingTx[swaperPubKey]
 	if !ok {
 		return nil, NewBlockChainError(UnExpectedError, errors.New("No staking tx in best state"))
@@ -230,11 +233,12 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 
 	txData := block.Body.Transactions[index]
 
-	fmt.Println("SA:", txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress)
 	keyWallet, _ := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress)
-
 	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
-	if paymentShardID != shardID {
+
+	fmt.Println("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress, paymentShardID, committeeShardID)
+
+	if paymentShardID != committeeShardID {
 		return nil, NewBlockChainError(UnExpectedError, errors.New("Not from this shard"))
 	}
 
@@ -252,6 +256,8 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 		blockgen.chain.GetDatabase(),
 		returnStakingMeta,
 	)
+	//modify the type of the salary transaction
+	returnStakingTx.Type = common.TxReturnStakingType
 
 	if err1 != nil {
 		return nil, err1
