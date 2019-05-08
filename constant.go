@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/constant-money/constant-chain/common"
 	"log"
 	"os"
 	"path/filepath"
@@ -111,7 +112,13 @@ func mainMaster(serverChan chan<- *Server) error {
 	if serverChan != nil {
 		serverChan <- &server
 	}
-	Logger.log.Criticalf("Metric Server: %+v", os.Getenv("GrafanaURL"))
+
+	// Check Metric analyzation system
+	env := os.Getenv("GrafanaURL")
+	if env != "" {
+		Logger.log.Criticalf("Metric Server: %+v", os.Getenv("GrafanaURL"))
+	}
+
 	// Wait until the interrupt signal is received from an OS signal or
 	// shutdown is requested through one of the subsystems such as the RPC
 	// server.
@@ -144,7 +151,7 @@ func main() {
 			os.Exit(1)
 		}
 		if isService {
-			os.Exit(0)
+			os.Exit(common.ExitCodeUnknow)
 		}
 	}
 
