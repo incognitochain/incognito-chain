@@ -2,6 +2,7 @@ package common
 
 import "time"
 
+// for common
 const (
 	EmptyString          = ""
 	PaymentAddressLength = 66
@@ -11,11 +12,15 @@ const (
 	NextForceUpdate      = "2019-06-15T23:59:00.000000"
 )
 
+// for exit code
 const (
 	ExitCodeUnknow = iota
+	ExitByOs
+	ExitByLogging
 	ExitCodeForceUpdate
 )
 
+// For all Transaction information
 const (
 	TxNormalType             = "n"  // normal tx(send and receive coin)
 	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
@@ -63,6 +68,7 @@ const (
 	NormalEncryptionFlag
 )
 
+// For Stability board
 const (
 	DCBBoard = BoardType(0)
 	GOVBoard = BoardType(1)
