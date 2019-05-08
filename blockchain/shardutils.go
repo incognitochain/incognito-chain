@@ -367,6 +367,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	for _, tx := range txList {
 		switch tx.GetType() {
 		//==================For Constant Transfer Only
+		//TxReturnStakingType cannot be crossshard tx
 		case common.TxNormalType, common.TxSalaryType:
 			{
 				//==================Proof Process
