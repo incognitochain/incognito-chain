@@ -28,7 +28,6 @@ type GenesisParams struct {
 	InitialPaymentAddress string
 	InitFundSalary        uint64
 	InitialDCBToken       uint64
-	InitialCMBToken       uint64
 	InitialGOVToken       uint64
 	InitialBondToken      uint64
 
@@ -51,7 +50,6 @@ var genesisParamsTestnetNew = GenesisParams{
 	InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
 	InitFundSalary:                      TestnetInitFundSalary,
 	InitialBondToken:                    TestnetInitBondToken,
-	InitialCMBToken:                     TestnetInitCmBToken,
 	InitialDCBToken:                     TestnetInitDCBToken,
 	InitialGOVToken:                     TestnetInitGovToken,
 	BasicSalary:                         TestnetBasicSalary,
@@ -84,7 +82,6 @@ var genesisParamsMainnetNew = GenesisParams{
 	InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
 	InitFundSalary:                      MainnetInitFundSalary,
 	InitialBondToken:                    MainnetInitBondToken,
-	InitialCMBToken:                     MainnetInitCmBToken,
 	InitialDCBToken:                     MainnetInitDCBToken,
 	InitialGOVToken:                     MainnetInitGovToken,
 	BasicSalary:                         MainnetBasicSalary,

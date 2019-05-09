@@ -66,7 +66,6 @@ var (
 	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
 	DCBTokenID       = Hash{1}
 	GOVTokenID       = Hash{2}
-	CMBTokenID       = Hash{3}
 	ConstantID       = Hash{4} // To send Constant in custom token
 	DCBVotingTokenID = Hash{5}
 	GOVVotingTokenID = Hash{6}
