@@ -25,6 +25,7 @@ const (
 	PoolSize = "PoolSize"
 	TxValidateByItSelfInPoolType = "TxValidateByItSelfInPoolType"
 	TxInOneBlock = "TxInOneBlock"
+	DuplicateTxs = "DuplicateTxs"
 )
 // tag
 const (
@@ -38,6 +39,7 @@ const (
 	VTBITxTypeMetic = "vtbitxtype"
 	TxPrivacyOrNotMetric = "txprivacyornot"
 	BlockHeight = "blockheight"
+	TxHash = "txhash"
 	
 )
 //Tag value
@@ -67,6 +69,9 @@ func AnalyzeTimeSeriesVTBITxTypeMetric(txType string, value float64){
 }
 func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64){
 	sendTimeSeriesTransactionMetricDataInfluxDB(PoolSizeMetric, numOfTxs, PoolSize, value)
+}
+func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64){
+	sendTimeSeriesTransactionMetricDataInfluxDB(TxHash, txHash, DuplicateTxs, value)
 }
 func sendTimeSeriesTransactionMetricDataInfluxDB(metricTag string, tagValue string, metric string, value ...float64) {
 	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
