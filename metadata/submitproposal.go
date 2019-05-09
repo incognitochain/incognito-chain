@@ -220,10 +220,10 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateSanityData(br BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if !submitDCBProposalMetadata.DCBParams.ValidateSanityData() {
-		return true, false, nil
+		return true, false, fmt.Errorf("invalid sanity data for DCB params")
 	}
 	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateSanityData() {
-		return true, false, nil
+		return true, false, fmt.Errorf("invalid sanity data for proposal info")
 	}
 	return true, true, nil
 }
