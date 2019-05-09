@@ -86,6 +86,9 @@ type TxPool struct {
 	IsLoadFromMempool bool
 
 	PersistMempool bool
+	
+	//For testing
+	DuplicateTxs map[common.Hash]uint64
 }
 
 /*
@@ -104,6 +107,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.TxLifeTime = cfg.TxLifeTime
 	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
 	tp.PersistMempool = cfg.PersistMempool
+	tp.DuplicateTxs = make(map[common.Hash]uint64)
 }
 func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
 	tp.config.DataBaseMempool = db
@@ -284,6 +288,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
+		go common.AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash.String(), float64(1))
 		err := MempoolTxError{}
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return err
