@@ -70,14 +70,14 @@ const (
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
-	TestnetSalaryPerTx                = 1
+	TestnetSalaryPerTx                = 3
 	TestnetBasicSalary                = 0
 	TestnetInitFundSalary             = 0
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
 	TestnetInitCmBToken               = 0
 	TestnetInitBondToken              = 0
-	TestnetFeePerTxKb                 = 2
+	TestnetFeePerTxKb                 = 3
 	TestnetGenesisBlockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 )
 

@@ -413,7 +413,9 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if tx.GetType() == common.TxSalaryType {
 		return tx.ValidateTxSalary(db)
 	}
-
+	if tx.GetType() == common.TxReturnStakingType {
+		return tx.ValidateTxReturnStaking(db)
+	}
 	var valid bool
 	var err error
 
@@ -677,7 +679,7 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 }
 
 func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	//if tx.Type == common.TxSalaryType {
+	//if tx.Type == common.TxSalaryType || tx.Type == common.TxReturnStakingType {
 	//	return errors.New("can not receive a salary tx from other node, this is a violation")
 	//}
 	poolNullifiers := mr.GetSerialNumbers()
@@ -708,7 +710,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	if tx.GetType() == common.TxSalaryType {
+	if tx.GetType() == common.TxSalaryType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
 	if tx.Metadata != nil {
@@ -750,9 +752,15 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, errors.New("wrong tx Sig PK")
 	}
 	// check Type is normal or salary tx
-	if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
+	switch txN.Type {
+	case common.TxNormalType, common.TxSalaryType, common.TxCustomTokenType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
+	default:
 		return false, errors.New("wrong tx type")
 	}
+
+	//if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
+	//	return false, errors.New("wrong tx type")
+	//}
 
 	// check info field
 	if len(txN.Info) > 512 {
@@ -983,7 +991,7 @@ func (tx *Tx) IsPrivacy() bool {
 }
 
 func (tx *Tx) ValidateType() bool {
-	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType
+	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType || tx.Type == common.TxReturnStakingType
 }
 
 func (tx *Tx) IsCoinsBurning() bool {
@@ -1129,6 +1137,11 @@ func (tx *Tx) InitTxSalary(
 	}
 
 	return nil
+}
+
+func (tx Tx) ValidateTxReturnStaking(db database.DatabaseInterface,
+) bool {
+	return true
 }
 
 func (tx Tx) ValidateTxSalary(
