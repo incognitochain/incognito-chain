@@ -130,7 +130,8 @@ type BlockchainRetriever interface {
 	GetBoardEndHeight(boardType common.BoardType, chainID byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
 	GetDatabase() database.DatabaseInterface
-
+	GetTxValue(txid string) (uint64, error)
+	GetShardIDFromTx(txid string) (byte, error)
 	// For validating loan metadata
 	// GetLoanTxs([]byte) ([][]byte, error)
 	GetLoanReq(loanID []byte) (*common.Hash, error)

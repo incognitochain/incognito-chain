@@ -74,8 +74,8 @@ func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	mr metadata.MempoolRetriever,
 ) error {
-	if customTokenTx.Type == common.TxSalaryType {
-		return errors.New("can not receive a salary tx from other node, this is a violation")
+	if customTokenTx.Type == common.TxSalaryType || customTokenTx.Type == common.TxReturnStakingType {
+		return errors.New("can not receive a salary tx | return staking tx from other node, this is a violation")
 	}
 
 	normalTx := customTokenTx.Tx
@@ -128,6 +128,10 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	if customTokenTx.GetType() == common.TxSalaryType {
 		return NewTransactionErr(UnexpectedErr, errors.New("Wrong salary tx"))
 	}
+	if customTokenTx.GetType() == common.TxReturnStakingType {
+		return NewTransactionErr(UnexpectedErr, errors.New("Wrong return staking tx"))
+	}
+
 	if customTokenTx.Metadata != nil {
 		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, shardID, db)
 		if err != nil {
