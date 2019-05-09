@@ -7,9 +7,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/databasemp"
-
+	
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -78,13 +78,11 @@ type TxPool struct {
 
 	//Max transaction pool may have
 	maxTx uint64
-
 	//Time to live for all transaction
 	TxLifeTime uint
-
+	Scantime time.Duration
 	//Reset mempool database
 	IsLoadFromMempool bool
-
 	PersistMempool bool
 	
 	//For testing
@@ -108,6 +106,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
 	tp.PersistMempool = cfg.PersistMempool
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
+	tp.Scantime = 1 * time.Hour
 }
 func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
 	tp.config.DataBaseMempool = db
@@ -119,7 +118,7 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
-func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
+func (tp *TxPool) LoadOrResetDatabaseMP() {
 	if !tp.IsLoadFromMempool {
 		err := tp.ResetDatabaseMP()
 		if err != nil {
@@ -127,7 +126,6 @@ func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
 		} else {
 			Logger.log.Critical("Successfully Reset from database")
 		}
-		return []TxDesc{}
 	} else {
 		txDescs, err := tp.LoadDatabaseMP()
 		if err != nil {
@@ -135,7 +133,6 @@ func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
 		} else {
 			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
 		}
-		return txDescs
 	}
 	//return []TxDesc{}
 }
@@ -143,10 +140,9 @@ func TxPoolMainLoop(tp *TxPool) {
 	if tp.TxLifeTime == 0 {
 		return
 	}
-	scanInterval := time.NewTicker(TXPOOL_SCAN_TIME * time.Second)
-	defer scanInterval.Stop()
 	for {
-		<-scanInterval.C
+		<-time.Tick(tp.Scantime)
+		tp.mtx.Lock()
 		ttl := time.Duration(tp.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
 		for _, txDesc := range tp.pool {
@@ -166,9 +162,9 @@ func TxPoolMainLoop(tp *TxPool) {
 			size := tp.CalPoolSize()
 			go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 		}
+		tp.mtx.Unlock()
 	}
 }
-
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp *TxPool) GetSerialNumbers() map[common.Hash][][]byte {
 	return tp.poolSerialNumbers
@@ -200,6 +196,7 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *Tx
 			Fee:    fee,
 		},
 		StartTime: time.Now(),
+		IsFowardMessage: false,
 	}
 	return txDesc
 }
@@ -575,6 +572,15 @@ func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
 	return descs
 }
 
+func (tp *TxPool) GetPool() map[common.Hash]*TxDesc {
+	return tp.pool
+}
+func (tp *TxPool) LockPool() {
+	tp.mtx.Lock()
+}
+func (tp *TxPool) UnlockPool(){
+	tp.mtx.Unlock()
+}
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
 	count := len(tp.pool)
