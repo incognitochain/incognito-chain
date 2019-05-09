@@ -101,7 +101,6 @@ const (
 	GetListGOVBoard                      = "getlistgovboard"
 	GetListDCBBoardPayment               = "getlistdcbboardpayment"
 	GetListGOVBoardPayment               = "getlistgovboardpayment"
-	GetListCMBBoard                      = "getlistcmbboard"
 	AppendListDCBBoard                   = "testappendlistdcbboard"
 	AppendListGOVBoard                   = "testappendlistgovboard"
 	GetGOVParams                         = "getgovparams"

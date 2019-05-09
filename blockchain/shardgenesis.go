@@ -97,18 +97,6 @@ func CreateShardGenesisBlock(
 		block.Body.Transactions = append(block.Body.Transactions, &govTokenTx)
 	}
 
-	// Create genesis token tx for CMB
-	if icoParams.InitialCMBToken > 0 {
-		cmbTokenTx := createSpecialTokenTx(
-			common.Hash(common.CMBTokenID),
-			"Commercial bank token",
-			"CMB",
-			icoParams.InitialCMBToken,
-			keyWallet.KeySet.PaymentAddress,
-		)
-		block.Body.Transactions = append(block.Body.Transactions, &cmbTokenTx)
-	}
-
 	// Create genesis token tx for BOND test
 	if icoParams.InitialBondToken > 0 {
 		bondTokenTx := createSpecialTokenTx(

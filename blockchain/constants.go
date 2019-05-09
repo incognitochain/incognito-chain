@@ -40,7 +40,6 @@ const (
 	MainnetInitFundSalary             = 0
 	MainnetInitDCBToken               = 0
 	MainnetInitGovToken               = 0
-	MainnetInitCmBToken               = 0
 	MainnetInitBondToken              = 0
 	MainnetFeePerTxKb                 = 0
 	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
@@ -75,7 +74,6 @@ const (
 	TestnetInitFundSalary             = 100000
 	TestnetInitDCBToken               = 10000
 	TestnetInitGovToken               = 10000
-	TestnetInitCmBToken               = 0
 	TestnetInitBondToken              = 0
 	TestnetFeePerTxKb                 = 2
 	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
