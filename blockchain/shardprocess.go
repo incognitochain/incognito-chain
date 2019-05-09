@@ -132,6 +132,16 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing Block %+v \n", block.Header.ShardID, *block.Hash())
 	}
 
+	//remove staking txid in beststate shard
+	for _, l := range block.Body.Instructions {
+		if l[0] == SwapAction {
+			swapedCommittees := strings.Split(l[2], ",")
+			for _, v := range swapedCommittees {
+				delete(GetBestStateShard(shardID).StakingTx, v)
+			}
+		}
+	}
+
 	//=========Remove invalid shard block in pool
 	blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 
@@ -605,9 +615,31 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		bestStateShard.ShardProposerIdx = common.IndexOfStr(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), bestStateShard.ShardCommittee)
 	}
 
+	newBeaconCandidate := []string{}
+	newShardCandidate := []string{}
 	// Add pending validator
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
+
+			if l[0] == StakeAction && l[2] == "beacon" {
+				beacon := strings.Split(l[1], ",")
+				newBeaconCandidate = append(newBeaconCandidate, beacon...)
+				if len(l) == 4 {
+					for i, v := range strings.Split(l[3], ",") {
+						GetBestStateShard(bestStateShard.ShardID).StakingTx[newBeaconCandidate[i]] = v
+					}
+				}
+			}
+			if l[0] == StakeAction && l[2] == "shard" {
+				shard := strings.Split(l[1], ",")
+				newShardCandidate = append(newShardCandidate, shard...)
+				if len(l) == 4 {
+					for i, v := range strings.Split(l[3], ",") {
+						GetBestStateShard(bestStateShard.ShardID).StakingTx[newShardCandidate[i]] = v
+					}
+				}
+			}
+
 			if l[0] == "assign" && l[2] == "shard" {
 				if l[3] == strconv.Itoa(int(block.Header.ShardID)) {
 					Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", block.Header.ShardID, bestStateShard.ShardPendingValidator)
@@ -620,8 +652,10 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 	if len(block.Body.Instructions) != 0 {
 		Logger.log.Critical("Shard Process/Update: ALL Instruction", block.Body.Instructions)
 	}
+
 	// Swap committee
 	for _, l := range block.Body.Instructions {
+
 		if l[0] == "swap" {
 			bestStateShard.ShardPendingValidator, bestStateShard.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(bestStateShard.ShardPendingValidator, bestStateShard.ShardCommittee, bestStateShard.ShardCommitteeSize, common.OFFSET)
 			if err != nil {
@@ -630,6 +664,11 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 			}
 			swapedCommittees := strings.Split(l[2], ",")
 			newCommittees := strings.Split(l[1], ",")
+
+			for _, v := range swapedCommittees {
+				delete(GetBestStateShard(bestStateShard.ShardID).StakingTx, v)
+			}
+
 			if !reflect.DeepEqual(swapedCommittees, shardSwapedCommittees) {
 				return NewBlockChainError(SwapError, errors.New("invalid shard swapped committees"))
 			}
