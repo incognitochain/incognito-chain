@@ -21,5 +21,4 @@ const (
 	CustomTokenInit = iota
 	CustomTokenTransfer
 	CustomTokenCrossShard
-	CustomTokenMint
 )
