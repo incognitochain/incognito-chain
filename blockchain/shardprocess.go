@@ -118,6 +118,16 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if err != nil {
 		return err
 	}
+	if blockchain.config.UserKeySet != nil {
+		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			err = blockchain.SaveCurrentShardState(block)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	if err := blockchain.BestState.Shard[shardID].Update(block, beaconBlocks); err != nil {
 		return err
 	}
@@ -149,6 +159,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	var processed int
 	errCh = make(chan error)
 
+	//TODO: refactor this
 	go func() {
 		errCh <- blockchain.ProcessLoanForBlock(block)
 	}()
@@ -188,20 +199,20 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		//Remove Candidate In pool
 		candidates := []string{}
 		tokenIDs := []string{}
-	for _, tx := range block.Body.Transactions {
-		if tx.GetMetadata() != nil {
-			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-				pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-				candidates = append(candidates, pubkey)
+		for _, tx := range block.Body.Transactions {
+			if tx.GetMetadata() != nil {
+				if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+					pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
+					candidates = append(candidates, pubkey)
+				}
 			}
-		}
-		if tx.GetType() == common.TxCustomTokenType {
-			customTokenTx := tx.(*transaction.TxCustomToken)
-			if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-				tokenID := customTokenTx.TxTokenData.PropertyID.String()
-				tokenIDs = append(tokenIDs, tokenID)
+			if tx.GetType() == common.TxCustomTokenType {
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
+					tokenID := customTokenTx.TxTokenData.PropertyID.String()
+					tokenIDs = append(tokenIDs, tokenID)
+				}
 			}
-		}
 		}
 		blockchain.config.TxPool.RemoveCandidateList(candidates)
 		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
