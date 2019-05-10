@@ -28,7 +28,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	shardIDParam := int(arrayParams[0].(float64))
 	isPrivacy := arrayParams[1].(bool)
 	isSent := arrayParams[2].(bool)
-	interval := arrayParams[3].(int64)
+	interval := int64(arrayParams[3].(float64))
 	datadir := "./utility/"
 	filename := ""
 	success := 0
