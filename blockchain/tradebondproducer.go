@@ -150,16 +150,19 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	}
 
 	// Build tx
-	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	burnWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	tool := producerTool{
+		key:     producerPrivateKey,
+		db:      blockgen.chain.GetDatabase(),
+		shardID: shardID,
+	}
 	txToken, usedID, err := transferTxToken(
 		amount,
 		unspentTokens[bondID.String()],
 		*bondID,
-		keyWalletBurnAccount.KeySet.PaymentAddress,
+		burnWallet.KeySet.PaymentAddress,
 		buyBackMeta,
-		producerPrivateKey,
-		blockgen.chain.GetDatabase(),
-		shardID,
+		tool,
 	)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)
