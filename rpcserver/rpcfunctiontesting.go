@@ -24,9 +24,11 @@ type CountResult struct {
 }
 func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	Logger.log.Critical(arrayParams)
 	shardIDParam := int(arrayParams[0].(float64))
 	isPrivacy := arrayParams[1].(bool)
 	isSent := arrayParams[2].(bool)
+	interval := arrayParams[3].(int64)
 	datadir := "./utility/"
 	filename := ""
 	success := 0
@@ -45,8 +47,9 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	count := 0
 	_ = json.Unmarshal([]byte(file), &data)
 	Logger.log.Criticalf("Get %+v Transactions from file \n", len(data.Txs))
+	intervalDuration := time.Duration(interval)*time.Millisecond
 	for index, txBase58Data := range data.Txs {
-		<-time.Tick(50*time.Millisecond)
+		<-time.Tick(intervalDuration)
 		Logger.log.Critical("Number of Transaction: ", index)
 		//<-time.Tick(50*time.Millisecond)
 		rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58Data)

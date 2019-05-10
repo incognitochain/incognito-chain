@@ -44,8 +44,7 @@ func CreateBeaconGenesisBlock(
 	header := BeaconHeader{
 		Timestamp:           time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
 		Height:              1,
-		//TODO: change version to 1 before merge to master
-		Version:             2,
+		Version:             1,
 		Round:               1,
 		Epoch:               1,
 		PrevBlockHash:       common.Hash{},
