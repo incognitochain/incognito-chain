@@ -242,6 +242,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBaseMempool:   dbmp,
 		IsLoadFromMempool: cfg.LoadMempool,
 		PersistMempool:    cfg.PersistMempool,
+		RelayShards:       relayShards,
+		UserKeyset:        serverObj.userKeySet,
 	})
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
@@ -583,6 +585,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	}
 	serverObj.memPool.UnlockPool()
 }
+
 /*
 // initListeners initializes the configured net listeners and adds any bound
 // addresses to the address manager. Returns the listeners and a NAT interface,

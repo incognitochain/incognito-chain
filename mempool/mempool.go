@@ -7,9 +7,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
+	"github.com/constant-money/constant-chain/cashec"
+
 	"github.com/constant-money/constant-chain/databasemp"
-	
+
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -43,6 +45,9 @@ type Config struct {
 	IsLoadFromMempool bool
 
 	PersistMempool bool
+
+	RelayShards []byte
+	UserKeyset  *cashec.KeySet
 }
 
 // TxDesc is transaction message in mempool
@@ -80,11 +85,11 @@ type TxPool struct {
 	maxTx uint64
 	//Time to live for all transaction
 	TxLifeTime uint
-	Scantime time.Duration
+	Scantime   time.Duration
 	//Reset mempool database
 	IsLoadFromMempool bool
-	PersistMempool bool
-	
+	PersistMempool    bool
+
 	//For testing
 	DuplicateTxs map[common.Hash]uint64
 }
@@ -165,6 +170,7 @@ func TxPoolMainLoop(tp *TxPool) {
 		tp.mtx.Unlock()
 	}
 }
+
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp *TxPool) GetSerialNumbers() map[common.Hash][][]byte {
 	return tp.poolSerialNumbers
@@ -195,7 +201,7 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *Tx
 			Height: height,
 			Fee:    fee,
 		},
-		StartTime: time.Now(),
+		StartTime:       time.Now(),
 		IsFowardMessage: false,
 	}
 	return txDesc
@@ -444,6 +450,44 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 	}
 }
 
+// Check relay shard and public key role before processing transaction
+func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
+	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	if common.IndexOfByte(senderShardID, tp.config.RelayShards) > -1 {
+		return true
+	}
+	return false
+}
+
+func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
+	if tp.config.UserKeyset != nil {
+		var shardID byte
+		publicKey := tp.config.UserKeyset.PaymentAddress.Pk
+		pubkey := base58.Base58Check{}.Encode(publicKey, common.ZeroByte)
+		if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconCommittee) > -1 {
+			return false
+		}
+		if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconPendingValidator) > -1 {
+			return false
+		}
+		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardCommittee {
+			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
+				shardID = shardCommitteesID
+			}
+		}
+		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardPendingValidator {
+			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
+				shardID = shardCommitteesID
+			}
+		}
+		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if senderShardID == shardID {
+			return true
+		}
+	}
+	return false
+}
+
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
 // free-standing transactions into a memory pool.  It includes functionality
 // such as rejecting duplicate transactions, ensuring transactions follow all
@@ -458,6 +502,9 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
+	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx){
+		return &common.Hash{}, &TxDesc{}, nil
+	}
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -488,7 +535,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxNoPrivacy, float64(1))
 	}
 	if err != nil {
-		Logger.log.Error(err)
+		Logger.log.Errorf("Tx %+v is %+v \n", *hash, err)
 	}
 	return hash, txDesc, err
 }
@@ -578,9 +625,10 @@ func (tp *TxPool) GetPool() map[common.Hash]*TxDesc {
 func (tp *TxPool) LockPool() {
 	tp.mtx.Lock()
 }
-func (tp *TxPool) UnlockPool(){
+func (tp *TxPool) UnlockPool() {
 	tp.mtx.Unlock()
 }
+
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
 	count := len(tp.pool)
