@@ -578,11 +578,11 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 
 // handleGetActiveShards - return active shard num
 func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	if rpcServer.config.BlockChain.IsReady(false, 0) {
-		activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
-		return activeShards, nil
-	}
-	return -1, nil
+	//if rpcServer.config.BlockChain.IsReady(false, 0) {
+	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+	return activeShards, nil
+	//}
+	//return -1, nil
 }
 
 func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
