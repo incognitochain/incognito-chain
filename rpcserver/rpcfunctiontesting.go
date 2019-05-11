@@ -29,6 +29,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	isPrivacy := arrayParams[1].(bool)
 	isSent := arrayParams[2].(bool)
 	interval := int64(arrayParams[3].(float64))
+	Logger.log.Criticalf("Interval between transactions %+v \n", interval)
 	datadir := "./utility/"
 	filename := ""
 	success := 0
