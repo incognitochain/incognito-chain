@@ -154,21 +154,14 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 		MetadataBase:   metadata.MetadataBase{Type: metadata.BuyBackRequestMeta},
 	}
 
-	// Save list of UTXO to prevent double spending in current block
-	if _, ok := unspentTokens[bondID.String()]; !ok {
-		unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(dcbWallet.KeySet, bondID)
-		if err == nil {
-			unspentTokens[bondID.String()] = unspentTxTokenOuts
-		} else {
-			unspentTokens[bondID.String()] = []transaction.TxTokenVout{}
-		}
-	}
+	// List of unused vouts
+	vouts := blockgen.initVouts(unspentTokens, bondID)
 
 	// Build tx
 	burnWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	txToken, usedID, err := transferTxToken(
 		amount,
-		unspentTokens[bondID.String()],
+		vouts,
 		*bondID,
 		burnWallet.KeySet.PaymentAddress,
 		buyBackMeta,
