@@ -433,6 +433,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	startAdd := time.Now()
 	tp.addTx(txD, isStore)
 	if isNewTransaction {
+		Logger.log.Infof("Add New Txs Into Pool %+v \n FROM SHARD %+v", *tx.Hash(), shardID)
 		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
 	}
 	return tx.Hash(), txD, nil
@@ -503,7 +504,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx){
-		return &common.Hash{}, &TxDesc{}, nil
+		err := errors.New("Unexpected Transaction Source Shard")
+		Logger.log.Error(err)
+		return &common.Hash{}, &TxDesc{}, err
 	}
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
@@ -535,7 +538,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxNoPrivacy, float64(1))
 	}
 	if err != nil {
-		Logger.log.Errorf("Tx %+v is %+v \n", *hash, err)
+			Logger.log.Error(err)
 	}
 	return hash, txDesc, err
 }
