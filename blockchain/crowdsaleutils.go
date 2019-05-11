@@ -22,6 +22,21 @@ type producerTool struct {
 	shardID byte
 }
 
+// initVouts cache and return a list of UTXO for a specific token to prevent double spending in a single block
+func (blockgen *BlkTmplGenerator) initVouts(unspentTokens map[string][]transaction.TxTokenVout, tokenID *common.Hash) []transaction.TxTokenVout {
+	dcbWallet, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	key := tokenID.String()
+	if _, ok := unspentTokens[key]; !ok {
+		unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(dcbWallet.KeySet, tokenID)
+		if err == nil {
+			unspentTokens[key] = unspentTxTokenOuts
+		} else {
+			unspentTokens[key] = []transaction.TxTokenVout{}
+		}
+	}
+	return unspentTokens[key]
+}
+
 func buildPaymentForCoin(
 	receiverAddress privacy.PaymentAddress,
 	amount uint64,
@@ -223,15 +238,7 @@ func buildPaymentForToken(
 	if mint {
 		txToken, err = mintTxToken(receiver, amount, tokenID, metaPay, tool)
 	} else {
-		// fmt.Printf("[db] transferTxToken with vouts && tokenAmount: %+v %d\n", vouts, tokenAmount)
-		txToken, usedID, err = transferTxToken(
-			amount,
-			vouts,
-			tokenID,
-			receiver,
-			metaPay,
-			tool,
-		)
+		txToken, usedID, err = transferTxToken(amount, vouts, tokenID, receiver, metaPay, tool)
 	}
 	if err != nil {
 		return nil, err
@@ -255,7 +262,6 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 	if err != nil {
 		return nil, err
 	}
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	saleID := paymentInst.SaleID
 	assetID := &paymentInst.AssetID
 
@@ -275,16 +281,8 @@ func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
 			tool,
 		)
 	} else if common.IsBondAsset(assetID) {
-		// Get unspent token UTXO to send to user
-		if _, ok := unspentTokens[assetID.String()]; !ok {
-			vouts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, assetID)
-			// fmt.Printf("[db] vouts: %+v\n%v\n", vouts, err)
-			if err == nil {
-				unspentTokens[assetID.String()] = vouts
-			} else {
-				unspentTokens[assetID.String()] = []transaction.TxTokenVout{}
-			}
-		}
+		// Get and cache list of UTXO
+		blockgen.initVouts(unspentTokens, assetID)
 
 		mint := false // Mint DCB token, transfer bonds
 		txResponse, err = buildPaymentForToken(
