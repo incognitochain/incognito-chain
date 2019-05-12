@@ -7,6 +7,7 @@ import (
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wire"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"time"
 )
@@ -26,7 +27,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	arrayParams := common.InterfaceSlice(params)
 	Logger.log.Critical(arrayParams)
 	shardIDParam := int(arrayParams[0].(float64))
-	isPrivacy := arrayParams[1].(bool)
+	txType := arrayParams[1].(string)
 	isSent := arrayParams[2].(bool)
 	interval := int64(arrayParams[3].(float64))
 	Logger.log.Criticalf("Interval between transactions %+v \n", interval)
@@ -34,11 +35,17 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	filename := ""
 	success := 0
 	fail := 0
-	if isPrivacy {
+	switch(txType) {
+	case "noprivacy":
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-5000.json"
-	} else {
+	case "privacy":
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-5000.json"
+	case "cstoken":
+		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-cstoken-5000.json"
+	default:
+		return CountResult{}, NewRPCError(ErrUnexpected,errors.New("Can't find file"))
 	}
+	
 	Logger.log.Critical("Getting Transactions from file: ", datadir+filename)
 	file, err := ioutil.ReadFile(datadir+filename)
 	if err != nil {
