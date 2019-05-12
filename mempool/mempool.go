@@ -433,7 +433,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	startAdd := time.Now()
 	tp.addTx(txD, isStore)
 	if isNewTransaction {
-		Logger.log.Infof("Add New Txs Into Pool %+v \n FROM SHARD %+v", *tx.Hash(), shardID)
+		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
 		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
 	}
 	return tx.Hash(), txD, nil
