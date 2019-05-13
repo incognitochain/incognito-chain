@@ -24,6 +24,7 @@ const (
 const (
 	TxNormalType             = "n"  // normal tx(send and receive coin)
 	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
+	TxReturnStakingType      = "rs" //
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 	MaxTxSize                = 100  // unit KB = 100KB
