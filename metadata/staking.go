@@ -12,16 +12,17 @@ import (
 )
 
 type StakingMetadata struct {
-	*MetadataBase
+	MetadataBase
+	PaymentAddress string
 }
 
-func NewStakingMetadata(stakingType int) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, paymentAdd string) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("Invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
 
-	return &StakingMetadata{metadataBase}, nil
+	return &StakingMetadata{*metadataBase, paymentAdd}, nil
 }
 
 /*
@@ -32,6 +33,7 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	}
 	return true
 }
+
 func (sm *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
 	senderPubkeyString := base58.Base58Check{}.Encode(txr.GetSigPubKey(), common.ZeroByte)
@@ -111,6 +113,6 @@ func GetBeaconStakeAmount() uint64 {
 }
 
 func GetShardStateAmount() uint64 {
-	const STAKE_SHARD_AMOUNT = 10000
+	const STAKE_SHARD_AMOUNT = 100
 	return STAKE_SHARD_AMOUNT
 }

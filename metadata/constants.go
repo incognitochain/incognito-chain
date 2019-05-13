@@ -35,6 +35,9 @@ const (
 	BuyGOVTokenRequestMeta       = 36
 	ShardBlockSalaryRequestMeta  = 37
 	ShardBlockSalaryResponseMeta = 38
+	BeaconSalaryRequestMeta      = 39
+	BeaconSalaryResponseMeta     = 40
+	ReturnStakingMeta            = 41
 
 	SubmitDCBProposalMeta          = 43
 	VoteDCBBoardMeta               = 44
