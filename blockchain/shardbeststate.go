@@ -37,7 +37,9 @@ type BestStateShard struct {
 	TotalTxns              uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
-	lock                   sync.RWMutex
+
+	MetricBlockHeight uint64
+	lock              sync.RWMutex
 }
 
 // Get role of a public key base on best state shard
