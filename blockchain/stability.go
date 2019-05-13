@@ -3,8 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database/lvdb"
@@ -13,6 +11,9 @@ import (
 	"github.com/constant-money/constant-chain/metadata/fromshardins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
+	"math"
+	"strconv"
+	"strings"
 )
 
 type accumulativeValues struct {
@@ -26,6 +27,8 @@ type accumulativeValues struct {
 	buyBackCoins         uint64
 	totalFee             uint64
 	totalSalary          uint64
+	totalBeaconSalary    uint64
+	totalShardSalary     uint64
 	totalRefundAmt       uint64
 	totalOracleRewards   uint64
 	saleDataMap          map[string]*component.SaleData
@@ -83,12 +86,15 @@ func buildStabilityActions(
 	// build salary update action
 	totalFee := getShardBlockFee(txs)
 	totalSalary, err := getShardBlockSalary(txs, bc, beaconHeight)
+	shardSalary := math.Ceil(float64(totalSalary) / 2)
+	beaconSalary := math.Floor(float64(totalSalary) / 2)
+	//fmt.Println("SA: fee&salary", totalFee, totalSalary, shardSalary, beaconSalary)
 	if err != nil {
 		return nil, err
 	}
 
 	if totalFee != 0 || totalSalary != 0 {
-		salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(totalSalary, totalFee, producerAddress, shardBlockHeight)
+		salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(uint64(beaconSalary), uint64(shardSalary), totalFee, producerAddress, shardBlockHeight)
 		actions = append(actions, salaryUpdateActions...)
 	}
 
@@ -250,6 +256,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		}
 	}
 	// update component in beststate
+
 	return instructions, nil
 }
 
@@ -299,7 +306,24 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 		fmt.Println("[ndh] - beaconBlock[", beaconBlock.Header.Height, "]")
 		for _, l := range beaconBlock.Body.Instructions {
 			// TODO: will improve the condition later
-			if l[0] == StakeAction || l[0] == "swap" || l[0] == RandomAction {
+			var tx metadata.Transaction
+			var err error
+			txs := []metadata.Transaction{}
+
+			if l[0] == SwapAction {
+				fmt.Println("SA: swap instruction ", l, beaconBlock.Header.Height, blockgen.chain.BestState.Beacon.ShardCommittee)
+				for _, v := range strings.Split(l[2], ",") {
+					tx, err := blockgen.buildReturnStakingAmountTx(v, producerPrivateKey)
+					if err != nil {
+						Logger.log.Error("SA:", err)
+						continue
+					}
+					resTxs = append(resTxs, tx)
+				}
+
+			}
+
+			if l[0] == StakeAction || l[0] == RandomAction {
 				continue
 			}
 			if len(l) <= 2 {
@@ -316,8 +340,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				}
 				Logger.log.Warn("Metadata type:", metaType, "\n")
 
-				var tx metadata.Transaction
-				txs := []metadata.Transaction{}
 				switch metaType {
 				case component.RewardDCBProposalSubmitterIns:
 					fmt.Println("[ndh]-RewardDCBProposalSubmitterIns")
@@ -439,6 +461,8 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				case metadata.ShardBlockSalaryRequestMeta:
 					salaryReqInfoStr := l[3]
 					txs, err = blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
+				case metadata.BeaconSalaryRequestMeta:
+					txs, err = blockgen.buildBeaconSalaryRes(l[2], l[3], producerPrivateKey)
 				}
 
 				if err != nil {
