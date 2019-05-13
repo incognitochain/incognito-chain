@@ -2,12 +2,11 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -17,13 +16,24 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64) (*ShardBlock, error) {
 	//============Build body=============
 	// Fetch Beacon information
-	fmt.Printf("[ndh] ========================== Creating shard block[%+v] ==============================", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
-	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
-	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
-	epoch := blockgen.chain.BestState.Beacon.Epoch
+	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	beaconHash,err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlockBytes, err := blockgen.chain.config.DataBase.FetchBeaconBlock(beaconHash)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock := BeaconBlock{}
+	err = json.Unmarshal(beaconBlockBytes,&beaconBlock)
+	if err != nil {
+		return nil, err
+	}
+	epoch := beaconBlock.Header.Epoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
 		newBeaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
