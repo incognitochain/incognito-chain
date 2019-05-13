@@ -129,6 +129,7 @@ func (engine *Engine) execBeaconRole() {
 		cBFTMsg:   engine.cBFTMsg,
 		EngineCfg: &engine.config,
 	}
+	bftProtocol.RoundData.Round = engine.currentBFTRound
 	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Beacon.Hash()
 	bftProtocol.RoundData.Layer = common.BEACON_ROLE
@@ -194,6 +195,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		cBFTMsg:   engine.cBFTMsg,
 		EngineCfg: &engine.config,
 	}
+	bftProtocol.RoundData.Round = engine.currentBFTRound
 	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Shard[shardID].Hash()
 	bftProtocol.RoundData.Layer = common.SHARD_ROLE

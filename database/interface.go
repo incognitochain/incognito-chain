@@ -62,9 +62,13 @@ type DatabaseInterface interface {
 	GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *DatabaseError)
 
 	// Best state of chain
-	StoreBestState(interface{}, byte) error
-	FetchBestState(byte) ([]byte, error)
-	CleanBestState() error
+	StorePrevBestState(interface{}, bool, byte) error
+	FetchPrevBestState(bool, byte) ([]byte, error)
+
+	// Best state of chain
+	StoreShardBestState(interface{}, byte) error
+	FetchShardBestState(byte) ([]byte, error)
+	CleanShardBestState() error
 
 	// Best state of chain
 	StoreBeaconBestState(interface{}) error

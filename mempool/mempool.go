@@ -257,7 +257,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	//Logger.log.Infof("Add Transaction %+v Successs \n", tx.Hash().String())
 }
-
 /*
 // maybeAcceptTransaction is the internal function which implements the public
 // See the comment for MaybeAcceptTransaction for more details.
