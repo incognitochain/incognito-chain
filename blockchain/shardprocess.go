@@ -171,10 +171,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 
 	//TODO: refactor this
 	go func() {
-		errCh <- blockchain.ProcessLoanForBlock(block)
-	}()
-
-	go func() {
 		errCh <- blockchain.processTradeBondTx(block)
 	}()
 
