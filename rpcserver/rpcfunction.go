@@ -103,18 +103,6 @@ var RpcHandler = map[string]commandHandler{
 	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
 	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
 
-	// Loan tx
-	GetLoanParams:             RpcServer.handleGetLoanParams,
-	CreateAndSendLoanRequest:  RpcServer.handleCreateAndSendLoanRequest,
-	CreateAndSendLoanResponse: RpcServer.handleCreateAndSendLoanResponse,
-	CreateAndSendLoanWithdraw: RpcServer.handleCreateAndSendLoanWithdraw,
-	CreateAndSendLoanPayment:  RpcServer.handleCreateAndSendLoanPayment,
-	GetLoanResponseApproved:   RpcServer.handleGetLoanResponseApproved,
-	GetLoanResponseRejected:   RpcServer.handleGetLoanResponseRejected,
-	GetLoanPaymentInfo:        RpcServer.handleGetLoanPaymentInfo,
-	GetBankFund:               RpcServer.handleGetBankFund,
-	GetLoanRequestTxStatus:    RpcServer.handleGetLoanRequestTxStatus,
-
 	// Crowdsale
 	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
 	CreateCrowdsaleRequestToken:           RpcServer.handleCreateCrowdsaleRequestToken,
@@ -170,13 +158,12 @@ var RpcHandler = map[string]commandHandler{
 	CreateRawSubmitGOVProposalTx:     RpcServer.handleCreateRawSubmitGOVProposalTransaction,
 
 	// dcb
-	GetDCBParams:       RpcServer.handleGetDCBParams,
-	GetDCBConstitution: RpcServer.handleGetDCBConstitution,
-	GetDCBBoardIndex:   RpcServer.handleGetDCBBoardIndex,
-	GetGOVBoardIndex:   RpcServer.handleGetGOVBoardIndex,
-	// CreateAndSendTxWithIssuingRequest:     RpcServer.handleCreateAndSendTxWithIssuingRequest,
-	// CreateAndSendTxWithContractingRequest: RpcServer.handleCreateAndSendTxWithContractingRequest,
+	GetDCBParams:           RpcServer.handleGetDCBParams,
+	GetDCBConstitution:     RpcServer.handleGetDCBConstitution,
+	GetDCBBoardIndex:       RpcServer.handleGetDCBBoardIndex,
+	GetGOVBoardIndex:       RpcServer.handleGetGOVBoardIndex,
 	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
+	GetBankFund:            RpcServer.handleGetBankFund,
 
 	// gov
 	GetBondTypes:                           RpcServer.handleGetBondTypes,

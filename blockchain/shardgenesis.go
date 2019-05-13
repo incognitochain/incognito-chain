@@ -76,9 +76,9 @@ func CreateShardGenesisBlock(
 	// Create genesis token tx for DCB
 	if icoParams.InitialDCBToken > 0 {
 		dcbTokenTx := createSpecialTokenTx( // DCB
-			common.Hash(common.DCBTokenID),
-			"Decentralized central bank token",
-			"DCB",
+			common.DCBTokenID,
+			common.DCBTokenName,
+			common.DCBTokenSymbol,
 			icoParams.InitialDCBToken,
 			keyWallet.KeySet.PaymentAddress,
 		)
@@ -88,25 +88,13 @@ func CreateShardGenesisBlock(
 	// Create genesis token tx for GOV
 	if icoParams.InitialGOVToken > 0 {
 		govTokenTx := createSpecialTokenTx(
-			common.Hash(common.GOVTokenID),
-			"Government token",
-			"GOV",
+			common.GOVTokenID,
+			common.GOVTokenName,
+			common.GOVTokenSymbol,
 			icoParams.InitialGOVToken,
 			keyWallet.KeySet.PaymentAddress,
 		)
 		block.Body.Transactions = append(block.Body.Transactions, &govTokenTx)
-	}
-
-	// Create genesis token tx for CMB
-	if icoParams.InitialCMBToken > 0 {
-		cmbTokenTx := createSpecialTokenTx(
-			common.Hash(common.CMBTokenID),
-			"Commercial bank token",
-			"CMB",
-			icoParams.InitialCMBToken,
-			keyWallet.KeySet.PaymentAddress,
-		)
-		block.Body.Transactions = append(block.Body.Transactions, &cmbTokenTx)
 	}
 
 	// Create genesis token tx for BOND test

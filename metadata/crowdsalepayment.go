@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -24,13 +26,14 @@ func (csRes *CrowdsalePayment) ValidateTxWithBlockChain(txr Transaction, bcr Blo
 		return false, err
 	}
 
-	// TODO(@0xbunyip): check if sending address is DCB's
-	//keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	//if !bytes.Equal(txr.GetSigPubKey(), keyWalletDCBAccount.KeySet.PaymentAddress.Pk[:]) {
-	//	return false, fmt.Errorf("Crowdsale payment must send asset from DCB address")
-	//}
+	// Check if sending address is DCB's
+	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
+	if (sale.Buy && !bytes.Equal(txr.GetSigPubKey(), dcbPk[:])) ||
+		(!sale.Buy && !bytes.Equal(txr.GetSender(), dcbPk[:])) {
+		return false, fmt.Errorf("crowdsale payment must send asset from DCB address")
+	}
 
-	// TODO(@0xbunyip): check double spending for coinbase CST tx?
 	if !sale.Buy {
 		// Check if sent from DCB address
 		// check double spending if selling bond
