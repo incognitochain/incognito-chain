@@ -122,3 +122,9 @@ func (rpcServer RpcServer) handleGetConstantCirculating(params interface{}, clos
 	}
 	return result{Total: uint64(0)}, nil
 }
+
+// handleGetBankFund returns bank fund stored on Beacon chain
+func (rpcServer RpcServer) handleGetBankFund(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	bankFund := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.BankFund
+	return bankFund, nil
+}

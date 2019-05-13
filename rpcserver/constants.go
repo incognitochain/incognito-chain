@@ -71,11 +71,11 @@ const (
 	HasSnDerivators                            = "hassnderivators"
 
 	CreateAndSendStakingTransaction = "createandsendstakingtransaction"
-	
+
 	//===========For Testing and Benchmark==============
 	GetAndSendTxsFromFile = "getandsendtxsfromfile"
 	//==================================================
-	
+
 	GetShardBestState  = "getshardbeststate"
 	GetBeaconBestState = "getbeaconbeststate"
 
@@ -101,7 +101,6 @@ const (
 	GetListGOVBoard                      = "getlistgovboard"
 	GetListDCBBoardPayment               = "getlistdcbboardpayment"
 	GetListGOVBoardPayment               = "getlistgovboardpayment"
-	GetListCMBBoard                      = "getlistcmbboard"
 	AppendListDCBBoard                   = "testappendlistdcbboard"
 	AppendListGOVBoard                   = "testappendlistgovboard"
 	GetGOVParams                         = "getgovparams"
@@ -113,18 +112,6 @@ const (
 	GetConstantCirculating               = "getconstantcirculating"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
-
-	// dcb loan
-	CreateAndSendLoanRequest  = "createandsendloanrequest"
-	CreateAndSendLoanResponse = "createandsendloanresponse"
-	CreateAndSendLoanPayment  = "createandsendloanpayment"
-	CreateAndSendLoanWithdraw = "createandsendloanwithdraw"
-	GetLoanResponseApproved   = "getloanresponseapproved"
-	GetLoanResponseRejected   = "getloanresponserejected"
-	GetLoanParams             = "loanparams"
-	GetLoanPaymentInfo        = "getloanpaymentinfo"
-	GetBankFund               = "getbankfund"
-	GetLoanRequestTxStatus    = "getloanrequesttxstatus"
 
 	// crowdsale
 	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"
@@ -174,8 +161,7 @@ const (
 	SendRawSubmitGOVProposalTx       = "sendrawsubmitgovproposaltx"
 
 	// dcb
-	// CreateAndSendTxWithIssuingRequest     = "createandsendtxwithissuingrequest"
-	// CreateAndSendTxWithContractingRequest = "createandsendtxwithcontractingrequest"
+	GetBankFund = "getbankfund"
 
 	// gov
 	GetBondTypes                           = "getbondtypes"
