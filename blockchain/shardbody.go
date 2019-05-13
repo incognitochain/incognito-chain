@@ -41,12 +41,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 		var tx metadata.Transaction
 		var parseErr error
 		switch txTemp["Type"].(string) {
-		case common.TxNormalType:
-			{
-				tx = &transaction.Tx{}
-				parseErr = json.Unmarshal(txTempJson, &tx)
-			}
-		case common.TxSalaryType:
+		case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
 			{
 				tx = &transaction.Tx{}
 				parseErr = json.Unmarshal(txTempJson, &tx)

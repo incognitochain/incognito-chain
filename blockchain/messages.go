@@ -64,17 +64,19 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	if _, ok := blockchain.syncStatus.Shards[newBlk.Header.ShardID]; ok {
 		fmt.Printf("Shard block received from shard %+v \n", newBlk.Header.ShardID)
-		if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight < newBlk.Header.Height {
+		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
+		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
 				Logger.log.Error(err)
 				return
-			} else {
-				if blockchain.BestState.Shard[newBlk.Header.ShardID].ShardHeight == newBlk.Header.Height-1 && blockchain.config.UserKeySet != nil {
-					userRole := blockchain.BestState.Shard[newBlk.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
-					if !blockchain.ConsensusOngoing {
-						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			}
+			if blockchain.config.UserKeySet != nil {
+				userRole := currentShardBestState.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
+						if !blockchain.ConsensusOngoing {
 							fmt.Println("Shard block insert", newBlk.Header.Height)
 							err = blockchain.InsertShardBlock(newBlk, false)
 							if err != nil {
@@ -82,16 +84,17 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 								return
 							}
 						}
-					} else {
-						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-							return
-						}
+						return
+					}
+					if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
+
 					}
 				}
-				err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
-				if err != nil {
-					fmt.Println("Shard block add pool err", err)
-				}
+			}
+
+			err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+			if err != nil {
+				fmt.Println("Shard block add pool err", err)
 			}
 		}
 	}

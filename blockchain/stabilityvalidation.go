@@ -56,6 +56,21 @@ func (bc *BlockChain) verifyUnusedContractingRequestInst(inst []string, shardID 
 	return fmt.Errorf("invalid unused inst: %v, %d, %+v", inst, shardID)
 }
 
+func (bc *BlockChain) verifyUnusedCrowdsalePaymentInst(inst []string, shardID byte) error {
+	// ContractingRequest inst unused either because invalid inst data or failed building Tx
+	if inst[1] != strconv.Itoa(int(shardID)) {
+		return nil
+	}
+
+	_, err := component.ParseContractingInfo(inst[3])
+	if err != nil {
+		return nil
+	}
+
+	// Asumme Constant and bonds are always enough so unused inst is unacceptable
+	return fmt.Errorf("invalid unused inst: %v, %d, %+v", inst, shardID)
+}
+
 func (bc *BlockChain) verifyUnusedInstructions(
 	insts [][]string,
 	instUsed []int,
@@ -69,7 +84,6 @@ func (bc *BlockChain) verifyUnusedInstructions(
 
 		var err error
 		switch inst[0] {
-		// TODO(@0xbunyip): review other insts
 		case strconv.Itoa(metadata.TradeActivationMeta):
 			err = bc.verifyUnusedTradeActivationInst(inst, shardID, accumulatedData)
 
@@ -78,6 +92,9 @@ func (bc *BlockChain) verifyUnusedInstructions(
 
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			err = bc.verifyUnusedContractingRequestInst(inst, shardID)
+
+		case strconv.Itoa(metadata.CrowdsalePaymentMeta):
+			err = bc.verifyUnusedCrowdsalePaymentInst(inst, shardID)
 		}
 
 		if err != nil {

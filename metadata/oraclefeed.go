@@ -75,7 +75,6 @@ func (of *OracleFeed) ValidateMetadataByItself() bool {
 	}
 	if !bytes.Equal(of.AssetType[:], common.DCBTokenID[:]) &&
 		!bytes.Equal(of.AssetType[:], common.GOVTokenID[:]) &&
-		!bytes.Equal(of.AssetType[:], common.CMBTokenID[:]) &&
 		!bytes.Equal(of.AssetType[:], common.ConstantID[:]) &&
 		!bytes.Equal(of.AssetType[:], common.ETHAssetID[:]) &&
 		!bytes.Equal(of.AssetType[:], common.BTCAssetID[:]) &&

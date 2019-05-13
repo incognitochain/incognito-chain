@@ -70,7 +70,7 @@ func (self *ShardPool) GetShardState() uint64 {
 }
 
 func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
-	//TODO: validate aggregated signature
+
 	self.poolMu.Lock()
 	defer self.poolMu.Unlock()
 
@@ -126,19 +126,19 @@ func (self *ShardPool) AddShardBlock(blk *blockchain.ShardBlock) error {
 
 func (self *ShardPool) updateLatestShardState() {
 	lastHeight := self.latestValidHeight
-	for i, blk := range self.pool {
+	for _, blk := range self.pool {
 		if blk.Header.Height <= lastHeight {
 			continue
 		}
 		if lastHeight+1 != blk.Header.Height {
 			break
 		}
-		if i == len(self.pool)-1 {
-			break
-		}
-		if self.pool[i+1].Header.PrevBlockHash != *blk.Hash() {
-			break
-		}
+		//if i == len(self.pool)-1 {
+		//	break
+		//}
+		//if self.pool[i+1].Header.PrevBlockHash != *blk.Hash() {
+		//	break
+		//}
 		lastHeight = blk.Header.Height
 	}
 	self.latestValidHeight = lastHeight

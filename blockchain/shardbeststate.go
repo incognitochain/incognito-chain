@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -68,6 +69,7 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 	for _, value := range bestStateShard.ShardPendingValidator {
 		res = append(res, []byte(value)...)
 	}
+
 	keys := []int{}
 	for k := range bestStateShard.BestCrossShard {
 		keys = append(keys, int(k))
@@ -79,6 +81,17 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 		binary.LittleEndian.PutUint64(valueBytes, value)
 		res = append(res, valueBytes...)
 	}
+
+	keystr := []string{}
+	for _, k := range bestStateShard.StakingTx {
+		keystr = append(keystr, k)
+	}
+	sort.Strings(keystr)
+	for key, value := range bestStateShard.StakingTx {
+		res = append(res, []byte(key)...)
+		res = append(res, []byte(value)...)
+	}
+
 	numTxnsBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(numTxnsBytes, bestStateShard.NumTxns)
 	res = append(res, numTxnsBytes...)
@@ -99,7 +112,7 @@ func (bestStateShard *BestStateShard) Hash() common.Hash {
 func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, proposerOffset int) string {
 	// fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
 	found := common.IndexOfStr(pubkey, bestStateShard.ShardCommittee)
-	// fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
+	fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
 	if found > -1 {
 		tmpID := (bestStateShard.ShardProposerIdx + proposerOffset + 1) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {
@@ -149,9 +162,110 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 	bestStateShard.ShardPendingValidator = []string{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
-
+	bestStateShard.StakingTx = make(map[string]string)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
 
 	return bestStateShard
+}
+
+//This only happen if user is a shard committee member.
+func (blockchain *BlockChain) RevertShardState(shardID byte) {
+	//Steps:
+	// 1. Load backup beststate
+	// 2. Set pool shardstate
+
+}
+
+func (blockchain *BlockChain) SaveCurrentShardState(block *ShardBlock) error {
+
+	//Steps:
+	// 1. Backup beststate
+	// 2.
+
+	// tempMarshal, err := json.Marshal(blockchain.BestState.Shard[block.Header.ShardID])
+	// if err != nil {
+	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
+	// }
+
+	// go func() {
+	// 	errCh <- blockchain.ProcessLoanForBlock(block)
+	// }()
+
+	// go func() {
+	// 	errCh <- blockchain.processTradeBondTx(block)
+	// }()
+
+	// for _, tx := range block.Body.Transactions {
+	// 	var err error
+
+	// 	switch tx.GetMetadataType() {
+	// 	case metadata.BuyFromGOVRequestMeta:
+	// 		err = blockchain.processBuyBondTx(tx)
+
+	// 	case metadata.BuyBackRequestMeta:
+	// 		err = blockchain.processSellBondTx(tx)
+	// 	case metadata.LoanUnlockMeta:
+	// 		{
+	// 			tx := tx.(*transaction.Tx)
+	// 			meta := tx.GetMetadata().(*metadata.LoanUnlock)
+	// 			err = blockchain.config.DataBase.StoreLoanWithdrawed(meta.LoanID)
+	// 		}
+	// 	}
+
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// go func() {
+	// 	// Process stability stand-alone instructions
+	// 	errCh <- blockchain.ProcessStandAloneInstructions(block)
+	// }()
+	// for _, inst := range block.Body.Instructions {
+	// 	if len(inst) < 2 {
+	// 		continue
+	// 	}
+	// 	var err error
+	// 	switch inst[0] {
+	// 	case strconv.Itoa(component.ConfirmBuySellRequestMeta):
+	// 		err = blockchain.processConfirmBuySellInst(inst)
+	// 	case strconv.Itoa(component.ConfirmBuyBackRequestMeta):
+	// 		err = blockchain.processConfirmBuyBackInst(inst)
+	// 	}
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// Store metadata instruction to local state
+	// for _, beaconBlock := range beaconBlocks {
+	// 	instructions := beaconBlock.Body.Instructions
+	// 	for _, inst := range instructions {
+	// 		err := blockchain.StoreMetadataInstructions(inst, shardID)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
+
+	// if len(inst) < 2 {
+	// 	return nil // Not error, just not stability instruction
+	// }
+	// switch inst[0] {
+	// case strconv.Itoa(metadata.IssuingRequestMeta):
+	// 	return bc.storeIssuingResponseInstruction(inst, shardID)
+	// case strconv.Itoa(metadata.ContractingRequestMeta):
+	// 	return bc.storeContractingResponseInstruction(inst, shardID)
+	// }
+
+	// //========Store new  Shard block and new shard bestState
+	// err = blockchain.ProcessStoreShardBlock(block)
+	// if err != nil {
+	// 	return err
+	// }
+	// Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
+	// return nil
+
+	return nil
 }

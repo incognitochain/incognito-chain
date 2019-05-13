@@ -70,11 +70,27 @@ func (blockgen *BlkTmplGenerator) buildTradeActivationTx(
 	}
 
 	fmt.Printf("[db] trade act tx data: %h %t %d\n", data.BondID, data.Buy, data.ReqAmount)
+	tool := producerTool{
+		key:     producerPrivateKey,
+		db:      blockgen.chain.GetDatabase(),
+		shardID: shardID,
+	}
 	txs := []metadata.Transaction{}
 	if data.Buy {
-		txs, err = blockgen.buildTradeBuySellRequestTx(data.TradeID, data.BondID, data.ReqAmount, producerPrivateKey)
+		txs, err = blockgen.buildTradeBuySellRequestTx(
+			data.TradeID,
+			data.BondID,
+			data.ReqAmount,
+			tool,
+		)
 	} else {
-		txs, err = blockgen.buildTradeBuyBackRequestTx(data.TradeID, data.BondID, data.ReqAmount, unspentTokens, producerPrivateKey, shardID)
+		txs, err = blockgen.buildTradeBuyBackRequestTx(
+			data.TradeID,
+			data.BondID,
+			data.ReqAmount,
+			unspentTokens,
+			tool,
+		)
 	}
 
 	if err != nil {
@@ -90,14 +106,14 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 	tradeID []byte,
 	bondID *common.Hash,
 	amount uint64,
-	producerPrivateKey *privacy.PrivateKey,
+	tool producerTool,
 ) ([]metadata.Transaction, error) {
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	dcbWallet, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	burnWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	buyPrice := blockgen.chain.GetSellBondPrice(bondID)
 
 	buySellMeta := &metadata.BuySellRequest{
-		PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
+		PaymentAddress: dcbWallet.KeySet.PaymentAddress,
 		TokenID:        *bondID,
 		Amount:         amount,
 		BuyPrice:       buyPrice,
@@ -106,10 +122,10 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 	}
 	cstAmount := amount * buyPrice
 	txs, err := transaction.BuildCoinbaseTxs(
-		[]*privacy.PaymentAddress{&keyWalletBurnAccount.KeySet.PaymentAddress},
+		[]*privacy.PaymentAddress{&burnWallet.KeySet.PaymentAddress},
 		[]uint64{cstAmount},
-		producerPrivateKey,
-		blockgen.chain.GetDatabase(),
+		tool.key,
+		tool.db,
 		[]metadata.Metadata{buySellMeta},
 	)
 	if err != nil {
@@ -117,7 +133,7 @@ func (blockgen *BlkTmplGenerator) buildTradeBuySellRequestTx(
 		// Skip building tx buyback/buysell if error (retry later)
 		return nil, nil
 	}
-	fmt.Printf("[db] built buy sell req: %d %v\n", cstAmount, keyWalletDCBAccount.KeySet.PaymentAddress)
+	fmt.Printf("[db] built buy sell req: %d %v\n", cstAmount, dcbWallet.KeySet.PaymentAddress)
 	return []metadata.Transaction{txs[0]}, nil
 }
 
@@ -126,40 +142,30 @@ func (blockgen *BlkTmplGenerator) buildTradeBuyBackRequestTx(
 	bondID *common.Hash,
 	amount uint64,
 	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
+	tool producerTool,
 ) ([]metadata.Transaction, error) {
 	fmt.Printf("[db] building buyback request tx: %d %h\n", amount, bondID)
 	// Build metadata to send to GOV
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
+	dcbWallet, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	buyBackMeta := &metadata.BuyBackRequest{
-		PaymentAddress: keyWalletDCBAccount.KeySet.PaymentAddress,
+		PaymentAddress: dcbWallet.KeySet.PaymentAddress,
 		Amount:         amount,
 		TradeID:        tradeID,
 		MetadataBase:   metadata.MetadataBase{Type: metadata.BuyBackRequestMeta},
 	}
 
-	// Save list of UTXO to prevent double spending in current block
-	if _, ok := unspentTokens[bondID.String()]; !ok {
-		unspentTxTokenOuts, err := blockgen.chain.GetUnspentTxCustomTokenVout(keyWalletDCBAccount.KeySet, bondID)
-		if err == nil {
-			unspentTokens[bondID.String()] = unspentTxTokenOuts
-		} else {
-			unspentTokens[bondID.String()] = []transaction.TxTokenVout{}
-		}
-	}
+	// List of unused vouts
+	vouts := blockgen.initVouts(unspentTokens, bondID)
 
 	// Build tx
-	keyWalletBurnAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	burnWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	txToken, usedID, err := transferTxToken(
 		amount,
-		unspentTokens[bondID.String()],
+		vouts,
 		*bondID,
-		keyWalletBurnAccount.KeySet.PaymentAddress,
+		burnWallet.KeySet.PaymentAddress,
 		buyBackMeta,
-		producerPrivateKey,
-		blockgen.chain.GetDatabase(),
-		shardID,
+		tool,
 	)
 	if err != nil {
 		fmt.Printf("[db] build buyback request err: %v\n", err)

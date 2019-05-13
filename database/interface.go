@@ -62,9 +62,13 @@ type DatabaseInterface interface {
 	GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *DatabaseError)
 
 	// Best state of chain
-	StoreBestState(interface{}, byte) error
-	FetchBestState(byte) ([]byte, error)
-	CleanBestState() error
+	StorePrevBestState(interface{}, bool, byte) error
+	FetchPrevBestState(bool, byte) ([]byte, error)
+
+	// Best state of chain
+	StoreShardBestState(interface{}, byte) error
+	FetchShardBestState(byte) ([]byte, error)
+	CleanShardBestState() error
 
 	// Best state of chain
 	StoreBeaconBestState(interface{}) error
@@ -131,13 +135,6 @@ type DatabaseInterface interface {
 	StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error // store custom token cross shard privacy
 	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
 	PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool
-
-	// Loans
-	StoreLoanPayment(loanID []byte, principle uint64, interest uint64, deadline uint64) error
-	GetLoanPayment(loanID []byte) (principle uint64, interest uint64, deadline uint64, err error)
-	GetLoanRequestTx(loanID []byte) ([]byte, error)
-	GetLoanWithdrawed(loanID []byte) (bool, error)
-	StoreLoanWithdrawed(loanID []byte) error
 
 	// Crowdsale
 	StoreSaleData(saleID, data []byte) error
