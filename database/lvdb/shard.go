@@ -108,7 +108,7 @@ func (db *db) DeleteBlock(hash *common.Hash, idx uint64, shardID byte) error {
 	return nil
 }
 
-func (db *db) StoreBestState(v interface{}, shardID byte) error {
+func (db *db) StoreShardBestState(v interface{}, shardID byte) error {
 	val, err := json.Marshal(v)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -120,7 +120,7 @@ func (db *db) StoreBestState(v interface{}, shardID byte) error {
 	return nil
 }
 
-func (db *db) FetchBestState(shardID byte) ([]byte, error) {
+func (db *db) FetchShardBestState(shardID byte) ([]byte, error) {
 	key := append(bestBlockKey, shardID)
 	block, err := db.Get(key)
 	if err != nil {
@@ -129,7 +129,7 @@ func (db *db) FetchBestState(shardID byte) ([]byte, error) {
 	return block, nil
 }
 
-func (db *db) CleanBestState() error {
+func (db *db) CleanShardBestState() error {
 	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		key := append(bestBlockKey, shardID)
 		err := db.lvdb.Delete(key, nil)
