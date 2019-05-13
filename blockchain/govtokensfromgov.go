@@ -120,10 +120,9 @@ func (blockgen *BlkTmplGenerator) buildBuyGOVTokensRes(
 			PropertyName:   propID.String(),
 			PropertySymbol: propID.String(),
 			Amount:         reqMeta.Amount,
-			// TokenTxType:    transaction.CustomTokenMint,
-			TokenTxType: transaction.CustomTokenInit,
-			Receiver:    []transaction.TxTokenVout{txTokenVout},
-			Mintable:    true,
+			TokenTxType:    transaction.CustomTokenInit,
+			Receiver:       []transaction.TxTokenVout{txTokenVout},
+			Mintable:       true,
 		}
 
 		resTx := &transaction.TxCustomToken{}

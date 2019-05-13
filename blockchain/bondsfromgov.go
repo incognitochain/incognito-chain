@@ -170,10 +170,9 @@ func (blockgen *BlkTmplGenerator) buildBuyBackRes(
 			PropertyName:   propID.String(),
 			PropertySymbol: propID.String(),
 			Amount:         buyBackInfo.Value,
-			// TokenTxType:    transaction.CustomTokenMint,
-			TokenTxType: transaction.CustomTokenInit,
-			Receiver:    []transaction.TxTokenVout{txTokenVout},
-			Mintable:    true,
+			TokenTxType:    transaction.CustomTokenInit,
+			Receiver:       []transaction.TxTokenVout{txTokenVout},
+			Mintable:       true,
 		}
 
 		buyBackRes := metadata.NewBuyBackResponse(buyBackInfo.RequestedTxID, metadata.BuyBackResponseMeta)
@@ -292,10 +291,9 @@ func (blockgen *BlkTmplGenerator) buildBuyBondsFromGOVRes(
 			PropertyName:   propID.String(),
 			PropertySymbol: propID.String(),
 			Amount:         reqMeta.Amount,
-			// TokenTxType:    transaction.CustomTokenMint,
-			TokenTxType: transaction.CustomTokenInit,
-			Receiver:    []transaction.TxTokenVout{txTokenVout},
-			Mintable:    true,
+			TokenTxType:    transaction.CustomTokenInit,
+			Receiver:       []transaction.TxTokenVout{txTokenVout},
+			Mintable:       true,
 		}
 
 		resTx := &transaction.TxCustomToken{}
