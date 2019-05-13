@@ -227,7 +227,9 @@ func (engine *Engine) execShardRole(shardID byte) {
 		}
 	default:
 		err = errors.New("Not your turn yet")
+		time.Sleep(time.Millisecond * 300)
 	}
+
 	if err == nil {
 		shardBlk := resBlk.(*blockchain.ShardBlock)
 		Logger.log.Critical("===============NEW SHARD BLOCK==============")

@@ -76,17 +76,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 
 	case ShardBlockSalaryResponseMeta:
 		md = &ShardBlockSalaryRes{}
-
-	case LoanRequestMeta:
-		md = &LoanRequest{}
-	case LoanResponseMeta:
-		md = &LoanResponse{}
-	case LoanWithdrawMeta:
-		md = &LoanWithdraw{}
-	case LoanPaymentMeta:
-		md = &LoanPayment{}
-	case LoanUnlockMeta:
-		md = &LoanUnlock{}
+	case BeaconSalaryResponseMeta:
+		md = &BeaconBlockSalaryRes{}
 
 	case CrowdsaleRequestMeta:
 		md = &CrowdsaleRequest{}
@@ -121,6 +112,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
 		md = &StakingMetadata{}
+	case ReturnStakingMeta:
+		md = &ReturnStakingMetadata{}
 
 	case RewardDCBProposalSubmitterMeta:
 		md = &RewardDCBProposalSubmitterMetadata{}

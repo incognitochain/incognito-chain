@@ -173,37 +173,24 @@ func (blockgen *BlkTmplGenerator) buildIssuingRes(
 		return []metadata.Transaction{tx}, nil
 	} else if bytes.Equal(issuingInfo.TokenID[:], common.DCBTokenID[:]) {
 		meta := metadata.NewIssuingResponse(txReqID, metadata.IssuingResponseMeta)
-		txCustom := &transaction.TxCustomToken{}
-		customTokenParamTx := &transaction.CustomTokenParamTx{
-			PropertyID:  common.DCBTokenID.String(),
-			TokenTxType: transaction.CustomTokenMint,
-			Amount:      issuingInfo.Amount,
-			Receiver: []transaction.TxTokenVout{
-				transaction.TxTokenVout{
-					Value:          issuingInfo.Amount,
-					PaymentAddress: issuingInfo.ReceiverAddress,
-				},
-			},
+		tool := producerTool{
+			key:     blkProducerPrivateKey,
+			db:      db,
+			shardID: shardID,
 		}
-		err = txCustom.Init(
-			blkProducerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			customTokenParamTx,
-			db,
+		tx, err := mintDCBToken(
+			issuingInfo.ReceiverAddress,
+			issuingInfo.Amount,
 			meta,
-			false,
-			shardID,
+			tool,
 		)
-		if err.(*transaction.TransactionError) != nil {
+		if err != nil {
 			fmt.Printf("[db] build issuing resp err: %v\n", err)
 			return nil, err
 		}
-		fmt.Printf("[db] build issuing resp success: %h\n", txCustom.Hash())
-		return []metadata.Transaction{txCustom}, nil
+		fmt.Printf("[db] build issuing resp success: %h\n", tx.Hash())
+		return []metadata.Transaction{tx}, nil
 	}
-	// TODO(@0xbunyip): fail to issue/refund
 	return []metadata.Transaction{}, nil
 }
 

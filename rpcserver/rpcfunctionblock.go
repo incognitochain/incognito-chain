@@ -174,7 +174,9 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 				transactionT := jsonresult.GetBlockTxResult{}
 
 				transactionT.Hash = tx.Hash().String()
-				if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxSalaryType {
+
+				switch tx.GetType() {
+				case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
 					txN := tx.(*transaction.Tx)
 					data, err := json.Marshal(txN)
 					if err != nil {
@@ -183,6 +185,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 					transactionT.HexData = hex.EncodeToString(data)
 					transactionT.Locktime = txN.LockTime
 				}
+
 				result.Txs = append(result.Txs, transactionT)
 			}
 		}

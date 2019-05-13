@@ -855,11 +855,6 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 			if shardIDOfReceiver != shardID {
 				continue
 			}
-		} else if txCustomTokenType == transaction.CustomTokenMint {
-			shardIDOfReceiver := common.GetShardIDFromLastByte(vout.PaymentAddress.Pk[len(vout.PaymentAddress.Pk)-1])
-			if shardIDOfReceiver != shardID {
-				continue
-			}
 		}
 		paymentAddressBytes := base58.Base58Check{}.Encode(vout.PaymentAddress.Bytes(), 0x00)
 		utxoHash := []byte(customTokenTx.Hash().String())

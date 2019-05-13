@@ -269,28 +269,11 @@ func createDCBGenesisParamsInst() []string {
 		},
 	}
 
-	// Dividend
-	divAmounts := []uint64{0}
-
-	// Collateralized loan
-	loanParams := []component.LoanParams{
-		component.LoanParams{
-			InterestRate:     100,   // 1%
-			Maturity:         1000,  // 1 month in blocks
-			LiquidationStart: 15000, // 150%
-		},
-	}
-
 	dcbParams := component.DCBParams{
-		ListSaleData:             saleData,
-		MinLoanResponseRequire:   1,
-		MinCMBApprovalRequire:    1,
-		LateWithdrawResponseFine: 0,
-		RaiseReserveData:         raiseReserveData,
-		SpendReserveData:         spendReserveData,
-		DividendAmount:           divAmounts[0],
-		ListLoanParams:           loanParams,
-		TradeBonds:               tradeBonds,
+		ListSaleData:     saleData,
+		RaiseReserveData: raiseReserveData,
+		SpendReserveData: spendReserveData,
+		TradeBonds:       tradeBonds,
 	}
 
 	// First proposal created by DCB, reward back to itself

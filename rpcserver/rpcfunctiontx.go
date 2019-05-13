@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -236,7 +237,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 		blockHashStr = blockHash.String()
 	}
 	switch tx.GetType() {
-	case common.TxNormalType, common.TxSalaryType:
+	case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = &jsonresult.TransactionDetail{
@@ -932,17 +933,29 @@ func (rpcServer RpcServer) handleCreateAndSendPrivacyCustomTokenTransaction(para
 */
 func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// get component
+
 	paramsArray := common.InterfaceSlice(params)
+	//var err error
 	if len(paramsArray) < 5 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type component"))
 	}
 	stakingType, ok := paramsArray[4].(float64)
+
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type component"))
 	}
 
-	var err error
-	metadata, err := metadata.NewStakingMetadata(int(stakingType))
+	senderKeyParam := paramsArray[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
+	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
+
+	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
+
 	tx, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
@@ -956,7 +969,7 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, common.ZeroByte),
 		ShardID:         txShardID,
 	}
 	return result, nil
@@ -973,6 +986,7 @@ func (rpcServer RpcServer) handleCreateAndSendStakingTx(params interface{}, clos
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
+
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
