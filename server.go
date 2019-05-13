@@ -493,10 +493,11 @@ func (serverObj Server) Start() {
 	}
 
 	Logger.log.Debug("Starting server")
+	serverObj.CheckForceUpdateSourceCode()
 	if cfg.TestNet {
-		Logger.log.Critical("************************")
-		Logger.log.Critical("* Testnet is active *")
-		Logger.log.Critical("************************")
+		Logger.log.Critical("************************" +
+			"* Testnet is active *" +
+			"************************")
 	}
 	// Server startup time. Used for the uptime command for uptime calculation.
 	serverObj.startupTime = time.Now().Unix()
@@ -584,6 +585,33 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 		}
 	}
 	serverObj.memPool.UnlockPool()
+}
+
+func (serverObject Server) CheckForceUpdateSourceCode() {
+	if common.NextForceUpdate == "" {
+		return
+	}
+	Logger.log.Warn("\n*********************************************************************************\n" +
+		"* Detected a Force Updating Time for this source code from https://github.com/constant-money/constant-chain at " + common.NextForceUpdate + " *" +
+		"\n*********************************************************************************\n")
+	go func() {
+		for true {
+			now := time.Now()
+			forceTime, _ := time.ParseInLocation(common.DateInputFormat, common.NextForceUpdate, time.Local)
+			fmt.Println(now)
+			fmt.Println(forceTime)
+			forced := now.After(forceTime)
+			if forced {
+				Logger.log.Error("\n*********************************************************************************\n" +
+					"We're exited because having a force update on this souce code." +
+					"\nPlease Update source code at https://github.com/constant-money/constant-chain" +
+					"\n*********************************************************************************\n")
+				os.Exit(common.ExitCodeForceUpdate)
+			}
+			Logger.log.Debug("Check time to force update source code from https://github.com/constant-money/constant-chain after " + common.NextForceUpdate)
+			time.Sleep(time.Second * 60) // each minute
+		}
+	}()
 }
 
 /*
