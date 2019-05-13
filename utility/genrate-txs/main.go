@@ -15,7 +15,6 @@ import (
 )
 
 func main() {
-
 	//==========Write
 	if os.Args[1] == "write" {
 		transactions := []string{}
@@ -25,12 +24,12 @@ func main() {
 			fmt.Print(err)
 			panic(err)
 		}
-		for i := 0; i < 500; i++ {
+		for i := 0; i < 10000; i++ {
 			txs := initTx("1000", "112t8rsq5Xx45T1ZKH4N45aBztqBJiDAR9Nw5wMb8Fe5PnFCqDiUAgVzoMr3xBznNJTfu2CSW3HC6M9rGHxTyUzUBbZHjv6wCMnucDDKbHT4", db)
 			transactions = append(transactions, txs[0])
 		}
 		file, _ := json.MarshalIndent(transactions, "", " ")
-		_ = ioutil.WriteFile("test0.json", file, 0644)
+		_ = ioutil.WriteFile("shard1-init-txs.json", file, 0644)
 	}
 	//==========Read
 	if os.Args[1] == "read" {
@@ -58,7 +57,6 @@ func readTxsFromFile(filename string) {
 func initTx(amount string, privateKey string, db database.DatabaseInterface) []string {
 	var initTxs []string
 	var initAmount, _ = strconv.Atoi(amount) // amount init
-	var privateKey = privateKey             // spending key str
 	testUserkeyList := []string{
 		privateKey,
 	}

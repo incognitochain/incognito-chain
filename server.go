@@ -242,6 +242,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBaseMempool:   dbmp,
 		IsLoadFromMempool: cfg.LoadMempool,
 		PersistMempool:    cfg.PersistMempool,
+		RelayShards:       relayShards,
+		UserKeyset:        serverObj.userKeySet,
 	})
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
@@ -526,56 +528,63 @@ func (serverObj Server) Start() {
 	}
 
 	if serverObj.memPool != nil {
-		txDescs := serverObj.memPool.LoadOrResetDatabaseMP()
-		for _, txDesc := range txDescs {
-			<-time.Tick(50 * time.Millisecond)
-			if !txDesc.IsFowardMessage {
-				tx := txDesc.Desc.Tx
-				switch tx.GetType() {
-				case common.TxNormalType:
-					{
-						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-						if err != nil {
-							continue
-						}
-						normalTx := tx.(*transaction.Tx)
-						txMsg.(*wire.MessageTx).Transaction = normalTx
-						err = serverObj.PushMessageToAll(txMsg)
-						if err == nil {
-							serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
-						}
+		serverObj.memPool.LoadOrResetDatabaseMP()
+		go serverObj.TransactionPoolBroadcastLoop()
+		go mempool.TxPoolMainLoop(serverObj.memPool)
+	}
+}
+func (serverObj *Server) TransactionPoolBroadcastLoop() {
+	<-time.Tick(serverObj.memPool.Scantime)
+	serverObj.memPool.LockPool()
+	txDescs := serverObj.memPool.GetPool()
+	for _, txDesc := range txDescs {
+		<-time.Tick(50 * time.Millisecond)
+		if !txDesc.IsFowardMessage {
+			tx := txDesc.Desc.Tx
+			switch tx.GetType() {
+			case common.TxNormalType:
+				{
+					txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+					if err != nil {
+						continue
 					}
-				case common.TxCustomTokenType:
-					{
-						txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-						if err != nil {
-							continue
-						}
-						customTokenTx := tx.(*transaction.TxCustomToken)
-						txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
-						err = serverObj.PushMessageToAll(txMsg)
-						if err == nil {
-							serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
-						}
+					normalTx := tx.(*transaction.Tx)
+					txMsg.(*wire.MessageTx).Transaction = normalTx
+					err = serverObj.PushMessageToAll(txMsg)
+					if err == nil {
+						serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
 					}
-				case common.TxCustomTokenPrivacyType:
-					{
-						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
-						if err != nil {
-							continue
-						}
-						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
-						err = serverObj.PushMessageToAll(txMsg)
-						if err == nil {
-							serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
-						}
+				}
+			case common.TxCustomTokenType:
+				{
+					txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
+					if err != nil {
+						continue
+					}
+					customTokenTx := tx.(*transaction.TxCustomToken)
+					txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
+					err = serverObj.PushMessageToAll(txMsg)
+					if err == nil {
+						serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
+					}
+				}
+			case common.TxCustomTokenPrivacyType:
+				{
+					txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+					if err != nil {
+						continue
+					}
+					customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+					txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+					err = serverObj.PushMessageToAll(txMsg)
+					if err == nil {
+						serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
 					}
 				}
 			}
 		}
-		go mempool.TxPoolMainLoop(serverObj.memPool)
 	}
+	serverObj.memPool.UnlockPool()
 }
 
 func (serverObject Server) CheckForceUpdateSourceCode() {
