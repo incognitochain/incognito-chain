@@ -206,6 +206,7 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 			res = append(res, []byte(value)...)
 		}
 	}
+
 	randomNumBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(randomNumBytes, uint64(bestStateBeacon.CurrentRandomNumber))
 	res = append(res, randomNumBytes...)
