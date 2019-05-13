@@ -1,10 +1,6 @@
 package metadata
 
 const (
-	LoanKeyDigestLength = 32
-)
-
-const (
 	InvalidMeta = 1
 
 	LoanRequestMeta  = 2

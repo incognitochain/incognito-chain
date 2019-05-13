@@ -132,13 +132,6 @@ type BlockchainRetriever interface {
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
-	// For validating loan metadata
-	// GetLoanTxs([]byte) ([][]byte, error)
-	GetLoanReq(loanID []byte) (*common.Hash, error)
-	GetLoanResps(loanID []byte) ([][]byte, []ValidLoanResponse, error)
-	GetLoanPayment([]byte) (uint64, uint64, uint64, error)
-	GetLoanRequestMeta(loanID []byte) (*LoanRequest, error)
-	GetLoanWithdrawed(loanID []byte) (bool, error)
 
 	// For validating crowdsale
 	GetSaleData([]byte) (*component.SaleData, error)
@@ -203,6 +196,7 @@ type Transaction interface {
 	GetInfo() []byte
 	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
 
+	GetSender() []byte
 	GetSigPubKey() []byte
 	IsPrivacy() bool
 	IsCoinsBurning() bool
