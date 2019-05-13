@@ -242,7 +242,8 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
 	//verify producer
-	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIdx + block.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
+	proposerOffset := (block.Header.Round - 1) % len(blockchain.BestState.Beacon.BeaconCommittee)
+	producerPosition := blockchain.BestState.Beacon.BeaconProposerIdx + proposerOffset
 	tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
@@ -641,6 +642,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			fmt.Println("SWAP l2", l[2])
 			fmt.Println("SWAP inPubkeys", inPubkeys)
 			fmt.Println("SWAP outPubkeys", outPubkeys)
+
 			if l[3] == "shard" {
 				temp, err := strconv.Atoi(l[4])
 				if err != nil {
@@ -707,11 +709,14 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			beacon := strings.Split(l[1], ",")
 			newBeaconCandidate = append(newBeaconCandidate, beacon...)
 		}
+
 		if l[0] == StakeAction && l[2] == "shard" {
 			shard := strings.Split(l[1], ",")
 			newShardCandidate = append(newShardCandidate, shard...)
 		}
+
 	}
+
 	if bestStateBeacon.BeaconHeight == 1 {
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")

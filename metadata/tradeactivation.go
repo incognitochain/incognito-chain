@@ -33,6 +33,19 @@ func NewTradeActivation(data map[string]interface{}) (Metadata, error) {
 	return &result, nil
 }
 
+func txCreatedByDCBBoardMember(txr Transaction, bcr BlockchainRetriever) bool {
+	isBoard := false
+	txPubKey := txr.GetSigPubKey()
+	fmt.Printf("check if created by dcb board: %v\n", txPubKey)
+	for _, member := range bcr.GetBoardPubKeys(common.DCBBoard) {
+		fmt.Printf("member of board pubkey: %v\n", member)
+		if bytes.Equal(member, txPubKey) {
+			isBoard = true
+		}
+	}
+	return isBoard
+}
+
 func (act *TradeActivation) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// Check if sender is a member of DCB Board
 	if !txCreatedByDCBBoardMember(txr, bcr) {

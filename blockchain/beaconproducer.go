@@ -47,7 +47,7 @@ import (
 	Sign:
 		Sign block and update validator index, agg sig
 */
-func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privacy.PaymentAddress, proposerOffset int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
+func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privacy.PaymentAddress, round int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
 	beaconBlock := &BeaconBlock{}
 	beaconBestState := BestStateBeacon{}
 	// lock blockchain
@@ -81,7 +81,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.Version = VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
-	beaconBlock.Header.Round = proposerOffset + 1
+	beaconBlock.Header.Round = round
 	fmt.Printf("[ndh] =================== Creating beacon block[%+v] =====================\n", beaconBlock.Header.Height)
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
@@ -224,7 +224,20 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
 			stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
 		}
+
+		if accumulativeValues.totalBeaconSalary > 0 {
+			//fmt.Println("SA: build beacon salary", accumulativeValues.totalBeaconSalary)
+			newInst, err := buildInstForBeaconSalary(accumulativeValues.totalBeaconSalary, beaconBestState.BeaconHeight+1, &blkTmplGenerator.chain.config.UserKeySet.PaymentAddress)
+
+			if err != nil {
+				Logger.log.Error(err)
+			}
+			if len(newInst) > 0 {
+				stabilityInstructions = append(stabilityInstructions, newInst)
+			}
+		}
 	}
+
 	votingInstruction, err := blkTmplGenerator.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
 	if err != nil {
 		fmt.Println("[ndh]-Build DCB voting instruction failed: ", err)
@@ -372,6 +385,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 
 	instructions := shardBlock.Instructions
 	Logger.log.Critical(instructions)
+
 	// Validate swap instruction => for testing
 	for _, l := range shardBlock.Instructions {
 		if len(l) > 0 {
@@ -382,6 +396,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 			}
 		}
 	}
+
 	if len(instructions) != 0 {
 		Logger.log.Criticalf("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
 	}
@@ -389,7 +404,8 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 		if len(l) > 0 {
 			if l[0] == StakeAction {
 				stakers = append(stakers, l)
-			} else if l[0] == SwapAction {
+			}
+			if l[0] == SwapAction {
 				swapers = append(swapers, l)
 			}
 		}
@@ -397,6 +413,8 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 
 	stakeBeacon := []string{}
 	stakeShard := []string{}
+	stakeBeaconTx := []string{}
+	stakeShardTx := []string{}
 	if len(stakers) != 0 {
 		Logger.log.Critical("Beacon Producer/ Process Stakers List", stakers)
 	}
@@ -419,19 +437,31 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 		tempStaker = blockChain.BestState.Beacon.GetValidStakers(tempStaker)
 		tempStaker = metadata.GetValidStaker(stakeShard, tempStaker)
 		tempStaker = metadata.GetValidStaker(stakeBeacon, tempStaker)
+
 		if len(tempStaker) > 0 {
 			if assignShard {
 				stakeShard = append(stakeShard, tempStaker...)
+				for i, v := range strings.Split(staker[1], ",") {
+					if common.IndexOfStr(v, stakeShard) > -1 {
+						stakeShardTx = append(stakeShardTx, strings.Split(staker[3], ",")[i])
+					}
+				}
 			} else {
 				stakeBeacon = append(stakeBeacon, tempStaker...)
+				for i, v := range strings.Split(staker[1], ",") {
+					if common.IndexOfStr(v, stakeBeacon) > -1 {
+						stakeBeaconTx = append(stakeBeaconTx, strings.Split(staker[3], ",")[i])
+					}
+				}
 			}
 		}
 	}
+
 	if len(stakeShard) > 0 {
-		validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeShard, ","), "shard"})
+		validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeShard, ","), "shard", strings.Join(stakeShardTx, ",")})
 	}
 	if len(stakeBeacon) > 0 {
-		validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeBeacon, ","), "beacon"})
+		validStakers = append(validStakers, []string{StakeAction, strings.Join(stakeBeacon, ","), "beacon", strings.Join(stakeBeaconTx, ",")})
 	}
 	// Validate swap instruction => extract only valid swap instruction
 	for _, swap := range swapers {
