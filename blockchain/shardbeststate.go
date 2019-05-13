@@ -20,25 +20,26 @@ import (
 // shared by all callers.
 
 type BestStateShard struct {
-	BestBlockHash          common.Hash     `json:"BestBlockHash"` // hash of block.
-	BestBlock              *ShardBlock     `json:"BestBlock"`     // block data
-	BestBeaconHash         common.Hash     `json:"BestBeaconHash"`
-	BeaconHeight           uint64          `json:"BeaconHeight"`
-	ShardID                byte            `json:"ShardID"`
-	Epoch                  uint64          `json:"Epoch"`
-	ShardHeight            uint64          `json:"ShardHeight"`
-	ShardCommitteeSize     int             `json:"ShardCommitteeSize"`
-	ShardProposerIdx       int             `json:"ShardProposerIdx"`
-	ShardCommittee         []string        `json:"ShardCommittee"`
-	ShardPendingValidator  []string        `json:"ShardPendingValidator"`
-	BestCrossShard         map[byte]uint64 `json:"BestCrossShard"`         // Best cross shard block by heigh
-	NumTxns                uint64          `json:"NumTxns"`                // The number of txns in the block.
-	TotalTxns              uint64          `json:"TotalTxns"`              // The total number of txns in the chain.
-	TotalTxnsExcludeSalary uint64          `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
-	ActiveShards           int             `json:"ActiveShards"`
-	
-	MetricBlockHeight      uint64
-	lock                   sync.RWMutex
+	BestBlockHash          common.Hash       `json:"BestBlockHash"` // hash of block.
+	BestBlock              *ShardBlock       `json:"BestBlock"`     // block data
+	BestBeaconHash         common.Hash       `json:"BestBeaconHash"`
+	BeaconHeight           uint64            `json:"BeaconHeight"`
+	ShardID                byte              `json:"ShardID"`
+	Epoch                  uint64            `json:"Epoch"`
+	ShardHeight            uint64            `json:"ShardHeight"`
+	ShardCommitteeSize     int               `json:"ShardCommitteeSize"`
+	ShardProposerIdx       int               `json:"ShardProposerIdx"`
+	ShardCommittee         []string          `json:"ShardCommittee"`
+	ShardPendingValidator  []string          `json:"ShardPendingValidator"`
+	BestCrossShard         map[byte]uint64   `json:"BestCrossShard"` // Best cross shard block by heigh
+	StakingTx              map[string]string `json:"StakingTx"`
+	NumTxns                uint64            `json:"NumTxns"`                // The number of txns in the block.
+	TotalTxns              uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
+	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
+	ActiveShards           int               `json:"ActiveShards"`
+
+	MetricBlockHeight uint64
+	lock              sync.RWMutex
 }
 
 // Get role of a public key base on best state shard
