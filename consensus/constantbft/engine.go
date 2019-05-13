@@ -130,12 +130,11 @@ func (engine *Engine) execBeaconRole() {
 		EngineCfg: &engine.config,
 	}
 	bftProtocol.RoundData.Round = engine.currentBFTRound
-	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Beacon.Hash()
 	bftProtocol.RoundData.Layer = common.BEACON_ROLE
 	bftProtocol.RoundData.Committee = make([]string, len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee))
 	copy(bftProtocol.RoundData.Committee, engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-	roundRole, _ := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.ProposerOffset)
+	roundRole, _ := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.Round)
 	var (
 		err    error
 		resBlk interface{}
@@ -196,7 +195,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 		EngineCfg: &engine.config,
 	}
 	bftProtocol.RoundData.Round = engine.currentBFTRound
-	bftProtocol.RoundData.ProposerOffset = (engine.currentBFTRound - 1) % len(engine.config.BlockChain.BestState.Shard[shardID].ShardCommittee)
 	bftProtocol.RoundData.BestStateHash = engine.config.BlockChain.BestState.Shard[shardID].Hash()
 	bftProtocol.RoundData.Layer = common.SHARD_ROLE
 	bftProtocol.RoundData.ShardID = shardID
@@ -206,7 +204,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		err    error
 		resBlk interface{}
 	)
-	roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.ProposerOffset)
+	roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.Round)
 	fmt.Println("My shard role", roundRole)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
