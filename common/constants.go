@@ -2,13 +2,25 @@ package common
 
 import "time"
 
+// for common
 const (
 	EmptyString          = ""
 	PaymentAddressLength = 66
 	ZeroByte             = byte(0x00)
 	DateOutputFormat     = "2006-01-02T15:04:05.999999"
+	DateInputFormat      = "2006-01-02T15:04:05.999999"
+	NextForceUpdate      = "2019-06-15T23:59:00.000000"
 )
 
+// for exit code
+const (
+	ExitCodeUnknow = iota
+	ExitByOs
+	ExitByLogging
+	ExitCodeForceUpdate
+)
+
+// For all Transaction information
 const (
 	TxNormalType             = "n"  // normal tx(send and receive coin)
 	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
@@ -23,11 +35,11 @@ const (
 	DurationOfGOVBoard   = 1000 //number of block one GOV board in charge
 	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock        = 1000
-	MinTxsInBlock        = 10                      // minium txs for block to get immediate process (meaning no wait time)
-	MinBlockWaitTime     = 2                       // second
-	MaxBlockWaitTime     = 4 - MinBlockWaitTime    // second
-	MinBeaconBlkInterval = 3 * time.Second         //second
-	MinShardBlkInterval  = 5 * time.Second //second
+	MinTxsInBlock        = 10                   // minium txs for block to get immediate process (meaning no wait time)
+	MinBlockWaitTime     = 2                    // second
+	MaxBlockWaitTime     = 4 - MinBlockWaitTime // second
+	MinBeaconBlkInterval = 3 * time.Second      //second
+	MinShardBlkInterval  = 5 * time.Second      //second
 )
 
 // for voting parameter
@@ -56,6 +68,7 @@ const (
 	NormalEncryptionFlag
 )
 
+// For Stability board
 const (
 	DCBBoard = BoardType(0)
 	GOVBoard = BoardType(1)
