@@ -16,72 +16,24 @@ type Oracle struct {
 	BTC      uint64            // against USD
 }
 
-type LoanParams struct {
-	InterestRate     uint64 `json:"InterestRate"`     // basis points, e.g. 125 represents 1.25%
-	Maturity         uint64 `json:"Maturity"`         // in number of blocks
-	LiquidationStart uint64 `json:"LiquidationStart"` // ratio between collateral and debt to start auto-liquidation, stored in basis points
-}
-
-func NewLoanParams(interestRate uint64, maturity uint64, liquidationStart uint64) *LoanParams {
-	return &LoanParams{InterestRate: interestRate, Maturity: maturity, LiquidationStart: liquidationStart}
-}
-
-func NewLoanParamsFromJson(data interface{}) *LoanParams {
-	loanParamsData := data.(map[string]interface{})
-	loanParams := NewLoanParams(
-		uint64(loanParamsData["InterestRate"].(float64)),
-		uint64(loanParamsData["Maturity"].(float64)),
-		uint64(loanParamsData["LiquidationStart"].(float64)),
-	)
-	return loanParams
-}
-
-func NewListLoanParamsFromJson(data interface{}) ([]LoanParams, error) {
-	listLoanParamsData := common.InterfaceSlice(data)
-	if listLoanParamsData == nil {
-		return nil, fmt.Errorf("ListLoanParams must be a slice")
-	}
-	listLoanParams := make([]LoanParams, 0)
-
-	for _, loanParamsData := range listLoanParamsData {
-		listLoanParams = append(listLoanParams, *NewLoanParamsFromJson(loanParamsData))
-	}
-	return listLoanParams, nil
-}
-
 type DCBParams struct {
-	ListSaleData             []SaleData
-	TradeBonds               []*TradeBondWithGOV
-	MinLoanResponseRequire   uint8
-	MinCMBApprovalRequire    uint8
-	LateWithdrawResponseFine uint64 // CST penalty for each CMB's late withdraw response
-	RaiseReserveData         map[common.Hash]*RaiseReserveData
-	SpendReserveData         map[common.Hash]*SpendReserveData
-	DividendAmount           uint64       // maximum total Constant to pay dividend; might be less if Institution's fund ran out
-	ListLoanParams           []LoanParams // component for collateralized loans of Constant
+	ListSaleData     []SaleData
+	TradeBonds       []*TradeBondWithGOV
+	RaiseReserveData map[common.Hash]*RaiseReserveData
+	SpendReserveData map[common.Hash]*SpendReserveData
 }
 
 func NewDCBParams(
 	listSaleData []SaleData,
 	tradeBonds []*TradeBondWithGOV,
-	minLoanResponseRequire uint8,
-	minCMBApprovalRequire uint8,
-	lateWithdrawResponseFine uint64,
 	raiseReserveData map[common.Hash]*RaiseReserveData,
 	spendReserveData map[common.Hash]*SpendReserveData,
-	dividendAmount uint64,
-	listLoanParams []LoanParams,
 ) *DCBParams {
 	return &DCBParams{
-		ListSaleData:             listSaleData,
-		TradeBonds:               tradeBonds,
-		MinLoanResponseRequire:   minLoanResponseRequire,
-		MinCMBApprovalRequire:    minCMBApprovalRequire,
-		LateWithdrawResponseFine: lateWithdrawResponseFine,
-		RaiseReserveData:         raiseReserveData,
-		SpendReserveData:         spendReserveData,
-		DividendAmount:           dividendAmount,
-		ListLoanParams:           listLoanParams,
+		ListSaleData:     listSaleData,
+		TradeBonds:       tradeBonds,
+		RaiseReserveData: raiseReserveData,
+		SpendReserveData: spendReserveData,
 	}
 }
 
@@ -116,30 +68,20 @@ func NewTradeBondsFromJson(data interface{}) ([]*TradeBondWithGOV, error) {
 func NewDCBParamsFromJson(rawData interface{}) (*DCBParams, error) {
 	DCBParams := rawData.(map[string]interface{})
 
-	minLoanResponseRequire := uint8(DCBParams["MinLoanResponseRequire"].(float64))
-	minCMBApprovalRequire := uint8(DCBParams["MinCMBApprovalRequire"].(float64))
-	lateWithdrawResponseFine := uint64(DCBParams["LateWithdrawResponseFine"].(float64))
-	dividendAmount := uint64(DCBParams["DividendAmount"].(float64))
 	raiseReserveData := NewRaiseReserveDataFromJson(DCBParams["RaiseReserveData"])
 	spendReserveData := NewSpendReserveDataFromJson(DCBParams["SpendReserveData"])
 
 	listSaleData, errSale := NewListSaleDataFromJson(DCBParams["ListSaleData"])
 	tradeBonds, errTrade := NewTradeBondsFromJson(DCBParams["TradeBonds"])
-	listLoanParams, errLoan := NewListLoanParamsFromJson(DCBParams["ListLoanParams"])
-	if err := common.CheckError(errSale, errTrade, errLoan); err != nil {
+	if err := common.CheckError(errSale, errTrade); err != nil {
 		return nil, err
 	}
 
 	return NewDCBParams(
 		listSaleData,
 		tradeBonds,
-		minLoanResponseRequire,
-		minCMBApprovalRequire,
-		lateWithdrawResponseFine,
 		raiseReserveData,
 		spendReserveData,
-		dividendAmount,
-		listLoanParams,
 	), nil
 }
 
@@ -210,15 +152,6 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	for key, data := range dcbParams.SpendReserveData {
 		record := string(key[:])
 		record += data.Hash().String()
-	}
-	record += string(dcbParams.MinLoanResponseRequire)
-	record += string(dcbParams.MinCMBApprovalRequire)
-	record += string(dcbParams.LateWithdrawResponseFine)
-	record += string(dcbParams.DividendAmount)
-	for _, i := range dcbParams.ListLoanParams {
-		record += string(i.InterestRate)
-		record += string(i.Maturity)
-		record += string(i.LiquidationStart)
 	}
 	hash := common.HashH([]byte(record))
 	return &hash

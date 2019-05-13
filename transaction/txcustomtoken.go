@@ -292,11 +292,6 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 		return true
 	}
 
-	if customTokenTx.TxTokenData.Type == CustomTokenMint {
-		// TODO(@0xsirrush): validate for this type
-		return true
-	}
-
 	//Process CustomToken Transfer
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
@@ -412,28 +407,6 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 
 	// Add token data component
 	switch tokenParams.TokenTxType {
-	case CustomTokenMint:
-		{
-			Logger.log.Error("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n")
-			handled = true
-			propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-			//TODO: check dcb or gov
-			if err != nil {
-				return NewTransactionErr(UnexpectedErr, err)
-			}
-			//TODO: check sender?
-			txCustomToken.TxTokenData = TxTokenData{
-				PropertyID:     *propertyID,
-				Type:           tokenParams.TokenTxType,
-				PropertyName:   tokenParams.PropertyName,
-				PropertySymbol: tokenParams.PropertySymbol,
-				Vins:           nil,
-				Vouts:          nil,
-				Amount:         tokenParams.Amount,
-			}
-			//TODO: get vouts
-			txCustomToken.TxTokenData.Vouts = tokenParams.Receiver
-		}
 	case CustomTokenCrossShard:
 		{
 			handled = true
@@ -592,6 +565,13 @@ func (tx *TxCustomToken) ValidateType() bool {
 
 func (tx *TxCustomToken) GetProof() *zkp.PaymentProof {
 	return tx.Proof
+}
+
+func (tx *TxCustomToken) GetSender() []byte {
+	if len(tx.TxTokenData.Vins) == 0 {
+		return nil
+	}
+	return tx.TxTokenData.Vins[0].PaymentAddress.Pk[:]
 }
 
 func (tx *TxCustomToken) GetTokenReceivers() ([][]byte, []uint64) {
