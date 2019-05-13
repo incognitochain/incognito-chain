@@ -11,6 +11,7 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	privacy "github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
+	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 func (blockchain *BlockChain) GetDatabase() database.DatabaseInterface {
@@ -77,55 +78,6 @@ func (blockchain *BlockChain) GetGOVParams() component.GOVParams {
 	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
-//// Loan
-func (blockchain *BlockChain) GetLoanReq(loanID []byte) (*common.Hash, error) {
-	key := getLoanRequestKeyBeacon(loanID)
-	reqHash, ok := blockchain.BestState.Beacon.Params[key]
-	if !ok {
-		return nil, errors.Errorf("Loan request with ID %x not found", loanID)
-	}
-	return common.NewHashFromStr(reqHash)
-}
-
-// GetLoanResps returns all responses of a given loanID
-func (blockchain *BlockChain) GetLoanResps(loanID []byte) ([][]byte, []metadata.ValidLoanResponse, error) {
-	key := getLoanResponseKeyBeacon(loanID)
-	senders := [][]byte{}
-	responses := []metadata.ValidLoanResponse{}
-	if data, ok := blockchain.BestState.Beacon.Params[key]; ok {
-		lrds, err := parseLoanResponseValueBeacon(data)
-		if err != nil {
-			return nil, nil, err
-		}
-		for _, lrd := range lrds {
-			senders = append(senders, lrd.SenderPubkey)
-			responses = append(responses, lrd.Response)
-		}
-	}
-	return senders, responses, nil
-}
-
-func (blockchain *BlockChain) GetLoanPayment(loanID []byte) (uint64, uint64, uint64, error) {
-	return blockchain.config.DataBase.GetLoanPayment(loanID)
-}
-
-func (blockchain *BlockChain) GetLoanRequestMeta(loanID []byte) (*metadata.LoanRequest, error) {
-	reqHash, err := blockchain.GetLoanReq(loanID)
-	if err != nil {
-		return nil, err
-	}
-	_, _, _, txReq, err := blockchain.GetTransactionByHash(reqHash)
-	if err != nil {
-		return nil, err
-	}
-	requestMeta := txReq.GetMetadata().(*metadata.LoanRequest)
-	return requestMeta, nil
-}
-
-func (blockchain *BlockChain) GetLoanWithdrawed(loanID []byte) (bool, error) {
-	return blockchain.config.DataBase.GetLoanWithdrawed(loanID)
-}
-
 //// Crowdsales
 func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *component.SaleData {
 	var saleData *component.SaleData
@@ -162,9 +114,12 @@ func (blockchain *BlockChain) GetDCBBondInfo(bondID *common.Hash) (uint64, uint6
 
 func (blockchain *BlockChain) GetAllSaleData() ([]*component.SaleData, error) {
 	data, err := blockchain.config.DataBase.GetAllSaleData()
-	if err != nil {
+	if err == lvdberr.ErrNotFound {
+		return nil, nil
+	} else if err != nil {
 		return nil, err
 	}
+
 	sales := []*component.SaleData{}
 	for _, saleRaw := range data {
 		sale := &component.SaleData{}
@@ -179,10 +134,7 @@ func (blockchain *BlockChain) GetAllSaleData() ([]*component.SaleData, error) {
 
 func (blockchain *BlockChain) CrowdsaleExisted(saleID []byte) bool {
 	_, err := blockchain.config.DataBase.GetSaleData(saleID)
-	if err != nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 // GetDCBBondInfo returns amount of bonds owned by DCB that is free to trade

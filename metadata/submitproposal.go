@@ -84,15 +84,69 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
 	return [][]string{instStr}, nil
 }
 
-func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) error {
+type bondSale struct {
+	buying  map[common.Hash]uint64
+	selling map[common.Hash]uint64
+}
+
+func validateBondSale(bondID common.Hash, buy bool, amount uint64, bcr BlockchainRetriever, bs bondSale) error {
+	freeAmount := bcr.GetDCBFreeBond(&bondID)
+	if !buy && freeAmount < amount+bs.selling[bondID] {
+		return errors.Errorf("not enough bond asset, free %d, sell %d", freeAmount, amount)
+	}
+
+	if !buy {
+		// Cannot buy and sell the same type of bond at the same time
+		if bs.buying[bondID] > 0 {
+			return errors.Errorf("cannot buy and sell the same bond in a single proposal")
+		}
+
+		// Check on-going sales
+		oldSales, err := bcr.GetAllSaleData()
+		if err != nil {
+			return err
+		}
+		for _, oldSale := range oldSales {
+			if oldSale.EndBlock >= bcr.GetBeaconHeight() {
+				continue // sale ended
+			}
+			if oldSale.Buy && bondID.IsEqual(oldSale.BondID) {
+				return errors.Errorf("cannot buy and sell the same bond at the same time")
+			}
+		}
+
+		// Update amount of bonds sold in this proposal
+		bs.selling[bondID] += amount
+	} else {
+		bs.buying[bondID] += amount
+	}
+	return nil
+}
+
+func validateTradeData(trade *component.TradeBondWithGOV, bcr BlockchainRetriever, bs bondSale) error {
+	// Valid bondID
+	if !common.IsBondAsset(trade.BondID) {
+		return errors.Errorf("BondID incorrect")
+	}
+
+	// Amount must be set
+	if trade.Amount == 0 {
+		return errors.Errorf("amount must be set")
+	}
+
+	// Check if DCB has enough bond (subtracted amount selling in other sales/trades in this proposal)
+	return validateBondSale(*trade.BondID, trade.Buy, trade.Amount, bcr, bs)
+}
+
+func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever, bs bondSale) error {
 	// No crowdsale existed with the same id
 	if bcr.CrowdsaleExisted(sale.SaleID) {
-		return errors.Errorf("crowdsale with the same ID existed")
+		return errors.Errorf("crowdsale with the same ID existed: %x", sale.SaleID)
 	}
 
 	// Valid bondID
 	if !common.IsBondAsset(sale.BondID) {
-		return errors.Errorf("bondID incorrect")
+		return errors.Errorf("BondID incorrect")
 	}
 
 	// EndBlock is valid
@@ -105,34 +159,14 @@ func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever) err
 		return errors.Errorf("crowdsale asset amount and price must be set")
 	}
 
-	// Check if DCB has enough bond
-	freeAmount := bcr.GetDCBFreeBond(sale.BondID)
-	if !sale.Buy && freeAmount < sale.Amount {
-		return errors.Errorf("crowdsale not enough asset, free %d, sell %d", freeAmount, sale.Amount)
+	// Sell price (in Constant) must be higher than average buy price
+	amount, paid := bcr.GetDCBBondInfo(sale.BondID)
+	if paid > amount*sale.Price {
+		return fmt.Errorf("bond sell price is too low, got %d expected at least %d", sale.Price, paid/amount)
 	}
 
-	if !sale.Buy {
-		// Cannot buy and sell the same type of bond at the same time
-		oldSales, err := bcr.GetAllSaleData()
-		if err != nil {
-			return err
-		}
-		for _, oldSale := range oldSales {
-			if oldSale.EndBlock >= bcr.GetBeaconHeight() {
-				continue // sale ended
-			}
-			if oldSale.Buy && sale.BondID.IsEqual(oldSale.BondID) {
-				return errors.Errorf("cannot buy and sell the same bond at the same time")
-			}
-		}
-
-		// Sell price (in Constant) must be higher than average buy price
-		amount, paid := bcr.GetDCBBondInfo(sale.BondID)
-		if paid > amount*sale.Price {
-			return fmt.Errorf("bond sell price is too low, got %d expected at least %d", sale.Price, paid/amount)
-		}
-	}
-	return nil
+	// Check if DCB has enough bond (subtracted amount selling in other sales/trades in this proposal)
+	return validateBondSale(*sale.BondID, sale.Buy, sale.Amount, bcr, bs)
 }
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(
@@ -145,11 +179,23 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 		return false, errors.Errorf("SubmitProposalInfo invalid")
 	}
 
-	// TODO(@0xbunyip): validate DCBParams: LoanParams, etc
+	fmt.Println("[db] validating dcb proposal")
 
 	// Validate Crowdsale data
+	bs := bondSale{
+		buying:  map[common.Hash]uint64{},
+		selling: map[common.Hash]uint64{},
+	}
 	for _, sale := range submitDCBProposalMetadata.DCBParams.ListSaleData {
-		err := validateCrowdsaleData(sale, br)
+		err := validateCrowdsaleData(sale, br, bs)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	// Validate Trade data
+	for _, trade := range submitDCBProposalMetadata.DCBParams.TradeBonds {
+		err := validateTradeData(trade, br, bs)
 		if err != nil {
 			return false, err
 		}
@@ -174,10 +220,10 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateSanityData(br BlockchainRetriever, tx Transaction) (bool, bool, error) {
 	if !submitDCBProposalMetadata.DCBParams.ValidateSanityData() {
-		return true, false, nil
+		return true, false, fmt.Errorf("invalid sanity data for DCB params")
 	}
 	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateSanityData() {
-		return true, false, nil
+		return true, false, fmt.Errorf("invalid sanity data for proposal info")
 	}
 	return true, true, nil
 }
