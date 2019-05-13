@@ -326,7 +326,7 @@ func loadConfig() (*config, []string, error) {
 	usageMessage := fmt.Sprintf("Use %s -h to show usage", appName)
 	if preCfg.ShowVersion {
 		fmt.Println(appName, "version", "0.0")
-		os.Exit(0)
+		os.Exit(common.ExitCodeUnknow)
 	}
 
 	// Perform service command and exit if specified.  Invalid service
@@ -337,7 +337,7 @@ func loadConfig() (*config, []string, error) {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
-		os.Exit(0)
+		os.Exit(common.ExitCodeUnknow)
 	}
 
 	// Load additional config from file.
@@ -400,7 +400,7 @@ func loadConfig() (*config, []string, error) {
 
 	if numNets > 1 {
 		Logger.log.Error("The testnet, regtest, segnet, and simnet component can't be used together -- choose one of the four")
-		os.Exit(0)
+		os.Exit(common.ExitCodeUnknow)
 	}
 
 	// Append the network type to the data directory so it is "namespaced"
@@ -420,7 +420,7 @@ func loadConfig() (*config, []string, error) {
 	// Special show command to list supported subsystems and exit.
 	if cfg.LogLevel == "show" {
 		fmt.Println("Supported subsystems", supportedSubsystems())
-		os.Exit(0)
+		os.Exit(common.ExitCodeUnknow)
 	}
 
 	// Initialize log rotation.  After log rotation has been initialized, the
