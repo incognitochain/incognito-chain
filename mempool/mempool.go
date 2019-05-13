@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/constant-money/constant-chain/cashec"
+
 	"github.com/constant-money/constant-chain/databasemp"
 
 	"github.com/constant-money/constant-chain/blockchain"
@@ -43,6 +45,9 @@ type Config struct {
 	IsLoadFromMempool bool
 
 	PersistMempool bool
+
+	RelayShards []byte
+	UserKeyset  *cashec.KeySet
 }
 
 // TxDesc is transaction message in mempool
@@ -78,14 +83,15 @@ type TxPool struct {
 
 	//Max transaction pool may have
 	maxTx uint64
-
 	//Time to live for all transaction
 	TxLifeTime uint
-
+	Scantime   time.Duration
 	//Reset mempool database
 	IsLoadFromMempool bool
+	PersistMempool    bool
 
-	PersistMempool bool
+	//For testing
+	DuplicateTxs map[common.Hash]uint64
 }
 
 /*
@@ -104,6 +110,8 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.TxLifeTime = cfg.TxLifeTime
 	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
 	tp.PersistMempool = cfg.PersistMempool
+	tp.DuplicateTxs = make(map[common.Hash]uint64)
+	tp.Scantime = 1 * time.Hour
 }
 func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
 	tp.config.DataBaseMempool = db
@@ -115,7 +123,7 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
-func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
+func (tp *TxPool) LoadOrResetDatabaseMP() {
 	if !tp.IsLoadFromMempool {
 		err := tp.ResetDatabaseMP()
 		if err != nil {
@@ -123,7 +131,6 @@ func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
 		} else {
 			Logger.log.Critical("Successfully Reset from database")
 		}
-		return []TxDesc{}
 	} else {
 		txDescs, err := tp.LoadDatabaseMP()
 		if err != nil {
@@ -131,7 +138,6 @@ func (tp *TxPool) LoadOrResetDatabaseMP() []TxDesc {
 		} else {
 			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
 		}
-		return txDescs
 	}
 	//return []TxDesc{}
 }
@@ -139,10 +145,9 @@ func TxPoolMainLoop(tp *TxPool) {
 	if tp.TxLifeTime == 0 {
 		return
 	}
-	scanInterval := time.NewTicker(TXPOOL_SCAN_TIME * time.Second)
-	defer scanInterval.Stop()
 	for {
-		<-scanInterval.C
+		<-time.Tick(tp.Scantime)
+		tp.mtx.Lock()
 		ttl := time.Duration(tp.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
 		for _, txDesc := range tp.pool {
@@ -162,6 +167,7 @@ func TxPoolMainLoop(tp *TxPool) {
 			size := tp.CalPoolSize()
 			go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 		}
+		tp.mtx.Unlock()
 	}
 }
 
@@ -195,7 +201,8 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *Tx
 			Height: height,
 			Fee:    fee,
 		},
-		StartTime: time.Now(),
+		StartTime:       time.Now(),
+		IsFowardMessage: false,
 	}
 	return txDesc
 }
@@ -283,6 +290,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
+		go common.AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash.String(), float64(1))
 		err := MempoolTxError{}
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return err
@@ -424,6 +432,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	startAdd := time.Now()
 	tp.addTx(txD, isStore)
 	if isNewTransaction {
+		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
 		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
 	}
 	return tx.Hash(), txD, nil
@@ -441,6 +450,44 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 	}
 }
 
+// Check relay shard and public key role before processing transaction
+func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
+	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	if common.IndexOfByte(senderShardID, tp.config.RelayShards) > -1 {
+		return true
+	}
+	return false
+}
+
+func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
+	if tp.config.UserKeyset != nil {
+		var shardID byte
+		publicKey := tp.config.UserKeyset.PaymentAddress.Pk
+		pubkey := base58.Base58Check{}.Encode(publicKey, common.ZeroByte)
+		if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconCommittee) > -1 {
+			return false
+		}
+		if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconPendingValidator) > -1 {
+			return false
+		}
+		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardCommittee {
+			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
+				shardID = shardCommitteesID
+			}
+		}
+		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardPendingValidator {
+			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
+				shardID = shardCommitteesID
+			}
+		}
+		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if senderShardID == shardID {
+			return true
+		}
+	}
+	return false
+}
+
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
 // free-standing transactions into a memory pool.  It includes functionality
 // such as rejecting duplicate transactions, ensuring transactions follow all
@@ -455,6 +502,11 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
+	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx){
+		err := errors.New("Unexpected Transaction Source Shard")
+		Logger.log.Error(err)
+		return &common.Hash{}, &TxDesc{}, err
+	}
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -485,7 +537,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxNoPrivacy, float64(1))
 	}
 	if err != nil {
-		Logger.log.Error(err)
+			Logger.log.Error(err)
 	}
 	return hash, txDesc, err
 }
@@ -567,6 +619,16 @@ func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
 		descs = append(descs, &desc.Desc)
 	}
 	return descs
+}
+
+func (tp *TxPool) GetPool() map[common.Hash]*TxDesc {
+	return tp.pool
+}
+func (tp *TxPool) LockPool() {
+	tp.mtx.Lock()
+}
+func (tp *TxPool) UnlockPool() {
+	tp.mtx.Unlock()
 }
 
 // Count return len of transaction pool

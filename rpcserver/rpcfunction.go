@@ -35,6 +35,7 @@ var RpcHandler = map[string]commandHandler{
 	//pool
 	GetMiningInfo:               RpcServer.handleGetMiningInfo,
 	GetRawMempool:               RpcServer.handleGetRawMempool,
+	GetNumberOfTxsInMempool:     RpcServer.handleGetNumberOfTxsInMempool,
 	GetMempoolEntry:             RpcServer.handleMempoolEntry,
 	GetShardToBeaconPoolStateV2: RpcServer.handleGetShardToBeaconPoolStateV2,
 	GetCrossShardPoolStateV2:    RpcServer.handleGetCrossShardPoolStateV2,
@@ -436,6 +437,10 @@ func (rpcServer RpcServer) handleGetRawMempool(params interface{}, closeChan <-c
 		TxHashes: rpcServer.config.TxMemPool.ListTxs(),
 	}
 	return result, nil
+}
+
+func (rpcServer RpcServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return len(rpcServer.config.TxMemPool.ListTxs()), nil
 }
 
 /*

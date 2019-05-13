@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+#GrafanaURL=http://128.199.96.206:8086/write?db=mydb
 ###### MULTI_MEMBERS
 # Shard 0
 if [ "$1" == "shard0-0" ]; then
