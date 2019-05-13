@@ -171,10 +171,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 
 	//TODO: refactor this
 	go func() {
-		errCh <- blockchain.ProcessLoanForBlock(block)
-	}()
-
-	go func() {
 		errCh <- blockchain.processTradeBondTx(block)
 	}()
 
@@ -268,7 +264,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	// Process transaction db
 	Logger.log.Criticalf("Found %d transactions in block height %+v", len(block.Body.Transactions), block.Header.Height)
 	//temp := blockchain.BestState.Shard[block.Header.ShardID].MetricBlockHeight
-	if block.Header.Height != 1{
+	if block.Header.Height != 1 {
 		go common.AnalyzeTimeSeriesTxsInOneBlockMetric(fmt.Sprintf("%d", block.Header.Height), float64(len(block.Body.Transactions)))
 		//blockchain.BestState.Shard[block.Header.ShardID].MetricBlockHeight = block.Header.Height
 	}
