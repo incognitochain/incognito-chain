@@ -4,7 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
-	
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
@@ -68,11 +68,11 @@ var RpcHandler = map[string]commandHandler{
 	RandomCommitments:               RpcServer.handleRandomCommitments,
 	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
 	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
-	
+
 	//======Testing and Benchmark======
 	GetAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
 	//=================================
-	
+
 	//pool
 
 	// Beststate
@@ -596,11 +596,11 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 
 // handleGetActiveShards - return active shard num
 func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	if rpcServer.config.BlockChain.IsReady(false, 0) {
-		activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
-		return activeShards, nil
-	}
-	return -1, nil
+	//if rpcServer.config.BlockChain.IsReady(false, 0) {
+	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+	return activeShards, nil
+	//}
+	//return -1, nil
 }
 
 func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
