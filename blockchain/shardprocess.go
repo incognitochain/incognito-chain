@@ -118,6 +118,16 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if err != nil {
 		return err
 	}
+	if blockchain.config.UserKeySet != nil {
+		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			err = blockchain.SaveCurrentShardState(block)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	if err := blockchain.BestState.Shard[shardID].Update(block, beaconBlocks); err != nil {
 		return err
 	}
@@ -155,28 +165,33 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 			}
 		}
 	}()
+	var errCh chan error
+	var processed int
+	errCh = make(chan error)
 
-	// Process stability tx
-	err = blockchain.processTradeBondTx(block)
-	if err != nil {
-		return err
-	}
+	//TODO: refactor this
+	go func() {
+		errCh <- blockchain.ProcessLoanForBlock(block)
+	}()
 
-	for _, tx := range block.Body.Transactions {
-		meta := tx.GetMetadata()
-		if meta == nil {
-			continue
-		}
-		err := meta.ProcessWhenInsertBlockShard(tx, blockchain)
+	go func() {
+		errCh <- blockchain.processTradeBondTx(block)
+	}()
+
+	go func() {
+		// Process stability stand-alone instructions
+		errCh <- blockchain.ProcessStandAloneInstructions(block)
+	}()
+
+	for {
+		err := <-errCh
 		if err != nil {
-			return err
+			return errors.New("Process stability error: " + err.Error())
 		}
-	}
-
-	// Process stability stand-alone instructions
-	err = blockchain.ProcessStandAloneInstructions(block)
-	if err != nil {
-		return err
+		processed++
+		if processed == 3 {
+			break
+		}
 	}
 
 	// Store metadata instruction to local state
@@ -190,28 +205,29 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		}
 	}
 
-	//Remove Candidate In pool
-	candidates := []string{}
-	tokenIDs := []string{}
-	for _, tx := range block.Body.Transactions {
-		if tx.GetMetadata() != nil {
-			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-				pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-				candidates = append(candidates, pubkey)
-			}
-		}
-		if tx.GetType() == common.TxCustomTokenType {
-			customTokenTx := tx.(*transaction.TxCustomToken)
-			if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-				tokenID := customTokenTx.TxTokenData.PropertyID.String()
-				tokenIDs = append(tokenIDs, tokenID)
-			}
-		}
-	}
-	blockchain.config.TxPool.RemoveCandidateList(candidates)
-	blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
-	//Remove tx out of pool
 	go func() {
+		//Remove Candidate In pool
+		candidates := []string{}
+		tokenIDs := []string{}
+		for _, tx := range block.Body.Transactions {
+			if tx.GetMetadata() != nil {
+				if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+					pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
+					candidates = append(candidates, pubkey)
+				}
+			}
+			if tx.GetType() == common.TxCustomTokenType {
+				customTokenTx := tx.(*transaction.TxCustomToken)
+				if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
+					tokenID := customTokenTx.TxTokenData.PropertyID.String()
+					tokenIDs = append(tokenIDs, tokenID)
+				}
+			}
+		}
+		blockchain.config.TxPool.RemoveCandidateList(candidates)
+		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
+
+		//Remove tx out of pool
 		for _, tx := range block.Body.Transactions {
 			blockchain.config.TxPool.RemoveTx(tx, true)
 		}
@@ -306,7 +322,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
 	//verify producer
-	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + block.Header.Round) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
+	proposerOffset := (block.Header.Round - 1) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
+	producerPosition := blockchain.BestState.Shard[shardID].ShardProposerIdx + proposerOffset
 	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))

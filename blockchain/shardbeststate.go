@@ -167,3 +167,104 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 
 	return bestStateShard
 }
+
+//This only happen if user is a shard committee member.
+func (blockchain *BlockChain) RevertShardState(shardID byte) {
+	//Steps:
+	// 1. Load backup beststate
+	// 2. Set pool shardstate
+
+}
+
+func (blockchain *BlockChain) SaveCurrentShardState(block *ShardBlock) error {
+
+	//Steps:
+	// 1. Backup beststate
+	// 2.
+
+	// tempMarshal, err := json.Marshal(blockchain.BestState.Shard[block.Header.ShardID])
+	// if err != nil {
+	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
+	// }
+
+	// go func() {
+	// 	errCh <- blockchain.ProcessLoanForBlock(block)
+	// }()
+
+	// go func() {
+	// 	errCh <- blockchain.processTradeBondTx(block)
+	// }()
+
+	// for _, tx := range block.Body.Transactions {
+	// 	var err error
+
+	// 	switch tx.GetMetadataType() {
+	// 	case metadata.BuyFromGOVRequestMeta:
+	// 		err = blockchain.processBuyBondTx(tx)
+
+	// 	case metadata.BuyBackRequestMeta:
+	// 		err = blockchain.processSellBondTx(tx)
+	// 	case metadata.LoanUnlockMeta:
+	// 		{
+	// 			tx := tx.(*transaction.Tx)
+	// 			meta := tx.GetMetadata().(*metadata.LoanUnlock)
+	// 			err = blockchain.config.DataBase.StoreLoanWithdrawed(meta.LoanID)
+	// 		}
+	// 	}
+
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// go func() {
+	// 	// Process stability stand-alone instructions
+	// 	errCh <- blockchain.ProcessStandAloneInstructions(block)
+	// }()
+	// for _, inst := range block.Body.Instructions {
+	// 	if len(inst) < 2 {
+	// 		continue
+	// 	}
+	// 	var err error
+	// 	switch inst[0] {
+	// 	case strconv.Itoa(component.ConfirmBuySellRequestMeta):
+	// 		err = blockchain.processConfirmBuySellInst(inst)
+	// 	case strconv.Itoa(component.ConfirmBuyBackRequestMeta):
+	// 		err = blockchain.processConfirmBuyBackInst(inst)
+	// 	}
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	// Store metadata instruction to local state
+	// for _, beaconBlock := range beaconBlocks {
+	// 	instructions := beaconBlock.Body.Instructions
+	// 	for _, inst := range instructions {
+	// 		err := blockchain.StoreMetadataInstructions(inst, shardID)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
+
+	// if len(inst) < 2 {
+	// 	return nil // Not error, just not stability instruction
+	// }
+	// switch inst[0] {
+	// case strconv.Itoa(metadata.IssuingRequestMeta):
+	// 	return bc.storeIssuingResponseInstruction(inst, shardID)
+	// case strconv.Itoa(metadata.ContractingRequestMeta):
+	// 	return bc.storeContractingResponseInstruction(inst, shardID)
+	// }
+
+	// //========Store new  Shard block and new shard bestState
+	// err = blockchain.ProcessStoreShardBlock(block)
+	// if err != nil {
+	// 	return err
+	// }
+	// Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
+	// return nil
+
+	return nil
+}

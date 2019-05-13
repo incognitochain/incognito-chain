@@ -335,3 +335,13 @@ func (bestStateBeacon *BestStateBeacon) GetAssetPrice(assetID common.Hash) uint6
 	}
 	return price
 }
+
+//This only happen if user is a beacon committee member.
+func (blockchain *BlockChain) RevertBeaconState() {
+
+}
+
+func (blockchain *BlockChain) SaveCurrentBeaconState(block *BeaconBlock) error {
+
+	return nil
+}
