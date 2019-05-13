@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -20,7 +20,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	//============Build body=============
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
-	beaconHash,err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+	beaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		return nil, err
 	}
 	beaconBlock := BeaconBlock{}
-	err = json.Unmarshal(beaconBlockBytes,&beaconBlock)
+	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
-		BeaconHash:           beaconHash,
+		BeaconHash:           *beaconHash,
 		Epoch:                epoch,
 		Round:                round,
 	}
