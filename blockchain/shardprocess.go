@@ -185,7 +185,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 			return errors.New("Process stability error: " + err.Error())
 		}
 		processed++
-		if processed == 3 {
+		if processed == 2 {
 			break
 		}
 	}
@@ -322,8 +322,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
 	//verify producer
-	proposerOffset := (block.Header.Round - 1) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
-	producerPosition := blockchain.BestState.Shard[shardID].ShardProposerIdx + proposerOffset
+	producerPosition := (blockchain.BestState.Shard[shardID].ShardProposerIdx + block.Header.Round) % len(blockchain.BestState.Shard[shardID].ShardCommittee)
 	tempProducer := blockchain.BestState.Shard[shardID].ShardCommittee[producerPosition]
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
@@ -553,6 +552,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	producerPosition := (bestStateShard.ShardProposerIdx + block.Header.Round) % len(bestStateShard.ShardCommittee)
 	producerPubkey := bestStateShard.ShardCommittee[producerPosition]
 	blockHash := block.Header.Hash()
+	fmt.Println("V58", producerPubkey, block.ProducerSig, blockHash.GetBytes(), base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte))
 	if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
