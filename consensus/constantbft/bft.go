@@ -22,7 +22,6 @@ type BFTProtocol struct {
 
 	RoundData struct {
 		BestStateHash    common.Hash
-		ProposerOffset   int
 		IsProposer       bool
 		Layer            string
 		ShardID          byte
@@ -64,7 +63,6 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	// }
 	// return nil, errors.New("can't produce block")
 	//    single-node end    //
-
 	for {
 		protocol.startTime = time.Now()
 		fmt.Println("BFT: New Phase", time.Since(protocol.startTime).Seconds())
