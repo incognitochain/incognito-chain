@@ -175,7 +175,7 @@ type Metadata interface {
 // Interface for all type of transaction
 type Transaction interface {
 	Hash() *common.Hash
-	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) bool
+	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) (bool, error)
 	GetMetadataType() int
 	GetType() string
 	GetLockTime() int64

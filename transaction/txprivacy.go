@@ -405,16 +405,16 @@ func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
 	// start := time.Now()
 	// Verify tx signature
 	if tx.GetType() == common.TxSalaryType {
-		return tx.ValidateTxSalary(db)
+		return tx.ValidateTxSalary(db), nil
 	}
 	if tx.GetType() == common.TxReturnStakingType {
-		return tx.ValidateTxReturnStaking(db)
+		return tx.ValidateTxReturnStaking(db), nil
 	}
 	var valid bool
 	var err error
@@ -425,14 +425,14 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Errorf("Error verifying signature of tx: %+v \n", err)
 		}
 		//Logger.log.Error("FAILED VERIFICATION SIGNATURE")
-		return false
+		return false, nil
 	}
 
 	senderPK := tx.GetSigPubKey()
 	multisigsRegBytes, getMSRErr := db.GetMultiSigsRegistration(senderPK)
 	if getMSRErr != nil {
 		Logger.log.Errorf("getMSRErr: %v\n", getMSRErr)
-		return false
+		return false, nil
 	}
 
 	// found, spending on multisigs address
@@ -443,7 +443,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Infof("%+v", err)
 		}
 		if !valid {
-			return false
+			return false, nil
 		}
 	}
 
@@ -460,14 +460,14 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		if common.CheckDuplicateBigIntArray(sndOutputs) {
 			Logger.log.Infof("Duplicate output coins' snd\n")
-			return false
+			return false, nil
 		}
 
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
 				Logger.log.Infof("snd existed: %d\n", i)
-				return false
+				return false, nil
 			}
 		}
 
@@ -476,7 +476,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, shardID, tokenID)
 				if !ok || err != nil {
-					return false
+					return false, nil
 				}
 			}
 		}
@@ -485,7 +485,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
 		if !valid {
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			return false
+			return false, nil
 		} else {
 			Logger.log.Debug("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
@@ -494,7 +494,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	//elapsed := time.Since(start)
 	//Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
-	return true
+	return true, nil
 }
 
 func (tx Tx) String() string {
@@ -942,7 +942,7 @@ func (tx *Tx) ValidateTxByItself(
 ) (bool, error) {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	ok := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+	ok, _ := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	if !ok {
 		return false, nil
 	}
