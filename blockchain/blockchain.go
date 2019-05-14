@@ -17,7 +17,6 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/database/lvdb"
 	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -296,7 +295,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock, blockchain)
-	blockchain.updateStabilityLocalState(initBlock)
 
 	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
@@ -1138,53 +1136,6 @@ func (blockchain *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 // 	return blockchain.BestState[shardID].BestBlock
 // }
 
-func (blockchain *BlockChain) GetConstitutionStartHeight(boardType common.BoardType, shardID byte) uint64 {
-	if boardType == common.DCBBoard {
-		return blockchain.GetDCBConstitutionStartHeight(shardID)
-	} else {
-		return blockchain.GetGOVConstitutionStartHeight(shardID)
-	}
-}
-
-func (self *BlockChain) GetDCBConstitutionStartHeight(shardID byte) uint64 {
-	return self.BestState.Beacon.StabilityInfo.DCBConstitution.StartedBlockHeight
-}
-func (self *BlockChain) GetGOVConstitutionStartHeight(shardID byte) uint64 {
-	return self.BestState.Beacon.StabilityInfo.GOVConstitution.StartedBlockHeight
-}
-
-func (blockchain *BlockChain) GetConstitutionEndHeight(boardType common.BoardType, shardID byte) uint64 {
-	if boardType == common.DCBBoard {
-		return blockchain.GetDCBConstitutionEndHeight(shardID)
-	} else {
-		return blockchain.GetGOVConstitutionEndHeight(shardID)
-	}
-}
-
-func (blockchain *BlockChain) GetBoardEndHeight(boardType common.BoardType, chainID byte) uint64 {
-	if boardType == common.DCBBoard {
-		return blockchain.GetDCBBoardEndHeight(chainID)
-	} else {
-		return blockchain.GetGOVBoardEndHeight(chainID)
-	}
-}
-
-func (self *BlockChain) GetDCBConstitutionEndHeight(chainID byte) uint64 {
-	return self.BestState.Beacon.StabilityInfo.DCBConstitution.GetEndedBlockHeight()
-}
-
-func (self *BlockChain) GetGOVConstitutionEndHeight(shardID byte) uint64 {
-	return self.BestState.Beacon.StabilityInfo.GOVConstitution.GetEndedBlockHeight()
-}
-
-func (self *BlockChain) GetDCBBoardEndHeight(chainID byte) uint64 {
-	return self.BestState.Beacon.StabilityInfo.DCBGovernor.EndBlock
-}
-
-func (self *BlockChain) GetGOVBoardEndHeight(chainID byte) uint64 {
-	return self.BestState.Beacon.StabilityInfo.GOVGovernor.EndBlock
-}
-
 func (self *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 	return self.BestState.Beacon.BestBlock.Header.Height
 }
@@ -1199,17 +1150,7 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 
 // GetFeePerKbTx - return fee (per kb of tx) from GOV component data
 func (blockchain BlockChain) GetFeePerKbTx() uint64 {
-	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
-}
-
-func (blockchain *BlockChain) GetCurrentBoardIndex(helper ConstitutionHelper) uint32 {
-	board := helper.GetBoard(blockchain)
-	return board.GetBoardIndex()
-}
-
-func (blockchain *BlockChain) GetConstitutionIndex(helper ConstitutionHelper) uint32 {
-	constitutionInfo := helper.GetConstitutionInfo(blockchain)
-	return constitutionInfo.ConstitutionIndex
+	return 0
 }
 
 //1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
@@ -1380,135 +1321,18 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 }
 
 func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
-	updateConstitutionIns, err := frombeaconins.NewUpdateDCBConstitutionInsFromStr(inst)
-	if err != nil {
-		fmt.Printf("[ndh] - Error here, don't know why. %+v\n", err)
-		return err
-	}
-	boardType := common.DCBBoard
-	constitution := bc.GetConstitution(boardType)
-	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
-	fmt.Printf("[ndh] - Board Index: %+v; constitution Index: %+v \n", bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex, constitution.GetConstitutionIndex())
-	if (bc.BestState.Beacon.StabilityInfo.DCBGovernor.BoardIndex == 1) && (constitution.GetConstitutionIndex() == 0) {
-		nextConstitutionIndex = 0
-	}
-	fmt.Printf("[ndh] Update DCB constitution instrucstion [%+v] %+v\n", nextConstitutionIndex, updateConstitutionIns)
-	err = bc.GetDatabase().SetNewProposalWinningVoter(
-		boardType,
-		nextConstitutionIndex,
-		updateConstitutionIns.Voters,
-	)
-	if err != nil {
-		return err
-	}
-
-	err = bc.BestState.Beacon.processUpdateDCBProposalInstruction(*updateConstitutionIns)
-	if err != nil {
-		return err
-	}
-	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.BankFund)
 	return nil
 }
 
 func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
-	updateConstitutionIns, err := frombeaconins.NewUpdateGOVConstitutionInsFromStr(inst)
-	if err != nil {
-		fmt.Printf("[ndh] - Error here, don't know why. %+v\n", err)
-		return err
-	}
-	boardType := common.GOVBoard
-	constitution := bc.GetConstitution(boardType) // last constitution
-	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
-	fmt.Printf("[ndh] - Board Index: %+v; constitution Index: %+v \n", bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex, constitution.GetConstitutionIndex())
-	if (bc.BestState.Beacon.StabilityInfo.GOVGovernor.BoardIndex == 1) && (constitution.GetConstitutionIndex() == 0) {
-		nextConstitutionIndex = 0
-	}
-	fmt.Printf("[ndh] Update GOV constitution instrucstion [%+v] %+v\n", nextConstitutionIndex, updateConstitutionIns)
-	db := bc.GetDatabase()
-	err = db.SetNewProposalWinningVoter(
-		boardType,
-		nextConstitutionIndex,
-		updateConstitutionIns.Voters,
-	)
-	if err != nil {
-		return err
-	}
-
-	// store unique info of bonds to db if any
-	sellingBondsParams := updateConstitutionIns.GOVParams.SellingBonds
-	if sellingBondsParams != nil {
-		bondID := sellingBondsParams.GetID()
-		sellingBondsParamsBytes, err := json.Marshal(sellingBondsParams)
-		if err != nil {
-			return err
-		}
-		err = db.StoreSoldBondTypes(bondID, sellingBondsParamsBytes)
-		if err != nil {
-			return err
-		}
-		// set default price to oracle for the newly created bond
-		if bc.BestState.Beacon.StabilityInfo.Oracle.Bonds == nil {
-			bc.BestState.Beacon.StabilityInfo.Oracle.Bonds = map[string]uint64{}
-		}
-		bc.BestState.Beacon.StabilityInfo.Oracle.Bonds[bondID.String()] = sellingBondsParams.BondPrice
-	}
-
-	err = bc.BestState.Beacon.processUpdateGOVProposalInstruction(*updateConstitutionIns)
-	if err != nil {
-		return err
-	}
-	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.SalaryFund)
+	//TODO
 	return nil
 }
 
 func (bc *BlockChain) processKeepOldDCBConstitutionIns(inst []string) error {
-	keepOldProposalIns, err := frombeaconins.NewKeepOldProposalInsFromStr(inst)
-	if err != nil {
-		fmt.Printf("[ndh] - Error here, don't know why. %+v\n", err)
-		return err
-	}
-	boardType := common.DCBBoard
-	constitution := bc.GetConstitution(boardType)
-	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
-	newConstitution := bc.GetConstitution(boardType).(DCBConstitution)
-	err = bc.GetDatabase().SetNewProposalWinningVoter(
-		boardType,
-		nextConstitutionIndex,
-		newConstitution.Voters,
-	)
-	if err != nil {
-		return err
-	}
-	err = bc.BestState.Beacon.processKeepOldDCBProposalInstruction(*keepOldProposalIns)
-	if err != nil {
-		return err
-	}
-	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.BankFund)
 	return nil
 }
 
 func (bc *BlockChain) processKeepOldGOVConstitutionIns(inst []string) error {
-	keepOldProposalIns, err := frombeaconins.NewKeepOldProposalInsFromStr(inst)
-	if err != nil {
-		fmt.Printf("[ndh] - Error here, don't know why. %+v\n", err)
-		return err
-	}
-	boardType := common.GOVBoard
-	constitution := bc.GetConstitution(boardType)
-	nextConstitutionIndex := constitution.GetConstitutionIndex() + 1
-	newConstitution := bc.GetConstitution(boardType).(GOVConstitution)
-	err = bc.GetDatabase().SetNewProposalWinningVoter(
-		boardType,
-		nextConstitutionIndex,
-		newConstitution.Voters,
-	)
-	if err != nil {
-		return err
-	}
-	err = bc.BestState.Beacon.processKeepOldGOVProposalInstruction(*keepOldProposalIns)
-	if err != nil {
-		return err
-	}
-	bc.GetDatabase().AddBoardFundDB(boardType, constitution.GetConstitutionIndex(), bc.BestState.Beacon.StabilityInfo.SalaryFund)
 	return nil
 }

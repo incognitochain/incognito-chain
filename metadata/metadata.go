@@ -135,10 +135,6 @@ type BlockchainRetriever interface {
 
 	// For validating reserve
 	GetAssetPrice(assetID *common.Hash) uint64
-
-	GetConstitution(boardType common.BoardType) ConstitutionInterface
-	// UpdateDCBFund(transaction Transaction)
-	GetGovernor(boardType common.BoardType) GovernorInterface
 }
 
 // Interface for all types of metadata in tx
@@ -197,8 +193,6 @@ type Transaction interface {
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
-	GetAmountOfVote(common.BoardType) (uint64, error)
-	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash

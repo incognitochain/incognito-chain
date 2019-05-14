@@ -79,45 +79,12 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 
-	case SubmitDCBProposalMeta:
-		md = &SubmitDCBProposalMetadata{}
-	case VoteDCBBoardMeta:
-		md = &VoteDCBBoardMetadata{}
-	case SubmitGOVProposalMeta:
-		md = &SubmitGOVProposalMetadata{}
-	case VoteGOVBoardMeta:
-		md = &VoteGOVBoardMetadata{}
-	case RewardProposalWinnerMeta:
-		md = &RewardProposalWinnerMetadata{}
-	case ShareRewardOldDCBBoardMeta:
-		md = &ShareRewardOldBoardMetadata{}
-	case ShareRewardOldGOVBoardMeta:
-		md = &ShareRewardOldBoardMetadata{}
-	case DCBVoteProposalMeta:
-		md = &DCBVoteProposalMetadata{}
-	case GOVVoteProposalMeta:
-		md = &GOVVoteProposalMetadata{}
-	case SendBackTokenVoteBoardFailMeta:
-		md = &SendBackTokenVoteBoardFailMetadata{}
-
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
 		md = &StakingMetadata{}
 	case ReturnStakingMeta:
 		md = &ReturnStakingMetadata{}
-
-	case RewardDCBProposalSubmitterMeta:
-		md = &RewardDCBProposalSubmitterMetadata{}
-
-	case RewardGOVProposalSubmitterMeta:
-		md = &RewardGOVProposalSubmitterMetadata{}
-
-	case RewardDCBProposalVoterMeta:
-		md = &RewardDCBProposalVoterMetadata{}
-
-	case RewardGOVProposalVoterMeta:
-		md = &RewardGOVProposalVoterMetadata{}
 
 	default:
 		fmt.Printf("[db] parse meta err: %+v\n", meta)
