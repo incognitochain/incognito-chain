@@ -179,10 +179,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		}
 	}
 	GetBestStateBeacon().lockMu.Unlock()
-	// Process instructions and store stability data
-	if err := blockchain.updateStabilityLocalState(block); err != nil {
-		return err
-	}
 	// ************ Store block at last
 	Logger.log.Info("Store StabilityInfo ")
 	if err := blockchain.config.DataBase.StoreStabilityInfoByHeight(block.Header.Height, bestStateBeacon.StabilityInfo); err != nil {
@@ -366,22 +362,6 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				}
 			} else {
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-			}
-		}
-		votingInstructionDCB, err := blockchain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
-		if err != nil {
-			fmt.Println("[ndh]-Build DCB voting instruction failed: ", err)
-		} else {
-			if len(votingInstructionDCB) != 0 {
-				stabilityInstructions = append(stabilityInstructions, votingInstructionDCB...)
-			}
-		}
-		votingInstructionGOV, err := blockchain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
-		if err != nil {
-			fmt.Println("[ndh]-Build GOV voting instruction failed: ", err)
-		} else {
-			if len(votingInstructionGOV) != 0 {
-				stabilityInstructions = append(stabilityInstructions, votingInstructionGOV...)
 			}
 		}
 		oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)

@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
@@ -59,51 +58,12 @@ func (blockchain *BlockChain) GetBeaconHeight() uint64 {
 	return blockchain.BestState.Beacon.BeaconHeight
 }
 
-func (blockchain *BlockChain) GetBoardPubKeys(boardType common.BoardType) [][]byte {
-	if boardType == common.DCBBoard {
-		return blockchain.GetDCBBoardPubKeys()
-	} else {
-		return blockchain.GetGOVBoardPubKeys()
-	}
-}
-
-func (blockchain *BlockChain) GetDCBBoardPubKeys() [][]byte {
-	pubkeys := [][]byte{}
-	for _, addr := range blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress {
-		pubkeys = append(pubkeys, addr.Pk[:])
-	}
-	return pubkeys
-}
-
-func (blockchain *BlockChain) GetGOVBoardPubKeys() [][]byte {
-	pubkeys := [][]byte{}
-	for _, addr := range blockchain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress {
-		pubkeys = append(pubkeys, addr.Pk[:])
-	}
-	return pubkeys
-}
-
-func (blockchain *BlockChain) GetBoardPaymentAddress(boardType common.BoardType) []privacy.PaymentAddress {
-	if boardType == common.DCBBoard {
-		return blockchain.BestState.Beacon.StabilityInfo.DCBGovernor.BoardPaymentAddress
-	}
-	return blockchain.BestState.Beacon.StabilityInfo.GOVGovernor.BoardPaymentAddress
-}
-
 func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) [][]byte {
 	pubKeys := make([][]byte, 0)
 	for _, i := range listPaymentAddresses {
 		pubKeys = append(pubKeys, i.Pk)
 	}
 	return pubKeys
-}
-
-func (blockchain *BlockChain) GetDCBParams() component.DCBParams {
-	return blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams
-}
-
-func (blockchain *BlockChain) GetGOVParams() component.GOVParams {
-	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
 }
 
 //// Reserve

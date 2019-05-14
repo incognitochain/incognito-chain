@@ -301,49 +301,6 @@ func (rpcServer RpcServer) handleCreateAndSendTxWithBuySellRequest(params interf
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleCreateRawVoteGOVBoardTransaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, *RPCError) {
-	// params = setBuildRawBurnTransactionParams(params, FeeVote)
-	arrayParams := common.InterfaceSlice(params)
-	arrayParams[1] = nil
-	return rpcServer.createRawCustomTokenTxWithMetadata(arrayParams, closeChan, metadata.NewVoteGOVBoardMetadataFromRPC)
-}
-
-func (rpcServer RpcServer) handleCreateAndSendVoteGOVBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.createAndSendTxWithMetadata(
-		params,
-		closeChan,
-		RpcServer.handleCreateRawVoteGOVBoardTransaction,
-		RpcServer.handleSendRawCustomTokenTransaction,
-	)
-}
-
-func (rpcServer RpcServer) handleCreateRawSubmitGOVProposalTransaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, *RPCError) {
-	params, err := rpcServer.buildParamsSubmitGOVProposal(params)
-	if err != nil {
-		return nil, err
-	}
-	return rpcServer.createRawTxWithMetadata(
-		params,
-		closeChan,
-		metadata.NewSubmitGOVProposalMetadataFromRPC,
-	)
-}
-
-func (rpcServer RpcServer) handleCreateAndSendSubmitGOVProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.createAndSendTxWithMetadata(
-		params,
-		closeChan,
-		RpcServer.handleCreateRawSubmitGOVProposalTransaction,
-		RpcServer.handleSendRawTransaction,
-	)
-}
-
 func (rpcServer RpcServer) handleCreateRawTxWithOracleFeed(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
