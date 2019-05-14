@@ -297,13 +297,16 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	ok, _ := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-	if !ok {
-		return false, nil
+	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+		return false, err
 	}
 
 	if customTokenTx.Metadata != nil {
-		return customTokenTx.Metadata.ValidateMetadataByItself(), nil
+		validateMetadata := customTokenTx.Metadata.ValidateMetadataByItself()
+		if !validateMetadata {
+			return validateMetadata, errors.New("Metadata is invalid")
+		}
+		return validateMetadata, nil
 	}
 	return true, nil
 }
