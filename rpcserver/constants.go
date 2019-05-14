@@ -98,18 +98,6 @@ const (
 
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
-	GetListDCBBoard                      = "getlistdcbboard"
-	GetListGOVBoard                      = "getlistgovboard"
-	GetListDCBBoardPayment               = "getlistdcbboardpayment"
-	GetListGOVBoardPayment               = "getlistgovboardpayment"
-	AppendListDCBBoard                   = "testappendlistdcbboard"
-	AppendListGOVBoard                   = "testappendlistgovboard"
-	GetGOVParams                         = "getgovparams"
-	GetDCBParams                         = "getdcbparams"
-	GetGOVConstitution                   = "getgovconstitution"
-	GetDCBConstitution                   = "getdcbconstitution"
-	GetDCBBoardIndex                     = "getdcbboardindex"
-	GetGOVBoardIndex                     = "getgovboardindex"
 	GetConstantCirculating               = "getconstantcirculating"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
@@ -121,25 +109,6 @@ const (
 	CreateAndSendContractingRequest = "createandsendcontractingrequest"
 	GetIssuingStatus                = "getissuingstatus"
 	GetContractingStatus            = "getcontractingstatus"
-
-	// vote
-	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
-	CreateRawVoteDCBBoardTx              = "createrawvotedcbboardtx"
-	CreateAndSendVoteDCBBoardTransaction = "createandsendvotedcbboardtransaction"
-	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
-	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
-	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
-
-	//vote propopsal
-	CreateAndSendVoteProposal = "createandsendvoteproposal"
-
-	// Submit Proposal
-	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
-	CreateRawSubmitDCBProposalTx     = "createrawsubmitdcbproposaltx"
-	SendRawSubmitDCBProposalTx       = "sendrawsubmitdcbproposaltx"
-	CreateAndSendSubmitGOVProposalTx = "createandsendsubmitgovproposaltx"
-	CreateRawSubmitGOVProposalTx     = "createrawsubmitgovproposaltx"
-	SendRawSubmitGOVProposalTx       = "sendrawsubmitgovproposaltx"
 
 	// dcb
 	GetBankFund = "getbankfund"

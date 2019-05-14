@@ -9,7 +9,6 @@ import (
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/wallet"
 )
@@ -112,13 +111,7 @@ func createGOVGenesisBoardInst() []string {
 	// 	Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
 	// 	Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
 	// }
-	boardAddress := []privacy.PaymentAddress{}
-	govBoardInst := &frombeaconins.AcceptGOVBoardIns{
-		BoardPaymentAddress: boardAddress,
-		StartAmountToken:    0,
-	}
-	govInst, _ := govBoardInst.GetStringFormat()
-	return govInst
+	return nil
 }
 
 func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
@@ -164,18 +157,7 @@ func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
 	// First proposal created by GOV, reward back to itself
 	keyWalletGOVAccount, _ := wallet.Base58CheckDeserialize(common.GOVAddress)
 	govAddress := keyWalletGOVAccount.KeySet.PaymentAddress
-	govUpdateInst := &frombeaconins.UpdateGOVConstitutionIns{
-		SubmitProposalInfo: component.SubmitProposalInfo{
-			ExecuteDuration:   EndOfFirstBoard + ExtendDurationForFirstBoard,
-			Explanation:       "Genesis GOV proposal",
-			PaymentAddress:    govAddress,
-			ConstitutionIndex: 0,
-		},
-		GOVParams: govParams,
-		Voters:    []privacy.PaymentAddress{},
-	}
-	govInst, _ := govUpdateInst.GetStringFormat()
-	return govInst
+	return nil
 }
 
 func createDCBGenesisInsts() [][]string {
@@ -200,12 +182,7 @@ func createDCBGenesisBoardInst() []string {
 		},
 	}
 
-	dcbBoardInst := &frombeaconins.AcceptDCBBoardIns{
-		BoardPaymentAddress: boardAddress,
-		StartAmountToken:    0,
-	}
-	dcbInst, _ := dcbBoardInst.GetStringFormat()
-	return dcbInst
+	return nil
 }
 
 func createDCBGenesisParamsInst() []string {
@@ -214,16 +191,5 @@ func createDCBGenesisParamsInst() []string {
 	// First proposal created by DCB, reward back to itself
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
-	dcbUpdateInst := &frombeaconins.UpdateDCBConstitutionIns{
-		SubmitProposalInfo: component.SubmitProposalInfo{
-			ExecuteDuration:   EndOfFirstBoard + ExtendDurationForFirstBoard,
-			Explanation:       "Genesis DCB proposal",
-			PaymentAddress:    dcbAddress,
-			ConstitutionIndex: 0,
-		},
-		DCBParams: dcbParams,
-		Voters:    []privacy.PaymentAddress{},
-	}
-	dcbInst, _ := dcbUpdateInst.GetStringFormat()
-	return dcbInst
+	return nil
 }
