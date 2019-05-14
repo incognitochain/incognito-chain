@@ -266,29 +266,27 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
-		ok, _ := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-		if !ok {
-			return false, nil
+		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+			return false, err
 		}
 		if len(customTokenTx.TxTokenData.Vouts) != 1 {
-			return false, nil
+			return false, errors.New("Length of Vouts != 1")
 		}
 		if len(customTokenTx.TxTokenData.Vins) != 0 && customTokenTx.TxTokenData.Vins != nil {
-			return false, nil
+			return false, errors.New("Length of Vins != 0 and Vins is nil")
 		}
 		return true, nil
 	}
 	//Process CustomToken CrossShard
 	if customTokenTx.TxTokenData.Type == CustomTokenCrossShard {
-		ok, _ := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-		if !ok {
-			return false, nil
+		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+			return false, err
 		}
 		if len(customTokenTx.listUtxo) != 0 {
-			return false, nil
+			return false, errors.New("Length listUtxo != 0")
 		}
 		if len(customTokenTx.TxTokenData.Vins) != 0 {
-			return false, nil
+			return false, errors.New("Length Vins != 0")
 		}
 		return true, nil
 	}
