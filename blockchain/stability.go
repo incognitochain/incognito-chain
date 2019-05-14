@@ -3,17 +3,15 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/constant-money/constant-chain/blockchain/component"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database/lvdb"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/metadata/frombeaconins"
-	"github.com/constant-money/constant-chain/metadata/fromshardins"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/constant-money/constant-chain/blockchain/component"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/transaction"
 )
 
 type accumulativeValues struct {
@@ -96,72 +94,6 @@ func buildStabilityActions(
 	if totalFee != 0 || totalSalary != 0 {
 		salaryUpdateActions, _ := createShardBlockSalaryUpdateAction(uint64(beaconSalary), uint64(shardSalary), totalFee, producerAddress, shardBlockHeight)
 		actions = append(actions, salaryUpdateActions...)
-	}
-
-	//Add response instruction
-	for _, beaconBlock := range beaconBlocks {
-		for _, l := range beaconBlock.Body.Instructions {
-			shardToProcess, err := strconv.Atoi(l[1])
-			if err != nil {
-				continue
-			}
-			if shardToProcess == int(shardID) {
-				metaType, err := strconv.Atoi(l[0])
-				if err != nil {
-					return nil, err
-				}
-				var newIns []string
-				if metaType != 37 {
-					fmt.Printf("[ndh] - instructions from beacon to shard metaType: %+v\n", l)
-				}
-				switch metaType {
-				case component.AcceptDCBProposalIns:
-					acceptProposalIns := frombeaconins.AcceptProposalIns{}
-					err := json.Unmarshal([]byte(l[2]), &acceptProposalIns)
-					if err != nil {
-						fmt.Println("[ndh] - error 1 ", err.Error())
-						return nil, err
-					}
-					txID := acceptProposalIns.TxID
-					_, _, _, txProposal, err := bc.GetTransactionByHash(&txID)
-					metaProposal := txProposal.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
-					newIns, err = fromshardins.NewNewDCBConstitutionIns(
-						metaProposal.SubmitProposalInfo,
-						metaProposal.DCBParams,
-						acceptProposalIns.Voters,
-					).GetStringFormat()
-					if err != nil {
-						fmt.Println("[ndh] - error 2 ", err.Error())
-						return nil, err
-					}
-					fmt.Println("[ndh] - new instructions AcceptProposalIns: ", newIns)
-				case component.AcceptGOVProposalIns:
-					acceptProposalIns := frombeaconins.AcceptProposalIns{}
-					err := json.Unmarshal([]byte(l[2]), &acceptProposalIns)
-					if err != nil {
-						return nil, err
-					}
-					txID := acceptProposalIns.TxID
-					_, _, _, txProposal, err := bc.GetTransactionByHash(&txID)
-					metaProposal := txProposal.GetMetadata().(*metadata.SubmitGOVProposalMetadata)
-					if err != nil {
-						fmt.Println("[ndh] - error 1 ", err.Error())
-						return nil, err
-					}
-					newIns, err = fromshardins.NewNewGOVConstitutionIns(
-						metaProposal.SubmitProposalInfo,
-						metaProposal.GOVParams,
-						acceptProposalIns.Voters,
-					).GetStringFormat()
-					if err != nil {
-						fmt.Println("[ndh] - error 2 ", err.Error())
-						return nil, err
-					}
-					fmt.Println("[ndh] - new instructions AcceptProposalIns: ", newIns)
-				}
-				actions = append(actions, newIns)
-			}
-		}
 	}
 
 	return actions, nil
@@ -261,36 +193,8 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 }
 
 func buildUpdateConstitutionIns(inst string, boardType common.BoardType) ([][]string, error) {
-	var newInst []string
-	if boardType == common.DCBBoard {
-		newConstitutionIns, err := fromshardins.NewNewDCBConstitutionInsFromStr(inst)
-		if err != nil {
-			return nil, err
-		}
-		newInst, err = frombeaconins.NewUpdateDCBConstitutionIns(
-			newConstitutionIns.SubmitProposalInfo,
-			newConstitutionIns.DCBParams,
-			newConstitutionIns.Voters,
-		).GetStringFormat()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println("[ndh]-[buildUpdateConstitutionIns]- completed", newInst)
-	} else {
-		newConstitutionIns, err := fromshardins.NewNewGOVConstitutionInsFromStr(inst)
-		if err != nil {
-			return nil, err
-		}
-		newInst, err = frombeaconins.NewUpdateGOVConstitutionIns(
-			newConstitutionIns.SubmitProposalInfo,
-			newConstitutionIns.GOVParams,
-			newConstitutionIns.Voters,
-		).GetStringFormat()
-		if err != nil {
-			return nil, err
-		}
-	}
-	return [][]string{newInst}, nil
+	//TODO
+	return nil, nil
 }
 
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
@@ -329,149 +233,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 			if len(l) <= 2 {
 				continue
 			}
-			shardToProcess, err := strconv.Atoi(l[1])
-			if err == nil && shardToProcess == int(shardID) {
-				metaType, err := strconv.Atoi(l[0])
-				if metaType != 37 {
-					fmt.Println("[ndh] - instruction from beacon to shard: ", l)
-				}
-				if err != nil {
-					return nil, err
-				}
-				Logger.log.Warn("Metadata type:", metaType, "\n")
-
-				switch metaType {
-				case component.RewardDCBProposalSubmitterIns:
-					fmt.Println("[ndh]-RewardDCBProposalSubmitterIns")
-					rewardProposalSubmitter := frombeaconins.RewardProposalSubmitterIns{}
-					err := json.Unmarshal([]byte(l[2]), &rewardProposalSubmitter)
-					if err != nil {
-						return nil, err
-					}
-					tx, err := rewardProposalSubmitter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, common.DCBBoard)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, tx)
-				case component.RewardGOVProposalSubmitterIns:
-					fmt.Println("[ndh]-RewardGOVProposalSubmitterIns")
-					rewardProposalSubmitter := frombeaconins.RewardProposalSubmitterIns{}
-					err := json.Unmarshal([]byte(l[2]), &rewardProposalSubmitter)
-					if err != nil {
-						return nil, err
-					}
-					tx, err := rewardProposalSubmitter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, common.GOVBoard)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, tx)
-				case component.RewardDCBProposalVoterIns:
-					fmt.Println("[ndh]-RewardDCBProposalVoterIns")
-					rewardProposalVoter := frombeaconins.RewardProposalVoterIns{}
-					err := json.Unmarshal([]byte(l[2]), &rewardProposalVoter)
-					if err != nil {
-						return nil, err
-					}
-					tx, err := rewardProposalVoter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, common.DCBBoard)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, tx)
-				case component.RewardGOVProposalVoterIns:
-					fmt.Println("[ndh]-RewardGOVProposalVoterIns")
-					rewardProposalVoter := frombeaconins.RewardProposalVoterIns{}
-					err := json.Unmarshal([]byte(l[2]), &rewardProposalVoter)
-					if err != nil {
-						return nil, err
-					}
-					tx, err := rewardProposalVoter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, common.GOVBoard)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, tx)
-				case metadata.CrowdsalePaymentMeta:
-					txs, err = blockgen.buildPaymentForCrowdsale(l[2], unspentTokens, producerPrivateKey, shardID)
-
-				case metadata.TradeActivationMeta:
-					txs, err = blockgen.buildTradeActivationTx(l[2], unspentTokens, producerPrivateKey, tradeActivated, shardID)
-
-				case metadata.BuyFromGOVRequestMeta:
-					contentStr := l[3]
-					sellingBondsParamsStr := l[4]
-					txs, err = blockgen.buildBuyBondsFromGOVRes(l[2], contentStr, sellingBondsParamsStr, producerPrivateKey, shardID)
-
-				case metadata.BuyGOVTokenRequestMeta:
-					contentStr := l[3]
-					txs, err = blockgen.buildBuyGOVTokensRes(l[2], contentStr, producerPrivateKey, shardID)
-
-				case metadata.BuyBackRequestMeta:
-					buyBackInfoStr := l[3]
-					txs, err = blockgen.buildBuyBackRes(l[2], buyBackInfoStr, producerPrivateKey, shardID)
-
-				case component.SendBackTokenVoteBoardFailIns:
-					fmt.Println("[ndh]-SendBackTokenVoteBoardFailIns")
-					sendBackTokenVoteFail := frombeaconins.TxSendBackTokenVoteFailIns{}
-					err := json.Unmarshal([]byte(l[2]), &sendBackTokenVoteFail)
-					if err != nil {
-						return nil, err
-					}
-
-					tx, err = sendBackTokenVoteFail.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
-					fmt.Println("[ndh]-SendBackTokenVoteBoardFailIns Ok, tx:", tx.GetMetadata())
-					txs = append(txs, tx)
-
-				case metadata.SendBackTokenToOldSupporterMeta:
-					fmt.Println("[ndh]-SendBackTokenToOldSupporterMeta")
-					sendBackTokenToOldSupporter := frombeaconins.TxSendBackTokenToOldSupporterIns{}
-					err := json.Unmarshal([]byte(l[2]), &sendBackTokenToOldSupporter)
-					if err != nil {
-						return nil, err
-					}
-					tx, err = sendBackTokenToOldSupporter.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase, blockgen.chain, shardID)
-
-					if err != nil {
-						return nil, err
-					}
-					fmt.Println("[ndh]-SendBackTokenToOldSupporterMeta ok, tx:", tx.GetMetadata())
-					txs = append(txs, tx)
-
-				case component.ShareRewardOldDCBBoardSupportterIns, component.ShareRewardOldGOVBoardSupportterIns:
-					fmt.Printf("[ndh]-ShareRewardOldBoardSupportterIns ok, tx: %+v\n", tx)
-					fmt.Printf("[ndh]-ShareRewardOldBoardSupportterIns ok, Ins: %+v\n", l)
-					shareRewardOldBoard := frombeaconins.ShareRewardOldBoardIns{}
-					err := json.Unmarshal([]byte(l[2]), &shareRewardOldBoard)
-					if err != nil {
-						return nil, err
-					}
-					tx, err = shareRewardOldBoard.BuildTransaction(producerPrivateKey, blockgen.chain.config.DataBase)
-					txs = append(txs, tx)
-
-				case metadata.IssuingRequestMeta:
-					issuingInfoStr := l[3]
-					txs, err = blockgen.buildIssuingRes(l[2], issuingInfoStr, producerPrivateKey, shardID)
-
-				case metadata.ContractingRequestMeta:
-					contractingInfoStr := l[3]
-					txs, err = blockgen.buildContractingRes(l[2], contractingInfoStr, producerPrivateKey)
-
-				case metadata.OracleRewardMeta:
-					evaluationStr := l[3]
-					txs, err = blockgen.buildOracleRewardTxs(evaluationStr, producerPrivateKey)
-
-				case metadata.ShardBlockSalaryRequestMeta:
-					salaryReqInfoStr := l[3]
-					txs, err = blockgen.buildSalaryRes(l[2], salaryReqInfoStr, producerPrivateKey)
-				case metadata.BeaconSalaryRequestMeta:
-					txs, err = blockgen.buildBeaconSalaryRes(l[2], l[3], producerPrivateKey)
-				}
-
-				if err != nil {
-					return nil, err
-				}
-				if len(txs) > 0 {
-					resTxs = append(resTxs, txs...)
-				}
-			}
 		}
 	}
 	return resTxs, nil
@@ -507,67 +268,16 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 }
 
 func (chain *BlockChain) AddVoteBoard(inst string) error {
-	fmt.Println("[ndh] - AddVoteBoard: ", inst)
-	newInst, err := fromshardins.NewVoteBoardInsFromStr(inst)
-	if err != nil {
-		return err
-	}
-	boardType := newInst.BoardType
-	voteAmount := newInst.AmountOfVote
-	voterPayment := newInst.VoterPaymentAddress
-	governor := chain.GetGovernor(boardType)
-	boardIndex := governor.GetBoardIndex() + 1
-	err1 := chain.GetDatabase().AddVoteBoard(
-		boardType,
-		boardIndex,
-		voterPayment,
-		newInst.CandidatePaymentAddress,
-		voteAmount,
-	)
-	if err1 != nil {
-		return err1
-	}
+	//TODO
 	return nil
 }
 
 func (chain *BlockChain) AddSubmitProposal(inst string) error {
-	newInst, err := fromshardins.NewSubmitProposalInsFromStr(inst)
-	fmt.Println("[ndh] - AddSubmitProposal: ", inst)
-	if err != nil {
-		return err
-	}
-	boardType := newInst.BoardType
-	submitter := newInst.SubmitProposal.SubmitterPayment
-	err1 := chain.GetDatabase().AddSubmitProposalDB(
-		boardType,
-		newInst.SubmitProposal.ConstitutionIndex,
-		newInst.SubmitProposal.ProposalTxID.GetBytes(),
-		submitter.Bytes(),
-	)
-	if err1 != nil {
-		return err1
-	}
+	//TODO
 	return nil
 }
 
 func (chain *BlockChain) AddVoteProposal(inst string) error {
-	fmt.Println("[ndh] - AddVoteProposal: ", inst)
-	newInst, err := fromshardins.NewNormalVoteProposalInsFromStr(inst)
-	if err != nil {
-		return err
-	}
-	// step 4 hyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-	err = chain.GetDatabase().AddVoteProposalDB(
-		newInst.BoardType,
-		newInst.VoteProposal.ConstitutionIndex,
-		newInst.VoteProposal.VoterPayment.Bytes(),
-		newInst.VoteProposal.ProposalTxID.GetBytes(),
-	)
-	gg := lvdb.ViewDBByPrefix(chain.config.DataBase, lvdb.VoteProposalPrefix)
-	_ = gg
-
-	if err != nil {
-		return err
-	}
+	//TODO
 	return nil
 }

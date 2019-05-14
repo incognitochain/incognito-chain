@@ -148,9 +148,6 @@ type BlockchainRetriever interface {
 	GetTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
 	GetLatestTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
 
-	GetConstitution(boardType common.BoardType) ConstitutionInterface
-	// UpdateDCBFund(transaction Transaction)
-	GetGovernor(boardType common.BoardType) GovernorInterface
 	CalcTradeData(string) (*component.TradeData, error)
 	GetSellBondPrice(*common.Hash) uint64
 }
