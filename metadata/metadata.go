@@ -7,7 +7,6 @@ import (
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/privacy"
 	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
@@ -118,10 +117,6 @@ type BlockchainRetriever interface {
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
-	GetDCBParams() component.DCBParams
-	GetBoardPubKeys(boardType common.BoardType) [][]byte
-	GetBoardPaymentAddress(boardType common.BoardType) []privacy.PaymentAddress
-	GetGOVParams() component.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
 	GetOracleParams() *component.Oracle
 	GetConstitutionStartHeight(boardType common.BoardType, shardID byte) uint64
