@@ -63,16 +63,6 @@ func ListPaymentAddressToListString(addresses []privacy.PaymentAddress) []string
 	return res
 }
 
-func getAmountVote(receiversPaymentAddressParam map[string]interface{}) int64 {
-	sumAmount := int64(0)
-	for paymentAddressStr, amount := range receiversPaymentAddressParam {
-		if paymentAddressStr == common.BurningAddress {
-			sumAmount += int64(amount.(float64))
-		}
-	}
-	return sumAmount
-}
-
 func (rpcServer RpcServer) handleGetConstantCirculating(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	type result struct {
 		Total uint64
