@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
@@ -126,24 +125,14 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		return nil
 	}
 	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
-	// fmt.Println("[ndh] - newshardtobeacon", previousShardBlock.Header.BeaconHeight, block.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
-		fmt.Println("[ndh] - error in create shard to beacon", err)
 		return nil
 	}
 	instructions, err := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, &blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks, blk.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
-		fmt.Println("[ndh] - error in create shard to beacon", err)
 		return nil
-	}
-	for _, inst := range instructions {
-		if len(inst) != 0 {
-			if inst[0] != "37" {
-				fmt.Println("[ndh] - instruction to beacon: ", inst)
-			}
-		}
 	}
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block
