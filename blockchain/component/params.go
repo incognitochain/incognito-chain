@@ -14,30 +14,14 @@ type Oracle struct {
 }
 
 type DCBParams struct {
-	RaiseReserveData map[common.Hash]*RaiseReserveData
-	SpendReserveData map[common.Hash]*SpendReserveData
 }
 
-func NewDCBParams(
-	raiseReserveData map[common.Hash]*RaiseReserveData,
-	spendReserveData map[common.Hash]*SpendReserveData,
-) *DCBParams {
-	return &DCBParams{
-		RaiseReserveData: raiseReserveData,
-		SpendReserveData: spendReserveData,
-	}
+func NewDCBParams() *DCBParams {
+	return &DCBParams{}
 }
 
 func NewDCBParamsFromJson(rawData interface{}) (*DCBParams, error) {
-	DCBParams := rawData.(map[string]interface{})
-
-	raiseReserveData := NewRaiseReserveDataFromJson(DCBParams["RaiseReserveData"])
-	spendReserveData := NewSpendReserveDataFromJson(DCBParams["SpendReserveData"])
-
-	return NewDCBParams(
-		raiseReserveData,
-		spendReserveData,
-	), nil
+	return NewDCBParams(), nil
 }
 
 type GOVParams struct {
@@ -94,14 +78,6 @@ func NewGOVParamsFromJson(data interface{}) *GOVParams {
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
 	record := ""
-	for key, data := range dcbParams.RaiseReserveData {
-		record := string(key[:])
-		record += data.Hash().String()
-	}
-	for key, data := range dcbParams.SpendReserveData {
-		record := string(key[:])
-		record += data.Hash().String()
-	}
 	hash := common.HashH([]byte(record))
 	return &hash
 }

@@ -32,33 +32,7 @@ func buildInstTypeAndAmountForContractingAction(
 ) (string, uint64) {
 	stabilityInfo := beaconBestState.StabilityInfo
 	oracle := stabilityInfo.Oracle
-	if bytes.Equal(md.CurrencyType[:], common.USDAssetID[:]) {
-		redeemAmount := md.BurnedConstAmount * oracle.Constant
-		return "accepted", redeemAmount
-	}
-	// crypto
-	spendReserveData := stabilityInfo.DCBConstitution.DCBParams.SpendReserveData
-	bestBlockHeight := beaconBestState.BestBlock.Header.Height
-	fmt.Printf("[db] buildInstTypeForCont spendReserveData: %+v\n", spendReserveData)
-	if spendReserveData == nil {
-		return "refund", 0
-	}
-	reserveData, existed := spendReserveData[md.CurrencyType]
-	if !existed {
-		return "refund", 0
-	}
-	if bestBlockHeight+1 > reserveData.EndBlock ||
-		md.BurnedConstAmount+accumulativeValues.constantsBurnedByETH > reserveData.Amount {
-		return "refund", 0
-	}
-	if bytes.Equal(md.CurrencyType[:], common.ETHAssetID[:]) &&
-		oracle.ETH < reserveData.ReserveMinPrice {
-		return "refund", 0
-	}
-	// redeemAmount := md.BurnedConstAmount * oracle.Constant / oracle.ETH
-	cstValue := md.BurnedConstAmount * oracle.Constant / 100
-	redeemAmount := common.CentInMilliEther(cstValue, oracle.ETH)
-	accumulativeValues.constantsBurnedByETH += md.BurnedConstAmount
+	redeemAmount := md.BurnedConstAmount * oracle.Constant
 	return "accepted", redeemAmount
 }
 
@@ -201,45 +175,7 @@ func buildInstTypeAndAmountForIssuingAction(
 ) (string, uint64) {
 	stabilityInfo := beaconBestState.StabilityInfo
 	oracle := stabilityInfo.Oracle
-	if bytes.Equal(md.AssetType[:], common.ConstantID[:]) {
-		return "accepted", (md.DepositedAmount * 100) / oracle.Constant
-	}
-	// process for case of DCB token
-	raiseReserveData := stabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
-	bestBlockHeight := beaconBestState.BestBlock.Header.Height
-	if raiseReserveData == nil {
-		return "refund", 0
-	}
-
-	dcbTokensNeeded := uint64(0)
-	reqAmt := uint64(0)
-	var existed bool
-	var reserveData *component.RaiseReserveData
-	isOnUSD := bytes.Equal(md.CurrencyType[:], common.USDAssetID[:])
-	isOnETH := bytes.Equal(md.CurrencyType[:], common.ETHAssetID[:])
-	if isOnUSD {
-		reserveData, existed = raiseReserveData[common.USDAssetID]
-		reqAmt = md.DepositedAmount / oracle.DCBToken
-		dcbTokensNeeded = reqAmt + accumulativeValues.dcbTokensSoldByUSD
-	} else if isOnETH {
-		reserveData, existed = raiseReserveData[common.ETHAssetID]
-		reqAmt = common.MilliEtherValue(md.DepositedAmount, oracle.ETH) / oracle.DCBToken
-		// reqAmt = (md.DepositedAmount * oracle.ETH) / oracle.DCBToken
-		dcbTokensNeeded = reqAmt + accumulativeValues.dcbTokensSoldByETH
-		fmt.Printf("[db] isOnETH: %+v %d %d %d\n", reserveData, reqAmt, dcbTokensNeeded, bestBlockHeight)
-	}
-	if !existed ||
-		bestBlockHeight+1 > reserveData.EndBlock ||
-		reserveData.Amount == 0 ||
-		reserveData.Amount < dcbTokensNeeded {
-		return "refund", 0
-	}
-	if isOnUSD {
-		accumulativeValues.dcbTokensSoldByUSD += reqAmt
-	} else if isOnETH {
-		accumulativeValues.dcbTokensSoldByETH += reqAmt
-	}
-	return "accepted", reqAmt
+	return "accepted", (md.DepositedAmount * 100) / oracle.Constant
 }
 
 func buildInstructionsForIssuingReq(

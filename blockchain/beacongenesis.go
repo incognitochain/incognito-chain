@@ -209,29 +209,7 @@ func createDCBGenesisBoardInst() []string {
 }
 
 func createDCBGenesisParamsInst() []string {
-	// Reserve
-	raiseReserveData := map[common.Hash]*component.RaiseReserveData{
-		common.ETHAssetID: &component.RaiseReserveData{
-			EndBlock: 1000,
-			Amount:   1000,
-		},
-		common.USDAssetID: &component.RaiseReserveData{
-			EndBlock: 1000,
-			Amount:   1000,
-		},
-	}
-	spendReserveData := map[common.Hash]*component.SpendReserveData{
-		common.ETHAssetID: &component.SpendReserveData{
-			EndBlock:        1000,
-			ReserveMinPrice: 1000,
-			Amount:          10000000,
-		},
-	}
-
-	dcbParams := component.DCBParams{
-		RaiseReserveData: raiseReserveData,
-		SpendReserveData: spendReserveData,
-	}
+	dcbParams := component.DCBParams{}
 
 	// First proposal created by DCB, reward back to itself
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
