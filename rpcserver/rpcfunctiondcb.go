@@ -73,49 +73,6 @@ func getAmountVote(receiversPaymentAddressParam map[string]interface{}) int64 {
 	return sumAmount
 }
 
-func (rpcServer RpcServer) handleCreateRawVoteDCBBoardTransaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, *RPCError) {
-	// params = setBuildRawBurnTransactionParams(params, FeeVote)
-	arrayParams := common.InterfaceSlice(params)
-	arrayParams[1] = nil
-	return rpcServer.createRawCustomTokenTxWithMetadata(arrayParams, closeChan, metadata.NewVoteDCBBoardMetadataFromRPC)
-}
-
-func (rpcServer RpcServer) handleCreateAndSendVoteDCBBoardTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.createAndSendTxWithMetadata(
-		params,
-		closeChan,
-		RpcServer.handleCreateRawVoteDCBBoardTransaction,
-		RpcServer.handleSendRawCustomTokenTransaction,
-	)
-}
-
-func (rpcServer RpcServer) handleCreateRawSubmitDCBProposalTransaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, *RPCError) {
-	params, err := rpcServer.buildParamsSubmitDCBProposal(params)
-	if err != nil {
-		return nil, err
-	}
-	return rpcServer.createRawTxWithMetadata(
-		params,
-		closeChan,
-		metadata.NewSubmitDCBProposalMetadataFromRPC,
-	)
-}
-
-func (rpcServer RpcServer) handleCreateAndSendSubmitDCBProposalTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.createAndSendTxWithMetadata(
-		params,
-		closeChan,
-		RpcServer.handleCreateRawSubmitDCBProposalTransaction,
-		RpcServer.handleSendRawTransaction,
-	)
-}
-
 func (rpcServer RpcServer) handleGetConstantCirculating(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	type result struct {
 		Total uint64
