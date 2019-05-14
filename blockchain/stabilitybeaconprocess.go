@@ -11,8 +11,6 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/metadata/frombeaconins"
-	"github.com/pkg/errors"
 )
 
 func (bsb *BestStateBeacon) processStabilityInstruction(inst []string, db database.DatabaseInterface) error {
@@ -30,60 +28,6 @@ func (bsb *BestStateBeacon) processStabilityInstruction(inst []string, db databa
 		return nil // Not error, just not stability instruction
 	}
 	switch inst[0] {
-	case strconv.Itoa(component.AcceptDCBBoardIns):
-		fmt.Println("[ndh] - Accept DCB Board intruction", inst)
-		acceptDCBBoardIns := frombeaconins.AcceptDCBBoardIns{}
-		err := json.Unmarshal([]byte(inst[2]), &acceptDCBBoardIns)
-		if err != nil {
-			fmt.Println("[ndh] - Accept DCB Board intruction ERRORRRRRRRRRRRRRRR", err)
-			return err
-		}
-		err = bsb.UpdateDCBBoard(acceptDCBBoardIns)
-		if err != nil {
-			fmt.Println("[ndh] - Accept DCB Board intruction ERRORRRRRRRRRRRRRRR2", err)
-			return err
-		}
-	case strconv.Itoa(component.AcceptGOVBoardIns):
-		fmt.Println("[ndh] - Accept GOV Board intruction", inst)
-		acceptGOVBoardIns := frombeaconins.AcceptGOVBoardIns{}
-		err := json.Unmarshal([]byte(inst[2]), &acceptGOVBoardIns)
-		if err != nil {
-			fmt.Println("[ndh] - Accept GOV Board intruction ERRORRRRRRRRRRRRRRR", err)
-			return err
-		}
-		err = bsb.UpdateGOVBoard(acceptGOVBoardIns)
-		if err != nil {
-			fmt.Println("[ndh] - Accept GOV Board intruction ERRORRRRRRRRRRRRRRR2", err)
-			return err
-		}
-	case strconv.Itoa(component.ShareRewardOldDCBBoardSupportterIns):
-		ShareRewardOldDCBBoardSupportterIns := frombeaconins.ShareRewardOldBoardIns{}
-		err := json.Unmarshal([]byte(inst[2]), &ShareRewardOldDCBBoardSupportterIns)
-		if err != nil {
-			return err
-		}
-		bsb.UpdateDCBFund(-int64(ShareRewardOldDCBBoardSupportterIns.AmountOfCoin))
-	case strconv.Itoa(component.ShareRewardOldGOVBoardSupportterIns):
-		ShareRewardOldGOVBoardSupportterIns := frombeaconins.ShareRewardOldBoardIns{}
-		err := json.Unmarshal([]byte(inst[2]), &ShareRewardOldGOVBoardSupportterIns)
-		if err != nil {
-			return err
-		}
-		bsb.UpdateGOVFund(-int64(ShareRewardOldGOVBoardSupportterIns.AmountOfCoin))
-	case strconv.Itoa(component.RewardDCBProposalSubmitterIns):
-		rewardDCBProposalSubmitterIns := frombeaconins.RewardProposalSubmitterIns{}
-		err := json.Unmarshal([]byte(inst[2]), &rewardDCBProposalSubmitterIns)
-		if err != nil {
-			return err
-		}
-		bsb.UpdateDCBFund(-int64(rewardDCBProposalSubmitterIns.Amount))
-	case strconv.Itoa(component.RewardGOVProposalSubmitterIns):
-		rewardGOVProposalSubmitterIns := frombeaconins.RewardProposalSubmitterIns{}
-		err := json.Unmarshal([]byte(inst[2]), &rewardGOVProposalSubmitterIns)
-		if err != nil {
-			return err
-		}
-		bsb.UpdateGOVFund(-int64(rewardGOVProposalSubmitterIns.Amount))
 
 	case strconv.Itoa(metadata.BuyFromGOVRequestMeta):
 		return bsb.processBuyFromGOVReqInstruction(inst, db)
@@ -315,87 +259,6 @@ func (bsb *BestStateBeacon) processBuyFromGOVReqInstruction(inst []string, db da
 			return err
 		}
 		stabilityInfo.SalaryFund += (md.Amount * md.BuyPrice)
-	}
-	return nil
-}
-
-func (bsb *BestStateBeacon) processUpdateDCBProposalInstruction(ins frombeaconins.UpdateDCBConstitutionIns) error {
-	dcbParams := ins.DCBParams
-	oldConstitution := bsb.StabilityInfo.DCBConstitution
-	fmt.Printf("[ndh] - - - - - - - - - - - - old Constitution Index %+v \n", oldConstitution)
-	bsb.StabilityInfo.DCBConstitution = DCBConstitution{
-		ConstitutionInfo: ConstitutionInfo{
-			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
-			StartedBlockHeight: bsb.BestBlock.Header.Height,
-			ExecuteDuration:    ins.SubmitProposalInfo.ExecuteDuration,
-			Explanation:        ins.SubmitProposalInfo.Explanation,
-			Voters:             ins.Voters,
-		},
-		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
-		DCBParams:                 dcbParams,
-	}
-	if ins.SubmitProposalInfo.ConstitutionIndex == 0 {
-		bsb.StabilityInfo.DCBConstitution.ConstitutionIndex = 0
-	}
-	return nil
-}
-
-func (bsb *BestStateBeacon) processKeepOldDCBProposalInstruction(ins frombeaconins.KeepOldProposalIns) error {
-	if ins.BoardType != common.DCBBoard {
-		return errors.New("Wrong board type!")
-	}
-	oldConstitution := bsb.StabilityInfo.DCBConstitution
-	bsb.StabilityInfo.DCBConstitution = DCBConstitution{
-		ConstitutionInfo: ConstitutionInfo{
-			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
-			StartedBlockHeight: bsb.BestBlock.Header.Height,
-			ExecuteDuration:    oldConstitution.ExecuteDuration,
-			Explanation:        oldConstitution.Explanation,
-			Voters:             oldConstitution.Voters,
-		},
-		CurrentDCBNationalWelfare: GetOracleDCBNationalWelfare(),
-		DCBParams:                 oldConstitution.DCBParams,
-	}
-	//TODO @dbchiem
-	return nil
-}
-
-func (bsb *BestStateBeacon) processUpdateGOVProposalInstruction(ins frombeaconins.UpdateGOVConstitutionIns) error {
-	oldConstitution := bsb.StabilityInfo.GOVConstitution
-	fmt.Printf("[ndh] - - - - - - - - - - - - old Constitution Index %+v \n", oldConstitution)
-	bsb.StabilityInfo.GOVConstitution = GOVConstitution{
-		ConstitutionInfo: ConstitutionInfo{
-			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
-			StartedBlockHeight: bsb.BestBlock.Header.Height,
-			ExecuteDuration:    ins.SubmitProposalInfo.ExecuteDuration,
-			Explanation:        ins.SubmitProposalInfo.Explanation,
-			Voters:             ins.Voters,
-		},
-		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
-		GOVParams:                 ins.GOVParams,
-	}
-	if ins.SubmitProposalInfo.ConstitutionIndex == 0 {
-		bsb.StabilityInfo.GOVConstitution.ConstitutionIndex = 0
-	}
-	return nil
-}
-
-func (bsb *BestStateBeacon) processKeepOldGOVProposalInstruction(ins frombeaconins.KeepOldProposalIns) error {
-	if ins.BoardType != common.GOVBoard {
-		return errors.New("Wrong board type!")
-	}
-	oldConstitution := bsb.StabilityInfo.GOVConstitution
-	fmt.Printf("[ndh] - - - - - - - - - - - - old Constitution Index %+v \n", oldConstitution)
-	bsb.StabilityInfo.GOVConstitution = GOVConstitution{
-		ConstitutionInfo: ConstitutionInfo{
-			ConstitutionIndex:  oldConstitution.ConstitutionIndex + 1,
-			StartedBlockHeight: bsb.BestBlock.Header.Height,
-			ExecuteDuration:    oldConstitution.ExecuteDuration,
-			Explanation:        oldConstitution.Explanation,
-			Voters:             oldConstitution.Voters,
-		},
-		CurrentGOVNationalWelfare: GetOracleGOVNationalWelfare(),
-		GOVParams:                 oldConstitution.GOVParams,
 	}
 	return nil
 }
