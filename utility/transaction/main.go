@@ -14,8 +14,10 @@ import (
 )
 
 func main() {
+	// init an ico tx for ico account
 	initTx()
 }
+
 func initTx() {
 	db, err := database.Open("leveldb", filepath.Join("./", "./"))
 	if err != nil {
@@ -25,7 +27,7 @@ func initTx() {
 	}
 	var initTxs []string
 	var initAmount, _ = strconv.Atoi(os.Args[1]) // amount init
-	var privateKey = os.Args[2]                 // spending key str
+	var privateKey = os.Args[2]                  // spending key str
 	testUserkeyList := []string{
 		privateKey,
 	}
