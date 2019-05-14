@@ -261,50 +261,50 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
-) bool {
+) (bool, error) {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
 		ok := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 		if !ok {
-			return false
+			return false, nil
 		}
 		if len(customTokenTx.TxTokenData.Vouts) != 1 {
-			return false
+			return false, nil
 		}
 		if len(customTokenTx.TxTokenData.Vins) != 0 && customTokenTx.TxTokenData.Vins != nil {
-			return false
+			return false, nil
 		}
-		return true
+		return true, nil
 	}
 	//Process CustomToken CrossShard
 	if customTokenTx.TxTokenData.Type == CustomTokenCrossShard {
 		ok := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 		if !ok {
-			return false
+			return false, nil
 		}
 		if len(customTokenTx.listUtxo) != 0 {
-			return false
+			return false, nil
 		}
 		if len(customTokenTx.TxTokenData.Vins) != 0 {
-			return false
+			return false, nil
 		}
-		return true
+		return true, nil
 	}
 
 	//Process CustomToken Transfer
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
-		return false
+		return false, nil
 	}
 	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	if !ok {
-		return false
+		return false, nil
 	}
 	if customTokenTx.Metadata != nil {
-		return customTokenTx.Metadata.ValidateMetadataByItself()
+		return customTokenTx.Metadata.ValidateMetadataByItself(), nil
 	}
-	return true
+	return true, nil
 }
 
 func (tx TxCustomToken) String() string {
