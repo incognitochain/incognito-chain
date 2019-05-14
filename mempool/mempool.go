@@ -461,9 +461,9 @@ func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
 
 func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 	if tp.config.UserKeyset != nil {
-		var shardID byte
 		publicKey := tp.config.UserKeyset.PaymentAddress.Pk
 		pubkey := base58.Base58Check{}.Encode(publicKey, common.ZeroByte)
+		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconCommittee) > -1 {
 			return false
 		}
@@ -472,17 +472,17 @@ func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 		}
 		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardCommittee {
 			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
-				shardID = shardCommitteesID
+				if senderShardID == shardCommitteesID {
+					return true
+				}
 			}
 		}
 		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardPendingValidator {
 			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
-				shardID = shardCommitteesID
+				if senderShardID == shardCommitteesID {
+					return true
+				}
 			}
-		}
-		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if senderShardID == shardID {
-			return true
 		}
 	}
 	return false
