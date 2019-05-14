@@ -61,14 +61,6 @@ const (
 	PercentageBoardSalary             = 5
 )
 
-//voting flag
-const (
-	Lv3EncryptionFlag = byte(iota)
-	Lv2EncryptionFlag
-	Lv1EncryptionFlag
-	NormalEncryptionFlag
-)
-
 // For Stability board
 const (
 	DCBBoard = BoardType(0)
