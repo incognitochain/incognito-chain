@@ -157,24 +157,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		case metadata.UpdatingOracleBoardMeta:
 			newInst, err = buildInstForUpdatingOracleBoardReq(shardID, contentStr, beaconBestState)
 
-		case component.NewDCBConstitutionIns:
-			fmt.Println("[ndh]-[NewDCBConstitutionIns] " + inst[2])
-			newInst, err = buildUpdateConstitutionIns(inst[2], common.DCBBoard)
-
-		case component.NewGOVConstitutionIns:
-			fmt.Println("[ndh]-[NewGOVConstitutionIns] " + inst[2])
-			newInst, err = buildUpdateConstitutionIns(inst[2], common.GOVBoard)
-
-		case component.VoteBoardIns:
-			fmt.Println("[ndh]-[AddVoteBoard] " + inst[2])
-			err = blockChain.AddVoteBoard(inst[2])
-
-		case component.SubmitProposalIns:
-			fmt.Println("[ndh]-[AddSubmitProposal] " + inst[2])
-			err = blockChain.AddSubmitProposal(inst[2])
-		case component.VoteProposalIns:
-			fmt.Println("[ndh]-[VoteProposalIns] " + inst[2])
-			err = blockChain.AddVoteProposal(inst[2])
 		default:
 			continue
 		}
@@ -265,19 +247,4 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(txs []met
 	}
 
 	return respTxs, nil
-}
-
-func (chain *BlockChain) AddVoteBoard(inst string) error {
-	//TODO
-	return nil
-}
-
-func (chain *BlockChain) AddSubmitProposal(inst string) error {
-	//TODO
-	return nil
-}
-
-func (chain *BlockChain) AddVoteProposal(inst string) error {
-	//TODO
-	return nil
 }

@@ -43,14 +43,6 @@ type Tx struct {
 	cachedHash *common.Hash // cached hash data of tx
 }
 
-func (tx *Tx) GetAmountOfVote(common.BoardType) (uint64, error) {
-	return 0, errors.New("wrong type of tx")
-}
-
-func (tx *Tx) GetVoterPaymentAddress() (*privacy.PaymentAddress, error) {
-	return nil, errors.New("wrong type of tx")
-}
-
 func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
