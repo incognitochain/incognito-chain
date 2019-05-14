@@ -8,28 +8,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 )
 
-func (bc *BlockChain) verifyUnusedTradeActivationInst(inst []string, shardID byte, accumulatedData *component.UsedInstData) error {
-	// TradeActivation failed either because it's activated, reqAmount too high or failed building Tx
-	if inst[1] != strconv.Itoa(int(shardID)) {
-		return nil
-	}
-
-	data, err := bc.CalcTradeData(inst[2])
-	if err != nil {
-		return nil
-	}
-
-	if data.Activated || data.ReqAmount > data.Amount || accumulatedData.TradeActivated[string(data.TradeID)] {
-		return nil
-	}
-
-	if !data.Buy {
-		// Assume not enough bond to create BuyBackRequest tx
-		return nil
-	}
-	return fmt.Errorf("invalid unused inst: %v, %d, %+v", inst, shardID, accumulatedData)
-}
-
 func (bc *BlockChain) verifyUnusedIssuingRequestInst(inst []string, shardID byte) error {
 	// IssuingRequest inst unused either because type != accepted or failed building Tx
 	if inst[1] != strconv.Itoa(int(shardID)) || inst[2] != "accepted" {
@@ -84,9 +62,6 @@ func (bc *BlockChain) verifyUnusedInstructions(
 
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.TradeActivationMeta):
-			err = bc.verifyUnusedTradeActivationInst(inst, shardID, accumulatedData)
-
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			err = bc.verifyUnusedIssuingRequestInst(inst, shardID)
 
@@ -109,9 +84,7 @@ func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	txs []metadata.Transaction,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
-	accumulatedData := component.UsedInstData{
-		TradeActivated: map[string]bool{},
-	}
+	accumulatedData := component.UsedInstData{}
 
 	instUsed := make([]int, len(insts))
 	invalidTxs := []metadata.Transaction{}

@@ -25,7 +25,6 @@ type BuyBackInfo struct {
 	BuyBackPrice   uint64
 	Value          uint64
 	RequestedTxID  common.Hash
-	TradeID        []byte
 }
 
 type BuyBackReqAction struct {
@@ -81,7 +80,6 @@ func buildInstructionsForBuyBackBondsReq(
 		BuyBackPrice:   bondTypeInfo.BuyBackPrice,
 		Value:          buyBackReqMeta.Amount,
 		RequestedTxID:  buyBackReqAction.TxReqID,
-		TradeID:        buyBackReqMeta.TradeID,
 	}
 	buyBackInfoBytes, err := json.Marshal(buyBackInfo)
 	if err != nil {

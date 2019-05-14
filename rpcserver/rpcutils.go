@@ -22,7 +22,6 @@ var metaConstructors = map[string]metaConstructorType{
 	CreateAndSendCrowdsaleRequestConstant: metadata.NewCrowdsaleRequest,
 	CreateAndSendIssuingRequest:           metadata.NewIssuingRequestFromMap,
 	CreateAndSendContractingRequest:       metadata.NewContractingRequestFromMap,
-	CreateAndSendTradeActivation:          metadata.NewTradeActivation,
 	CreateAndSendVoteProposal:             metadata.NewVoteProposalMetadataFromRPC,
 }
 

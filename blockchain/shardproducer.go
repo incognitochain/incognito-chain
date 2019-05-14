@@ -82,15 +82,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		instructions = append(instructions, swapInstruction)
 	}
 
-	// Build stand-alone stability instructions
-	tradeBondRespInsts, err := blockgen.buildTradeBondConfirmInsts(beaconBlocks, shardID)
-	if err != nil {
-		return nil, err
-	}
-	if tradeBondRespInsts != nil && len(tradeBondRespInsts) > 0 {
-		instructions = append(instructions, tradeBondRespInsts...)
-	}
-
 	block := &ShardBlock{
 		Body: ShardBody{
 			CrossTransactions: crossTransactions,
@@ -338,9 +329,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
 	instUsed := make([]int, len(instsForValidations))
-	accumulatedData := component.UsedInstData{
-		TradeActivated: map[string]bool{},
-	}
+	accumulatedData := component.UsedInstData{}
 
 	for _, txDesc := range sourceTxns {
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)

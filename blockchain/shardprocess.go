@@ -165,30 +165,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 			}
 		}
 	}()
-	var errCh chan error
-	var processed int
-	errCh = make(chan error)
-
-	//TODO: refactor this
-	go func() {
-		errCh <- blockchain.processTradeBondTx(block)
-	}()
-
-	go func() {
-		// Process stability stand-alone instructions
-		errCh <- blockchain.ProcessStandAloneInstructions(block)
-	}()
-
-	for {
-		err := <-errCh
-		if err != nil {
-			return errors.New("Process stability error: " + err.Error())
-		}
-		processed++
-		if processed == 2 {
-			break
-		}
-	}
 
 	// Store metadata instruction to local state
 	for _, beaconBlock := range beaconBlocks {
