@@ -533,30 +533,6 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 	return keyset.Sign(buff.Bytes())
 }
 
-func (tx *TxCustomToken) GetAmountOfVote(boardType common.BoardType) (uint64, error) {
-	sum := uint64(0)
-	for _, vout := range tx.TxTokenData.Vouts {
-		keyWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-		keyset := keyWallet.KeySet
-		paymentAddress := keyset.PaymentAddress
-		pubKey := string(paymentAddress.Pk)
-		if string(vout.PaymentAddress.Pk) == string(pubKey) {
-			if (boardType == common.DCBBoard) && (common.DCBTokenID.Cmp(&vout.txCustomTokenID) == 0) {
-				sum += vout.Value
-			} else {
-				if (boardType == common.GOVBoard) && (common.GOVTokenID.Cmp(&vout.txCustomTokenID) == 0) {
-					sum += vout.Value
-				}
-			}
-		}
-	}
-	return sum, nil
-}
-
-func (tx *TxCustomToken) GetVoterPaymentAddress() (*privacy.PaymentAddress, error) {
-	return &tx.TxTokenData.Vins[0].PaymentAddress, nil
-}
-
 func (tx *TxCustomToken) IsPrivacy() bool {
 	return false
 }

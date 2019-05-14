@@ -425,16 +425,6 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 	for _, inst := range block.Body.Instructions {
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(component.UpdateDCBConstitutionIns):
-			err = bc.processUpdateDCBConstitutionIns(inst)
-		case strconv.Itoa(component.UpdateGOVConstitutionIns):
-			err = bc.processUpdateGOVConstitutionIns(inst)
-
-		case strconv.Itoa(component.KeepOldDCBProposalIns):
-			err = bc.processKeepOldDCBConstitutionIns(inst)
-		case strconv.Itoa(component.KeepOldGOVProposalIns):
-			err = bc.processKeepOldGOVConstitutionIns(inst)
-
 		case strconv.Itoa(metadata.CrowdsalePaymentMeta):
 			err = bc.processCrowdsalePaymentInstruction(inst)
 
@@ -449,7 +439,6 @@ func (bc *BlockChain) updateStabilityLocalState(block *BeaconBlock) error {
 			return err
 		}
 	}
-	return bc.GetDatabase().AddConstantsPriceDB(bc.BestState.Beacon.StabilityInfo.DCBConstitution.ConstitutionIndex, bc.BestState.Beacon.StabilityInfo.Oracle.Constant)
 }
 
 func (bc *BlockChain) storeSaleData(saleData *component.SaleData) error {

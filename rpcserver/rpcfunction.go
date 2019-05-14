@@ -143,26 +143,8 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendTxWithMultiSigsReg:      RpcServer.handleCreateAndSendTxWithMultiSigsReg,
 	CreateAndSendTxWithMultiSigsSpending: RpcServer.handleCreateAndSendTxWithMultiSigsSpending,
 
-	// vote board
-	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
-	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
-	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
-	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteGOVBoardTransaction,
-
-	// vote proposal
-	CreateAndSendVoteProposal: RpcServer.handleCreateAndSendVoteProposalTransaction,
-
-	// Submit Proposal:
-	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
-	CreateRawSubmitDCBProposalTx:     RpcServer.handleCreateRawSubmitDCBProposalTransaction,
-	CreateAndSendSubmitGOVProposalTx: RpcServer.handleCreateAndSendSubmitGOVProposalTransaction,
-	CreateRawSubmitGOVProposalTx:     RpcServer.handleCreateRawSubmitGOVProposalTransaction,
-
 	// dcb
 	GetDCBParams:           RpcServer.handleGetDCBParams,
-	GetDCBConstitution:     RpcServer.handleGetDCBConstitution,
-	GetDCBBoardIndex:       RpcServer.handleGetDCBBoardIndex,
-	GetGOVBoardIndex:       RpcServer.handleGetGOVBoardIndex,
 	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
 	GetBankFund:            RpcServer.handleGetBankFund,
 
@@ -173,7 +155,6 @@ var RpcHandler = map[string]commandHandler{
 	GetOracleTokenIDs:                      RpcServer.handleGetOracleTokenIDs,
 	GetCurrentOracleNetworkParams:          RpcServer.handleGetCurrentOracleNetworkParams,
 	SignUpdatingOracleBoardContent:         RpcServer.handleSignUpdatingOracleBoardContent,
-	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
 	GetGOVParams:                           RpcServer.handleGetGOVParams,
 	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
 	CreateAndSendTxWithBuySellRequest:      RpcServer.handleCreateAndSendTxWithBuySellRequest,

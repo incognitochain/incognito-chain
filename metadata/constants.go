@@ -39,23 +39,6 @@ const (
 	BeaconSalaryResponseMeta     = 40
 	ReturnStakingMeta            = 41
 
-	SubmitDCBProposalMeta          = 43
-	VoteDCBBoardMeta               = 44
-	SubmitGOVProposalMeta          = 45
-	VoteGOVBoardMeta               = 46
-	RewardProposalWinnerMeta       = 47
-	RewardDCBProposalSubmitterMeta = 48
-	RewardGOVProposalSubmitterMeta = 49
-	ShareRewardOldDCBBoardMeta     = 50
-	ShareRewardOldGOVBoardMeta     = 51
-	RewardDCBProposalVoterMeta     = 52
-	RewardGOVProposalVoterMeta     = 53
-	SendBackTokenVoteBoardFailMeta = 54
-	DCBVoteProposalMeta            = 55
-	GOVVoteProposalMeta            = 56
-
-	SendBackTokenToOldSupporterMeta = 59
-
 	//statking
 	ShardStakingMeta  = 63
 	BeaconStakingMeta = 64
