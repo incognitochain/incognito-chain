@@ -950,7 +950,12 @@ func (tx *Tx) ValidateTxByItself(
 		if hasPrivacy {
 			return false, errors.New("Metadata can not exist in not privacy tx")
 		}
-		return tx.Metadata.ValidateMetadataByItself(), nil
+		validateMetadata := tx.Metadata.ValidateMetadataByItself()
+		if validateMetadata {
+			return validateMetadata, nil
+		} else {
+			return validateMetadata, errors.New("Validate Metadata fail")
+		}
 	}
 	return true, nil
 }
