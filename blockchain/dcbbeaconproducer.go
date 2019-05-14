@@ -8,7 +8,6 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/wallet"
 )
 
 // buildPassThroughInstruction converts shard instruction to beacon instruction in order to update BeaconBestState later on in beaconprocess
@@ -111,20 +110,4 @@ func buildPaymentInstructionForCrowdsale(
 	// fmt.Printf("[db] sentValue, payAmount, buyLeft, sellLeft: %d %d %d %d\n", sentAssetValue, paymentAmount, saleData.BuyingAmount, saleData.SellingAmount)
 	// Build instructions
 	return generateCrowdsalePaymentInstruction(paymentAddress, paymentAmount, sellingAsset, saleData.SaleID, sentAmount, true)
-}
-
-func buildInstructionsForTradeActivation(
-	shardID byte,
-	contentStr string,
-) ([][]string, error) {
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
-	dcbShardID := common.GetShardIDFromLastByte(dcbPk[len(dcbPk)-1])
-	inst := []string{
-		strconv.Itoa(metadata.TradeActivationMeta),
-		strconv.Itoa(int(dcbShardID)),
-		contentStr,
-	}
-	fmt.Printf("[db] beacon built inst: %v\n", inst)
-	return [][]string{inst}, nil
 }

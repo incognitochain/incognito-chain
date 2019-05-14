@@ -143,10 +143,6 @@ type DatabaseInterface interface {
 	StoreDCBBondInfo(bondID *common.Hash, amountAvail, cstPaid uint64) error
 	GetDCBBondInfo(bondID *common.Hash) (uint64, uint64)
 
-	// DCB trade bonds with GOV
-	StoreTradeActivation(tradeID []byte, bondID *common.Hash, buy bool, activated bool, amount uint64) error
-	GetTradeActivation(tradeID []byte) (*common.Hash, bool, bool, uint64, error)
-
 	// Reserve
 	StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error
 	GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)

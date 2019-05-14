@@ -251,29 +251,10 @@ func createDCBGenesisParamsInst() []string {
 		},
 	}
 
-	// Trade bonds
-	tradeBondBuyID := [32]byte{5}
-	tradeBondSellID := [32]byte{6}
-	tradeBonds := []*component.TradeBondWithGOV{
-		&component.TradeBondWithGOV{
-			TradeID: tradeBondBuyID[:],
-			BondID:  bondID,
-			Amount:  100,
-			Buy:     true,
-		},
-		&component.TradeBondWithGOV{
-			TradeID: tradeBondSellID[:],
-			BondID:  bondID,
-			Amount:  200,
-			Buy:     false,
-		},
-	}
-
 	dcbParams := component.DCBParams{
 		ListSaleData:     saleData,
 		RaiseReserveData: raiseReserveData,
 		SpendReserveData: spendReserveData,
-		TradeBonds:       tradeBonds,
 	}
 
 	// First proposal created by DCB, reward back to itself

@@ -123,21 +123,6 @@ func validateBondSale(bondID common.Hash, buy bool, amount uint64, bcr Blockchai
 	return nil
 }
 
-func validateTradeData(trade *component.TradeBondWithGOV, bcr BlockchainRetriever, bs bondSale) error {
-	// Valid bondID
-	if !common.IsBondAsset(trade.BondID) {
-		return errors.Errorf("BondID incorrect")
-	}
-
-	// Amount must be set
-	if trade.Amount == 0 {
-		return errors.Errorf("amount must be set")
-	}
-
-	// Check if DCB has enough bond (subtracted amount selling in other sales/trades in this proposal)
-	return validateBondSale(*trade.BondID, trade.Buy, trade.Amount, bcr, bs)
-}
-
 func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever, bs bondSale) error {
 	// No crowdsale existed with the same id
 	if bcr.CrowdsaleExisted(sale.SaleID) {
@@ -188,14 +173,6 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 	}
 	for _, sale := range submitDCBProposalMetadata.DCBParams.ListSaleData {
 		err := validateCrowdsaleData(sale, br, bs)
-		if err != nil {
-			return false, err
-		}
-	}
-
-	// Validate Trade data
-	for _, trade := range submitDCBProposalMetadata.DCBParams.TradeBonds {
-		err := validateTradeData(trade, br, bs)
 		if err != nil {
 			return false, err
 		}
