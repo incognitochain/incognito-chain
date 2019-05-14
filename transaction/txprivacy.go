@@ -440,7 +440,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if len(multisigsRegBytes) > 0 {
 		valid, err = tx.verifyMultiSigsTx(db)
 		if err != nil {
-			Logger.log.Infof("%+v", err)
+			Logger.log.Errorf("%+v", err)
 		}
 		if !valid {
 			return false, nil
@@ -459,14 +459,14 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		if common.CheckDuplicateBigIntArray(sndOutputs) {
-			Logger.log.Infof("Duplicate output coins' snd\n")
+			Logger.log.Errorf("Duplicate output coins' snd\n")
 			return false, nil
 		}
 
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
-				Logger.log.Infof("snd existed: %d\n", i)
+				Logger.log.Errorf("snd existed: %d\n", i)
 				return false, nil
 			}
 		}
@@ -487,7 +487,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
 			return false, nil
 		} else {
-			Logger.log.Debug("SUCCESSED VERIFICATION PAYMENT PROOF ")
+			Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
 	//@UNCOMMENT: metric time
@@ -942,13 +942,13 @@ func (tx *Tx) ValidateTxByItself(
 ) (bool, error) {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	ok, _ := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	if !ok {
-		return false, nil
+		return false, err
 	}
 	if tx.Metadata != nil {
 		if hasPrivacy {
-			return false, nil
+			return false, errors.New("Metadata can not exist in not privacy tx")
 		}
 		return tx.Metadata.ValidateMetadataByItself(), nil
 	}
