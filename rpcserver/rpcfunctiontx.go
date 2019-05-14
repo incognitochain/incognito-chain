@@ -429,7 +429,7 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("New Custom Token Transaction: %s\n", hash.String())
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
