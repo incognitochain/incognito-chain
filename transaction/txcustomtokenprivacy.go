@@ -291,21 +291,21 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
-) bool {
+) (bool, error) {
 	if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
-		return true
+		return true, nil
 	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	if !ok {
-		return false
+		return false, nil
 	}
 
 	if customTokenTx.Metadata != nil {
-		return customTokenTx.Metadata.ValidateMetadataByItself()
+		return customTokenTx.Metadata.ValidateMetadataByItself(), nil
 	}
-	return true
+	return true, nil
 }
 
 func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {

@@ -939,20 +939,20 @@ func (tx *Tx) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
-) bool {
+) (bool, error) {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	ok := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	if !ok {
-		return false
+		return false, nil
 	}
 	if tx.Metadata != nil {
 		if hasPrivacy {
-			return false
+			return false, nil
 		}
-		return tx.Metadata.ValidateMetadataByItself()
+		return tx.Metadata.ValidateMetadataByItself(), nil
 	}
-	return true
+	return true, nil
 }
 
 // GetMetadataType returns the type of underlying metadata if is existed
