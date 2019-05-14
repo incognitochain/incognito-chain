@@ -411,7 +411,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	// start := time.Now()
 	// Verify tx signature
 	if tx.GetType() == common.TxSalaryType {
-		return tx.ValidateTxSalary(db), nil
+		return tx.ValidateTxSalary(db)
 	}
 	if tx.GetType() == common.TxReturnStakingType {
 		return tx.ValidateTxReturnStaking(db), nil
@@ -1158,14 +1158,14 @@ func (tx Tx) ValidateTxReturnStaking(db database.DatabaseInterface,
 
 func (tx Tx) ValidateTxSalary(
 	db database.DatabaseInterface,
-) bool {
+) (bool, error) {
 	// verify signature
 	valid, err := tx.verifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Infof("Error verifying signature of tx: %+v", err)
 		}
-		return false
+		return false, err
 	}
 
 	// check whether output coin's input exists in input list or not
@@ -1174,7 +1174,7 @@ func (tx Tx) ValidateTxSalary(
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.ConstantID[:])
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
-		return false
+		return false, err
 	}
 
 	// check output coin's coin commitment is calculated correctly
@@ -1185,7 +1185,11 @@ func (tx Tx) ValidateTxSalary(
 	shardID := common.GetShardIDFromLastByte(tx.Proof.OutputCoins[0].CoinDetails.GetPubKeyLastByte())
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(tx.Proof.OutputCoins[0].CoinDetails.Randomness))
-	return cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment)
+	ok := cmTmp.IsEqual(tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment)
+	if !ok {
+		return ok, errors.New("check output coin's coin commitment isn't calculated correctly")
+	}
+	return ok, nil
 }
 
 func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.Metadata, error) {
