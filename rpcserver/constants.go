@@ -121,11 +121,6 @@ const (
 	CreateAndSendContractingRequest = "createandsendcontractingrequest"
 	GetIssuingStatus                = "getissuingstatus"
 	GetContractingStatus            = "getcontractingstatus"
-	ConvertETHToDCBTokenAmount      = "convertethtodcbtokenamount"
-	ConvertCSTToETHAmount           = "convertcsttoethamount"
-	GetRaiseReserveInfo             = "getraisereserveinfo"
-	GetSpendReserveInfo             = "getspendreserveinfo"
-	ConvertUSDToDCBTokenAmount      = "convertusdtodcbtokenamount"
 
 	// vote
 	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
