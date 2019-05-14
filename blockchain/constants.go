@@ -135,5 +135,5 @@ const (
 // ---------------------------------------------
 
 var TestnetInitConstant = []string{
-	`{"Version":1,"Type":"s","LockTime":1554269718,"Fee":0,"Info":null,"SigPubKey":"A58CKhajw92BH9mFlRBEbCrAOl8nzD9Ey4TdMLWDKL0A","Sig":"ZqtpQ/H30vwQSNMrNj5yU1CU4hH958AnxsXJVLaysV76IUDP3IN+FiII5nwVs8T4KRwsA60p7EMT7v1H95nN8A==","Proof":"11111116WGHqpGRpb156mNjZAF55nAeqtfP68nb2hQYXCzLzACytCMb85wsvL37QLnSmmFCf6UU4oWWQx1FtQQjmUW1ZFq6dBJt1GwQLNKGz8DqR4P2UfKN2eNXX83htr2AaLUUEQoSw1ntBaRq4ArQgkhT6oMzv5bHqRDbZdR5Z9yt4jZvHGveWdCowP5jRq1vH3j5Z92W9eguWWEhmkKe9hj","PubKeyLastByteSender":0,"Metadata":null}`,
+	`{"Version":1,"Type":"s","LockTime":1557799670,"Fee":0,"Info":null,"SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA","Sig":"P1wbiDpmn2PK9G3FNILqu3JrU5E4ekfrnOz9X7Dd9HRHwp+YDFiEAMLicj7mhKcp3RCR+SWsWOaFxenbrmzXdA==","Proof":"1111111RMhr5Bpy8zSZm7bQEnJcEEbeMSYh6wX9LdwSBjWhESroPN9mvBuwapr4DfKH26bQm9Eu8jtKR3saFoseZj46YQbf7iyuiA6JhAKmekHK1ds4qtFw1ipFzhLYNvp4MYXEupErvQGvZ6bvd9sxDxbwrEFJuV7i8QnHMLftsAAwDAEpDr8MkuxwDXAr5rEjoo9h6SDBHo4c1X6VRBT2GSe3","PubKeyLastByteSender":0,"Metadata":null}`,
 }
