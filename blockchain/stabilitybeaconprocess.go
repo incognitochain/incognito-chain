@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -199,21 +198,6 @@ func (bsb *BestStateBeacon) processContractingReqInstruction(inst []string) erro
 	if err != nil {
 		return err
 	}
-	if bytes.Equal(cInfo.CurrencyType[:], common.USDAssetID[:]) {
-		// no need to update BestStateBeacon
-		return nil
-	}
-	// burn const by crypto
-	stabilityInfo := bsb.StabilityInfo
-	spendReserveData := stabilityInfo.DCBConstitution.DCBParams.SpendReserveData
-	if spendReserveData == nil {
-		return nil
-	}
-	reserveData, existed := spendReserveData[cInfo.CurrencyType]
-	if !existed {
-		return nil
-	}
-	reserveData.Amount -= cInfo.BurnedConstAmount
 	return nil
 }
 
@@ -229,16 +213,6 @@ func (bsb *BestStateBeacon) processIssuingReqInstruction(inst []string) error {
 	if err != nil {
 		return err
 	}
-	stabilityInfo := bsb.StabilityInfo
-	raiseReserveData := stabilityInfo.DCBConstitution.DCBParams.RaiseReserveData
-	if raiseReserveData == nil {
-		return nil
-	}
-	reserveData, existed := raiseReserveData[iInfo.CurrencyType]
-	if !existed {
-		return nil
-	}
-	reserveData.Amount -= iInfo.Amount
 	return nil
 }
 

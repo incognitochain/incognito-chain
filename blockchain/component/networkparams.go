@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
 )
@@ -142,75 +141,6 @@ func NewRefundInfoFromJson(data interface{}) *RefundInfo {
 type SaleDCBTokensByUSDData struct {
 	Amount   uint64
 	EndBlock uint64
-}
-
-type RaiseReserveData struct {
-	EndBlock uint64
-	Amount   uint64 // # BANK tokens
-}
-
-type SpendReserveData struct {
-	EndBlock        uint64
-	ReserveMinPrice uint64
-	Amount          uint64 // Constant to burn
-}
-
-func NewRaiseReserveDataFromJson(data interface{}) map[common.Hash]*RaiseReserveData {
-	if data == nil {
-		return nil
-	}
-	dataMap := data.(map[string]interface{})
-	raiseReserveData := map[common.Hash]*RaiseReserveData{}
-	for key, value := range dataMap {
-		currencyType, err := common.NewHashFromStr(key)
-		if err != nil {
-			continue
-		}
-		values := value.(map[string]interface{})
-		rd := &RaiseReserveData{
-			EndBlock: uint64(values["EndBlock"].(float64)),
-			Amount:   uint64(values["Amount"].(float64)),
-		}
-		raiseReserveData[*currencyType] = rd
-	}
-	return raiseReserveData
-}
-
-func (rrd *RaiseReserveData) Hash() *common.Hash {
-	record := strconv.FormatUint(rrd.EndBlock, 10)
-	record += strconv.FormatUint(rrd.Amount, 10)
-	hash := common.HashH([]byte(record))
-	return &hash
-}
-
-func NewSpendReserveDataFromJson(data interface{}) map[common.Hash]*SpendReserveData {
-	if data == nil {
-		return nil
-	}
-	dataMap := data.(map[string]interface{})
-	spendReserveData := map[common.Hash]*SpendReserveData{}
-	for key, value := range dataMap {
-		currencyType, err := common.NewHashFromStr(key)
-		if err != nil {
-			continue
-		}
-		values := value.(map[string]interface{})
-		sd := &SpendReserveData{
-			EndBlock:        uint64(values["EndBlock"].(float64)),
-			ReserveMinPrice: uint64(values["ReserveMinPrice"].(float64)),
-			Amount:          uint64(values["Amount"].(float64)),
-		}
-		spendReserveData[*currencyType] = sd
-	}
-	return spendReserveData
-}
-
-func (srd *SpendReserveData) Hash() *common.Hash {
-	record := strconv.FormatUint(srd.EndBlock, 10)
-	record += strconv.FormatUint(srd.ReserveMinPrice, 10)
-	record += strconv.FormatUint(srd.Amount, 10)
-	hash := common.HashH([]byte(record))
-	return &hash
 }
 
 type OracleNetwork struct {

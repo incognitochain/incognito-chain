@@ -93,23 +93,6 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 	if !submitDCBProposalMetadata.SubmitProposalInfo.ValidateTxWithBlockChain(common.DCBBoard, chainID, db) {
 		return false, errors.Errorf("SubmitProposalInfo invalid")
 	}
-
-	fmt.Println("[db] validating dcb proposal")
-
-	// Validate reserve data
-	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData
-	for assetID, _ := range raiseReserveData {
-		if br.GetAssetPrice(&assetID) == 0 {
-			return false, errors.Errorf("cannot raise reserve without oracle price for asset %s", assetID.String())
-		}
-	}
-
-	spendReserveData := submitDCBProposalMetadata.DCBParams.SpendReserveData
-	for assetID, _ := range spendReserveData {
-		if br.GetAssetPrice(&assetID) == 0 {
-			return false, errors.Errorf("cannot spend reserve without oracle price for asset %s", assetID.String())
-		}
-	}
 	return true, nil
 }
 
