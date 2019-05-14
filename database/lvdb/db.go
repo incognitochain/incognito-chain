@@ -69,10 +69,6 @@ var (
 	// bond type
 	bondTypePrefix = []byte("bondtype-")
 
-	// crowdsale
-	crowdsalePrefix   = []byte("crowdsale-")
-	dcbBondInfoPrefix = []byte("dcbBondInfo-")
-
 	Unreward   = []byte("unreward")
 	Spent      = []byte("spent")
 	Unspent    = []byte("unspent")

@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -313,9 +312,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 			panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
 		}
-		accumulativeValues := &accumulativeValues{
-			saleDataMap: map[string]*component.SaleData{},
-		}
+		accumulativeValues := &accumulativeValues{}
 		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
 		var keys []int
 		for k := range allShardBlocks {

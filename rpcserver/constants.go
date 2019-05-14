@@ -114,18 +114,6 @@ const (
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
 
-	// crowdsale
-	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"
-	CreateCrowdsaleRequestToken           = "createcrowdsalerequesttoken"
-	SendCrowdsaleRequestToken             = "sendcrowdsalerequesttoken"
-	CreateAndSendCrowdsaleRequestToken    = "createandsendcrowdsalerequesttoken"
-	CreateCrowdsaleRequestConstant        = "createcrowdsalerequestconstant"
-	SendCrowdsaleRequestConstant          = "sendcrowdsalerequestconstant"
-	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
-	GetListDCBProposalBuyingAssets        = "getlistdcbproposalbuyingassets"
-	GetListDCBProposalSellingAssets       = "getlistdcbproposalsellingassets"
-	GetDCBBondInfo                        = "getdcbbondinfo"
-
 	// reserve
 	CreateIssuingRequest            = "createissuingrequest"
 	SendIssuingRequest              = "sendissuingrequest"

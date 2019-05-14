@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
@@ -178,9 +177,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	allShardBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock(shardsToBeacon)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
-	accumulativeValues := &accumulativeValues{
-		saleDataMap: map[string]*component.SaleData{},
-	}
+	accumulativeValues := &accumulativeValues{}
 	var keys []int
 	for k := range allShardBlocks {
 		keys = append(keys, int(k))

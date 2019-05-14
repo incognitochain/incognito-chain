@@ -1,14 +1,11 @@
 package component
 
 import (
-	"crypto/rand"
 	"fmt"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
 )
-
-const saleDataSep = "-"
 
 type SellingBonds struct {
 	BondName       string
@@ -113,73 +110,6 @@ func NewSellingGOVTokensFromJson(data interface{}) *SellingGOVTokens {
 		uint64(sellingGOVTokensData["SellingWithin"].(float64)),
 	)
 	return sellingGOVTokens
-}
-
-type SaleData struct {
-	SaleID   []byte // Unique id of the crowdsale to store in db
-	EndBlock uint64
-
-	BondID *common.Hash
-	Price  uint64 // price per bond (in Constant)
-	Amount uint64 // number of bond to buy/sell
-	Buy    bool   // buying or selling bond
-
-	proposalTxHash common.Hash // Temp storage; stored permanent in db, not in proposal
-}
-
-func (sd *SaleData) SetProposalTxHash(h common.Hash) {
-	sd.proposalTxHash = h
-}
-
-func (sd *SaleData) GetProposalTxHash() common.Hash {
-	return sd.proposalTxHash
-}
-
-func NewSaleData(
-	endBlock uint64,
-	bondID *common.Hash,
-	price uint64,
-	amount uint64,
-	buy bool,
-) *SaleData {
-	return &SaleData{
-		EndBlock: endBlock,
-		BondID:   bondID,
-		Price:    price,
-		Amount:   amount,
-		Buy:      buy,
-	}
-}
-
-func NewSaleDataFromJson(data interface{}) *SaleData {
-	if data == nil {
-		return nil
-	}
-	saleDataRaw := data.(map[string]interface{})
-	bondIDRaw := saleDataRaw["BondID"].(string)
-	bondID, err := common.Hash{}.NewHashFromStr(bondIDRaw)
-	if err != nil {
-		return nil
-	}
-
-	saleData := NewSaleData(
-		uint64(saleDataRaw["EndBlock"].(float64)),
-		bondID,
-		uint64(saleDataRaw["Price"].(float64)),
-		uint64(saleDataRaw["Amount"].(float64)),
-		saleDataRaw["Buy"].(bool),
-	)
-
-	// Generate SaleID randomly
-	hash := saleData.PartialHash()
-	salt := make([]byte, 32)
-	rand.Read(salt)
-	saltedHash := []byte{}
-	saltedHash = append(saltedHash, hash[:]...)
-	saltedHash = append(saltedHash, salt...)
-	saleID := common.HashH(saltedHash)
-	saleData.SaleID = saleID[:]
-	return saleData
 }
 
 type RefundInfo struct {
@@ -325,24 +255,6 @@ func NewOracleNetworkFromJson(data interface{}) *OracleNetwork {
 		uint8(oracleNetworkData["OracleRewardMultiplier"].(float64)),
 	)
 	return oracleNetwork
-}
-
-func (saleData *SaleData) PartialHash() *common.Hash {
-	record := string(saleData.EndBlock)
-	record += saleData.BondID.String()
-	record += string(saleData.Amount)
-	record += string(saleData.Price)
-	record += strconv.FormatBool(saleData.Buy)
-	hash := common.HashH([]byte(record))
-	return &hash
-}
-
-func (saleData *SaleData) Hash() *common.Hash {
-	h := saleData.PartialHash()
-	record := string(saleData.SaleID)
-	record += string(h[:])
-	hash := common.HashH([]byte(record))
-	return &hash
 }
 
 func (sellingBonds *SellingBonds) Hash() *common.Hash {
