@@ -1,8 +1,6 @@
 package component
 
 import (
-	"fmt"
-
 	"github.com/constant-money/constant-chain/common"
 )
 
@@ -16,33 +14,18 @@ type Oracle struct {
 }
 
 type DCBParams struct {
-	ListSaleData     []SaleData
 	RaiseReserveData map[common.Hash]*RaiseReserveData
 	SpendReserveData map[common.Hash]*SpendReserveData
 }
 
 func NewDCBParams(
-	listSaleData []SaleData,
 	raiseReserveData map[common.Hash]*RaiseReserveData,
 	spendReserveData map[common.Hash]*SpendReserveData,
 ) *DCBParams {
 	return &DCBParams{
-		ListSaleData:     listSaleData,
 		RaiseReserveData: raiseReserveData,
 		SpendReserveData: spendReserveData,
 	}
-}
-
-func NewListSaleDataFromJson(data interface{}) ([]SaleData, error) {
-	listSaleDataData := common.InterfaceSlice(data)
-	if listSaleDataData == nil {
-		return nil, fmt.Errorf("ListSaleData must be a slice")
-	}
-	listSaleData := make([]SaleData, 0)
-	for _, i := range listSaleDataData {
-		listSaleData = append(listSaleData, *NewSaleDataFromJson(i))
-	}
-	return listSaleData, nil
 }
 
 func NewDCBParamsFromJson(rawData interface{}) (*DCBParams, error) {
@@ -51,13 +34,7 @@ func NewDCBParamsFromJson(rawData interface{}) (*DCBParams, error) {
 	raiseReserveData := NewRaiseReserveDataFromJson(DCBParams["RaiseReserveData"])
 	spendReserveData := NewSpendReserveDataFromJson(DCBParams["SpendReserveData"])
 
-	listSaleData, err := NewListSaleDataFromJson(DCBParams["ListSaleData"])
-	if err != nil {
-		return nil, err
-	}
-
 	return NewDCBParams(
-		listSaleData,
 		raiseReserveData,
 		spendReserveData,
 	), nil
@@ -117,9 +94,6 @@ func NewGOVParamsFromJson(data interface{}) *GOVParams {
 
 func (dcbParams *DCBParams) Hash() *common.Hash {
 	record := ""
-	for _, saleData := range dcbParams.ListSaleData {
-		record += string(saleData.Hash().GetBytes())
-	}
 	for key, data := range dcbParams.RaiseReserveData {
 		record := string(key[:])
 		record += data.Hash().String()

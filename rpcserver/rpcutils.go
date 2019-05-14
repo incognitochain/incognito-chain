@@ -18,11 +18,9 @@ import (
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
 
 var metaConstructors = map[string]metaConstructorType{
-	CreateAndSendCrowdsaleRequestToken:    metadata.NewCrowdsaleRequest,
-	CreateAndSendCrowdsaleRequestConstant: metadata.NewCrowdsaleRequest,
-	CreateAndSendIssuingRequest:           metadata.NewIssuingRequestFromMap,
-	CreateAndSendContractingRequest:       metadata.NewContractingRequestFromMap,
-	CreateAndSendVoteProposal:             metadata.NewVoteProposalMetadataFromRPC,
+	CreateAndSendIssuingRequest:     metadata.NewIssuingRequestFromMap,
+	CreateAndSendContractingRequest: metadata.NewContractingRequestFromMap,
+	CreateAndSendVoteProposal:       metadata.NewVoteProposalMetadataFromRPC,
 }
 
 func isTxForVoting(meta metadata.Metadata) bool {

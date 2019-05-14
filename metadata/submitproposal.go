@@ -84,76 +84,6 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) BuildReqActions(
 	return [][]string{instStr}, nil
 }
 
-type bondSale struct {
-	buying  map[common.Hash]uint64
-	selling map[common.Hash]uint64
-}
-
-func validateBondSale(bondID common.Hash, buy bool, amount uint64, bcr BlockchainRetriever, bs bondSale) error {
-	freeAmount := bcr.GetDCBFreeBond(&bondID)
-	if !buy && freeAmount < amount+bs.selling[bondID] {
-		return errors.Errorf("not enough bond asset, free %d, sell %d", freeAmount, amount)
-	}
-
-	if !buy {
-		// Cannot buy and sell the same type of bond at the same time
-		if bs.buying[bondID] > 0 {
-			return errors.Errorf("cannot buy and sell the same bond in a single proposal")
-		}
-
-		// Check on-going sales
-		oldSales, err := bcr.GetAllSaleData()
-		if err != nil {
-			return err
-		}
-		for _, oldSale := range oldSales {
-			if oldSale.EndBlock >= bcr.GetBeaconHeight() {
-				continue // sale ended
-			}
-			if oldSale.Buy && bondID.IsEqual(oldSale.BondID) {
-				return errors.Errorf("cannot buy and sell the same bond at the same time")
-			}
-		}
-
-		// Update amount of bonds sold in this proposal
-		bs.selling[bondID] += amount
-	} else {
-		bs.buying[bondID] += amount
-	}
-	return nil
-}
-
-func validateCrowdsaleData(sale component.SaleData, bcr BlockchainRetriever, bs bondSale) error {
-	// No crowdsale existed with the same id
-	if bcr.CrowdsaleExisted(sale.SaleID) {
-		return errors.Errorf("crowdsale with the same ID existed: %x", sale.SaleID)
-	}
-
-	// Valid bondID
-	if !common.IsBondAsset(sale.BondID) {
-		return errors.Errorf("BondID incorrect")
-	}
-
-	// EndBlock is valid
-	if sale.EndBlock <= bcr.GetBeaconHeight() {
-		return errors.Errorf("crowdsale EndBlock must be higher than current beacon height")
-	}
-
-	// Amount and DefaultPrice must be set
-	if sale.Amount*sale.Price == 0 {
-		return errors.Errorf("crowdsale asset amount and price must be set")
-	}
-
-	// Sell price (in Constant) must be higher than average buy price
-	amount, paid := bcr.GetDCBBondInfo(sale.BondID)
-	if paid > amount*sale.Price {
-		return fmt.Errorf("bond sell price is too low, got %d expected at least %d", sale.Price, paid/amount)
-	}
-
-	// Check if DCB has enough bond (subtracted amount selling in other sales/trades in this proposal)
-	return validateBondSale(*sale.BondID, sale.Buy, sale.Amount, bcr, bs)
-}
-
 func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockChain(
 	tx Transaction,
 	br BlockchainRetriever,
@@ -165,18 +95,6 @@ func (submitDCBProposalMetadata *SubmitDCBProposalMetadata) ValidateTxWithBlockC
 	}
 
 	fmt.Println("[db] validating dcb proposal")
-
-	// Validate Crowdsale data
-	bs := bondSale{
-		buying:  map[common.Hash]uint64{},
-		selling: map[common.Hash]uint64{},
-	}
-	for _, sale := range submitDCBProposalMetadata.DCBParams.ListSaleData {
-		err := validateCrowdsaleData(sale, br, bs)
-		if err != nil {
-			return false, err
-		}
-	}
 
 	// Validate reserve data
 	raiseReserveData := submitDCBProposalMetadata.DCBParams.RaiseReserveData

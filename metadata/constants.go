@@ -11,8 +11,7 @@ const (
 
 	// Dividend: removed 7-8
 
-	CrowdsaleRequestMeta = 10
-	CrowdsalePaymentMeta = 11
+	// Crowdsale: removed 10-11
 
 	// CMB: removed 12-19
 
@@ -75,7 +74,6 @@ var minerCreatedMetaTypes = []int{
 	BuyFromGOVRequestMeta,
 	BuyBackRequestMeta,
 	ShardBlockSalaryResponseMeta,
-	CrowdsalePaymentMeta,
 	IssuingResponseMeta,
 	ContractingResponseMeta,
 }

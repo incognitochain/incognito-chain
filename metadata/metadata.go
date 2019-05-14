@@ -133,13 +133,6 @@ type BlockchainRetriever interface {
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
 
-	// For validating crowdsale
-	GetSaleData([]byte) (*component.SaleData, error)
-	GetAllSaleData() ([]*component.SaleData, error)
-	CrowdsaleExisted(saleID []byte) bool
-	GetDCBBondInfo(bondID *common.Hash) (uint64, uint64)
-	GetDCBFreeBond(bondID *common.Hash) uint64
-
 	// For validating reserve
 	GetAssetPrice(assetID *common.Hash) uint64
 

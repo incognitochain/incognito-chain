@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
@@ -68,22 +67,6 @@ func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateSanityData(b
 
 func (acceptDCBProposalMetadata *AcceptDCBProposalMetadata) ValidateMetadataByItself() bool {
 	return true
-}
-
-func getSaleDataActionValue(meta *AcceptDCBProposalMetadata, bcr BlockchainRetriever) (string, error) {
-	_, _, _, txProposal, err := bcr.GetTransactionByHash(&meta.AcceptProposalMetadata.ProposalTXID)
-	if err != nil {
-		return "", err
-	}
-	metaProposal, ok := txProposal.GetMetadata().(*SubmitDCBProposalMetadata)
-	if !ok {
-		return "", errors.New("Error parsing proposal metadata")
-	}
-	value, err := json.Marshal(metaProposal.DCBParams)
-	if err != nil {
-		return "", err
-	}
-	return string(value), nil
 }
 
 func ParseAcceptDCBProposalMetadataActionValue(values string) (*component.DCBParams, error) {

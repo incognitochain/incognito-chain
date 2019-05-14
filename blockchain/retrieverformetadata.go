@@ -1,16 +1,13 @@
 package blockchain
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	privacy "github.com/constant-money/constant-chain/privacy"
-	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 func (blockchain *BlockChain) GetDatabase() database.DatabaseInterface {
@@ -107,85 +104,6 @@ func (blockchain *BlockChain) GetDCBParams() component.DCBParams {
 
 func (blockchain *BlockChain) GetGOVParams() component.GOVParams {
 	return blockchain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams
-}
-
-//// Crowdsales
-func (blockchain *BlockChain) parseProposalCrowdsaleData(proposalTxHash *common.Hash, saleID []byte) *component.SaleData {
-	var saleData *component.SaleData
-	_, _, _, proposalTx, err := blockchain.GetTransactionByHash(proposalTxHash)
-	if err == nil {
-		proposalMeta := proposalTx.GetMetadata().(*metadata.SubmitDCBProposalMetadata)
-		fmt.Printf("[db] proposal cs data: %+v\n", proposalMeta)
-		for _, data := range proposalMeta.DCBParams.ListSaleData {
-			fmt.Printf("[db] data ptr: %p, data: %+v\n", &data, data)
-			if bytes.Equal(data.SaleID, saleID) {
-				saleData = &data
-				saleData.SetProposalTxHash(*proposalTxHash)
-				break
-			}
-		}
-	}
-	return saleData
-}
-
-// GetProposedCrowdsale returns SaleData from BeaconBestState; BuyingAmount and SellingAmount might be outdated, the rest is ok to use
-func (blockchain *BlockChain) GetSaleData(saleID []byte) (*component.SaleData, error) {
-	saleRaw, err := blockchain.config.DataBase.GetSaleData(saleID)
-	if err != nil {
-		return nil, err
-	}
-	sale := &component.SaleData{}
-	err = json.Unmarshal(saleRaw, &sale)
-	return sale, err
-}
-
-func (blockchain *BlockChain) GetDCBBondInfo(bondID *common.Hash) (uint64, uint64) {
-	return blockchain.config.DataBase.GetDCBBondInfo(bondID)
-}
-
-func (blockchain *BlockChain) GetAllSaleData() ([]*component.SaleData, error) {
-	data, err := blockchain.config.DataBase.GetAllSaleData()
-	if err == lvdberr.ErrNotFound {
-		return nil, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	sales := []*component.SaleData{}
-	for _, saleRaw := range data {
-		sale := &component.SaleData{}
-		err := json.Unmarshal(saleRaw, sale)
-		if err != nil {
-			return nil, err
-		}
-		sales = append(sales, sale)
-	}
-	return sales, nil
-}
-
-func (blockchain *BlockChain) CrowdsaleExisted(saleID []byte) bool {
-	_, err := blockchain.config.DataBase.GetSaleData(saleID)
-	return err == nil
-}
-
-// GetDCBBondInfo returns amount of bonds owned by DCB that is free to trade
-// (not being hold up in other trades/crowdsales)
-func (blockchain *BlockChain) GetDCBFreeBond(bondID *common.Hash) uint64 {
-	amount, _ := blockchain.GetDCBBondInfo(bondID)
-
-	// Subtract amounts from ongoing crowdsales that are selling the same bond
-	sales, _ := blockchain.GetAllSaleData()
-	for _, sale := range sales {
-		if sale.Buy || !sale.BondID.IsEqual(bondID) || sale.EndBlock < blockchain.GetBeaconHeight() {
-			continue
-		}
-		if sale.Amount >= amount {
-			amount = 0
-		} else {
-			amount -= sale.Amount
-		}
-	}
-	return amount
 }
 
 //// Reserve

@@ -209,29 +209,6 @@ func createDCBGenesisBoardInst() []string {
 }
 
 func createDCBGenesisParamsInst() []string {
-	// Crowdsale bonds
-	bondID, _ := common.NewHashFromStr("a1bdba2624828899959bd3704df90859539623d89ba6767d0000000000000000")
-	buyBondSaleID := [32]byte{1}
-	sellBondSaleID := [32]byte{2}
-	saleData := []component.SaleData{
-		component.SaleData{
-			SaleID:   buyBondSaleID[:],
-			EndBlock: 1000,
-			BondID:   bondID,
-			Amount:   100,  // 100 bonds
-			Price:    100,  // 100 cent Constant per bond
-			Buy:      true, // 100 cent per CST
-		},
-		component.SaleData{
-			SaleID:   sellBondSaleID[:],
-			EndBlock: 2000,
-			BondID:   bondID,
-			Amount:   200,   // 100 bonds
-			Price:    150,   // 150 cent Constant per bond
-			Buy:      false, // 100 cent per CST
-		},
-	}
-
 	// Reserve
 	raiseReserveData := map[common.Hash]*component.RaiseReserveData{
 		common.ETHAssetID: &component.RaiseReserveData{
@@ -252,7 +229,6 @@ func createDCBGenesisParamsInst() []string {
 	}
 
 	dcbParams := component.DCBParams{
-		ListSaleData:     saleData,
 		RaiseReserveData: raiseReserveData,
 		SpendReserveData: spendReserveData,
 	}

@@ -198,8 +198,6 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// validate for normal tx
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	ok, err := tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
 	if ok {
 		if len(tx.listUtxo) == 0 {
@@ -211,16 +209,6 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
-
-			// Bond sent from DCB can be created by anyone but only with
-			// appropriate metadata and instruction
-			if bytes.Equal(vin.PaymentAddress.Pk, dcbPk) {
-				metaType := tx.GetMetadataType()
-				if metaType != metadata.CrowdsalePaymentMeta && metaType != metadata.BuyBackRequestMeta {
-					return false, errors.New("Check Bond from DCB")
-				}
-				continue
-			}
 
 			// get data from utxo
 			utxo := tx.listUtxo[vin.TxCustomTokenID]
