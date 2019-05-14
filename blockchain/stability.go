@@ -14,7 +14,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata/frombeaconins"
 	"github.com/constant-money/constant-chain/metadata/fromshardins"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
 )
 
 type accumulativeValues struct {
@@ -32,7 +31,6 @@ type accumulativeValues struct {
 	totalShardSalary     uint64
 	totalRefundAmt       uint64
 	totalOracleRewards   uint64
-	saleDataMap          map[string]*component.SaleData
 }
 
 func getStabilityInfoByHeight(blockchain *BlockChain, beaconHeight uint64) (*StabilityInfo, error) {
@@ -202,9 +200,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		case metadata.BuyGOVTokenRequestMeta:
 			newInst, err = buildInstructionsForBuyGOVTokensReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
-		case metadata.CrowdsaleRequestMeta:
-			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues, blockChain)
-
 		case metadata.BuyBackRequestMeta:
 			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blockChain)
 
@@ -296,8 +291,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
-	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
-	unspentTokens := map[string]([]transaction.TxTokenVout){}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		fmt.Println("[ndh] - beaconBlock[", beaconBlock.Header.Height, "]")
@@ -386,8 +379,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 						return nil, err
 					}
 					resTxs = append(resTxs, tx)
-				case metadata.CrowdsalePaymentMeta:
-					txs, err = blockgen.buildPaymentForCrowdsale(l[2], unspentTokens, producerPrivateKey, shardID)
 
 				case metadata.BuyFromGOVRequestMeta:
 					contentStr := l[3]

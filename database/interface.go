@@ -136,13 +136,6 @@ type DatabaseInterface interface {
 	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
 	PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool
 
-	// Crowdsale
-	StoreSaleData(saleID, data []byte) error
-	GetSaleData(saleID []byte) ([]byte, error)
-	GetAllSaleData() ([][]byte, error)
-	StoreDCBBondInfo(bondID *common.Hash, amountAvail, cstPaid uint64) error
-	GetDCBBondInfo(bondID *common.Hash) (uint64, uint64)
-
 	// Reserve
 	StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error
 	GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)

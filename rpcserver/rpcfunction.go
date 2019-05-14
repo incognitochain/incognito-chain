@@ -104,18 +104,6 @@ var RpcHandler = map[string]commandHandler{
 	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
 	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
 
-	// Crowdsale
-	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
-	CreateCrowdsaleRequestToken:           RpcServer.handleCreateCrowdsaleRequestToken,
-	SendCrowdsaleRequestToken:             RpcServer.handleSendCrowdsaleRequestToken,
-	CreateAndSendCrowdsaleRequestToken:    RpcServer.handleCreateAndSendCrowdsaleRequestToken,
-	CreateCrowdsaleRequestConstant:        RpcServer.handleCreateCrowdsaleRequestConstant,
-	SendCrowdsaleRequestConstant:          RpcServer.handleSendCrowdsaleRequestConstant,
-	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
-	GetListDCBProposalBuyingAssets:        RpcServer.handleGetListDCBProposalBuyingAssets,
-	GetListDCBProposalSellingAssets:       RpcServer.handleGetListDCBProposalSellingAssets,
-	GetDCBBondInfo:                        RpcServer.handleGetDCBBondInfo,
-
 	// Reserve
 	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
 	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
