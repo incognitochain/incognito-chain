@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -134,7 +133,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 	stakeBeaconTxID := []string{}
 	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks, beaconHeight)
 	if err != nil {
-		fmt.Println("[ndh] - wtf err???", err)
 		return nil, err
 	}
 

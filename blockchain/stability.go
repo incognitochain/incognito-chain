@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/constant-money/constant-chain/blockchain/component"
-	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
@@ -112,10 +111,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if len(inst) == 0 {
 			continue
 		}
-		if inst[0] != "37" {
-			fmt.Println("[ndh] -----------------------> Instrucstion from shard to beacon ", inst)
-			fmt.Printf("[db] beaconProducer found inst: %s\n", inst[0])
-		}
 		// TODO: will improve the condition later
 		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction {
 			continue
@@ -174,11 +169,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	return instructions, nil
 }
 
-func buildUpdateConstitutionIns(inst string, boardType common.BoardType) ([][]string, error) {
-	//TODO
-	return nil, nil
-}
-
 func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	beaconBlocks []*BeaconBlock,
 	producerPrivateKey *privacy.PrivateKey,
@@ -189,7 +179,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	tradeActivated := map[string]bool{}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
-		fmt.Println("[ndh] - beaconBlock[", beaconBlock.Header.Height, "]")
 		for _, l := range beaconBlock.Body.Instructions {
 			// TODO: will improve the condition later
 			var tx metadata.Transaction
