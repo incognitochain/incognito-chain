@@ -360,11 +360,15 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		}
 	}
 	startValidate := time.Now()
-	validated, _ := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
+	validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	go common.AnalyzeTimeSeriesVTBITxTypeMetric(txType, float64(time.Since(startValidate).Seconds()))
 	if !validated {
 		err := MempoolTxError{}
-		err.Init(RejectInvalidTx, errors.New("invalid tx"))
+		messageError := "Invalid tx - "
+		if errValidateTxByItself != nil {
+			messageError += errValidateTxByItself.Error()
+		}
+		err.Init(RejectInvalidTx, errors.New(messageError))
 		return err
 	}
 
