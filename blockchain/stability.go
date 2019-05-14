@@ -3,6 +3,10 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"strconv"
+	"strings"
+
 	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database/lvdb"
@@ -11,9 +15,6 @@ import (
 	"github.com/constant-money/constant-chain/metadata/fromshardins"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
-	"math"
-	"strconv"
-	"strings"
 )
 
 type accumulativeValues struct {
@@ -204,9 +205,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		case metadata.CrowdsaleRequestMeta:
 			newInst, err = buildInstructionsForCrowdsaleRequest(shardID, contentStr, beaconBestState, accumulativeValues, blockChain)
 
-		case metadata.TradeActivationMeta:
-			newInst, err = buildInstructionsForTradeActivation(shardID, contentStr)
-
 		case metadata.BuyBackRequestMeta:
 			newInst, err = buildInstructionsForBuyBackBondsReq(shardID, contentStr, beaconBestState, accumulativeValues, blockChain)
 
@@ -300,7 +298,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 ) ([]metadata.Transaction, error) {
 	// TODO(@0xbunyip): refund bonds in multiple blocks since many refund instructions might come at once and UTXO picking order is not perfect
 	unspentTokens := map[string]([]transaction.TxTokenVout){}
-	tradeActivated := map[string]bool{}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		fmt.Println("[ndh] - beaconBlock[", beaconBlock.Header.Height, "]")
@@ -391,9 +388,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 					resTxs = append(resTxs, tx)
 				case metadata.CrowdsalePaymentMeta:
 					txs, err = blockgen.buildPaymentForCrowdsale(l[2], unspentTokens, producerPrivateKey, shardID)
-
-				case metadata.TradeActivationMeta:
-					txs, err = blockgen.buildTradeActivationTx(l[2], unspentTokens, producerPrivateKey, tradeActivated, shardID)
 
 				case metadata.BuyFromGOVRequestMeta:
 					contentStr := l[3]

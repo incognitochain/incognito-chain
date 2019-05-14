@@ -20,8 +20,6 @@ const (
 	ShareRewardOldGOVBoardSupportterIns //14
 	SendBackTokenVoteBoardFailIns       //15
 
-	ConfirmBuySellRequestMeta //16
-	ConfirmBuyBackRequestMeta //17
 	RewardDCBProposalVoterIns //18
 	RewardGOVProposalVoterIns //19
 	KeepOldDCBProposalIns     //20

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
-	"github.com/pkg/errors"
 )
 
 type Oracle struct {
@@ -18,20 +17,17 @@ type Oracle struct {
 
 type DCBParams struct {
 	ListSaleData     []SaleData
-	TradeBonds       []*TradeBondWithGOV
 	RaiseReserveData map[common.Hash]*RaiseReserveData
 	SpendReserveData map[common.Hash]*SpendReserveData
 }
 
 func NewDCBParams(
 	listSaleData []SaleData,
-	tradeBonds []*TradeBondWithGOV,
 	raiseReserveData map[common.Hash]*RaiseReserveData,
 	spendReserveData map[common.Hash]*SpendReserveData,
 ) *DCBParams {
 	return &DCBParams{
 		ListSaleData:     listSaleData,
-		TradeBonds:       tradeBonds,
 		RaiseReserveData: raiseReserveData,
 		SpendReserveData: spendReserveData,
 	}
@@ -49,37 +45,19 @@ func NewListSaleDataFromJson(data interface{}) ([]SaleData, error) {
 	return listSaleData, nil
 }
 
-func NewTradeBondsFromJson(data interface{}) ([]*TradeBondWithGOV, error) {
-	tradeBondData := common.InterfaceSlice(data)
-	if tradeBondData == nil {
-		return nil, errors.Errorf("Invalid TradeBonds data")
-	}
-	tradeBonds := make([]*TradeBondWithGOV, 0)
-	for _, data := range tradeBondData {
-		trade, err := NewTradeBondWithGOVFromJson(data)
-		if err != nil {
-			return nil, err
-		}
-		tradeBonds = append(tradeBonds, trade)
-	}
-	return tradeBonds, nil
-}
-
 func NewDCBParamsFromJson(rawData interface{}) (*DCBParams, error) {
 	DCBParams := rawData.(map[string]interface{})
 
 	raiseReserveData := NewRaiseReserveDataFromJson(DCBParams["RaiseReserveData"])
 	spendReserveData := NewSpendReserveDataFromJson(DCBParams["SpendReserveData"])
 
-	listSaleData, errSale := NewListSaleDataFromJson(DCBParams["ListSaleData"])
-	tradeBonds, errTrade := NewTradeBondsFromJson(DCBParams["TradeBonds"])
-	if err := common.CheckError(errSale, errTrade); err != nil {
+	listSaleData, err := NewListSaleDataFromJson(DCBParams["ListSaleData"])
+	if err != nil {
 		return nil, err
 	}
 
 	return NewDCBParams(
 		listSaleData,
-		tradeBonds,
 		raiseReserveData,
 		spendReserveData,
 	), nil
@@ -141,9 +119,6 @@ func (dcbParams *DCBParams) Hash() *common.Hash {
 	record := ""
 	for _, saleData := range dcbParams.ListSaleData {
 		record += string(saleData.Hash().GetBytes())
-	}
-	for _, trade := range dcbParams.TradeBonds {
-		record += string(trade.Hash().GetBytes())
 	}
 	for key, data := range dcbParams.RaiseReserveData {
 		record := string(key[:])

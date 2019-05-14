@@ -143,16 +143,9 @@ type BlockchainRetriever interface {
 	// For validating reserve
 	GetAssetPrice(assetID *common.Hash) uint64
 
-	// For validating trade bonds
-	GetAllTrades() []*component.TradeBondWithGOV
-	GetTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
-	GetLatestTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
-
 	GetConstitution(boardType common.BoardType) ConstitutionInterface
 	// UpdateDCBFund(transaction Transaction)
 	GetGovernor(boardType common.BoardType) GovernorInterface
-	CalcTradeData(string) (*component.TradeData, error)
-	GetSellBondPrice(*common.Hash) uint64
 }
 
 // Interface for all types of metadata in tx

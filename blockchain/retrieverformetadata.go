@@ -10,7 +10,6 @@ import (
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
 	privacy "github.com/constant-money/constant-chain/privacy"
-	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
@@ -186,49 +185,12 @@ func (blockchain *BlockChain) GetDCBFreeBond(bondID *common.Hash) uint64 {
 			amount -= sale.Amount
 		}
 	}
-
-	// Subtract amounts from ongoing trades that proposed selling the same bonds to GOV
-	trades := blockchain.GetAllTrades()
-	for _, t := range trades {
-		if t.Buy || !t.BondID.IsEqual(bondID) {
-			continue
-		}
-		if t.Amount >= amount {
-			amount = 0
-		} else {
-			amount -= t.Amount
-		}
-	}
 	return amount
 }
 
 //// Reserve
 func (blockchain *BlockChain) GetAssetPrice(assetID *common.Hash) uint64 {
 	return blockchain.BestState.Beacon.GetAssetPrice(*assetID)
-}
-
-//// Trade bonds
-func (blockchain *BlockChain) GetAllTrades() []*component.TradeBondWithGOV {
-	return blockchain.BestState.Beacon.StabilityInfo.DCBConstitution.DCBParams.TradeBonds
-}
-
-func (blockchain *BlockChain) GetTradeActivation(tradeID []byte) (*common.Hash, bool, bool, uint64, error) {
-	return blockchain.config.DataBase.GetTradeActivation(tradeID)
-}
-
-// GetLatestTradeActivation returns trade activation from local state if exist, otherwise get from current proposal
-func (blockchain *BlockChain) GetLatestTradeActivation(tradeID []byte) (*common.Hash, bool, bool, uint64, error) {
-	bondID, buy, activated, amount, err := blockchain.config.DataBase.GetTradeActivation(tradeID)
-	if err == nil {
-		return bondID, buy, activated, amount, nil
-	}
-	for _, trade := range blockchain.GetAllTrades() {
-		if bytes.Equal(trade.TradeID, tradeID) {
-			activated := false
-			return trade.BondID, trade.Buy, activated, trade.Amount, nil
-		}
-	}
-	return nil, false, false, 0, errors.New("no trade found")
 }
 
 func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string) {
