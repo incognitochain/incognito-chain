@@ -60,13 +60,6 @@ type StabilityInfo struct {
 	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
 	BankFund   uint64 // for DBank
 
-	GOVConstitution GOVConstitution // component which get from governance for network
-	DCBConstitution DCBConstitution
-
-	// BOARD
-	DCBGovernor DCBGovernor
-	GOVGovernor GOVGovernor
-
 	// Price feeds through Oracle
 	Oracle component.Oracle
 }
