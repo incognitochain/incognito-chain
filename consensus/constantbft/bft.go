@@ -21,6 +21,7 @@ type BFTProtocol struct {
 	pendingBlock interface{}
 
 	RoundData struct {
+		MinBeaconHeight  uint64
 		BestStateHash    common.Hash
 		IsProposer       bool
 		Layer            string
@@ -126,7 +127,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		}
 	} else {
 
-		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState)
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState, protocol.RoundData.MinBeaconHeight)
 		go common.AnalyzeTimeSeriesShardBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
 		if err != nil {
 			Logger.log.Error(err)

@@ -382,9 +382,9 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.tokenIDMtx.Lock()
+			tp.tokenIDMtx.RLock()
 			found := common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool)
-			tp.tokenIDMtx.Unlock()
+			tp.tokenIDMtx.RUnlock()
 			if found > 0 {
 				str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
 				err := MempoolTxError{}
@@ -398,9 +398,9 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-			tp.tokenIDMtx.Lock()
+			tp.candidateMtx.RLock()
 			found := common.IndexOfStrInHashMap(pubkey, tp.CandidatePool)
-			tp.tokenIDMtx.Unlock()
+			tp.candidateMtx.RUnlock()
 			if found > 0 {
 				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
 				err := MempoolTxError{}
@@ -466,9 +466,9 @@ func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
 
 func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 	if tp.config.UserKeyset != nil {
-		var shardID byte
 		publicKey := tp.config.UserKeyset.PaymentAddress.Pk
 		pubkey := base58.Base58Check{}.Encode(publicKey, common.ZeroByte)
+		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconCommittee) > -1 {
 			return false
 		}
@@ -477,17 +477,17 @@ func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 		}
 		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardCommittee {
 			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
-				shardID = shardCommitteesID
+				if senderShardID == shardCommitteesID {
+					return true
+				}
 			}
 		}
 		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardPendingValidator {
 			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
-				shardID = shardCommitteesID
+				if senderShardID == shardCommitteesID {
+					return true
+				}
 			}
-		}
-		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if senderShardID == shardID {
-			return true
 		}
 	}
 	return false
