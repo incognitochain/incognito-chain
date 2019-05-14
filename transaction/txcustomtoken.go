@@ -200,13 +200,13 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 	// validate for normal tx
 	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
 	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
-	ok, _ := tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
+	ok, err := tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
 	if ok {
 		if len(tx.listUtxo) == 0 {
-			return false, nil
+			return false, errors.New("Len listUtxo is 0")
 		}
 		if len(tx.TxTokenData.Vins) == 0 {
-			return false, nil
+			return false, errors.New("Len Vins is 0")
 		}
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
@@ -217,7 +217,7 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			if bytes.Equal(vin.PaymentAddress.Pk, dcbPk) {
 				metaType := tx.GetMetadataType()
 				if metaType != metadata.CrowdsalePaymentMeta && metaType != metadata.BuyBackRequestMeta {
-					return false, nil
+					return false, errors.New("Check Bond from DCB")
 				}
 				continue
 			}
@@ -229,12 +229,12 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			signature, _, _ := base58.Base58Check{}.Decode(vin.Signature)
 			ok, err := keySet.Verify(data[:], signature)
 			if err != nil || !ok {
-				return false, nil
+				return false, err
 			}
 		}
 		return true, nil
 	}
-	return false, nil
+	return false, err
 }
 
 func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
@@ -294,14 +294,17 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	//Process CustomToken Transfer
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
-		return false, nil
+		return false, errors.New("getListUTXOFromTxCustomToken")
 	}
-	ok, _ = customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-	if !ok {
-		return false, nil
+	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+		return false, err
 	}
 	if customTokenTx.Metadata != nil {
-		return customTokenTx.Metadata.ValidateMetadataByItself(), nil
+		validateMetadata := customTokenTx.Metadata.ValidateMetadataByItself()
+		if !validateMetadata {
+			return validateMetadata, errors.New("Metadata is invalid")
+		}
+		return validateMetadata, nil
 	}
 	return true, nil
 }
