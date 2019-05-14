@@ -189,7 +189,7 @@ type Transaction interface {
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
 	ValidateSanityData(BlockchainRetriever) (bool, error)
-	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) bool
+	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) (bool, error)
 	ValidateType() bool
 	GetMetadata() Metadata
 	SetMetadata(Metadata)

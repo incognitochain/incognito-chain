@@ -264,6 +264,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	//Logger.log.Infof("Add Transaction %+v Successs \n", tx.Hash().String())
 }
+
 /*
 // maybeAcceptTransaction is the internal function which implements the public
 // See the comment for MaybeAcceptTransaction for more details.
@@ -359,7 +360,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		}
 	}
 	startValidate := time.Now()
-	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
+	validated, _ := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	go common.AnalyzeTimeSeriesVTBITxTypeMetric(txType, float64(time.Since(startValidate).Seconds()))
 	if !validated {
 		err := MempoolTxError{}
@@ -502,7 +503,7 @@ func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx){
+	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx) {
 		err := errors.New("Unexpected Transaction Source Shard")
 		Logger.log.Error(err)
 		return &common.Hash{}, &TxDesc{}, err
@@ -537,7 +538,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxNoPrivacy, float64(1))
 	}
 	if err != nil {
-			Logger.log.Error(err)
+		Logger.log.Error(err)
 	}
 	return hash, txDesc, err
 }
