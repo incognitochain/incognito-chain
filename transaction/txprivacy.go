@@ -432,7 +432,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	multisigsRegBytes, getMSRErr := db.GetMultiSigsRegistration(senderPK)
 	if getMSRErr != nil {
 		Logger.log.Errorf("getMSRErr: %v\n", getMSRErr)
-		return false, nil
+		return false, getMSRErr
 	}
 
 	// found, spending on multisigs address
@@ -443,7 +443,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Errorf("%+v", err)
 		}
 		if !valid {
-			return false, nil
+			return false, err
 		}
 	}
 
@@ -460,14 +460,14 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		if common.CheckDuplicateBigIntArray(sndOutputs) {
 			Logger.log.Errorf("Duplicate output coins' snd\n")
-			return false, nil
+			return false, errors.New("Duplicate output coins' snd\n")
 		}
 
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
 				Logger.log.Errorf("snd existed: %d\n", i)
-				return false, nil
+				return false, errors.New(fmt.Sprintf("snd existed: %d\n", i))
 			}
 		}
 
@@ -476,7 +476,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			for i := 0; i < len(tx.Proof.InputCoins); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.InputCoins[i].CoinDetails.CoinCommitment.Compress(), db, shardID, tokenID)
 				if !ok || err != nil {
-					return false, nil
+					return false, err
 				}
 			}
 		}
@@ -485,7 +485,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
 		if !valid {
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			return false, nil
+			return false, errors.New("FAILED VERIFICATION PAYMENT PROOF")
 		} else {
 			Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
