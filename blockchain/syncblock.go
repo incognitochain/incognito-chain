@@ -588,7 +588,6 @@ func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
 }
 
 func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
-
 	currentInsert.Shards[shardID].Lock()
 	defer currentInsert.Shards[shardID].Unlock()
 	blks := blockchain.config.ShardPool[shardID].GetValidBlock()

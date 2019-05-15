@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
+	lru "github.com/hashicorp/golang-lru"
 	"sync"
 	"time"
 )
@@ -11,10 +12,12 @@ import (
 const (
 	MAX_VALID_PENDING_BLK_IN_POOL   = 10000
 	MAX_INVALID_PENDING_BLK_IN_POOL = 10000
+	CACHE_SIZE = 2000
 )
 type ShardPoolConfig struct {
 	MaxValidBlock int
 	MaxInvalidBlock int
+	CacheSize int
 }
 type ShardPool struct {
 	pool              []*blockchain.ShardBlock // shardID -> height -> block
@@ -26,12 +29,14 @@ type ShardPool struct {
 	latestValidHeight uint64
 	mtx               *sync.RWMutex
 	config            ShardPoolConfig
+	cache             *lru.Cache
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
 var defaultConfig = ShardPoolConfig{
 	MaxValidBlock: MAX_VALID_PENDING_BLK_IN_POOL,
 	MaxInvalidBlock: MAX_INVALID_PENDING_BLK_IN_POOL,
+	CacheSize: CACHE_SIZE,
 }
 //@NOTICE: Shard pool will always be empty when node start
 func init() {
@@ -69,6 +74,7 @@ func GetShardPool(shardID byte) *ShardPool {
 		shardPool.conflictedPool = []*blockchain.ShardBlock{}
 		shardPool.config = defaultConfig
 		shardPool.pendingPool = make(map[uint64]*blockchain.ShardBlock)
+		shardPool.cache, _ = lru.New(shardPool.config.CacheSize)
 	}
 	return shardPoolMap[shardID]
 }
@@ -103,6 +109,9 @@ func (self *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 }
 func(self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock) error {
 	//If receive old block, it will ignore
+	if _, ok := self.cache.Get(block.Header.Hash()); ok {
+		return errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork")
+	}
 	if block.Header.Height <= self.latestValidHeight {
 		if self.latestValidHeight - block.Header.Height >= 1 {
 			self.conflictedPool = append(self.conflictedPool, block)
@@ -166,7 +175,6 @@ func (self *ShardPool) promotePendingPool(){
 			}
 		}
 	}
-	
 }
 //@Notice: Remove should set latest valid height
 //Because normal node may not have these block to remove
@@ -181,6 +189,7 @@ func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 	for index, block := range self.validPool {
 		if block.Header.Height <= lastBlockHeight {
 			// if reach the end of pool then pool will be reset to empty array
+			self.cache.Add(block.Header.Hash(), block)
 			if index == len(self.validPool)-1 {
 				self.validPool = self.validPool[index+1:]
 			}
