@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
@@ -332,7 +331,6 @@ func (tx *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 	return true, nil
 }

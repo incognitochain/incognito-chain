@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -178,12 +177,6 @@ func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[commo
 		result[*tx.Hash()] = tx
 	}
 	return result, nil
-}
-
-// GetOracleParams returns oracle component
-func (blockchain *BlockChain) GetOracleParams() *component.Oracle {
-	return &component.Oracle{}
-	// return blockchain.BestState[0].BestBlock.Header.Oracle
 }
 
 // -------------- End of Blockchain retriever's implementation --------------

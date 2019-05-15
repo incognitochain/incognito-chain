@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/metadata"
 )
 

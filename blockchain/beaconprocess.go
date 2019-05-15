@@ -308,7 +308,6 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 			panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
 		}
-		accumulativeValues := &accumulativeValues{}
 		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
 		var keys []int
 		for k := range allShardBlocks {
@@ -354,7 +353,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					}
 				}
 				for _, shardBlock := range shardBlocks {
-					tempShardState, validStaker, validSwapper, stabilityInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, accumulativeValues, shardID)
+					tempShardState, validStaker, validSwapper, stabilityInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
 					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 					validStakers = append(validStakers, validStaker...)
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
@@ -364,12 +363,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 			}
 		}
-		oracleInsts, err := blockchain.buildOracleRewardInstructions(&beaconBestState)
-		if err != nil {
-			fmt.Println("Build oracle reward instructions failed: ", err)
-		} else if len(oracleInsts) > 0 {
-			stabilityInstructions = append(stabilityInstructions, oracleInsts...)
-		}
+
 		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
 		fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
 		tempInstructionArr := []string{}
@@ -584,11 +578,6 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 	//cross shard state
 
 	// update param
-	err := bestStateBeacon.updateOracleParams(chain)
-	if err != nil {
-		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-		return NewBlockChainError(UnExpectedError, err)
-	}
 	instructions := newBlock.Body.Instructions
 	for _, l := range instructions {
 		if len(l) < 1 {
