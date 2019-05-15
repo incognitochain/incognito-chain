@@ -419,25 +419,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		return false, nil
 	}
 
-	senderPK := tx.GetSigPubKey()
-	multisigsRegBytes, getMSRErr := db.GetMultiSigsRegistration(senderPK)
-	if getMSRErr != nil {
-		Logger.log.Errorf("getMSRErr: %v\n", getMSRErr)
-		return false, getMSRErr
-	}
-
-	// found, spending on multisigs address
-	// Multi signatures
-	if len(multisigsRegBytes) > 0 {
-		valid, err = tx.verifyMultiSigsTx(db)
-		if err != nil {
-			Logger.log.Errorf("%+v", err)
-		}
-		if !valid {
-			return false, err
-		}
-	}
-
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}

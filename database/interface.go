@@ -137,13 +137,6 @@ type DatabaseInterface interface {
 	GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)
 	StoreContractingInfo(reqTxID common.Hash, amount uint64, redeem uint64, instType string) error
 	GetContractingInfo(reqTxID common.Hash) (uint64, uint64, string, error)
-
-	// Multisigs
-	StoreMultiSigsRegistration([]byte, []byte) error
-	GetMultiSigsRegistration([]byte) ([]byte, error)
-	// bond
-	StoreSoldBondTypes(*common.Hash, []byte) error
-	GetSoldBondTypes() ([][]byte, error)
-	GetSoldBondTypeByID(*common.Hash) ([]byte, error)
+	
 	Close() error
 }

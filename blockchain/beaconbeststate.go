@@ -54,10 +54,6 @@ type BestStateBeacon struct {
 	lockMu      sync.RWMutex
 }
 
-func (si StabilityInfo) GetBytes() []byte {
-	return common.GetBytes(si)
-}
-
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
 	res := make(map[byte]uint64)
 	for index, element := range bestStateBeacon.BestShardHeight {
@@ -112,7 +108,6 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	bestStateBeacon.ShardPendingValidator = make(map[byte][]string)
 	bestStateBeacon.Params = make(map[string]string)
 	bestStateBeacon.CurrentRandomNumber = -1
-	bestStateBeacon.StabilityInfo = StabilityInfo{}
 	bestStateBeacon.BeaconCommitteeSize = netparam.BeaconCommitteeSize
 	bestStateBeacon.ShardCommitteeSize = netparam.ShardCommitteeSize
 	bestStateBeacon.ActiveShards = netparam.ActiveShards

@@ -66,11 +66,6 @@ func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) []
 	return pubKeys
 }
 
-//// Reserve
-func (blockchain *BlockChain) GetAssetPrice(assetID *common.Hash) uint64 {
-	return blockchain.BestState.Beacon.GetAssetPrice(*assetID)
-}
-
 func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string) {
 	beaconBestState := BestStateBeacon{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()

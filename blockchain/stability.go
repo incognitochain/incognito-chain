@@ -52,7 +52,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if err != nil {
 			return [][]string{}, err
 		}
-		contentStr := inst[1]
 		newInst := [][]string{}
 		switch metaType {
 		// case metadata.IssuingRequestMeta:
@@ -68,7 +67,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			Logger.log.Error(err)
 			continue
 		}
-
 		if len(newInst) > 0 {
 			instructions = append(instructions, newInst...)
 		}
@@ -84,11 +82,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-			// TODO: will improve the condition later
-			var tx metadata.Transaction
-			var err error
-			txs := []metadata.Transaction{}
-
 			if l[0] == SwapAction {
 				fmt.Println("SA: swap instruction ", l, beaconBlock.Header.Height, blockgen.chain.BestState.Beacon.ShardCommittee)
 				for _, v := range strings.Split(l[2], ",") {
