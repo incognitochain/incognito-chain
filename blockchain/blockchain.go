@@ -821,7 +821,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		paymentAddressKey = append(paymentAddressKey, common.Int32ToBytes(int32(voutIndex))...)
 		_, err := blockchain.config.DataBase.HasValue(paymentAddressKey)
 		if err != nil {
 			return err
@@ -866,7 +866,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		paymentAddressKey = append(paymentAddressKey, common.Int32ToBytes(int32(voutIndex))...)
 		ok, err := blockchain.config.DataBase.HasValue(paymentAddressKey)
 		// Vout already exist
 		if ok {
@@ -992,9 +992,9 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.
 				return nil, err
 			}
 			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])[0]
-			voutIndex := int(voutIndexByte)
-			vout.SetIndex(voutIndex)
+			voutIndexByte := []byte(keys[4])
+			voutIndex := common.BytesToInt32(voutIndexByte)
+			vout.SetIndex(int(voutIndex))
 			value, err := strconv.Atoi(values[0])
 			if err != nil {
 				return nil, err
