@@ -1,43 +1,13 @@
 package blockchain
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/constant-money/constant-chain/metadata"
 )
-
-func (bc *BlockChain) verifyUnusedIssuingRequestInst(inst []string, shardID byte) error {
-	// IssuingRequest inst unused either because type != accepted or failed building Tx
-	if inst[1] != strconv.Itoa(int(shardID)) || inst[2] != "accepted" {
-		return nil
-	}
-
-	_, err := component.ParseIssuingInfo(inst[3])
-	if err != nil {
-		return nil
-	}
-	return fmt.Errorf("invalid unused inst: %v, %d, %+v", inst, shardID)
-}
-
-func (bc *BlockChain) verifyUnusedContractingRequestInst(inst []string, shardID byte) error {
-	// ContractingRequest inst unused either because type != refund or failed building Tx
-	if inst[1] != strconv.Itoa(int(shardID)) || inst[2] != "refund" {
-		return nil
-	}
-
-	_, err := component.ParseContractingInfo(inst[3])
-	if err != nil {
-		return nil
-	}
-	return fmt.Errorf("invalid unused inst: %v, %d, %+v", inst, shardID)
-}
 
 func (bc *BlockChain) verifyUnusedInstructions(
 	insts [][]string,
 	instUsed []int,
 	shardID byte,
-	accumulatedData *component.UsedInstData,
 ) error {
 	for i, inst := range insts {
 		if instUsed[i] > 0 {
@@ -46,11 +16,13 @@ func (bc *BlockChain) verifyUnusedInstructions(
 
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.IssuingRequestMeta):
-			err = bc.verifyUnusedIssuingRequestInst(inst, shardID)
+		// case strconv.Itoa(metadata.IssuingRequestMeta):
+		// 	err = bc.verifyUnusedIssuingRequestInst(inst, shardID)
 
-		case strconv.Itoa(metadata.ContractingRequestMeta):
-			err = bc.verifyUnusedContractingRequestInst(inst, shardID)
+		// case strconv.Itoa(metadata.ContractingRequestMeta):
+		// 	err = bc.verifyUnusedContractingRequestInst(inst, shardID)
+		default:
+			return nil
 		}
 
 		if err != nil {
@@ -65,12 +37,11 @@ func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	txs []metadata.Transaction,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
-	accumulatedData := component.UsedInstData{}
 
 	instUsed := make([]int, len(insts))
 	invalidTxs := []metadata.Transaction{}
 	for _, tx := range txs {
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instUsed, shardID, bc, &accumulatedData)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instUsed, shardID, bc)
 		if err != nil {
 			return nil, err
 		}
@@ -81,7 +52,7 @@ func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	if len(invalidTxs) > 0 {
 		return invalidTxs, nil
 	}
-	err := bc.verifyUnusedInstructions(insts, instUsed, shardID, &accumulatedData)
+	err := bc.verifyUnusedInstructions(insts, instUsed, shardID)
 	if err != nil {
 		return nil, err
 	}

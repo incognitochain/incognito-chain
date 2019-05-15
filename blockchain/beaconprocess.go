@@ -180,10 +180,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	}
 	GetBestStateBeacon().lockMu.Unlock()
 	// ************ Store block at last
-	Logger.log.Info("Store StabilityInfo ")
-	if err := blockchain.config.DataBase.StoreStabilityInfoByHeight(block.Header.Height, bestStateBeacon.StabilityInfo); err != nil {
-		return err
-	}
 	//========Store new Beaconblock and new Beacon bestState in cache
 	Logger.log.Infof("Store Beacon BestState  ")
 	if err := blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon); err != nil {
