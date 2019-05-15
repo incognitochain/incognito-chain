@@ -1,16 +1,11 @@
 package blockchain
 
 import (
-	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/wallet"
 )
 
 func CreateBeaconGenesisBlock(
@@ -32,12 +27,7 @@ func CreateBeaconGenesisBlock(
 	inst = append(inst, shardAssingInstruction)
 
 	// init network param
-	// inst = append(inst, []string{InitAction, salaryFund, strconv.Itoa(int(genesisParams.InitFundSalary))})
 	inst = append(inst, []string{SetAction, "randomnumber", strconv.Itoa(int(0))})
-
-	// init stability params
-	stabilityInsts := createStabilityGenesisInsts(genesisParams)
-	inst = append(inst, stabilityInsts...)
 
 	body := BeaconBody{ShardState: nil, Instructions: inst}
 	header := BeaconHeader{
@@ -61,135 +51,4 @@ func CreateBeaconGenesisBlock(
 	}
 
 	return block
-}
-
-// createStabilityGenesisInsts generates instructions to initialize stability params for genesis block of beacon chain
-func createStabilityGenesisInsts(genesisParams GenesisParams) [][]string {
-	govInsts := createGOVGenesisInsts(genesisParams)
-	dcbInsts := createDCBGenesisInsts()
-	insts := [][]string{}
-	insts = append(insts, govInsts...)
-	insts = append(insts, dcbInsts...)
-	return insts
-}
-
-func createGOVGenesisInsts(genesisParams GenesisParams) [][]string {
-	return [][]string{
-		createGOVGenesisBoardInst(),
-		createGOVGenesisParamInst(genesisParams),
-		createGOVGenesisOracleInst(),
-		createGOVGenesisSalaryFund(genesisParams),
-	}
-}
-
-func createGOVGenesisSalaryFund(genesisParams GenesisParams) []string {
-	return []string{InitAction, salaryFund, strconv.Itoa(int(genesisParams.InitFundSalary))}
-}
-
-func createGOVGenesisOracleInst() []string {
-	initialPrices := component.Oracle{
-		DCBToken: 1000,   // $10
-		GOVToken: 500,    // $5
-		Constant: 100,    // $1
-		ETH:      15000,  // $150
-		BTC:      400000, // $4000
-	}
-	content, err := json.Marshal(initialPrices)
-	if err != nil {
-		fmt.Println("Error to marshal oracleInitialPrices: ", err)
-		return []string{}
-	}
-	return []string{
-		InitAction,
-		oracleInitialPrices,
-		string(content),
-	}
-}
-
-func createGOVGenesisBoardInst() []string {
-	// govMemberAddr := privacy.PaymentAddress{
-	// 	Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
-	// 	Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
-	// }
-	return nil
-}
-
-func createGOVGenesisParamInst(genesisParams GenesisParams) []string {
-	// Bond
-	sellingBonds := &component.SellingBonds{
-		BondName:       "Bond 1000 blocks",
-		BondSymbol:     "BND1000",
-		TotalIssue:     1000,
-		BondsToSell:    1000,
-		BondPrice:      100, // 1 constant
-		Maturity:       3,
-		BuyBackPrice:   120, // 1.2 constant
-		StartSellingAt: 0,
-		SellingWithin:  100000,
-	}
-	sellingGOVTokens := &component.SellingGOVTokens{
-		TotalIssue:      1000,
-		GOVTokensToSell: 1000,
-		GOVTokenPrice:   500, // 5 constant
-		StartSellingAt:  0,
-		SellingWithin:   10000,
-	}
-
-	oracleNetwork := &component.OracleNetwork{
-		OraclePubKeys:          []string{"039f022a16a3c3dd811fd9859510446c2ac03a5f27cc3f44cb84dd30b58328bd00"},
-		UpdateFrequency:        10,
-		Quorum:                 1,
-		OracleRewardMultiplier: 1, // 0.01C
-		AcceptableErrorMargin:  200,
-		WrongTimesAllowed:      2,
-	}
-
-	govParams := component.GOVParams{
-		SalaryPerTx:      uint64(genesisParams.SalaryPerTx),
-		BasicSalary:      uint64(genesisParams.BasicSalary),
-		FeePerKbTx:       uint64(genesisParams.FeePerTxKb),
-		SellingBonds:     sellingBonds,
-		SellingGOVTokens: sellingGOVTokens,
-		RefundInfo:       nil,
-		OracleNetwork:    oracleNetwork,
-	}
-
-	// First proposal created by GOV, reward back to itself
-	keyWalletGOVAccount, _ := wallet.Base58CheckDeserialize(common.GOVAddress)
-	govAddress := keyWalletGOVAccount.KeySet.PaymentAddress
-	return nil
-}
-
-func createDCBGenesisInsts() [][]string {
-	boardInst := createDCBGenesisBoardInst()
-	paramInst := createDCBGenesisParamsInst()
-	insts := [][]string{}
-	if len(boardInst) > 0 {
-		insts = append(insts, boardInst)
-	}
-	if len(paramInst) > 0 {
-		insts = append(insts, paramInst)
-	}
-	return insts
-}
-
-func createDCBGenesisBoardInst() []string {
-	boardAddress := []privacy.PaymentAddress{
-		// Payment4: 112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy
-		privacy.PaymentAddress{
-			Pk: []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0},
-			Tk: []byte{2, 58, 116, 58, 73, 55, 129, 154, 193, 197, 40, 130, 50, 242, 99, 84, 59, 31, 107, 85, 68, 234, 250, 118, 66, 188, 15, 139, 89, 254, 12, 38, 211},
-		},
-	}
-
-	return nil
-}
-
-func createDCBGenesisParamsInst() []string {
-	dcbParams := component.DCBParams{}
-
-	// First proposal created by DCB, reward back to itself
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbAddress := keyWalletDCBAccount.KeySet.PaymentAddress
-	return nil
 }

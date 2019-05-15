@@ -23,23 +23,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 	var md Metadata
 	switch int(mtTemp["Type"].(float64)) {
-	case BuyFromGOVRequestMeta:
-		md = &BuySellRequest{}
-
-	case BuyBackRequestMeta:
-		md = &BuyBackRequest{}
-
-	case BuyGOVTokenRequestMeta:
-		md = &BuyGOVTokenRequest{}
-
 	case ResponseBaseMeta:
 		md = &ResponseBase{}
-
-	case BuyFromGOVResponseMeta:
-		md = &BuySellResponse{}
-
-	case BuyBackResponseMeta:
-		md = &BuyBackResponse{}
 
 	case IssuingRequestMeta:
 		md = &IssuingRequest{}
@@ -52,27 +37,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 
 	case ContractingResponseMeta:
 		md = &ResponseBase{}
-
-	case OracleFeedMeta:
-		md = &OracleFeed{}
-
-	case OracleRewardMeta:
-		md = &OracleReward{}
-
-	case RefundMeta:
-		md = &Refund{}
-
-	case UpdatingOracleBoardMeta:
-		md = &UpdatingOracleBoard{}
-
-	case MultiSigsRegistrationMeta:
-		md = &MultiSigsRegistration{}
-
-	case MultiSigsSpendingMeta:
-		md = &MultiSigsSpending{}
-
-	case WithSenderAddressMeta:
-		md = &WithSenderAddress{}
 
 	case ShardBlockSalaryResponseMeta:
 		md = &ShardBlockSalaryRes{}

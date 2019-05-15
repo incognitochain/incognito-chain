@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 )
 
@@ -43,7 +42,6 @@ type BestStateBeacon struct {
 	CurrentRandomTimeStamp                 int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                 `json:"IsGetRandomNumber"`
 	Params                                 map[string]string    `json:"Params,omitempty"`
-	StabilityInfo                          StabilityInfo        `json:"StabilityInfo"`
 	BeaconCommitteeSize                    int                  `json:"BeaconCommitteeSize"`
 	ShardCommitteeSize                     int                  `json:"ShardCommitteeSize"`
 	ActiveShards                           int                  `json:"ActiveShards"`
@@ -54,14 +52,6 @@ type BestStateBeacon struct {
 
 	ShardHandle map[byte]bool `json:"ShardHandle"` // lock sync.RWMutex
 	lockMu      sync.RWMutex
-}
-
-type StabilityInfo struct {
-	SalaryFund uint64 // use to pay salary for miners(block producer or current leader) in chain
-	BankFund   uint64 // for DBank
-
-	// Price feeds through Oracle
-	Oracle component.Oracle
 }
 
 func (si StabilityInfo) GetBytes() []byte {
@@ -301,32 +291,6 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) 
 	}
 
 	return common.EmptyString, 0
-}
-
-// GetAssetPrice returns price stored in Oracle
-func (bestStateBeacon *BestStateBeacon) GetAssetPrice(assetID common.Hash) uint64 {
-	price := uint64(0)
-	if common.IsBondAsset(&assetID) {
-		if bestStateBeacon.StabilityInfo.Oracle.Bonds != nil {
-			price = bestStateBeacon.StabilityInfo.Oracle.Bonds[assetID.String()]
-		}
-	} else {
-		oracle := bestStateBeacon.StabilityInfo.Oracle
-		if common.IsConstantAsset(&assetID) {
-			price = oracle.Constant
-		} else if assetID.IsEqual(&common.DCBTokenID) {
-			price = oracle.DCBToken
-		} else if assetID.IsEqual(&common.GOVTokenID) {
-			price = oracle.GOVToken
-		} else if assetID.IsEqual(&common.ETHAssetID) {
-			price = oracle.ETH
-		} else if assetID.IsEqual(&common.BTCAssetID) {
-			price = oracle.BTC
-		} else if assetID.IsEqual(&common.USDAssetID) {
-			price = 1 // Oracle's price is again USD itself
-		}
-	}
-	return price
 }
 
 //This only happen if user is a beacon committee member.

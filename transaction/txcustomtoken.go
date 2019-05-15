@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -651,7 +650,6 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 	if !tx.TxTokenData.Mintable {
 		return true, nil
@@ -665,5 +663,5 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	// if !meta.IsMinerCreatedMetaType() {
 	// 	return false, nil
 	// }
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr, accumulatedData)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr)
 }
