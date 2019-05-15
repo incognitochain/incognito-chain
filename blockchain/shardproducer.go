@@ -185,13 +185,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	}()
 
 	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
-	// Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
-	if err != nil {
-		return nil, err
-	}
-	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
-	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
+	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +320,6 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
 	instUsed := make([]int, len(instsForValidations))
-	accumulatedData := component.UsedInstData{}
 
 	for _, txDesc := range sourceTxns {
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
@@ -340,7 +333,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain, &accumulatedData)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain)
 		if err != nil || !ok {
 			txToRemove = append(txToRemove, tx)
 			continue
