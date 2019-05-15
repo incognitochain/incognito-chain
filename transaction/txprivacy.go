@@ -382,17 +382,6 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	return res, nil
 }
 
-func (tx *Tx) verifyMultiSigsTx(db database.DatabaseInterface) (bool, error) {
-	meta := tx.GetMetadata()
-	if meta == nil {
-		return false, nil
-	}
-	if meta.GetType() != metadata.MultiSigsSpendingMeta {
-		return false, nil
-	}
-	return meta.VerifyMultiSigs(tx, db)
-}
-
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
