@@ -7,8 +7,6 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
-
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
@@ -18,39 +16,39 @@ import (
 	"github.com/constant-money/constant-chain/wallet"
 )
 
-func (rpcServer RpcServer) getBondTypes() (*jsonresult.GetBondTypeResult, error) {
-	db := *rpcServer.config.Database
-	soldBondTypesBytesArr, err := db.GetSoldBondTypes()
-	if err != nil {
-		return nil, err
-	}
+// func (rpcServer RpcServer) getBondTypes() (*jsonresult.GetBondTypeResult, error) {
+// 	db := *rpcServer.config.Database
+// 	soldBondTypesBytesArr, err := db.GetSoldBondTypes()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	result := &jsonresult.GetBondTypeResult{
-		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
-	}
-	for _, soldBondTypesBytes := range soldBondTypesBytesArr {
-		var bondInfo component.SellingBonds
-		err = json.Unmarshal(soldBondTypesBytes, &bondInfo)
-		if err != nil {
-			return nil, err
-		}
-		bondIDStr := bondInfo.GetID().String()
-		bondType := jsonresult.GetBondTypeResultItem{
-			BondName:       bondInfo.BondName,
-			BondSymbol:     bondInfo.BondSymbol,
-			BondID:         bondIDStr,
-			StartSellingAt: bondInfo.StartSellingAt,
-			EndSellingAt:   bondInfo.StartSellingAt + bondInfo.SellingWithin,
-			Maturity:       bondInfo.Maturity,
-			BuyBackPrice:   bondInfo.BuyBackPrice,
-			BuyPrice:       bondInfo.BondPrice,
-			TotalIssue:     bondInfo.TotalIssue,
-			Available:      bondInfo.BondsToSell,
-		}
-		result.BondTypes[bondIDStr] = bondType
-	}
-	return result, nil
-}
+// 	result := &jsonresult.GetBondTypeResult{
+// 		BondTypes: make(map[string]jsonresult.GetBondTypeResultItem),
+// 	}
+// 	for _, soldBondTypesBytes := range soldBondTypesBytesArr {
+// 		var bondInfo component.SellingBonds
+// 		err = json.Unmarshal(soldBondTypesBytes, &bondInfo)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		bondIDStr := bondInfo.GetID().String()
+// 		bondType := jsonresult.GetBondTypeResultItem{
+// 			BondName:       bondInfo.BondName,
+// 			BondSymbol:     bondInfo.BondSymbol,
+// 			BondID:         bondIDStr,
+// 			StartSellingAt: bondInfo.StartSellingAt,
+// 			EndSellingAt:   bondInfo.StartSellingAt + bondInfo.SellingWithin,
+// 			Maturity:       bondInfo.Maturity,
+// 			BuyBackPrice:   bondInfo.BuyBackPrice,
+// 			BuyPrice:       bondInfo.BondPrice,
+// 			TotalIssue:     bondInfo.TotalIssue,
+// 			Available:      bondInfo.BondsToSell,
+// 		}
+// 		result.BondTypes[bondIDStr] = bondType
+// 	}
+// 	return result, nil
+// }
 
 func (rpcServer RpcServer) handleGetOracleTokenIDs(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	bondTypesRes, err := rpcServer.getBondTypes()

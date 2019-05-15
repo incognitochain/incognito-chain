@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
@@ -85,7 +84,6 @@ func (mb *MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	txr Transaction,
 	bcr BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 	return true, nil
 }
@@ -118,9 +116,6 @@ type BlockchainRetriever interface {
 	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
-	GetOracleParams() *component.Oracle
-	GetConstitutionStartHeight(boardType common.BoardType, shardID byte) uint64
-	GetConstitutionEndHeight(boardType common.BoardType, shardID byte) uint64
 	GetCurrentBeaconBlockHeight(byte) uint64
 	GetBoardEndHeight(boardType common.BoardType, chainID byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
@@ -145,7 +140,7 @@ type Metadata interface {
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, Transaction, BlockchainRetriever, *component.UsedInstData) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, Transaction, BlockchainRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
 }
 
@@ -191,5 +186,5 @@ type Transaction interface {
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
-	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, BlockchainRetriever, *component.UsedInstData) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, BlockchainRetriever) (bool, error)
 }

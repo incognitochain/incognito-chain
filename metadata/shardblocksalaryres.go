@@ -7,7 +7,6 @@ import (
 	// "errors"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
@@ -91,7 +90,6 @@ func (sbsRes *ShardBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 	instIdx := -1
 	var shardBlockSalaryInfo ShardBlockSalaryInfo

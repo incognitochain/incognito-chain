@@ -6,49 +6,8 @@ import (
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
 )
-
-func (blockGen *BlkTmplGenerator) registerMultiSigsAddresses(
-	txs []metadata.Transaction,
-) error {
-	if len(txs) == 0 {
-		return nil
-	}
-	msRegs := map[string]*metadata.MultiSigsRegistration{}
-	sortedTxs := transaction.SortTxsByLockTime(txs, false)
-	for _, tx := range sortedTxs {
-		meta := tx.GetMetadata()
-		if meta == nil {
-			continue
-		}
-		multiSigsReg, ok := meta.(*metadata.MultiSigsRegistration)
-		if !ok {
-			return errors.New("Could not parse MultiSigsRegistration metadata")
-		}
-		msRegs[string(multiSigsReg.PaymentAddress.Pk)] = multiSigsReg
-	}
-	// store msRegs to db
-	// TODO: should use batch-write to ensure data consistency
-	db := blockGen.chain.config.DataBase
-	for _, msReg := range msRegs {
-		pk := msReg.PaymentAddress.Pk
-		regBytes, err := db.GetMultiSigsRegistration(pk)
-		if err != nil {
-			return err
-		}
-		if len(regBytes) > 0 { // this address was registered already
-			continue
-		}
-		err = db.StoreMultiSigsRegistration(pk, common.ToBytes(*msReg))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
 func ValidateAggSignature(validatorIdx [][]int, committees []string, aggSig string, R string, blockHash *common.Hash) error {
 	// return nil //single-node
