@@ -182,15 +182,14 @@ func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 		if block.Header.Height <= lastBlockHeight {
 			// if reach the end of pool then pool will be reset to empty array
 			if index == len(self.validPool)-1 {
-				self.pool = self.pool[index+1:]
+				self.validPool = self.validPool[index+1:]
 			}
 			continue
 		} else {
-			self.pool = self.pool[index:]
+			self.validPool = self.validPool[index:]
 			break
 		}
 	}
-	
 }
 
 func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
