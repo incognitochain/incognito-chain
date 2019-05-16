@@ -241,31 +241,7 @@ func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock)
 	}
 	return false
 }
-func (self *ShardPool) updateLatestShardStateV2() {
-	self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
-}
 
-func (self *ShardPool) promotePendingPoolV2(){
-	for {
-		nextHeight := self.latestValidHeight + 1
-		block, ok := self.pendingPool[nextHeight]
-		if !ok {
-			break
-		} else {
-			err := self.ValidateShardBlock(block, true)
-			if err != nil {
-				break
-			} else {
-				isSuccess := self.insertNewShardBlockToPool(block)
-				if !isSuccess {
-					break
-				} else {
-					delete(self.pendingPool, nextHeight)
-				}
-			}
-		}
-	}
-}
 //@Notice: Remove should set latest valid height
 //Because normal node may not have these block to remove
 func (self *ShardPool) RemoveBlock(lastBlockHeight uint64) {
