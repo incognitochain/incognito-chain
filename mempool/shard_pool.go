@@ -12,20 +12,19 @@ import (
 )
 
 const (
-	MAX_VALID_PENDING_BLK_IN_POOL   = 10000
-	MAX_INVALID_PENDING_BLK_IN_POOL = 10000
-	CACHE_SIZE = 2000
+	MAX_VALID_SHARD_BLK_IN_POOL   = 10000
+	MAX_PENDING_SHARD_BLK_IN_POOL = 10000
+	SHARD_CACHE_SIZE              = 2000
 )
 type ShardPoolConfig struct {
 	MaxValidBlock int
-	MaxInvalidBlock int
+	MaxPendingBlock int
 	CacheSize int
 }
 type ShardPool struct {
 	validPool         []*blockchain.ShardBlock // valid, ready to insert into blockchain
 	pendingPool       map[uint64]*blockchain.ShardBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
 	conflictedPool    map[common.Hash]*blockchain.ShardBlock
-	blackListPool     map[common.Hash]*blockchain.ShardBlock
 	shardID           byte
 	latestValidHeight uint64
 	mtx               *sync.RWMutex
@@ -35,9 +34,9 @@ type ShardPool struct {
 
 var shardPoolMap = make(map[byte]*ShardPool)
 var defaultConfig = ShardPoolConfig{
-	MaxValidBlock: MAX_VALID_PENDING_BLK_IN_POOL,
-	MaxInvalidBlock: MAX_INVALID_PENDING_BLK_IN_POOL,
-	CacheSize: CACHE_SIZE,
+	MaxValidBlock:   MAX_VALID_SHARD_BLK_IN_POOL,
+	MaxPendingBlock: MAX_PENDING_SHARD_BLK_IN_POOL,
+	CacheSize:       SHARD_CACHE_SIZE,
 }
 //@NOTICE: Shard pool will always be empty when node start
 func init() {
@@ -71,7 +70,6 @@ func GetShardPool(shardID byte) *ShardPool {
 		shardPool.latestValidHeight = 1
 		shardPoolMap[shardID] = shardPool
 		shardPool.validPool = []*blockchain.ShardBlock{}
-		shardPool.blackListPool = make(map[common.Hash]*blockchain.ShardBlock)
 		shardPool.conflictedPool = make(map[common.Hash]*blockchain.ShardBlock)
 		shardPool.config = defaultConfig
 		shardPool.pendingPool = make(map[uint64]*blockchain.ShardBlock)
@@ -126,13 +124,13 @@ func(self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPending
 	}
 	// if next valid block then check max valid pool
 	if self.latestValidHeight+1 == block.Header.Height {
-		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxInvalidBlock {
+		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
 			return NewBlockPoolError(MaxPoolSizeError,errors.New("Exceed max valid pool and pending pool"))
 		}
 	}
 	// if not next valid block then check max pending pool
 	if block.Header.Height > self.latestValidHeight {
-		if len(self.pendingPool) >= self.config.MaxInvalidBlock {
+		if len(self.pendingPool) >= self.config.MaxPendingBlock {
 			return NewBlockPoolError(MaxPoolSizeError,errors.New("Exceed max invalid pending pool"))
 		}
 	}
@@ -144,7 +142,7 @@ func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) b
 			self.validPool = append(self.validPool, block)
 			self.updateLatestShardState()
 			return true
-		} else if len(self.pendingPool) < self.config.MaxInvalidBlock {
+		} else if len(self.pendingPool) < self.config.MaxPendingBlock {
 			self.pendingPool[block.Header.Height] = block
 			return false
 		}
@@ -216,6 +214,7 @@ func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock)
 						self.pendingPool[block.Header.Height] = block
 						// delete last block in pool
 						self.validPool = self.validPool[:len(self.validPool)-1]
+						self.cache.Add(block.Header.Hash(), block)
 						self.latestValidHeight -= 1
 						validBlock, ok := self.conflictedPool[block.Header.PrevBlockHash]
 						if ok {
@@ -233,7 +232,7 @@ func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock)
 					return true
 				}
 			}
-		} else if len(self.pendingPool) < self.config.MaxInvalidBlock{
+		} else if len(self.pendingPool) < self.config.MaxPendingBlock{
 			self.pendingPool[block.Header.Height] = block
 		}
 	} else {
@@ -257,7 +256,7 @@ func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 			// if reach the end of pool then pool will be reset to empty array
 			self.cache.Add(block.Header.Hash(), block)
 			if index == len(self.validPool)-1 {
-				self.validPool = self.validPool[index+1:]
+				self.validPool = []*blockchain.ShardBlock{}
 			}
 			continue
 		} else {
