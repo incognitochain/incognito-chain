@@ -16,6 +16,8 @@ import (
 const (
 	beaconBlockCache = 1000
 	shardBlockCache = 1000
+	crossShardBlockCache = 500
+	shardToBeaconBlockCache = 500
 	txCache = 10000
 )
 type NetSync struct {
@@ -48,6 +50,8 @@ type NetSyncConfig struct {
 type NetSyncCache struct {
 	beaconBlockCache  *lru.Cache
 	shardBlockCache   *lru.Cache
+	shardToBeaconBlockCache *lru.Cache
+	crossShardBlockCache *lru.Cache
 	txCache      *lru.Cache
 }
 func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
@@ -57,10 +61,14 @@ func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 	beaconBlockCache, _ := lru.New(beaconBlockCache)
 	shardBlockCache, _ := lru.New(shardBlockCache)
 	txCache, _ := lru.New(txCache)
+	shardToBeaconBlockCache, _ := lru.New(shardToBeaconBlockCache)
+	crossShardBlockCache, _ := lru.New(crossShardBlockCache)
 	netSync.cache = &NetSyncCache{
 		beaconBlockCache: beaconBlockCache,
 		shardBlockCache: shardBlockCache,
 		txCache: txCache,
+		shardToBeaconBlockCache: shardToBeaconBlockCache,
+		crossShardBlockCache: crossShardBlockCache,
 	}
 	return &netSync
 }
@@ -333,26 +341,28 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 
 func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
-	isAdded := netSync.HandleCacheBeaconBlock(&msg.Block)
-	if !isAdded {
+	if isAdded := netSync.HandleCacheBeaconBlock(&msg.Block); !isAdded {
 		netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
 	}
 }
 func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
-	isAdded := netSync.HandleCacheShardBlock(&msg.Block)
-	if !isAdded {
+	if isAdded := netSync.HandleCacheShardBlock(&msg.Block); !isAdded {
 		netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
 	}
 }
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")
-	netSync.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
+	if isAdded := netSync.HandleCacheCrossShardBlock(&msg.Block); !isAdded {
+		netSync.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
+	}
 
 }
 func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Info("Handling new message ShardToBeacon")
-	netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
+	if isAdded := netSync.HandleCacheShardToBeaconBlock(&msg.Block); !isAdded {
+		netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
+	}
 }
 
 func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
@@ -459,5 +469,21 @@ func (netSync *NetSync) HandleCacheTx(transaction metadata.Transaction) bool {
 		return true
 	}
 	netSync.cache.txCache.Add(transaction.Hash(), true)
+	return false
+}
+func (netSync *NetSync) HandleCacheShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) bool {
+	_, ok := netSync.cache.shardToBeaconBlockCache.Get(block.Header.Hash())
+	if ok {
+		return true
+	}
+	netSync.cache.shardToBeaconBlockCache.Add(block.Header.Hash(), true)
+	return false
+}
+func (netSync *NetSync) HandleCacheCrossShardBlock(block *blockchain.CrossShardBlock) bool {
+	_, ok := netSync.cache.crossShardBlockCache.Get(block.Header.Hash())
+	if ok {
+		return true
+	}
+	netSync.cache.crossShardBlockCache.Add(block.Header.Hash(), true)
 	return false
 }
