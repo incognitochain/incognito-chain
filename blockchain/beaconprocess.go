@@ -108,6 +108,17 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	} else {
 		Logger.log.Infof("BEACON %+v | SKIP Verify BestState with Block %+v \n", *block.Hash())
 	}
+
+	if blockchain.config.UserKeySet != nil {
+		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			err := blockchain.BackupCurrentBeaconState(block)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	Logger.log.Infof("Update BestState with Beacon Block %+v \n", *block.Hash())
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee
@@ -138,21 +149,20 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		return err
 	}
 	// }
-	shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
-	if err != nil {
-		fmt.Println("No committee for this epoch")
-	}
-	shardCommittee := make(map[byte][]string)
-	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
-		fmt.Println("Fail to unmarshal shard committee")
-	}
+	// shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
+	// if err != nil {
+	// 	fmt.Println("No committee for this epoch")
+	// }
+	// shardCommittee := make(map[byte][]string)
+	// if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+	// 	fmt.Println("Fail to unmarshal shard committee")
+	// }
 	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 	GetBestStateBeacon().lockMu.Lock()
 	if block.Body.ShardState != nil {
 		for fromShard, shardBlocks := range block.Body.ShardState {
-
 			go func(fromShard byte, shardBlocks []ShardState) {
 				for _, shardBlock := range shardBlocks {
 					for _, toShard := range shardBlock.CrossShard {

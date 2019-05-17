@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"sort"
 	"strconv"
 	"sync"
@@ -336,12 +337,76 @@ func (bestStateBeacon *BestStateBeacon) GetAssetPrice(assetID common.Hash) uint6
 	return price
 }
 
-//This only happen if user is a beacon committee member.
-func (blockchain *BlockChain) RevertBeaconState() {
-
+func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *BeaconBlock) error {
+	return nil
 }
 
-func (blockchain *BlockChain) SaveCurrentBeaconState(block *BeaconBlock) error {
+//This only happen if user is a beacon committee member.
+func (blockchain *BlockChain) RevertBeaconState() {
+	//Steps:
+	// 1. Restore current beststate to previous beststate
+	// 2. Set beacon/shardtobeacon pool state
+	// 3. Delete newly inserted block
+	// 4. Delete data store by block
+	// if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.ShardCommittee); err != nil {
+	// 	return err
+	// }
+	// for shardID, shardStates := range block.Body.ShardState {
+	// 	for _, shardState := range shardStates {
+	// 		blockchain.config.DataBase.StoreAcceptedShardToBeacon(shardID, block.Header.Height, &shardState.Hash)
+	// 	}
+	// }
+	// //=========Remove beacon block in pool
+	// blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
 
+	// //=========Remove shard to beacon block in pool
+	// Logger.log.Info("Remove block from pool block with hash  ", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
+	// blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
+
+	// lastCrossShardState := GetBestStateBeacon().LastCrossShardState
+	// if block.Body.ShardState != nil {
+	// 	for fromShard, shardBlocks := range block.Body.ShardState {
+	// 		go func(fromShard byte, shardBlocks []ShardState) {
+	// 			for _, shardBlock := range shardBlocks {
+	// 				for _, toShard := range shardBlock.CrossShard {
+	// 					if fromShard == toShard {
+	// 						continue
+	// 					}
+	// 					if lastCrossShardState[fromShard] == nil {
+	// 						lastCrossShardState[fromShard] = make(map[byte]uint64)
+	// 					}
+	// 					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
+	// 					waitHeight := shardBlock.Height
+	// 					// fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
+	// 					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
+	// 					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
+	// 					//dont care overwrite this value
+	// 					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, waitHeight, 0)
+	// 					if lastCrossShardState[fromShard] == nil {
+	// 						lastCrossShardState[fromShard] = make(map[byte]uint64)
+	// 					}
+	// 					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
+	// 				}
+	// 			}
+	// 			blockchain.config.CrossShardPool[fromShard].UpdatePool()
+	// 		}(fromShard, shardBlocks)
+	// 	}
+	// }
+}
+
+func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error {
+	//Steps:
+	// 1. Backup beststate
+	// 2. Backup data that will be modify by new block data
+	tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+
+	if err := blockchain.config.DataBase.StorePrevBestState(tempMarshal, true, 0); err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	// blockchain.config.DataBase.BackupCommitteeByEpoch()
+	// blockchain.config.DataBase.BackupCrossShardNextHeight()
 	return nil
 }
