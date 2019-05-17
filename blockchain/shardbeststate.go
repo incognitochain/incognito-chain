@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -170,103 +171,71 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 	return bestStateShard
 }
 
+func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBlock) error {
+
+	return nil
+}
+
 //This only happen if user is a shard committee member.
 func (blockchain *BlockChain) RevertShardState(shardID byte) {
 	//Steps:
-	// 1. Load backup beststate
+	// 1. Restore current beststate to previous beststate
 	// 2. Set pool shardstate
+	// 3. Delete newly inserted block
+	// 4. Remove incoming crossShardBlks
+	// 5. Delete txs and its related stuff (ex: txview) belong to block
+
+	// 3
+	// if err := blockchain.StoreShardBlock(block); err != nil {
+	// 	return err
+	// }
+
+	// if err := blockchain.StoreShardBlockIndex(block); err != nil {
+	// 	return err
+	// }
+
+	// if err := blockchain.StoreShardBestState(block.Header.ShardID); err != nil {
+	// 	return err
+	// }
+
+	// 4
+	// err := blockchain.StoreIncomingCrossShard(block)
+	// if err != nil {
+	// 	return NewBlockChainError(UnExpectedError, err)
+	// }
 
 }
 
-func (blockchain *BlockChain) SaveCurrentShardState(block *ShardBlock) error {
+func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock) error {
 
 	//Steps:
 	// 1. Backup beststate
-	// 2.
+	// 2.	Backup data that will be modify by new block data
 
-	// tempMarshal, err := json.Marshal(blockchain.BestState.Shard[block.Header.ShardID])
-	// if err != nil {
-	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
-	// }
+	tempMarshal, err := json.Marshal(blockchain.BestState.Shard[block.Header.ShardID])
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
 
-	// go func() {
-	// 	errCh <- blockchain.ProcessLoanForBlock(block)
-	// }()
+	if err := blockchain.config.DataBase.StorePrevBestState(tempMarshal, false, block.Header.ShardID); err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
 
-	// go func() {
-	// 	errCh <- blockchain.processTradeBondTx(block)
-	// }()
-
-	// for _, tx := range block.Body.Transactions {
-	// 	var err error
-
-	// 	switch tx.GetMetadataType() {
-	// 	case metadata.BuyFromGOVRequestMeta:
-	// 		err = blockchain.processBuyBondTx(tx)
-
-	// 	case metadata.BuyBackRequestMeta:
-	// 		err = blockchain.processSellBondTx(tx)
-	// 	case metadata.LoanUnlockMeta:
-	// 		{
-	// 			tx := tx.(*transaction.Tx)
-	// 			meta := tx.GetMetadata().(*metadata.LoanUnlock)
-	// 			err = blockchain.config.DataBase.StoreLoanWithdrawed(meta.LoanID)
-	// 		}
-	// 	}
-
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// go func() {
-	// 	// Process stability stand-alone instructions
-	// 	errCh <- blockchain.ProcessStandAloneInstructions(block)
-	// }()
-	// for _, inst := range block.Body.Instructions {
-	// 	if len(inst) < 2 {
-	// 		continue
-	// 	}
-	// 	var err error
-	// 	switch inst[0] {
-	// 	case strconv.Itoa(component.ConfirmBuySellRequestMeta):
-	// 		err = blockchain.processConfirmBuySellInst(inst)
-	// 	case strconv.Itoa(component.ConfirmBuyBackRequestMeta):
-	// 		err = blockchain.processConfirmBuyBackInst(inst)
-	// 	}
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// Store metadata instruction to local state
-	// for _, beaconBlock := range beaconBlocks {
-	// 	instructions := beaconBlock.Body.Instructions
-	// 	for _, inst := range instructions {
-	// 		err := blockchain.StoreMetadataInstructions(inst, shardID)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	}
-	// }
-
-	// if len(inst) < 2 {
-	// 	return nil // Not error, just not stability instruction
-	// }
-	// switch inst[0] {
-	// case strconv.Itoa(metadata.IssuingRequestMeta):
-	// 	return bc.storeIssuingResponseInstruction(inst, shardID)
-	// case strconv.Itoa(metadata.ContractingRequestMeta):
-	// 	return bc.storeContractingResponseInstruction(inst, shardID)
-	// }
-
-	// //========Store new  Shard block and new shard bestState
-	// err = blockchain.ProcessStoreShardBlock(block)
-	// if err != nil {
+	// if err := blockchain.CreateAndSaveTxViewPointFromBlock(block); err != nil {
 	// 	return err
 	// }
-	// Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
-	// return nil
+
+	// for index, tx := range block.Body.Transactions {
+	// 	if err := blockchain.StoreTransactionIndex(tx.Hash(), block.Hash(), index); err != nil {
+	// 		Logger.log.Error("ERROR", err, "Transaction in block with hash", blockHash, "and index", index, ":", tx)
+	// 		return NewBlockChainError(UnExpectedError, err)
+	// 	}
+	// 	Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
+	// }
+	// // Store Incomming Cross Shard
+	// if err := blockchain.CreateAndSaveCrossTransactionCoinViewPointFromBlock(block); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

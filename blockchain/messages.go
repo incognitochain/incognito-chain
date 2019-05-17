@@ -73,6 +73,12 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				return
 			}
 			if blockchain.config.UserKeySet != nil {
+				if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
+					if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
+						return
+					}
+					blockchain.RevertShardState(newBlk.Header.ShardID)
+				}
 				userRole := currentShardBestState.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
@@ -85,9 +91,6 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 							}
 						}
 						return
-					}
-					if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
-
 					}
 				}
 			}
@@ -103,7 +106,8 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	if blockchain.syncStatus.Beacon {
 		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
-		if blockchain.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
+		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
+			currentBeaconBestState := blockchain.BestState.Beacon
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
@@ -111,15 +115,24 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				Logger.log.Error(err)
 				return
 			} else {
-				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 && blockchain.config.UserKeySet != nil {
-					if !blockchain.ConsensusOngoing {
-						userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
-						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-							fmt.Println("Beacon block insert", newBlk.Header.Height)
-							err = blockchain.InsertBeaconBlock(newBlk, false)
-							if err != nil {
-								Logger.log.Error(err)
-								return
+				if blockchain.config.UserKeySet != nil {
+					if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
+						if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
+							return
+						}
+						blockchain.RevertBeaconState()
+					}
+
+					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+						if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+							if !blockchain.ConsensusOngoing {
+								fmt.Println("Beacon block insert", newBlk.Header.Height)
+								err = blockchain.InsertBeaconBlock(newBlk, false)
+								if err != nil {
+									Logger.log.Error(err)
+									return
+								}
 							}
 						}
 					}
