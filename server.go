@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/transaction"
 	"log"
 	"net"
@@ -128,6 +129,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 
+	//Init channel
+	cPendingTxs := make(chan []metadata.Transaction)
+	cRemovedTxs := make(chan []metadata.Transaction)
+	cRoleInCommittees := make(chan int)
+	cTxCache := make(chan common.Hash)
 	var err error
 
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
@@ -248,7 +254,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-
+	serverObj.memPool.InitChannelMempool(cTxCache, cRoleInCommittees, cPendingTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
@@ -262,7 +268,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//===============
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 	// Init block template generator
-	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool)
+	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
 	if err != nil {
 		return err
 	}
@@ -292,8 +298,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
-	})
-	serverObj.memPool.InitChannelCacheMempool(serverObj.netSync.Cache.CTxCache)
+	}, cTxCache)
 	// Create a connection manager.
 	var peer *peer.Peer
 	if !cfg.DisableListen {
@@ -532,7 +537,7 @@ func (serverObj Server) Start() {
 	if serverObj.memPool != nil {
 		serverObj.memPool.LoadOrResetDatabaseMP()
 		go serverObj.TransactionPoolBroadcastLoop()
-		go mempool.TxPoolMainLoop(serverObj.memPool)
+		go serverObj.memPool.Start(serverObj.cQuit)
 	}
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {

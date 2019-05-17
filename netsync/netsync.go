@@ -57,7 +57,7 @@ type NetSyncCache struct {
 	txCacheMtx    sync.RWMutex
 	CTxCache      chan common.Hash
 }
-func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
+func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash) *NetSync {
 	netSync.config = cfg
 	netSync.cQuit = make(chan struct{})
 	netSync.cMessage = make(chan interface{})
@@ -73,7 +73,7 @@ func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 		shardToBeaconBlockCache: shardToBeaconBlockCache,
 		crossShardBlockCache: crossShardBlockCache,
 	}
-	netSync.Cache.CTxCache = make(chan common.Hash)
+	netSync.Cache.CTxCache = cTxCache
 	return &netSync
 }
 
