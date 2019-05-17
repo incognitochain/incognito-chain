@@ -15,6 +15,7 @@ const (
 	MAX_VALID_SHARD_BLK_IN_POOL   = 10000
 	MAX_PENDING_SHARD_BLK_IN_POOL = 10000
 	SHARD_CACHE_SIZE              = 2000
+	MAIN_LOOP_TIME                = 2000 // count in milisecond
 )
 type ShardPoolConfig struct {
 	MaxValidBlock int
@@ -41,7 +42,8 @@ var defaultConfig = ShardPoolConfig{
 //@NOTICE: Shard pool will always be empty when node start
 func init() {
 	go func() {
-		ticker := time.Tick(5 * time.Second)
+		mainLoopTime := time.Duration(MAIN_LOOP_TIME)*time.Millisecond
+		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
 			for k, _ := range shardPoolMap {
 				GetShardPool(k).RemoveBlock(blockchain.GetBestStateShard(k).ShardHeight)
@@ -104,7 +106,7 @@ func (self *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 	self.promotePendingPool()
 	return nil
 }
-//TODO: add beacon block best state condition
+
 func(self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPending bool) error {
 	//If receive old block, it will ignore
 	if _, ok := self.cache.Get(block.Header.Hash()); ok {
@@ -203,6 +205,11 @@ func (self *ShardPool) PromotePendingPool(){
 			+ Find conflicted block with recent delete latest block in pool if possbile then try to add conflicted block into pool
 */
 func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock) bool {
+	//If unknown to beacon best state store in pending
+	if block.Header.Height > blockchain.GetBestStateBeacon().BestShardHeight[self.shardID] {
+		self.pendingPool[block.Header.Height] = block
+		return false
+	}
 	// Condition 1
 	if self.latestValidHeight+1 == block.Header.Height {
 		// if pool still has available room

@@ -153,7 +153,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	}
 
 	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		mempoolErr, ok := err.(mempool.MempoolTxError)
 		if ok {
@@ -426,7 +426,7 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	}
 
 	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
@@ -890,7 +890,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	}
 
 	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-	rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
