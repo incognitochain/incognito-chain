@@ -397,7 +397,71 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 	blockgen.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
 }
-
+func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
+	shardID byte,
+	beaconBlocks []*BeaconBlock,
+) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+	sourceTxns := blockgen.GetPendingTxs()
+	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
+	if !isEmpty {
+		panic("TempTxPool Is not Empty")
+	}
+	currentSize := uint64(0)
+	startTime := time.Now()
+	
+	instsForValidations := [][]string{}
+	for _, beaconBlock := range beaconBlocks {
+		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
+	}
+	instUsed := make([]int, len(instsForValidations))
+	accumulatedData := component.UsedInstData{
+		TradeActivated: map[string]bool{},
+	}
+	
+	for _, tx := range sourceTxns {
+		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
+		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if txShardID != shardID {
+			continue
+		}
+		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+		if err != nil {
+			txToRemove = append(txToRemove, tx)
+			continue
+		}
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain, &accumulatedData)
+		if err != nil || !ok {
+			txToRemove = append(txToRemove, tx)
+			continue
+		}
+		
+		tempTx := tempTxDesc.Tx
+		totalFee += tx.GetTxFee()
+		
+		tempSize := tempTx.GetTxActualSize()
+		if currentSize+tempSize >= common.MaxBlockSize {
+			break
+		}
+		currentSize += tempSize
+		txsToAdd = append(txsToAdd, tempTx)
+		if len(txsToAdd) == common.MaxTxsInBlock {
+			break
+		}
+		// Time bound condition for block creation
+		//if time for getting transaction exceed half of MinShardBlkInterval then break
+		elasped := time.Since(startTime).Nanoseconds()
+		//Logger.log.Critical("Shard Producer/Elapsed: ", elasped)
+		//Logger.log.Critical("Shard Producer/MinShardBlkInterval: ", common.MinShardBlkInterval.Nanoseconds())
+		//Logger.log.Critical("Shard Producer/MinShardBlkInterval/2: ", common.MinShardBlkInterval.Nanoseconds()/2)
+		if elasped >= (common.MinShardBlkInterval.Nanoseconds()/2)*3 {
+			//Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
+			break
+		}
+	}
+	Logger.log.Criticalf("☭ %+v transactions for New Block from pool \n", len(txsToAdd))
+	blockgen.chain.config.TempTxPool.EmptyPool()
+	return txsToAdd, txToRemove, totalFee
+}
 /*
 	1. Get valid tx for specific shard and their fee, also return unvalid tx
 		a. Validate Tx By it self
