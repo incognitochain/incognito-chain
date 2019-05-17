@@ -215,7 +215,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 	fmt.Println("My shard role", roundRole)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
-		engine.config.CInCommittees <- int(shardID)
+		fmt.Println(">>>>>>>>>>>>>>>>>", engine.config.CInCommittees)
+		//engine.config.CInCommittees <- int(shardID)
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		resBlk, err = bftProtocol.Start()
@@ -224,7 +225,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
-		engine.config.CInCommittees <- int(shardID)
+		fmt.Println("<<<<<<<<<<<<<<<<<<", engine.config.CInCommittees)
+		//engine.config.CInCommittees <- int(shardID)
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		resBlk, err = bftProtocol.Start()
@@ -233,7 +235,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
-		engine.config.CInCommittees <- -1
+		//engine.config.CInCommittees <- -1
 		err = errors.New("Not your turn yet")
 		time.Sleep(time.Millisecond * 300)
 	}

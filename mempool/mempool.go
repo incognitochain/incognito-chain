@@ -854,27 +854,30 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 		select{
 		case <-cQuit:
 			return
-			case shardID := <-tp.CRoleInCommittees:
-				{
-					tp.roleMtx.Lock()
-					tp.RoleInCommittees = shardID
-					tp.roleMtx.Unlock()
-				}
-		default:
-			if tp.RoleInCommittees > -1 {
-				txs := []metadata.Transaction{}
-				i := 0
-				for _, txDesc := range tp.pool {
-					txs = append(txs, txDesc.Desc.Tx)
-					i++
-					if i == 999 {
-						break
-					}
-				}
-				tp.CPendingTxs <- txs
-				time.Sleep(2 * time.Second)
+		case shardID := <-tp.CRoleInCommittees:
+			{
+				tp.roleMtx.Lock()
+				tp.RoleInCommittees = shardID
+				tp.roleMtx.Unlock()
 			}
-				
+		default:
+			{
+				tp.roleMtx.Lock()
+				if tp.RoleInCommittees > -1 {
+					txs := []metadata.Transaction{}
+					i := 0
+					for _, txDesc := range tp.pool {
+						txs = append(txs, txDesc.Desc.Tx)
+						i++
+						if i == 999 {
+							break
+						}
+					}
+					tp.CPendingTxs <- txs
+					time.Sleep(5 * time.Second)
+				}
+				tp.roleMtx.Unlock()
+			}
 		}
 	}
 
