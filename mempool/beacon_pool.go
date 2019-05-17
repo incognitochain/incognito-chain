@@ -213,6 +213,8 @@ func (self *BeaconPool) removeBlock(lastBlockHeight uint64) {
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
+	blocks := make([]*blockchain.BeaconBlock, len(self.validPool))
+	copy(blocks, self.validPool)
 	return self.validPool
 }
 
