@@ -7,11 +7,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/cashec"
-
+	
 	"github.com/constant-money/constant-chain/databasemp"
-
+	
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -40,7 +40,7 @@ type Config struct {
 
 	//Max transaction pool may have
 	MaxTx uint64
-
+	
 	//Reset mempool database when run node
 	IsLoadFromMempool bool
 
@@ -48,8 +48,8 @@ type Config struct {
 
 	RelayShards []byte
 	UserKeyset  *cashec.KeySet
+	
 }
-
 // TxDesc is transaction message in mempool
 type TxDesc struct {
 	// transaction details
@@ -81,17 +81,12 @@ type TxPool struct {
 	TokenIDPool map[common.Hash]string
 	tokenIDMtx  sync.RWMutex
 
-	//Max transaction pool may have
-	maxTx uint64
-	//Time to live for all transaction
-	TxLifeTime uint
-	Scantime   time.Duration
-	//Reset mempool database
-	IsLoadFromMempool bool
-	PersistMempool    bool
-
 	//For testing
 	DuplicateTxs map[common.Hash]uint64
+	
+	cCacheTx chan common.Hash
+	
+	Scantime   time.Duration
 }
 
 /*
@@ -99,6 +94,7 @@ Init Txpool from config
 */
 func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
+	tp.Scantime = 1 * time.Hour
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
 	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
@@ -106,25 +102,23 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.TokenIDPool = make(map[common.Hash]string)
 	tp.CandidatePool = make(map[common.Hash]string)
 	tp.cMtx = sync.RWMutex{}
-	tp.maxTx = cfg.MaxTx
-	tp.TxLifeTime = cfg.TxLifeTime
-	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
-	tp.PersistMempool = cfg.PersistMempool
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
-	tp.Scantime = 1 * time.Hour
+}
+func (tp *TxPool) InitChannelCacheMempool(cCacheTx chan common.Hash) {
+	tp.cCacheTx = cCacheTx
 }
 func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
 	tp.config.DataBaseMempool = db
 }
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
-	if tp.PersistMempool {
+	if tp.config.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
 	} else {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
 func (tp *TxPool) LoadOrResetDatabaseMP() {
-	if !tp.IsLoadFromMempool {
+	if !tp.config.IsLoadFromMempool {
 		err := tp.ResetDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
@@ -142,13 +136,13 @@ func (tp *TxPool) LoadOrResetDatabaseMP() {
 	//return []TxDesc{}
 }
 func TxPoolMainLoop(tp *TxPool) {
-	if tp.TxLifeTime == 0 {
+	if tp.config.TxLifeTime == 0 {
 		return
 	}
 	for {
 		<-time.Tick(tp.Scantime)
 		tp.mtx.Lock()
-		ttl := time.Duration(tp.TxLifeTime) * time.Second
+		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
 		for _, txDesc := range tp.pool {
 			if time.Since(txDesc.StartTime) > ttl {
@@ -520,11 +514,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 			txType = common.TxNormalNoPrivacy
 		}
 	}
-	if uint64(len(tp.pool)) >= tp.maxTx {
+	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
 	startAdd := time.Now()
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool, true)
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
 	// fmt.Printf("[db] pool maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), hash, err)
 	elapsed := float64(time.Since(startAdd).Seconds())
 
@@ -543,6 +537,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	if err != nil {
 		Logger.log.Error(err)
+	}
+	if tp.cCacheTx != nil {
+		tp.cCacheTx <- *tx.Hash()
 	}
 	return hash, txDesc, err
 }

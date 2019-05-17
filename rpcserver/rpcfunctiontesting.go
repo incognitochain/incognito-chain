@@ -87,6 +87,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					}
 				} else {
 					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
 						continue
@@ -127,6 +128,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					}
 				} else {
 					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
 						continue
@@ -166,6 +168,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 				}
 			} else {
 				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++
 					continue
