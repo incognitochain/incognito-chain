@@ -283,6 +283,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		BlockGen:          serverObj.blockgen,
 		NodeMode:          cfg.NodeMode,
 		UserKeySet:        serverObj.userKeySet,
+		CInCommittees:     cRoleInCommittees,
 	})
 	if err != nil {
 		return err
