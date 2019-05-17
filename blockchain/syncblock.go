@@ -594,6 +594,7 @@ func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
 	for _, newBlk := range blks {
 		err := blockchain.InsertShardBlock(newBlk, false)
 		if err != nil {
+			//@Notice: remove or keep invalid block
 			Logger.log.Error(err)
 			break
 		}
