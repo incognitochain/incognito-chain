@@ -293,6 +293,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 	})
+	serverObj.memPool.InitChannelCacheMempool(serverObj.netSync.Cache.CTxCache)
 	// Create a connection manager.
 	var peer *peer.Peer
 	if !cfg.DisableListen {
@@ -367,6 +368,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Database:        &serverObj.dataBase,
 			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
 			MiningPubKeyB58: miningPubkeyB58,
+			NetSync:         serverObj.netSync,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)

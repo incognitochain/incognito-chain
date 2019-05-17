@@ -487,7 +487,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
 			return false, errors.New("FAILED VERIFICATION PAYMENT PROOF")
 		} else {
-			Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
+			//Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
 	//@UNCOMMENT: metric time

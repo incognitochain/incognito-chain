@@ -104,6 +104,7 @@ func (self *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 	self.promotePendingPool()
 	return nil
 }
+//TODO: add beacon block best state condition
 func(self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPending bool) error {
 	//If receive old block, it will ignore
 	if _, ok := self.cache.Get(block.Header.Hash()); ok {
@@ -153,7 +154,11 @@ func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) b
 	return false
 }
 func (self *ShardPool) updateLatestShardState() {
-	self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
+	if len(self.validPool) > 0 {
+		self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
+	} else {
+		self.latestValidHeight = blockchain.GetBestStateShard(self.shardID).ShardHeight
+	}
 }
 
 func (self *ShardPool) promotePendingPool(){
@@ -190,10 +195,12 @@ func (self *ShardPool) PromotePendingPool(){
 
 	- New Block Will be inserted into valid pool if match these condition:
 		1 New Block Height = LatestValidHeight + 1
-		2 Block with Height = New Block Height + 1 exist in pool
+		2 Block with Height = New Block Height + 1 exist in pool -> skip
 		3 New Block Previous Hash = Latest block hash in valid pool (if valid pool is not empty)
 		- If new block pre hash does not point to latest block hash in pool then,
 			+ Delete current latest block hash in pool
+			+ Add new block to pending pool
+			+ Find conflicted block with recent delete latest block in pool if possbile then try to add conflicted block into pool
 */
 func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock) bool {
 	// Condition 1
@@ -201,9 +208,10 @@ func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock)
 		// if pool still has available room
 		if len(self.validPool) < self.config.MaxValidBlock {
 			// Condition 2
-			if _, ok := self.pendingPool[block.Header.Height+1]; ok {
+			//if _, ok := self.pendingPool[block.Header.Height+1]; ok {
 				if len(self.validPool) > 0 {
-					latestBlockHash := self.validPool[len(self.validPool)-1].Header.Hash()
+					latestBlock := self.validPool[len(self.validPool)-1]
+					latestBlockHash := latestBlock.Header.Hash()
 					// condition 3
 					if strings.Compare(block.Header.PrevBlockHash.String(), latestBlockHash.String()) == 0 {
 						self.validPool = append(self.validPool, block)
@@ -212,15 +220,20 @@ func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock)
 					} else {
 						// add new block to pending pool
 						self.pendingPool[block.Header.Height] = block
-						// delete last block in pool
+						// delete latest block in pool
 						self.validPool = self.validPool[:len(self.validPool)-1]
-						self.cache.Add(block.Header.Hash(), block)
-						self.latestValidHeight -= 1
-						validBlock, ok := self.conflictedPool[block.Header.PrevBlockHash]
+						// update latest state
+						self.updateLatestShardState()
+						// add delete block to cache
+						self.cache.Add(latestBlockHash, latestBlock)
+						// find previous block of new block
+						previousBlock, ok := self.conflictedPool[block.Header.PrevBlockHash]
 						if ok {
-							err := self.AddShardBlock(validBlock)
+							// try to add previous block of new block
+							err := self.AddShardBlock(previousBlock)
 							if err == nil {
-								delete(self.conflictedPool, validBlock.Header.Hash())
+								delete(self.conflictedPool, previousBlock.Header.Hash())
+								return true
 							}
 						}
 						return false
@@ -232,9 +245,9 @@ func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock)
 					return true
 				}
 			}
-		} else if len(self.pendingPool) < self.config.MaxPendingBlock{
-			self.pendingPool[block.Header.Height] = block
-		}
+		//} else if len(self.pendingPool) < self.config.MaxPendingBlock{
+		//	self.pendingPool[block.Header.Height] = block
+		//}
 	} else {
 		self.pendingPool[block.Header.Height] = block
 	}
@@ -269,9 +282,7 @@ func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
-	blocks := make([]*blockchain.ShardBlock, len(self.validPool))
-	copy(blocks, self.validPool)
-	return blocks
+	return self.validPool
 }
 func (self *ShardPool) GetPendingBlock() []*blockchain.ShardBlock {
 	self.mtx.RLock()
