@@ -7,11 +7,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/cashec"
-	
+
 	"github.com/constant-money/constant-chain/databasemp"
-	
+
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -40,7 +40,7 @@ type Config struct {
 
 	//Max transaction pool may have
 	MaxTx uint64
-	
+
 	//Reset mempool database when run node
 	IsLoadFromMempool bool
 
@@ -48,8 +48,8 @@ type Config struct {
 
 	RelayShards []byte
 	UserKeyset  *cashec.KeySet
-	
 }
+
 // TxDesc is transaction message in mempool
 type TxDesc struct {
 	// transaction details
@@ -73,7 +73,7 @@ type TxPool struct {
 	txCoinHashHPool   map[common.Hash][]common.Hash
 	coinHashHPool     map[common.Hash]bool
 	cMtx              sync.RWMutex
-	Scantime   time.Duration
+	Scantime          time.Duration
 	//Candidate List in mempool
 	CandidatePool map[common.Hash]string
 	candidateMtx  sync.RWMutex
@@ -85,11 +85,11 @@ type TxPool struct {
 	//Caching received txs
 	cCacheTx chan common.Hash
 	//Current Role of Node
-	RoleInCommittees   int
+	RoleInCommittees  int
 	CRoleInCommittees chan int
-	roleMtx sync.RWMutex
+	roleMtx           sync.RWMutex
 	// channel to deliver txs to block gen
-	CPendingTxs   chan []metadata.Transaction
+	CPendingTxs chan []metadata.Transaction
 }
 
 /*
@@ -850,8 +850,8 @@ func (tp *TxPool) MonitorPool() {
 
 func (tp *TxPool) Start(cQuit chan struct{}) {
 	go tp.MonitorPool()
-	for{
-		select{
+	for {
+		select {
 		case <-cQuit:
 			return
 		case shardID := <-tp.CRoleInCommittees:
@@ -862,7 +862,7 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 			}
 		default:
 			{
-				tp.roleMtx.Lock()
+				tp.roleMtx.RLock()
 				if tp.RoleInCommittees > -1 {
 					txs := []metadata.Transaction{}
 					i := 0
@@ -876,10 +876,9 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 					tp.CPendingTxs <- txs
 					time.Sleep(5 * time.Second)
 				}
-				tp.roleMtx.Unlock()
+				tp.roleMtx.RUnlock()
 			}
 		}
 	}
 
 }
-
