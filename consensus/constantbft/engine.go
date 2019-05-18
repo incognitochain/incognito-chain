@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -55,7 +55,7 @@ func (engine *Engine) Start() error {
 	}
 	engine.cQuit = make(chan struct{})
 	//Start block generator
-	
+
 	engine.cBFTMsg = make(chan wire.Message)
 	engine.started = true
 	Logger.log.Info("Start consensus with key", engine.config.UserKeySet.GetPublicKeyB58())
@@ -216,7 +216,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 	switch roundRole {
 	case common.PROPOSER_ROLE:
 		fmt.Println(">>>>>>>>>>>>>>>>>", engine.config.CInCommittees)
-		//engine.config.CInCommittees <- int(shardID)
+		go func() { engine.config.CInCommittees <- int(shardID) }()
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		resBlk, err = bftProtocol.Start()
@@ -226,7 +226,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		}
 	case common.VALIDATOR_ROLE:
 		fmt.Println("<<<<<<<<<<<<<<<<<<", engine.config.CInCommittees)
-		//engine.config.CInCommittees <- int(shardID)
+		go func() { engine.config.CInCommittees <- int(shardID) }()
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		resBlk, err = bftProtocol.Start()
@@ -235,7 +235,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
-		//engine.config.CInCommittees <- -1
+		go func() { engine.config.CInCommittees <- -1 }()
 		err = errors.New("Not your turn yet")
 		time.Sleep(time.Millisecond * 300)
 	}
