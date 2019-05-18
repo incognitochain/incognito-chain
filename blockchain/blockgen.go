@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"sync"
-
+	
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 )
@@ -33,6 +33,7 @@ func (blkTmplGenerator BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, 
 }
 
 func (blkTmplGenerator *BlkTmplGenerator) Start(cQuit chan struct{}) {
+	Logger.log.Critical("Block Gen is starting")
 	for {
 		select {
 		case <-cQuit:
