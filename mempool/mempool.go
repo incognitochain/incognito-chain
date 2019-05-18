@@ -436,10 +436,10 @@ func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
 }
 
 func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
-	if tp.config.UserKeyset != nil {
+	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	//if tp.config.UserKeyset != nil {
 		//publicKey := tp.config.UserKeyset.PaymentAddress.Pk
 		//pubkey := base58.Base58Check{}.Encode(publicKey, common.ZeroByte)
-		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		//if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconCommittee) > -1 {
 		//	return false
 		//}
@@ -460,16 +460,16 @@ func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 		//		}
 		//	}
 		//}
-		tp.roleMtx.RLock()
-		if tp.RoleInCommittees > -1 && byte(tp.RoleInCommittees) == senderShardID {
-			tp.roleMtx.RUnlock()
-			return true
-		} else {
-			tp.roleMtx.RUnlock()
-			return false
-		}
+	//}
+	//return false
+	tp.roleMtx.RLock()
+	if tp.RoleInCommittees > -1 && byte(tp.RoleInCommittees) == senderShardID {
+		tp.roleMtx.RUnlock()
+		return true
+	} else {
+		tp.roleMtx.RUnlock()
+		return false
 	}
-	return false
 }
 
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
@@ -856,29 +856,28 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 			return
 		case shardID := <-tp.CRoleInCommittees:
 			{
-				tp.roleMtx.Lock()
-				tp.RoleInCommittees = shardID
-				tp.roleMtx.Unlock()
-			}
-		default:
-			{
-				tp.roleMtx.RLock()
-				if tp.RoleInCommittees > -1 {
-					txs := []metadata.Transaction{}
-					i := 0
-					for _, txDesc := range tp.pool {
-						txs = append(txs, txDesc.Desc.Tx)
-						i++
-						if i == 999 {
-							break
+				go func() {
+					tp.roleMtx.Lock()
+					defer tp.roleMtx.Unlock()
+					tp.mtx.RLock()
+					defer tp.mtx.RUnlock()
+					tp.RoleInCommittees = shardID
+					if tp.RoleInCommittees > -1 {
+						txs := []metadata.Transaction{}
+						i := 0
+						for _, txDesc := range tp.pool {
+							txs = append(txs, txDesc.Desc.Tx)
+							i++
+							if i == 999 {
+								break
+							}
+						}
+						if len(txs) > 0 {
+							tp.CPendingTxs <- txs
 						}
 					}
-					tp.CPendingTxs <- txs
-					time.Sleep(5 * time.Second)
-				}
-				tp.roleMtx.RUnlock()
+				}()
 			}
 		}
 	}
-
 }

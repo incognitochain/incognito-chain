@@ -55,7 +55,7 @@ func (engine *Engine) Start() error {
 	}
 	engine.cQuit = make(chan struct{})
 	//Start block generator
-
+	go engine.config.BlockGen.Start(engine.cQuit)
 	engine.cBFTMsg = make(chan wire.Message)
 	engine.started = true
 	Logger.log.Info("Start consensus with key", engine.config.UserKeySet.GetPublicKeyB58())
@@ -215,8 +215,9 @@ func (engine *Engine) execShardRole(shardID byte) {
 	fmt.Println("My shard role", roundRole)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
-		fmt.Println(">>>>>>>>>>>>>>>>>", engine.config.CInCommittees)
-		go func() { engine.config.CInCommittees <- int(shardID) }()
+		go func() { fmt.Println("129jasdkla;sndkajskdlajwldjo2jiajljlsjadlkajdlk")
+		engine.config.CInCommittees <- int(shardID)
+		}()
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		resBlk, err = bftProtocol.Start()
@@ -225,7 +226,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
-		fmt.Println("<<<<<<<<<<<<<<<<<<", engine.config.CInCommittees)
 		go func() { engine.config.CInCommittees <- int(shardID) }()
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
