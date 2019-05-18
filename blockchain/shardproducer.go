@@ -196,7 +196,7 @@ func (blockgen *BlkTmplGenerator) FinalizeShardBlock(blk *ShardBlock, producerKe
 	Get Transaction For new Block
 */
 func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, error) {
-	txsToAdd, txToRemove, _ := blockgen.getPendingTransaction(shardID, beaconBlocks)
+	txsToAdd, txToRemove, _ := blockgen.getPendingTransactionV2(shardID, beaconBlocks)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
@@ -402,6 +402,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	beaconBlocks []*BeaconBlock,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.GetPendingTxs()
+	Logger.log.Critical("Number of transaction get from pool: ", len(sourceTxns))
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
@@ -444,16 +445,16 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		}
 		currentSize += tempSize
 		txsToAdd = append(txsToAdd, tempTx)
-		if len(txsToAdd) == common.MaxTxsInBlock {
+		if len(txsToAdd) == MaxTxsInBlock {
 			break
 		}
 		// Time bound condition for block creation
-		//if time for getting transaction exceed half of MinShardBlkInterval then break
 		elasped := time.Since(startTime).Nanoseconds()
-		//Logger.log.Critical("Shard Producer/Elapsed: ", elasped)
-		//Logger.log.Critical("Shard Producer/MinShardBlkInterval: ", common.MinShardBlkInterval.Nanoseconds())
-		//Logger.log.Critical("Shard Producer/MinShardBlkInterval/2: ", common.MinShardBlkInterval.Nanoseconds()/2)
-		if elasped >= (common.MinShardBlkInterval.Nanoseconds()/2)*3 {
+		// @txsProcessTimeInBlockCreation is a constant for this current version
+		txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
+		if elasped >= txsProcessTimeInBlockCreation {
+			TxsAverageProcessTime = elasped/int64(len(txsToAdd))
+			MaxTxsInBlock = int(txsProcessTimeInBlockCreation / TxsAverageProcessTime)
 			//Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
