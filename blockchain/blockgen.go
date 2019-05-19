@@ -64,11 +64,12 @@ func (blkTmplGenerator *BlkTmplGenerator) RemoveTransaction(txs []metadata.Trans
 	blkTmplGenerator.PendingTxs = make(map[common.Hash]metadata.Transaction)
 }
 func (blkTmplGenerator *BlkTmplGenerator) GetPendingTxs() []metadata.Transaction {
-	blkTmplGenerator.mtx.RLock()
-	defer blkTmplGenerator.mtx.RUnlock()
+	blkTmplGenerator.mtx.Lock()
+	defer blkTmplGenerator.mtx.Unlock()
 	pendingTxs := []metadata.Transaction{}
 	for _, tx := range blkTmplGenerator.PendingTxs{
 		pendingTxs = append(pendingTxs, tx)
 	}
+	blkTmplGenerator.PendingTxs = make(map[common.Hash]metadata.Transaction)
 	return pendingTxs
 }

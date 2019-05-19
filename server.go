@@ -132,7 +132,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//Init channel
 	cPendingTxs := make(chan []metadata.Transaction)
 	cRemovedTxs := make(chan []metadata.Transaction)
-	cRoleInCommittees := make(chan int)
+	cRoleInCommitteesMempool := make(chan int)
+	cRoleInCommitteesNetSync := make(chan int)
 	cTxCache := make(chan common.Hash)
 	var err error
 
@@ -254,7 +255,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-	serverObj.memPool.InitChannelMempool(cTxCache, cRoleInCommittees, cPendingTxs)
+	serverObj.memPool.InitChannelMempool(cTxCache, cRoleInCommitteesMempool, cPendingTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
@@ -275,15 +276,16 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init consensus engine
 	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
-		CrossShardPool:    serverObj.crossShardPool,
-		ShardToBeaconPool: serverObj.shardToBeaconPool,
-		ChainParams:       serverObj.chainParams,
-		BlockChain:        serverObj.blockChain,
-		Server:            serverObj,
-		BlockGen:          serverObj.blockgen,
-		NodeMode:          cfg.NodeMode,
-		UserKeySet:        serverObj.userKeySet,
-		CInCommittees:     cRoleInCommittees,
+		CrossShardPool:           serverObj.crossShardPool,
+		ShardToBeaconPool:        serverObj.shardToBeaconPool,
+		ChainParams:              serverObj.chainParams,
+		BlockChain:               serverObj.blockChain,
+		Server:                   serverObj,
+		BlockGen:                 serverObj.blockgen,
+		NodeMode:                 cfg.NodeMode,
+		UserKeySet:               serverObj.userKeySet,
+		CRoleInCommitteesMempool: cRoleInCommitteesMempool,
+		CRoleInCommitteesNetSync: cRoleInCommitteesNetSync,
 	})
 	if err != nil {
 		return err
@@ -299,7 +301,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
-	}, cTxCache)
+	}, cTxCache,
+	&netsync.ShardIDConfig{
+		RelayShard:relayShards,
+		RoleInCommittees: -1,
+		CRoleInCommittees: cRoleInCommitteesNetSync,
+	},)
 	// Create a connection manager.
 	var peer *peer.Peer
 	if !cfg.DisableListen {
