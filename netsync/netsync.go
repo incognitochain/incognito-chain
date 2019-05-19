@@ -31,8 +31,14 @@ type NetSync struct {
 
 	config *NetSyncConfig
 	Cache  *NetSyncCache
+	ShardIDConfig *ShardIDConfig
 }
-
+type ShardIDConfig struct {
+	RelayShard []byte
+	RoleInCommittees int
+	CRoleInCommittees chan int
+	roleInCommitteesMtx sync.RWMutex
+}
 type NetSyncConfig struct {
 	BlockChain        *blockchain.BlockChain
 	ChainParam        *blockchain.Params
@@ -47,6 +53,7 @@ type NetSyncConfig struct {
 	Consensus interface {
 		OnBFTMsg(wire.Message)
 	}
+	
 }
 type NetSyncCache struct {
 	beaconBlockCache  *lru.Cache
@@ -57,8 +64,9 @@ type NetSyncCache struct {
 	txCacheMtx    sync.RWMutex
 	CTxCache      chan common.Hash
 }
-func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash) *NetSync {
+func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgShardID *ShardIDConfig) *NetSync {
 	netSync.config = cfg
+	netSync.ShardIDConfig = cfgShardID
 	netSync.cQuit = make(chan struct{})
 	netSync.cMessage = make(chan interface{})
 	beaconBlockCache, _ := lru.New(beaconBlockCache)
@@ -245,6 +253,9 @@ func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTx
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	Logger.log.Info("Handling new message tx")
+	if !netSync.HandleTxWithRole(msg.Transaction) {
+		return
+	}
 	if isAdded := netSync.HandleCacheTx(msg.Transaction); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
@@ -266,6 +277,9 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 	Logger.log.Info("Handling new message tx")
+	if !netSync.HandleTxWithRole(msg.Transaction) {
+		return
+	}
 	if isAdded := netSync.HandleCacheTx(msg.Transaction); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		
@@ -287,6 +301,9 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken) {
 	Logger.log.Info("Handling new message tx")
+	if !netSync.HandleTxWithRole(msg.Transaction) {
+		return
+	}
 	if isAdded := netSync.HandleCacheTx(msg.Transaction); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
@@ -499,10 +516,26 @@ func (netSync *NetSync) HandleCacheCrossShardBlock(block *blockchain.CrossShardB
 	return false
 }
 
+func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
+	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	for _, shardID := range netSync.ShardIDConfig.RelayShard {
+		if senderShardID == shardID {
+			return true
+		}
+	}
+	netSync.ShardIDConfig.roleInCommitteesMtx.RLock()
+	if netSync.ShardIDConfig.RoleInCommittees > -1 && byte(netSync.ShardIDConfig.RoleInCommittees) == senderShardID {
+		netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
+		return true
+	} else {
+		netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
+		return false
+	}
+}
 func (netSync *NetSync) cacheLoop() {
 	for {
 		select {
-			case txHash := <- netSync.Cache.CTxCache: {
+			case txHash := <-netSync.Cache.CTxCache: {
 				go func() {
 					netSync.Cache.txCacheMtx.Lock()
 					defer netSync.Cache.txCacheMtx.Unlock()
@@ -510,6 +543,13 @@ func (netSync *NetSync) cacheLoop() {
 					if !ok {
 						netSync.Cache.txCache.Add(txHash, true)
 					}
+				}()
+			}
+			case shardID := <-netSync.ShardIDConfig.CRoleInCommittees: {
+				go func() {
+					netSync.ShardIDConfig.roleInCommitteesMtx.Lock()
+					defer netSync.ShardIDConfig.roleInCommitteesMtx.Unlock()
+					netSync.ShardIDConfig.RoleInCommittees = shardID
 				}()
 			}
 		}

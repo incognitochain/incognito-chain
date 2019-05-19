@@ -25,7 +25,6 @@ type BeaconPool struct {
 	validPool         []*blockchain.BeaconBlock // valid, ready to insert into blockchain
 	pendingPool       map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
 	conflictedPool    map[common.Hash]*blockchain.BeaconBlock
-	blackListPool     map[common.Hash]*blockchain.BeaconBlock
 	latestValidHeight uint64
 	mtx               sync.RWMutex
 	config            BeaconPoolConfig
@@ -39,6 +38,7 @@ func init() {
 		ticker := time.Tick(5 * time.Second)
 		for _ = range ticker {
 			GetBeaconPool().RemoveBlock(blockchain.GetBestStateBeacon().BeaconHeight)
+			GetBeaconPool().CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
 			GetBeaconPool().PromotePendingPool()
 		}
 	}()
@@ -157,7 +157,11 @@ func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock
 	return false
 }
 func (self *BeaconPool) updateLatestBeaconState() {
-	self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
+	if len(self.validPool) > 0 {
+		self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
+	} else {
+		self.latestValidHeight = blockchain.GetBestStateBeacon().BeaconHeight
+	}
 }
 // Check block in pending block then add to valid pool if block is valid
 func (self *BeaconPool) promotePendingPool() {
@@ -193,12 +197,11 @@ func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
 	defer self.mtx.Unlock()
 	self.removeBlock(lastBlockHeight)
 }
-
 //@Notice: Remove should set latest valid height
 //Because normal beacon node may not have these block to remove
-func (self *BeaconPool) removeBlock(lastBlockHeight uint64) {
+func (self *BeaconPool) removeBlock(latestBlockHeight uint64) {
 	for index, block := range self.validPool {
-		if block.Header.Height <= lastBlockHeight {
+		if block.Header.Height <= latestBlockHeight {
 			if index == len(self.validPool)-1 {
 				self.validPool = []*blockchain.BeaconBlock{}
 			}
@@ -206,6 +209,21 @@ func (self *BeaconPool) removeBlock(lastBlockHeight uint64) {
 		} else {
 			self.validPool = self.validPool[index:]
 			break
+		}
+	}
+}
+
+func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+	for height, block := range self.pendingPool {
+		if block.Header.Height <= latestBlockHeight {
+			delete(self.pendingPool, height)
+		}
+	}
+	for hash, block := range self.conflictedPool {
+		if block.Header.Height < latestBlockHeight - 2 {
+			delete(self.conflictedPool, hash)
 		}
 	}
 }
