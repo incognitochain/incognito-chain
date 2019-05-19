@@ -47,6 +47,7 @@ func init() {
 		for _ = range ticker {
 			for k, _ := range shardPoolMap {
 				GetShardPool(k).RemoveBlock(blockchain.GetBestStateShard(k).ShardHeight)
+				GetShardPool(k).CleanOldBlock(blockchain.GetBestStateShard(k).ShardHeight)
 				GetShardPool(k).PromotePendingPool()
 			}
 		}
@@ -282,6 +283,21 @@ func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 		} else {
 			self.validPool = self.validPool[index:]
 			break
+		}
+	}
+}
+
+func (self *ShardPool) CleanOldBlock(latestBlockHeight uint64) {
+	self.mtx.Lock()
+	defer self.mtx.Unlock()
+	for height, block := range self.pendingPool {
+		if block.Header.Height <= latestBlockHeight {
+			delete(self.pendingPool, height)
+		}
+	}
+	for hash, block := range self.conflictedPool {
+		if block.Header.Height < latestBlockHeight - 2 {
+			delete(self.conflictedPool, hash)
 		}
 	}
 }

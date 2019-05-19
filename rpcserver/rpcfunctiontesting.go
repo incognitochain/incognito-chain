@@ -37,9 +37,9 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	fail := 0
 	switch(txType) {
 	case "noprivacy":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-5000.json"
-	case "privacy":
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-5000.json"
+	case "privacy":
+		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-5000.json"
 	case "cstoken":
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-cstoken-5000.json"
 	case "cstokenprivacy":

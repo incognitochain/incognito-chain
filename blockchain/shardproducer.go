@@ -402,6 +402,8 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	beaconBlocks []*BeaconBlock,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	sourceTxns := blockgen.GetPendingTxs()
+	txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
+	var elasped int64
 	Logger.log.Critical("Number of transaction get from pool: ", len(sourceTxns))
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
@@ -449,16 +451,18 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 			break
 		}
 		// Time bound condition for block creation
-		elasped := time.Since(startTime).Nanoseconds()
+		elasped = time.Since(startTime).Nanoseconds()
 		// @txsProcessTimeInBlockCreation is a constant for this current version
-		txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
 		if elasped >= txsProcessTimeInBlockCreation {
-			TxsAverageProcessTime = elasped/int64(len(txsToAdd))
-			MaxTxsInBlock = int(txsProcessTimeInBlockCreation / TxsAverageProcessTime)
 			//Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
 	}
+	//if len(txsToAdd) != 0 {
+	//	TxsAverageProcessTime = elasped/int64(len(txsToAdd))
+	//	MaxTxsInBlock = int(txsProcessTimeInBlockCreation / TxsAverageProcessTime)
+	//}
+	Logger.log.Info("Max Transaction In Block ⚡︎ ", MaxTxsInBlock)
 	Logger.log.Criticalf("☭ %+v transactions for New Block from pool \n", len(txsToAdd))
 	blockgen.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee

@@ -57,7 +57,7 @@ var (
 	// public key
 	PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
 	MaxTxsInBlock        = 600
-	MaxTxsProcessTimeInBlockCreation = float64(0.66)
+	MaxTxsProcessTimeInBlockCreation = float64(0.85)
 	TxsAverageProcessTime = int64(5000) // count in nano second ~= 5 mili seconds
 	DefaultTxsAverageProcessTime = int64(5000) // count in nano second
 )

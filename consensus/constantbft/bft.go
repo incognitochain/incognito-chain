@@ -161,7 +161,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	Logger.log.Critical("BFT: Block create time is", elasped)
 	select {
 	case <-protocol.proposeCh:
-		Logger.log.Critical("Oops block create time longer than timeout")
+		Logger.log.Critical("☠︎ Oops block create time longer than timeout")
 	default:
 		protocol.proposeCh <- msg
 	}
