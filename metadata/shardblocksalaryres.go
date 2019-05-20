@@ -20,6 +20,10 @@ type ShardBlockSalaryRes struct {
 	ShardBlockSalaryInfoHash common.Hash
 }
 
+type ShardBlockRewardMeta struct {
+	MetadataBase
+}
+
 type ShardBlockSalaryInfo struct {
 	ShardBlockSalary uint64
 	ShardBlockFee    uint64
@@ -45,12 +49,26 @@ func NewShardBlockSalaryRes(
 	}
 }
 
+func NewShardBlockRewardMeta() *ShardBlockRewardMeta {
+	metadataBase := MetadataBase{
+		Type: ShardBlockReward,
+	}
+	return &ShardBlockRewardMeta{
+		MetadataBase: metadataBase,
+	}
+}
+
 func (sbsRes *ShardBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
 }
 
 func (sbsRes *ShardBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
+	return false, nil
+}
+
+func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
 	return false, nil
 }
@@ -66,6 +84,16 @@ func (sbsRes *ShardBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, t
 	// 	return false, false, errors.New("Wrong request info's shard block height")
 	// }
 	return false, true, nil
+}
+
+func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateMetadataByItself() bool {
+	// The validation just need to check at tx level, so returning true here
+	return true
+}
+
+func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+	// The validation just need to check at tx level, so returning true here
+	return false, false, nil
 }
 
 func (sbsRes *ShardBlockSalaryRes) ValidateMetadataByItself() bool {

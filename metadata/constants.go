@@ -9,6 +9,7 @@ const (
 	ContractingResponseMeta = 27
 
 	ResponseBaseMeta             = 35
+	ShardBlockReward             = 36
 	ShardBlockSalaryRequestMeta  = 37
 	ShardBlockSalaryResponseMeta = 38
 	BeaconSalaryRequestMeta      = 39

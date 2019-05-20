@@ -3,9 +3,18 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/privacy"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/transaction"
+)
+
+const (
+	RewardBase = 0
+	Duration   = 1000000
 )
 
 type ShardBody struct {
@@ -106,4 +115,28 @@ func (shardBody *ShardBody) ExtractOutgoingCrossShardMap() (map[byte][]common.Ha
 	// 	crossShardMap[crossblock.ShardID] = append(crossShardMap[crossblock.ShardID], crossblock.BlockHash)
 	// }
 	return crossShardMap, nil
+}
+
+func (shardBody *ShardBody) addBlockReward(blockHeight uint64, producerPayment privacy.PaymentAddress, producerPriKey privacy.PrivateKey, db database.DatabaseInterface) error {
+	txsFee := uint64(0)
+
+	for _, tx := range shardBody.Transactions {
+		txsFee += tx.GetTxFee()
+	}
+	n := blockHeight / Duration
+	reward := uint64(RewardBase)
+	for ; n > 0; n-- {
+		reward /= 2
+	}
+	reward += txsFee
+	txCoinBase := new(transaction.Tx)
+	err := txCoinBase.InitTxSalary(reward, &producerPayment, &producerPriKey, db, metadata.NewShardBlockRewardMeta())
+	if err != nil {
+		return err
+	}
+	if shardBody.Transactions == nil {
+		return errors.New("not init tx arrays")
+	}
+	shardBody.Transactions = append(shardBody.Transactions, txCoinBase)
+	return nil
 }
