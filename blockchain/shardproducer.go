@@ -97,9 +97,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	}
 	err = block.Body.addBlockReward(blockgen.chain.BestState.Shard[shardID].BestBlock.Header.Height+1, producerKeySet.PaymentAddress, producerKeySet.PrivateKey, blockgen.chain.GetDatabase())
 	if err != nil {
+		fmt.Printf("\n\nerrorrrrrrrrrrrrrrrrrrr\n\n\n\n%+v\n\n\n\n", err.Error())
 		return nil, err
 	} else {
-		fmt.Printf("\n\n\n%+v \n\n\n", block.Body.Transactions[len(block.Body.Transactions)-1])
+		fmt.Printf("\n\neiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\n\n\n%+v \n %+v \n\n\n", len(block.Body.Transactions), block.Body.Transactions[len(block.Body.Transactions)-1])
 	}
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)
