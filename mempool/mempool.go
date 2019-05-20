@@ -90,6 +90,7 @@ type TxPool struct {
 	roleMtx           sync.RWMutex
 	// channel to deliver txs to block gen
 	CPendingTxs chan []metadata.Transaction
+	IsBlockGenStarted bool
 }
 
 /*
@@ -107,6 +108,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.cMtx = sync.RWMutex{}
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
 	tp.RoleInCommittees = -1
+	tp.IsBlockGenStarted = false
 }
 func (tp *TxPool) InitChannelMempool(cCacheTx chan common.Hash, cRoleInCommittees chan int, cPendingTxs chan []metadata.Transaction) {
 	tp.cCacheTx = cCacheTx
@@ -525,6 +527,12 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	if err != nil {
 		Logger.log.Error(err)
+	} else {
+		if tp.IsBlockGenStarted {
+			go func(tx metadata.Transaction){
+				tp.CPendingTxs <- []metadata.Transaction{tx}
+			}(tx)
+		}
 	}
 	return hash, txDesc, err
 }
@@ -859,23 +867,23 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 				go func() {
 					tp.roleMtx.Lock()
 					defer tp.roleMtx.Unlock()
-					tp.mtx.RLock()
-					defer tp.mtx.RUnlock()
+					//tp.mtx.RLock()
+					//defer tp.mtx.RUnlock()
 					tp.RoleInCommittees = shardID
-					if tp.RoleInCommittees > -1 {
-						txs := []metadata.Transaction{}
-						i := 0
-						for _, txDesc := range tp.pool {
-							txs = append(txs, txDesc.Desc.Tx)
-							i++
-							if i == 999 {
-								break
-							}
-						}
-						if len(txs) > 0 {
-							tp.CPendingTxs <- txs
-						}
-					}
+					//if tp.RoleInCommittees > -1 {
+					//	txs := []metadata.Transaction{}
+					//	i := 0
+					//	for _, txDesc := range tp.pool {
+					//		txs = append(txs, txDesc.Desc.Tx)
+					//		i++
+					//		if i == 999 {
+					//			break
+					//		}
+					//	}
+					//	if len(txs) > 0 {
+					//		tp.CPendingTxs <- txs
+					//	}
+					//}
 				}()
 			}
 		}

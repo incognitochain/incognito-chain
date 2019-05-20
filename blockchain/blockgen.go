@@ -15,12 +15,12 @@ type BlkTmplGenerator struct {
 	chain             *BlockChain
 	CQuit             chan struct{}
 	CPendingTxs       chan []metadata.Transaction
-	CRemovedTxs       chan []metadata.Transaction
+	CRemovedTxs       chan metadata.Transaction
 	PendingTxs        map[common.Hash]metadata.Transaction
 	mtx               sync.RWMutex
 }
 
-func (blkTmplGenerator BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, shardToBeaconPool ShardToBeaconPool, crossShardPool map[byte]CrossShardPool, cPendingTxs chan []metadata.Transaction, cRemovedTxs chan []metadata.Transaction) (*BlkTmplGenerator, error) {
+func (blkTmplGenerator BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, shardToBeaconPool ShardToBeaconPool, crossShardPool map[byte]CrossShardPool, cPendingTxs chan []metadata.Transaction, cRemovedTxs chan metadata.Transaction) (*BlkTmplGenerator, error) {
 	return &BlkTmplGenerator{
 		txPool:            txPool,
 		shardToBeaconPool: shardToBeaconPool,
@@ -40,11 +40,11 @@ func (blkTmplGenerator *BlkTmplGenerator) Start(cQuit chan struct{}) {
 			return
 		case addTxs := <-blkTmplGenerator.CPendingTxs:
 			{
-				go blkTmplGenerator.AddTransaction(addTxs)
+				go blkTmplGenerator.AddTransactionV2(addTxs)
 			}
 		case removeTxs := <-blkTmplGenerator.CRemovedTxs:
 			{
-				go blkTmplGenerator.RemoveTransaction(removeTxs)
+				go blkTmplGenerator.RemoveTransactionV2(removeTxs)
 			}
 		}
 	}
@@ -72,5 +72,27 @@ func (blkTmplGenerator *BlkTmplGenerator) GetPendingTxs() []metadata.Transaction
 		pendingTxs = append(pendingTxs, tx)
 	}
 	blkTmplGenerator.PendingTxs = make(map[common.Hash]metadata.Transaction)
+	return pendingTxs
+}
+
+func (blkTmplGenerator *BlkTmplGenerator) AddTransactionV2(txs []metadata.Transaction) {
+	blkTmplGenerator.mtx.Lock()
+	defer blkTmplGenerator.mtx.Unlock()
+	for _, tx := range txs {
+		blkTmplGenerator.PendingTxs[*tx.Hash()] = tx
+	}
+}
+func (blkTmplGenerator *BlkTmplGenerator) RemoveTransactionV2(tx metadata.Transaction) {
+	blkTmplGenerator.mtx.Lock()
+	defer blkTmplGenerator.mtx.Unlock()
+	delete(blkTmplGenerator.PendingTxs, *tx.Hash())
+}
+func (blkTmplGenerator *BlkTmplGenerator) GetPendingTxsV2() []metadata.Transaction {
+	blkTmplGenerator.mtx.Lock()
+	defer blkTmplGenerator.mtx.Unlock()
+	pendingTxs := []metadata.Transaction{}
+	for _, tx := range blkTmplGenerator.PendingTxs{
+		pendingTxs = append(pendingTxs, tx)
+	}
 	return pendingTxs
 }

@@ -401,7 +401,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	shardID byte,
 	beaconBlocks []*BeaconBlock,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
-	sourceTxns := blockgen.GetPendingTxs()
+	sourceTxns := blockgen.GetPendingTxsV2()
 	txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
 	var elasped int64
 	Logger.log.Critical("Number of transaction get from pool: ", len(sourceTxns))
