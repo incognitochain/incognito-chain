@@ -219,13 +219,13 @@ func (engine *Engine) execShardRole(shardID byte) {
 		resBlk interface{}
 	)
 	roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.Round)
-	fmt.Println("My shard role", roundRole)
+	Logger.log.Infof("My shard role %+v, ShardID %+v \n", roundRole, shardID)
+	go func() {
+		engine.config.CRoleInCommitteesMempool <- int(shardID)
+		engine.config.CRoleInCommitteesNetSync <- int(shardID)
+	}()
 	switch roundRole {
 	case common.PROPOSER_ROLE:
-		go func() {
-			engine.config.CRoleInCommitteesMempool <- int(shardID)
-			engine.config.CRoleInCommitteesNetSync <- int(shardID)
-		}()
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		resBlk, err = bftProtocol.Start()
@@ -234,10 +234,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
-		go func() {
-			engine.config.CRoleInCommitteesMempool <- int(shardID)
-			engine.config.CRoleInCommitteesNetSync <- int(shardID)
-		}()
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		resBlk, err = bftProtocol.Start()
@@ -246,10 +242,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
-		go func() {
-			engine.config.CRoleInCommitteesMempool <- -1
-			engine.config.CRoleInCommitteesNetSync <- -1
-		}()
 		err = errors.New("Not your turn yet")
 		time.Sleep(time.Millisecond * 300)
 	}
