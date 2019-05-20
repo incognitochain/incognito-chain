@@ -6,6 +6,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"sync"
 	"sync/atomic"
+	"time"
 	
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/mempool"
@@ -20,6 +21,7 @@ const (
 	crossShardBlockCache = 500
 	shardToBeaconBlockCache = 500
 	txCache = 10000
+	workers = 5
 )
 type NetSync struct {
 	started   int32
@@ -533,18 +535,14 @@ func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
 	}
 }
 func (netSync *NetSync) cacheLoop() {
+	for w:=0 ;w < workers ;w++ {
+		go netSync.HandleCacheTxHashWoker(netSync.Cache.CTxCache)
+	}
 	for {
 		select {
-			case txHash := <-netSync.Cache.CTxCache: {
-				go func() {
-					netSync.Cache.txCacheMtx.Lock()
-					defer netSync.Cache.txCacheMtx.Unlock()
-					_, ok := netSync.Cache.txCache.Get(txHash)
-					if !ok {
-						netSync.Cache.txCache.Add(txHash, true)
-					}
-				}()
-			}
+			//case txHash := <-netSync.Cache.CTxCache: {
+			//	go netSync.HandleCacheTxHash(txHash)
+			//}
 			case shardID := <-netSync.ShardIDConfig.CRoleInCommittees: {
 				go func() {
 					netSync.ShardIDConfig.roleInCommitteesMtx.Lock()
@@ -553,5 +551,12 @@ func (netSync *NetSync) cacheLoop() {
 				}()
 			}
 		}
+	}
+}
+
+func (netSync *NetSync) HandleCacheTxHashWoker(cTxCache <-chan common.Hash) {
+	for job := range cTxCache {
+		netSync.HandleCacheTxHash(job)
+		time.Sleep(time.Nanosecond)
 	}
 }
