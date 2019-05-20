@@ -2,7 +2,8 @@ package rpcserver
 
 import (
 	"errors"
-
+	"sort"
+	
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/mempool"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
@@ -69,7 +70,11 @@ func (rpcServer RpcServer) handleGetBeaconPoolState(params interface{}, closeCha
 	// result.BestBlock = nil
 	return result, nil
 }
-
+type Blocks struct {
+	Pending []uint64
+	Valid   []uint64
+	Latest  uint64
+}
 func (rpcServer RpcServer) handleGetShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// if rpcServer.config.BlockChain.BestState.Beacon == nil {
 	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
@@ -86,8 +91,11 @@ func (rpcServer RpcServer) handleGetShardPoolState(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
 	result := shardPool.GetAllBlockHeight()
+	sort.Slice(result, func(i, j int) bool {
+		return result[i] < result[j]
+	})
 	// result.BestBlock = nil
-	return result, nil
+	return Blocks{Valid:shardPool.GetValidBlockHeight(), Pending:shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}, nil
 }
 
 func (rpcServer RpcServer) handleGetShardPoolLatestValidHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
