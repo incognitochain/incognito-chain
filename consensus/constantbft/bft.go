@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
+	"github.com/pkg/errors"
 )
 
 type BFTProtocol struct {
@@ -57,12 +58,12 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	}
 	go protocol.earlyMsgHandler()
 	//    single-node start    //
-	// go protocol.CreateBlockMsg()
-	// <-protocol.proposeCh
-	// if protocol.pendingBlock != nil {
-	// 	return protocol.pendingBlock, nil
-	// }
-	// return nil, errors.New("can't produce block")
+	go protocol.CreateBlockMsg()
+	<-protocol.proposeCh
+	if protocol.pendingBlock != nil {
+		return protocol.pendingBlock, nil
+	}
+	return nil, errors.New("can't produce block")
 	//    single-node end    //
 	for {
 		protocol.startTime = time.Now()
