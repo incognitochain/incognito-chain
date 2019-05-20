@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -93,6 +94,12 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
+	}
+	err = block.Body.addBlockReward(blockgen.chain.BestState.Shard[shardID].BestBlock.Header.Height+1, producerKeySet.PaymentAddress, producerKeySet.PrivateKey, blockgen.chain.GetDatabase())
+	if err != nil {
+		return nil, err
+	} else {
+		fmt.Printf("\n\n\n%+v \n\n\n", block.Body.Transactions[len(block.Body.Transactions)-1])
 	}
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)

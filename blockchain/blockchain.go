@@ -1225,25 +1225,6 @@ func (blockchain BlockChain) GetFeePerKbTx() uint64 {
 // 	return instructions, nil
 // }
 
-// func (blockchain *BlockChain) SetEncryptPhrase(helper ConstitutionHelper) {
-// 	flag := byte(0)
-// 	boardType := helper.GetBoardType()
-// 	height := blockchain.BestState.Beacon.BestBlock.Header.Height
-// 	if blockchain.NeedToEnterEncryptionPhrase(helper) {
-// 		flag = common.Lv2EncryptionFlag
-// 		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
-// 		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
-// 	} else if blockchain.NeedEnterEncryptLv1(helper) {
-// 		flag = common.Lv1EncryptionFlag
-// 		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
-// 		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
-// 	} else if blockchain.NeedEnterEncryptNormal(helper) {
-// 		flag = common.NormalEncryptionFlag
-// 		blockchain.config.DataBase.SetEncryptionLastBlockHeight(boardType, height)
-// 		blockchain.config.DataBase.SetEncryptFlag(boardType, flag)
-// 	}
-// }
-
 // GetRecentTransactions - find all recent history txs which are created by user
 // by number of block, maximum is 100 newest blocks
 func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, shardID byte) (map[string]metadata.Transaction, error) {
@@ -1311,21 +1292,4 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 		return blockchain.syncStatus.IsReady.Shards[shardID]
 	}
 	return blockchain.syncStatus.IsReady.Beacon
-}
-
-func (bc *BlockChain) processUpdateDCBConstitutionIns(inst []string) error {
-	return nil
-}
-
-func (bc *BlockChain) processUpdateGOVConstitutionIns(inst []string) error {
-	//TODO
-	return nil
-}
-
-func (bc *BlockChain) processKeepOldDCBConstitutionIns(inst []string) error {
-	return nil
-}
-
-func (bc *BlockChain) processKeepOldGOVConstitutionIns(inst []string) error {
-	return nil
 }
