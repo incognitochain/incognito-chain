@@ -499,7 +499,7 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 		// if pubkeyShardID == shardID {
 		item1 := view.mapSnD[k]
 		for _, snd := range item1 {
-			err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, snd, view.shardID)
+			err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, privacy.AddPaddingBigInt(snd, privacy.BigIntSize), view.shardID)
 			if err != nil {
 				return err
 			}

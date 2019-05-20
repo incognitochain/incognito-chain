@@ -380,7 +380,7 @@ func (db *db) CleanCommitments() error {
 }
 
 // StoreSNDerivators - store list serialNumbers by shardID
-func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error {
+func (db *db) StoreSNDerivators(tokenID *common.Hash, data []byte, shardID byte) error {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
@@ -389,10 +389,10 @@ func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte
 	}
 
 	// "snderivator-data:data"
-	snderivatorData := data.Bytes()
+	//snderivatorData := data.Bytes()
 	//keySpec := make([]byte, len(key))
-	keySpec := append(key, snderivatorData...)
-	if err := db.lvdb.Put(keySpec, snderivatorData, nil); err != nil {
+	keySpec := append(key, data...)
+	if err := db.lvdb.Put(keySpec, []byte{}, nil); err != nil {
 		return err
 	}
 
@@ -402,7 +402,7 @@ func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	arrData = append(arrData, string(snderivatorData))
+	arrData = append(arrData, string(data))
 	b, err := json.Marshal(arrData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -438,11 +438,10 @@ func (db *db) FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, e
 }
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by shardID
-func (db *db) HasSNDerivator(tokenID *common.Hash, data big.Int, shardID byte) (bool, error) {
+func (db *db) HasSNDerivator(tokenID *common.Hash, data []byte, shardID byte) (bool, error) {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
-	snderivatorData := data.Bytes()
-	keySpec := append(key, snderivatorData...)
+	keySpec := append(key, data...)
 	_, err := db.Get(keySpec)
 	if err != nil {
 		return false, nil
