@@ -588,13 +588,13 @@ func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
 }
 
 func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
-
 	currentInsert.Shards[shardID].Lock()
 	defer currentInsert.Shards[shardID].Unlock()
 	blks := blockchain.config.ShardPool[shardID].GetValidBlock()
 	for _, newBlk := range blks {
 		err := blockchain.InsertShardBlock(newBlk, false)
 		if err != nil {
+			//@Notice: remove or keep invalid block
 			Logger.log.Error(err)
 			break
 		}

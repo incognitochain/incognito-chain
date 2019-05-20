@@ -225,7 +225,10 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 
 		//Remove tx out of pool
 		for _, tx := range block.Body.Transactions {
-			blockchain.config.TxPool.RemoveTx(tx, true)
+			go func(tx metadata.Transaction) {
+					blockchain.config.TxPool.RemoveTx(tx, true)
+					blockchain.config.CRemovedTxs <- tx
+			}(tx)
 		}
 	}()
 
@@ -234,6 +237,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if err != nil {
 		return err
 	}
+	blockchain.config.ShardPool[block.Header.ShardID].RemoveBlock(block.Header.Height)
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
 	return nil
 }
@@ -262,7 +266,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// Process transaction db
-	Logger.log.Criticalf("Found %d transactions in block height %+v", len(block.Body.Transactions), block.Header.Height)
+	Logger.log.Criticalf("SHARD %+v | Found %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
 	//temp := blockchain.BestState.Shard[block.Header.ShardID].MetricBlockHeight
 	if block.Header.Height != 1 {
 		go common.AnalyzeTimeSeriesTxsInOneBlockMetric(fmt.Sprintf("%d", block.Header.Height), float64(len(block.Body.Transactions)))
