@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	RewardBase = 0
+	RewardBase = 1666
 	Duration   = 1000000
 )
 

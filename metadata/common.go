@@ -38,8 +38,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ContractingResponseMeta:
 		md = &ResponseBase{}
 
-	case ShardBlockSalaryResponseMeta:
-		md = &ShardBlockSalaryRes{}
+	// case ShardBlockSalaryResponseMeta:
+	// 	md = &ShardBlockSalaryRes{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 
@@ -49,6 +49,9 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &StakingMetadata{}
 	case ReturnStakingMeta:
 		md = &ReturnStakingMetadata{}
+
+	case ShardBlockReward:
+		md = &ShardBlockRewardMeta{}
 
 	default:
 		fmt.Printf("[db] parse meta err: %+v\n", meta)
