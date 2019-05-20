@@ -104,7 +104,7 @@ type DatabaseInterface interface {
 
 	// SNDerivator
 	StoreSNDerivators(tokenID *common.Hash, data []byte, shardID byte) error
-	FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
+	//FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
 	HasSNDerivator(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSNDerivator() error
 
