@@ -2,10 +2,9 @@ package blockchain
 
 import (
 	"encoding/binary"
-	"fmt"
 	"sort"
 	"sync"
-
+	
 	"github.com/constant-money/constant-chain/common"
 )
 
@@ -113,7 +112,7 @@ func (bestStateShard *BestStateShard) Hash() common.Hash {
 func (bestStateShard *BestStateShard) GetPubkeyRole(pubkey string, round int) string {
 	// fmt.Println("Shard BestState/ BEST STATE", bestStateShard)
 	found := common.IndexOfStr(pubkey, bestStateShard.ShardCommittee)
-	fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
+	//fmt.Println("Shard BestState/ Get Public Key Role, Found IN Shard COMMITTEES", found)
 	if found > -1 {
 		tmpID := (bestStateShard.ShardProposerIdx + round) % len(bestStateShard.ShardCommittee)
 		if found == tmpID {

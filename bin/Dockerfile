@@ -23,5 +23,5 @@ COPY ./txs-shard0-privacy-5000.json /utility/
 COPY ./txs-shard1-noprivacy-5000.json /utility/
 COPY ./txs-shard1-privacy-5000.json /utility/
 COPY ./txs-shard1-cstoken-5000.json /utility/
-
+COPY ./txs-shard1-cstokenprivacy-5000.json /utility/
 CMD ["/bin/sh"]

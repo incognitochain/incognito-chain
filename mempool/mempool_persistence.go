@@ -95,7 +95,7 @@ func (tp *TxPool) ResetDatabaseMP() error {
 func (tp *TxPool) LoadDatabaseMP() ([]TxDesc,error) {
 	txDescs := []TxDesc{}
 	allTxHashes, allTxs, err := tp.config.DataBaseMempool.Load()
-	ttl := time.Duration(tp.TxLifeTime) * time.Second
+	ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 	if err != nil {
 		return txDescs, err
 	}
