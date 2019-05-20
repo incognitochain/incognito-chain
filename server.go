@@ -131,7 +131,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	//Init channel
 	cPendingTxs := make(chan []metadata.Transaction)
-	cRemovedTxs := make(chan []metadata.Transaction)
+	cRemovedTxs := make(chan metadata.Transaction)
 	cRoleInCommitteesMempool := make(chan int)
 	cRoleInCommitteesNetSync := make(chan int)
 	cTxCache := make(chan common.Hash)
@@ -184,7 +184,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
 	})
-
+	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
 		return err
 	}
@@ -539,6 +539,8 @@ func (serverObj Server) Start() {
 			Logger.log.Error(err)
 			go serverObj.Stop()
 			return
+		} else {
+			serverObj.memPool.IsBlockGenStarted = true
 		}
 	}
 
