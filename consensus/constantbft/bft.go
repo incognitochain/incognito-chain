@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
 )
@@ -21,6 +21,7 @@ type BFTProtocol struct {
 	pendingBlock interface{}
 
 	RoundData struct {
+		MinBeaconHeight  uint64
 		BestStateHash    common.Hash
 		IsProposer       bool
 		Layer            string
@@ -126,7 +127,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		}
 	} else {
 
-		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState)
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState, protocol.RoundData.MinBeaconHeight)
 		go common.AnalyzeTimeSeriesShardBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
 		if err != nil {
 			Logger.log.Error(err)
@@ -160,7 +161,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	Logger.log.Critical("BFT: Block create time is", elasped)
 	select {
 	case <-protocol.proposeCh:
-		Logger.log.Critical("Oops block create time longer than timeout")
+		Logger.log.Critical("☠︎ Oops block create time longer than timeout")
 	default:
 		protocol.proposeCh <- msg
 	}

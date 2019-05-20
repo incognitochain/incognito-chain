@@ -37,11 +37,13 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	fail := 0
 	switch(txType) {
 	case "noprivacy":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-5000.json"
-	case "privacy":
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-5000.json"
+	case "privacy":
+		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-5000.json"
 	case "cstoken":
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-cstoken-5000.json"
+	case "cstokenprivacy":
+		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-cstokenprivacy-5000.json"
 	default:
 		return CountResult{}, NewRPCError(ErrUnexpected,errors.New("Can't find file"))
 	}
@@ -65,37 +67,123 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 			fail++
 			continue
 		}
-		var tx transaction.Tx
-		err = json.Unmarshal(rawTxBytes, &tx)
-		if err != nil {
-			fail++
-			continue
-		}
-		if !isSent {
-			_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+		switch(txType) {
+		case "cstoken":
+			{
+				var tx transaction.TxCustomToken
+				err = json.Unmarshal(rawTxBytes, &tx)
+				if err != nil {
+					fail++
+					continue
+				}
+				if !isSent {
+					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					if err != nil {
+						fail++
+						continue
+					} else {
+						success++
+						continue
+					}
+				} else {
+					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+					if err != nil {
+						fail++
+						continue
+					}
+					txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
+					if err != nil {
+						fail++
+						continue
+					}
+					txMsg.(*wire.MessageTxToken).Transaction = &tx
+					err = rpcServer.config.Server.PushMessageToAll(txMsg)
+					if err != nil {
+						fail++
+						continue
+					}
+				}
+				if err == nil {
+					count++
+					success++
+				}
+			}
+		case "cstokenprivacy":
+			{
+				var tx transaction.TxCustomTokenPrivacy
+				err = json.Unmarshal(rawTxBytes, &tx)
+				if err != nil {
+					fail++
+					continue
+				}
+				if !isSent {
+					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					if err != nil {
+						fail++
+						continue
+					} else {
+						success++
+						continue
+					}
+				} else {
+					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+					if err != nil {
+						fail++
+						continue
+					}
+					txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+					if err != nil {
+						fail++
+						continue
+					}
+					txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
+					err = rpcServer.config.Server.PushMessageToAll(txMsg)
+					if err != nil {
+						fail++
+						continue
+					}
+				}
+				if err == nil {
+					count++
+					success++
+				}
+			}
+		default:
+			var tx transaction.Tx
+			err = json.Unmarshal(rawTxBytes, &tx)
 			if err != nil {
 				fail++
 				continue
+			}
+			if !isSent {
+				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				if err != nil {
+					fail++
+					continue
+				} else {
+					success++
+					continue
+				}
 			} else {
-				success++
-				continue
-			}
-		} else {
-			_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-			if err != nil {
-				fail++
-				continue
-			}
-			txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-			if err != nil {
-				fail++
-				continue
-			}
-			txMsg.(*wire.MessageTx).Transaction = &tx
-			err = rpcServer.config.Server.PushMessageToAll(txMsg)
-			if err != nil {
-				fail++
-				continue
+				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+				if err != nil {
+					fail++
+					continue
+				}
+				txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+				if err != nil {
+					fail++
+					continue
+				}
+				txMsg.(*wire.MessageTx).Transaction = &tx
+				err = rpcServer.config.Server.PushMessageToAll(txMsg)
+				if err != nil {
+					fail++
+					continue
+				}
 			}
 		}
 		if err == nil {
