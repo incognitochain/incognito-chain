@@ -73,25 +73,24 @@ type TxPool struct {
 	txCoinHashHPool   map[common.Hash][]common.Hash
 	coinHashHPool     map[common.Hash]bool
 	cMtx              sync.RWMutex
+	Scantime          time.Duration
 	//Candidate List in mempool
 	CandidatePool map[common.Hash]string
 	candidateMtx  sync.RWMutex
-
 	//Token ID List in Mempool
 	TokenIDPool map[common.Hash]string
 	tokenIDMtx  sync.RWMutex
-
-	//Max transaction pool may have
-	maxTx uint64
-	//Time to live for all transaction
-	TxLifeTime uint
-	Scantime   time.Duration
-	//Reset mempool database
-	IsLoadFromMempool bool
-	PersistMempool    bool
-
 	//For testing
 	DuplicateTxs map[common.Hash]uint64
+	//Caching received txs
+	cCacheTx chan common.Hash
+	//Current Role of Node
+	RoleInCommittees  int
+	CRoleInCommittees chan int
+	roleMtx           sync.RWMutex
+	// channel to deliver txs to block gen
+	CPendingTxs chan []metadata.Transaction
+	IsBlockGenStarted bool
 }
 
 /*
@@ -99,6 +98,7 @@ Init Txpool from config
 */
 func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
+	tp.Scantime = 1 * time.Hour
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
 	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
@@ -106,25 +106,27 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.TokenIDPool = make(map[common.Hash]string)
 	tp.CandidatePool = make(map[common.Hash]string)
 	tp.cMtx = sync.RWMutex{}
-	tp.maxTx = cfg.MaxTx
-	tp.TxLifeTime = cfg.TxLifeTime
-	tp.IsLoadFromMempool = cfg.IsLoadFromMempool
-	tp.PersistMempool = cfg.PersistMempool
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
-	tp.Scantime = 1 * time.Hour
+	tp.RoleInCommittees = -1
+	tp.IsBlockGenStarted = false
+}
+func (tp *TxPool) InitChannelMempool(cCacheTx chan common.Hash, cRoleInCommittees chan int, cPendingTxs chan []metadata.Transaction) {
+	tp.cCacheTx = cCacheTx
+	tp.CRoleInCommittees = cRoleInCommittees
+	tp.CPendingTxs = cPendingTxs
 }
 func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
 	tp.config.DataBaseMempool = db
 }
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
-	if tp.PersistMempool {
+	if tp.config.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
 	} else {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
 func (tp *TxPool) LoadOrResetDatabaseMP() {
-	if !tp.IsLoadFromMempool {
+	if !tp.config.IsLoadFromMempool {
 		err := tp.ResetDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
@@ -140,35 +142,6 @@ func (tp *TxPool) LoadOrResetDatabaseMP() {
 		}
 	}
 	//return []TxDesc{}
-}
-func TxPoolMainLoop(tp *TxPool) {
-	if tp.TxLifeTime == 0 {
-		return
-	}
-	for {
-		<-time.Tick(tp.Scantime)
-		tp.mtx.Lock()
-		ttl := time.Duration(tp.TxLifeTime) * time.Second
-		txsToBeRemoved := []*TxDesc{}
-		for _, txDesc := range tp.pool {
-			if time.Since(txDesc.StartTime) > ttl {
-				txsToBeRemoved = append(txsToBeRemoved, txDesc)
-			}
-		}
-		for _, txDesc := range txsToBeRemoved {
-			txHash := *txDesc.Desc.Tx.Hash()
-			startTime := txDesc.StartTime
-			delete(tp.pool, txHash)
-			delete(tp.poolSerialNumbers, txHash)
-			delete(tp.txCoinHashHPool, txHash)
-			delete(tp.CandidatePool, txHash)
-			delete(tp.TokenIDPool, txHash)
-			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(startTime).Seconds()))
-			size := tp.CalPoolSize()
-			go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
-		}
-		tp.mtx.Unlock()
-	}
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
@@ -382,9 +355,9 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.tokenIDMtx.Lock()
+			tp.tokenIDMtx.RLock()
 			found := common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool)
-			tp.tokenIDMtx.Unlock()
+			tp.tokenIDMtx.RUnlock()
 			if found > 0 {
 				str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
 				err := MempoolTxError{}
@@ -398,9 +371,9 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-			tp.tokenIDMtx.Lock()
+			tp.candidateMtx.RLock()
 			found := common.IndexOfStrInHashMap(pubkey, tp.CandidatePool)
-			tp.tokenIDMtx.Unlock()
+			tp.candidateMtx.RUnlock()
 			if found > 0 {
 				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
 				err := MempoolTxError{}
@@ -465,32 +438,40 @@ func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
 }
 
 func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
-	if tp.config.UserKeyset != nil {
-		var shardID byte
-		publicKey := tp.config.UserKeyset.PaymentAddress.Pk
-		pubkey := base58.Base58Check{}.Encode(publicKey, common.ZeroByte)
-		if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconCommittee) > -1 {
-			return false
-		}
-		if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconPendingValidator) > -1 {
-			return false
-		}
-		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardCommittee {
-			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
-				shardID = shardCommitteesID
-			}
-		}
-		for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardPendingValidator {
-			if common.IndexOfStr(pubkey, shardCommittees) > -1 {
-				shardID = shardCommitteesID
-			}
-		}
-		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		if senderShardID == shardID {
-			return true
-		}
+	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	//if tp.config.UserKeyset != nil {
+		//publicKey := tp.config.UserKeyset.PaymentAddress.Pk
+		//pubkey := base58.Base58Check{}.Encode(publicKey, common.ZeroByte)
+		//if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconCommittee) > -1 {
+		//	return false
+		//}
+		//if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconPendingValidator) > -1 {
+		//	return false
+		//}
+		//for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardCommittee {
+		//	if common.IndexOfStr(pubkey, shardCommittees) > -1 {
+		//		if senderShardID == shardCommitteesID {
+		//			return true
+		//		}
+		//	}
+		//}
+		//for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardPendingValidator {
+		//	if common.IndexOfStr(pubkey, shardCommittees) > -1 {
+		//		if senderShardID == shardCommitteesID {
+		//			return true
+		//		}
+		//	}
+		//}
+	//}
+	//return false
+	tp.roleMtx.RLock()
+	if tp.RoleInCommittees > -1 && byte(tp.RoleInCommittees) == senderShardID {
+		tp.roleMtx.RUnlock()
+		return true
+	} else {
+		tp.roleMtx.RUnlock()
+		return false
 	}
-	return false
 }
 
 // MaybeAcceptTransaction is the main workhorse for handling insertion of new
@@ -507,6 +488,7 @@ func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
+	go func(txHash common.Hash) {tp.cCacheTx <- txHash}(*tx.Hash())
 	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx) {
 		err := errors.New("Unexpected Transaction Source Shard")
 		Logger.log.Error(err)
@@ -520,11 +502,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 			txType = common.TxNormalNoPrivacy
 		}
 	}
-	if uint64(len(tp.pool)) >= tp.maxTx {
+	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
 	startAdd := time.Now()
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.PersistMempool, true)
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
 	// fmt.Printf("[db] pool maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), hash, err)
 	elapsed := float64(time.Since(startAdd).Seconds())
 
@@ -543,6 +525,12 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	if err != nil {
 		Logger.log.Error(err)
+	} else {
+		if tp.IsBlockGenStarted {
+			go func(tx metadata.Transaction){
+				tp.CPendingTxs <- []metadata.Transaction{tx}
+			}(tx)
+		}
 	}
 	return hash, txDesc, err
 }
@@ -834,4 +822,68 @@ func (tp *TxPool) CalPoolSize() uint64 {
 		totalSize += size
 	}
 	return totalSize
+}
+
+func (tp *TxPool) MonitorPool() {
+	if tp.config.TxLifeTime == 0 {
+		return
+	}
+	for {
+		<-time.Tick(tp.Scantime)
+		tp.mtx.Lock()
+		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
+		txsToBeRemoved := []*TxDesc{}
+		for _, txDesc := range tp.pool {
+			if time.Since(txDesc.StartTime) > ttl {
+				txsToBeRemoved = append(txsToBeRemoved, txDesc)
+			}
+		}
+		for _, txDesc := range txsToBeRemoved {
+			txHash := *txDesc.Desc.Tx.Hash()
+			startTime := txDesc.StartTime
+			delete(tp.pool, txHash)
+			delete(tp.poolSerialNumbers, txHash)
+			delete(tp.txCoinHashHPool, txHash)
+			delete(tp.CandidatePool, txHash)
+			delete(tp.TokenIDPool, txHash)
+			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(startTime).Seconds()))
+			size := tp.CalPoolSize()
+			go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
+		}
+		tp.mtx.Unlock()
+	}
+}
+
+func (tp *TxPool) Start(cQuit chan struct{}) {
+	go tp.MonitorPool()
+	for {
+		select {
+		case <-cQuit:
+			return
+		case shardID := <-tp.CRoleInCommittees:
+			{
+				go func() {
+					tp.roleMtx.Lock()
+					defer tp.roleMtx.Unlock()
+					//tp.mtx.RLock()
+					//defer tp.mtx.RUnlock()
+					tp.RoleInCommittees = shardID
+					//if tp.RoleInCommittees > -1 {
+					//	txs := []metadata.Transaction{}
+					//	i := 0
+					//	for _, txDesc := range tp.pool {
+					//		txs = append(txs, txDesc.Desc.Tx)
+					//		i++
+					//		if i == 999 {
+					//			break
+					//		}
+					//	}
+					//	if len(txs) > 0 {
+					//		tp.CPendingTxs <- txs
+					//	}
+					//}
+				}()
+			}
+		}
+	}
 }

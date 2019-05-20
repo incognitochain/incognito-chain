@@ -73,40 +73,19 @@ type BestState struct {
 
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
-	// dataBase defines the database which houses the blocks and will be used to
-	// store all metadata created by this package.
-	//
-	// This field is required.
 	DataBase database.DatabaseInterface
-
-	// shardBlock *lru.Cache
-	// shardBody  *lru.Cache
-	//======
-	// Interrupt specifies a channel the caller can close to signal that
-	// long running operations, such as catching up indexes or performing
-	// database migrations, should be interrupted.
-	//
-	// This field can be nil if the caller does not desire the behavior.
 	Interrupt <-chan struct{}
-
-	// chainParams identifies which chain parameters the chain is associated
-	// with.
-	//
-	// This field is required.
 	ChainParams *Params
 	RelayShards []byte
 	NodeMode    string
-
-	//snapshot reward
-	customTokenRewardSnapshot map[string]uint64
-
+	customTokenRewardSnapshot map[string]uint64 //snapshot reward
 	ShardToBeaconPool ShardToBeaconPool
 	CrossShardPool    map[byte]CrossShardPool
 	BeaconPool        BeaconPool
 	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
 	TempTxPool        TxPool
-
+	CRemovedTxs       chan metadata.Transaction
 	Server interface {
 		BoardcastNodeState() error
 
@@ -163,6 +142,9 @@ func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
 	blockchain.config.TempTxPool = temptxpool
 }
 
+func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Transaction) {
+	blockchain.config.CRemovedTxs = cRemovedTxs
+}
 // -------------- Blockchain retriever's implementation --------------
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
 func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {

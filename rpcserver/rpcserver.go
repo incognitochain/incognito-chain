@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/netsync"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,7 +17,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/addrmanager"
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/connmanager"
@@ -69,6 +70,7 @@ type RpcServerConfig struct {
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
 	NodeMode        string
+	NetSync         *netsync.NetSync
 	Server          interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
