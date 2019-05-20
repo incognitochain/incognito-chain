@@ -289,28 +289,29 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // Encrypt returns a ciphertext encrypting for a coin using a hybrid cryptosystem,
 // in which AES encryption scheme is used as a data encapsulation scheme,
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
-func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) error {
+func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
 	// 32 byte first: Randomness
 	msg := append(AddPaddingBigInt(outputCoin.CoinDetails.Randomness, BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
 
 	pubKeyPoint := new(EllipticPoint)
 	err := pubKeyPoint.Decompress(recipientTK)
 	if err != nil {
-		return err
+		return NewPrivacyErr(EncryptOutputCoinErr, err)
 	}
+
 	outputCoin.CoinDetailsEncrypted, err = HybridEncrypt(msg, pubKeyPoint)
 	if err != nil {
-		return err
+		return NewPrivacyErr(EncryptOutputCoinErr, err)
 	}
 
 	return nil
 }
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
-func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) error {
+func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
 	msg, err := HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
 	if err != nil {
-		return err
+		return NewPrivacyErr(DecryptOutputCoinErr, err)
 	}
 
 	// Assign randomness and value to outputCoin details
