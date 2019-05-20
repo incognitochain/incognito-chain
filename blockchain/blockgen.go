@@ -52,6 +52,7 @@ func (blkTmplGenerator *BlkTmplGenerator) Start(cQuit chan struct{}) {
 func (blkTmplGenerator *BlkTmplGenerator) AddTransaction(txs []metadata.Transaction) {
 	blkTmplGenerator.mtx.Lock()
 	defer blkTmplGenerator.mtx.Unlock()
+	Logger.log.Critical("Number of transaction get from pool: ", len(txs))
 	blkTmplGenerator.PendingTxs = make(map[common.Hash]metadata.Transaction)
 	for _, tx := range txs {
 		blkTmplGenerator.PendingTxs[*tx.Hash()] = tx
