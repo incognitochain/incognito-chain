@@ -488,9 +488,7 @@ func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	if tp.cCacheTx != nil {
-		tp.cCacheTx <- *tx.Hash()
-	}
+	go func(txHash common.Hash) {tp.cCacheTx <- txHash}(*tx.Hash())
 	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx) {
 		err := errors.New("Unexpected Transaction Source Shard")
 		Logger.log.Error(err)
