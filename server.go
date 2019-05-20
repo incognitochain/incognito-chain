@@ -134,7 +134,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	cRemovedTxs := make(chan metadata.Transaction)
 	cRoleInCommitteesMempool := make(chan int)
 	cRoleInCommitteesNetSync := make(chan int)
-	cTxCache := make(chan common.Hash)
+	cTxCache := make(chan common.Hash, 100)
 	var err error
 
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
