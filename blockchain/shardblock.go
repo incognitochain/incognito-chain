@@ -101,6 +101,44 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	return nil
 }
 
+func (shardBlock *ShardBlock) VerifyBlockReward() error {
+	hasBlockReward := false
+	txsFee := uint64(0)
+	for _, tx := range shardBlock.Body.Transactions {
+		if tx.GetMetadataType() == metadata.ShardBlockReward {
+			if hasBlockReward {
+				return errors.New("This block contains more than one coinbase transaction for shard block producer!")
+			}
+			hasBlockReward = true
+		} else {
+			txsFee += tx.GetTxFee()
+		}
+	}
+	if !hasBlockReward {
+		return errors.New("This block dont have coinbase tx for shard block producer")
+	}
+	numberOfTxs := len(shardBlock.Body.Transactions)
+	if shardBlock.Body.Transactions[numberOfTxs-1].GetMetadataType() != metadata.ShardBlockReward {
+		return errors.New("Coinbase transaction must be the last transaction")
+	}
+	n := shardBlock.Header.Height / Duration
+	reward := uint64(RewardBase)
+	for ; n > 0; n-- {
+		reward /= 2
+	}
+	receivers, values := shardBlock.Body.Transactions[numberOfTxs-1].GetReceivers()
+	if len(receivers) != 1 {
+		return errors.New("Wrong receiver")
+	}
+	if !common.ByteEqual(receivers[0], shardBlock.Header.ProducerAddress.Pk) {
+		return errors.New("Wrong receiver")
+	}
+	if reward != values[0] {
+		return errors.New("Wrong reward value")
+	}
+	return nil
+}
+
 func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig

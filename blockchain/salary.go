@@ -13,6 +13,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+// func getMiningReward(isForBeacon bool, blkHeight uint64) uint64 {
+// 	return 0
+// }
+
 func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 	swaperPubKey string,
 	blkProducerPrivateKey *privacy.PrivateKey,
