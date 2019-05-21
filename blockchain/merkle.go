@@ -2,11 +2,9 @@ package blockchain
 
 import (
 	"bytes"
-	"math"
-	"strings"
-
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
+	"math"
 )
 
 type Merkle struct {
@@ -199,9 +197,8 @@ func (merkle Merkle) VerifyMerkleRootFromMerklePath(leaf common.Hash, merklePath
 		}
 		i = i / 2
 	}
-	merkleRootString := merkleRoot.String()
-
-	if strings.Compare(finalHash.String(), merkleRootString) == 0 {
+	merkleRootPointer := &merkleRoot
+	if !merkleRootPointer.IsEqual(finalHash){
 		return true
 	}
 	return false
