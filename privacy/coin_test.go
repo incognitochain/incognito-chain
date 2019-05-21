@@ -74,4 +74,50 @@ func TestCoin(t *testing.T){
 }
 
 
+func TestEncryptCoin(t *testing.T) {
+	// prepare key
+	privateKey := GeneratePrivateKey(new(big.Int).SetInt64(123).Bytes())
+	paymentAddress := GeneratePaymentAddress(privateKey)
+	viewingKey := GenerateViewingKey(privateKey)
+
+	for i:=0; i< 100000; i++ {
+		fmt.Printf("\n\n i: %v\n", i)
+		// new output coin with value and randomness
+		coin := new(OutputCoin)
+		coin.CoinDetails = new(Coin)
+		coin.CoinDetails.Randomness = RandScalar()
+		coin.CoinDetails.Value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
+		coin.CoinDetails.PublicKey = new(EllipticPoint)
+		err := coin.CoinDetails.PublicKey.Decompress(paymentAddress.Pk)
+		if err != nil {
+			Logger.Log.Error(err)
+		}
+
+		// encrypt output coins
+		err = coin.Encrypt(paymentAddress.Tk)
+		if err.(*PrivacyError) != nil {
+			Logger.Log.Error(err)
+		}
+
+		// convert output coin to bytes array
+		coinByte := coin.Bytes()
+
+		// create new output coin to test
+		coin2 := new(OutputCoin)
+		err = coin2.SetBytes(coinByte)
+		if err != nil {
+			Logger.Log.Error(err)
+		}
+
+		err = coin2.Decrypt(viewingKey)
+		if err.(*PrivacyError) != nil {
+			Logger.Log.Error(err)
+		}
+
+		assert.Equal(t, coin.CoinDetails.Randomness , coin2.CoinDetails.Randomness)
+		assert.Equal(t, coin.CoinDetails.Value , coin2.CoinDetails.Value)
+	}
+}
+
+
 
