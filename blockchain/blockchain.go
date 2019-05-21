@@ -71,40 +71,19 @@ type BestState struct {
 
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
-	// dataBase defines the database which houses the blocks and will be used to
-	// store all metadata created by this package.
-	//
-	// This field is required.
 	DataBase database.DatabaseInterface
-
-	// shardBlock *lru.Cache
-	// shardBody  *lru.Cache
-	//======
-	// Interrupt specifies a channel the caller can close to signal that
-	// long running operations, such as catching up indexes or performing
-	// database migrations, should be interrupted.
-	//
-	// This field can be nil if the caller does not desire the behavior.
 	Interrupt <-chan struct{}
-
-	// chainParams identifies which chain parameters the chain is associated
-	// with.
-	//
-	// This field is required.
 	ChainParams *Params
 	RelayShards []byte
 	NodeMode    string
-
-	//snapshot reward
-	customTokenRewardSnapshot map[string]uint64
-
+	customTokenRewardSnapshot map[string]uint64 //snapshot reward
 	ShardToBeaconPool ShardToBeaconPool
 	CrossShardPool    map[byte]CrossShardPool
 	BeaconPool        BeaconPool
 	ShardPool         map[byte]ShardPool
 	TxPool            TxPool
 	TempTxPool        TxPool
-
+	CRemovedTxs       chan metadata.Transaction
 	Server interface {
 		BoardcastNodeState() error
 
@@ -161,6 +140,9 @@ func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
 	blockchain.config.TempTxPool = temptxpool
 }
 
+func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Transaction) {
+	blockchain.config.CRemovedTxs = cRemovedTxs
+}
 // -------------- Blockchain retriever's implementation --------------
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
 func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
@@ -490,7 +472,7 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 		// if pubkeyShardID == shardID {
 		item1 := view.mapSnD[k]
 		for _, snd := range item1 {
-			err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, snd, view.shardID)
+			err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, privacy.AddPaddingBigInt(&snd, privacy.BigIntSize), view.shardID)
 			if err != nil {
 				return err
 			}
@@ -812,7 +794,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		paymentAddressKey = append(paymentAddressKey, common.Int32ToBytes(int32(voutIndex))...)
 		_, err := blockchain.config.DataBase.HasValue(paymentAddressKey)
 		if err != nil {
 			return err
@@ -857,7 +839,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
 		paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
 		paymentAddressKey = append(paymentAddressKey, Splitter...)
-		paymentAddressKey = append(paymentAddressKey, byte(voutIndex))
+		paymentAddressKey = append(paymentAddressKey, common.Int32ToBytes(int32(voutIndex))...)
 		ok, err := blockchain.config.DataBase.HasValue(paymentAddressKey)
 		// Vout already exist
 		if ok {
@@ -983,9 +965,9 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.
 				return nil, err
 			}
 			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])[0]
-			voutIndex := int(voutIndexByte)
-			vout.SetIndex(voutIndex)
+			voutIndexByte := []byte(keys[4])
+			voutIndex := common.BytesToInt32(voutIndexByte)
+			vout.SetIndex(int(voutIndex))
 			value, err := strconv.Atoi(values[0])
 			if err != nil {
 				return nil, err

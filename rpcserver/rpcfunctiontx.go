@@ -153,6 +153,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	}
 
 	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		mempoolErr, ok := err.(mempool.MempoolTxError)
 		if ok {
@@ -425,11 +426,12 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	}
 
 	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Infof("New Custom Token Transaction: %s\n", hash.String())
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
@@ -830,7 +832,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
-		ok, err := db.HasSNDerivator(tokenID, *(new(big.Int).SetBytes(snderivator)), shardIDSender)
+		ok, err := db.HasSNDerivator(tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), privacy.BigIntSize), shardIDSender)
 		if ok || err != nil {
 			// serial number in db
 			result = append(result, true)
@@ -888,6 +890,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	}
 
 	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		return nil, NewRPCError(ErrSendTxData, err)
 	}

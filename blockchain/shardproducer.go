@@ -16,12 +16,24 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64) (*ShardBlock, error) {
 	//============Build body=============
 	// Fetch Beacon information
-	beaconHeight := blockgen.chain.BestState.Beacon.BeaconHeight
-	beaconHash := blockgen.chain.BestState.Beacon.BestBlockHash
-	epoch := blockgen.chain.BestState.Beacon.Epoch
+	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	beaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlockBytes, err := blockgen.chain.config.DataBase.FetchBeaconBlock(beaconHash)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock := BeaconBlock{}
+	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
+	if err != nil {
+		return nil, err
+	}
+	epoch := beaconBlock.Header.Epoch
 	if epoch-blockgen.chain.BestState.Shard[shardID].Epoch > 1 {
 		beaconHeight = blockgen.chain.BestState.Shard[shardID].Epoch * common.EPOCH
 		newBeaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
@@ -157,7 +169,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
-		BeaconHash:           beaconHash,
+		BeaconHash:           *beaconHash,
 		Epoch:                epoch,
 		Round:                round,
 	}
@@ -182,7 +194,7 @@ func (blockgen *BlkTmplGenerator) FinalizeShardBlock(blk *ShardBlock, producerKe
 	Get Transaction For new Block
 */
 func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, error) {
-	txsToAdd, txToRemove, _ := blockgen.getPendingTransaction(shardID, beaconBlocks)
+	txsToAdd, txToRemove, _ := blockgen.getPendingTransactionV2(shardID, beaconBlocks)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
@@ -370,6 +382,76 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 			break
 		}
 	}
+	Logger.log.Criticalf("☭ %+v transactions for New Block from pool \n", len(txsToAdd))
+	blockgen.chain.config.TempTxPool.EmptyPool()
+	return txsToAdd, txToRemove, totalFee
+}
+func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
+	shardID byte,
+	beaconBlocks []*BeaconBlock,
+) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+	sourceTxns := blockgen.GetPendingTxsV2()
+	txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
+	var elasped int64
+	Logger.log.Critical("Number of transaction get from pool: ", len(sourceTxns))
+	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
+	if !isEmpty {
+		panic("TempTxPool Is not Empty")
+	}
+	currentSize := uint64(0)
+	startTime := time.Now()
+
+	instsForValidations := [][]string{}
+	for _, beaconBlock := range beaconBlocks {
+		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
+	}
+	instUsed := make([]int, len(instsForValidations))
+	accumulatedData := component.UsedInstData{
+		TradeActivated: map[string]bool{},
+	}
+
+	for _, tx := range sourceTxns {
+		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
+		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if txShardID != shardID {
+			continue
+		}
+		tempTxDesc, err := blockgen.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+		if err != nil {
+			txToRemove = append(txToRemove, tx)
+			continue
+		}
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain, &accumulatedData)
+		if err != nil || !ok {
+			txToRemove = append(txToRemove, tx)
+			continue
+		}
+
+		tempTx := tempTxDesc.Tx
+		totalFee += tx.GetTxFee()
+
+		tempSize := tempTx.GetTxActualSize()
+		if currentSize+tempSize >= common.MaxBlockSize {
+			break
+		}
+		currentSize += tempSize
+		txsToAdd = append(txsToAdd, tempTx)
+		if len(txsToAdd) == MaxTxsInBlock {
+			break
+		}
+		// Time bound condition for block creation
+		elasped = time.Since(startTime).Nanoseconds()
+		// @txsProcessTimeInBlockCreation is a constant for this current version
+		if elasped >= txsProcessTimeInBlockCreation {
+			//Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
+			break
+		}
+	}
+	//if len(txsToAdd) != 0 {
+	//	TxsAverageProcessTime = elasped/int64(len(txsToAdd))
+	//	MaxTxsInBlock = int(txsProcessTimeInBlockCreation / TxsAverageProcessTime)
+	//}
+	Logger.log.Info("Max Transaction In Block ⚡︎ ", MaxTxsInBlock)
 	Logger.log.Criticalf("☭ %+v transactions for New Block from pool \n", len(txsToAdd))
 	blockgen.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
