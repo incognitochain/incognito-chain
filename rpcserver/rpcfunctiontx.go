@@ -832,7 +832,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
-		ok, err := db.HasSNDerivator(tokenID, *(new(big.Int).SetBytes(snderivator)), shardIDSender)
+		ok, err := db.HasSNDerivator(tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), privacy.BigIntSize), shardIDSender)
 		if ok || err != nil {
 			// serial number in db
 			result = append(result, true)
