@@ -107,7 +107,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
 func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte, db database.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(tokenID, *snd, shardID)
+	ok, err := db.HasSNDerivator(tokenID, privacy.AddPaddingBigInt(snd, privacy.BigIntSize), shardID)
 	if err != nil {
 		return false, err
 	}

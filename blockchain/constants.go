@@ -47,6 +47,7 @@ const (
 	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
+
 // VARIABLE for mainnet
 var (
 	MainnetInitConstant = []string{}
@@ -56,11 +57,12 @@ var (
 	// For shard
 	// public key
 	PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
-	MaxTxsInBlock        = 600
-	MaxTxsProcessTimeInBlockCreation = float64(0.85)
-	TxsAverageProcessTime = int64(5000) // count in nano second ~= 5 mili seconds
-	DefaultTxsAverageProcessTime = int64(5000) // count in nano second
+	MaxTxsInBlock                             = 600
+	MaxTxsProcessTimeInBlockCreation          = float64(0.85)
+	TxsAverageProcessTime                     = int64(5000) // count in nano second ~= 5 mili seconds
+	DefaultTxsAverageProcessTime              = int64(5000) // count in nano second
 )
+
 // END CONSTANT for network MAINNET
 
 // CONSTANT for network TESTNET

@@ -380,69 +380,28 @@ func (db *db) CleanCommitments() error {
 }
 
 // StoreSNDerivators - store list serialNumbers by shardID
-func (db *db) StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error {
+func (db *db) StoreSNDerivators(tokenID *common.Hash, data []byte, shardID byte) error {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
-	res, err := db.lvdb.Get(key, nil)
+	_, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	// "snderivator-data:data"
-	snderivatorData := data.Bytes()
-	//keySpec := make([]byte, len(key))
-	keySpec := append(key, snderivatorData...)
-	if err := db.lvdb.Put(keySpec, snderivatorData, nil); err != nil {
+	// "snderivator-data:nil"
+	keySpec := append(key, data...)
+	if err := db.lvdb.Put(keySpec, []byte{}, nil); err != nil {
 		return err
 	}
 
-	var arrData []string
-	if len(res) > 0 {
-		if err := json.Unmarshal(res, &arrData); err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
-		}
-	}
-	arrData = append(arrData, string(snderivatorData))
-	b, err := json.Marshal(arrData)
-	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}
-	if err := db.lvdb.Put(key, b, nil); err != nil {
-		return err
-	}
 	return nil
 }
 
-// FetchSerialNumbers - Get list all SnDerivators by shardID
-func (db *db) FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error) {
-	key := db.GetKey(string(snderivatorsPrefix), tokenID)
-	key = append(key, shardID)
-	res, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return make([]big.Int, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-
-	var arrData []string
-	if len(res) > 0 {
-		if err := json.Unmarshal(res, &arrData); err != nil {
-			return make([]big.Int, 0), errors.Wrap(err, "json.Unmarshal")
-		}
-	}
-	result := []big.Int{}
-	for _, data := range arrData {
-		temp := big.Int{}
-		temp.SetBytes([]byte(data))
-		result = append(result, temp)
-	}
-	return result, nil
-}
-
 // HasSNDerivator - Check SnDerivator in list SnDerivators by shardID
-func (db *db) HasSNDerivator(tokenID *common.Hash, data big.Int, shardID byte) (bool, error) {
+func (db *db) HasSNDerivator(tokenID *common.Hash, data []byte, shardID byte) (bool, error) {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
-	snderivatorData := data.Bytes()
-	keySpec := append(key, snderivatorData...)
+	keySpec := append(key, data...)
 	_, err := db.Get(keySpec)
 	if err != nil {
 		return false, nil
