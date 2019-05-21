@@ -129,14 +129,14 @@ func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
 		!bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) {
 		return false
 	}
-	if !bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) &&
-		!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
-		return false
-	}
-	if bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) &&
-		!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
-		return false
-	}
+	// if !bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) &&
+	// 	!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
+	// 	return false
+	// }
+	// if bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) &&
+	// 	!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
+	// 	return false
+	// }
 	return true
 }
 

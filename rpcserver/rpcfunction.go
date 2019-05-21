@@ -104,17 +104,6 @@ var RpcHandler = map[string]commandHandler{
 	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
 	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
 
-	// Reserve
-	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
-	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
-	CreateAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
-	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
-	GetIssuingStatus:                RpcServer.handleGetIssuingStatus,
-	GetContractingStatus:            RpcServer.handleGetContractingStatus,
-
-	// dcb
-	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
-
 	// wallet
 	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
 	DefragmentAccount:              RpcServer.handleDefragmentAccount,
@@ -429,7 +418,6 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 
-	govFeePerKbTx := uint64(0) // 0 rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 	estimateFeeCoinPerKb := uint64(0)
 	estimateTxSizeInKb := uint64(0)
 	if len(outCoins) > 0 {
@@ -479,7 +467,6 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 		EstimateTxSizeInKb:   estimateTxSizeInKb,
-		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
 }
@@ -503,11 +490,9 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 
 	// param #2: numblocl
 	estimateFeeCoinPerKb := rpcServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8)
-	govFeePerKbTx := uint64(0) //rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
-		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
 }
