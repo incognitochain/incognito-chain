@@ -142,22 +142,7 @@ func (self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPendin
 	}
 	return nil
 }
-//func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) bool {
-//	if self.latestValidHeight+1 == block.Header.Height {
-//		if len(self.validPool) < self.config.MaxValidBlock {
-//			self.validPool = append(self.validPool, block)
-//			self.updateLatestShardState()
-//			return true
-//		} else if len(self.pendingPool) < self.config.MaxPendingBlock {
-//			self.pendingPool[block.Header.Height] = block
-//			return false
-//		}
-//	} else {
-//		self.pendingPool[block.Header.Height] = block
-//		return false
-//	}
-//	return false
-//}
+
 func (self *ShardPool) updateLatestShardState() {
 	if len(self.validPool) > 0 {
 		self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
