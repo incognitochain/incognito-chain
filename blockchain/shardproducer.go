@@ -95,7 +95,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 			return nil, err
 		}
 	}
-	err = block.Body.addBlockReward(blockgen.chain.BestState.Shard[shardID].BestBlock.Header.Height+1, producerKeySet.PaymentAddress, producerKeySet.PrivateKey, blockgen.chain.GetDatabase())
+	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
+	err = block.Body.addBlockReward(blockgen.chain.getRewardAmount(prevBlock.Header.Height+1), prevBlock.Header.Height+1, producerKeySet.PaymentAddress, producerKeySet.PrivateKey, blockgen.chain.GetDatabase())
 	if err != nil {
 		fmt.Printf("\n\nerrorrrrrrrrrrrrrrrrrrr\n\n\n\n%+v\n\n\n\n", err.Error())
 		return nil, err
@@ -113,7 +114,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if len(merkleRoots) > 0 {
 		merkleRoot = merkleRoots[len(merkleRoots)-1]
 	}
-	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
 	prevBlockHash := prevBlock.Hash()
 	crossTransactionRoot, err := CreateMerkleCrossTransaction(block.Body.CrossTransactions)
 	if err != nil {
@@ -193,7 +193,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	}()
 
 	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
+	stabilityResponseTxs, err := blockgen.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
