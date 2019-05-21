@@ -46,7 +46,7 @@ type DatabaseInterface interface {
 	//Crossshard
 	StoreCrossShardNextHeight(byte, byte, uint64, uint64) error
 	FetchCrossShardNextHeight(byte, byte, uint64) (uint64, error)
-	DeleteCrossShardNextHeight(byte, byte) error
+	DeleteCrossShardNextHeight(byte, byte, uint64) error
 
 	// Block index
 	StoreShardBlockIndex(*common.Hash, uint64, byte) error
@@ -115,8 +115,8 @@ type DatabaseInterface interface {
 	StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error
 	FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
 	HasSNDerivator(tokenID *common.Hash, data big.Int, shardID byte) (bool, error)
-	BackupSNDerivators(tokenID *common.Hash, shardID byte) error
-	RestoreSNDerivators(tokenID *common.Hash, shardID byte) error
+	// BackupSNDerivators(tokenID *common.Hash, shardID byte) error
+	// RestoreSNDerivators(tokenID *common.Hash, shardID byte) error
 	CleanSNDerivator() error
 
 	// Fee estimator
@@ -128,7 +128,7 @@ type DatabaseInterface interface {
 	StoreCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
 	DeleteCustomToken(tokenID *common.Hash) error
 	StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, shardID, block height, tx-id, data tx
-	DeleteCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64) error
+	DeleteCustomTokenTx(tokenID *common.Hash, txIndex int32, shardID byte, blockHeight uint64) error
 	ListCustomToken() ([][]byte, error)                                                                      // get list all custom token which issued in network, return init tx hash
 	CustomTokenIDExisted(tokenID *common.Hash) bool                                                          // check tokenID existed in network, return init tx hash
 	PrivacyCustomTokenIDExisted(tokenID *common.Hash) bool                                                   // check privacy tokenID existed in network
@@ -143,7 +143,7 @@ type DatabaseInterface interface {
 	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
 	DeletePrivacyCustomToken(tokenID *common.Hash) error
 	StorePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error
-	DeletePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64) error
+	DeletePrivacyCustomTokenTx(tokenID *common.Hash, txIndex int32, shardID byte, blockHeight uint64) error
 	ListPrivacyCustomToken() ([][]byte, error)                          // get list all custom token which issued in network
 	PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) // from token id get all custom txs
 
