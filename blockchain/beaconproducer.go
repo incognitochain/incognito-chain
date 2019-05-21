@@ -89,6 +89,8 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	//fmt.Println("[db] NewBlockBeacon GetShardState")
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+	beaconBlockRewardIns, err := metadata.BuildInstForBeaconSalary(blkTmplGenerator.chain.getRewardAmount(beaconBlock.Header.Height), beaconBlock.Header.Height, &beaconBlock.Header.ProducerAddress)
+	tempInstruction = append(tempInstruction, beaconBlockRewardIns)
 	//fmt.Println("BeaconProducer/tempInstruction", tempInstruction)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction

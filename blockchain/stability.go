@@ -48,25 +48,25 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction {
 			continue
 		}
-		metaType, err := strconv.Atoi(inst[0])
-		if err != nil {
-			return [][]string{}, err
-		}
+		// metaType, err := strconv.Atoi(inst[0])
+		// if err != nil {
+		// 	return [][]string{}, err
+		// }
 		newInst := [][]string{}
-		switch metaType {
-		// case metadata.IssuingRequestMeta:
-		// 	newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+		// switch metaType {
+		// // case metadata.IssuingRequestMeta:
+		// // 	newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
-		// case metadata.ContractingRequestMeta:
-		// 	newInst, err = buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+		// // case metadata.ContractingRequestMeta:
+		// // 	newInst, err = buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
-		default:
-			continue
-		}
-		if err != nil {
-			Logger.log.Error(err)
-			continue
-		}
+		// default:
+		// 	continue
+		// }
+		// if err != nil {
+		// 	Logger.log.Error(err)
+		// 	continue
+		// }
 		if len(newInst) > 0 {
 			instructions = append(instructions, newInst...)
 		}
@@ -74,7 +74,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	return instructions, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
+func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 	beaconBlocks []*BeaconBlock,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -94,7 +94,26 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 				}
 
 			}
+			shardToProcess, err := strconv.Atoi(l[1])
+			if err != nil {
+				continue
+			}
+			if shardToProcess == int(shardID) {
+				metaType, err := strconv.Atoi(l[0])
+				if err != nil {
+					return nil, err
+				}
+				// var newIns []string
+				switch metaType {
+				case metadata.BeaconSalaryRequestMeta:
+					txs, err := blockgen.buildBeaconSalaryRes(l[0], l[3], producerPrivateKey)
+					if err != nil {
+						return nil, err
+					}
+					resTxs = append(resTxs, txs...)
+				}
 
+			}
 			if l[0] == StakeAction || l[0] == RandomAction {
 				continue
 			}

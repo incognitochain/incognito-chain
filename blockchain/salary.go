@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/constant-money/constant-chain/common/base58"
@@ -78,4 +79,64 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 		return nil, err1
 	}
 	return returnStakingTx, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
+	instType string,
+	contentStr string,
+	blkProducerPrivateKey *privacy.PrivateKey,
+) ([]metadata.Transaction, error) {
+
+	var beaconSalaryInfo metadata.BeaconSalaryInfo
+	err := json.Unmarshal([]byte(contentStr), &beaconSalaryInfo)
+	if err != nil {
+		return nil, err
+	}
+	if beaconSalaryInfo.PayToAddress == nil || beaconSalaryInfo.InfoHash == nil {
+		return nil, errors.Errorf("Can not Parse from contentStr")
+	}
+
+	salaryResMeta := metadata.NewBeaconBlockSalaryRes(
+		beaconSalaryInfo.BeaconBlockHeight,
+		beaconSalaryInfo.PayToAddress,
+		beaconSalaryInfo.InfoHash,
+		metadata.BeaconSalaryResponseMeta,
+	)
+
+	salaryResTx := new(transaction.Tx)
+	err = salaryResTx.InitTxSalary(
+		beaconSalaryInfo.BeaconSalary,
+		beaconSalaryInfo.PayToAddress,
+		blkProducerPrivateKey,
+		blockgen.chain.GetDatabase(),
+		salaryResMeta,
+	)
+	//fmt.Println("SA: beacon salary", beaconSalaryInfo, salaryResTx.CalculateTxValue(), salaryResTx.Hash().String())
+	if err != nil {
+		return nil, err
+	}
+	return []metadata.Transaction{salaryResTx}, nil
+}
+
+// func (blockgen *BlkTmplGenerator) buildBeaconRewardTx(inst metadata.BeaconSalaryInfo, producerPriKey *privacy.PrivateKey) error {
+// 	n := inst.BeaconBlockHeight / blockgen.chain.config.ChainParams.RewardHalflife
+// 	reward := blockgen.chain.config.ChainParams.BasicReward
+// 	for ; n > 0; n-- {
+// 		reward /= 2
+// 	}
+// 	txCoinBase := new(transaction.Tx)
+// 	// err := txCoinBase.InitTxSalary(reward, inst.PayToAddress, producerPriKey, db)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+
+func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
+	n := blkHeight / blockchain.config.ChainParams.RewardHalflife
+	reward := uint64(blockchain.config.ChainParams.BasicReward)
+	for ; n > 0; n-- {
+		reward /= 2
+	}
+	return reward
 }
