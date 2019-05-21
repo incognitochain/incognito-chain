@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"bytes"
 	"encoding/binary"
 	"math/big"
 
@@ -346,16 +347,35 @@ func (db *db) DeletePrivacyCustomTokenTx(tokenID *common.Hash, txIndex int32, sh
 	return nil
 }
 
-func (db *db) DeleteCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64) error {
+func (db *db) RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeight uint64) error {
 	key := append(nextCrossShardKeyPrefix, fromShard)
 	key = append(key, []byte("-")...)
 	key = append(key, toShard)
 	key = append(key, []byte("-")...)
 	curHeightBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
-	key = append(key, curHeightBytes...)
-	err := db.Delete(key)
-	if err != nil {
+	heightKey := append(key, curHeightBytes...)
+	for {
+		nextHeightBytes, err := db.lvdb.Get(heightKey, nil)
+		if err != nil && err != lvdberr.ErrNotFound {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		err = db.Delete(heightKey)
+		if err != nil {
+			return err
+		}
+
+		var nextHeight uint64
+		binary.Read(bytes.NewReader(nextHeightBytes[:8]), binary.LittleEndian, &nextHeight)
+
+		if nextHeight == 0 {
+			break
+		}
+		heightKey = append(key, nextHeightBytes...)
+	}
+	nextHeightBytes := make([]byte, 8)
+	heightKey = append(key, curHeightBytes...)
+	if err := db.lvdb.Put(heightKey, nextHeightBytes, nil); err != nil {
 		return err
 	}
 	return nil
@@ -371,6 +391,15 @@ func (db *db) DeleteCommitteeByEpoch(blkEpoch uint64) error {
 	err := db.Delete(key)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (db *db) DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error {
+	prefix := append([]byte{shardID}, shardBlkHash[:]...)
+	key := append(shardToBeaconKeyPrefix, prefix...)
+	if err := db.Delete(key); err != nil {
+		return nil
 	}
 	return nil
 }
