@@ -7,7 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/mempool"
 	"github.com/constant-money/constant-chain/peer"
@@ -16,13 +16,14 @@ import (
 )
 
 const (
-	beaconBlockCache = 1000
-	shardBlockCache = 1000
-	crossShardBlockCache = 500
+	beaconBlockCache        = 1000
+	shardBlockCache         = 1000
+	crossShardBlockCache    = 500
 	shardToBeaconBlockCache = 500
-	txCache = 10000
-	workers = 5
+	txCache                 = 10000
+	workers                 = 5
 )
+
 type NetSync struct {
 	started   int32
 	shutdown  int32
@@ -31,14 +32,14 @@ type NetSync struct {
 	cMessage chan interface{}
 	cQuit    chan struct{}
 
-	config *NetSyncConfig
-	Cache  *NetSyncCache
+	config        *NetSyncConfig
+	Cache         *NetSyncCache
 	ShardIDConfig *ShardIDConfig
 }
 type ShardIDConfig struct {
-	RelayShard []byte
-	RoleInCommittees int
-	CRoleInCommittees chan int
+	RelayShard          []byte
+	RoleInCommittees    int
+	CRoleInCommittees   chan int
 	roleInCommitteesMtx sync.RWMutex
 }
 type NetSyncConfig struct {
@@ -55,16 +56,16 @@ type NetSyncConfig struct {
 	Consensus interface {
 		OnBFTMsg(wire.Message)
 	}
-	
 }
 type NetSyncCache struct {
-	beaconBlockCache  *lru.Cache
-	shardBlockCache   *lru.Cache
+	beaconBlockCache        *lru.Cache
+	shardBlockCache         *lru.Cache
 	shardToBeaconBlockCache *lru.Cache
-	crossShardBlockCache *lru.Cache
-	txCache      *lru.Cache
-	CTxCache      chan common.Hash
+	crossShardBlockCache    *lru.Cache
+	txCache                 *lru.Cache
+	CTxCache                chan common.Hash
 }
+
 func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgShardID *ShardIDConfig) *NetSync {
 	netSync.config = cfg
 	netSync.ShardIDConfig = cfgShardID
@@ -76,11 +77,11 @@ func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgSha
 	shardToBeaconBlockCache, _ := lru.New(shardToBeaconBlockCache)
 	crossShardBlockCache, _ := lru.New(crossShardBlockCache)
 	netSync.Cache = &NetSyncCache{
-		beaconBlockCache: beaconBlockCache,
-		shardBlockCache: shardBlockCache,
-		txCache: txCache,
+		beaconBlockCache:        beaconBlockCache,
+		shardBlockCache:         shardBlockCache,
+		txCache:                 txCache,
 		shardToBeaconBlockCache: shardToBeaconBlockCache,
-		crossShardBlockCache: crossShardBlockCache,
+		crossShardBlockCache:    crossShardBlockCache,
 	}
 	netSync.Cache.CTxCache = cTxCache
 	return &netSync
@@ -105,7 +106,7 @@ func (netSync *NetSync) Stop() {
 	}
 
 	Logger.log.Warn("Sync manager shutting down")
-	close(netSync. cQuit)
+	close(netSync.cQuit)
 }
 
 // messageHandler is the main handler for the sync manager.  It must be run as a
@@ -261,7 +262,7 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
 			Logger.log.Error(err)
-			
+
 			// Broadcast to network
 		} else {
 			Logger.log.Infof("there is hash of transaction %s", hash.String())
@@ -283,7 +284,7 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 	}
 	if isAdded := netSync.HandleCacheTx(msg.Transaction); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
-		
+
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
@@ -494,10 +495,7 @@ func (netSync *NetSync) HandleCacheTx(transaction metadata.Transaction) bool {
 }
 
 func (netSync *NetSync) HandleCacheTxHash(txHash common.Hash) {
-	_, ok := netSync.Cache.txCache.Get(txHash)
-	if !ok {
-		netSync.Cache.txCache.Add(txHash, true)
-	}
+	netSync.Cache.txCache.Add(txHash, true)
 }
 func (netSync *NetSync) HandleCacheShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) bool {
 	_, ok := netSync.Cache.shardToBeaconBlockCache.Get(block.Header.Hash())
@@ -533,15 +531,16 @@ func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
 	}
 }
 func (netSync *NetSync) cacheLoop() {
-	for w:=0 ;w < workers ;w++ {
+	for w := 0; w < workers; w++ {
 		go netSync.HandleCacheTxHashWoker(netSync.Cache.CTxCache)
 	}
 	for {
 		select {
-			//case txHash := <-netSync.Cache.CTxCache: {
-			//	go netSync.HandleCacheTxHash(txHash)
-			//}
-			case shardID := <-netSync.ShardIDConfig.CRoleInCommittees: {
+		//case txHash := <-netSync.Cache.CTxCache: {
+		//	go netSync.HandleCacheTxHash(txHash)
+		//}
+		case shardID := <-netSync.ShardIDConfig.CRoleInCommittees:
+			{
 				go func() {
 					netSync.ShardIDConfig.roleInCommitteesMtx.Lock()
 					defer netSync.ShardIDConfig.roleInCommitteesMtx.Unlock()
@@ -554,7 +553,7 @@ func (netSync *NetSync) cacheLoop() {
 
 func (netSync *NetSync) HandleCacheTxHashWoker(cTxCache <-chan common.Hash) {
 	for job := range cTxCache {
-		netSync.HandleCacheTxHash(job)
+		go netSync.HandleCacheTxHash(job)
 		time.Sleep(time.Nanosecond)
 	}
 }
