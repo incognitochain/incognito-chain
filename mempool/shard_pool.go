@@ -6,7 +6,6 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	lru "github.com/hashicorp/golang-lru"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 )
@@ -224,7 +223,8 @@ func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock)
 				latestBlock := self.validPool[len(self.validPool)-1]
 				latestBlockHash := latestBlock.Header.Hash()
 				// condition 3
-				if strings.Compare(block.Header.PrevBlockHash.String(), latestBlockHash.String()) == 0 {
+				preHash := &block.Header.PrevBlockHash
+				if preHash.IsEqual(&latestBlockHash) {
 					self.validPool = append(self.validPool, block)
 					self.updateLatestShardState()
 					return true
