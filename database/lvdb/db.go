@@ -47,18 +47,6 @@ var (
 	privacyTokenInitPrefix       = []byte("privacy-token-init-")
 	rewared                      = []byte("reward")
 
-	//vote prefix
-	voteBoardSumPrefix           = []byte("votesumboard-")
-	voteBoardCountPrefix         = []byte("votecountboard-")
-	VoteBoardListPrefix          = []byte("votelistboard-")
-	threePhraseCryptoOwnerPrefix = []byte("threephrasecryptoownerprefix-")
-	VoteProposalPrefix           = []byte("voteproposalprefix-")
-	BoardFundPrefix              = []byte("boardfundprefix-")
-	ConstantPricePrefix          = []byte("constantspriceprefix-")
-	listVoterOfProposalPrefix    = []byte("listvoterofproposalprefix-")
-	SubmitProposalPrefix         = []byte("submitproposalprefix-")
-	threePhraseVoteValuePrefix   = []byte("threephrasevotevalueprefix-")
-	winningVoterPrefix           = []byte("winningvoterprefix-")
 	//pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
 	encryptFlagPrefix               = []byte("encryptFlagPrefix")
 	encryptionLastBlockHeightPrefix = []byte("encryptionlastblockheightprefix")
@@ -68,11 +56,6 @@ var (
 
 	// bond type
 	bondTypePrefix = []byte("bondtype-")
-
-	// crowdsale
-	crowdsalePrefix       = []byte("crowdsale-")
-	dcbBondInfoPrefix     = []byte("dcbBondInfo-")
-	tradeActivationPrefix = []byte("tradeAct-")
 
 	Unreward   = []byte("unreward")
 	Spent      = []byte("spent")
