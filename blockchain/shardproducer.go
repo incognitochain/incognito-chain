@@ -406,9 +406,9 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
 	instUsed := make([]int, len(instsForValidations))
-	accumulatedData := component.UsedInstData{
-		TradeActivated: map[string]bool{},
-	}
+	// accumulatedData := component.UsedInstData{
+	// 	TradeActivated: map[string]bool{},
+	// }
 
 	for _, tx := range sourceTxns {
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
@@ -421,7 +421,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain, &accumulatedData)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain)
 		if err != nil || !ok {
 			txToRemove = append(txToRemove, tx)
 			continue
