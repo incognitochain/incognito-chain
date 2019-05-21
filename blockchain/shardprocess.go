@@ -23,6 +23,7 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
+	Logger.log.Errorf("\n%v\n%v\n", block.Header, len(block.Body.Transactions))
 	if block.Header.ShardID != shardID {
 		return errors.New("wrong shard")
 	}
@@ -67,6 +68,9 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardID); err != nil {
+		return err
+	}
+	if err := block.VerifyBlockReward(blockchain); err != nil {
 		return err
 	}
 	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for signing", shardID, block.Header.Height, *block.Hash())
@@ -167,30 +171,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 			}
 		}
 	}()
-	var errCh chan error
-	var processed int
-	errCh = make(chan error)
-
-	//TODO: refactor this
-	go func() {
-		errCh <- blockchain.processTradeBondTx(block)
-	}()
-
-	go func() {
-		// Process stability stand-alone instructions
-		errCh <- blockchain.ProcessStandAloneInstructions(block)
-	}()
-
-	for {
-		err := <-errCh
-		if err != nil {
-			return errors.New("Process stability error: " + err.Error())
-		}
-		processed++
-		if processed == 2 {
-			break
-		}
-	}
 
 	// Store metadata instruction to local state
 	for _, beaconBlock := range beaconBlocks {

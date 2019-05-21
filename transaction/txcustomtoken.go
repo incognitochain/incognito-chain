@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -198,8 +197,6 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// validate for normal tx
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
 	ok, err := tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
 	if ok {
 		if len(tx.listUtxo) == 0 {
@@ -211,16 +208,6 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
-
-			// Bond sent from DCB can be created by anyone but only with
-			// appropriate metadata and instruction
-			if bytes.Equal(vin.PaymentAddress.Pk, dcbPk) {
-				metaType := tx.GetMetadataType()
-				if metaType != metadata.CrowdsalePaymentMeta && metaType != metadata.BuyBackRequestMeta {
-					return false, errors.New("Check Bond from DCB")
-				}
-				continue
-			}
 
 			// get data from utxo
 			utxo := tx.listUtxo[vin.TxCustomTokenID]
@@ -533,30 +520,6 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 	return keyset.Sign(buff.Bytes())
 }
 
-func (tx *TxCustomToken) GetAmountOfVote(boardType common.BoardType) (uint64, error) {
-	sum := uint64(0)
-	for _, vout := range tx.TxTokenData.Vouts {
-		keyWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-		keyset := keyWallet.KeySet
-		paymentAddress := keyset.PaymentAddress
-		pubKey := string(paymentAddress.Pk)
-		if string(vout.PaymentAddress.Pk) == string(pubKey) {
-			if (boardType == common.DCBBoard) && (common.DCBTokenID.Cmp(&vout.txCustomTokenID) == 0) {
-				sum += vout.Value
-			} else {
-				if (boardType == common.GOVBoard) && (common.GOVTokenID.Cmp(&vout.txCustomTokenID) == 0) {
-					sum += vout.Value
-				}
-			}
-		}
-	}
-	return sum, nil
-}
-
-func (tx *TxCustomToken) GetVoterPaymentAddress() (*privacy.PaymentAddress, error) {
-	return &tx.TxTokenData.Vins[0].PaymentAddress, nil
-}
-
 func (tx *TxCustomToken) IsPrivacy() bool {
 	return false
 }
@@ -687,7 +650,6 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 	if !tx.TxTokenData.Mintable {
 		return true, nil
@@ -701,5 +663,5 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	// if !meta.IsMinerCreatedMetaType() {
 	// 	return false, nil
 	// }
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr, accumulatedData)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr)
 }
