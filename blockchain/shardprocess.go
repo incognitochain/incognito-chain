@@ -39,7 +39,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	shardBestState := BestStateShard{}
 	// check with current final best state
 	// New block must be compatible with current best state
-	if strings.Compare(blockchain.BestState.Shard[shardID].BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
+	bestBlockHash := &blockchain.BestState.Shard[shardID].BestBlockHash
+	if bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
 		tempMarshal, err := json.Marshal(blockchain.BestState.Shard[shardID])
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
@@ -98,7 +99,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	//========Verify block with previous best state
 	// check with current final best state
 	// block can only be insert if it match the current best state
-	if strings.Compare(blockchain.BestState.Shard[shardID].BestBlockHash.String(), block.Header.PrevBlockHash.String()) != 0 {
+	bestBlockHash := &blockchain.BestState.Shard[shardID].BestBlockHash
+	if !bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 
@@ -795,7 +797,7 @@ func (blockchain *BlockChain) VerifyCrossShardCustomToken(CrossTxTokenData map[b
 	if err != nil {
 		return err
 	}
-	if strings.Compare(hash.String(), hashFromTxs.String()) != 0 {
+	if !hash.IsEqual(&hashFromTxs) {
 		return errors.New("Cross Token Data from Cross Shard Block Not Compatible with Cross Token Data in New Block")
 	}
 	return nil
