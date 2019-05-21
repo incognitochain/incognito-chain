@@ -137,7 +137,6 @@ func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock
 			nextHeight := block.Header.Height + 1
 			// Condition 3: check next block
 			if nextBlock, ok := self.pendingPool[nextHeight]; ok {
-				//if strings.Compare(nextBlock.Header.PrevBlockHash.String(), block.Header.Hash().String()) == 0 {
 				preHash := &nextBlock.Header.PrevBlockHash
 				blockHeader := block.Header.Hash()
 				if preHash.IsEqual(&blockHeader) {
