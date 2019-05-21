@@ -6,7 +6,6 @@ import (
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	lru "github.com/hashicorp/golang-lru"
-	"strings"
 	"sync"
 	"time"
 )
@@ -138,7 +137,10 @@ func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock
 			nextHeight := block.Header.Height + 1
 			// Condition 3: check next block
 			if nextBlock, ok := self.pendingPool[nextHeight]; ok {
-				if strings.Compare(nextBlock.Header.PrevBlockHash.String(), block.Header.Hash().String()) == 0 {
+				//if strings.Compare(nextBlock.Header.PrevBlockHash.String(), block.Header.Hash().String()) == 0 {
+				preHash := &nextBlock.Header.PrevBlockHash
+				blockHeader := block.Header.Hash()
+				if preHash.IsEqual(&blockHeader) {
 					self.validPool = append(self.validPool, block)
 					self.updateLatestBeaconState()
 				} else {
