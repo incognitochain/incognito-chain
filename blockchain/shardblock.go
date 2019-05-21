@@ -101,7 +101,7 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	return nil
 }
 
-func (shardBlock *ShardBlock) VerifyBlockReward() error {
+func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
 	hasBlockReward := false
 	txsFee := uint64(0)
 	for _, tx := range shardBlock.Body.Transactions {
@@ -121,11 +121,7 @@ func (shardBlock *ShardBlock) VerifyBlockReward() error {
 	if shardBlock.Body.Transactions[numberOfTxs-1].GetMetadataType() != metadata.ShardBlockReward {
 		return errors.New("Coinbase transaction must be the last transaction")
 	}
-	n := shardBlock.Header.Height / Duration
-	reward := uint64(RewardBase)
-	for ; n > 0; n-- {
-		reward /= 2
-	}
+
 	receivers, values := shardBlock.Body.Transactions[numberOfTxs-1].GetReceivers()
 	if len(receivers) != 1 {
 		return errors.New("Wrong receiver")
@@ -133,6 +129,7 @@ func (shardBlock *ShardBlock) VerifyBlockReward() error {
 	if !common.ByteEqual(receivers[0], shardBlock.Header.ProducerAddress.Pk) {
 		return errors.New("Wrong receiver")
 	}
+	reward := blockchain.getRewardAmount(shardBlock.Header.Height)
 	if reward != values[0] {
 		return errors.New("Wrong reward value")
 	}

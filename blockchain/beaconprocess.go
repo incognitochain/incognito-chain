@@ -13,6 +13,7 @@ import (
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/metadata"
 )
 
 /*
@@ -366,6 +367,8 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		for _, strs := range tempInstruction {
 			tempInstructionArr = append(tempInstructionArr, strs...)
 		}
+		beaconBlockRewardIns, err := metadata.BuildInstForBeaconSalary(blockchain.getRewardAmount(block.Header.Height), block.Header.Height, &block.Header.ProducerAddress)
+		tempInstructionArr = append(tempInstructionArr, beaconBlockRewardIns...)
 		tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
 		if err != nil {
 			return NewBlockChainError(HashError, errors.New("Fail to generate hash for instruction"))

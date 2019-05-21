@@ -117,16 +117,11 @@ func (shardBody *ShardBody) ExtractOutgoingCrossShardMap() (map[byte][]common.Ha
 	return crossShardMap, nil
 }
 
-func (shardBody *ShardBody) addBlockReward(blockHeight uint64, producerPayment privacy.PaymentAddress, producerPriKey privacy.PrivateKey, db database.DatabaseInterface) error {
+func (shardBody *ShardBody) addBlockReward(reward, blockHeight uint64, producerPayment privacy.PaymentAddress, producerPriKey privacy.PrivateKey, db database.DatabaseInterface) error {
 	txsFee := uint64(0)
 
 	for _, tx := range shardBody.Transactions {
 		txsFee += tx.GetTxFee()
-	}
-	n := blockHeight / Duration
-	reward := uint64(RewardBase)
-	for ; n > 0; n-- {
-		reward /= 2
 	}
 	reward += txsFee
 	txCoinBase := new(transaction.Tx)

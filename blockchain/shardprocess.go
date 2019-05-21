@@ -69,7 +69,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
 	}
-	if err := block.VerifyBlockReward(); err != nil {
+	if err := block.VerifyBlockReward(blockchain); err != nil {
 		return err
 	}
 	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for signing", shardID, block.Header.Height, *block.Hash())
