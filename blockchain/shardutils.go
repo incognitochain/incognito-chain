@@ -268,8 +268,8 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 		}
 		i = i / 2
 	}
-	merkleRootString := merkleRoot.String()
-	if strings.Compare(finalHash.String(), merkleRootString) != 0 {
+	merkleRootPointer := &merkleRoot
+	if !merkleRootPointer.IsEqual(&finalHash){
 		return false
 	} else {
 		return true

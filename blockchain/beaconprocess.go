@@ -45,7 +45,8 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	beaconBestState := BestStateBeacon{}
 	// check with current final best state
 	// New block must be compatible with current best state
-	if strings.Compare(blockchain.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) == 0 {
+	bestBlockHash := &blockchain.BestState.Beacon.BestBlockHash
+	if bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
 		tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
@@ -95,7 +96,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//========Verify block with previous best state
 	// check with current final best state
 	// block can only be insert if it match the current best state
-	if strings.Compare(blockchain.BestState.Beacon.BestBlockHash.String(), block.Header.PrevBlockHash.String()) != 0 {
+	bestBlockHash := &blockchain.BestState.Beacon.BestBlockHash
+	if !bestBlockHash.IsEqual(&block.Header.PrevBlockHash){
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// fmt.Printf("BeaconBest state %+v \n", blockchain.BestState.Beacon)
@@ -322,7 +324,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
 					blockHash := shardBlocks[index].Header.Hash()
-					if strings.Compare(blockHash.String(), shardState.Hash.String()) != 0 {
+					if !blockHash.IsEqual(&shardState.Hash) {
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 					}
 					if !reflect.DeepEqual(shardBlocks[index].Header.CrossShards, shardState.CrossShard) {
@@ -375,7 +377,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		}
 		fmt.Println("BeaconProcess/tempInstructionHash: ", tempInstructionHash)
 		fmt.Println("BeaconProcess/block.Header.InstructionHash: ", block.Header.InstructionHash)
-		if strings.Compare(tempInstructionHash.String(), block.Header.InstructionHash.String()) != 0 {
+		if !tempInstructionHash.IsEqual(&block.Header.InstructionHash) {
 			return NewBlockChainError(InstructionHashError, errors.New("instruction hash is not correct"))
 		}
 	}
