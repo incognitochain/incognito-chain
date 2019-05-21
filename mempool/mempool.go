@@ -22,50 +22,30 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	// Block chain of node
-	BlockChain *blockchain.BlockChain
-
-	DataBase database.DatabaseInterface
-
-	DataBaseMempool databasemp.DatabaseInterface
-
-	ChainParams *blockchain.Params
-
-	// FeeEstimatator provides a feeEstimator. If it is not nil, the mempool
-	// records all new transactions it observes into the feeEstimator.
-	FeeEstimator map[byte]*FeeEstimator
-
-	// Transaction life time in pool
-	TxLifeTime uint
-
-	//Max transaction pool may have
-	MaxTx uint64
-
-	//Reset mempool database when run node
-	IsLoadFromMempool bool
-
-	PersistMempool bool
-
-	RelayShards []byte
-	UserKeyset  *cashec.KeySet
+	BlockChain        *blockchain.BlockChain // Block chain of node
+	DataBase          database.DatabaseInterface
+	DataBaseMempool   databasemp.DatabaseInterface
+	ChainParams       *blockchain.Params
+	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
+	TxLifeTime        uint                   // Transaction life time in pool
+	MaxTx             uint64                 //Max transaction pool may have
+	IsLoadFromMempool bool                   //Reset mempool database when run node
+	PersistMempool    bool
+	RelayShards       []byte
+	UserKeyset        *cashec.KeySet
 }
 
 // TxDesc is transaction message in mempool
 type TxDesc struct {
-	// transaction details
-	Desc metadata.TxDesc
-
-	//Unix Time that transaction enter mempool
-	StartTime time.Time
-
+	Desc            metadata.TxDesc // transaction details
+	StartTime       time.Time       //Unix Time that transaction enter mempool
 	IsFowardMessage bool
 }
 
 // TxPool is transaction pool
 type TxPool struct {
 	// The following variables must only be used atomically.
-	lastUpdated int64 // last time pool was updated
-
+	lastUpdated       int64 // last time pool was updated
 	mtx               sync.RWMutex
 	config            Config
 	pool              map[common.Hash]*TxDesc
@@ -74,22 +54,16 @@ type TxPool struct {
 	coinHashHPool     map[common.Hash]bool
 	cMtx              sync.RWMutex
 	Scantime          time.Duration
-	//Candidate List in mempool
-	CandidatePool map[common.Hash]string
-	candidateMtx  sync.RWMutex
-	//Token ID List in Mempool
-	TokenIDPool map[common.Hash]string
-	tokenIDMtx  sync.RWMutex
-	//For testing
-	DuplicateTxs map[common.Hash]uint64
-	//Caching received txs
-	cCacheTx chan common.Hash
-	//Current Role of Node
-	RoleInCommittees  int
+	CandidatePool     map[common.Hash]string //Candidate List in mempool
+	candidateMtx      sync.RWMutex
+	TokenIDPool       map[common.Hash]string //Token ID List in Mempool
+	tokenIDMtx        sync.RWMutex
+	DuplicateTxs      map[common.Hash]uint64 //For testing
+	cCacheTx          chan common.Hash       //Caching received txs
+	RoleInCommittees  int                    //Current Role of Node
 	CRoleInCommittees chan int
 	roleMtx           sync.RWMutex
-	// channel to deliver txs to block gen
-	CPendingTxs chan []metadata.Transaction
+	CPendingTxs       chan metadata.Transaction // channel to deliver txs to block gen
 	IsBlockGenStarted bool
 }
 
@@ -110,7 +84,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 }
-func (tp *TxPool) InitChannelMempool(cCacheTx chan common.Hash, cRoleInCommittees chan int, cPendingTxs chan []metadata.Transaction) {
+func (tp *TxPool) InitChannelMempool(cCacheTx chan common.Hash, cRoleInCommittees chan int, cPendingTxs chan metadata.Transaction) {
 	tp.cCacheTx = cCacheTx
 	tp.CRoleInCommittees = cRoleInCommittees
 	tp.CPendingTxs = cPendingTxs
@@ -206,7 +180,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	//==================================================
 	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
 		if tp.config.FeeEstimator != nil {
@@ -220,7 +193,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	if txHash != nil {
 		tp.AddTxCoinHashH(*txHash)
 	}
-
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
@@ -261,10 +233,18 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	var shardID byte
 	var err error
 	txHash := tx.Hash()
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		if tx.IsPrivacy() {
+			txType = common.TxNormalPrivacy
+		} else {
+			txType = common.TxNormalNoPrivacy
+		}
+	}
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
-		go common.AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash.String(), float64(1))
+		go common.AnalyzeTimeSeriesTxDuplicateTimesMetric(txType, float64(1))
 		err := MempoolTxError{}
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return err
@@ -324,14 +304,6 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	txType := tx.GetType()
-	if txType == common.TxNormalType {
-		if tx.IsPrivacy() {
-			txType = common.TxNormalPrivacy
-		} else {
-			txType = common.TxNormalNoPrivacy
-		}
-	}
 	startValidate := time.Now()
 	validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	go common.AnalyzeTimeSeriesVTBITxTypeMetric(txType, float64(time.Since(startValidate).Seconds()))
@@ -439,31 +411,6 @@ func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
 
 func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	//if tp.config.UserKeyset != nil {
-		//publicKey := tp.config.UserKeyset.PaymentAddress.Pk
-		//pubkey := base58.Base58Check{}.Encode(publicKey, common.ZeroByte)
-		//if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconCommittee) > -1 {
-		//	return false
-		//}
-		//if common.IndexOfStr(pubkey, tp.config.BlockChain.BestState.Beacon.BeaconPendingValidator) > -1 {
-		//	return false
-		//}
-		//for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardCommittee {
-		//	if common.IndexOfStr(pubkey, shardCommittees) > -1 {
-		//		if senderShardID == shardCommitteesID {
-		//			return true
-		//		}
-		//	}
-		//}
-		//for shardCommitteesID, shardCommittees := range tp.config.BlockChain.BestState.Beacon.ShardPendingValidator {
-		//	if common.IndexOfStr(pubkey, shardCommittees) > -1 {
-		//		if senderShardID == shardCommitteesID {
-		//			return true
-		//		}
-		//	}
-		//}
-	//}
-	//return false
 	tp.roleMtx.RLock()
 	if tp.RoleInCommittees > -1 && byte(tp.RoleInCommittees) == senderShardID {
 		tp.roleMtx.RUnlock()
@@ -488,7 +435,9 @@ func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	go func(txHash common.Hash) {tp.cCacheTx <- txHash}(*tx.Hash())
+	go func(txHash common.Hash) {
+		tp.cCacheTx <- txHash
+	}(*tx.Hash())
 	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx) {
 		err := errors.New("Unexpected Transaction Source Shard")
 		Logger.log.Error(err)
@@ -527,8 +476,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		Logger.log.Error(err)
 	} else {
 		if tp.IsBlockGenStarted {
-			go func(tx metadata.Transaction){
-				tp.CPendingTxs <- []metadata.Transaction{tx}
+			go func(tx metadata.Transaction) {
+				tp.CPendingTxs <- tx
 			}(tx)
 		}
 	}
