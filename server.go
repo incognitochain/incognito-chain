@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/transaction"
 	"log"
 	"net"
@@ -128,6 +129,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 
+	//Init channel
+	cPendingTxs := make(chan metadata.Transaction, 100)
+	cRemovedTxs := make(chan metadata.Transaction)
+	cRoleInCommitteesMempool := make(chan int)
+	cRoleInCommitteesNetSync := make(chan int)
+	cTxCache := make(chan common.Hash, 100)
 	var err error
 
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
@@ -177,7 +184,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
 	})
-
+	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
 		return err
 	}
@@ -248,7 +255,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-
+	serverObj.memPool.InitChannelMempool(cTxCache, cRoleInCommitteesMempool, cPendingTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
@@ -262,21 +269,23 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//===============
 	serverObj.addrManager = addrmanager.New(cfg.DataDir)
 	// Init block template generator
-	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool)
+	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
 	if err != nil {
 		return err
 	}
 
 	// Init consensus engine
 	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
-		CrossShardPool:    serverObj.crossShardPool,
-		ShardToBeaconPool: serverObj.shardToBeaconPool,
-		ChainParams:       serverObj.chainParams,
-		BlockChain:        serverObj.blockChain,
-		Server:            serverObj,
-		BlockGen:          serverObj.blockgen,
-		NodeMode:          cfg.NodeMode,
-		UserKeySet:        serverObj.userKeySet,
+		CrossShardPool:           serverObj.crossShardPool,
+		ShardToBeaconPool:        serverObj.shardToBeaconPool,
+		ChainParams:              serverObj.chainParams,
+		BlockChain:               serverObj.blockChain,
+		Server:                   serverObj,
+		BlockGen:                 serverObj.blockgen,
+		NodeMode:                 cfg.NodeMode,
+		UserKeySet:               serverObj.userKeySet,
+		CRoleInCommitteesMempool: cRoleInCommitteesMempool,
+		CRoleInCommitteesNetSync: cRoleInCommitteesNetSync,
 	})
 	if err != nil {
 		return err
@@ -292,7 +301,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
-	})
+	}, cTxCache,
+	&netsync.ShardIDConfig{
+		RelayShard:relayShards,
+		RoleInCommittees: -1,
+		CRoleInCommittees: cRoleInCommitteesNetSync,
+	},)
 	// Create a connection manager.
 	var peer *peer.Peer
 	if !cfg.DisableListen {
@@ -367,6 +381,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Database:        &serverObj.dataBase,
 			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
 			MiningPubKeyB58: miningPubkeyB58,
+			NetSync:         serverObj.netSync,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -524,13 +539,15 @@ func (serverObj Server) Start() {
 			Logger.log.Error(err)
 			go serverObj.Stop()
 			return
+		} else {
+			serverObj.memPool.IsBlockGenStarted = true
 		}
 	}
 
 	if serverObj.memPool != nil {
 		serverObj.memPool.LoadOrResetDatabaseMP()
 		go serverObj.TransactionPoolBroadcastLoop()
-		go mempool.TxPoolMainLoop(serverObj.memPool)
+		go serverObj.memPool.Start(serverObj.cQuit)
 	}
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {

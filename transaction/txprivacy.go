@@ -276,7 +276,10 @@ func (tx *Tx) Init(
 		// encrypt coin details (Randomness)
 		// hide information of output coins except coin commitments, public key, snDerivators
 		for i := 0; i < len(tx.Proof.OutputCoins); i++ {
-			tx.Proof.OutputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
+			err = tx.Proof.OutputCoins[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
+			if err.(*privacy.PrivacyError) != nil {
+				return NewTransactionErr(UnexpectedErr, err)
+			}
 			tx.Proof.OutputCoins[i].CoinDetails.SerialNumber = nil
 			tx.Proof.OutputCoins[i].CoinDetails.Value = 0
 			tx.Proof.OutputCoins[i].CoinDetails.Randomness = nil
@@ -448,7 +451,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
 			return false, errors.New("FAILED VERIFICATION PAYMENT PROOF")
 		} else {
-			Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
+			//Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
 	//@UNCOMMENT: metric time
