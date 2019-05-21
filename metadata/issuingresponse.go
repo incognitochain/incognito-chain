@@ -1,14 +1,8 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
-
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/pkg/errors"
 )
 
 type IssuingResponse struct {
@@ -64,39 +58,6 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
-	fmt.Printf("[db] verifying issuing response tx\n")
-	idx := -1
-	for i, inst := range insts {
-		if instUsed[i] > 0 ||
-			inst[0] != strconv.Itoa(IssuingRequestMeta) ||
-			inst[1] != strconv.Itoa(int(shardID)) ||
-			inst[2] != "accepted" {
-			continue
-		}
-		issuingInfo, err := component.ParseIssuingInfo(inst[3])
-		if err != nil {
-			continue
-		}
-		unique, pk, amount, assetID := tx.GetTransferData()
-		txData := &component.IssuingInfo{
-			ReceiverAddress: privacy.PaymentAddress{Pk: pk},
-			Amount:          amount,
-			TokenID:         *assetID,
-		}
-
-		if unique && txData.Compare(issuingInfo) {
-			idx = i
-			break
-		}
-	}
-
-	if idx == -1 {
-		return false, errors.Errorf("no instruction found for IssuingResponse tx %s", tx.Hash().String())
-	}
-
-	instUsed[idx] += 1
-	fmt.Printf("[db] inst %d matched\n", idx)
 	return true, nil
 }

@@ -2,9 +2,7 @@ package blockchain
 
 import (
 	"fmt"
-	"strconv"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -35,34 +33,6 @@ func (blockgen *BlkTmplGenerator) initVouts(unspentTokens map[string][]transacti
 		}
 	}
 	return unspentTokens[key]
-}
-
-func buildPaymentForCoin(
-	receiverAddress privacy.PaymentAddress,
-	amount uint64,
-	saleID []byte,
-	tool producerTool,
-) (*transaction.Tx, error) {
-	// Mint and send Constant
-	metaPay := &metadata.CrowdsalePayment{
-		SaleID: make([]byte, len(saleID)),
-	}
-	metaPay.Type = metadata.CrowdsalePaymentMeta
-	copy(metaPay.SaleID, saleID)
-	metaPayList := []metadata.Metadata{metaPay}
-
-	amounts := []uint64{amount}
-	txs, err := transaction.BuildCoinbaseTxs(
-		[]*privacy.PaymentAddress{&receiverAddress},
-		amounts,
-		tool.key,
-		tool.db,
-		metaPayList,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return txs[0], nil
 }
 
 func transferTxToken(
@@ -211,123 +181,4 @@ func mintTxToken(
 		Mintable: true,
 	}
 	return initTxCustomToken(params, meta, tool)
-}
-
-func buildPaymentForToken(
-	receiver privacy.PaymentAddress,
-	amount uint64,
-	tokenID common.Hash,
-	unspentTokens map[string]([]transaction.TxTokenVout),
-	saleID []byte,
-	mint bool,
-	tool producerTool,
-) (*transaction.TxCustomToken, error) {
-	var txToken *transaction.TxCustomToken
-	var err error
-	vouts := unspentTokens[tokenID.String()]
-	usedID := -1
-
-	// Create metadata for crowdsale payment
-	metaPay := &metadata.CrowdsalePayment{
-		SaleID: make([]byte, len(saleID)),
-	}
-	copy(metaPay.SaleID, saleID)
-	metaPay.Type = metadata.CrowdsalePaymentMeta
-
-	// Build txcustomtoken
-	if mint {
-		txToken, err = mintTxToken(receiver, amount, tokenID, metaPay, tool)
-	} else {
-		txToken, usedID, err = transferTxToken(amount, vouts, tokenID, receiver, metaPay, tool)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	// Update list of token available for next request
-	if usedID >= 0 && !mint {
-		unspentTokens[tokenID.String()] = vouts[usedID:]
-	}
-	return txToken, nil
-}
-
-// buildPaymentForCrowdsale builds CrowdsalePayment tx sending either CST or Token
-func (blockgen *BlkTmplGenerator) buildPaymentForCrowdsale(
-	inst string,
-	unspentTokens map[string]([]transaction.TxTokenVout),
-	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
-) ([]metadata.Transaction, error) {
-	paymentInst, err := component.ParseCrowdsalePaymentInstruction(inst)
-	if err != nil {
-		return nil, err
-	}
-	saleID := paymentInst.SaleID
-	assetID := &paymentInst.AssetID
-
-	// Data needed to build txs
-	tool := producerTool{
-		key:     producerPrivateKey,
-		db:      blockgen.chain.GetDatabase(),
-		shardID: shardID,
-	}
-
-	var txResponse metadata.Transaction
-	if common.IsConstantAsset(assetID) {
-		txResponse, err = buildPaymentForCoin(
-			paymentInst.PaymentAddress,
-			paymentInst.Amount,
-			saleID,
-			tool,
-		)
-	} else if common.IsBondAsset(assetID) {
-		// Get and cache list of UTXO
-		blockgen.initVouts(unspentTokens, assetID)
-
-		mint := false // Mint DCB token, transfer bonds
-		txResponse, err = buildPaymentForToken(
-			paymentInst.PaymentAddress,
-			paymentInst.Amount,
-			*assetID,
-			unspentTokens,
-			saleID,
-			mint,
-			tool,
-		)
-	}
-	if err != nil {
-		return nil, err
-	}
-	return []metadata.Transaction{txResponse}, err
-}
-
-func generateCrowdsalePaymentInstruction(
-	paymentAddress privacy.PaymentAddress,
-	amount uint64,
-	assetID *common.Hash,
-	saleID []byte,
-	sentAmount uint64,
-	updateSale bool,
-) ([][]string, error) {
-	inst := &component.CrowdsalePaymentInstruction{
-		PaymentAddress: paymentAddress,
-		Amount:         amount,
-		AssetID:        *assetID,
-		SaleID:         saleID,
-		SentAmount:     sentAmount,
-		UpdateSale:     updateSale,
-	}
-	instStr, err := inst.String()
-	if err != nil {
-		return nil, err
-	}
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
-	dcbShardID := common.GetShardIDFromLastByte(dcbPk[len(dcbPk)-1])
-	paymentInst := []string{
-		strconv.Itoa(metadata.CrowdsalePaymentMeta),
-		strconv.Itoa(int(dcbShardID)),
-		instStr,
-	}
-	return [][]string{paymentInst}, nil
 }

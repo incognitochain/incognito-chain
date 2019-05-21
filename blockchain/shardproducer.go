@@ -2,12 +2,12 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -92,15 +92,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		instructions = append(instructions, swapInstruction)
 	}
 
-	// Build stand-alone stability instructions
-	tradeBondRespInsts, err := blockgen.buildTradeBondConfirmInsts(beaconBlocks, shardID)
-	if err != nil {
-		return nil, err
-	}
-	if tradeBondRespInsts != nil && len(tradeBondRespInsts) > 0 {
-		instructions = append(instructions, tradeBondRespInsts...)
-	}
-
 	block := &ShardBlock{
 		Body: ShardBody{
 			CrossTransactions: crossTransactions,
@@ -116,6 +107,14 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 			return nil, err
 		}
 	}
+	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
+	err = block.Body.addBlockReward(blockgen.chain.getRewardAmount(prevBlock.Header.Height+1), prevBlock.Header.Height+1, producerKeySet.PaymentAddress, producerKeySet.PrivateKey, blockgen.chain.GetDatabase())
+	if err != nil {
+		fmt.Printf("\n\nerrorrrrrrrrrrrrrrrrrrr\n\n\n\n%+v\n\n\n\n", err.Error())
+		return nil, err
+	} else {
+		fmt.Printf("\n\neiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\n\n\n%+v \n %+v \n\n\n", len(block.Body.Transactions), block.Body.Transactions[len(block.Body.Transactions)-1])
+	}
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)
 	}
@@ -127,7 +126,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if len(merkleRoots) > 0 {
 		merkleRoot = merkleRoots[len(merkleRoots)-1]
 	}
-	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
 	prevBlockHash := prevBlock.Hash()
 	crossTransactionRoot, err := CreateMerkleCrossTransaction(block.Body.CrossTransactions)
 	if err != nil {
@@ -207,13 +205,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	}()
 
 	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey)
-	// Logger.log.Error(stabilityResponseTxs, "-----------------------------\n")
-	if err != nil {
-		return nil, err
-	}
-	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
-	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
+	stabilityResponseTxs, err := blockgen.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -348,9 +340,6 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
 	instUsed := make([]int, len(instsForValidations))
-	accumulatedData := component.UsedInstData{
-		TradeActivated: map[string]bool{},
-	}
 
 	for _, txDesc := range sourceTxns {
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
@@ -364,7 +353,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain, &accumulatedData)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain)
 		if err != nil || !ok {
 			txToRemove = append(txToRemove, tx)
 			continue
@@ -411,16 +400,16 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	}
 	currentSize := uint64(0)
 	startTime := time.Now()
-	
+
 	instsForValidations := [][]string{}
 	for _, beaconBlock := range beaconBlocks {
 		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	}
 	instUsed := make([]int, len(instsForValidations))
-	accumulatedData := component.UsedInstData{
-		TradeActivated: map[string]bool{},
-	}
-	
+	// accumulatedData := component.UsedInstData{
+	// 	TradeActivated: map[string]bool{},
+	// }
+
 	for _, tx := range sourceTxns {
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -432,15 +421,15 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain, &accumulatedData)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain)
 		if err != nil || !ok {
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
-		
+
 		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
-		
+
 		tempSize := tempTx.GetTxActualSize()
 		if currentSize+tempSize >= common.MaxBlockSize {
 			break
@@ -467,6 +456,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	blockgen.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
 }
+
 /*
 	1. Get valid tx for specific shard and their fee, also return unvalid tx
 		a. Validate Tx By it self
