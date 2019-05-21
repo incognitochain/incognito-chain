@@ -87,6 +87,7 @@ func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	}
 	self.insertNewBeaconBlockToPool(block)
 	self.promotePendingPool()
+	self.CleanOldBlock(self.latestValidHeight)
 	return nil
 }
 

@@ -106,6 +106,7 @@ func (self *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 	}
 	self.insertNewShardBlockToPoolV2(block)
 	self.promotePendingPool()
+	self.CleanOldBlock(self.latestValidHeight)
 	return nil
 }
 
