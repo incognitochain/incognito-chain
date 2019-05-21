@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
@@ -102,6 +101,41 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	return nil
 }
 
+func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
+	hasBlockReward := false
+	txsFee := uint64(0)
+	for _, tx := range shardBlock.Body.Transactions {
+		if tx.GetMetadataType() == metadata.ShardBlockReward {
+			if hasBlockReward {
+				return errors.New("This block contains more than one coinbase transaction for shard block producer!")
+			}
+			hasBlockReward = true
+		} else {
+			txsFee += tx.GetTxFee()
+		}
+	}
+	if !hasBlockReward {
+		return errors.New("This block dont have coinbase tx for shard block producer")
+	}
+	numberOfTxs := len(shardBlock.Body.Transactions)
+	if shardBlock.Body.Transactions[numberOfTxs-1].GetMetadataType() != metadata.ShardBlockReward {
+		return errors.New("Coinbase transaction must be the last transaction")
+	}
+
+	receivers, values := shardBlock.Body.Transactions[numberOfTxs-1].GetReceivers()
+	if len(receivers) != 1 {
+		return errors.New("Wrong receiver")
+	}
+	if !common.ByteEqual(receivers[0], shardBlock.Header.ProducerAddress.Pk) {
+		return errors.New("Wrong receiver")
+	}
+	reward := blockchain.getRewardAmount(shardBlock.Header.Height)
+	if reward != values[0] {
+		return errors.New("Wrong reward value")
+	}
+	return nil
+}
+
 func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
@@ -126,24 +160,14 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		return nil
 	}
 	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
-	// fmt.Println("[ndh] - newshardtobeacon", previousShardBlock.Header.BeaconHeight, block.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
-		fmt.Println("[ndh] - error in create shard to beacon", err)
 		return nil
 	}
 	instructions, err := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, &blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks, blk.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
-		fmt.Println("[ndh] - error in create shard to beacon", err)
 		return nil
-	}
-	for _, inst := range instructions {
-		if len(inst) != 0 {
-			if inst[0] != "37" {
-				fmt.Println("[ndh] - instruction to beacon: ", inst)
-			}
-		}
 	}
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block
