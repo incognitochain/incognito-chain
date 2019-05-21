@@ -137,9 +137,12 @@ phase:
 				protocol.forwardMsg(msg)
 				if protocol.RoundData.Layer == common.BEACON_ROLE {
 					pendingBlk := blockchain.BeaconBlock{}
-					pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
-
-					err := protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
+					err := pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+					err = protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
@@ -148,8 +151,12 @@ phase:
 					protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 				} else {
 					pendingBlk := blockchain.ShardBlock{}
-					pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
-					err := protocol.EngineCfg.BlockChain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoundData.ShardID)
+					err := pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+					err = protocol.EngineCfg.BlockChain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoundData.ShardID)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
