@@ -37,27 +37,25 @@ type Server struct {
 	started     int32
 	startupTime int64
 
-	protocolVersion string
-	chainParams     *blockchain.Params
-	connManager     *connmanager.ConnManager
-	blockChain      *blockchain.BlockChain
-	dataBase        database.DatabaseInterface
-	rpcServer       *rpcserver.RpcServer
-
+	protocolVersion   string
+	chainParams       *blockchain.Params
+	connManager       *connmanager.ConnManager
+	blockChain        *blockchain.BlockChain
+	dataBase          database.DatabaseInterface
+	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
 	tempMemPool       *mempool.TxPool
 	beaconPool        *mempool.BeaconPool
 	shardPool         map[byte]blockchain.ShardPool
 	shardToBeaconPool *mempool.ShardToBeaconPool
 	crossShardPool    map[byte]blockchain.CrossShardPool
-
-	waitGroup       sync.WaitGroup
-	netSync         *netsync.NetSync
-	addrManager     *addrmanager.AddrManager
-	userKeySet      *cashec.KeySet
-	wallet          *wallet.Wallet
-	consensusEngine *constantbft.Engine
-	blockgen        *blockchain.BlkTmplGenerator
+	waitGroup         sync.WaitGroup
+	netSync           *netsync.NetSync
+	addrManager       *addrmanager.AddrManager
+	userKeySet        *cashec.KeySet
+	wallet            *wallet.Wallet
+	consensusEngine   *constantbft.Engine
+	blockgen          *blockchain.BlkTmplGenerator
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -302,11 +300,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 	}, cTxCache,
-	&netsync.ShardIDConfig{
-		RelayShard:relayShards,
-		RoleInCommittees: -1,
-		CRoleInCommittees: cRoleInCommitteesNetSync,
-	},)
+		&netsync.ShardIDConfig{
+			RelayShard:        relayShards,
+			RoleInCommittees:  -1,
+			CRoleInCommittees: cRoleInCommitteesNetSync,
+		})
 	// Create a connection manager.
 	var peer *peer.Peer
 	if !cfg.DisableListen {
