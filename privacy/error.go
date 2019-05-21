@@ -13,6 +13,8 @@ const (
 	MarshalErr
 	UnmarshalErr
 	SetBytesProofErr
+	EncryptOutputCoinErr
+	DecryptOutputCoinErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -27,6 +29,8 @@ var ErrCodeMessage = map[int]struct {
 	MarshalErr : {-5, "Marshal payment proof error"},
 	UnmarshalErr : {-6, "Unmarshal payment proof error"},
 	SetBytesProofErr : {-6, "Set bytes payment proof error"},
+	EncryptOutputCoinErr : {-7, "Encrypt output coins error"},
+	DecryptOutputCoinErr : {-8, "Decrypt output coins error"},
 }
 
 type PrivacyError struct {

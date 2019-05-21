@@ -1,6 +1,8 @@
 package blockchain
 
-import "time"
+import (
+	"time"
+)
 
 //Network fixed params
 const (
@@ -42,15 +44,20 @@ const (
 	// ------------- end Mainnet --------------------------------------
 )
 
-var MainnetInitConstant = []string{}
-
-// for beacon
-// public key
-var PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
-
-// For shard
-// public key
-var PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
+// VARIABLE for mainnet
+var (
+	MainnetInitConstant = []string{}
+	// for beacon
+	// public key
+	PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
+	// For shard
+	// public key
+	PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
+	MaxTxsInBlock                             = 600
+	MaxTxsProcessTimeInBlockCreation          = float64(0.85)
+	TxsAverageProcessTime                     = int64(5000) // count in nano second ~= 5 mili seconds
+	DefaultTxsAverageProcessTime              = int64(5000) // count in nano second
+)
 
 // END CONSTANT for network MAINNET
 

@@ -1,9 +1,8 @@
 package zkp
 
 import (
-	"fmt"
 	"math/big"
-
+	
 	"github.com/constant-money/constant-chain/privacy"
 )
 
@@ -494,7 +493,7 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	zSquare := new(big.Int).Exp(z, twoNumber, privacy.Curve.Params().N)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
-	fmt.Printf("T2: %v\n", proof.t2)
+	//fmt.Printf("T2: %v\n", proof.t2)
 	x := generateChallengeForAggRange(AggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
 	xSquare := new(big.Int).Exp(x, twoNumber, privacy.Curve.Params().N)
 
