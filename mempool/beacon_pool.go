@@ -14,15 +14,16 @@ import (
 const (
 	MAX_VALID_BEACON_BLK_IN_POOL   = 10000
 	MAX_PENDING_BEACON_BLK_IN_POOL = 10000
-	BEACON_CACHE_SIZE = 2000
+	BEACON_CACHE_SIZE              = 2000
 )
+
 type BeaconPoolConfig struct {
 	MaxValidBlock   int
 	MaxPendingBlock int
 	CacheSize       int
 }
 type BeaconPool struct {
-	validPool         []*blockchain.BeaconBlock // valid, ready to insert into blockchain
+	validPool         []*blockchain.BeaconBlock          // valid, ready to insert into blockchain
 	pendingPool       map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
 	conflictedPool    map[common.Hash]*blockchain.BeaconBlock
 	latestValidHeight uint64
@@ -80,7 +81,7 @@ func (self *BeaconPool) GetBeaconState() uint64 {
 func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-	
+
 	err := self.validateBeaconBlock(block, false)
 	if err != nil {
 		return err
@@ -90,38 +91,39 @@ func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	return nil
 }
 
-func(self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPending bool) error {
+func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPending bool) error {
 	//If receive old block, it will ignore
 	if _, ok := self.cache.Get(block.Header.Hash()); ok {
-		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork: " + fmt.Sprintf("%d",block.Header.Height)))
+		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
 	if block.Header.Height <= self.latestValidHeight {
-		if self.latestValidHeight - block.Header.Height > 2 {
+		if self.latestValidHeight-block.Header.Height > 2 {
 			self.conflictedPool[block.Header.Hash()] = block
 		}
-		return NewBlockPoolError(OldBlockError,errors.New("Receive old block: " + fmt.Sprintf("%d",block.Header.Height)))
+		return NewBlockPoolError(OldBlockError, errors.New("Receive old block: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
 	if !isPending {
 		//If block already in pool, it will ignore
 		_, ok := self.pendingPool[block.Header.Height]
 		if ok {
-			return NewBlockPoolError(DuplicateBlockError,errors.New("Receive duplicate block in pending pool: " + fmt.Sprintf("%d",block.Header.Height)))
+			return NewBlockPoolError(DuplicateBlockError, errors.New("Receive duplicate block in pending pool: "+fmt.Sprintf("%d", block.Header.Height)))
 		}
 	}
 	// if next valid block then check max valid pool
 	if self.latestValidHeight+1 == block.Header.Height {
 		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError,errors.New("Exceed max valid pool and pending pool"))
+			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
 		}
 	}
 	// if not next valid block then check max pending pool
 	if block.Header.Height > self.latestValidHeight {
 		if len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError,errors.New("Exceed max invalid pending pool"))
+			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
 		}
 	}
 	return nil
 }
+
 /*
  New block only become valid after
 	1. This block height is next block height ( latest valid height + 1)
@@ -130,7 +132,7 @@ func(self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPend
 */
 func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock) bool {
 	// Condition 1: check height
-	if block.Header.Height == self.latestValidHeight + 1 {
+	if block.Header.Height == self.latestValidHeight+1 {
 		// Condition 2: check pool capacity
 		if len(self.validPool) < self.config.MaxValidBlock {
 			nextHeight := block.Header.Height + 1
@@ -163,6 +165,7 @@ func (self *BeaconPool) updateLatestBeaconState() {
 		self.latestValidHeight = blockchain.GetBestStateBeacon().BeaconHeight
 	}
 }
+
 // Check block in pending block then add to valid pool if block is valid
 func (self *BeaconPool) promotePendingPool() {
 	for {
@@ -197,6 +200,7 @@ func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
 	defer self.mtx.Unlock()
 	self.removeBlock(lastBlockHeight)
 }
+
 //@Notice: Remove should set latest valid height
 //Because normal beacon node may not have these block to remove
 func (self *BeaconPool) removeBlock(latestBlockHeight uint64) {
@@ -222,7 +226,7 @@ func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
 		}
 	}
 	for hash, block := range self.conflictedPool {
-		if block.Header.Height < latestBlockHeight - 2 {
+		if block.Header.Height < latestBlockHeight-2 {
 			delete(self.conflictedPool, hash)
 		}
 	}
@@ -279,7 +283,7 @@ func (self *BeaconPool) GetAllBlockHeight() []uint64 {
 	for _, block := range self.pendingPool {
 		blockHeights = append(blockHeights, block.Header.Height)
 	}
-	
+
 	return blockHeights
 }
 
