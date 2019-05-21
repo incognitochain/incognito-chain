@@ -16,13 +16,6 @@ const (
 	defaultMaxBlockSyncTime     = 1 * time.Second  // in second
 	defaultCacheCleanupTime     = 30 * time.Second // in second
 
-	// Threshold ratio
-	ThresholdRatioOfDCBCrisis   = 9000
-	ThresholdRatioOfGOVCrisis   = 9000
-	ConstitutionPerBoard        = 10
-	EndOfFirstBoard             = 50
-	ExtendDurationForFirstBoard = 30
-	BaseSalaryBoard             = 10000
 )
 
 // CONSTANT for network MAINNET
