@@ -14,7 +14,7 @@ const (
 	MAX_VALID_SHARD_BLK_IN_POOL   = 10000
 	MAX_PENDING_SHARD_BLK_IN_POOL = 10000
 	SHARD_CACHE_SIZE              = 2000
-	MAIN_LOOP_TIME                = 2000 // count in milisecond
+	SHARD_POOL_MAIN_LOOP_TIME     = 200 // count in milisecond
 )
 
 type ShardPoolConfig struct {
@@ -43,7 +43,7 @@ var defaultConfig = ShardPoolConfig{
 //@NOTICE: Shard pool will always be empty when node start
 func init() {
 	go func() {
-		mainLoopTime := time.Duration(MAIN_LOOP_TIME) * time.Millisecond
+		mainLoopTime := time.Duration(SHARD_POOL_MAIN_LOOP_TIME) * time.Millisecond
 		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
 			for k, _ := range shardPoolMap {
