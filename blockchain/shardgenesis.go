@@ -3,8 +3,6 @@ package blockchain
 import (
 	"time"
 
-	"github.com/constant-money/constant-chain/wallet"
-
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
@@ -45,10 +43,10 @@ func CreateShardGenesisBlock(
 	icoParams GenesisParams,
 ) *ShardBlock {
 
-	keyWallet, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
-	if err != nil {
-		panic(err)
-	}
+	// keyWallet, err := wallet.Base58CheckDeserialize(icoParams.InitialPaymentAddress)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	body := ShardBody{}
 	header := ShardHeader{
@@ -73,41 +71,41 @@ func CreateShardGenesisBlock(
 		Header: header,
 	}
 
-	// Create genesis token tx for DCB
-	if icoParams.InitialDCBToken > 0 {
-		dcbTokenTx := createSpecialTokenTx( // DCB
-			common.DCBTokenID,
-			common.DCBTokenName,
-			common.DCBTokenSymbol,
-			icoParams.InitialDCBToken,
-			keyWallet.KeySet.PaymentAddress,
-		)
-		block.Body.Transactions = append(block.Body.Transactions, &dcbTokenTx)
-	}
+	// // Create genesis token tx for DCB
+	// if icoParams.InitialDCBToken > 0 {
+	// 	dcbTokenTx := createSpecialTokenTx( // DCB
+	// 		common.DCBTokenID,
+	// 		common.DCBTokenName,
+	// 		common.DCBTokenSymbol,
+	// 		icoParams.InitialDCBToken,
+	// 		keyWallet.KeySet.PaymentAddress,
+	// 	)
+	// 	block.Body.Transactions = append(block.Body.Transactions, &dcbTokenTx)
+	// }
 
-	// Create genesis token tx for GOV
-	if icoParams.InitialGOVToken > 0 {
-		govTokenTx := createSpecialTokenTx(
-			common.GOVTokenID,
-			common.GOVTokenName,
-			common.GOVTokenSymbol,
-			icoParams.InitialGOVToken,
-			keyWallet.KeySet.PaymentAddress,
-		)
-		block.Body.Transactions = append(block.Body.Transactions, &govTokenTx)
-	}
+	// // Create genesis token tx for GOV
+	// if icoParams.InitialGOVToken > 0 {
+	// 	govTokenTx := createSpecialTokenTx(
+	// 		common.GOVTokenID,
+	// 		common.GOVTokenName,
+	// 		common.GOVTokenSymbol,
+	// 		icoParams.InitialGOVToken,
+	// 		keyWallet.KeySet.PaymentAddress,
+	// 	)
+	// 	block.Body.Transactions = append(block.Body.Transactions, &govTokenTx)
+	// }
 
-	// Create genesis token tx for BOND test
-	if icoParams.InitialBondToken > 0 {
-		bondTokenTx := createSpecialTokenTx(
-			common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
-			"BondTest",
-			"BONTest",
-			icoParams.InitialBondToken,
-			keyWallet.KeySet.PaymentAddress,
-		)
-		block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
-	}
+	// // Create genesis token tx for BOND test
+	// if icoParams.InitialBondToken > 0 {
+	// 	bondTokenTx := createSpecialTokenTx(
+	// 		common.Hash([common.HashSize]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}),
+	// 		"BondTest",
+	// 		"BONTest",
+	// 		icoParams.InitialBondToken,
+	// 		keyWallet.KeySet.PaymentAddress,
+	// 	)
+	// 	block.Body.Transactions = append(block.Body.Transactions, &bondTokenTx)
+	// }
 
 	return block
 }

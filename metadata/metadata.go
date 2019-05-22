@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/privacy"
 	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
 )
 
@@ -86,7 +84,6 @@ func (mb *MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	txr Transaction,
 	bcr BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 	return true, nil
 }
@@ -118,41 +115,12 @@ type BlockchainRetriever interface {
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
-	GetDCBParams() component.DCBParams
-	GetBoardPubKeys(boardType common.BoardType) [][]byte
-	GetBoardPaymentAddress(boardType common.BoardType) []privacy.PaymentAddress
-	GetGOVParams() component.GOVParams
 	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
-	GetOracleParams() *component.Oracle
-	GetConstitutionStartHeight(boardType common.BoardType, shardID byte) uint64
-	GetConstitutionEndHeight(boardType common.BoardType, shardID byte) uint64
 	GetCurrentBeaconBlockHeight(byte) uint64
-	GetBoardEndHeight(boardType common.BoardType, chainID byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
-
-	// For validating crowdsale
-	GetSaleData([]byte) (*component.SaleData, error)
-	GetAllSaleData() ([]*component.SaleData, error)
-	CrowdsaleExisted(saleID []byte) bool
-	GetDCBBondInfo(bondID *common.Hash) (uint64, uint64)
-	GetDCBFreeBond(bondID *common.Hash) uint64
-
-	// For validating reserve
-	GetAssetPrice(assetID *common.Hash) uint64
-
-	// For validating trade bonds
-	GetAllTrades() []*component.TradeBondWithGOV
-	GetTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
-	GetLatestTradeActivation([]byte) (*common.Hash, bool, bool, uint64, error)
-
-	GetConstitution(boardType common.BoardType) ConstitutionInterface
-	// UpdateDCBFund(transaction Transaction)
-	GetGovernor(boardType common.BoardType) GovernorInterface
-	CalcTradeData(string) (*component.TradeData, error)
-	GetSellBondPrice(*common.Hash) uint64
 }
 
 // Interface for all types of metadata in tx
@@ -168,7 +136,7 @@ type Metadata interface {
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, Transaction, BlockchainRetriever, *component.UsedInstData) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, Transaction, BlockchainRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
 }
 
@@ -211,10 +179,8 @@ type Transaction interface {
 	// Get receivers' data for custom token tx (nil for normal tx)
 	GetTokenReceivers() ([][]byte, []uint64)
 	GetTokenUniqueReceiver() (bool, []byte, uint64)
-	GetAmountOfVote(common.BoardType) (uint64, error)
-	GetVoterPaymentAddress() (*privacy.PaymentAddress, error)
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
-	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, BlockchainRetriever, *component.UsedInstData) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, BlockchainRetriever) (bool, error)
 }
