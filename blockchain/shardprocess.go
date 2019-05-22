@@ -121,6 +121,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if blockchain.config.UserKeySet != nil {
 		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			blockchain.config.DataBase.CleanBackup(true, block.Header.ShardID)
 			err = blockchain.BackupCurrentShardState(block)
 			if err != nil {
 				return err
