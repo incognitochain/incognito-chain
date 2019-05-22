@@ -136,19 +136,6 @@ func (beaconBody *BeaconBody) Hash() common.Hash {
 	return common.HashH([]byte(beaconBody.toString()))
 }
 
-// func (beaconBlock *BeaconBody) UnmarshalJSON(data []byte) error {
-// 	type BodyAlias BeaconBody
-// 	blkBody := &BodyAlias{}
-
-// 	err := json.Unmarshal(data, blkBody)
-// 	if err != nil {
-// 		return NewBlockChainError(UnmashallJsonBlockError, err)
-// 	}
-// 	beaconBlock.Instructions = blkBody.Instructions
-// 	beaconBlock.ShardState = blkBody.ShardState
-// 	return nil
-// }
-
 func (beaconHeader *BeaconHeader) toString() string {
 	res := ""
 	res += beaconHeader.ProducerAddress.String()
@@ -170,25 +157,3 @@ func (beaconHeader *BeaconHeader) toString() string {
 func (beaconBlock *BeaconHeader) Hash() common.Hash {
 	return common.HashH([]byte(beaconBlock.toString()))
 }
-
-// func (beaconBlock *BeaconHeader) UnmarshalJSON(data []byte) error {
-// 	type HeaderAlias BeaconHeader
-// 	blkHeader := &HeaderAlias{}
-// 	err := json.Unmarshal(data, blkHeader)
-// 	if err != nil {
-// 		return NewBlockChainError(UnmashallJsonBlockError, err)
-// 	}
-// 	beaconBlock.Height = blkHeader.Height
-// 	beaconBlock.InstructionHash = blkHeader.InstructionHash
-// 	beaconBlock.PrevBlockHash = blkHeader.PrevBlockHash
-// 	beaconBlock.Producer = blkHeader.Producer
-// 	beaconBlock.ShardCandidateRoot = blkHeader.ShardCandidateRoot
-// 	beaconBlock.ShardStateHash = blkHeader.ShardStateHash
-// 	beaconBlock.ShardValidatorsRoot = blkHeader.ShardValidatorsRoot
-// 	beaconBlock.Timestamp = blkHeader.Timestamp
-// 	beaconBlock.Epoch = blkHeader.Epoch
-// 	beaconBlock.ValidatorsRoot = blkHeader.ValidatorsRoot
-// 	beaconBlock.Version = blkHeader.Version
-// 	beaconBlock.BeaconCandidateRoot = blkHeader.BeaconCandidateRoot
-// 	return nil
-// }
