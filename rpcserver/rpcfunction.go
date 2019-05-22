@@ -429,7 +429,6 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 
-	govFeePerKbTx := uint64(0) // 0 rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 	estimateFeeCoinPerKb := uint64(0)
 	estimateTxSizeInKb := uint64(0)
 	if len(outCoins) > 0 {
@@ -479,7 +478,6 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 		EstimateTxSizeInKb:   estimateTxSizeInKb,
-		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
 }
@@ -503,22 +501,17 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 
 	// param #2: numblocl
 	estimateFeeCoinPerKb := rpcServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8)
-	govFeePerKbTx := uint64(0) //rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
-		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
 }
 
 // handleGetActiveShards - return active shard num
 func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	//if rpcServer.config.BlockChain.IsReady(false, 0) {
 	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
 	return activeShards, nil
-	//}
-	//return -1, nil
 }
 
 func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
