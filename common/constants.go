@@ -51,13 +51,6 @@ var (
 // 	GOVVotingTokenID = Hash{6}
 )
 
-// asset IDs for oracle feed (must prefix with 99)
-var (
-	BTCAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 1}
-	ETHAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 2}
-	USDAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 3}
-)
-
 // centralized website's pubkey
 var (
 	CentralizedWebsitePubKey = []byte{2, 194, 130, 176, 102, 36, 183, 114, 109, 135, 49, 114, 177, 92, 214, 31, 25, 4, 72, 103, 196, 161, 36, 69, 121, 102, 159, 24, 31, 131, 101, 20, 0}

@@ -26,20 +26,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ResponseBaseMeta:
 		md = &ResponseBase{}
 
-	case IssuingRequestMeta:
-		md = &IssuingRequest{}
-
-	case IssuingResponseMeta:
-		md = &IssuingResponse{}
-
-	case ContractingRequestMeta:
-		md = &ContractingRequest{}
-
-	case ContractingResponseMeta:
-		md = &ResponseBase{}
-
-	// case BeaconSalaryRequestMeta:
-	// 	md = &BeaconSalaryInfo{}
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 
