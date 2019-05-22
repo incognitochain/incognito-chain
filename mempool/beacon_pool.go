@@ -15,7 +15,7 @@ const (
 	MAX_VALID_BEACON_BLK_IN_POOL   = 10000
 	MAX_PENDING_BEACON_BLK_IN_POOL = 10000
 	BEACON_CACHE_SIZE              = 2000
-	BEACON_POOL_MAIN_LOOP_TIME     = 200 // count in milisecond
+	BEACON_POOL_MAIN_LOOP_TIME     = 500 // count in milisecond
 )
 
 type BeaconPoolConfig struct {
@@ -90,6 +90,7 @@ func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	}
 	self.insertNewBeaconBlockToPool(block)
 	self.promotePendingPool()
+	//self.CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
 	return nil
 }
 
@@ -145,6 +146,7 @@ func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock
 				if preHash.IsEqual(&blockHeader) {
 					self.validPool = append(self.validPool, block)
 					self.updateLatestBeaconState()
+					return true
 				} else {
 					self.cache.Add(block.Header.Hash(), block)
 				}
