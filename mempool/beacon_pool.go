@@ -216,6 +216,7 @@ func (self *BeaconPool) removeBlock(latestBlockHeight uint64) {
 			break
 		}
 	}
+	self.updateLatestBeaconState()
 }
 
 func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
