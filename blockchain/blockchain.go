@@ -729,8 +729,8 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBlock(block *ShardBlock) error {
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
-
 	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block)
+
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		// 0xsirrush updated: check existed tokenID
 		tokenID := privacyCustomTokenSubView.tokenID

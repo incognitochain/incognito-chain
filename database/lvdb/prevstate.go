@@ -57,8 +57,11 @@ func (db *db) BackupCommitmentsOfPubkey(tokenID *common.Hash, shardID byte, pubk
 
 	keySpec4 := append(current, pubkey...)
 	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	if err != nil {
+		if err != lvdberr.ErrNotFound {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return nil
 	}
 	if len(resByPubkey) > 0 {
 		key := getPrevPrefix(false, shardID)
@@ -107,8 +110,11 @@ func (db *db) BackupCommitments(tokenID *common.Hash, shardID byte) error {
 	key = append(key, current...)
 
 	res, err := db.lvdb.Get(current, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	if err != nil {
+		if err != lvdberr.ErrNotFound {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return nil
 	}
 
 	if err := db.Put(key, res); err != nil {
@@ -156,6 +162,7 @@ func (db *db) DeleteCommitmentsIndex(tokenID *common.Hash, shardID byte) error {
 
 	return nil
 }
+
 func (db *db) RestoreCommitments(tokenID *common.Hash, shardID byte) error {
 	current := db.GetKey(string(commitmentsPrefix), tokenID)
 	current = append(current, shardID)
@@ -190,8 +197,11 @@ func (db *db) BackupOutputCoin(tokenID *common.Hash, pubkey []byte, shardID byte
 	current = append(current, shardID)
 	current = append(current, pubkey...)
 	resByPubkey, err := db.lvdb.Get(current, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	if err != nil {
+		if err != lvdberr.ErrNotFound {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return nil
 	}
 	if len(resByPubkey) > 0 {
 		key := getPrevPrefix(false, shardID)
@@ -243,8 +253,11 @@ func (db *db) BackupSerialNumber(tokenID *common.Hash, shardID byte) error {
 	current := db.GetKey(string(serialNumbersPrefix), tokenID)
 	current = append(current, shardID)
 	res, err := db.lvdb.Get(current, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	if err != nil {
+		if err != lvdberr.ErrNotFound {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return nil
 	}
 	key := getPrevPrefix(false, shardID)
 	key = append(key, current...)
@@ -395,11 +408,30 @@ func (db *db) DeleteCommitteeByEpoch(blkEpoch uint64) error {
 	return nil
 }
 
+func (db *db) DeletePrivacyCustomTokenCrossShard(tokenID *common.Hash) error {
+	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
+	err := db.Delete(key)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db *db) DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error {
 	prefix := append([]byte{shardID}, shardBlkHash[:]...)
 	key := append(shardToBeaconKeyPrefix, prefix...)
 	if err := db.Delete(key); err != nil {
 		return nil
+	}
+	return nil
+}
+
+func (db *db) DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error {
+	prefix := append([]byte{shardID}, append([]byte{crossShardID}, crossBlkHash[:]...)...)
+	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
+	key := append(crossShardKeyPrefix, prefix...)
+	if err := db.Delete(key); err != nil {
+		return err
 	}
 	return nil
 }

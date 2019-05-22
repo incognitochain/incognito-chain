@@ -27,6 +27,7 @@ type DatabaseInterface interface {
 	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash *common.Hash) error
 	HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error
 	GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) (uint64, error)
+	DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error
 	// StoreOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlk interface{}) error
 	// HasOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) error
 	// GetOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) ([]byte, error)
@@ -106,6 +107,9 @@ type DatabaseInterface interface {
 	GetCommitmentLength(tokenID *common.Hash, shardID byte) (*big.Int, error)
 	GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
+	BackupCommitmentsOfPubkey(tokenID *common.Hash, shardID byte, pubkey []byte) error
+	RestoreCommitmentsOfPubkey(tokenID *common.Hash, shardID byte, pubkey []byte, commitments []byte) error
+	DeleteCommitmentsIndex(tokenID *common.Hash, shardID byte) error
 	BackupCommitments(tokenID *common.Hash, shardID byte) error
 	RestoreCommitments(tokenID *common.Hash, shardID byte) error
 	BackupOutputCoin(tokenID *common.Hash, pubkey []byte, shardID byte) error
@@ -116,8 +120,6 @@ type DatabaseInterface interface {
 	StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error
 	FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
 	HasSNDerivator(tokenID *common.Hash, data big.Int, shardID byte) (bool, error)
-	// BackupSNDerivators(tokenID *common.Hash, shardID byte) error
-	// RestoreSNDerivators(tokenID *common.Hash, shardID byte) error
 	CleanSNDerivator() error
 
 	// Fee estimator
@@ -151,6 +153,7 @@ type DatabaseInterface interface {
 	StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error // store custom token cross shard privacy
 	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
 	PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool
+	DeletePrivacyCustomTokenCrossShard(tokenID *common.Hash) error
 
 	// Crowdsale
 	StoreSaleData(saleID, data []byte) error
