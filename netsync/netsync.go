@@ -59,6 +59,7 @@ type NetSyncConfig struct {
 }
 type NetSyncCache struct {
 	beaconBlockCache        *lru.Cache
+	beaconBlockCacheMtx     sync.RWMutex
 	shardBlockCache         *lru.Cache
 	shardToBeaconBlockCache *lru.Cache
 	crossShardBlockCache    *lru.Cache
@@ -468,6 +469,8 @@ func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 	}
 }
 func (netSync *NetSync) HandleCacheBeaconBlock(block *blockchain.BeaconBlock) bool {
+	netSync.Cache.beaconBlockCacheMtx.Lock()
+	defer netSync.Cache.beaconBlockCacheMtx.Unlock()
 	_, ok := netSync.Cache.beaconBlockCache.Get(block.Header.Hash())
 	if ok {
 		return true
