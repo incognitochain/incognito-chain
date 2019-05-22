@@ -6,6 +6,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	lru "github.com/hashicorp/golang-lru"
+	"sort"
 	"sync"
 	"time"
 )
@@ -14,6 +15,7 @@ const (
 	MAX_VALID_BEACON_BLK_IN_POOL   = 10000
 	MAX_PENDING_BEACON_BLK_IN_POOL = 10000
 	BEACON_CACHE_SIZE              = 2000
+	BEACON_POOL_MAIN_LOOP_TIME     = 200 // count in milisecond
 )
 
 type BeaconPoolConfig struct {
@@ -35,7 +37,8 @@ var beaconPool *BeaconPool = nil
 
 func init() {
 	go func() {
-		ticker := time.Tick(5 * time.Second)
+		mainLoopTime := time.Duration(BEACON_POOL_MAIN_LOOP_TIME) * time.Millisecond
+		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
 			GetBeaconPool().RemoveBlock(blockchain.GetBestStateBeacon().BeaconHeight)
 			GetBeaconPool().CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
@@ -297,7 +300,18 @@ func (self *BeaconPool) GetAllBlockHeight() []uint64 {
 
 	return blockHeights
 }
-
+func (self *BeaconPool) GetPendingBlockHeight() []uint64 {
+	self.mtx.RLock()
+	defer self.mtx.RUnlock()
+	blocks := []uint64{}
+	for _, block := range self.pendingPool {
+		blocks = append(blocks, block.Header.Height)
+	}
+	sort.Slice(blocks, func(i, j int) bool {
+		return blocks[i] < blocks[j]
+	})
+	return blocks
+}
 func (self *BeaconPool) GetBlockByHeight(height uint64) *blockchain.BeaconBlock {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
