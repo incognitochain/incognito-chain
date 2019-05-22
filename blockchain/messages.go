@@ -66,12 +66,6 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		fmt.Printf("Shard block received from shard %+v \n", newBlk.Header.ShardID)
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
-			blkHash := newBlk.Header.Hash()
-			err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
-			if err != nil {
-				Logger.log.Error(err)
-				return
-			}
 			if blockchain.config.UserKeySet != nil {
 				if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
 					if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
@@ -84,7 +78,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
 						if !blockchain.ConsensusOngoing {
 							fmt.Println("Shard block insert", newBlk.Header.Height)
-							err = blockchain.InsertShardBlock(newBlk, false)
+							err := blockchain.InsertShardBlock(newBlk, false)
 							if err != nil {
 								Logger.log.Error(err)
 								return
@@ -95,7 +89,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				}
 			}
 
-			err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+			err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 			if err != nil {
 				fmt.Println("Shard block add pool err", err)
 			}
