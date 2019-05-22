@@ -16,11 +16,11 @@ import (
 )
 
 const (
-	beaconBlockCache        = 100
-	shardBlockCache         = 100
-	crossShardBlockCache    = 50
-	shardToBeaconBlockCache = 50
-	txCache                 = 1000
+	beaconBlockCache        = 1000
+	shardBlockCache         = 1000
+	crossShardBlockCache    = 500
+	shardToBeaconBlockCache = 500
+	txCache                 = 10000
 	workers                 = 5
 )
 
