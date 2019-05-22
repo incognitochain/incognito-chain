@@ -279,15 +279,23 @@ func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 func (self *ShardPool) CleanOldBlock(latestBlockHeight uint64) {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-	for height, block := range self.pendingPool {
-		if block.Header.Height <= latestBlockHeight {
-			delete(self.pendingPool, height)
+	toBeRemovedHeight := []uint64{}
+	toBeRemovedHash := []common.Hash{}
+	for height, _ := range self.pendingPool {
+		if height <= latestBlockHeight {
+			toBeRemovedHeight = append(toBeRemovedHeight, height)
 		}
 	}
 	for hash, block := range self.conflictedPool {
 		if block.Header.Height < latestBlockHeight-2 {
-			delete(self.conflictedPool, hash)
+			toBeRemovedHash = append(toBeRemovedHash, hash)
 		}
+	}
+	for _, height := range toBeRemovedHeight {
+		delete(self.pendingPool, height)
+	}
+	for _, hash := range toBeRemovedHash {
+		delete(self.conflictedPool, hash)
 	}
 }
 
