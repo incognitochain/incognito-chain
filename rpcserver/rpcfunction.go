@@ -104,21 +104,6 @@ var RpcHandler = map[string]commandHandler{
 	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
 	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
 
-	// Crowdsale
-	GetListOngoingCrowdsale:               RpcServer.handleGetListOngoingCrowdsale,
-	CreateCrowdsaleRequestToken:           RpcServer.handleCreateCrowdsaleRequestToken,
-	SendCrowdsaleRequestToken:             RpcServer.handleSendCrowdsaleRequestToken,
-	CreateAndSendCrowdsaleRequestToken:    RpcServer.handleCreateAndSendCrowdsaleRequestToken,
-	CreateCrowdsaleRequestConstant:        RpcServer.handleCreateCrowdsaleRequestConstant,
-	SendCrowdsaleRequestConstant:          RpcServer.handleSendCrowdsaleRequestConstant,
-	CreateAndSendCrowdsaleRequestConstant: RpcServer.handleCreateAndSendCrowdsaleRequestConstant,
-	GetListDCBProposalBuyingAssets:        RpcServer.handleGetListDCBProposalBuyingAssets,
-	GetListDCBProposalSellingAssets:       RpcServer.handleGetListDCBProposalSellingAssets,
-	GetDCBBondInfo:                        RpcServer.handleGetDCBBondInfo,
-
-	// Trade bonds with GOV
-	CreateAndSendTradeActivation: RpcServer.handleCreateAndSendTradeActivation,
-
 	// Reserve
 	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
 	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
@@ -126,63 +111,9 @@ var RpcHandler = map[string]commandHandler{
 	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
 	GetIssuingStatus:                RpcServer.handleGetIssuingStatus,
 	GetContractingStatus:            RpcServer.handleGetContractingStatus,
-	ConvertETHToDCBTokenAmount:      RpcServer.handleConvertETHToDCBTokenAmount,
-	ConvertCSTToETHAmount:           RpcServer.handleConvertCSTToETHAmount,
-	GetRaiseReserveInfo:             RpcServer.handleGetRaiseReserveInfo,
-	GetSpendReserveInfo:             RpcServer.handleGetSpendReserveInfo,
-	ConvertUSDToDCBTokenAmount:      RpcServer.handleConvertUSDToDCBTokenAmount,
-
-	// multisig
-	CreateSignatureOnCustomTokenTx:       RpcServer.handleCreateSignatureOnCustomTokenTx,
-	GetListDCBBoard:                      RpcServer.handleGetListDCBBoard,
-	GetListGOVBoard:                      RpcServer.handleGetListGOVBoard,
-	GetListDCBBoardPayment:               RpcServer.handleGetListDCBBoardPayment,
-	GetListGOVBoardPayment:               RpcServer.handleGetListGOVBoardPayment,
-	AppendListDCBBoard:                   RpcServer.handleAppendListDCBBoard,
-	AppendListGOVBoard:                   RpcServer.handleAppendListGOVBoard,
-	CreateAndSendTxWithMultiSigsReg:      RpcServer.handleCreateAndSendTxWithMultiSigsReg,
-	CreateAndSendTxWithMultiSigsSpending: RpcServer.handleCreateAndSendTxWithMultiSigsSpending,
-
-	// vote board
-	CreateAndSendVoteDCBBoardTransaction: RpcServer.handleCreateAndSendVoteDCBBoardTransaction,
-	CreateRawVoteDCBBoardTx:              RpcServer.handleCreateRawVoteDCBBoardTransaction,
-	CreateAndSendVoteGOVBoardTransaction: RpcServer.handleCreateAndSendVoteGOVBoardTransaction,
-	CreateRawVoteGOVBoardTx:              RpcServer.handleCreateRawVoteGOVBoardTransaction,
-
-	// vote proposal
-	CreateAndSendVoteProposal: RpcServer.handleCreateAndSendVoteProposalTransaction,
-
-	// Submit Proposal:
-	CreateAndSendSubmitDCBProposalTx: RpcServer.handleCreateAndSendSubmitDCBProposalTransaction,
-	CreateRawSubmitDCBProposalTx:     RpcServer.handleCreateRawSubmitDCBProposalTransaction,
-	CreateAndSendSubmitGOVProposalTx: RpcServer.handleCreateAndSendSubmitGOVProposalTransaction,
-	CreateRawSubmitGOVProposalTx:     RpcServer.handleCreateRawSubmitGOVProposalTransaction,
 
 	// dcb
-	GetDCBParams:           RpcServer.handleGetDCBParams,
-	GetDCBConstitution:     RpcServer.handleGetDCBConstitution,
-	GetDCBBoardIndex:       RpcServer.handleGetDCBBoardIndex,
-	GetGOVBoardIndex:       RpcServer.handleGetGOVBoardIndex,
 	GetConstantCirculating: RpcServer.handleGetConstantCirculating,
-	GetBankFund:            RpcServer.handleGetBankFund,
-
-	// gov
-	GetBondTypes:                           RpcServer.handleGetBondTypes,
-	GetCurrentSellingBondTypes:             RpcServer.handleGetCurrentSellingBondTypes,
-	GetCurrentStabilityInfo:                RpcServer.handleGetCurrentStabilityInfo,
-	GetOracleTokenIDs:                      RpcServer.handleGetOracleTokenIDs,
-	GetCurrentOracleNetworkParams:          RpcServer.handleGetCurrentOracleNetworkParams,
-	SignUpdatingOracleBoardContent:         RpcServer.handleSignUpdatingOracleBoardContent,
-	GetGOVConstitution:                     RpcServer.handleGetGOVConstitution,
-	GetGOVParams:                           RpcServer.handleGetGOVParams,
-	CreateAndSendTxWithBuyBackRequest:      RpcServer.handleCreateAndSendTxWithBuyBackRequest,
-	CreateAndSendTxWithBuySellRequest:      RpcServer.handleCreateAndSendTxWithBuySellRequest,
-	CreateAndSendTxWithOracleFeed:          RpcServer.handleCreateAndSendTxWithOracleFeed,
-	CreateAndSendTxWithUpdatingOracleBoard: RpcServer.handleCreateAndSendTxWithUpdatingOracleBoard,
-	CreateAndSendTxWithSenderAddress:       RpcServer.handleCreateAndSendTxWithSenderAddress,
-	CreateAndSendTxWithBuyGOVTokensRequest: RpcServer.handleCreateAndSendTxWithBuyGOVTokensRequest,
-	GetCurrentSellingGOVTokens:             RpcServer.handleGetCurrentSellingGOVTokens,
-	GetAssetPrice:                          RpcServer.handleGetAssetPrice,
 
 	// wallet
 	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
@@ -498,7 +429,6 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 
-	govFeePerKbTx := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 	estimateFeeCoinPerKb := uint64(0)
 	estimateTxSizeInKb := uint64(0)
 	if len(outCoins) > 0 {
@@ -548,7 +478,6 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 		EstimateTxSizeInKb:   estimateTxSizeInKb,
-		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
 }
@@ -572,22 +501,17 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 
 	// param #2: numblocl
 	estimateFeeCoinPerKb := rpcServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8)
-	govFeePerKbTx := rpcServer.config.BlockChain.BestState.Beacon.StabilityInfo.GOVConstitution.GOVParams.FeePerKbTx
 
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
-		GOVFeePerKbTx:        govFeePerKbTx,
 	}
 	return result, nil
 }
 
 // handleGetActiveShards - return active shard num
 func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	//if rpcServer.config.BlockChain.IsReady(false, 0) {
 	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
 	return activeShards, nil
-	//}
-	//return -1, nil
 }
 
 func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

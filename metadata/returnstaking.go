@@ -2,13 +2,13 @@ package metadata
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/blockchain/component"
+	"strings"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
-	"strings"
 )
 
 type ReturnStakingMetadata struct {
@@ -77,7 +77,6 @@ func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 
 	if len(insts) == 0 {

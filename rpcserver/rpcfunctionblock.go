@@ -310,10 +310,7 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:           bestState.BestBlock.Header.Height,
 			Hash:             bestState.BestBlockHash.String(),
-			SalaryPerTx:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx,
-			BasicSalary:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.BasicSalary,
 			TotalTxs:         bestState.TotalTxns,
-			SalaryFund:       beaconBestState.StabilityInfo.SalaryFund,
 			BlockProducer:    bestState.BestBlock.Header.ProducerAddress.String(),
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
 		}
@@ -324,9 +321,6 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 		Hash:             beaconBestState.BestBlock.Hash().String(),
 		BlockProducer:    beaconBestState.BestBlock.Header.ProducerAddress.String(),
 		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
-		SalaryFund:       beaconBestState.StabilityInfo.SalaryFund,
-		SalaryPerTx:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.SalaryPerTx,
-		BasicSalary:      beaconBestState.StabilityInfo.GOVConstitution.GOVParams.BasicSalary,
 	}
 	return result, nil
 }

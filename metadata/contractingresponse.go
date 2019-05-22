@@ -1,14 +1,8 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
-
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/pkg/errors"
 )
 
 type ContractingResponse struct {
@@ -55,39 +49,6 @@ func (cRes *ContractingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
-	fmt.Printf("[db] verifying Contracting response tx\n")
-	idx := -1
-	for i, inst := range insts {
-		if instUsed[i] > 0 ||
-			inst[0] != strconv.Itoa(ContractingRequestMeta) ||
-			inst[1] != strconv.Itoa(int(shardID)) ||
-			inst[2] != "refund" {
-			continue
-		}
-		contractingInfo, err := component.ParseContractingInfo(inst[3])
-		if err != nil {
-			continue
-		}
-
-		unique, pk, amount, assetID := tx.GetTransferData()
-		txData := &component.ContractingInfo{
-			BurnerAddress:     privacy.PaymentAddress{Pk: pk},
-			BurnedConstAmount: amount,
-		}
-
-		if unique && txData.Compare(contractingInfo) && assetID.IsEqual(&common.ConstantID) {
-			idx = i
-			break
-		}
-	}
-
-	if idx == -1 {
-		return false, errors.Errorf("no instruction found for ContractingResponse tx %s", tx.Hash().String())
-	}
-
-	instUsed[idx] += 1
-	fmt.Printf("[db] inst %d matched\n", idx)
 	return true, nil
 }
