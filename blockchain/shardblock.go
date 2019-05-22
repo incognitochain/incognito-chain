@@ -130,6 +130,7 @@ func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
 		return errors.New("Wrong receiver")
 	}
 	reward := blockchain.getRewardAmount(shardBlock.Header.Height)
+	reward += txsFee
 	if reward != values[0] {
 		return errors.New("Wrong reward value")
 	}
