@@ -788,4 +788,14 @@ func (blockchain *BlockChain) StoreIncomingCrossShard(block *ShardBlock) error {
 	return nil
 }
 
+func (blockchain *BlockChain) DeleteIncomingCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			blockchain.config.DataBase.DeleteIncomingCrossShard(block.Header.ShardID, crossShard, &crossBlk)
+		}
+	}
+	return nil
+}
+
 //=======================================END CROSS SHARD UTIL
