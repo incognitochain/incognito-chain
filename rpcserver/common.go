@@ -2,7 +2,7 @@ package rpcserver
 
 import (
 	"sort"
-	
+
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -494,6 +494,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	return tx, nil
 }
 
+// estimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
 func (rpcServer RpcServer) estimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64) uint64 {
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
@@ -510,6 +511,7 @@ func (rpcServer RpcServer) estimateFeeWithEstimator(defaultFee int64, shardID by
 	return estimateFeeCoinPerKb
 }
 
+// estimateFee - estimate fee from tx data and return real full fee, fee per kb and real tx size
 func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin,
 	paymentInfos []*privacy.PaymentInfo, shardID byte,
 	numBlock uint64, hasPrivacy bool,

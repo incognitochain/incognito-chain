@@ -2,6 +2,7 @@ package jsonresult
 
 import (
 	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/constant-money/constant-chain/metadata"
 )
 
 type GetBlocksBeaconResult struct {
@@ -43,8 +44,9 @@ type GetBlockResult struct {
 	Round             int                `json:"Round"`
 	CrossShards       []int              `json:"CrossShards"`
 	Epoch             uint64             `json:"Epoch"`
-	Reward            uint64             `json:"Reward"` // salary tx output
-	Fee               uint64             `json:"Fee"`    // total fee
+	Reward            uint64             `json:"Reward"`
+	RewardBeacon      uint64             `json:"RewardBeacon"`
+	Fee               uint64             `json:"Fee"`
 	Size              uint64             `json:"Size"`
 }
 
@@ -99,7 +101,13 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 		}
 	}
 	getBlockResult.Epoch = block.Header.Epoch
-	if len(block.Body.Transactions) > 0 && block.Body.Transactions[0].GetProof() != nil {
-		getBlockResult.Reward = block.Body.Transactions[0].GetProof().OutputCoins[0].CoinDetails.Value
+	if len(block.Body.Transactions) > 0 {
+		for _, tx := range block.Body.Transactions {
+			if tx.GetMetadataType() == metadata.ShardBlockReward {
+				getBlockResult.Reward += tx.GetProof().OutputCoins[0].CoinDetails.Value
+			} else if tx.GetMetadataType() == metadata.BeaconSalaryResponseMeta {
+				getBlockResult.RewardBeacon += tx.GetProof().OutputCoins[0].CoinDetails.Value
+			}
+		}
 	}
 }

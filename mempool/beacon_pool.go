@@ -6,6 +6,7 @@ import (
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	lru "github.com/hashicorp/golang-lru"
+	"sort"
 	"sync"
 	"time"
 )
@@ -14,6 +15,7 @@ const (
 	MAX_VALID_BEACON_BLK_IN_POOL   = 10000
 	MAX_PENDING_BEACON_BLK_IN_POOL = 10000
 	BEACON_CACHE_SIZE              = 2000
+	BEACON_POOL_MAIN_LOOP_TIME     = 200 // count in milisecond
 )
 
 type BeaconPoolConfig struct {
@@ -35,7 +37,8 @@ var beaconPool *BeaconPool = nil
 
 func init() {
 	go func() {
-		ticker := time.Tick(5 * time.Second)
+		mainLoopTime := time.Duration(BEACON_POOL_MAIN_LOOP_TIME) * time.Millisecond
+		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
 			GetBeaconPool().RemoveBlock(blockchain.GetBestStateBeacon().BeaconHeight)
 			//GetBeaconPool().CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
@@ -108,17 +111,17 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 		if ok {
 			return NewBlockPoolError(DuplicateBlockError, errors.New("Receive duplicate block in pending pool: "+fmt.Sprintf("%d", block.Header.Height)))
 		}
+		// if not next valid block then check max pending pool
+		if block.Header.Height > self.latestValidHeight {
+			if len(self.pendingPool) >= self.config.MaxPendingBlock {
+				return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
+			}
+		}
 	}
 	// if next valid block then check max valid pool
 	if self.latestValidHeight+1 == block.Header.Height {
 		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
 			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
-		}
-	}
-	// if not next valid block then check max pending pool
-	if block.Header.Height > self.latestValidHeight {
-		if len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
 		}
 	}
 	return nil
@@ -217,6 +220,7 @@ func (self *BeaconPool) removeBlock(latestBlockHeight uint64) {
 			break
 		}
 	}
+	self.updateLatestBeaconState()
 }
 
 func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
@@ -241,6 +245,7 @@ func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
 		delete(self.conflictedPool, hash)
 	}
 }
+
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
 	self.mtx.RLock()
@@ -296,7 +301,18 @@ func (self *BeaconPool) GetAllBlockHeight() []uint64 {
 
 	return blockHeights
 }
-
+func (self *BeaconPool) GetPendingBlockHeight() []uint64 {
+	self.mtx.RLock()
+	defer self.mtx.RUnlock()
+	blocks := []uint64{}
+	for _, block := range self.pendingPool {
+		blocks = append(blocks, block.Header.Height)
+	}
+	sort.Slice(blocks, func(i, j int) bool {
+		return blocks[i] < blocks[j]
+	})
+	return blocks
+}
 func (self *BeaconPool) GetBlockByHeight(height uint64) *blockchain.BeaconBlock {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()

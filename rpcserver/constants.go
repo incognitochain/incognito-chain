@@ -18,7 +18,7 @@ const (
 
 	GetMiningInfo                 = "getmininginfo"
 	GetRawMempool                 = "getrawmempool"
-	GetNumberOfTxsInMempool = "getnumberoftxsinmempool"
+	GetNumberOfTxsInMempool       = "getnumberoftxsinmempool"
 	GetMempoolEntry               = "getmempoolentry"
 	GetBeaconPoolState            = "getbeaconpoolstate"
 	GetShardPoolState             = "getshardpoolstate"
@@ -98,36 +98,9 @@ const (
 
 	// multisig for board spending
 	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
-	GetListDCBBoard                      = "getlistdcbboard"
-	GetListGOVBoard                      = "getlistgovboard"
-	GetListDCBBoardPayment               = "getlistdcbboardpayment"
-	GetListGOVBoardPayment               = "getlistgovboardpayment"
-	AppendListDCBBoard                   = "testappendlistdcbboard"
-	AppendListGOVBoard                   = "testappendlistgovboard"
-	GetGOVParams                         = "getgovparams"
-	GetDCBParams                         = "getdcbparams"
-	GetGOVConstitution                   = "getgovconstitution"
-	GetDCBConstitution                   = "getdcbconstitution"
-	GetDCBBoardIndex                     = "getdcbboardindex"
-	GetGOVBoardIndex                     = "getgovboardindex"
 	GetConstantCirculating               = "getconstantcirculating"
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
-
-	// crowdsale
-	GetListOngoingCrowdsale               = "getlistongoingcrowdsale"
-	CreateCrowdsaleRequestToken           = "createcrowdsalerequesttoken"
-	SendCrowdsaleRequestToken             = "sendcrowdsalerequesttoken"
-	CreateAndSendCrowdsaleRequestToken    = "createandsendcrowdsalerequesttoken"
-	CreateCrowdsaleRequestConstant        = "createcrowdsalerequestconstant"
-	SendCrowdsaleRequestConstant          = "sendcrowdsalerequestconstant"
-	CreateAndSendCrowdsaleRequestConstant = "createandsendcrowdsalerequestconstant"
-	GetListDCBProposalBuyingAssets        = "getlistdcbproposalbuyingassets"
-	GetListDCBProposalSellingAssets       = "getlistdcbproposalsellingassets"
-	GetDCBBondInfo                        = "getdcbbondinfo"
-
-	// trade bonds with gov
-	CreateAndSendTradeActivation = "createandsendtradeactivation"
 
 	// reserve
 	CreateIssuingRequest            = "createissuingrequest"
@@ -136,30 +109,6 @@ const (
 	CreateAndSendContractingRequest = "createandsendcontractingrequest"
 	GetIssuingStatus                = "getissuingstatus"
 	GetContractingStatus            = "getcontractingstatus"
-	ConvertETHToDCBTokenAmount      = "convertethtodcbtokenamount"
-	ConvertCSTToETHAmount           = "convertcsttoethamount"
-	GetRaiseReserveInfo             = "getraisereserveinfo"
-	GetSpendReserveInfo             = "getspendreserveinfo"
-	ConvertUSDToDCBTokenAmount      = "convertusdtodcbtokenamount"
-
-	// vote
-	SendRawVoteBoardDCBTx                = "sendrawvoteboarddcbtx"
-	CreateRawVoteDCBBoardTx              = "createrawvotedcbboardtx"
-	CreateAndSendVoteDCBBoardTransaction = "createandsendvotedcbboardtransaction"
-	SendRawVoteBoardGOVTx                = "sendrawvoteboardgovtx"
-	CreateRawVoteGOVBoardTx              = "createrawvotegovboardtx"
-	CreateAndSendVoteGOVBoardTransaction = "createandsendvotegovboardtransaction"
-
-	//vote propopsal
-	CreateAndSendVoteProposal = "createandsendvoteproposal"
-
-	// Submit Proposal
-	CreateAndSendSubmitDCBProposalTx = "createandsendsubmitdcbproposaltx"
-	CreateRawSubmitDCBProposalTx     = "createrawsubmitdcbproposaltx"
-	SendRawSubmitDCBProposalTx       = "sendrawsubmitdcbproposaltx"
-	CreateAndSendSubmitGOVProposalTx = "createandsendsubmitgovproposaltx"
-	CreateRawSubmitGOVProposalTx     = "createrawsubmitgovproposaltx"
-	SendRawSubmitGOVProposalTx       = "sendrawsubmitgovproposaltx"
 
 	// dcb
 	GetBankFund = "getbankfund"

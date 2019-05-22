@@ -37,12 +37,8 @@ const (
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
-	MainnetSalaryPerTx                = 0
-	MainnetBasicSalary                = 0
-	MainnetInitFundSalary             = 0
-	MainnetInitDCBToken               = 0
-	MainnetInitGovToken               = 0
-	MainnetInitBondToken              = 0
+	MainnetBasicReward                = 0
+	MainnetRewardHalflife             = 100000
 	MainnetFeePerTxKb                 = 0
 	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
@@ -76,12 +72,8 @@ const (
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
-	TestnetSalaryPerTx                = 0
-	TestnetBasicSalary                = 0
-	TestnetInitFundSalary             = 100000
-	TestnetInitDCBToken               = 0
-	TestnetInitGovToken               = 0
-	TestnetInitBondToken              = 0
+	TestnetBasicReward                = 2000
+	TestnetRewardHalflife             = 100000
 	TestnetFeePerTxKb                 = 2
 	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 )
