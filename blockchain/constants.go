@@ -118,12 +118,6 @@ const (
 	StakeAction  = "stake"
 )
 
-// Key param for instruction
-const (
-	salaryFund          = "salaryFund"
-	oracleInitialPrices = "oracleInitialPrices"
-)
-
 // ---------------------------------------------
 
 var TestnetInitConstant = []string{
