@@ -126,6 +126,12 @@ func (self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPendin
 		if ok {
 			return NewBlockPoolError(DuplicateBlockError, errors.New("Receive duplicate block in pending pool"))
 		}
+		// if not next valid block then check max pending pool
+		if block.Header.Height > self.latestValidHeight {
+			if len(self.pendingPool) >= self.config.MaxPendingBlock {
+				return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
+			}
+		}
 	}
 	// if next valid block then check max valid pool
 	if self.latestValidHeight+1 == block.Header.Height {
@@ -133,30 +139,9 @@ func (self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPendin
 			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
 		}
 	}
-	// if not next valid block then check max pending pool
-	if block.Header.Height > self.latestValidHeight {
-		if len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
-		}
-	}
 	return nil
 }
-func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) bool {
-	if self.latestValidHeight+1 == block.Header.Height {
-		if len(self.validPool) < self.config.MaxValidBlock {
-			self.validPool = append(self.validPool, block)
-			self.updateLatestShardState()
-			return true
-		} else if len(self.pendingPool) < self.config.MaxPendingBlock {
-			self.pendingPool[block.Header.Height] = block
-			return false
-		}
-	} else {
-		self.pendingPool[block.Header.Height] = block
-		return false
-	}
-	return false
-}
+
 func (self *ShardPool) updateLatestShardState() {
 	if len(self.validPool) > 0 {
 		self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
@@ -176,7 +161,7 @@ func (self *ShardPool) promotePendingPool() {
 			if err != nil {
 				break
 			} else {
-				isSuccess := self.insertNewShardBlockToPool(block)
+				isSuccess := self.insertNewShardBlockToPoolV2(block)
 				if !isSuccess {
 					break
 				} else {
@@ -288,20 +273,29 @@ func (self *ShardPool) removeBlock(lastBlockHeight uint64) {
 			break
 		}
 	}
+	self.updateLatestShardState()
 }
 
 func (self *ShardPool) CleanOldBlock(latestBlockHeight uint64) {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-	for height, block := range self.pendingPool {
-		if block.Header.Height <= latestBlockHeight {
-			delete(self.pendingPool, height)
+	toBeRemovedHeight := []uint64{}
+	toBeRemovedHash := []common.Hash{}
+	for height, _ := range self.pendingPool {
+		if height <= latestBlockHeight {
+			toBeRemovedHeight = append(toBeRemovedHeight, height)
 		}
 	}
 	for hash, block := range self.conflictedPool {
 		if block.Header.Height < latestBlockHeight-2 {
-			delete(self.conflictedPool, hash)
+			toBeRemovedHash = append(toBeRemovedHash, hash)
 		}
+	}
+	for _, height := range toBeRemovedHeight {
+		delete(self.pendingPool, height)
+	}
+	for _, hash := range toBeRemovedHash {
+		delete(self.conflictedPool, hash)
 	}
 }
 
