@@ -107,17 +107,17 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 		if ok {
 			return NewBlockPoolError(DuplicateBlockError, errors.New("Receive duplicate block in pending pool: "+fmt.Sprintf("%d", block.Header.Height)))
 		}
+		// if not next valid block then check max pending pool
+		if block.Header.Height > self.latestValidHeight {
+			if len(self.pendingPool) >= self.config.MaxPendingBlock {
+				return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
+			}
+		}
 	}
 	// if next valid block then check max valid pool
 	if self.latestValidHeight+1 == block.Header.Height {
 		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
 			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
-		}
-	}
-	// if not next valid block then check max pending pool
-	if block.Header.Height > self.latestValidHeight {
-		if len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
 		}
 	}
 	return nil
@@ -216,22 +216,32 @@ func (self *BeaconPool) removeBlock(latestBlockHeight uint64) {
 			break
 		}
 	}
+	self.updateLatestBeaconState()
 }
 
 func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-	for height, block := range self.pendingPool {
-		if block.Header.Height <= latestBlockHeight {
-			delete(self.pendingPool, height)
+	toBeRemovedHeight := []uint64{}
+	toBeRemovedHash := []common.Hash{}
+	for height, _ := range self.pendingPool {
+		if height <= latestBlockHeight {
+			toBeRemovedHeight = append(toBeRemovedHeight, height)
 		}
 	}
 	for hash, block := range self.conflictedPool {
 		if block.Header.Height < latestBlockHeight-2 {
-			delete(self.conflictedPool, hash)
+			toBeRemovedHash = append(toBeRemovedHash, hash)
 		}
 	}
+	for _, height := range toBeRemovedHeight {
+		delete(self.pendingPool, height)
+	}
+	for _, hash := range toBeRemovedHash {
+		delete(self.conflictedPool, hash)
+	}
 }
+
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
 	self.mtx.RLock()
