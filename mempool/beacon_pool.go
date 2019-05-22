@@ -107,17 +107,17 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 		if ok {
 			return NewBlockPoolError(DuplicateBlockError, errors.New("Receive duplicate block in pending pool: "+fmt.Sprintf("%d", block.Header.Height)))
 		}
+		// if not next valid block then check max pending pool
+		if block.Header.Height > self.latestValidHeight {
+			if len(self.pendingPool) >= self.config.MaxPendingBlock {
+				return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
+			}
+		}
 	}
 	// if next valid block then check max valid pool
 	if self.latestValidHeight+1 == block.Header.Height {
 		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
 			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
-		}
-	}
-	// if not next valid block then check max pending pool
-	if block.Header.Height > self.latestValidHeight {
-		if len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
 		}
 	}
 	return nil
