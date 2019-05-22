@@ -41,7 +41,7 @@ func init() {
 		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
 			GetBeaconPool().RemoveBlock(blockchain.GetBestStateBeacon().BeaconHeight)
-			//GetBeaconPool().CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
+			GetBeaconPool().CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
 			GetBeaconPool().PromotePendingPool()
 		}
 	}()
@@ -146,6 +146,7 @@ func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock
 				if preHash.IsEqual(&blockHeader) {
 					self.validPool = append(self.validPool, block)
 					self.updateLatestBeaconState()
+					return true
 				} else {
 					self.cache.Add(block.Header.Hash(), block)
 				}
