@@ -358,7 +358,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	if err != nil {
 		return nil, err
 	}
-	block, err, _ := blockchain.GetShardBlockByHash(hashBlock)
+	block, _, err := blockchain.GetShardBlockByHash(hashBlock)
 
 	return block, err
 }
@@ -366,18 +366,18 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, error, uint64) {
+func (blockchain *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, uint64, error) {
 	blockBytes, err := blockchain.config.DataBase.FetchBlock(hash)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
 
 	block := ShardBlock{}
 	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
-	return &block, nil, uint64(len(blockBytes))
+	return &block, uint64(len(blockBytes)), nil
 }
 
 /*
@@ -996,7 +996,7 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *
 		Logger.log.Error(abc)
 		return byte(255), nil, -1, nil, abc
 	}
-	block, err1, _ := blockchain.GetShardBlockByHash(blockHash)
+	block, _, err1 := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
 		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err1)

@@ -102,7 +102,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	//============Process new block with beststate
 	fmt.Println("Beacon Candidate", beaconBestState.CandidateBeaconWaitingForCurrentRandom)
 	if len(beaconBlock.Body.Instructions) != 0 {
-		//Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+		Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
 	}
 	beaconBestState.Update(beaconBlock, blkTmplGenerator.chain)
 	//============End Process new block with beststate
