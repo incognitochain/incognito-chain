@@ -71,20 +71,20 @@ type BestState struct {
 
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
-	DataBase database.DatabaseInterface
-	Interrupt <-chan struct{}
-	ChainParams *Params
-	RelayShards []byte
-	NodeMode    string
+	DataBase                  database.DatabaseInterface
+	Interrupt                 <-chan struct{}
+	ChainParams               *Params
+	RelayShards               []byte
+	NodeMode                  string
 	customTokenRewardSnapshot map[string]uint64 //snapshot reward
-	ShardToBeaconPool ShardToBeaconPool
-	CrossShardPool    map[byte]CrossShardPool
-	BeaconPool        BeaconPool
-	ShardPool         map[byte]ShardPool
-	TxPool            TxPool
-	TempTxPool        TxPool
-	CRemovedTxs       chan metadata.Transaction
-	Server interface {
+	ShardToBeaconPool         ShardToBeaconPool
+	CrossShardPool            map[byte]CrossShardPool
+	BeaconPool                BeaconPool
+	ShardPool                 map[byte]ShardPool
+	TxPool                    TxPool
+	TempTxPool                TxPool
+	CRemovedTxs               chan metadata.Transaction
+	Server                    interface {
 		BoardcastNodeState() error
 
 		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error
@@ -143,6 +143,7 @@ func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
 func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Transaction) {
 	blockchain.config.CRemovedTxs = cRemovedTxs
 }
+
 // -------------- Blockchain retriever's implementation --------------
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
 func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
@@ -1123,89 +1124,10 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, blockchain.config.DataBase)
 }
 
-// GetFeePerKbTx - return fee (per kb of tx) from GOV component data
+// GetFeePerKbTx - return fee (per kb of tx)
 func (blockchain BlockChain) GetFeePerKbTx() uint64 {
 	return 0
 }
-
-//1. Current National welfare (NW)  < lastNW * 0.9 (Emergency case)
-//2. Block height == last constitution start time + last constitution window
-//This function is called after successful connect block => block height is block height of best state
-// func (self *BlockChain) NeedToEnterEncryptionPhrase(helper ConstitutionHelper) bool {
-// 	thisBlockHeight := self.BestState.Beacon.BestBlock.Header.Height
-// 	newNationalWelfare := helper.GetCurrentNationalWelfare(self)
-// 	oldNationalWelfare := helper.GetOldNationalWelfare(self)
-// 	thresholdNationalWelfare := oldNationalWelfare * helper.GetThresholdRatioOfCrisis() / common.BasePercentage
-// 	//
-// 	constitutionInfo := helper.GetConstitutionInfo(self)
-// 	endedOfConstitution := constitutionInfo.StartedBlockHeight + constitutionInfo.ExecuteDuration
-// 	pivotOfStart := endedOfConstitution - 3*uint64(common.EncryptionOnePhraseDuration)
-// 	//
-// 	rightTime := newNationalWelfare < thresholdNationalWelfare || pivotOfStart == uint64(thisBlockHeight)
-
-// 	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-// 	rightFlag := encryptFlag == common.Lv3EncryptionFlag
-// 	if rightTime && rightFlag {
-// 		return true
-// 	}
-// 	return false
-// }
-
-// //This function is called after successful connect block => block height is block height of best state
-// func (self *BlockChain) NeedEnterEncryptLv1(helper ConstitutionHelper) bool {
-// 	BestBlock := self.BestState.Beacon.BestBlock
-// 	thisBlockHeight := BestBlock.Header.Height
-// 	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-// 	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-// 	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-// 		encryptFlag == common.Lv2EncryptionFlag {
-// 		return true
-// 	}
-// 	return false
-// }
-
-// //This function is called after successful connect block => block height is block height of best state
-// func (self *BlockChain) NeedEnterEncryptNormal(helper ConstitutionHelper) bool {
-// 	BestBlock := self.BestState.Beacon.BestBlock
-// 	thisBlockHeight := BestBlock.Header.Height
-// 	lastEncryptBlockHeight, _ := self.config.DataBase.GetEncryptionLastBlockHeight(helper.GetBoardType())
-// 	encryptFlag, _ := self.config.DataBase.GetEncryptFlag(helper.GetBoardType())
-// 	if thisBlockHeight == lastEncryptBlockHeight+common.EncryptionOnePhraseDuration &&
-// 		encryptFlag == common.Lv1EncryptionFlag {
-// 		return true
-// 	}
-// 	return false
-// }
-
-//This function is called after successful connect block => block height is block height of best state
-// func (self *BlockChain) CreateUpdateEncryptPhraseAndRewardConstitutionIns(helper ConstitutionHelper) ([]frombeaconins.InstructionFromBeacon, error) {
-// 	instructions := make([]frombeaconins.InstructionFromBeacon, 0)
-// 	flag := byte(0)
-// 	boardType := helper.GetBoardType()
-// 	if self.NeedToEnterEncryptionPhrase(helper) {
-// 		flag = common.Lv2EncryptionFlag
-// 	} else if self.NeedEnterEncryptLv1(helper) {
-// 		flag = common.Lv1EncryptionFlag
-// 	} else if self.NeedEnterEncryptNormal(helper) {
-// 		flag = common.NormalEncryptionFlag
-// 	} else if self.readyNewConstitution(helper) {
-// 		flag = common.Lv3EncryptionFlag
-// 		newIns, err := self.createAcceptConstitutionAndRewardSubmitter(helper)
-// 		instructions = append(instructions, newIns...)
-// 		if err != nil {
-// 			Logger.log.Error(err)
-// 			return nil, err
-// 		}
-// 		rewardIns, err := self.createRewardProposalWinnerIns(helper)
-// 		instructions = append(instructions, rewardIns)
-// 	}
-// 	//create instruction to force shard to create transaction. Insert block in shard will affect db
-// 	setEncryptionLastBlockIns := frombeaconins.NewSetEncryptionLastBlockIns(boardType, self.BestState.Beacon.BestBlock.Header.Height)
-// 	instructions = append(instructions, setEncryptionLastBlockIns)
-// 	setEncryptionFlagIns := frombeaconins.NewSetEncryptionFlagIns(boardType, flag)
-// 	instructions = append(instructions, setEncryptionFlagIns)
-// 	return instructions, nil
-// }
 
 // GetRecentTransactions - find all recent history txs which are created by user
 // by number of block, maximum is 100 newest blocks
