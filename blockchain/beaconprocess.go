@@ -5,15 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
-	"sort"
-	"strconv"
-	"strings"
-
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/metadata"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 /*
@@ -151,7 +150,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
-	GetBestStateBeacon().lockMu.Lock()
 	if block.Body.ShardState != nil {
 		for fromShard, shardBlocks := range block.Body.ShardState {
 
@@ -181,7 +179,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 			}(fromShard, shardBlocks)
 		}
 	}
-	GetBestStateBeacon().lockMu.Unlock()
 	// ************ Store block at last
 	//========Store new Beaconblock and new Beacon bestState in cache
 	Logger.log.Infof("Store Beacon BestState  ")
@@ -202,7 +199,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
 	blockchain.config.BeaconPool.RemoveBlock(blockchain.BestState.Beacon.BeaconHeight)
 	//=========Remove shard to beacon block in pool
-	Logger.log.Info("Remove block from pool block with hash  ", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
+	//Logger.log.Info("Remove block from pool block with hash  ", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
 	Logger.log.Infof("Finish Insert new block %+v, with hash %+v \n", block.Header.Height, *block.Hash())
@@ -333,8 +330,8 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				}
 				// Only accept block in one epoch
 				for index, shardBlock := range shardBlocks {
-					currentCommittee := blockchain.BestState.Beacon.ShardCommittee[shardID]
-					currentPendingValidator := blockchain.BestState.Beacon.ShardPendingValidator[shardID]
+					currentCommittee := blockchain.BestState.Beacon.GetAShardCommittee(shardID)
+					currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
 					hash := shardBlock.Header.Hash()
 					err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 					if index == 0 && err != nil {
@@ -399,6 +396,8 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	- ShardState
 */
 func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		// ValidatorIdx must > Number of Beacon Committee / 2 AND Number of Beacon Committee > 3
@@ -460,6 +459,9 @@ func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *Be
 - Random number if have in instruction
 */
 func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *BeaconBlock, snapShotBeaconCommittee []string) error {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+
 	var (
 		strs []string
 		isOk bool
