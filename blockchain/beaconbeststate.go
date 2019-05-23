@@ -54,6 +54,15 @@ type BestStateBeacon struct {
 	lockMu      sync.RWMutex
 }
 
+func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	if err := copier.Copy(&res, bestStateBeacon); err != nil {
+		Logger.log.Error(err)
+	}
+	return res
+}
+
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
