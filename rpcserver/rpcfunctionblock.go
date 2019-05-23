@@ -206,7 +206,7 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 		if errH != nil {
 			return nil, NewRPCError(ErrUnexpected, errH)
 		}
-		block, errD, _ := rpcServer.config.BlockChain.GetBeaconBlockByHash(hash)
+		block, _, errD := rpcServer.config.BlockChain.GetBeaconBlockByHash(hash)
 		if errD != nil {
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
@@ -280,7 +280,7 @@ func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan 
 		for numBlock > 0 {
 			numBlock--
 			// block, errD := rpcServer.config.BlockChain.GetBlockByHash(previousHash)
-			block, errD, size := rpcServer.config.BlockChain.GetBeaconBlockByHash(previousHash)
+			block, size, errD := rpcServer.config.BlockChain.GetBeaconBlockByHash(previousHash)
 			if errD != nil {
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
