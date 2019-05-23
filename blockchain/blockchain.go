@@ -773,7 +773,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 
 /*
 // 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
-//   H: value-spent/unspent-rewarded/unreward
+//   H: value-spent/unspent
 */
 func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken, shardID byte) error {
 	Splitter := lvdb.Splitter
@@ -956,9 +956,9 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.
 	for key, value := range data {
 		keys := strings.Split(key, string(splitter))
 		values := strings.Split(value, string(splitter))
-		// get unspent and unreward transaction output
+		// values: [amount-value, spent/unspent]
+		// get unspent transaction output
 		if strings.Compare(values[1], string(unspent)) == 0 {
-
 			vout := transaction.TxTokenVout{}
 			vout.PaymentAddress = receiverKeyset.PaymentAddress
 			txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
@@ -974,7 +974,7 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.
 				return nil, err
 			}
 			vout.Value = uint64(value)
-			fmt.Println("GetCustomTokenPaymentAddressUTXO VOUT", vout)
+			Logger.log.Info("GetCustomTokenPaymentAddressUTXO VOUT", vout)
 			voutList = append(voutList, vout)
 		}
 	}
