@@ -71,7 +71,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	acceptedNullifiers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
-	acceptedSnD := make(map[string][]big.Int, 0)
+	acceptedSnD := make(map[string][]big.Int)
 	if proof == nil {
 		return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 	}
@@ -139,7 +139,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
-	acceptedSnD := make(map[string][]big.Int, 0)
+	acceptedSnD := make(map[string][]big.Int)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for indexTx, tx := range transactions {
@@ -326,8 +326,8 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 ) (map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]big.Int, error) {
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
-	acceptedSnD := make(map[string][]big.Int, 0)
-	if outputCoins == nil || len(outputCoins) == 0 {
+	acceptedSnD := make(map[string][]big.Int)
+	if len(outputCoins) == 0 {
 		return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 	}
 
