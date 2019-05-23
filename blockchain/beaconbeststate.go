@@ -2,8 +2,8 @@ package blockchain
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"github.com/constant-money/constant-chain/common"
-	"github.com/jinzhu/copier"
 	"sort"
 	"strconv"
 	"sync"
@@ -24,7 +24,7 @@ var bestStateBeacon *BestStateBeacon //singleton object
 type BestStateBeacon struct {
 	BestBlockHash                          common.Hash          `json:"BestBlockHash"`     // The hash of the block.
 	PrevBestBlockHash                      common.Hash          `json:"PrevBestBlockHash"` // The hash of the block.
-	BestBlock                              *BeaconBlock         `json:"BestBlock"`         // The block.
+	BestBlock                              BeaconBlock          `json:"BestBlock"`         // The block.
 	BestShardHash                          map[byte]common.Hash `json:"BestShardHash"`
 	BestShardHeight                        map[byte]uint64      `json:"BestShardHeight"`
 	Epoch                                  uint64               `json:"Epoch"`
@@ -57,7 +57,12 @@ type BestStateBeacon struct {
 func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
-	if err := copier.Copy(&res, *bestStateBeacon); err != nil {
+	b, err := json.Marshal(bestStateBeacon)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	err = json.Unmarshal(b, &res)
+	if err != nil {
 		Logger.log.Error(err)
 	}
 	return res
@@ -88,8 +93,9 @@ func (bestStateBeacon *BestStateBeacon) GetAShardCommittee(shardID byte) []strin
 func (bestStateBeacon *BestStateBeacon) GetShardCommittee() (res map[byte][]string) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
-	if err := copier.Copy(&res, bestStateBeacon.ShardCommittee); err != nil {
-		Logger.log.Error(err)
+	res = make(map[byte][]string)
+	for index, element := range bestStateBeacon.ShardCommittee {
+		res[index] = element
 	}
 	return res
 }
@@ -103,8 +109,9 @@ func (bestStateBeacon *BestStateBeacon) GetAShardPendingValidator(shardID byte) 
 func (bestStateBeacon *BestStateBeacon) GetShardPendingValidator() (res map[byte][]string) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
-	if err := copier.Copy(&res, bestStateBeacon.ShardPendingValidator); err != nil {
-		Logger.log.Error(err)
+	res = make(map[byte][]string)
+	for index, element := range bestStateBeacon.ShardPendingValidator {
+		res[index] = element
 	}
 	return res
 }
