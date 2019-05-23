@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -83,7 +82,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
-				fmt.Println("SA: swap instruction ", l, beaconBlock.Header.Height, blockgen.chain.BestState.Beacon.ShardCommittee)
+				//fmt.Println("SA: swap instruction ", l, beaconBlock.Header.Height, blockgen.chain.BestState.Beacon.GetShardCommittee())
 				for _, v := range strings.Split(l[2], ",") {
 					tx, err := blockgen.buildReturnStakingAmountTx(v, producerPrivateKey)
 					if err != nil {
