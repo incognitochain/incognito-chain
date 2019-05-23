@@ -47,25 +47,14 @@ var (
 	privacyTokenInitPrefix       = []byte("privacy-token-init-")
 	rewared                      = []byte("reward")
 
-	//pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
-	encryptFlagPrefix               = []byte("encryptFlagPrefix")
-	encryptionLastBlockHeightPrefix = []byte("encryptionlastblockheightprefix")
-
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
-
-	// bond type
-	bondTypePrefix = []byte("bondtype-")
 
 	Unreward   = []byte("unreward")
 	Spent      = []byte("spent")
 	Unspent    = []byte("unspent")
 	Mintable   = []byte("mintable")
 	UnMintable = []byte("unmintable")
-
-	// reserve
-	reserveIssuingInfoPrefix     = []byte("rsIss")
-	reserveContractingInfoPrefix = []byte("rsCon")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
