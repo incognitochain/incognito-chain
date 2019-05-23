@@ -49,7 +49,7 @@ func ValidateAggSignature(validatorIdx [][]int, committees []string, aggSig stri
 	}
 	schnMultiSig := &privacy.SchnMultiSig{}
 	schnMultiSig.SetBytes(tempAggSig)
-	if schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeysR, pubKeysAggSig, RCombined) == false {
+	if !schnMultiSig.VerifyMultiSig(blockHash.GetBytes(), pubKeysR, pubKeysAggSig, RCombined) {
 		return errors.New("Invalid Agg signature")
 	}
 	return nil
