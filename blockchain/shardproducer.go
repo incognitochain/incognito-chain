@@ -484,7 +484,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	// var wg sync.WaitGroup
 
 	for _, fromShardID := range keys {
-		crossTxTokenDataList, _ := crossTxTokenDataMap[byte(fromShardID)]
+		crossTxTokenDataList := crossTxTokenDataMap[byte(fromShardID)]
 		//crossTxTokenData is already sorted by block height
 		for _, crossTxTokenData := range crossTxTokenDataList {
 			for _, txTokenData := range crossTxTokenData.TxTokenData {

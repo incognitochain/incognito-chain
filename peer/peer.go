@@ -27,22 +27,8 @@ import (
 // ConnState represents the state of the requested connection.
 type ConnState uint8
 
-var MAX_RETRIES_CHECK_HASH_MESSAGE = 5
-var MAX_TIMEOUT_CHECK_HASH_MESSAGE = time.Duration(10)
-var HEAVY_MESSAGE_SIZE = 5 * 1024 * 1024
-var SPAM_MESSAGE_SIZE = 50 * 1024 * 1024
-var MESSAGE_HASH_POOL_SIZE = 1000
-
-var MESSAGE_TO_ALL = byte('a')
-var MESSAGE_TO_SHARD = byte('s')
-var MESSAGE_TO_PEER = byte('p')
-var MESSAGE_TO_BEACON = byte('b')
-
 // RemotePeer is present for libp2p node data
 type Peer struct {
-	messagePool    map[string]bool
-	messagePoolMtx sync.Mutex
-
 	messagePoolNew *cache.Cache
 
 	// channel
@@ -123,13 +109,8 @@ type MessageListeners struct {
 	OnAddr             func(p *PeerConn, msg *wire.MessageAddr)
 
 	//PBFT
-	OnBFTMsg func(p *PeerConn, msg wire.Message)
-	// OnInvalidBlock  func(p *PeerConn, msg *wire.MessageInvalidBlock)
-	OnPeerState func(p *PeerConn, msg *wire.MessagePeerState)
-	//OnRegistration  func(p *PeerConn, msg *wire.MessageRegistration)
-	// OnSwapRequest func(p *PeerConn, msg *wire.MessageSwapRequest)
-	// OnSwapSig     func(p *PeerConn, msg *wire.MessageSwapSig)
-	// OnSwapUpdate  func(p *PeerConn, msg *wire.MessageSwapUpdate)
+	OnBFTMsg             func(p *PeerConn, msg wire.Message)
+	OnPeerState          func(p *PeerConn, msg *wire.MessagePeerState)
 	PushRawBytesToShard  func(p *PeerConn, msgBytes *[]byte, shard byte) error
 	PushRawBytesToBeacon func(p *PeerConn, msgBytes *[]byte) error
 	GetCurrentRoleShard  func() (string, *byte)
@@ -144,7 +125,6 @@ type outMsg struct {
 	rawBytes     *[]byte
 	message      wire.Message
 	doneChan     chan<- struct{}
-	//encoding wire.MessageEncoding
 }
 
 func (peerObj *Peer) HashToPool(hash string) error {
@@ -710,22 +690,6 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 		}
 	})
 }
-
-/*
-renewPeerConnection - create peer conn by goroutines for pending peers(reconnect)
-*/
-/*func (peerObj *Peer) renewPeerConnection() {
-	peerObj.pendingPeersMtx.Lock()
-	defer peerObj.pendingPeersMtx.Unlock()
-	if len(peerObj.PendingPeers) > 0 {
-		Logger.log.Infof("*start - Creating peer conn to %d pending peers", len(peerObj.PendingPeers))
-		for _, peer := range peerObj.PendingPeers {
-			Logger.log.Infof("---> RemotePeer: ", peer.RawAddress)
-			peerObj.PushConn(peer, nil)
-		}
-		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(peerObj.PendingPeers))
-	}
-}*/
 
 func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
 	peerObj.peerConnsMtx.Lock()

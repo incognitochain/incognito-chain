@@ -296,7 +296,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		validStakers := [][]string{}
 		validSwappers := make(map[byte][][]string)
 		stabilityInstructions := [][]string{}
-		tempMarshal, err := json.Marshal(*blockchain.BestState.Beacon)
+		tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
 		err = json.Unmarshal(tempMarshal, &beaconBestState)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, errors.New("Fail to Unmarshal beacon beststate"))
@@ -371,6 +371,9 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			tempInstructionArr = append(tempInstructionArr, strs...)
 		}
 		beaconBlockRewardIns, err := metadata.BuildInstForBeaconSalary(blockchain.getRewardAmount(block.Header.Height), block.Header.Height, &block.Header.ProducerAddress)
+		if err != nil {
+			return NewBlockChainError(HashError, fmt.Errorf("Fail to generate hash for instruction %+v", err))
+		}
 		tempInstructionArr = append(tempInstructionArr, beaconBlockRewardIns...)
 		tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
 		if err != nil {
