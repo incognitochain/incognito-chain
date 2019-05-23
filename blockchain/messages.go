@@ -78,7 +78,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
 						if !blockchain.ConsensusOngoing {
 							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
-							err = blockchain.InsertShardBlock(newBlk, false)
+							err := blockchain.InsertShardBlock(newBlk, false)
 							if err != nil {
 								Logger.log.Error(err)
 								return
