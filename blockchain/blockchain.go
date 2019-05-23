@@ -58,11 +58,6 @@ type BlockChain struct {
 		}
 	}
 	ConsensusOngoing bool
-	// knownChainState struct {
-	// 	Shards map[byte]ChainState
-	// 	Beacon ChainState
-	// }
-	// PeerStateCh chan *peerState
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -561,13 +556,6 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 	}
 	return nil
 }
-
-// func (self *BlockChain) GetChainBlocks(shardID byte) ([]*Block, error) {
-// 	result := make([]*Block, 0)
-// 	data, err := self.config.DataBase.FetchChainBlocks(shardID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
@@ -1114,10 +1102,6 @@ func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[str
 func (blockchain *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return blockchain.config.customTokenRewardSnapshot
 }
-
-// func (blockchain *BlockChain) GetBestBlock(shardID byte) *Block {
-// 	return blockchain.BestState[shardID].BestBlock
-// }
 
 func (self *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 	return self.BestState.Beacon.BestBlock.Header.Height
