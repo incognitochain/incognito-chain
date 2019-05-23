@@ -84,7 +84,7 @@ func (engine *Engine) Start() error {
 					case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
 						engine.userLayer = common.BEACON_ROLE
 					}
-					engine.config.Server.UpdateConsensusState(engine.userLayer, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.ShardCommittee)
+					engine.config.Server.UpdateConsensusState(engine.userLayer, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.GetShardCommittee())
 					switch engine.userLayer {
 					case common.BEACON_ROLE:
 						if engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO {

@@ -37,8 +37,8 @@ const (
 	MinTxsInBlock        = 10                   // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime     = 2                    // second
 	MaxBlockWaitTime     = 4 - MinBlockWaitTime // second
-	MinBeaconBlkInterval = 5 * time.Second      //second
-	MinShardBlkInterval  = 5 * time.Second      //second
+	MinBeaconBlkInterval = 1 * time.Second      //second
+	MinShardBlkInterval  = 2 * time.Second      //second
 )
 
 // special token ids (aka. PropertyID in custom token)
