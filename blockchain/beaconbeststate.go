@@ -57,7 +57,7 @@ type BestStateBeacon struct {
 func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
-	if err := copier.Copy(&res, bestStateBeacon); err != nil {
+	if err := copier.Copy(&res, *bestStateBeacon); err != nil {
 		Logger.log.Error(err)
 	}
 	return res
