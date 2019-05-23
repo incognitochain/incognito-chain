@@ -23,7 +23,7 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
-	Logger.log.Errorf("\n%v\n%v\n", block.Header, len(block.Body.Transactions))
+	//Logger.log.Errorf("\n%v\n%v\n", block.Header, len(block.Body.Transactions))
 	if block.Header.ShardID != shardID {
 		return errors.New("wrong shard")
 	}
@@ -172,17 +172,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		}
 	}()
 
-	// Store metadata instruction to local state
-	for _, beaconBlock := range beaconBlocks {
-		instructions := beaconBlock.Body.Instructions
-		for _, inst := range instructions {
-			err := blockchain.StoreMetadataInstructions(inst, shardID)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	go func() {
 		//Remove Candidate In pool
 		candidates := []string{}
@@ -208,8 +197,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		//Remove tx out of pool
 		for _, tx := range block.Body.Transactions {
 			go func(tx metadata.Transaction) {
-					blockchain.config.TxPool.RemoveTx(tx, true)
-					blockchain.config.CRemovedTxs <- tx
+				blockchain.config.TxPool.RemoveTx(tx, true)
+				blockchain.config.CRemovedTxs <- tx
 			}(tx)
 		}
 	}()
