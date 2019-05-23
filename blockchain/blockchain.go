@@ -313,7 +313,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 	if err != nil {
 		return nil, err
 	}
-	block, err, _ := blockchain.GetBeaconBlockByHash(hashBlock)
+	block, _, err := blockchain.GetBeaconBlockByHash(hashBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -323,17 +323,17 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetBeaconBlockByHash(hash *common.Hash) (*BeaconBlock, error, uint64) {
+func (blockchain *BlockChain) GetBeaconBlockByHash(hash *common.Hash) (*BeaconBlock, uint64, error) {
 	blockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(hash)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
 	block := BeaconBlock{}
 	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
-	return &block, nil, uint64(len(blockBytes))
+	return &block, uint64(len(blockBytes)), nil
 }
 
 /*
@@ -709,6 +709,9 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 	view := NewTxViewPoint(block.Header.ShardID)
 
 	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block)
+	if err != nil {
+		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock", err)
+	}
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		// 0xsirrush updated: check existed tokenID
 		tokenID := privacyCustomTokenSubView.tokenID
