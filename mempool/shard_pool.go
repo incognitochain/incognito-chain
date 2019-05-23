@@ -195,7 +195,7 @@ func (self *ShardPool) PromotePendingPool() {
 */
 func (self *ShardPool) insertNewShardBlockToPoolV2(block *blockchain.ShardBlock) bool {
 	//If unknown to beacon best state store in pending
-	if block.Header.Height > blockchain.GetBestStateBeacon().BestShardHeight[block.Header.ShardID] {
+	if block.Header.Height > blockchain.GetBestStateBeacon().GetBestHeightOfShard(block.Header.ShardID) {
 		self.pendingPool[block.Header.Height] = block
 		return false
 	}
