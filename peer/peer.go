@@ -691,22 +691,6 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 	})
 }
 
-/*
-renewPeerConnection - create peer conn by goroutines for pending peers(reconnect)
-*/
-/*func (peerObj *Peer) renewPeerConnection() {
-	peerObj.pendingPeersMtx.Lock()
-	defer peerObj.pendingPeersMtx.Unlock()
-	if len(peerObj.PendingPeers) > 0 {
-		Logger.log.Infof("*start - Creating peer conn to %d pending peers", len(peerObj.PendingPeers))
-		for _, peer := range peerObj.PendingPeers {
-			Logger.log.Infof("---> RemotePeer: ", peer.RawAddress)
-			peerObj.PushConn(peer, nil)
-		}
-		Logger.log.Infof("*end - Creating peer conn to %d pending peers", len(peerObj.PendingPeers))
-	}
-}*/
-
 func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
