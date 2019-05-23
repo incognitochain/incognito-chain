@@ -370,6 +370,9 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			tempInstructionArr = append(tempInstructionArr, strs...)
 		}
 		beaconBlockRewardIns, err := metadata.BuildInstForBeaconSalary(blockchain.getRewardAmount(block.Header.Height), block.Header.Height, &block.Header.ProducerAddress)
+		if err != nil {
+			return NewBlockChainError(HashError, fmt.Errorf("Fail to generate hash for instruction %+v", err))
+		}
 		tempInstructionArr = append(tempInstructionArr, beaconBlockRewardIns...)
 		tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
 		if err != nil {

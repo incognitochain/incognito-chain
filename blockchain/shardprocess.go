@@ -417,7 +417,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(TransactionError, err)
 	}
 	if len(invalidTxs) > 0 {
-		return NewBlockChainError(TransactionError, errors.New(fmt.Sprintf("There are %d invalid txs...", len(invalidTxs))))
+		return NewBlockChainError(TransactionError, fmt.Errorf("There are %d invalid txs...", len(invalidTxs)))
 	}
 
 	// Get cross shard block from pool
