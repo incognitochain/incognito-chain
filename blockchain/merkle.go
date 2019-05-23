@@ -198,7 +198,7 @@ func (merkle Merkle) VerifyMerkleRootFromMerklePath(leaf common.Hash, merklePath
 		i = i / 2
 	}
 	merkleRootPointer := &merkleRoot
-	if !merkleRootPointer.IsEqual(finalHash){
+	if merkleRootPointer.IsEqual(finalHash){
 		return true
 	}
 	return false
