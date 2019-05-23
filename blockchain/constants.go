@@ -119,5 +119,16 @@ const (
 
 // ---------------------------------------------
 var TestnetInitConstant = []string{
-	`{"Version":1,"Type":"s","LockTime":1557799670,"Fee":0,"Info":null,"SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA","Sig":"P1wbiDpmn2PK9G3FNILqu3JrU5E4ekfrnOz9X7Dd9HRHwp+YDFiEAMLicj7mhKcp3RCR+SWsWOaFxenbrmzXdA==","Proof":"1111111RMhr5Bpy8zSZm7bQEnJcEEbeMSYh6wX9LdwSBjWhESroPN9mvBuwapr4DfKH26bQm9Eu8jtKR3saFoseZj46YQbf7iyuiA6JhAKmekHK1ds4qtFw1ipFzhLYNvp4MYXEupErvQGvZ6bvd9sxDxbwrEFJuV7i8QnHMLftsAAwDAEpDr8MkuxwDXAr5rEjoo9h6SDBHo4c1X6VRBT2GSe3","PubKeyLastByteSender":0,"Metadata":null}`,
+	`{  
+   "Version":1,
+   "Type":"s",
+   "LockTime":1557799670,
+   "Fee":0,
+   "Info":null,
+   "SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA",
+   "Sig":"P1wbiDpmn2PK9G3FNILqu3JrU5E4ekfrnOz9X7Dd9HRHwp+YDFiEAMLicj7mhKcp3RCR+SWsWOaFxenbrmzXdA==",
+   "Proof":"1111111RMhr5Bpy8zSZm7bQEnJcEEbeMSYh6wX9LdwSBjWhESroPN9mvBuwapr4DfKH26bQm9Eu8jtKR3saFoseZj46YQbf7iyuiA6JhAKmekHK1ds4qtFw1ipFzhLYNvp4MYXEupErvQGvZ6bvd9sxDxbwrEFJuV7i8QnHMLftsAAwDAEpDr8MkuxwDXAr5rEjoo9h6SDBHo4c1X6VRBT2GSe3",
+   "PubKeyLastByteSender":0,
+   "Metadata":null
+	}`,
 }
