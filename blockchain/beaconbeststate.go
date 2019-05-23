@@ -19,7 +19,7 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-var bestStateBeacon *BestStateBeacon //singleton object
+var bestStateBeacon *BestStateBeacon
 
 type BestStateBeacon struct {
 	BestBlockHash                          common.Hash          `json:"BestBlockHash"`     // The hash of the block.
@@ -51,21 +51,25 @@ type BestStateBeacon struct {
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
 
 	ShardHandle map[byte]bool `json:"ShardHandle"` // lock sync.RWMutex
-	lockMu      sync.RWMutex
+	lockMu      *sync.RWMutex
 }
 
-func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	b, err := json.Marshal(bestStateBeacon)
+func (s BestStateBeacon) MarshalJSON() []byte {
+	s.lockMu.RLock()
+	defer s.lockMu.RUnlock()
+
+	type Alias BestStateBeacon
+
+	b, err := json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(&s),
+	})
+
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	err = json.Unmarshal(b, &res)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	return res
+	return b
 }
 
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
@@ -117,6 +121,9 @@ func (bestStateBeacon *BestStateBeacon) GetShardPendingValidator() (res map[byte
 }
 
 func (bsb *BestStateBeacon) GetCurrentShard() byte {
+	if bestStateBeacon.lockMu == nil {
+		bestStateBeacon.lockMu = new(sync.RWMutex)
+	}
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
 	for shardID, isCurrent := range bsb.ShardHandle {
@@ -135,7 +142,9 @@ func GetBestStateBeacon() *BestStateBeacon {
 	if bestStateBeacon != nil {
 		return bestStateBeacon
 	}
-	bestStateBeacon = &BestStateBeacon{}
+	bestStateBeacon = &BestStateBeacon{
+		lockMu: new(sync.RWMutex),
+	}
 	return bestStateBeacon
 }
 
@@ -143,6 +152,9 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	if bestStateBeacon == nil {
 		bestStateBeacon = GetBestStateBeacon()
 	}
+
+	bestStateBeacon.lockMu = new(sync.RWMutex)
+	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
 	bestStateBeacon.BestShardHeight = make(map[byte]uint64)
@@ -164,6 +176,10 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	return bestStateBeacon
 }
 func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
+	if bestStateBeacon.lockMu == nil {
+		bestStateBeacon.lockMu = new(sync.RWMutex)
+		return []byte{}
+	}
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
 	var keys []int
@@ -306,6 +322,9 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
 func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	if bestStateBeacon.lockMu == nil {
+		bestStateBeacon.lockMu = new(sync.RWMutex)
+	}
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
 	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
