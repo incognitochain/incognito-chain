@@ -11,7 +11,7 @@ import (
 
 func (netSync *NetSync) GetBlkShardByHashAndSend(peerID libp2p.ID, blkType byte, blkHashes []common.Hash, crossShardID byte) {
 	for _, blkHash := range blkHashes {
-		blk, err, _ := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
+		blk, _, err := netSync.config.BlockChain.GetShardBlockByHash(&blkHash)
 		if err != nil {
 			Logger.log.Error(err)
 			continue

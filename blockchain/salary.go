@@ -40,7 +40,7 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 		Logger.log.Error(abc)
 		return nil, abc
 	}
-	block, err1, _ := blockgen.chain.GetShardBlockByHash(blockHash)
+	block, _, err1 := blockgen.chain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
 		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return nil, NewBlockChainError(UnExpectedError, err1)
