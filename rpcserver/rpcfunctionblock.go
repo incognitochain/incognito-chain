@@ -176,7 +176,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 				transactionT.Hash = tx.Hash().String()
 
 				switch tx.GetType() {
-				case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
+				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 					txN := tx.(*transaction.Tx)
 					data, err := json.Marshal(txN)
 					if err != nil {
