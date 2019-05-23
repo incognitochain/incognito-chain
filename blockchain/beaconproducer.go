@@ -124,7 +124,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 		panic(err)
 	}
 	// Shard Validator root
-	beaconBlock.Header.ShardValidatorsRoot, err = GenerateHashFromMapByteString(beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee)
+	beaconBlock.Header.ShardValidatorsRoot, err = GenerateHashFromMapByteString(beaconBestState.GetShardPendingValidator(), beaconBestState.GetShardCommittee())
 	// fmt.Printf("Beacon Produce/AfterUpdate: Shard Pending Validator %+v , ShardCommitee %+v, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardValidatorsRoot)
 	if err != nil {
 		panic(err)
@@ -196,7 +196,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 		}
 		//=======
 		for index, shardBlock := range shardBlocks {
-			currentCommittee := beaconBestState.ShardCommittee[shardID]
+			currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 			hash := shardBlock.Header.Hash()
 			err1 := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 			fmt.Println("Beacon Producer/ Validate Agg Signature for shard", shardID, err1 == nil)
@@ -304,10 +304,10 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 }
 
 func (bestStateBeacon *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
-	for _, committees := range bestStateBeacon.ShardCommittee {
+	for _, committees := range bestStateBeacon.GetShardCommittee() {
 		tempStaker = metadata.GetValidStaker(committees, tempStaker)
 	}
-	for _, validators := range bestStateBeacon.ShardPendingValidator {
+	for _, validators := range bestStateBeacon.GetShardPendingValidator() {
 		tempStaker = metadata.GetValidStaker(validators, tempStaker)
 	}
 	tempStaker = metadata.GetValidStaker(bestStateBeacon.BeaconCommittee, tempStaker)

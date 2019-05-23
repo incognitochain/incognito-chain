@@ -189,7 +189,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 				}
 
 				if userRole == common.SHARD_ROLE && RCS.ClosestBeaconState.Height-1 <= blockchain.BestState.Beacon.BeaconHeight {
-					if RCS.ClosestShardsState[userShardID].Height == GetBestStateShard(userShardID).ShardHeight && RCS.ClosestShardsState[userShardID].Height >= GetBestStateBeacon().BestShardHeight[userShardID] {
+					if RCS.ClosestShardsState[userShardID].Height == GetBestStateShard(userShardID).ShardHeight && RCS.ClosestShardsState[userShardID].Height >= GetBestStateBeacon().GetBestHeightOfShard(userShardID) {
 						blockchain.SetReadyState(false, 0, true)
 						blockchain.SetReadyState(true, userShardID, true)
 					} else {
@@ -283,7 +283,7 @@ func (blockchain *BlockChain) StartSyncBlk() {
 			case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
 				userLayer = common.BEACON_ROLE
 			}
-			blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
+			blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.GetShardCommittee())
 
 			blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 			blockchain.syncStatus.Unlock()
