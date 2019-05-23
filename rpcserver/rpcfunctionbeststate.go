@@ -52,7 +52,7 @@ func (rpcServer RpcServer) handleGetCandidateList(params interface{}, closeChan 
 	CBWFNR := rpcServer.config.BlockChain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
 	epoch := rpcServer.config.BlockChain.BestState.Beacon.Epoch
 	result := jsonresult.CandidateListsResult{
-		Epoch:                                  epoch,
+		Epoch: epoch,
 		CandidateShardWaitingForCurrentRandom:  CSWFCR,
 		CandidateBeaconWaitingForCurrentRandom: CBWFCR,
 		CandidateShardWaitingForNextRandom:     CSWFNR,
@@ -63,8 +63,8 @@ func (rpcServer RpcServer) handleGetCandidateList(params interface{}, closeChan 
 func (rpcServer RpcServer) handleGetCommitteeList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	beaconCommittee := rpcServer.config.BlockChain.BestState.Beacon.BeaconCommittee
 	beaconPendingValidator := rpcServer.config.BlockChain.BestState.Beacon.BeaconPendingValidator
-	shardCommittee := rpcServer.config.BlockChain.BestState.Beacon.ShardCommittee
-	shardPendingValidator := rpcServer.config.BlockChain.BestState.Beacon.ShardPendingValidator
+	shardCommittee := rpcServer.config.BlockChain.BestState.Beacon.GetShardCommittee()
+	shardPendingValidator := rpcServer.config.BlockChain.BestState.Beacon.GetShardPendingValidator()
 	epoch := rpcServer.config.BlockChain.BestState.Beacon.Epoch
 	result := jsonresult.CommitteeListsResult{
 		Epoch:                  epoch,

@@ -63,7 +63,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	if _, ok := blockchain.syncStatus.Shards[newBlk.Header.ShardID]; ok {
-		fmt.Printf("Shard block received from shard %+v \n", newBlk.Header.ShardID)
+		fmt.Println("Shard block received from shard", newBlk.Header.ShardID, newBlk.Header.Height)
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			if blockchain.config.UserKeySet != nil {
@@ -74,8 +74,13 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 					blockchain.RevertShardState(newBlk.Header.ShardID)
 				}
 				userRole := currentShardBestState.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+				fmt.Println("Shard block received 1", userRole)
+
 				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+					fmt.Println("Shard block received 2", currentShardBestState.ShardHeight, newBlk.Header.Height)
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
+
+						fmt.Println("Shard block received 3", blockchain.ConsensusOngoing, blockchain.IsReady(true, newBlk.Header.ShardID))
 						if !blockchain.ConsensusOngoing {
 							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
 							err := blockchain.InsertShardBlock(newBlk, false)
