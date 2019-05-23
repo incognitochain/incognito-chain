@@ -14,6 +14,11 @@ import (
 
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
 
+var metaConstructors = map[string]metaConstructorType{
+	CreateAndSendIssuingRequest:     metadata.NewIssuingRequestFromMap,
+	CreateAndSendContractingRequest: metadata.NewContractingRequestFromMap,
+}
+
 func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)

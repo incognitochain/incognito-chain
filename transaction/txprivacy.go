@@ -1151,6 +1151,8 @@ func (tx Tx) GetTokenID() *common.Hash {
 }
 
 func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []metadata.Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instsUsed []int,
 	shardID byte,
@@ -1166,12 +1168,12 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 			return false, nil
 		}
 		// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
-		// if !meta.IsMinerCreatedMetaType() {
-		// 	return false, nil
-		// }
+		if !meta.IsMinerCreatedMetaType() {
+			return false, nil
+		}
 	}
 	if meta != nil {
-		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr)
+		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr)
 	}
 	return true, nil
 }

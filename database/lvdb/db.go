@@ -50,6 +50,9 @@ var (
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
 
+	// centralized bridge
+	centralizedBridgePrefix = []byte("centralizedbridge-")
+
 	Unreward   = []byte("unreward")
 	Spent      = []byte("spent")
 	Unspent    = []byte("unspent")
