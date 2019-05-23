@@ -137,6 +137,12 @@ type DatabaseInterface interface {
 	GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)
 	StoreContractingInfo(reqTxID common.Hash, amount uint64, redeem uint64, instType string) error
 	GetContractingInfo(reqTxID common.Hash) (uint64, uint64, string, error)
-	
+
+	// Centralized bridge
+	CountUpDepositedAmtByTokenID(*common.Hash, uint64) error
+	DeductAmtByTokenID(*common.Hash, uint64) error
+	GetBridgeTokensAmounts() ([][]byte, error)
+	IsBridgeTokenExisted(*common.Hash) (bool, error)
+
 	Close() error
 }

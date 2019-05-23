@@ -1,8 +1,11 @@
 package metadata
 
 import (
+	"bytes"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
+	"github.com/pkg/errors"
 )
 
 type IssuingResponse struct {
@@ -26,7 +29,7 @@ func (iRes *IssuingResponse) CheckTransactionFee(tr Transaction, minFee uint64) 
 }
 
 func (iRes *IssuingResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	// no need to validate tx with blockchain, just need to validate with requeste tx (via RequestedTxID) in current block
+	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return false, nil
 }
 
@@ -53,11 +56,40 @@ func (iRes *IssuingResponse) CalculateSize() uint64 {
 }
 
 func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instUsed []int,
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
 ) (bool, error) {
+
+	idx := -1
+	for i, txInBlock := range txsInBlock {
+		if txsUsed[i] > 0 ||
+			txInBlock.GetMetadataType() != IssuingRequestMeta ||
+			!bytes.Equal(iRes.RequestedTxID[:], txInBlock.Hash()[:]) {
+			continue
+		}
+		issuingReqRaw := txInBlock.GetMetadata()
+		issuingReq, ok := issuingReqRaw.(*IssuingRequest)
+		if !ok {
+			continue
+		}
+		_, pk, amount, assetID := tx.GetTransferData()
+		if !bytes.Equal(issuingReq.ReceiverAddress.Pk[:], pk[:]) ||
+			issuingReq.DepositedAmount == amount ||
+			!bytes.Equal(issuingReq.TokenID[:], assetID[:]) {
+			continue
+		}
+
+		idx = i
+		break
+	}
+	if idx == -1 { // not found the issuance request tx for this response
+		return false, errors.Errorf("no instruction found for IssuingResponse tx %s", tx.Hash().String())
+	}
+	txsUsed[idx] = 1
 	return true, nil
 }
