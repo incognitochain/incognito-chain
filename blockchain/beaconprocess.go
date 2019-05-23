@@ -96,7 +96,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	// check with current final best state
 	// block can only be insert if it match the current best state
 	bestBlockHash := &blockchain.BestState.Beacon.BestBlockHash
-	if !bestBlockHash.IsEqual(&block.Header.PrevBlockHash){
+	if !bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	// fmt.Printf("BeaconBest state %+v \n", blockchain.BestState.Beacon)
@@ -586,13 +586,6 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		if len(l) < 1 {
 			continue
 		}
-		// For stability instructions
-		err := bestStateBeacon.processStabilityInstruction(l, chain.config.DataBase)
-		if err != nil {
-			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-			return NewBlockChainError(UnExpectedError, err)
-		}
-
 		if l[0] == SetAction {
 			bestStateBeacon.Params[l[1]] = l[2]
 		}

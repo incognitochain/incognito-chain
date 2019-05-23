@@ -102,33 +102,6 @@ const (
 	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
 	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
 
-	// reserve
-	CreateIssuingRequest            = "createissuingrequest"
-	SendIssuingRequest              = "sendissuingrequest"
-	CreateAndSendIssuingRequest     = "createandsendissuingrequest"
-	CreateAndSendContractingRequest = "createandsendcontractingrequest"
-	GetIssuingStatus                = "getissuingstatus"
-	GetContractingStatus            = "getcontractingstatus"
-
-	// dcb
-	GetBankFund = "getbankfund"
-
-	// gov
-	GetBondTypes                           = "getbondtypes"
-	GetCurrentSellingBondTypes             = "getcurrentsellingbondtypes"
-	GetCurrentStabilityInfo                = "getcurrentstabilityinfo"
-	GetOracleTokenIDs                      = "getoracletokenids"
-	GetCurrentOracleNetworkParams          = "getcurrentoraclenetworkparams"
-	SignUpdatingOracleBoardContent         = "signupdatingoracleboardcontent"
-	CreateAndSendTxWithBuyBackRequest      = "createandsendtxwithbuybackrequest"
-	CreateAndSendTxWithBuySellRequest      = "createandsendtxwithbuysellrequest"
-	CreateAndSendTxWithOracleFeed          = "createandsendtxwithoraclefeed"
-	CreateAndSendTxWithUpdatingOracleBoard = "createandsendtxwithupdatingoracleboard"
-	CreateAndSendTxWithSenderAddress       = "createandsendtxwithsenderaddress"
-	CreateAndSendTxWithBuyGOVTokensRequest = "createandsendtxwithbuygovtokensrequest"
-	GetCurrentSellingGOVTokens             = "getcurrentsellinggovtokens"
-	GetAssetPrice                          = "getassetprice"
-
 	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"
