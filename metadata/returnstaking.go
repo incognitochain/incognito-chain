@@ -110,7 +110,7 @@ func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 	for i, inst := range insts {
 		if instUsed[i] == 0 { // not used before
 			if inst[0] == "swap" { // is swap action
-				if strings.Index(inst[2], spa) != -1 { // in swaper list
+				if strings.Contains(inst[2], spa) { // in swaper list
 					inSwapper = true
 					instUsed[i] += 1
 					break
