@@ -149,6 +149,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	}
 	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
+	GetBestStateBeacon().lockMu.Lock()
 	lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 	if block.Body.ShardState != nil {
 		for fromShard, shardBlocks := range block.Body.ShardState {
@@ -179,6 +180,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 			}(fromShard, shardBlocks)
 		}
 	}
+	GetBestStateBeacon().lockMu.Unlock()
+
 	// ************ Store block at last
 	//========Store new Beaconblock and new Beacon bestState in cache
 	Logger.log.Infof("Store Beacon BestState  ")
