@@ -360,6 +360,15 @@ func (db *db) DeletePrivacyCustomTokenTx(tokenID *common.Hash, txIndex int32, sh
 	return nil
 }
 
+func (db *db) DeletePrivacyCustomTokenCrossShard(tokenID *common.Hash) error {
+	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
+	err := db.Delete(key)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (db *db) RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeight uint64) error {
 	key := append(nextCrossShardKeyPrefix, fromShard)
 	key = append(key, []byte("-")...)
@@ -401,15 +410,6 @@ func (db *db) DeleteCommitteeByEpoch(blkEpoch uint64) error {
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, blkEpoch)
 	key = append(key, buf[:]...)
-	err := db.Delete(key)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (db *db) DeletePrivacyCustomTokenCrossShard(tokenID *common.Hash) error {
-	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
 		return err
