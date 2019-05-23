@@ -295,7 +295,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		validStakers := [][]string{}
 		validSwappers := make(map[byte][][]string)
 		stabilityInstructions := [][]string{}
-		tempMarshal, err := json.Marshal(*blockchain.BestState.Beacon)
+		tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
 		err = json.Unmarshal(tempMarshal, &beaconBestState)
 		if err != nil {
 			return NewBlockChainError(UnExpectedError, errors.New("Fail to Unmarshal beacon beststate"))
