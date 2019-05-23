@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
@@ -291,32 +290,36 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
-) bool {
+) (bool, error) {
 	if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
-		return true
+		return true, nil
 	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	ok := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-	if !ok {
-		return false
+	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+		return false, err
 	}
 
 	if customTokenTx.Metadata != nil {
-		return customTokenTx.Metadata.ValidateMetadataByItself()
+		validateMetadata := customTokenTx.Metadata.ValidateMetadataByItself()
+		if !validateMetadata {
+			return validateMetadata, errors.New("Metadata is invalid")
+		}
+		return validateMetadata, nil
 	}
-	return true
+	return true, nil
 }
 
-func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
-	if customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
+func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+	ok, error := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
+	if ok {
 		if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
 			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(false, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		} else {
 			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(true, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		}
 	}
-	return false
+	return false, error
 }
 
 func (tx *TxCustomTokenPrivacy) GetProof() *zkp.PaymentProof {
@@ -328,7 +331,6 @@ func (tx *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 	return true, nil
 }

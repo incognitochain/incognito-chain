@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -196,30 +195,19 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 
 // ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
-func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// validate for normal tx
-	keyWalletDCBAccount, _ := wallet.Base58CheckDeserialize(common.DCBAddress)
-	dcbPk := keyWalletDCBAccount.KeySet.PaymentAddress.Pk
-	if tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID) {
+	ok, err := tx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
+	if ok {
 		if len(tx.listUtxo) == 0 {
-			return false
+			return false, errors.New("Len listUtxo is 0")
 		}
 		if len(tx.TxTokenData.Vins) == 0 {
-			return false
+			return false, errors.New("Len Vins is 0")
 		}
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
-
-			// Bond sent from DCB can be created by anyone but only with
-			// appropriate metadata and instruction
-			if bytes.Equal(vin.PaymentAddress.Pk, dcbPk) {
-				metaType := tx.GetMetadataType()
-				if metaType != metadata.CrowdsalePaymentMeta && metaType != metadata.BuyBackRequestMeta {
-					return false
-				}
-				continue
-			}
 
 			// get data from utxo
 			utxo := tx.listUtxo[vin.TxCustomTokenID]
@@ -228,12 +216,12 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			signature, _, _ := base58.Base58Check{}.Decode(vin.Signature)
 			ok, err := keySet.Verify(data[:], signature)
 			if err != nil || !ok {
-				return false
+				return false, err
 			}
 		}
-		return true
+		return true, nil
 	}
-	return false
+	return false, err
 }
 
 func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
@@ -261,50 +249,51 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
-) bool {
+) (bool, error) {
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
-		ok := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-		if !ok {
-			return false
+		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+			return false, err
 		}
 		if len(customTokenTx.TxTokenData.Vouts) != 1 {
-			return false
+			return false, errors.New("Length of Vouts != 1")
 		}
 		if len(customTokenTx.TxTokenData.Vins) != 0 && customTokenTx.TxTokenData.Vins != nil {
-			return false
+			return false, errors.New("Length of Vins != 0 and Vins is nil")
 		}
-		return true
+		return true, nil
 	}
 	//Process CustomToken CrossShard
 	if customTokenTx.TxTokenData.Type == CustomTokenCrossShard {
-		ok := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-		if !ok {
-			return false
+		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+			return false, err
 		}
 		if len(customTokenTx.listUtxo) != 0 {
-			return false
+			return false, errors.New("Length listUtxo != 0")
 		}
 		if len(customTokenTx.TxTokenData.Vins) != 0 {
-			return false
+			return false, errors.New("Length Vins != 0")
 		}
-		return true
+		return true, nil
 	}
 
 	//Process CustomToken Transfer
 	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
 	if !ok {
-		return false
+		return false, errors.New("getListUTXOFromTxCustomToken")
 	}
-	ok = customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
-	if !ok {
-		return false
+	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+		return false, err
 	}
 	if customTokenTx.Metadata != nil {
-		return customTokenTx.Metadata.ValidateMetadataByItself()
+		validateMetadata := customTokenTx.Metadata.ValidateMetadataByItself()
+		if !validateMetadata {
+			return validateMetadata, errors.New("Metadata is invalid")
+		}
+		return validateMetadata, nil
 	}
-	return true
+	return true, nil
 }
 
 func (tx TxCustomToken) String() string {
@@ -531,30 +520,6 @@ func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte
 	return keyset.Sign(buff.Bytes())
 }
 
-func (tx *TxCustomToken) GetAmountOfVote(boardType common.BoardType) (uint64, error) {
-	sum := uint64(0)
-	for _, vout := range tx.TxTokenData.Vouts {
-		keyWallet, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-		keyset := keyWallet.KeySet
-		paymentAddress := keyset.PaymentAddress
-		pubKey := string(paymentAddress.Pk)
-		if string(vout.PaymentAddress.Pk) == string(pubKey) {
-			if (boardType == common.DCBBoard) && (common.DCBTokenID.Cmp(&vout.txCustomTokenID) == 0) {
-				sum += vout.Value
-			} else {
-				if (boardType == common.GOVBoard) && (common.GOVTokenID.Cmp(&vout.txCustomTokenID) == 0) {
-					sum += vout.Value
-				}
-			}
-		}
-	}
-	return sum, nil
-}
-
-func (tx *TxCustomToken) GetVoterPaymentAddress() (*privacy.PaymentAddress, error) {
-	return &tx.TxTokenData.Vins[0].PaymentAddress, nil
-}
-
 func (tx *TxCustomToken) IsPrivacy() bool {
 	return false
 }
@@ -685,7 +650,6 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
-	accumulatedData *component.UsedInstData,
 ) (bool, error) {
 	if !tx.TxTokenData.Mintable {
 		return true, nil
@@ -699,5 +663,5 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	// if !meta.IsMinerCreatedMetaType() {
 	// 	return false, nil
 	// }
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr, accumulatedData)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr)
 }

@@ -48,42 +48,14 @@ var (
 	privacyTokenInitPrefix       = []byte("privacy-token-init-")
 	rewared                      = []byte("reward")
 
-	//vote prefix
-	voteBoardSumPrefix           = []byte("votesumboard-")
-	voteBoardCountPrefix         = []byte("votecountboard-")
-	VoteBoardListPrefix          = []byte("votelistboard-")
-	threePhraseCryptoOwnerPrefix = []byte("threephrasecryptoownerprefix-")
-	VoteProposalPrefix           = []byte("voteproposalprefix-")
-	BoardFundPrefix              = []byte("boardfundprefix-")
-	ConstantPricePrefix          = []byte("constantspriceprefix-")
-	listVoterOfProposalPrefix    = []byte("listvoterofproposalprefix-")
-	SubmitProposalPrefix         = []byte("submitproposalprefix-")
-	threePhraseVoteValuePrefix   = []byte("threephrasevotevalueprefix-")
-	winningVoterPrefix           = []byte("winningvoterprefix-")
-	//pubKeyToPaymentAddress          = []byte("pubkeytopaymentaddress")
-	encryptFlagPrefix               = []byte("encryptFlagPrefix")
-	encryptionLastBlockHeightPrefix = []byte("encryptionlastblockheightprefix")
-
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
-
-	// bond type
-	bondTypePrefix = []byte("bondtype-")
-
-	// crowdsale
-	crowdsalePrefix       = []byte("crowdsale-")
-	dcbBondInfoPrefix     = []byte("dcbBondInfo-")
-	tradeActivationPrefix = []byte("tradeAct-")
 
 	Unreward   = []byte("unreward")
 	Spent      = []byte("spent")
 	Unspent    = []byte("unspent")
 	Mintable   = []byte("mintable")
 	UnMintable = []byte("unmintable")
-
-	// reserve
-	reserveIssuingInfoPrefix     = []byte("rsIss")
-	reserveContractingInfoPrefix = []byte("rsCon")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {

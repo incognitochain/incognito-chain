@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/constant-money/constant-chain/blockchain/component"
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
@@ -82,7 +81,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
 	beaconBlock.Header.Round = round
-	fmt.Printf("[ndh] =================== Creating beacon block[%+v] =====================\n", beaconBlock.Header.Height)
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		beaconBlock.Header.Epoch++
@@ -91,6 +89,8 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	//fmt.Println("[db] NewBlockBeacon GetShardState")
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+	beaconBlockRewardIns, err := metadata.BuildInstForBeaconSalary(blkTmplGenerator.chain.getRewardAmount(beaconBlock.Header.Height), beaconBlock.Header.Height, &beaconBlock.Header.ProducerAddress)
+	tempInstruction = append(tempInstruction, beaconBlockRewardIns)
 	//fmt.Println("BeaconProducer/tempInstruction", tempInstruction)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
@@ -178,9 +178,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 	allShardBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock(shardsToBeacon)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
-	accumulativeValues := &accumulativeValues{
-		saleDataMap: map[string]*component.SaleData{},
-	}
 	var keys []int
 	for k := range allShardBlocks {
 		keys = append(keys, int(k))
@@ -218,47 +215,12 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			totalBlock = 49
 		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
-			shardState, validStaker, validSwapper, stabilityInstruction := blkTmplGenerator.chain.GetShardStateFromBlock(beaconBestState, shardBlock, accumulativeValues, shardID)
+			shardState, validStaker, validSwapper, stabilityInstruction := blkTmplGenerator.chain.GetShardStateFromBlock(beaconBestState, shardBlock, shardID)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakers = append(validStakers, validStaker...)
 			validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
 			stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
 		}
-
-		if accumulativeValues.totalBeaconSalary > 0 {
-			//fmt.Println("SA: build beacon salary", accumulativeValues.totalBeaconSalary)
-			newInst, err := buildInstForBeaconSalary(accumulativeValues.totalBeaconSalary, beaconBestState.BeaconHeight+1, &blkTmplGenerator.chain.config.UserKeySet.PaymentAddress)
-
-			if err != nil {
-				Logger.log.Error(err)
-			}
-			if len(newInst) > 0 {
-				stabilityInstructions = append(stabilityInstructions, newInst)
-			}
-		}
-	}
-
-	votingInstruction, err := blkTmplGenerator.chain.generateVotingInstructionWOIns(DCBConstitutionHelper{})
-	if err != nil {
-		fmt.Println("[ndh]-Build DCB voting instruction failed: ", err)
-	} else {
-		if len(votingInstruction) != 0 {
-			stabilityInstructions = append(stabilityInstructions, votingInstruction...)
-		}
-	}
-	votingInstruction, err = blkTmplGenerator.chain.generateVotingInstructionWOIns(GOVConstitutionHelper{})
-	if err != nil {
-		fmt.Println("[ndh]-Build GOV voting instruction failed: ", err)
-	} else {
-		if len(votingInstruction) != 0 {
-			stabilityInstructions = append(stabilityInstructions, votingInstruction...)
-		}
-	}
-	oracleInsts, err := blkTmplGenerator.chain.buildOracleRewardInstructions(beaconBestState)
-	if err != nil {
-		fmt.Println("Build oracle reward instructions failed: ", err)
-	} else if len(oracleInsts) > 0 {
-		stabilityInstructions = append(stabilityInstructions, oracleInsts...)
 	}
 	return shardStates, validStakers, validSwappers, stabilityInstructions
 }
@@ -367,7 +329,7 @@ func (bestStateBeacon *BestStateBeacon) GetValidStakers(tempStaker []string) []s
 	- ["stake" "pubkey1,pubkey2,..." "beacon"]
 
 */
-func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateBeacon, shardBlock *ShardToBeaconBlock, accumulativeValues *accumulativeValues, shardID byte) (map[byte]ShardState, [][]string, map[byte][][]string, [][]string) {
+func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateBeacon, shardBlock *ShardToBeaconBlock, shardID byte) (map[byte]ShardState, [][]string, map[byte][][]string, [][]string) {
 	//Variable Declaration
 	shardStates := make(map[byte]ShardState)
 	validStakers := [][]string{}
@@ -486,7 +448,6 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 		shardID,
 		shardBlock.Instructions,
 		beaconBestState,
-		accumulativeValues,
 	)
 	if err != nil {
 		Logger.log.Errorf("Build stability instructions failed: %s \n", err.Error())

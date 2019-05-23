@@ -22,20 +22,18 @@ type Params struct {
 
 	// GenesisBlock defines the first block of the chain.
 	GenesisShardBlock *ShardBlock
+	BasicReward       uint64
+	RewardHalflife    uint64
 }
 
 type GenesisParams struct {
 	InitialPaymentAddress string
-	InitFundSalary        uint64
-	InitialDCBToken       uint64
-	InitialGOVToken       uint64
-	InitialBondToken      uint64
 
 	InitialConstant []string
 
-	SalaryPerTx uint64
-	BasicSalary uint64
-	FeePerTxKb  uint64
+	BasicReward    uint64
+	RewardHalflife uint64
+	FeePerTxKb     uint64
 
 	RandomNumber uint64
 
@@ -48,12 +46,8 @@ type GenesisParams struct {
 // FOR TESTNET
 var genesisParamsTestnetNew = GenesisParams{
 	InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
-	InitFundSalary:                      TestnetInitFundSalary,
-	InitialBondToken:                    TestnetInitBondToken,
-	InitialDCBToken:                     TestnetInitDCBToken,
-	InitialGOVToken:                     TestnetInitGovToken,
-	BasicSalary:                         TestnetBasicSalary,
-	SalaryPerTx:                         TestnetSalaryPerTx,
+	BasicReward:                         TestnetBasicReward,
+	RewardHalflife:                      TestnetRewardHalflife,
 	FeePerTxKb:                          TestnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
@@ -61,8 +55,8 @@ var genesisParamsTestnetNew = GenesisParams{
 
 	//@Notice: InitTxsForBenchmark is for testing and benchmark only
 	//InitialConstant: append(TestnetInitConstant, append(InitTxsShard0, append(InitTxsShard1, InitTxsForBenchmark...)...)...),
-	//InitialConstant: append(TestnetInitConstant, InitTxsShard0...),
-	InitialConstant: TestnetInitConstant,
+	InitialConstant: append(TestnetInitConstant, InitTxsShard0...),
+	//InitialConstant: TestnetInitConstant,
 }
 
 var ChainTestParam = Params{
@@ -75,6 +69,8 @@ var ChainTestParam = Params{
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
+	BasicReward:        genesisParamsTestnetNew.BasicReward,
+	RewardHalflife:     genesisParamsTestnetNew.RewardHalflife,
 }
 
 // END TESTNET
@@ -82,12 +78,8 @@ var ChainTestParam = Params{
 // FOR MAINNET
 var genesisParamsMainnetNew = GenesisParams{
 	InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
-	InitFundSalary:                      MainnetInitFundSalary,
-	InitialBondToken:                    MainnetInitBondToken,
-	InitialDCBToken:                     MainnetInitDCBToken,
-	InitialGOVToken:                     MainnetInitGovToken,
-	BasicSalary:                         MainnetBasicSalary,
-	SalaryPerTx:                         MainnetSalaryPerTx,
+	BasicReward:                         MainnetBasicReward,
+	RewardHalflife:                      MainnetRewardHalflife,
 	FeePerTxKb:                          MainnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
@@ -106,4 +98,6 @@ var ChainMainParam = Params{
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
+	BasicReward:        genesisParamsMainnetNew.BasicReward,
+	RewardHalflife:     genesisParamsMainnetNew.RewardHalflife,
 }

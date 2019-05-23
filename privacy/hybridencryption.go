@@ -45,7 +45,7 @@ func HybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext
 	// Generate a AES key as the abscissa of a random elliptic point
 	aesKeyPoint := new(EllipticPoint)
 	aesKeyPoint.Randomize()
-	aesKeyByte := aesKeyPoint.X.Bytes()
+	aesKeyByte := AddPaddingBigInt(aesKeyPoint.X, BigIntSize)
 
 	// Encrypt msg using aesKeyByte
 	aesScheme := &AES{
@@ -92,7 +92,7 @@ func HybridDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err
 
 	// Get AES key
 	aesScheme := &AES{
-		Key: aesKeyPoint.X.Bytes(),
+		Key: AddPaddingBigInt(aesKeyPoint.X, BigIntSize),
 	}
 
 	// Decrypt encrypted coin randomness using AES key

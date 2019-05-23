@@ -298,7 +298,7 @@ func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress []byt
 	key = append(key, Splitter...)
 	key = append(key, []byte(txHash.String())...)
 	key = append(key, Splitter...)
-	key = append(key, byte(voutIndex))
+	key = append(key, common.Int32ToBytes(int32(voutIndex))...)
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
 		fmt.Println("ERROR finding PubKey in DB, UpdateRewardAccountUTXO", err)

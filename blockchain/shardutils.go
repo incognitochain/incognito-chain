@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -134,7 +133,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 	stakeBeaconTxID := []string{}
 	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks, beaconHeight)
 	if err != nil {
-		fmt.Println("[ndh] - wtf err???", err)
 		return nil, err
 	}
 
@@ -270,8 +268,8 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 		}
 		i = i / 2
 	}
-	merkleRootString := merkleRoot.String()
-	if strings.Compare(finalHash.String(), merkleRootString) != 0 {
+	merkleRootPointer := &merkleRoot
+	if !merkleRootPointer.IsEqual(&finalHash){
 		return false
 	} else {
 		return true

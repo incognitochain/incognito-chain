@@ -29,14 +29,16 @@ type Engine struct {
 }
 
 type EngineConfig struct {
-	BlockChain        *blockchain.BlockChain
-	ChainParams       *blockchain.Params
-	BlockGen          *blockchain.BlkTmplGenerator
-	UserKeySet        *cashec.KeySet
-	NodeMode          string
-	Server            serverInterface
-	ShardToBeaconPool blockchain.ShardToBeaconPool
-	CrossShardPool    map[byte]blockchain.CrossShardPool
+	BlockChain               *blockchain.BlockChain
+	ChainParams              *blockchain.Params
+	BlockGen                 *blockchain.BlkTmplGenerator
+	UserKeySet               *cashec.KeySet
+	NodeMode                 string
+	Server                   serverInterface
+	ShardToBeaconPool        blockchain.ShardToBeaconPool
+	CrossShardPool           map[byte]blockchain.CrossShardPool
+	CRoleInCommitteesMempool chan int
+	CRoleInCommitteesNetSync chan int
 }
 
 //Init apply configuration to consensus engine
@@ -53,6 +55,8 @@ func (engine *Engine) Start() error {
 		return errors.New("Consensus engine is already started")
 	}
 	engine.cQuit = make(chan struct{})
+	//Start block generator
+	go engine.config.BlockGen.Start(engine.cQuit)
 	engine.cBFTMsg = make(chan wire.Message)
 	engine.started = true
 	Logger.log.Info("Start consensus with key", engine.config.UserKeySet.GetPublicKeyB58())
@@ -141,6 +145,9 @@ func (engine *Engine) execBeaconRole() {
 	)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
+		engine.config.CRoleInCommitteesMempool <- -1
+		engine.config.CRoleInCommitteesNetSync <- -1
+		
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
@@ -150,6 +157,9 @@ func (engine *Engine) execBeaconRole() {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
+		engine.config.CRoleInCommitteesMempool <- -1
+		engine.config.CRoleInCommitteesNetSync <- -1
+		
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
@@ -159,6 +169,9 @@ func (engine *Engine) execBeaconRole() {
 			engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
+		engine.config.CRoleInCommitteesMempool <- -1
+		engine.config.CRoleInCommitteesNetSync <- -1
+		
 		err = errors.New("Not your turn yet")
 	}
 
@@ -206,7 +219,11 @@ func (engine *Engine) execShardRole(shardID byte) {
 		resBlk interface{}
 	)
 	roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.Round)
-	fmt.Println("My shard role", roundRole)
+	Logger.log.Infof("My shard role %+v, ShardID %+v \n", roundRole, shardID)
+	go func() {
+		engine.config.CRoleInCommitteesMempool <- int(shardID)
+		engine.config.CRoleInCommitteesNetSync <- int(shardID)
+	}()
 	switch roundRole {
 	case common.PROPOSER_ROLE:
 		bftProtocol.RoundData.IsProposer = true

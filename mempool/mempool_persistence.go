@@ -4,26 +4,28 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/databasemp/lvdb"
+	"github.com/constant-money/constant-chain/transaction"
 )
+
 type TempDesc struct {
-	StartTime time.Time
+	StartTime     time.Time
 	IsPushMessage bool
-	Height uint64
-	Fee uint64
-	FeePerKB int32
+	Height        uint64
+	Fee           uint64
+	FeePerKB      int32
 }
+
 func (tp *TxPool) AddTransactionToDatabaseMP(txHash *common.Hash, txDesc TxDesc) error {
 	tx := txDesc.Desc.Tx
 	tempDesc := TempDesc{
-		StartTime: txDesc.StartTime,
-		IsPushMessage:txDesc.IsFowardMessage,
-		Height:txDesc.Desc.Height,
-		Fee:txDesc.Desc.Fee,
-		FeePerKB: txDesc.Desc.FeePerKB,
+		StartTime:     txDesc.StartTime,
+		IsPushMessage: txDesc.IsFowardMessage,
+		Height:        txDesc.Desc.Height,
+		Fee:           txDesc.Desc.Fee,
+		FeePerKB:      txDesc.Desc.FeePerKB,
 	}
 	switch tx.GetType() {
 	//==================For Constant Transfer Only
@@ -82,7 +84,7 @@ func (tp *TxPool) AddTransactionToDatabaseMP(txHash *common.Hash, txDesc TxDesc)
 
 func (tp *TxPool) GetTransactionFromDatabaseMP(txHash *common.Hash) (TxDesc, error) {
 	value, err := tp.config.DataBaseMempool.GetTransaction(txHash)
-	values := strings.Split(string(value),string(lvdb.Splitter))
+	values := strings.Split(string(value), string(lvdb.Splitter))
 	txDesc, err := UmmarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
 	if err != nil {
 		return TxDesc{}, err
@@ -92,18 +94,18 @@ func (tp *TxPool) GetTransactionFromDatabaseMP(txHash *common.Hash) (TxDesc, err
 func (tp *TxPool) ResetDatabaseMP() error {
 	return tp.config.DataBaseMempool.Reset()
 }
-func (tp *TxPool) LoadDatabaseMP() ([]TxDesc,error) {
+func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
 	txDescs := []TxDesc{}
 	allTxHashes, allTxs, err := tp.config.DataBaseMempool.Load()
-	ttl := time.Duration(tp.TxLifeTime) * time.Second
+	ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 	if err != nil {
 		return txDescs, err
 	}
 	for index, tx := range allTxs {
-		values := strings.Split(string(tx),string(lvdb.Splitter))
+		values := strings.Split(string(tx), string(lvdb.Splitter))
 		txDesc, err := UmmarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
 		if err != nil {
-			txHash,err := common.NewHash(allTxHashes[index][3:])
+			txHash, err := common.NewHash(allTxHashes[index][3:])
 			if err != nil {
 				continue
 			}
@@ -121,13 +123,13 @@ func (tp *TxPool) LoadDatabaseMP() ([]TxDesc,error) {
 			tp.RemoveTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
 			continue
 		}
-		
+
 		tp.addTx(&txDesc, false)
 		txDescs = append(txDescs, txDesc)
 	}
 	return txDescs, nil
 }
-func (tp *TxPool) RemoveTransactionFromDatabaseMP(txHash *common.Hash) (error){
+func (tp *TxPool) RemoveTransactionFromDatabaseMP(txHash *common.Hash) error {
 	if has, _ := tp.config.DataBaseMempool.HasTransaction(txHash); has {
 		err := tp.config.DataBaseMempool.RemoveTransaction(txHash)
 		return err
@@ -140,13 +142,13 @@ func UmmarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 	switch txType {
 	case common.TxNormalType:
 		{
-		tx := transaction.Tx{}
-		err := json.Unmarshal(valueTx, &tx)
-		if err != nil {
-			return txDesc, err
-		}
-		
-		txDesc.Desc.Tx = &tx
+			tx := transaction.Tx{}
+			err := json.Unmarshal(valueTx, &tx)
+			if err != nil {
+				return txDesc, err
+			}
+
+			txDesc.Desc.Tx = &tx
 		}
 	case common.TxCustomTokenType:
 		{
