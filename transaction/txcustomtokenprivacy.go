@@ -327,6 +327,8 @@ func (tx *TxCustomTokenPrivacy) GetProof() *zkp.PaymentProof {
 }
 
 func (tx *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []metadata.Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instsUsed []int,
 	shardID byte,

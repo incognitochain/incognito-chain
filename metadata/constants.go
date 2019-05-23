@@ -3,10 +3,9 @@ package metadata
 const (
 	InvalidMeta = 1
 
-	IssuingRequestMeta      = 24
-	IssuingResponseMeta     = 25
-	ContractingRequestMeta  = 26
-	ContractingResponseMeta = 27
+	IssuingRequestMeta     = 24
+	IssuingResponseMeta    = 25
+	ContractingRequestMeta = 26
 
 	ResponseBaseMeta             = 35
 	ShardBlockReward             = 36
@@ -26,9 +25,10 @@ const (
 )
 
 var minerCreatedMetaTypes = []int{
-	ShardBlockSalaryResponseMeta,
+	ShardBlockReward,
+	BeaconSalaryResponseMeta,
 	IssuingResponseMeta,
-	ContractingResponseMeta,
+	ReturnStakingMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
