@@ -23,7 +23,7 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
-	Logger.log.Errorf("\n%v\n%v\n", block.Header, len(block.Body.Transactions))
+	//Logger.log.Errorf("\n%v\n%v\n", block.Header, len(block.Body.Transactions))
 	if block.Header.ShardID != shardID {
 		return errors.New("wrong shard")
 	}

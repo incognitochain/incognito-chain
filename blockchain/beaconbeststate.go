@@ -298,6 +298,8 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
 func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
