@@ -519,26 +519,6 @@ func BytesPlusOne(b []byte) []byte {
 	return res
 }
 
-func IsOffChainAsset(assetID *Hash) bool {
-	return bytes.Equal(assetID[:8], BTCAssetID[:8])
-}
-
-func IsBondAsset(assetID *Hash) bool {
-	return bytes.Equal(assetID[:8], BondTokenID[:8])
-}
-
-func IsConstantAsset(assetID *Hash) bool {
-	return assetID.IsEqual(&ConstantID)
-}
-
-func IsDCBTokenAsset(assetID *Hash) bool {
-	return assetID.IsEqual(&DCBTokenID)
-}
-
-func IsUSDAsset(assetID *Hash) bool {
-	return assetID.IsEqual(&USDAssetID)
-}
-
 func IndexOfByte(item byte, arrays []byte) int {
 	for k, v := range arrays {
 		if v == item {
@@ -607,4 +587,16 @@ func (s *ErrorSaver) Get() error {
 func CheckError(errs ...error) error {
 	errSaver := &ErrorSaver{}
 	return errSaver.Save(errs...)
+}
+
+func ByteEqual(a []byte, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := 0; i < len(a); i++ {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

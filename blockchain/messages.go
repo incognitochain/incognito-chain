@@ -77,8 +77,8 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
 						if !blockchain.ConsensusOngoing {
-							fmt.Println("Shard block insert", newBlk.Header.Height)
-							err := blockchain.InsertShardBlock(newBlk, false)
+							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
+							err = blockchain.InsertShardBlock(newBlk, false)
 							if err != nil {
 								Logger.log.Error(err)
 								return
@@ -91,7 +91,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 			err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 			if err != nil {
-				fmt.Println("Shard block add pool err", err)
+				Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
 			}
 		}
 	}

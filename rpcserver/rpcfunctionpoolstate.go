@@ -2,7 +2,8 @@ package rpcserver
 
 import (
 	"errors"
-
+	"sort"
+	
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/mempool"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
@@ -65,11 +66,15 @@ func (rpcServer RpcServer) handleGetBeaconPoolState(params interface{}, closeCha
 	if beaconPool == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Beacon Pool not init"))
 	}
-	result := beaconPool.GetPoolLen()
+	result := beaconPool.GetAllBlockHeight()
 	// result.BestBlock = nil
 	return result, nil
 }
-
+type Blocks struct {
+	Pending []uint64
+	Valid   []uint64
+	Latest  uint64
+}
 func (rpcServer RpcServer) handleGetShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	// if rpcServer.config.BlockChain.BestState.Beacon == nil {
 	// 	return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
@@ -86,8 +91,11 @@ func (rpcServer RpcServer) handleGetShardPoolState(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
 	result := shardPool.GetAllBlockHeight()
+	sort.Slice(result, func(i, j int) bool {
+		return result[i] < result[j]
+	})
 	// result.BestBlock = nil
-	return result, nil
+	return Blocks{Valid:shardPool.GetValidBlockHeight(), Pending:shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}, nil
 }
 
 func (rpcServer RpcServer) handleGetShardPoolLatestValidHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -183,48 +191,26 @@ handleGetShardPoolState - RPC get shard block in pool
 */
 func (rpcServer RpcServer) handleGetShardPoolStateV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) != 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("wrong format params"))
+	if len(paramsArray) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
 	}
 	shardID := byte(paramsArray[0].(float64))
+	
 	shardPool := mempool.GetShardPool(shardID)
 	if shardPool == nil {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Shard Pool not init"))
+		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
-	blockHeights := shardPool.GetAllBlockHeight()
-	latestBlockHeight := shardPool.GetLatestValidBlockHeight()
-	shardBlockPoolResult := jsonresult.ShardBlockPoolResult{ShardID: shardID}
-	for _, blockHeight := range blockHeights {
-		if blockHeight <= latestBlockHeight {
-			shardBlockPoolResult.ValidBlockHeight = append(shardBlockPoolResult.ValidBlockHeight, blockHeight)
-		} else {
-			shardBlockPoolResult.PendingBlockHeight = append(shardBlockPoolResult.PendingBlockHeight, blockHeight)
-		}
-	}
-	return shardBlockPoolResult, nil
+	result := shardPool.GetAllBlockHeight()
+	sort.Slice(result, func(i, j int) bool {
+		return result[i] < result[j]
+	})
+	return Blocks{Valid:shardPool.GetValidBlockHeight(), Pending:shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}, nil
 }
 
 func (rpcServer RpcServer) handleGetBeaconPoolStateV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) != 0 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("wrong format params"))
-	}
 	beaconPool := mempool.GetBeaconPool()
 	if beaconPool == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Beacon Pool not init"))
 	}
-	blockHeights := beaconPool.GetAllBlockHeight()
-	latestBlockHeight := beaconPool.GetLatestValidBlockHeight()
-	beaconBlockPoolResult := jsonresult.BeaconBlockPoolResult{
-		ValidBlockHeight:   []uint64{},
-		PendingBlockHeight: []uint64{},
-	}
-	for _, blockHeight := range blockHeights {
-		if blockHeight <= latestBlockHeight {
-			beaconBlockPoolResult.ValidBlockHeight = append(beaconBlockPoolResult.ValidBlockHeight, blockHeight)
-		} else {
-			beaconBlockPoolResult.PendingBlockHeight = append(beaconBlockPoolResult.PendingBlockHeight, blockHeight)
-		}
-	}
-	return beaconBlockPoolResult, nil
+	return Blocks{Valid:beaconPool.GetValidBlockHeight(), Pending:beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}, nil
 }
