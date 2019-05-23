@@ -110,6 +110,8 @@ func (bestStateBeacon *BestStateBeacon) GetShardPendingValidator() (res map[byte
 }
 
 func (bsb *BestStateBeacon) GetCurrentShard() byte {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	for shardID, isCurrent := range bsb.ShardHandle {
 		if isCurrent {
 			return shardID
@@ -135,7 +137,6 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 		bestStateBeacon = GetBestStateBeacon()
 	}
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
-	bestStateBeacon.BestBlock = nil
 	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
 	bestStateBeacon.BestShardHeight = make(map[byte]uint64)
 	bestStateBeacon.BeaconHeight = 0
@@ -156,6 +157,8 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	return bestStateBeacon
 }
 func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
@@ -290,8 +293,6 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	return res
 }
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
 	return common.HashH(bestStateBeacon.GetBytes())
 }
 
