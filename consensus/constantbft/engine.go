@@ -194,7 +194,6 @@ func (engine *Engine) execBeaconRole() {
 	} else {
 		Logger.log.Error(err)
 	}
-	return
 }
 
 func (engine *Engine) execShardRole(shardID byte) {

@@ -6,7 +6,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/metadata"
-	privacy "github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 func (blockchain *BlockChain) GetDatabase() database.DatabaseInterface {
@@ -21,7 +21,7 @@ func (blockchain *BlockChain) GetShardIDFromTx(txid string) (byte, error) {
 	if err != nil {
 		return 0, NewBlockChainError(UnExpectedError, err)
 	}
-	block, err1, _ := blockchain.GetShardBlockByHash(blockHash)
+	block, _, err1 := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
 		return 0, NewBlockChainError(UnExpectedError, err1)
 	}
@@ -37,7 +37,7 @@ func (blockchain *BlockChain) GetTxValue(txid string) (uint64, error) {
 	if err != nil {
 		return 0, NewBlockChainError(UnExpectedError, err)
 	}
-	block, err1, _ := blockchain.GetShardBlockByHash(blockHash)
+	block, _, err1 := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
 		return 0, NewBlockChainError(UnExpectedError, err1)
 	}

@@ -84,6 +84,7 @@ func (merkle Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) [
 
 	return merkles
 }
+
 func (merkle Merkle) BuildMerkleTreeOfHashes(shardsHash []*common.Hash, length int) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
@@ -92,10 +93,7 @@ func (merkle Merkle) BuildMerkleTreeOfHashes(shardsHash []*common.Hash, length i
 	merkles := make([]*common.Hash, arraySize)
 
 	// Create the base transaction hashes and populate the array with them.
-	// Create the base transaction hashes and populate the array with them.
-	for i := range shardsHash {
-		merkles[i] = shardsHash[i]
-	}
+	copy(merkles, shardsHash)
 	for i := len(shardsHash); i < len(merkles); i++ {
 		merkles[i], _ = common.Hash{}.NewHashFromStr("")
 	}
@@ -198,10 +196,7 @@ func (merkle Merkle) VerifyMerkleRootFromMerklePath(leaf common.Hash, merklePath
 		i = i / 2
 	}
 	merkleRootPointer := &merkleRoot
-	if merkleRootPointer.IsEqual(finalHash){
-		return true
-	}
-	return false
+	return merkleRootPointer.IsEqual(finalHash)
 }
 
 // nextPowerOfTwo returns the next highest power of two from a given number if

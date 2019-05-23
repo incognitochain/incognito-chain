@@ -93,6 +93,9 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
 	beaconBlockRewardIns, err := metadata.BuildInstForBeaconSalary(blkTmplGenerator.chain.getRewardAmount(beaconBlock.Header.Height), beaconBlock.Header.Height, &beaconBlock.Header.ProducerAddress)
+	if err != nil {
+		Logger.log.Error("NewBlockBeacon", err)
+	}
 	tempInstruction = append(tempInstruction, beaconBlockRewardIns)
 	//fmt.Println("BeaconProducer/tempInstruction", tempInstruction)
 	//==========Create Body
@@ -102,7 +105,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	//============Process new block with beststate
 	fmt.Println("Beacon Candidate", beaconBestState.CandidateBeaconWaitingForCurrentRandom)
 	if len(beaconBlock.Body.Instructions) != 0 {
-		//Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+		Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
 	}
 	beaconBestState.Update(beaconBlock, blkTmplGenerator.chain)
 	//============End Process new block with beststate

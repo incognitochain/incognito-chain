@@ -3,14 +3,11 @@ package blockchain
 import (
 	"sync"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 )
 
-const (
-	workers = 5
-)
 type BlkTmplGenerator struct {
 	// blockpool   BlockPool
 	txPool            TxPool
@@ -38,7 +35,7 @@ func (blkTmplGenerator BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, 
 
 func (blkTmplGenerator *BlkTmplGenerator) Start(cQuit chan struct{}) {
 	Logger.log.Critical("Block Gen is starting")
-	for w:=0; w < workers; w++ {
+	for w := 0; w < workerNum; w++ {
 		go blkTmplGenerator.AddTransactionV2Worker(blkTmplGenerator.CPendingTxs)
 	}
 	for {
@@ -56,6 +53,7 @@ func (blkTmplGenerator *BlkTmplGenerator) Start(cQuit chan struct{}) {
 		}
 	}
 }
+
 //func (blkTmplGenerator *BlkTmplGenerator) AddTransaction(txs []metadata.Transaction) {
 //	blkTmplGenerator.mtx.Lock()
 //	defer blkTmplGenerator.mtx.Unlock()
@@ -102,7 +100,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetPendingTxsV2() []metadata.Transacti
 	blkTmplGenerator.mtx.Lock()
 	defer blkTmplGenerator.mtx.Unlock()
 	pendingTxs := []metadata.Transaction{}
-	for _, tx := range blkTmplGenerator.PendingTxs{
+	for _, tx := range blkTmplGenerator.PendingTxs {
 		pendingTxs = append(pendingTxs, tx)
 	}
 	return pendingTxs
