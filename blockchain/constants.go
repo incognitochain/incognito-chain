@@ -111,7 +111,6 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 // Action for instruction
 const (
 	SetAction    = "set"
-	InitAction   = "init"
 	DeleteAction = "del"
 	SwapAction   = "swap"
 	RandomAction = "random"
