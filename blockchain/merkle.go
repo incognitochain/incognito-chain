@@ -198,10 +198,7 @@ func (merkle Merkle) VerifyMerkleRootFromMerklePath(leaf common.Hash, merklePath
 		i = i / 2
 	}
 	merkleRootPointer := &merkleRoot
-	if merkleRootPointer.IsEqual(finalHash){
-		return true
-	}
-	return false
+	return merkleRootPointer.IsEqual(finalHash)
 }
 
 // nextPowerOfTwo returns the next highest power of two from a given number if

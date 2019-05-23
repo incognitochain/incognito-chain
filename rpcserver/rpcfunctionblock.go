@@ -342,7 +342,7 @@ func (rpcServer RpcServer) handleGetBlockCount(params interface{}, closeChan <-c
 	shardID := byte(paramNumber)
 	isGetBeacon := paramNumber == -1
 	if isGetBeacon {
-		if rpcServer.config.BlockChain.BestState != nil && rpcServer.config.BlockChain.BestState.Beacon != nil && rpcServer.config.BlockChain.BestState.Beacon.BestBlock != nil {
+		if rpcServer.config.BlockChain.BestState != nil && rpcServer.config.BlockChain.BestState.Beacon != nil {
 			return rpcServer.config.BlockChain.BestState.Beacon.BestBlock.Header.Height, nil
 		}
 	}

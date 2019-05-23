@@ -545,7 +545,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 	// update BestShardHash, BestBlock, BestBlockHash
 	bestStateBeacon.PrevBestBlockHash = bestStateBeacon.BestBlockHash
 	bestStateBeacon.BestBlockHash = *newBlock.Hash()
-	bestStateBeacon.BestBlock = newBlock
+	bestStateBeacon.BestBlock = *newBlock
 	bestStateBeacon.Epoch = newBlock.Header.Epoch
 	bestStateBeacon.BeaconHeight = newBlock.Header.Height
 	if newBlock.Header.Height == 1 {
