@@ -24,7 +24,7 @@ var bestStateBeacon *BestStateBeacon //singleton object
 type BestStateBeacon struct {
 	BestBlockHash                          common.Hash          `json:"BestBlockHash"`     // The hash of the block.
 	PrevBestBlockHash                      common.Hash          `json:"PrevBestBlockHash"` // The hash of the block.
-	BestBlock                              *BeaconBlock         `json:"BestBlock"`         // The block.
+	BestBlock                              BeaconBlock          `json:"BestBlock"`         // The block.
 	BestShardHash                          map[byte]common.Hash `json:"BestShardHash"`
 	BestShardHeight                        map[byte]uint64      `json:"BestShardHeight"`
 	Epoch                                  uint64               `json:"Epoch"`
@@ -54,10 +54,11 @@ type BestStateBeacon struct {
 	lockMu      sync.RWMutex
 }
 
-func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
+func (bestStateBeacon *BestStateBeacon) Clone() BestStateBeacon {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
-	if err := copier.Copy(&res, *bestStateBeacon); err != nil {
+	res := BestStateBeacon{}
+	if err := copier.Copy(&res, bestStateBeacon); err != nil {
 		Logger.log.Error(err)
 	}
 	return res
