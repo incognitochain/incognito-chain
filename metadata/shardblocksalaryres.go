@@ -85,6 +85,8 @@ func (sbsRes *ShardBlockSalaryRes) Hash() *common.Hash {
 }
 
 func (sbsRes *ShardBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instUsed []int,
 	shardID byte,

@@ -69,12 +69,13 @@ const (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
-	DCBTokenID       = Hash{1}
-	GOVTokenID       = Hash{2}
-	ConstantID       = Hash{4} // To send Constant in custom token
-	DCBVotingTokenID = Hash{5}
-	GOVVotingTokenID = Hash{6}
+	BondTokenID = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
+	DCBTokenID  = Hash{1}
+	GOVTokenID  = Hash{2}
+	ConstantID  = Hash{4} // To send Constant in custom token
+	IUSDTokenID = Hash{5}
+	IETHTokenID = Hash{6}
+	IBTCTokenID = Hash{7}
 )
 
 // special token data

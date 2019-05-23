@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"math/big"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -18,16 +17,14 @@ import (
 type IssuingRequest struct {
 	ReceiverAddress privacy.PaymentAddress
 	DepositedAmount uint64
-	AssetType       common.Hash // token id (one of types: Constant, BANK)
-	CurrencyType    common.Hash // USD or ETH for now
+	TokenID         common.Hash
 	MetadataBase
 }
 
 func NewIssuingRequest(
 	receiverAddress privacy.PaymentAddress,
 	depositedAmount uint64,
-	assetType common.Hash,
-	currencyType common.Hash,
+	tokenID common.Hash,
 	metaType int,
 ) (*IssuingRequest, error) {
 	metadataBase := MetadataBase{
@@ -36,60 +33,38 @@ func NewIssuingRequest(
 	issuingReq := &IssuingRequest{
 		ReceiverAddress: receiverAddress,
 		DepositedAmount: depositedAmount,
-		AssetType:       assetType,
-		CurrencyType:    currencyType,
+		TokenID:         tokenID,
 	}
 	issuingReq.MetadataBase = metadataBase
 	return issuingReq, nil
 }
 
 func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
-	n := new(big.Int)
-	n, ok := n.SetString(data["DepositedAmount"].(string), 10)
-	if !ok {
-		return nil, errors.Errorf("DepositedAmount incorrect")
-	}
-	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
+	tokenID, err := common.NewHashFromStr(data["TokenID"].(string))
 	if err != nil {
-		return nil, errors.Errorf("CurrencyType incorrect")
+		return nil, errors.Errorf("TokenID incorrect")
 	}
 
-	depositedAmt := uint64(0)
-	if bytes.Equal(currencyType[:], common.USDAssetID[:]) {
-		depositedAmtStr := data["DepositedAmount"].(string)
-		depositedAmtInt, err := strconv.Atoi(depositedAmtStr)
-		if err != nil {
-			return nil, err
-		}
-		depositedAmt = uint64(depositedAmtInt)
-	} else {
-		// Convert from Wei to MilliEther
-		denominator := big.NewInt(common.WeiToMilliEtherRatio)
-		n = n.Quo(n, denominator)
-		if !n.IsUint64() {
-			return nil, errors.Errorf("DepositedAmount cannot be converted into uint64")
-		}
-		depositedAmt = n.Uint64()
+	depositedAmtStr := data["DepositedAmount"].(string)
+	depositedAmtInt, err := strconv.Atoi(depositedAmtStr)
+	if err != nil {
+		return nil, err
 	}
+	depositedAmt := uint64(depositedAmtInt)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	if err != nil {
 		return nil, errors.Errorf("ReceiveAddress incorrect")
 	}
 
-	assetType, err := common.NewHashFromStr(data["AssetType"].(string))
-	if err != nil {
-		return nil, errors.Errorf("AssetType incorrect")
-	}
-
 	return NewIssuingRequest(
 		keyWallet.KeySet.PaymentAddress,
 		depositedAmt,
-		*assetType,
-		*currencyType,
+		*tokenID,
 		IssuingRequestMeta,
 	)
 }
+
 func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
@@ -97,8 +72,18 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	db database.DatabaseInterface,
 ) (bool, error) {
 	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
-		return false, errors.New("The issuance request must be called by centralized website.")
+		return false, errors.New("the issuance request must be called by centralized website")
 	}
+
+	bridgeTokenExisted, err := db.IsBridgeTokenExisted(&iReq.TokenID)
+	if err != nil {
+		return false, err
+	}
+	normalCustomTokenExisted := db.CustomTokenIDExisted(&iReq.TokenID)
+	if !bridgeTokenExisted && normalCustomTokenExisted {
+		return false, errors.New("another custome token was already existed with the same token id")
+	}
+
 	return true, nil
 }
 
@@ -112,11 +97,8 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if iReq.Type != IssuingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
-	if len(iReq.AssetType) != common.HashSize {
-		return false, false, errors.New("Wrong request info's asset type")
-	}
-	if len(iReq.CurrencyType) != common.HashSize {
-		return false, false, errors.New("Wrong request info's currency type")
+	if len(iReq.TokenID) != common.HashSize {
+		return false, false, errors.New("Wrong request info's token id")
 	}
 	return true, true, nil
 }
@@ -125,25 +107,12 @@ func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != IssuingRequestMeta {
 		return false
 	}
-	if !bytes.Equal(iReq.CurrencyType[:], common.USDAssetID[:]) &&
-		!bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) {
-		return false
-	}
-	if !bytes.Equal(iReq.AssetType[:], common.ConstantID[:]) &&
-		!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
-		return false
-	}
-	if bytes.Equal(iReq.CurrencyType[:], common.ETHAssetID[:]) &&
-		!bytes.Equal(iReq.AssetType[:], common.DCBTokenID[:]) {
-		return false
-	}
 	return true
 }
 
 func (iReq *IssuingRequest) Hash() *common.Hash {
 	record := iReq.ReceiverAddress.String()
-	record += iReq.AssetType.String()
-	record += iReq.CurrencyType.String()
+	record += iReq.TokenID.String()
 	record += string(iReq.DepositedAmount)
 	record += iReq.MetadataBase.Hash().String()
 
@@ -153,12 +122,8 @@ func (iReq *IssuingRequest) Hash() *common.Hash {
 }
 
 func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	pkLastByte := iReq.ReceiverAddress.Pk[len(iReq.ReceiverAddress.Pk)-1]
-	receiverShardID := common.GetShardIDFromLastByte(pkLastByte)
 	actionContent := map[string]interface{}{
-		"txReqId":         *(tx.Hash()),
-		"receiverShardID": receiverShardID,
-		"meta":            *iReq,
+		"meta": *iReq,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
