@@ -210,7 +210,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	transactions := make(map[*transaction.Tx]struct{})
 	for _, t := range block.Body.Transactions {
 		switch t.GetType() {
-		case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
+		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
 				transactions[t.(*transaction.Tx)] = struct{}{}
 			}
