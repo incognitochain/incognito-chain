@@ -70,10 +70,8 @@ type DatabaseInterface interface {
 	StoreBeaconBestState(interface{}) error
 	StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
-	StoreStabilityInfoByHeight(uint64, interface{}) error
 
 	FetchCommitteeByHeight(uint64) ([]byte, error)
-	FetchStabilityInfoByHeight(uint64) ([]byte, error)
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
@@ -132,11 +130,5 @@ type DatabaseInterface interface {
 	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
 	PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool
 
-	// Reserve
-	StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error
-	GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)
-	StoreContractingInfo(reqTxID common.Hash, amount uint64, redeem uint64, instType string) error
-	GetContractingInfo(reqTxID common.Hash) (uint64, uint64, string, error)
-	
 	Close() error
 }

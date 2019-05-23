@@ -99,6 +99,7 @@ func (engine *Engine) Start() error {
 							} else {
 								engine.config.BlockChain.ConsensusOngoing = true
 								engine.execShardRole(shardID)
+								fmt.Println("BFT: exit")
 								engine.config.BlockChain.ConsensusOngoing = false
 							}
 						}
@@ -147,7 +148,7 @@ func (engine *Engine) execBeaconRole() {
 	case common.PROPOSER_ROLE:
 		engine.config.CRoleInCommitteesMempool <- -1
 		engine.config.CRoleInCommitteesNetSync <- -1
-		
+
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
@@ -159,7 +160,7 @@ func (engine *Engine) execBeaconRole() {
 	case common.VALIDATOR_ROLE:
 		engine.config.CRoleInCommitteesMempool <- -1
 		engine.config.CRoleInCommitteesNetSync <- -1
-		
+
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
@@ -171,7 +172,7 @@ func (engine *Engine) execBeaconRole() {
 	default:
 		engine.config.CRoleInCommitteesMempool <- -1
 		engine.config.CRoleInCommitteesNetSync <- -1
-		
+
 		err = errors.New("Not your turn yet")
 	}
 

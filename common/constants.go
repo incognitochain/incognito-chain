@@ -32,64 +32,23 @@ const (
 
 // for mining consensus
 const (
-	DurationOfDCBBoard   = 6    //number of block one DCB board in charge
-	DurationOfGOVBoard   = 1000 //number of block one GOV board in charge
 	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock        = 1000
 	MinTxsInBlock        = 10                   // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime     = 2                    // second
 	MaxBlockWaitTime     = 4 - MinBlockWaitTime // second
-	MinBeaconBlkInterval = 1 * time.Second      //second
-	MinShardBlkInterval  = 2 * time.Second      //second
-)
-
-// for voting parameter
-const (
-	SumOfVoteDCBToken                 = 100000000
-	SumOfVoteGOVToken                 = 100000000
-	MinimumBlockOfProposalDuration    = 10
-	MaximumBlockOfProposalDuration    = 200
-	MaximumProposalExplainationLength = 1000
-	DCBGovernorsLowerBound            = 3
-	DCBGovernorsUpperBound            = 4
-	DCBRewardPercent                  = 30
-	GOVGovernorsLowerBound            = 3
-	GOVGovernorsUpperBound            = 4
-	GOVRewardPercent                  = 30
-	BoardRewardPercent                = 30
-	BasePercentage                    = 10000
-	PercentageBoardSalary             = 5
-)
-
-// For Stability board
-const (
-	DCBBoard = BoardType(0)
-	GOVBoard = BoardType(1)
+	MinBeaconBlkInterval = 5 * time.Second      //second
+	MinShardBlkInterval  = 5 * time.Second      //second
 )
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
-	DCBTokenID       = Hash{1}
-	GOVTokenID       = Hash{2}
-	ConstantID       = Hash{4} // To send Constant in custom token
-	DCBVotingTokenID = Hash{5}
-	GOVVotingTokenID = Hash{6}
-)
-
-// special token data
-const (
-	DCBTokenName   = "Decentralized central bank token"
-	DCBTokenSymbol = "DCB"
-	GOVTokenName   = "Government token"
-	GOVTokenSymbol = "GOV"
-)
-
-// asset IDs for oracle feed (must prefix with 99)
-var (
-	BTCAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 1}
-	ETHAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 2}
-	USDAssetID = Hash{99, 99, 99, 99, 99, 99, 99, 99, 3}
+	// 	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
+	// 	DCBTokenID       = Hash{1}
+	// 	GOVTokenID       = Hash{2}
+	ConstantID = Hash{4} // To send Constant in custom token
+// 	DCBVotingTokenID = Hash{5}
+// 	GOVVotingTokenID = Hash{6}
 )
 
 // centralized website's pubkey
@@ -99,8 +58,8 @@ var (
 
 // board addresses
 const (
-	DCBAddress     = "1NHpWKZYCLQeGKSSsJewsA8p3nsPoAZbmEmtsuBqd6yU7KJnzJZVt39b7AgP"
-	GOVAddress     = "1NHoFQ3Nr8fQm3ZLk2ACSgZXjVH6JobpuV65RD3QAEEGe76KknMQhGbc4g8P"
+	// DCBAddress     = "1NHpWKZYCLQeGKSSsJewsA8p3nsPoAZbmEmtsuBqd6yU7KJnzJZVt39b7AgP"
+	// GOVAddress     = "1NHoFQ3Nr8fQm3ZLk2ACSgZXjVH6JobpuV65RD3QAEEGe76KknMQhGbc4g8P"
 	BurningAddress = "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c"
 )
 
