@@ -109,8 +109,8 @@ var RpcHandler = map[string]commandHandler{
 	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
 	CreateAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
 	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
-	GetIssuingStatus:                RpcServer.handleGetIssuingStatus,
-	GetContractingStatus:            RpcServer.handleGetContractingStatus,
+	// GetIssuingStatus:                RpcServer.handleGetIssuingStatus,
+	// GetContractingStatus:            RpcServer.handleGetContractingStatus,
 
 	// dcb
 	GetConstantCirculating: RpcServer.handleGetConstantCirculating,

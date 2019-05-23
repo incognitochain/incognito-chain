@@ -15,25 +15,25 @@ import (
 
 // whoever can send this type of tx
 type ContractingRequest struct {
-	BurnerAddress     privacy.PaymentAddress
-	BurnedConstAmount uint64      // must be equal to vout value
-	CurrencyType      common.Hash // USD or ETH for now
+	BurnerAddress privacy.PaymentAddress
+	BurnedAmount  uint64 // must be equal to vout value
+	TokenID       common.Hash
 	MetadataBase
 }
 
 func NewContractingRequest(
 	burnerAddress privacy.PaymentAddress,
-	burnedConstAmount uint64,
-	currencyType common.Hash,
+	burnedAmount uint64,
+	tokenID common.Hash,
 	metaType int,
 ) (*ContractingRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	contractingReq := &ContractingRequest{
-		CurrencyType:      currencyType,
-		BurnedConstAmount: burnedConstAmount,
-		BurnerAddress:     burnerAddress,
+		TokenID:       tokenID,
+		BurnedAmount:  burnedAmount,
+		BurnerAddress: burnerAddress,
 	}
 	contractingReq.MetadataBase = metadataBase
 	return contractingReq, nil
@@ -45,16 +45,16 @@ func NewContractingRequestFromMap(data map[string]interface{}) (Metadata, error)
 		return nil, errors.Errorf("BurnerAddress incorrect")
 	}
 
-	burnedConstAmount := uint64(data["BurnedConstAmount"].(float64))
+	burnedAmount := uint64(data["BurnedAmount"].(float64))
 
-	currencyType, err := common.NewHashFromStr(data["CurrencyType"].(string))
+	tokenID, err := common.NewHashFromStr(data["TokenID"].(string))
 	if err != nil {
-		return nil, errors.Errorf("CurrencyType incorrect")
+		return nil, errors.Errorf("TokenID incorrect")
 	}
 	return NewContractingRequest(
 		keyWallet.KeySet.PaymentAddress,
-		burnedConstAmount,
-		*currencyType,
+		burnedAmount,
+		*tokenID,
 		ContractingRequestMeta,
 	)
 }
@@ -65,6 +65,9 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
+	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
+		return false, errors.New("the issuance request must be called by centralized website")
+	}
 	return true, nil
 }
 
@@ -75,18 +78,18 @@ func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr 
 	if len(cReq.BurnerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's burner address")
 	}
-	if cReq.BurnedConstAmount == 0 {
-		return false, false, errors.New("Wrong request info's deposited amount")
+	if cReq.BurnedAmount == 0 {
+		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if len(cReq.CurrencyType) != common.HashSize {
-		return false, false, errors.New("Wrong request info's currency type")
+	if len(cReq.TokenID) != common.HashSize {
+		return false, false, errors.New("Wrong request info's token id")
 	}
 
 	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
 	}
-	if cReq.BurnedConstAmount != txr.CalculateTxValue() {
-		return false, false, errors.New("BurnedConstAmount incorrect")
+	if cReq.BurnedAmount != txr.CalculateTxValue() {
+		return false, false, errors.New("BurnedAmount incorrect")
 	}
 	if !bytes.Equal(txr.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
 		return false, false, errors.New("BurnerAddress incorrect")
@@ -101,8 +104,8 @@ func (cReq *ContractingRequest) ValidateMetadataByItself() bool {
 func (cReq *ContractingRequest) Hash() *common.Hash {
 	record := cReq.MetadataBase.Hash().String()
 	record += cReq.BurnerAddress.String()
-	record += cReq.CurrencyType.String()
-	record += string(cReq.BurnedConstAmount)
+	record += cReq.TokenID.String()
+	record += string(cReq.BurnedAmount)
 
 	// final hash
 	hash := common.HashH([]byte(record))
@@ -110,12 +113,8 @@ func (cReq *ContractingRequest) Hash() *common.Hash {
 }
 
 func (cReq *ContractingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	if bytes.Equal(cReq.CurrencyType[:], common.USDAssetID[:]) {
-		return [][]string{}, nil
-	}
 	actionContent := map[string]interface{}{
-		"txReqId": *(tx.Hash()),
-		"meta":    *cReq,
+		"meta": *cReq,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {

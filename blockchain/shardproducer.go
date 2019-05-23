@@ -185,7 +185,13 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	}()
 
 	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
+	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
+	if err != nil {
+		return nil, err
+	}
+	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
+
+	stabilityResponseTxs, err = blockgen.buildStabilityResponseTxsFromInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -315,11 +321,11 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 	currentSize := uint64(0)
 	startTime := time.Now()
 
-	instsForValidations := [][]string{}
-	for _, beaconBlock := range beaconBlocks {
-		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
-	}
-	instUsed := make([]int, len(instsForValidations))
+	// instsForValidations := [][]string{}
+	// for _, beaconBlock := range beaconBlocks {
+	// 	instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
+	// }
+	// instUsed := make([]int, len(instsForValidations))
 
 	for _, txDesc := range sourceTxns {
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
@@ -333,11 +339,14 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain)
-		if err != nil || !ok {
-			txToRemove = append(txToRemove, tx)
-			continue
-		}
+		// ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(
+		// 	[]metadata.Transaction{}, []int{},
+		// 	instsForValidations, instUsed, shardID, blockgen.chain,
+		// )
+		// if err != nil || !ok {
+		// 	txToRemove = append(txToRemove, tx)
+		// 	continue
+		// }
 
 		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()

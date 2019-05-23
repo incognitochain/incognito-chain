@@ -52,13 +52,14 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if err != nil {
 			return [][]string{}, err
 		}
+		actionContentStr := inst[1]
 		newInst := [][]string{}
 		switch metaType {
-		// case metadata.IssuingRequestMeta:
-		// 	newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+		case metadata.IssuingRequestMeta:
+			newInst, err = processIssuingReq(blockChain, actionContentStr)
 
-		// case metadata.ContractingRequestMeta:
-		// 	newInst, err = buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+		case metadata.ContractingRequestMeta:
+			newInst, err = processContractingReq(blockChain, actionContentStr)
 
 		default:
 			continue
@@ -104,4 +105,30 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsFromInstructions(
 		}
 	}
 	return resTxs, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(
+	txs []metadata.Transaction,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) ([]metadata.Transaction, error) {
+	respTxs := []metadata.Transaction{}
+	removeIds := []int{}
+	for i, tx := range txs {
+		var respTx metadata.Transaction
+		var err error
+
+		switch tx.GetMetadataType() {
+		case metadata.IssuingRequestMeta:
+			respTx, err = blockgen.buildIssuanceTx(tx, producerPrivateKey, shardID)
+		}
+
+		if err != nil {
+			// Remove this tx if cannot create corresponding response
+			removeIds = append(removeIds, i)
+		} else if respTx != nil {
+			respTxs = append(respTxs, respTx)
+		}
+	}
+	return respTxs, nil
 }

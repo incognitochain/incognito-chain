@@ -39,9 +39,10 @@ func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 ) ([]metadata.Transaction, error) {
 
 	instUsed := make([]int, len(insts))
+	txsUsed := make([]int, len(txs))
 	invalidTxs := []metadata.Transaction{}
 	for _, tx := range txs {
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instUsed, shardID, bc)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, bc)
 		if err != nil {
 			return nil, err
 		}
