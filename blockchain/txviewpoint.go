@@ -144,7 +144,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for indexTx, tx := range transactions {
 		switch tx.GetType() {
-		case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
+		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
 				normalTx := tx.(*transaction.Tx)
 				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, constantTokenID)
