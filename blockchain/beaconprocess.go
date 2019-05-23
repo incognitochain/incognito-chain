@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 /*
@@ -399,6 +400,9 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	- ShardState
 */
 func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
+	if bestStateBeacon.lockMu == nil {
+		bestStateBeacon.lockMu = new(sync.RWMutex)
+	}
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
 	//=============Verify aggegrate signature
@@ -531,6 +535,9 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	Update Beststate with new Block
 */
 func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *BlockChain) error {
+	if bestStateBeacon.lockMu == nil {
+		bestStateBeacon.lockMu = new(sync.RWMutex)
+	}
 	bestStateBeacon.lockMu.Lock()
 	defer bestStateBeacon.lockMu.Unlock()
 
