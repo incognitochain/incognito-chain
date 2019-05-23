@@ -54,6 +54,15 @@ type BestStateBeacon struct {
 	lockMu      sync.RWMutex
 }
 
+func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	if err := copier.Copy(&res, *bestStateBeacon); err != nil {
+		Logger.log.Error(err)
+	}
+	return res
+}
+
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
@@ -101,6 +110,8 @@ func (bestStateBeacon *BestStateBeacon) GetShardPendingValidator() (res map[byte
 }
 
 func (bsb *BestStateBeacon) GetCurrentShard() byte {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	for shardID, isCurrent := range bsb.ShardHandle {
 		if isCurrent {
 			return shardID
@@ -126,7 +137,6 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 		bestStateBeacon = GetBestStateBeacon()
 	}
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
-	bestStateBeacon.BestBlock = nil
 	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
 	bestStateBeacon.BestShardHeight = make(map[byte]uint64)
 	bestStateBeacon.BeaconHeight = 0
@@ -147,6 +157,8 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	return bestStateBeacon
 }
 func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
@@ -281,14 +293,14 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	return res
 }
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
 	return common.HashH(bestStateBeacon.GetBytes())
 }
 
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
 func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
