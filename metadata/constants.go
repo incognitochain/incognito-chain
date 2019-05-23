@@ -25,12 +25,6 @@ const (
 	MaxDivTxsPerBlock = 1000
 )
 
-// update oracle board actions
-const (
-	Add = iota + 1
-	Remove
-)
-
 var minerCreatedMetaTypes = []int{
 	ShardBlockSalaryResponseMeta,
 	IssuingResponseMeta,
