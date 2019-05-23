@@ -77,8 +77,8 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]st
 			panic("Fail to unmarshal Beacon BestState")
 		}
 	}
-	SC := beaconBestState.ShardCommittee
-	SPV := beaconBestState.ShardPendingValidator
+	SC := beaconBestState.GetShardCommittee()
+	SPV := beaconBestState.GetShardPendingValidator()
 	BC := beaconBestState.BeaconCommittee
 	BPV := beaconBestState.BeaconPendingValidator
 	CBWFCR := beaconBestState.CandidateBeaconWaitingForCurrentRandom

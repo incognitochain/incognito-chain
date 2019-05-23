@@ -12,6 +12,7 @@ import (
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/jinzhu/copier"
 )
 
 // BestState houses information about the current best block and other info
@@ -59,7 +60,18 @@ type BestStateBeacon struct {
 	lockMu      sync.RWMutex
 }
 
+func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	if err := copier.Copy(&res, bestStateBeacon); err != nil {
+		Logger.log.Error(err)
+	}
+	return res
+}
+
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	res := make(map[byte]uint64)
 	for index, element := range bestStateBeacon.BestShardHeight {
 		res[index] = element
@@ -71,6 +83,36 @@ func (bestStateBeacon *BestStateBeacon) GetBestHeightOfShard(shardID byte) uint6
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
 	return bestStateBeacon.BestShardHeight[shardID]
+}
+
+func (bestStateBeacon *BestStateBeacon) GetAShardCommittee(shardID byte) []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return bestStateBeacon.ShardCommittee[shardID]
+}
+
+func (bestStateBeacon *BestStateBeacon) GetShardCommittee() (res map[byte][]string) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	if err := copier.Copy(&res, bestStateBeacon.ShardCommittee); err != nil {
+		Logger.log.Error(err)
+	}
+	return res
+}
+
+func (bestStateBeacon *BestStateBeacon) GetAShardPendingValidator(shardID byte) []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return bestStateBeacon.ShardPendingValidator[shardID]
+}
+
+func (bestStateBeacon *BestStateBeacon) GetShardPendingValidator() (res map[byte][]string) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	if err := copier.Copy(&res, bestStateBeacon.ShardPendingValidator); err != nil {
+		Logger.log.Error(err)
+	}
+	return res
 }
 
 func (bsb *BestStateBeacon) GetCurrentShard() byte {
@@ -262,6 +304,8 @@ func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
 func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
