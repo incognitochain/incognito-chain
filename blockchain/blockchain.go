@@ -599,6 +599,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 				if !existedToken {
 					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
 					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+					if err != nil {
+						Logger.log.Error("CreateAndSaveTxViewPointFromBlock", err)
+					}
 				}
 				/*listCustomToken, err := blockchain.ListCustomToken()
 				if err != nil {

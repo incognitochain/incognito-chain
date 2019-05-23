@@ -300,7 +300,7 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		listSerialNumbers:           make([][]byte, 0),
 		mapCommitments:              make(map[string][][]byte),
 		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
-		mapSnD:                      make(map[string][]big.Int, 0),
+		mapSnD:                      make(map[string][]big.Int),
 		customTokenTxs:              make(map[int32]*transaction.TxCustomToken),
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
@@ -374,7 +374,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedCommitments := make(map[string][][]byte)
-	acceptedSnD := make(map[string][]big.Int, 0)
+	acceptedSnD := make(map[string][]big.Int)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	//@NOTICE: this function just work for Normal Transaction

@@ -519,26 +519,6 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 	return coinList, txTokenDataList, txTokenPrivacyDataList
 }
 
-/*
-	Get output coin of transaction
-	Check receiver last byte
-	Append output coin to corresponding shard
-*/
-func getOutCoinCrossShard(txList []metadata.Transaction, shardID byte) []privacy.OutputCoin {
-	coinList := []privacy.OutputCoin{}
-	for _, tx := range txList {
-		if tx.GetProof() != nil {
-			for _, outCoin := range tx.GetProof().OutputCoins {
-				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
-				if lastByte == shardID {
-					coinList = append(coinList, *outCoin)
-				}
-			}
-		}
-	}
-	return coinList
-}
-
 func calHashOutCoinCrossShard(outCoins []privacy.OutputCoin) common.Hash {
 	tmpByte := []byte{}
 	var outputCoinHash common.Hash
