@@ -384,7 +384,8 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBloc
 Store best state of block(best block, num of tx, ...) into Database
 */
 func (blockchain *BlockChain) StoreBeaconBestState() error {
-	return blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon.Clone())
+	bsb := blockchain.BestState.Beacon.Clone()
+	return blockchain.config.DataBase.StoreBeaconBestState(bsb)
 }
 
 /*
