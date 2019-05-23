@@ -4,10 +4,6 @@ import (
 	"math/big"
 
 	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
@@ -78,10 +74,8 @@ type DatabaseInterface interface {
 	StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
 	DeleteCommitteeByEpoch(uint64) error
-	StoreStabilityInfoByHeight(uint64, interface{}) error
 
 	FetchCommitteeByHeight(uint64) ([]byte, error)
-	FetchStabilityInfoByHeight(uint64) ([]byte, error)
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
@@ -117,9 +111,9 @@ type DatabaseInterface interface {
 	CleanCommitments() error
 
 	// SNDerivator
-	StoreSNDerivators(tokenID *common.Hash, data big.Int, shardID byte) error
-	FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
-	HasSNDerivator(tokenID *common.Hash, data big.Int, shardID byte) (bool, error)
+	StoreSNDerivators(tokenID *common.Hash, data []byte, shardID byte) error
+	//FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
+	HasSNDerivator(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSNDerivator() error
 
 	// Fee estimator
@@ -155,59 +149,5 @@ type DatabaseInterface interface {
 	PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool
 	DeletePrivacyCustomTokenCrossShard(tokenID *common.Hash) error
 
-	// Crowdsale
-	StoreSaleData(saleID, data []byte) error
-	GetSaleData(saleID []byte) ([]byte, error)
-	GetAllSaleData() ([][]byte, error)
-	StoreDCBBondInfo(bondID *common.Hash, amountAvail, cstPaid uint64) error
-	GetDCBBondInfo(bondID *common.Hash) (uint64, uint64)
-
-	// DCB trade bonds with GOV
-	StoreTradeActivation(tradeID []byte, bondID *common.Hash, buy bool, activated bool, amount uint64) error
-	GetTradeActivation(tradeID []byte) (*common.Hash, bool, bool, uint64, error)
-
-	// Reserve
-	StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error
-	GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)
-	StoreContractingInfo(reqTxID common.Hash, amount uint64, redeem uint64, instType string) error
-	GetContractingInfo(reqTxID common.Hash) (uint64, uint64, string, error)
-
-	//Vote
-	AddVoteBoard(
-		boardType common.BoardType,
-		boardIndex uint32,
-		VoterPaymentAddress privacy.PaymentAddress,
-		CandidatePaymentAddress privacy.PaymentAddress,
-		amount uint64,
-	) error
-	GetTopMostVoteGovernor(boardType common.BoardType, currentBoardIndex uint32) (CandidateList, error)
-	NewIterator(*util.Range, *opt.ReadOptions) iterator.Iterator
-	GetKey(string, interface{}) []byte
-	AddListVoterOfProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
-	AddSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte, submitter []byte) error
-	GetProposalTXIDByConstitutionIndex(boardType common.BoardType, constitutionIndex uint32) ([]byte, error)
-	GetSubmitProposalDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) ([]byte, error)
-	DeleteAnyProposalButThisDB(boardType common.BoardType, constitutionIndex uint32, proposalTxID []byte) error
-	GetProposalSubmitterByConstitutionIndexDB(boardType common.BoardType, constitutionIndex uint32) ([]byte, error)
-	AddVoteProposalDB(boardType common.BoardType, constitutionIndex uint32, voterPayment []byte, proposalTxID []byte) error
-	AddBoardFundDB(boardType common.BoardType, constitutionIndex uint32, amountOfBoardFund uint64) error
-	GetBoardFundDB(boardType common.BoardType, constitutionIndex uint32) (uint64, error)
-	AddConstantsPriceDB(constitutionIndex uint32, price uint64) error
-	SetNewProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32, paymentAddresses []privacy.PaymentAddress) error
-	GetCurrentProposalWinningVoter(boardType common.BoardType, constitutionIndex uint32) ([]privacy.PaymentAddress, error)
-	GetEncryptFlag(boardType common.BoardType) (byte, error)
-	SetEncryptFlag(boardType common.BoardType, flag byte)
-	GetEncryptionLastBlockHeight(boardType common.BoardType) (uint64, error)
-	SetEncryptionLastBlockHeight(boardType common.BoardType, height uint64)
-
-	// Multisigs
-	StoreMultiSigsRegistration([]byte, []byte) error
-	GetMultiSigsRegistration([]byte) ([]byte, error)
-	GetBoardVoterList(boardType common.BoardType, chairPaymentAddress privacy.PaymentAddress, boardIndex uint32) []privacy.PaymentAddress
-
-	// bond
-	StoreSoldBondTypes(*common.Hash, []byte) error
-	GetSoldBondTypes() ([][]byte, error)
-	GetSoldBondTypeByID(*common.Hash) ([]byte, error)
 	Close() error
 }

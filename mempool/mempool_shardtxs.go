@@ -9,6 +9,7 @@ import (
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/transaction"
 )
+
 /*
 	Verify Transaction with these condition:
 	1. Validate with current mempool:
@@ -28,11 +29,11 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 			go func(tx metadata.Transaction) {
 				if tx.GetType() == common.TxCustomTokenType {
 					customTokenTx := tx.(*transaction.TxCustomToken)
-						if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
-							errCh <- nil
-							return
-							}
+					if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+						errCh <- nil
+						return
 					}
+				}
 				err := tp.validateTxIndependProperties(tx)
 				errCh <- err
 			}(tx)
@@ -106,6 +107,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 
 	return nil
 }
+
 /*
 SKIP salary transaction
 Verify Transaction with these condition:
@@ -166,7 +168,7 @@ func (tp *TxPool) validateTxIndependProperties(tx metadata.Transaction) error {
 
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	validated := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
+	validated, _ := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
 	if !validated {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidTx, errors.New("invalid tx"))

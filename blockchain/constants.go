@@ -1,6 +1,8 @@
 package blockchain
 
-import "time"
+import (
+	"time"
+)
 
 //Network fixed params
 const (
@@ -14,13 +16,6 @@ const (
 	defaultMaxBlockSyncTime     = 1 * time.Second  // in second
 	defaultCacheCleanupTime     = 30 * time.Second // in second
 
-	// Threshold ratio
-	ThresholdRatioOfDCBCrisis   = 9000
-	ThresholdRatioOfGOVCrisis   = 9000
-	ConstitutionPerBoard        = 10
-	EndOfFirstBoard             = 50
-	ExtendDurationForFirstBoard = 30
-	BaseSalaryBoard             = 10000
 )
 
 // CONSTANT for network MAINNET
@@ -35,32 +30,33 @@ const (
 	MainNetActiveShards        = 2
 
 	//board and proposal parameters
-	MainnetSalaryPerTx                = 0
-	MainnetBasicSalary                = 0
-	MainnetInitFundSalary             = 0
-	MainnetInitDCBToken               = 0
-	MainnetInitGovToken               = 0
-	MainnetInitBondToken              = 0
+	MainnetBasicReward                = 0
+	MainnetRewardHalflife             = 100000
 	MainnetFeePerTxKb                 = 0
 	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
 
-var MainnetInitConstant = []string{}
-
-// for beacon
-// public key
-var PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
-
-// For shard
-// public key
-var PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
+// VARIABLE for mainnet
+var (
+	MainnetInitConstant = []string{}
+	// for beacon
+	// public key
+	PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
+	// For shard
+	// public key
+	PreSelectShardNodeMainnetSerializedPubkey = PreSelectShardNodeTestnetSerializedPubkey
+	MaxTxsInBlock                             = 600
+	MaxTxsProcessTimeInBlockCreation          = float64(0.85)
+	TxsAverageProcessTime                     = int64(5000) // count in nano second ~= 5 mili seconds
+	DefaultTxsAverageProcessTime              = int64(5000) // count in nano second
+)
 
 // END CONSTANT for network MAINNET
 
 // CONSTANT for network TESTNET
 const (
-	Testnet            = 0x02
+	Testnet            = 0x255
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
@@ -69,12 +65,8 @@ const (
 	TestNetActiveShards        = 2
 
 	//board and proposal parameters
-	TestnetSalaryPerTx                = 0
-	TestnetBasicSalary                = 0
-	TestnetInitFundSalary             = 100000
-	TestnetInitDCBToken               = 10000
-	TestnetInitGovToken               = 10000
-	TestnetInitBondToken              = 0
+	TestnetBasicReward                = 2000
+	TestnetRewardHalflife             = 100000
 	TestnetFeePerTxKb                 = 2
 	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 )
@@ -126,14 +118,8 @@ const (
 	StakeAction  = "stake"
 )
 
-// Key param for instruction
-const (
-	salaryFund          = "salaryFund"
-	oracleInitialPrices = "oracleInitialPrices"
-)
-
 // ---------------------------------------------
 
 var TestnetInitConstant = []string{
-	`{"Version":1,"Type":"s","LockTime":1554269718,"Fee":0,"Info":null,"SigPubKey":"A58CKhajw92BH9mFlRBEbCrAOl8nzD9Ey4TdMLWDKL0A","Sig":"ZqtpQ/H30vwQSNMrNj5yU1CU4hH958AnxsXJVLaysV76IUDP3IN+FiII5nwVs8T4KRwsA60p7EMT7v1H95nN8A==","Proof":"11111116WGHqpGRpb156mNjZAF55nAeqtfP68nb2hQYXCzLzACytCMb85wsvL37QLnSmmFCf6UU4oWWQx1FtQQjmUW1ZFq6dBJt1GwQLNKGz8DqR4P2UfKN2eNXX83htr2AaLUUEQoSw1ntBaRq4ArQgkhT6oMzv5bHqRDbZdR5Z9yt4jZvHGveWdCowP5jRq1vH3j5Z92W9eguWWEhmkKe9hj","PubKeyLastByteSender":0,"Metadata":null}`,
+	`{"Version":1,"Type":"s","LockTime":1557799670,"Fee":0,"Info":null,"SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA","Sig":"P1wbiDpmn2PK9G3FNILqu3JrU5E4ekfrnOz9X7Dd9HRHwp+YDFiEAMLicj7mhKcp3RCR+SWsWOaFxenbrmzXdA==","Proof":"1111111RMhr5Bpy8zSZm7bQEnJcEEbeMSYh6wX9LdwSBjWhESroPN9mvBuwapr4DfKH26bQm9Eu8jtKR3saFoseZj46YQbf7iyuiA6JhAKmekHK1ds4qtFw1ipFzhLYNvp4MYXEupErvQGvZ6bvd9sxDxbwrEFJuV7i8QnHMLftsAAwDAEpDr8MkuxwDXAr5rEjoo9h6SDBHo4c1X6VRBT2GSe3","PubKeyLastByteSender":0,"Metadata":null}`,
 }
