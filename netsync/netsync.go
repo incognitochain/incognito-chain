@@ -4,6 +4,7 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/patrickmn/go-cache"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,6 +23,8 @@ const (
 	shardToBeaconBlockCache = 500
 	txCache                 = 10000
 	workers                 = 5
+	MsgLiveTime         = 3 * time.Second  // in second
+	MsgsCleanupInterval = 10 * time.Second //in second
 )
 
 type NetSync struct {
@@ -58,12 +61,7 @@ type NetSyncConfig struct {
 	}
 }
 type NetSyncCache struct {
-	beaconBlockCache        *lru.Cache
-	beaconBlockCacheMtx     sync.RWMutex
-	shardBlockCache         *lru.Cache
-	shardBlockCacheMtx      sync.RWMutex
-	shardToBeaconBlockCache *lru.Cache
-	crossShardBlockCache    *lru.Cache
+	blockCache              *cache.Cache
 	txCache                 *lru.Cache
 	CTxCache                chan common.Hash
 }
@@ -73,17 +71,11 @@ func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgSha
 	netSync.ShardIDConfig = cfgShardID
 	netSync.cQuit = make(chan struct{})
 	netSync.cMessage = make(chan interface{})
-	beaconBlockCache, _ := lru.New(beaconBlockCache)
-	shardBlockCache, _ := lru.New(shardBlockCache)
+	blockCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	txCache, _ := lru.New(txCache)
-	shardToBeaconBlockCache, _ := lru.New(shardToBeaconBlockCache)
-	crossShardBlockCache, _ := lru.New(crossShardBlockCache)
 	netSync.Cache = &NetSyncCache{
-		beaconBlockCache:        beaconBlockCache,
-		shardBlockCache:         shardBlockCache,
 		txCache:                 txCache,
-		shardToBeaconBlockCache: shardToBeaconBlockCache,
-		crossShardBlockCache:    crossShardBlockCache,
+		blockCache: blockCache,
 	}
 	netSync.Cache.CTxCache = cTxCache
 	return &netSync
@@ -365,26 +357,26 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 
 func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
-	if isAdded := netSync.HandleCacheBeaconBlock(&msg.Block); !isAdded {
+	if isAdded := netSync.HandleCacheBlock(*msg.Block.Hash()); !isAdded {
 		netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
 	}
 }
 func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
-	if isAdded := netSync.HandleCacheShardBlock(&msg.Block); !isAdded {
+	if isAdded := netSync.HandleCacheBlock(*msg.Block.Hash()); !isAdded {
 		netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
 	}
 }
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")
-	if isAdded := netSync.HandleCacheCrossShardBlock(&msg.Block); !isAdded {
+	if isAdded := netSync.HandleCacheBlock(*msg.Block.Hash()); !isAdded {
 		netSync.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
 	}
 
 }
 func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Info("Handling new message ShardToBeacon")
-	if isAdded := netSync.HandleCacheShardToBeaconBlock(&msg.Block); !isAdded {
+	if isAdded := netSync.HandleCacheBlock(*msg.Block.Hash()); !isAdded {
 		netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
 	}
 }
@@ -469,25 +461,13 @@ func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 		netSync.GetBlkShardByHeightAndSend(peerID, msg.FromPool, 1, msg.BySpecificHeight, msg.FromShardID, msg.BlkHeights, msg.ToShardID)
 	}
 }
-func (netSync *NetSync) HandleCacheBeaconBlock(block *blockchain.BeaconBlock) bool {
-	netSync.Cache.beaconBlockCacheMtx.Lock()
-	defer netSync.Cache.beaconBlockCacheMtx.Unlock()
-	_, ok := netSync.Cache.beaconBlockCache.Get(block.Header.Hash())
+func (netSync *NetSync) HandleCacheBlock(blockHash common.Hash) bool {
+	
+	_, ok := netSync.Cache.blockCache.Get(blockHash.String())
 	if ok {
 		return true
 	}
-	netSync.Cache.beaconBlockCache.Add(block.Header.Hash(), true)
-	return false
-}
-
-func (netSync *NetSync) HandleCacheShardBlock(block *blockchain.ShardBlock) bool {
-	netSync.Cache.shardBlockCacheMtx.Lock()
-	defer netSync.Cache.shardBlockCacheMtx.Unlock()
-	_, ok := netSync.Cache.shardBlockCache.Get(block.Header.Hash())
-	if ok {
-		return true
-	}
-	netSync.Cache.shardBlockCache.Add(block.Header.Hash(), true)
+	netSync.Cache.blockCache.Add(blockHash.String(),1, MsgLiveTime)
 	return false
 }
 
@@ -502,22 +482,6 @@ func (netSync *NetSync) HandleCacheTx(transaction metadata.Transaction) bool {
 
 func (netSync *NetSync) HandleCacheTxHash(txHash common.Hash) {
 	netSync.Cache.txCache.Add(txHash, true)
-}
-func (netSync *NetSync) HandleCacheShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) bool {
-	_, ok := netSync.Cache.shardToBeaconBlockCache.Get(block.Header.Hash())
-	if ok {
-		return true
-	}
-	netSync.Cache.shardToBeaconBlockCache.Add(block.Header.Hash(), true)
-	return false
-}
-func (netSync *NetSync) HandleCacheCrossShardBlock(block *blockchain.CrossShardBlock) bool {
-	_, ok := netSync.Cache.crossShardBlockCache.Get(block.Header.Hash())
-	if ok {
-		return true
-	}
-	netSync.Cache.crossShardBlockCache.Add(block.Header.Hash(), true)
-	return false
 }
 
 func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
