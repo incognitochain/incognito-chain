@@ -273,11 +273,11 @@ func (blockchain *BlockChain) initBeaconState() error {
 		Logger.log.Error("Error Store best state for block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	if err := blockchain.config.DataBase.StoreBeaconBlock(blockchain.BestState.Beacon.BestBlock); err != nil {
+	if err := blockchain.config.DataBase.StoreBeaconBlock(&blockchain.BestState.Beacon.BestBlock); err != nil {
 		Logger.log.Error("Error store beacon block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
-	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.ShardCommittee); err != nil {
+	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
 		return err
 	}
 	blockHash := initBlock.Hash()
@@ -309,7 +309,7 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 	if err != nil {
 		return nil, err
 	}
-	block, err, _ := blockchain.GetBeaconBlockByHash(hashBlock)
+	block, _, err := blockchain.GetBeaconBlockByHash(hashBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -319,17 +319,17 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetBeaconBlockByHash(hash *common.Hash) (*BeaconBlock, error, uint64) {
+func (blockchain *BlockChain) GetBeaconBlockByHash(hash *common.Hash) (*BeaconBlock, uint64, error) {
 	blockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(hash)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
 	block := BeaconBlock{}
 	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
-	return &block, nil, uint64(len(blockBytes))
+	return &block, uint64(len(blockBytes)), nil
 }
 
 /*
@@ -354,7 +354,7 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 	if err != nil {
 		return nil, err
 	}
-	block, err, _ := blockchain.GetShardBlockByHash(hashBlock)
+	block, _, err := blockchain.GetShardBlockByHash(hashBlock)
 
 	return block, err
 }
@@ -362,25 +362,25 @@ func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte)
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, error, uint64) {
+func (blockchain *BlockChain) GetShardBlockByHash(hash *common.Hash) (*ShardBlock, uint64, error) {
 	blockBytes, err := blockchain.config.DataBase.FetchBlock(hash)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
 
 	block := ShardBlock{}
 	err = json.Unmarshal(blockBytes, &block)
 	if err != nil {
-		return nil, err, 0
+		return nil, 0, err
 	}
-	return &block, nil, uint64(len(blockBytes))
+	return &block, uint64(len(blockBytes)), nil
 }
 
 /*
 Store best state of block(best block, num of tx, ...) into Database
 */
 func (blockchain *BlockChain) StoreBeaconBestState() error {
-	return blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon.Clone())
+	return blockchain.config.DataBase.StoreBeaconBestState(blockchain.BestState.Beacon)
 }
 
 /*
@@ -557,13 +557,6 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 	return nil
 }
 
-// func (self *BlockChain) GetChainBlocks(shardID byte) ([]*Block, error) {
-// 	result := make([]*Block, 0)
-// 	data, err := self.config.DataBase.FetchChainBlocks(shardID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
 // @note: this function only work for transaction transfer token/constant within shard
@@ -594,6 +587,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 				if !existedToken {
 					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
 					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+					if err != nil {
+						Logger.log.Error("CreateAndSaveTxViewPointFromBlock", err)
+					}
 				}
 				/*listCustomToken, err := blockchain.ListCustomToken()
 				if err != nil {
@@ -700,7 +696,9 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block)
-
+	if err != nil {
+		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock", err)
+	}
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		// 0xsirrush updated: check existed tokenID
 		tokenID := privacyCustomTokenSubView.tokenID
@@ -769,7 +767,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 
 /*
 // 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
-//   H: value-spent/unspent-rewarded/unreward
+//   H: value-spent/unspent
 */
 func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken, shardID byte) error {
 	Splitter := lvdb.Splitter
@@ -952,9 +950,9 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.
 	for key, value := range data {
 		keys := strings.Split(key, string(splitter))
 		values := strings.Split(value, string(splitter))
-		// get unspent and unreward transaction output
+		// values: [amount-value, spent/unspent]
+		// get unspent transaction output
 		if strings.Compare(values[1], string(unspent)) == 0 {
-
 			vout := transaction.TxTokenVout{}
 			vout.PaymentAddress = receiverKeyset.PaymentAddress
 			txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
@@ -970,7 +968,7 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.
 				return nil, err
 			}
 			vout.Value = uint64(value)
-			fmt.Println("GetCustomTokenPaymentAddressUTXO VOUT", vout)
+			Logger.log.Info("GetCustomTokenPaymentAddressUTXO VOUT", vout)
 			voutList = append(voutList, vout)
 		}
 	}
@@ -985,7 +983,7 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash *common.Hash) (byte, *
 		Logger.log.Error(abc)
 		return byte(255), nil, -1, nil, abc
 	}
-	block, err1, _ := blockchain.GetShardBlockByHash(blockHash)
+	block, _, err1 := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
 		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return byte(255), nil, -1, nil, NewBlockChainError(UnExpectedError, err1)
@@ -1103,10 +1101,6 @@ func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[str
 func (blockchain *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
 	return blockchain.config.customTokenRewardSnapshot
 }
-
-// func (blockchain *BlockChain) GetBestBlock(shardID byte) *Block {
-// 	return blockchain.BestState[shardID].BestBlock
-// }
 
 func (self *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 	return self.BestState.Beacon.BestBlock.Header.Height
