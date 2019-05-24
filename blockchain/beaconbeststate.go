@@ -19,7 +19,7 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-var bestStateBeacon *BestStateBeacon //singleton object
+var bestStateBeacon *BestStateBeacon
 
 type BestStateBeacon struct {
 	BestBlockHash                          common.Hash          `json:"BestBlockHash"`     // The hash of the block.
@@ -54,18 +54,20 @@ type BestStateBeacon struct {
 	lockMu      sync.RWMutex
 }
 
-func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	b, err := json.Marshal(bestStateBeacon)
+func (s *BestStateBeacon) MarshalJSON() ([]byte, error) {
+	s.lockMu.RLock()
+	defer s.lockMu.RUnlock()
+
+	type Alias BestStateBeacon
+	b, err := json.Marshal(&struct {
+		*Alias
+	}{
+		(*Alias)(s),
+	})
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	err = json.Unmarshal(b, &res)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	return res
+	return b, err
 }
 
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
@@ -143,6 +145,7 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	if bestStateBeacon == nil {
 		bestStateBeacon = GetBestStateBeacon()
 	}
+	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
 	bestStateBeacon.BestShardHeight = make(map[byte]uint64)

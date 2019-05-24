@@ -1,13 +1,14 @@
 package constantbft
 
 import (
+	"fmt"
 	"math/big"
 	"sort"
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
-	privacy "github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 )
 
@@ -17,7 +18,6 @@ type bftCommittedSig struct {
 }
 
 type multiSigScheme struct {
-	userKeySet *cashec.KeySet
 	//user data use for sign
 	dataToSig common.Hash
 	personal  struct {
@@ -104,12 +104,21 @@ func (multiSig *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig st
 	listPubkeyOfSigners := GetPubKeysFromIdx(multiSig.combine.SigningCommittee, validatorsIdx)
 	validatorPubkey := new(privacy.PublicKey)
 	pubKeyTemp, byteVersion, err := base58.Base58Check{}.Decode(validatorPk)
-	if (err != nil) || (byteVersion != common.ZeroByte) {
+	if err != nil {
 		return err
+	}
+	if byteVersion != common.ZeroByte {
+		return fmt.Errorf("VerifyCommitSig byte version %+v", byteVersion)
 	}
 	*validatorPubkey = pubKeyTemp
 	var valSigbytesarr []byte
 	valSigbytesarr, byteVersion, err = base58.Base58Check{}.Decode(commitSig)
+	if err != nil {
+		return err
+	}
+	if byteVersion != common.ZeroByte {
+		return fmt.Errorf("VerifyCommitSig byte version %+v", byteVersion)
+	}
 	valSig := new(privacy.SchnMultiSig)
 	err = valSig.SetBytes(valSigbytesarr)
 	if err != nil {

@@ -6,8 +6,8 @@ type constantbftLogger struct {
 	log common.Logger
 }
 
-func (self *constantbftLogger) Init(inst common.Logger) {
-	self.log = inst
+func (constantbftLogger *constantbftLogger) Init(inst common.Logger) {
+	constantbftLogger.log = inst
 }
 
 // Global instant to use
