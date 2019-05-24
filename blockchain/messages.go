@@ -83,7 +83,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 						fmt.Println("Shard block received 3", blockchain.ConsensusOngoing, blockchain.IsReady(true, newBlk.Header.ShardID))
 						if blockchain.IsReady(true, newBlk.Header.ShardID) == false {
 							Logger.log.Info("Insert New Shard Block to pool", newBlk.Header.Height)
-							err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+							err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 							if err != nil {
 								Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
 							}
