@@ -3,7 +3,7 @@ package constantbft
 import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
-	privacy "github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/privacy"
 )
 
 func GetPubKeysFromIdx(pubkeyList []string, idxs []int) []*privacy.PublicKey {
@@ -21,8 +21,7 @@ func GetPubKeysFromIdx(pubkeyList []string, idxs []int) []*privacy.PublicKey {
 }
 
 func GetClosestPoolState(poolStates []map[byte]uint64) map[byte]uint64 {
-	var closestPoolState map[byte]uint64
-	closestPoolState = make(map[byte]uint64)
+	closestPoolState := make(map[byte]uint64)
 
 	for _, poolState := range poolStates {
 		for shardID, blkHeight := range poolState {

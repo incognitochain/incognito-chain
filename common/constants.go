@@ -23,7 +23,7 @@ const (
 // For all Transaction information
 const (
 	TxNormalType             = "n"  // normal tx(send and receive coin)
-	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
+	TxRewardType             = "s"  // reward tx
 	TxReturnStakingType      = "rs" //
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
@@ -47,8 +47,8 @@ var (
 	// 	DCBTokenID       = Hash{1}
 	// 	GOVTokenID       = Hash{2}
 	ConstantID = Hash{4} // To send Constant in custom token
-// 	DCBVotingTokenID = Hash{5}
-// 	GOVVotingTokenID = Hash{6}
+	// 	DCBVotingTokenID = Hash{5}
+	// 	GOVVotingTokenID = Hash{6}
 )
 
 // centralized website's pubkey
