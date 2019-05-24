@@ -238,24 +238,3 @@ func CalcMerkleRoot(txns []metadata.Transaction) common.Hash {
 	merkles := Merkle{}.BuildMerkleTreeStore(utilTxns)
 	return *merkles[len(merkles)-1]
 }
-
-/*
-// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
-*/
-/*func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
-	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-			tx, ok := blockTx.(*transaction.TxNormal)
-			if ok == false {
-				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		}
-	}
-	return nil
-}*/

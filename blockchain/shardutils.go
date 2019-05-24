@@ -60,8 +60,10 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 				shardID := common.GetShardIDFromLastByte(lastByte)
 				byteMap[common.GetShardIDFromLastByte(shardID)] = 1
+				//fmt.Println("CS: header has output coin to shard", shardID)
 			}
 		}
+
 		switch tx.GetType() {
 		case common.TxCustomTokenType:
 			{
@@ -363,7 +365,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 		switch tx.GetType() {
 		//==================For Constant Transfer Only
 		//TxReturnStakingType cannot be crossshard tx
-		case common.TxNormalType, common.TxSalaryType:
+		case common.TxNormalType, common.TxRewardType:
 			{
 				//==================Proof Process
 				if tx.GetProof() != nil {
@@ -465,6 +467,7 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 			for _, outCoin := range tx.GetProof().OutputCoins {
 				lastByte := common.GetShardIDFromLastByte(outCoin.CoinDetails.GetPubKeyLastByte())
 				if lastByte == shardID {
+					//fmt.Println("CS: outputcoin has output coin to shard", lastByte)
 					coinList = append(coinList, *outCoin)
 				}
 			}
