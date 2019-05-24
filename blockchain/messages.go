@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -56,6 +57,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	}
 	blockchain.syncStatus.Unlock()
 
+	pState.updateTime = time.Now()
 	blockchain.syncStatus.PeersStateLock.Lock()
 	blockchain.syncStatus.PeersState[pState.Peer] = pState
 	blockchain.syncStatus.PeersStateLock.Unlock()
