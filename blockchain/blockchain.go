@@ -57,12 +57,8 @@ type BlockChain struct {
 			Shards map[byte]bool
 		}
 	}
+	Synker           synker
 	ConsensusOngoing bool
-	// knownChainState struct {
-	// 	Shards map[byte]ChainState
-	// 	Beacon ChainState
-	// }
-	// PeerStateCh chan *peerState
 }
 type BestState struct {
 	Beacon *BestStateBeacon
