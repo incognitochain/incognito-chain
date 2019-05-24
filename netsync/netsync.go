@@ -3,7 +3,6 @@ package netsync
 import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/patrickmn/go-cache"
 	"sync"
 	"sync/atomic"
@@ -58,7 +57,7 @@ type NetSyncConfig struct {
 }
 type NetSyncCache struct {
 	blockCache              *cache.Cache
-	txCache                 *lru.Cache
+	txCache                 *cache.Cache
 	CTxCache                chan common.Hash
 }
 
@@ -68,7 +67,7 @@ func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgSha
 	netSync.cQuit = make(chan struct{})
 	netSync.cMessage = make(chan interface{})
 	blockCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
-	txCache, _ := lru.New(txCache)
+	txCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	netSync.Cache = &NetSyncCache{
 		txCache:                 txCache,
 		blockCache: blockCache,
@@ -468,16 +467,17 @@ func (netSync *NetSync) HandleCacheBlock(blockHash common.Hash) bool {
 }
 
 func (netSync *NetSync) HandleCacheTx(transaction metadata.Transaction) bool {
-	_, ok := netSync.Cache.txCache.Get(*transaction.Hash())
+	txHash := *transaction.Hash()
+	_, ok := netSync.Cache.txCache.Get(txHash.String())
 	if ok {
 		return true
 	}
-	netSync.Cache.txCache.Add(*transaction.Hash(), true)
+	netSync.Cache.txCache.Add(txHash.String(),1, MsgLiveTime)
 	return false
 }
 
 func (netSync *NetSync) HandleCacheTxHash(txHash common.Hash) {
-	netSync.Cache.txCache.Add(txHash, true)
+	netSync.Cache.txCache.Add(txHash.String(),1, MsgLiveTime)
 }
 
 func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
