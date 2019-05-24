@@ -17,6 +17,7 @@ type peerState struct {
 	ShardToBeaconPool *map[byte][]uint64
 	CrossShardPool    map[byte]*map[byte][]uint64
 	Peer              libp2p.ID
+	updateTime        time.Time
 }
 
 type ChainState struct {
