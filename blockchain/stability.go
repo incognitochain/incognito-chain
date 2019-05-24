@@ -39,7 +39,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	beaconBestState *BestStateBeacon,
 ) ([][]string, error) {
 	instructions := [][]string{}
-
 	for _, inst := range shardBlockInstructions {
 		if len(inst) == 0 {
 			continue
@@ -53,13 +52,9 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if err != nil {
 			return [][]string{}, err
 		}
-		actionContentStr := inst[1]
 		switch metaType {
-		case metadata.IssuingRequestMeta:
-			newInst, err = processIssuingReq(blockChain, actionContentStr)
-
-		case metadata.ContractingRequestMeta:
-			newInst, err = processContractingReq(blockChain, actionContentStr)
+		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta:
+			newInst = [][]string{inst}
 
 		default:
 			continue

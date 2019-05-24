@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"reflect"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
@@ -68,10 +69,25 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
 		return false, errors.New("the issuance request must be called by centralized website")
 	}
+
+	bridgeTokenExisted, err := db.IsBridgeTokenExisted(&cReq.TokenID)
+	if err != nil {
+		return false, err
+	}
+	if !bridgeTokenExisted {
+		return false, errors.New("the burning token is not existed in bridge tokens")
+	}
+
 	return true, nil
 }
 
 func (cReq *ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+
+	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
+	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
+		return true, true, nil
+	}
+
 	if cReq.Type != ContractingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
