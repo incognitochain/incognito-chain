@@ -17,10 +17,6 @@ import (
 )
 
 const (
-	beaconBlockCache        = 1000
-	shardBlockCache         = 1000
-	crossShardBlockCache    = 500
-	shardToBeaconBlockCache = 500
 	txCache                 = 10000
 	workers                 = 5
 	MsgLiveTime         = 3 * time.Second  // in second
