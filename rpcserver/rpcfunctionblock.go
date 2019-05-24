@@ -72,7 +72,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			return nil, NewRPCError(ErrUnexpected, errH)
 		}
 		// block, errD := rpcServer.config.BlockChain.GetBlockByHash(hash)
-		block, errD, _ := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
+		block, _, errD := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
 		if errD != nil {
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
@@ -176,7 +176,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 				transactionT.Hash = tx.Hash().String()
 
 				switch tx.GetType() {
-				case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
+				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 					txN := tx.(*transaction.Tx)
 					data, err := json.Marshal(txN)
 					if err != nil {
@@ -206,7 +206,7 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 		if errH != nil {
 			return nil, NewRPCError(ErrUnexpected, errH)
 		}
-		block, errD, _ := rpcServer.config.BlockChain.GetBeaconBlockByHash(hash)
+		block, _, errD := rpcServer.config.BlockChain.GetBeaconBlockByHash(hash)
 		if errD != nil {
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
@@ -260,7 +260,7 @@ func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan 
 		for numBlock > 0 {
 			numBlock--
 			// block, errD := rpcServer.config.BlockChain.GetBlockByHash(previousHash)
-			block, errD, size := rpcServer.config.BlockChain.GetShardBlockByHash(previousHash)
+			block, size, errD := rpcServer.config.BlockChain.GetShardBlockByHash(previousHash)
 			if errD != nil {
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
@@ -280,7 +280,7 @@ func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan 
 		for numBlock > 0 {
 			numBlock--
 			// block, errD := rpcServer.config.BlockChain.GetBlockByHash(previousHash)
-			block, errD, size := rpcServer.config.BlockChain.GetBeaconBlockByHash(previousHash)
+			block, size, errD := rpcServer.config.BlockChain.GetBeaconBlockByHash(previousHash)
 			if errD != nil {
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
@@ -342,7 +342,7 @@ func (rpcServer RpcServer) handleGetBlockCount(params interface{}, closeChan <-c
 	shardID := byte(paramNumber)
 	isGetBeacon := paramNumber == -1
 	if isGetBeacon {
-		if rpcServer.config.BlockChain.BestState != nil && rpcServer.config.BlockChain.BestState.Beacon != nil && rpcServer.config.BlockChain.BestState.Beacon.BestBlock != nil {
+		if rpcServer.config.BlockChain.BestState != nil && rpcServer.config.BlockChain.BestState.Beacon != nil {
 			return rpcServer.config.BlockChain.BestState.Beacon.BestBlock.Header.Height, nil
 		}
 	}
@@ -419,7 +419,7 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 			return nil, NewRPCError(ErrUnexpected, errors.New("invalid blockhash format"))
 		}
 		// block, err := rpcServer.config.BlockChain.GetBlockByHash(&bhash)
-		block, err, _ := rpcServer.config.BlockChain.GetShardBlockByHash(&bhash)
+		block, _, err := rpcServer.config.BlockChain.GetShardBlockByHash(&bhash)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, errors.New("block not exist"))
 		}

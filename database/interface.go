@@ -24,9 +24,6 @@ type DatabaseInterface interface {
 	HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error
 	GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) (uint64, error)
 	DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error
-	// StoreOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlk interface{}) error
-	// HasOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) error
-	// GetOutgoingCrossShard(shardID byte, crossShardID byte, blkHeight uint64) ([]byte, error)
 
 	StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error
 	HasAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error
@@ -132,7 +129,6 @@ type DatabaseInterface interface {
 	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                             // from token id get all custom txs
 	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                   // get balance of all paymentaddress of a token (only return payment address with balance > 0)
-	UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress []byte, txHash *common.Hash, voutIndex int) error
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
 	GetCustomTokenPaymentAddressesBalanceUnreward(tokenID *common.Hash) (map[string]uint64, error)
 

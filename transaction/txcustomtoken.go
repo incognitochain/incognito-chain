@@ -20,7 +20,6 @@ import (
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
 // and contain data(vin, vout) to support issuing and transfer a custom token(token from end-user, look like erc-20)
 // Dev or end-user can use this class tx to create an token type which use personal purpose
-// In particular of constant network, some special token (DCB token, GOV token, BOND token, ....) used this class tx to implement something
 type TxCustomToken struct {
 	Tx                      // inherit from normal tx of constant(supporting privacy)
 	TxTokenData TxTokenData // vin - vout format
@@ -73,7 +72,7 @@ func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	mr metadata.MempoolRetriever,
 ) error {
-	if customTokenTx.Type == common.TxSalaryType || customTokenTx.Type == common.TxReturnStakingType {
+	if customTokenTx.Type == common.TxRewardType || customTokenTx.Type == common.TxReturnStakingType {
 		return errors.New("can not receive a salary tx | return staking tx from other node, this is a violation")
 	}
 
@@ -124,7 +123,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	if customTokenTx.GetType() == common.TxSalaryType {
+	if customTokenTx.GetType() == common.TxRewardType {
 		return NewTransactionErr(UnexpectedErr, errors.New("Wrong salary tx"))
 	}
 	if customTokenTx.GetType() == common.TxReturnStakingType {

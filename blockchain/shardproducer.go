@@ -165,7 +165,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
 		CrossTransactionRoot: *crossTransactionRoot,
 		InstructionsRoot:     instructionsHash,
-		CrossShards:          CreateCrossShardByteArray(txsToAdd, shardID),
+		CrossShards:          CreateCrossShardByteArray(block.Body.Transactions, shardID),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
@@ -484,7 +484,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	// var wg sync.WaitGroup
 
 	for _, fromShardID := range keys {
-		crossTxTokenDataList, _ := crossTxTokenDataMap[byte(fromShardID)]
+		crossTxTokenDataList := crossTxTokenDataMap[byte(fromShardID)]
 		//crossTxTokenData is already sorted by block height
 		for _, crossTxTokenData := range crossTxTokenDataList {
 			for _, txTokenData := range crossTxTokenData.TxTokenData {

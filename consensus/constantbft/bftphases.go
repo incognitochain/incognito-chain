@@ -33,8 +33,7 @@ func (protocol *BFTProtocol) phasePropose() error {
 		}
 	})
 
-	var readyMsgs map[string]*wire.MessageBFTReady
-	readyMsgs = make(map[string]*wire.MessageBFTReady)
+	readyMsgs := make(map[string]*wire.MessageBFTReady)
 
 	fmt.Println("BFT: Listen for ready msg", time.Since(protocol.startTime).Seconds())
 phase:
@@ -183,7 +182,7 @@ phase:
 								}
 							} else {
 								if userRole := protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Round); userRole == common.PROPOSER_ROLE {
-									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, nil, protocol.EngineCfg.UserKeySet)
+									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight(), protocol.EngineCfg.UserKeySet)
 									protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID)
 								}
 							}
@@ -217,8 +216,8 @@ func (protocol *BFTProtocol) phasePrepare() error {
 		protocol.forwardMsg(msg)
 	})
 
-	var collectedRiList map[string][]byte //map of members and their Ri
-	collectedRiList = make(map[string][]byte)
+	//map of members and their Ri
+	collectedRiList := make(map[string][]byte)
 	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = protocol.multiSigScheme.personal.Ri
 phase:
 	for {
@@ -240,7 +239,7 @@ phase:
 		case msg := <-protocol.cBFTMsg:
 			if msg.MessageType() == wire.CmdBFTPrepare {
 				fmt.Println("BFT: Prepare msg received", time.Since(protocol.startTime).Seconds())
-				if common.IndexOfStr(msg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msg.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
+				if common.IndexOfStr(msg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Equal(protocol.multiSigScheme.dataToSig[:], msg.(*wire.MessageBFTPrepare).BlkHash[:]) {
 					if _, ok := collectedRiList[msg.(*wire.MessageBFTPrepare).Pubkey]; !ok {
 						collectedRiList[msg.(*wire.MessageBFTPrepare).Pubkey] = msg.(*wire.MessageBFTPrepare).Ri
 						protocol.forwardMsg(msg)
