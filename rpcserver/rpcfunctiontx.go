@@ -238,7 +238,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 		blockHashStr = blockHash.String()
 	}
 	switch tx.GetType() {
-	case common.TxNormalType, common.TxSalaryType, common.TxReturnStakingType:
+	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 		{
 			tempTx := tx.(*transaction.Tx)
 			result = &jsonresult.TransactionDetail{

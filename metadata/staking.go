@@ -18,7 +18,7 @@ type StakingMetadata struct {
 
 func NewStakingMetadata(stakingType int, paymentAdd string) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
-		return nil, errors.New("Invalid staking type")
+		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
 
@@ -28,10 +28,7 @@ func NewStakingMetadata(stakingType int, paymentAdd string) (*StakingMetadata, e
 /*
  */
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
-	if !(sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta) {
-		return false
-	}
-	return true
+	return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
 }
 
 func (sm *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
@@ -51,7 +48,7 @@ func (sm *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 	tempStaker = GetValidStaker(CSWFCR, tempStaker)
 	tempStaker = GetValidStaker(CSWFNR, tempStaker)
 	if len(tempStaker) == 0 {
-		return false, errors.New("Invalid Staker, This pubkey may staked already")
+		return false, errors.New("invalid Staker, This pubkey may staked already")
 	}
 	return true, nil
 }
@@ -64,22 +61,22 @@ func (sm *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 */
 func (sm *StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if txr.IsPrivacy() {
-		return false, false, errors.New("Staking Transaction Is No Privacy Transaction")
+		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
 	onlyOne, pubkey, amount := txr.GetUniqueReceiver()
 
 	if !onlyOne {
-		return false, false, errors.New("Staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
+		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
 	}
 	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-	if bytes.Compare(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) != 0 {
-		return false, false, errors.New("Receiver Should be Burning Address")
+	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
+		return false, false, errors.New("receiver Should be Burning Address")
 	}
 	if sm.Type == ShardStakingMeta && amount != GetShardStateAmount() {
-		return false, false, errors.New("Invalid Stake Shard Amount")
+		return false, false, errors.New("invalid Stake Shard Amount")
 	}
 	if sm.Type == BeaconStakingMeta && amount != GetBeaconStakeAmount() {
-		return false, false, errors.New("Invalid Stake Beacon Amount")
+		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 	return true, true, nil
 }

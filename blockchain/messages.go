@@ -64,8 +64,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 }
 
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
+	fmt.Println("Shard block received from shard A", newBlk.Header.ShardID, newBlk.Header.Height)
 	if _, ok := blockchain.syncStatus.Shards[newBlk.Header.ShardID]; ok {
-		fmt.Println("Shard block received from shard", newBlk.Header.ShardID, newBlk.Header.Height)
+		fmt.Println("Shard block received from shard B", newBlk.Header.ShardID, newBlk.Header.Height)
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			if blockchain.config.UserKeySet != nil {
@@ -81,14 +82,18 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 					fmt.Println("Shard block received 2", currentShardBestState.ShardHeight, newBlk.Header.Height)
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
-
 						fmt.Println("Shard block received 3", blockchain.ConsensusOngoing, blockchain.IsReady(true, newBlk.Header.ShardID))
-						if !blockchain.ConsensusOngoing {
+						if blockchain.IsReady(true, newBlk.Header.ShardID) == false {
+							Logger.log.Info("Insert New Shard Block to pool", newBlk.Header.Height)
+							err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+							if err != nil {
+								Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
+							}
+						} else if !blockchain.ConsensusOngoing {
 							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
 							err := blockchain.InsertShardBlock(newBlk, false)
 							if err != nil {
 								Logger.log.Error(err)
-								return
 							}
 						}
 						return
@@ -173,7 +178,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 			return
 		}
 
-		if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.ShardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+		if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.GetAShardCommittee(block.Header.ShardID), block.AggregatedSig, block.R, block.Hash()); err != nil {
 			Logger.log.Error(err)
 			return
 		}

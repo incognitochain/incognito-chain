@@ -3,7 +3,7 @@ package blockchain
 import (
 	"encoding/binary"
 	"encoding/json"
-	"errors"
+	"github.com/constant-money/constant-chain/common"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,12 +25,12 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-var bestStateBeacon *BestStateBeacon //singleton object
+var bestStateBeacon *BestStateBeacon
 
 type BestStateBeacon struct {
 	BestBlockHash                          common.Hash          `json:"BestBlockHash"`     // The hash of the block.
 	PrevBestBlockHash                      common.Hash          `json:"PrevBestBlockHash"` // The hash of the block.
-	BestBlock                              *BeaconBlock         `json:"BestBlock"`         // The block.
+	BestBlock                              BeaconBlock          `json:"BestBlock"`         // The block.
 	BestShardHash                          map[byte]common.Hash `json:"BestShardHash"`
 	BestShardHeight                        map[byte]uint64      `json:"BestShardHeight"`
 	Epoch                                  uint64               `json:"Epoch"`
@@ -60,13 +60,20 @@ type BestStateBeacon struct {
 	lockMu      sync.RWMutex
 }
 
-func (bestStateBeacon *BestStateBeacon) Clone() (res BestStateBeacon) {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	if err := copier.Copy(&res, bestStateBeacon); err != nil {
+func (s *BestStateBeacon) MarshalJSON() ([]byte, error) {
+	s.lockMu.RLock()
+	defer s.lockMu.RUnlock()
+
+	type Alias BestStateBeacon
+	b, err := json.Marshal(&struct {
+		*Alias
+	}{
+		(*Alias)(s),
+	})
+	if err != nil {
 		Logger.log.Error(err)
 	}
-	return res
+	return b, err
 }
 
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
@@ -94,8 +101,9 @@ func (bestStateBeacon *BestStateBeacon) GetAShardCommittee(shardID byte) []strin
 func (bestStateBeacon *BestStateBeacon) GetShardCommittee() (res map[byte][]string) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
-	if err := copier.Copy(&res, bestStateBeacon.ShardCommittee); err != nil {
-		Logger.log.Error(err)
+	res = make(map[byte][]string)
+	for index, element := range bestStateBeacon.ShardCommittee {
+		res[index] = element
 	}
 	return res
 }
@@ -109,13 +117,16 @@ func (bestStateBeacon *BestStateBeacon) GetAShardPendingValidator(shardID byte) 
 func (bestStateBeacon *BestStateBeacon) GetShardPendingValidator() (res map[byte][]string) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
-	if err := copier.Copy(&res, bestStateBeacon.ShardPendingValidator); err != nil {
-		Logger.log.Error(err)
+	res = make(map[byte][]string)
+	for index, element := range bestStateBeacon.ShardPendingValidator {
+		res[index] = element
 	}
 	return res
 }
 
 func (bsb *BestStateBeacon) GetCurrentShard() byte {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	for shardID, isCurrent := range bsb.ShardHandle {
 		if isCurrent {
 			return shardID
@@ -141,7 +152,7 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 		bestStateBeacon = GetBestStateBeacon()
 	}
 	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
-	bestStateBeacon.BestBlock = nil
+	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
 	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
 	bestStateBeacon.BestShardHeight = make(map[byte]uint64)
 	bestStateBeacon.BeaconHeight = 0
@@ -162,6 +173,8 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	return bestStateBeacon
 }
 func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
@@ -296,8 +309,6 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	return res
 }
 func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
 	return common.HashH(bestStateBeacon.GetBytes())
 }
 
