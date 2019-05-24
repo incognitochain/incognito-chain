@@ -3,8 +3,13 @@ package rpcserver
 import (
 	"encoding/json"
 
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/database/lvdb"
+	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
+	"github.com/constant-money/constant-chain/transaction"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 func (rpcServer RpcServer) handleGetBridgeTokensAmounts(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -51,21 +56,67 @@ func (rpcServer RpcServer) handleCreateAndSendIssuingRequest(params interface{},
 	)
 }
 
-func (rpcServer RpcServer) handleCreateContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constructor := metaConstructors[CreateAndSendContractingRequest]
-	return rpcServer.createRawTxWithMetadata(params, closeChan, constructor)
-}
+func (rpcServer RpcServer) handleCreateRawTxWithContractingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
 
-func (rpcServer RpcServer) handleSendContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.sendRawTxWithMetadata(params, closeChan)
-}
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddr := senderKey.KeySet.PaymentAddress
+	tokenParamsRaw := arrayParams[4].(map[string]interface{})
+	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	tokenID, err := common.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 
-// handleCreateAndSendContractingRequest for user to sell Constant and receive either USD or ETH
-func (rpcServer RpcServer) handleCreateAndSendContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.createAndSendTxWithMetadata(
-		params,
-		closeChan,
-		RpcServer.handleCreateContractingRequest,
-		RpcServer.handleSendContractingRequest,
+	meta, _ := metadata.NewContractingRequest(
+		paymentAddr,
+		uint64(voutsAmount),
+		*tokenID,
+		metadata.ContractingRequestMeta,
 	)
+	customTokenTx, rpcErr := rpcServer.buildRawCustomTokenTransaction(params, meta)
+	// rpcErr := err1.(*RPCError)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	byteArrays, err := json.Marshal(customTokenTx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            customTokenTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (rpcServer RpcServer) handleCreateAndSendContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithContractingReq(params, closeChan)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, NewRPCError(ErrUnexpected, err1)
+	}
+
+	txID := sendResult.(*common.Hash)
+	result := jsonresult.CreateTransactionResult{
+		// TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+		TxID: txID.String(),
+	}
+	return result, nil
 }

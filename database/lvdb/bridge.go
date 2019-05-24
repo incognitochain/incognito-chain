@@ -11,8 +11,8 @@ import (
 )
 
 type TokenWithAmount struct {
-	TokenID      *common.Hash `json:"tokenId"`
-	Amount       uint64       `json:"amount"`
+	TokenID *common.Hash `json:"tokenId"`
+	Amount  uint64       `json:"amount"`
 }
 
 func (db *db) CountUpDepositedAmtByTokenID(
@@ -30,8 +30,8 @@ func (db *db) CountUpDepositedAmtByTokenID(
 	var newTokenWithAmount TokenWithAmount
 	if len(tokenWithAmtBytes) == 0 {
 		newTokenWithAmount = TokenWithAmount{
-			TokenID:      tokenID,
-			Amount:       amount,
+			TokenID: tokenID,
+			Amount:  amount,
 		}
 	} else { // found existing amount info
 		var existingTokenWithAmount TokenWithAmount
@@ -40,8 +40,8 @@ func (db *db) CountUpDepositedAmtByTokenID(
 			return unmarshalErr
 		}
 		newTokenWithAmount = TokenWithAmount{
-			TokenID:      existingTokenWithAmount.TokenID,
-			Amount:       existingTokenWithAmount.Amount + amount,
+			TokenID: existingTokenWithAmount.TokenID,
+			Amount:  existingTokenWithAmount.Amount + amount,
 		}
 	}
 
@@ -86,7 +86,7 @@ func (db *db) DeductAmtByTokenID(
 
 	if len(tokenWithAmtBytes) == 0 { // not found
 		return nil
-	} 
+	}
 	// found existing amount info
 	var existingTokenWithAmount TokenWithAmount
 	unmarshalErr := json.Unmarshal(tokenWithAmtBytes, &existingTokenWithAmount)
@@ -94,12 +94,12 @@ func (db *db) DeductAmtByTokenID(
 		return unmarshalErr
 	}
 	newTokenWithAmount := TokenWithAmount{
-		TokenID:      existingTokenWithAmount.TokenID,
+		TokenID: existingTokenWithAmount.TokenID,
 	}
-	if newTokenWithAmount.Amount <= amount {
+	if existingTokenWithAmount.Amount <= amount {
 		newTokenWithAmount.Amount = 0
 	} else {
-		newTokenWithAmount.Amount -= amount
+		newTokenWithAmount.Amount = existingTokenWithAmount.Amount - amount
 	}
 
 	contentBytes, marshalErr := json.Marshal(newTokenWithAmount)

@@ -80,8 +80,8 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 		return false, err
 	}
 	normalCustomTokenExisted := db.CustomTokenIDExisted(&iReq.TokenID)
-	if !bridgeTokenExisted && normalCustomTokenExisted {
-		return false, errors.New("another custome token was already existed with the same token id")
+	if !bridgeTokenExisted && normalCustomTokenExisted { // since normal custom tokens set contains bridge tokens
+		return false, errors.New("another custom token was already existed with the same token id")
 	}
 
 	return true, nil
