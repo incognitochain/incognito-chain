@@ -16,7 +16,6 @@ func (engine *Engine) OnBFTMsg(msg wire.Message) {
 	if engine.started {
 		engine.cBFTMsg <- msg
 	}
-	return
 }
 
 func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *cashec.KeySet) (wire.Message, error) {
