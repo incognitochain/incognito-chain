@@ -269,7 +269,7 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 
 	// Check block
 	// _, err := rpcServer.config.BlockChain.GetBlockByHash(hash)
-	_, err, _ := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
+	_, _, err := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
 	if err != nil {
 		isBlock = false
 	} else {

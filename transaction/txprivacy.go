@@ -393,7 +393,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	Logger.log.Debugf("VALIDATING TX........\n")
 	// start := time.Now()
 	// Verify tx signature
-	if tx.GetType() == common.TxSalaryType {
+	if tx.GetType() == common.TxRewardType {
 		return tx.ValidateTxSalary(db)
 	}
 	if tx.GetType() == common.TxReturnStakingType {
@@ -563,7 +563,7 @@ func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 
 func (tx *Tx) IsSalaryTx() bool {
 	// Check normal tx(not an action tx)
-	if tx.GetType() != common.TxSalaryType {
+	if tx.GetType() != common.TxRewardType {
 		return false
 	}
 	// Check nullifiers in every Descs
@@ -650,7 +650,7 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 }
 
 func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	//if tx.Type == common.TxSalaryType || tx.Type == common.TxReturnStakingType {
+	//if tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType {
 	//	return errors.New("can not receive a salary tx from other node, this is a violation")
 	//}
 	poolNullifiers := mr.GetSerialNumbers()
@@ -681,7 +681,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	if tx.GetType() == common.TxSalaryType || tx.GetType() == common.TxReturnStakingType {
+	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
 	if tx.Metadata != nil {
@@ -724,12 +724,12 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	}
 	// check Type is normal or salary tx
 	switch txN.Type {
-	case common.TxNormalType, common.TxSalaryType, common.TxCustomTokenType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
 	default:
 		return false, errors.New("wrong tx type")
 	}
 
-	//if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
+	//if txN.Type != common.TxNormalType && txN.Type != common.TxRewardType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
 	//	return false, errors.New("wrong tx type")
 	//}
 
@@ -967,7 +967,7 @@ func (tx *Tx) IsPrivacy() bool {
 }
 
 func (tx *Tx) ValidateType() bool {
-	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType || tx.Type == common.TxReturnStakingType
+	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
 func (tx *Tx) IsCoinsBurning() bool {
@@ -1043,7 +1043,7 @@ func (tx *Tx) InitTxSalary(
 	metaData metadata.Metadata,
 ) error {
 	tx.Version = TxVersion
-	tx.Type = common.TxSalaryType
+	tx.Type = common.TxRewardType
 
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()

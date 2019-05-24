@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/transaction"
@@ -145,7 +144,7 @@ var bestStateShardMap = make(map[byte]*BestStateShard)
 
 func GetBestStateShard(shardID byte) *BestStateShard {
 
-	if bestStateShard, ok := bestStateShardMap[shardID]; ok != true {
+	if bestStateShard, ok := bestStateShardMap[shardID]; !ok {
 		bestStateShardMap[shardID] = &BestStateShard{}
 		bestStateShardMap[shardID].ShardID = shardID
 		return bestStateShardMap[shardID]
