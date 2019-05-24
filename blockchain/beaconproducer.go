@@ -48,9 +48,7 @@ import (
 */
 func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privacy.PaymentAddress, round int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
 	beaconBlock := &BeaconBlock{}
-	beaconBestState := BestStateBeacon{
-		lockMu: new(sync.RWMutex),
-	}
+	beaconBestState := BestStateBeacon{}
 	// lock blockchain
 	blkTmplGenerator.chain.chainLock.Lock()
 	// fmt.Printf("Beacon Produce: BeaconBestState Original %+v \n", blkTmplGenerator.chain.BestState.Beacon)

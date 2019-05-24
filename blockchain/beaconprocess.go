@@ -13,7 +13,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 /*
@@ -154,6 +153,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	if block.Body.ShardState != nil {
 		lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 		for fromShard, shardBlocks := range block.Body.ShardState {
+
 			go func(fromShard byte, shardBlocks []ShardState) {
 				GetBestStateBeacon().lockMu.Lock()
 				defer GetBestStateBeacon().lockMu.Unlock()
@@ -167,7 +167,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 						}
 						lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
 						waitHeight := shardBlock.Height
-						// fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
+						//fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
 						blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
 						//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 						//dont care overwrite this value
@@ -403,9 +403,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	- ShardState
 */
 func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
-	if bestStateBeacon.lockMu == nil {
-		bestStateBeacon.lockMu = new(sync.RWMutex)
-	}
+
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
 	//=============Verify aggegrate signature
@@ -538,9 +536,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	Update Beststate with new Block
 */
 func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *BlockChain) error {
-	if bestStateBeacon.lockMu == nil {
-		bestStateBeacon.lockMu = new(sync.RWMutex)
-	}
+
 	bestStateBeacon.lockMu.Lock()
 	defer bestStateBeacon.lockMu.Unlock()
 
