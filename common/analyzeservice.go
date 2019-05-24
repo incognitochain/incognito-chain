@@ -110,7 +110,7 @@ func AnalyzeTimeSeriesShardBlockMetric(paymentAddress string, value float64) {
 
 func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64) {
 	
-	os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
+	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GrafanaURL")
 	if databaseUrl == "" {
 		return
