@@ -3,16 +3,16 @@ package blockchain
 import (
 	"encoding/binary"
 	"encoding/json"
-	"github.com/constant-money/constant-chain/common"
+	"errors"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
+
+	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/jinzhu/copier"
 )
 
 // BestState houses information about the current best block and other info
