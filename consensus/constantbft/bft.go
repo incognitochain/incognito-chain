@@ -165,7 +165,6 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	default:
 		protocol.proposeCh <- msg
 	}
-	return
 }
 
 func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
