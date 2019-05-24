@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+	"github.com/constant-money/constant-chain/blockchain"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
@@ -16,7 +17,7 @@ func (rpcServer RpcServer) handleGetBeaconBestState(params interface{}, closeCha
 	}
 
 	result := *rpcServer.config.BlockChain.BestState.Beacon
-	result.BestBlock = nil
+	result.BestBlock = blockchain.BeaconBlock{}
 	return result, nil
 }
 

@@ -23,7 +23,7 @@ const (
 // For all Transaction information
 const (
 	TxNormalType             = "n"  // normal tx(send and receive coin)
-	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
+	TxRewardType             = "s"  // reward tx
 	TxReturnStakingType      = "rs" //
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
@@ -37,8 +37,8 @@ const (
 	MinTxsInBlock        = 10                   // minium txs for block to get immediate process (meaning no wait time)
 	MinBlockWaitTime     = 2                    // second
 	MaxBlockWaitTime     = 4 - MinBlockWaitTime // second
-	MinBeaconBlkInterval = 5 * time.Second      //second
-	MinShardBlkInterval  = 5 * time.Second      //second
+	MinBeaconBlkInterval = 1 * time.Second      //second
+	MinShardBlkInterval  = 2 * time.Second      //second
 )
 
 // special token ids (aka. PropertyID in custom token)
@@ -47,8 +47,8 @@ var (
 	// 	DCBTokenID       = Hash{1}
 	// 	GOVTokenID       = Hash{2}
 	ConstantID = Hash{4} // To send Constant in custom token
-// 	DCBVotingTokenID = Hash{5}
-// 	GOVVotingTokenID = Hash{6}
+	// 	DCBVotingTokenID = Hash{5}
+	// 	GOVVotingTokenID = Hash{6}
 )
 
 // centralized website's pubkey

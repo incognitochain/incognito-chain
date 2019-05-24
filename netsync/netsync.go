@@ -536,6 +536,7 @@ func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
 		return false
 	}
 }
+
 func (netSync *NetSync) cacheLoop() {
 	for w := 0; w < workers; w++ {
 		go netSync.HandleCacheTxHashWoker(netSync.Cache.CTxCache)

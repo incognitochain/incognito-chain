@@ -26,3 +26,17 @@ const (
 	ConnEstablished
 	ConnDisconnected
 )
+
+const (
+	MAX_RETRIES_CHECK_HASH_MESSAGE = 5
+	MAX_TIMEOUT_CHECK_HASH_MESSAGE = time.Duration(10)
+	HEAVY_MESSAGE_SIZE             = 5 * 1024 * 1024
+	SPAM_MESSAGE_SIZE              = 50 * 1024 * 1024
+)
+
+const (
+	MESSAGE_TO_ALL    = byte('a')
+	MESSAGE_TO_SHARD  = byte('s')
+	MESSAGE_TO_PEER   = byte('p')
+	MESSAGE_TO_BEACON = byte('b')
+)

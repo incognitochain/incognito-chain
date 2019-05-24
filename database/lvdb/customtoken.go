@@ -286,37 +286,6 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddr
 	return results, nil
 }
 
-/*
-	Update UTXO from unreward -> reward
-*/
-func (db *db) UpdateRewardAccountUTXO(tokenID *common.Hash, paymentAddress []byte, txHash *common.Hash, voutIndex int) error {
-	key := TokenPaymentAddressPrefix
-	key = append(key, Splitter...)
-	key = append(key, []byte(tokenID.String())...)
-	key = append(key, Splitter...)
-	key = append(key, base58.Base58Check{}.Encode(paymentAddress, 0x00)...)
-	key = append(key, Splitter...)
-	key = append(key, []byte(txHash.String())...)
-	key = append(key, Splitter...)
-	key = append(key, common.Int32ToBytes(int32(voutIndex))...)
-	_, err := db.HasValue([]byte(key))
-	if err != nil {
-		fmt.Println("ERROR finding PubKey in DB, UpdateRewardAccountUTXO", err)
-		return err
-	}
-	res, err := db.Get([]byte(key))
-	if err != nil {
-		return err
-	}
-	reses := strings.Split(string(res), string(Splitter))
-	// {value}-unspent-unreward
-	value := reses[0] + reses[1] + string(rewared)
-	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (db *db) StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error {
 	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
 	if err := db.lvdb.Put(key, tokenValue, nil); err != nil {
