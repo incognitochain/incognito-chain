@@ -29,7 +29,7 @@ import (
 //Parameter #3—the list paymentaddress-readonlykey which be used to view list outputcoin
 //Parameter #4 - optional - token id - default constant coin
 func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
+	Logger.log.Infof("handleListOutputCoins params: %+v", params)
 	result := jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
@@ -37,10 +37,21 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 	// get component
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 1 {
+		Logger.log.Infof("handleListOutputCoins result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
-	min := int(paramsArray[0].(float64))
-	max := int(paramsArray[1].(float64))
+	minTemp, ok := paramsArray[0].(float64)
+	if !ok {
+		Logger.log.Infof("handleListOutputCoins result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
+	}
+	min := int(minTemp)
+	maxTemp, ok := paramsArray[1].(float64)
+	if !ok {
+		Logger.log.Infof("handleListOutputCoins result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
+	}
+	max := int(maxTemp)
 	_ = min
 	_ = max
 	//#3: list key component
@@ -53,6 +64,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		var err1 error
 		tokenID, err1 = common.Hash{}.NewHashFromStr(paramsArray[3].(string))
 		if err1 != nil {
+			Logger.log.Infof("handleListOutputCoins result: %+v, err: %+v", nil, err1)
 			return nil, NewRPCError(ErrListCustomTokenNotFound, err1)
 		}
 	}
@@ -63,6 +75,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		readonlyKeyStr := keys["ReadonlyKey"].(string)
 		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
+			Logger.log.Infof("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 
@@ -70,6 +83,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		pubKeyStr := keys["PaymentAddress"].(string)
 		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
 		if err != nil {
+			Logger.log.Infof("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 
@@ -82,6 +96,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		outputCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, tokenID)
 		if err != nil {
+			Logger.log.Infof("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		item := make([]jsonresult.OutCoin, 0)
@@ -102,7 +117,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 		}
 		result.Outputs[readonlyKeyStr] = item
 	}
-
+	Logger.log.Infof("handleListOutputCoins result: %+v", result)
 	return result, nil
 }
 
@@ -110,6 +125,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 // handleCreateTransaction handles createtransaction commands.
 */
 func (rpcServer RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleCreateRawTransaction params: %+v", params)
 	var err error
 	tx, err := rpcServer.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
@@ -127,6 +143,7 @@ func (rpcServer RpcServer) handleCreateRawTransaction(params interface{}, closeC
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 		ShardID:         txShardID,
 	}
+	Logger.log.Infof("handleCreateRawTransaction result: %+v", result)
 	return result, nil
 }
 
@@ -137,18 +154,19 @@ Parameter #2–whether to allow high fees
 Result—a TXID or error Message
 */
 func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debug(params)
+	Logger.log.Infof("handleSendRawTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
+		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	var tx transaction.Tx
-	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
+		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
@@ -161,6 +179,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 				return nil, NewRPCError(ErrRejectInvalidFee, mempoolErr)
 			}
 		}
+		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
@@ -169,12 +188,14 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	// broadcast Message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
+		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
+		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	}
 
@@ -182,6 +203,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
 	}
+	Logger.log.Infof("handleSendRawTransaction result: %+v", result)
 	return result, nil
 }
 
@@ -189,9 +211,11 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 handleCreateAndSendTx - RPC creates transaction and send to network
 */
 func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleCreateAndSendTx params: %+v", params)
 	var err error
 	data, err := rpcServer.handleCreateRawTransaction(params, closeChan)
 	if err.(*RPCError) != nil {
+		Logger.log.Infof("handleCreateAndSendTx result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
@@ -200,12 +224,14 @@ func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <
 	newParam = append(newParam, base58CheckData)
 	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*RPCError) != nil {
+		Logger.log.Infof("handleCreateAndSendTx result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
 		ShardID: tx.ShardID,
 	}
+	Logger.log.Infof("handleCreateAndSendTx result: %+v", result)
 	return result, nil
 }
 
@@ -213,6 +239,7 @@ func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <
 handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
 */
 func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetMempoolInfo params: %+v", params)
 	result := jsonresult.GetMempoolInfo{}
 	result.Size = rpcServer.config.TxMemPool.Count()
 	result.Bytes = rpcServer.config.TxMemPool.Size()
@@ -228,6 +255,7 @@ func (rpcServer RpcServer) handleGetMempoolInfo(params interface{}, closeChan <-
 			result.ListTxs = append(result.ListTxs, item)
 		}
 	}
+	Logger.log.Infof("handleGetMempoolInfo result: %+v", result)
 	return result, nil
 }
 
@@ -331,13 +359,18 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 
 // Get transaction by Hash
 func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetTransactionByHash params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: transaction Hash
 	if len(arrayParams) < 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is empty"))
 	}
 	Logger.log.Infof("Get TransactionByHash input Param %+v", arrayParams[0].(string))
-	txHash, _ := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	txHashTemp, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is invalid"))
+	}
+	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
 	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
 	db := *(rpcServer.config.Database)
 	shardID, blockHash, index, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(txHash)
@@ -364,7 +397,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 		return nil, err.(*RPCError)
 	}
 	result.IsInBlock = true
-
+	Logger.log.Infof("handleGetTransactionByHash result: %+v", result)
 	return result, nil
 }
 
@@ -381,10 +414,8 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 }
 
 // handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
-func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(
-	params interface{},
-	closeChan <-chan struct{},
-) (interface{}, *RPCError) {
+func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleCreateRawCustomTokenTransaction params: %+v", params)
 	var err error
 	tx, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
@@ -405,29 +436,33 @@ func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(
 		TokenAmount:     tx.TxTokenData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
+	Logger.log.Infof("handleCreateRawCustomTokenTransaction result: %+v", result)
 	return result, nil
 }
 
 // handleSendRawTransaction...
 func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
+	Logger.log.Infof("handleSendRawCustomTokenTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
+		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	tx := transaction.TxCustomToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
+		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
+		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
@@ -436,6 +471,7 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
 	if err != nil {
+		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
@@ -445,7 +481,9 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	if err == nil {
 		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	}
-	return tx.Hash(), nil
+	result := tx.Hash()
+	Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v", result)
+	return result, nil
 }
 
 // handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
