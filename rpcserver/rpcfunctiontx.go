@@ -444,7 +444,11 @@ func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(params interfac
 func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleSendRawCustomTokenTransaction params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	base58CheckData := arrayParams[0].(string)
+	base58CheckData, ok := arrayParams[0].(string)
+	if !ok {
+		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("param is invalid"))
+	}
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 
 	if err != nil {
@@ -488,39 +492,48 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 
 // handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
 func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleCreateAndSendCustomTokenTransaction params: %+v", params)
 	data, err := rpcServer.handleCreateRawCustomTokenTransaction(params, closeChan)
 	if err != nil {
+		Logger.log.Infof("handleCreateAndSendCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, err
 	}
 	tx := data.(jsonresult.CreateTransactionCustomTokenResult)
 	base58CheckData := tx.Base58CheckData
 	if err != nil {
+		Logger.log.Infof("handleCreateAndSendCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, err
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	txID, err := rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
 	if err != nil {
+		Logger.log.Infof("handleCreateAndSendCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, err
 	}
+	Logger.log.Infof("handleCreateAndSendCustomTokenTransaction result: %+v", txID)
 	return txID, nil
 }
 
 func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetListCustomTokenBalance params: %+v", params)
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	arrayParams := common.InterfaceSlice(params)
-	accountParam := arrayParams[0].(string)
-	if len(accountParam) == 0 {
+	accountParam, ok := arrayParams[0].(string)
+	if len(accountParam) == 0 || !ok {
+		Logger.log.Infof("handleGetListCustomTokenBalance result: %+v", nil)
 		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
 	}
 	account, err := wallet.Base58CheckDeserialize(accountParam)
 	if err != nil {
+		Logger.log.Infof("handleGetListCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, nil
 	}
 	result.PaymentAddress = accountParam
 	accountPaymentAddress := account.KeySet.PaymentAddress
 	temps, err := rpcServer.config.BlockChain.ListCustomToken()
 	if err != nil {
+		Logger.log.Infof("handleGetListCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	for _, tx := range temps {
@@ -542,24 +555,29 @@ func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, c
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
+	Logger.log.Infof("handleGetListCustomTokenBalance result: %+v", result)
 	return result, nil
 }
 
 func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetListPrivacyCustomTokenBalance params: %+v", params)
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
 	arrayParams := common.InterfaceSlice(params)
-	privateKey := arrayParams[0].(string)
-	if len(privateKey) == 0 {
+	privateKey, ok := arrayParams[0].(string)
+	if len(privateKey) == 0 || !ok {
+		Logger.log.Infof("handleGetListPrivacyCustomTokenBalance result: %+v", nil)
 		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
 	}
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
-		return nil, nil
+		Logger.log.Infof("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	temps, listCustomTokenCrossShard, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
+		Logger.log.Infof("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	for _, tx := range temps {
@@ -578,6 +596,7 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		constantTokenID.SetBytes(common.ConstantID[:])
 		outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
+			Logger.log.Infof("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		for _, out := range outcoints {
@@ -622,15 +641,26 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
-
+	Logger.log.Infof("handleGetListPrivacyCustomTokenBalance result: %+v", result)
 	return result, nil
 }
 
 // handleCustomTokenDetail - return list tx which relate to custom token by token id
 func (rpcServer RpcServer) handleCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleCustomTokenDetail params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	tokenID, err := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	if len(arrayParams) < 1 {
+		Logger.log.Infof("handleCustomTokenDetail result: %+v", nil)
+		return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+	}
+	tokenIDTemp, ok := arrayParams[0].(string)
+	if !ok {
+		Logger.log.Infof("handleCustomTokenDetail result: %+v", nil)
+		return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDTemp)
 	if err != nil {
+		Logger.log.Infof("handleCustomTokenDetail result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	txs, _ := rpcServer.config.BlockChain.GetCustomTokenTxsHash(tokenID)
@@ -640,14 +670,26 @@ func (rpcServer RpcServer) handleCustomTokenDetail(params interface{}, closeChan
 	for _, tx := range txs {
 		result.ListTxs = append(result.ListTxs, tx.String())
 	}
+	Logger.log.Infof("handleCustomTokenDetail result: %+v", result)
 	return result, nil
 }
 
 // handlePrivacyCustomTokenDetail - return list tx which relate to privacy custom token by token id
 func (rpcServer RpcServer) handlePrivacyCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handlePrivacyCustomTokenDetail params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	tokenID, err := common.Hash{}.NewHashFromStr(arrayParams[0].(string))
+	if len(arrayParams) < 1 {
+		Logger.log.Infof("handlePrivacyCustomTokenDetail result: %+v", nil)
+		return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+	}
+	tokenIDTemp, ok := arrayParams[0].(string)
+	if !ok {
+		Logger.log.Infof("handlePrivacyCustomTokenDetail result: %+v", nil)
+		return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDTemp)
 	if err != nil {
+		Logger.log.Infof("handlePrivacyCustomTokenDetail result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	txs, _ := rpcServer.config.BlockChain.GetPrivacyCustomTokenTxsHash(tokenID)
@@ -657,32 +699,48 @@ func (rpcServer RpcServer) handlePrivacyCustomTokenDetail(params interface{}, cl
 	for _, tx := range txs {
 		result.ListTxs = append(result.ListTxs, tx.String())
 	}
+	Logger.log.Infof("handlePrivacyCustomTokenDetail result: %+v", result)
 	return result, nil
 }
 
 // handleListUnspentCustomToken - return list utxo of custom token
 func (rpcServer RpcServer) handleListUnspentCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleListUnspentCustomToken params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 2 {
+		Logger.log.Infof("handleListUnspentCustomToken result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+	}
 	// param #1: paymentaddress of sender
-	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		Logger.log.Infof("handleListUnspentCustomToken result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKey is invalid"))
+	}
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
 	if err != nil {
+		Logger.log.Infof("handleListUnspentCustomToken result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKeyset := senderKey.KeySet
 
 	// param #2: tokenID
-	tokenIDParam := arrayParams[1]
-	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDParam.(string))
+	tokenIDParam, ok := arrayParams[1].(string)
+	if !ok {
+		Logger.log.Infof("handleListUnspentCustomToken result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("tokenID is invalid"))
+	}
+	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDParam)
 	unspentTxTokenOuts, err := rpcServer.config.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
 
 	if err != nil {
+		Logger.log.Infof("handleListUnspentCustomToken result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := []jsonresult.UnspentCustomToken{}
 	for _, temp := range unspentTxTokenOuts {
 		item := jsonresult.UnspentCustomToken{
-			PaymentAddress:  senderKeyParam.(string),
+			PaymentAddress:  senderKeyParam,
 			Index:           temp.GetIndex(),
 			TxCustomTokenID: temp.GetTxCustomTokenID().String(),
 			Value:           temp.Value,
@@ -690,6 +748,7 @@ func (rpcServer RpcServer) handleListUnspentCustomToken(params interface{}, clos
 		result = append(result, item)
 	}
 
+	Logger.log.Infof("handleListUnspentCustomToken result: %+v", result)
 	return result, NewRPCError(ErrUnexpected, err)
 }
 
