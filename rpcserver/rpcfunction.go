@@ -28,7 +28,6 @@ var RpcHandler = map[string]commandHandler{
 	GetAllPeers:              RpcServer.handleGetAllPeers,
 	EstimateFee:              RpcServer.handleEstimateFee,
 	EstimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
-	GetGenerate:              RpcServer.handleGetGenerate,
 	GetActiveShards:          RpcServer.handleGetActiveShards,
 	GetMaxShardsNumber:       RpcServer.handleGetMaxShardsNumber,
 
@@ -327,7 +326,7 @@ func (rpcServer RpcServer) handleGetConnectionCount(params interface{}, closeCha
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetConnectionCount params: %+v", params)
+	Logger.log.Infof("handleGetMiningInfo params: %+v", params)
 	if !rpcServer.config.IsMiningNode || rpcServer.config.MiningPubKeyB58 == "" {
 		return jsonresult.GetMiningInfoResult{
 			IsCommittee: false,
@@ -350,7 +349,7 @@ func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-c
 	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
 		result.ShardID = -1
 	}
-	Logger.log.Infof("handleGetConnectionCount result: %+v", result)
+	Logger.log.Infof("handleGetMiningInfo result: %+v", result)
 	return result, nil
 }
 
@@ -359,34 +358,43 @@ handleGetRawMempool - RPC returns all transaction ids in memory pool as a json a
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (rpcServer RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetRawMempool params: %+v", params)
 	result := jsonresult.GetRawMempoolResult{
 		TxHashes: rpcServer.config.TxMemPool.ListTxs(),
 	}
+	Logger.log.Infof("handleGetRawMempool result: %+v", result)
 	return result, nil
 }
 
 func (rpcServer RpcServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return len(rpcServer.config.TxMemPool.ListTxs()), nil
+	Logger.log.Infof("handleGetNumberOfTxsInMempool params: %+v", params)
+	result := len(rpcServer.config.TxMemPool.ListTxs())
+	Logger.log.Infof("handleGetNumberOfTxsInMempool result: %+v", result)
+	return result, nil
 }
 
 /*
 handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
 func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleMempoolEntry params: %+v", params)
 	// Param #1: hash string of tx(tx id)
 	if params == nil {
 		params = ""
 	}
 	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
+		Logger.log.Infof("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	result := jsonresult.GetMempoolEntryResult{}
 	result.Tx, err = rpcServer.config.TxMemPool.GetTx(txID)
 	if err != nil {
+		Logger.log.Infof("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	Logger.log.Infof("handleMempoolEntry result: %+v", result)
 	return result, nil
 }
 
