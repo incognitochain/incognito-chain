@@ -402,17 +402,32 @@ func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-ch
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleEstimateFee params: %+v", params)
 	/******* START Fetch all component to ******/
 	// all component
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+	}
 	// param #1: private key of sender
-	senderKeyParam := arrayParams[0]
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Sender private key is invalid"))
+	}
 	// param #3: estimation fee coin per kb
-	defaultFeeCoinPerKb := int64(arrayParams[2].(float64))
+	defaultFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Default FeeCoinPerKbtemp is invalid"))
+	}
+	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbtemp)
 	// param #4: hasPrivacy flag for constant
-	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	hashPrivacyTemp, ok := arrayParams[3].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("hasPrivacy is invalid"))
+	}
+	hasPrivacy := int(hashPrivacyTemp) > 0
 
-	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
 		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
@@ -482,6 +497,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 		EstimateTxSizeInKb:   estimateTxSizeInKb,
 	}
+	Logger.log.Infof("handleEstimateFee result: %+v", result)
 	return result, nil
 }
 
