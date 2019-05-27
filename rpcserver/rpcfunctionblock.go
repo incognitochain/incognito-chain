@@ -365,13 +365,15 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 getblockcount RPC return information fo blockchain node
 */
 func (rpcServer RpcServer) handleGetBlockCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetBlockCount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
+		Logger.log.Infof("handleGetBlockChainInfo result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("component empty"))
 	}
 	params, ok := arrayParams[0].(float64)
-	// component, ok := component.(float64)
 	if !ok {
+		Logger.log.Infof("handleGetBlockChainInfo result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected get float number component"))
 	}
 	paramNumber := int(params.(float64))
@@ -379,13 +381,19 @@ func (rpcServer RpcServer) handleGetBlockCount(params interface{}, closeChan <-c
 	isGetBeacon := paramNumber == -1
 	if isGetBeacon {
 		if rpcServer.config.BlockChain.BestState != nil && rpcServer.config.BlockChain.BestState.Beacon != nil {
-			return rpcServer.config.BlockChain.BestState.Beacon.BestBlock.Header.Height, nil
+			result := rpcServer.config.BlockChain.BestState.Beacon.BestBlock.Header.Height
+			Logger.log.Infof("handleGetBlockChainInfo result: %+v", result)
+			return result, nil
 		}
 	}
 
 	if rpcServer.config.BlockChain.BestState != nil && rpcServer.config.BlockChain.BestState.Shard[shardID] != nil && rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock != nil {
-		return rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height + 1, nil
+		result := rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height + 1
+		Logger.log.Infof("handleGetBlockChainInfo result: %+v", result)
+		return result, nil
 	}
+	result := 0
+	Logger.log.Infof("handleGetBlockChainInfo result: %+v", result)
 	return 0, nil
 }
 
@@ -393,6 +401,7 @@ func (rpcServer RpcServer) handleGetBlockCount(params interface{}, closeChan <-c
 getblockhash RPC return information fo blockchain node
 */
 func (rpcServer RpcServer) handleGetBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetBlockHash params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) != 2 {
 		arrayParams = []interface{}{
@@ -401,8 +410,18 @@ func (rpcServer RpcServer) handleGetBlockHash(params interface{}, closeChan <-ch
 		}
 	}
 
-	shardID := int(arrayParams[0].(float64))
-	height := uint64(arrayParams[1].(float64))
+	shardIDTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		Logger.log.Infof("handleGetBlockHash result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("shardID is invalid"))
+	}
+	shardID := int(shardIDTemp)
+	heightTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		Logger.log.Infof("handleGetBlockHash result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("height is invalid"))
+	}
+	height := uint64(heightTemp)
 
 	var hash *common.Hash
 	var err error
@@ -418,6 +437,7 @@ func (rpcServer RpcServer) handleGetBlockHash(params interface{}, closeChan <-ch
 	}
 
 	if err != nil {
+		Logger.log.Infof("handleGetBlockHash result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
@@ -426,25 +446,33 @@ func (rpcServer RpcServer) handleGetBlockHash(params interface{}, closeChan <-ch
 	} else {
 		hash = shardBlock.Hash()
 	}
-	// return hash.Hash().String(), nil
-	return hash.String(), nil
+	result := hash.String()
+	Logger.log.Infof("handleGetBlockHash result: %+v", result)
+	return result, nil
 }
 
 // handleGetBlockHeader - return block header data
 func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// Logger.log.Info(component)
-	log.Printf("%+v", params)
+	Logger.log.Infof("handleGetBlockHeader params: %+v", params)
 	result := jsonresult.GetHeaderResult{}
 
 	arrayParams := common.InterfaceSlice(params)
-	// Logger.log.Info(arrayParams)
 	log.Printf("arrayParams: %+v", arrayParams)
 	if arrayParams == nil || len(arrayParams) == 0 || len(arrayParams) <= 3 {
 		arrayParams = append(arrayParams, "", "", 0.0)
 	}
-	getBy := arrayParams[0].(string)
-	block := arrayParams[1].(string)
-	shardID := arrayParams[2].(float64)
+	getBy, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrUnexpected, errors.New("getBy is invalid"))
+	}
+	block, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, NewRPCError(ErrUnexpected, errors.New("block is invalid"))
+	}
+	shardID, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrUnexpected, errors.New("shardID is invalid"))
+	}
 	switch getBy {
 	case "blockhash":
 		bhash := common.Hash{}
@@ -452,11 +480,13 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 		// Logger.log.Info(bhash)
 		log.Printf("%+v", bhash)
 		if err != nil {
+			Logger.log.Infof("handleGetBlockHeader result: %+v", nil)
 			return nil, NewRPCError(ErrUnexpected, errors.New("invalid blockhash format"))
 		}
 		// block, err := rpcServer.config.BlockChain.GetBlockByHash(&bhash)
 		block, _, err := rpcServer.config.BlockChain.GetShardBlockByHash(&bhash)
 		if err != nil {
+			Logger.log.Infof("handleGetBlockHeader result: %+v", nil)
 			return nil, NewRPCError(ErrUnexpected, errors.New("block not exist"))
 		}
 		result.Header = block.Header
@@ -467,11 +497,13 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 	case "blocknum":
 		bnum, err := strconv.Atoi(block)
 		if err != nil {
+			Logger.log.Infof("handleGetBlockHeader result: %+v", nil)
 			return nil, NewRPCError(ErrUnexpected, errors.New("invalid blocknum format"))
 		}
 		fmt.Println(shardID)
 		// if uint64(bnum-1) > rpcServer.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.GetHeight() || bnum <= 0 {
 		if uint64(bnum-1) > rpcServer.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.Height || bnum <= 0 {
+			Logger.log.Infof("handleGetBlockHeader result: %+v", nil)
 			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
 		}
 		block, _ := rpcServer.config.BlockChain.GetShardBlockByHeight(uint64(bnum-1), uint8(shardID))
@@ -483,26 +515,41 @@ func (rpcServer RpcServer) handleGetBlockHeader(params interface{}, closeChan <-
 		result.BlockNum = bnum
 		result.ShardID = uint8(shardID)
 	default:
+		Logger.log.Infof("handleGetBlockHeader result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("wrong request format"))
 	}
 
+	Logger.log.Infof("handleGetBlockHeader result: %+v", result)
 	return result, nil
 }
 
 //This function return the result of cross shard block of a specific block in shard
 func (rpcServer RpcServer) handleGetCrossShardBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetCrossShardBlock params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	// Logger.log.Info(arrayParams)
 	log.Printf("arrayParams: %+v", arrayParams)
 	if arrayParams == nil || len(arrayParams) != 2 {
+		Logger.log.Infof("handleGetCrossShardBlock result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("wrong request format"))
 	}
 	// #param1: shardID
+	shardIDtemp, ok := arrayParams[0].(float64)
+	if !ok {
+		Logger.log.Infof("handleGetCrossShardBlock result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("shardID is invalid"))
+	}
+	shardID := int(shardIDtemp)
 	// #param2: shard block height
-	shardID := int(arrayParams[0].(float64))
-	blockHeight := uint64(arrayParams[1].(float64))
+	blockHeightTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		Logger.log.Infof("handleGetCrossShardBlock result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("blockHeight is invalid"))
+	}
+	blockHeight := uint64(blockHeightTemp)
 	shardBlock, err := rpcServer.config.BlockChain.GetShardBlockByHeight(blockHeight, byte(shardID))
 	if err != nil {
+		Logger.log.Infof("handleGetCrossShardBlock result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.CrossShardDataResult{HasCrossShard: false}
@@ -587,5 +634,6 @@ func (rpcServer RpcServer) handleGetCrossShardBlock(params interface{}, closeCha
 	if flag {
 		result.HasCrossShard = flag
 	}
+	Logger.log.Infof("handleGetCrossShardBlock result: %+v", result)
 	return result, nil
 }
