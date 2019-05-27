@@ -19,7 +19,7 @@ type TxViewPoint struct {
 	shardID           byte
 	listSerialNumbers [][]byte // array serialNumbers
 	//listSnD            []big.Int
-	mapSnD         map[string][]big.Int
+	mapSnD         map[string][][]byte
 	mapCommitments map[string][][]byte //map[base58check.encode{pubkey}]([]([]byte-commitment))
 	mapOutputCoins map[string][]privacy.OutputCoin
 
@@ -46,7 +46,7 @@ func (view *TxViewPoint) ListSerialNumbers() [][]byte {
 // func (view *TxViewPoint) ListSnDerivators() []big.Int {
 // 	return view.listSnD
 // }
-func (view *TxViewPoint) MapSnDerivators() map[string][]big.Int {
+func (view *TxViewPoint) MapSnDerivators() map[string][][]byte {
 	return view.mapSnD
 }
 
@@ -139,7 +139,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
-	acceptedSnD := make(map[string][]big.Int)
+	acceptedSnD := make(map[string][][]byte)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	for indexTx, tx := range transactions {
@@ -256,9 +256,12 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 				}
 				for pubkey, data := range snDsP {
 					if subView.mapSnD[pubkey] == nil {
-						subView.mapSnD[pubkey] = make([]big.Int, 0)
+						subView.mapSnD[pubkey] = make([][]byte, 0)
 					}
-					subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], data...)
+					for _, b := range data {
+						temp := privacy.AddPaddingBigInt(&b, privacy.BigIntSize)
+						subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], temp)
+					}
 				}
 				// subView.listSnD = append(subView.listSnD, snDsP...)
 				if err != nil {
@@ -300,7 +303,7 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		listSerialNumbers:           make([][]byte, 0),
 		mapCommitments:              make(map[string][][]byte),
 		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
-		mapSnD:                      make(map[string][]big.Int),
+		mapSnD:                      make(map[string][][]byte),
 		customTokenTxs:              make(map[int32]*transaction.TxCustomToken),
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
@@ -374,7 +377,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedCommitments := make(map[string][][]byte)
-	acceptedSnD := make(map[string][]big.Int)
+	acceptedSnD := make(map[string][][]byte)
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
 	//@NOTICE: this function just work for Normal Transaction
@@ -429,9 +432,12 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 					}
 					for pubkey, data := range snDsP {
 						if subView.mapSnD[pubkey] == nil {
-							subView.mapSnD[pubkey] = make([]big.Int, 0)
+							subView.mapSnD[pubkey] = make([][]byte, 0)
 						}
-						subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], data...)
+						for _, t := range data {
+							temp := privacy.AddPaddingBigInt(&t, privacy.BigIntSize)
+							subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], temp)
+						}
 					}
 					view.privacyCustomTokenViewPoint[int32(index)] = subView
 				}
