@@ -749,7 +749,7 @@ func (rpcServer RpcServer) handleListUnspentCustomToken(params interface{}, clos
 	}
 
 	Logger.log.Infof("handleListUnspentCustomToken result: %+v", result)
-	return result, NewRPCError(ErrUnexpected, err)
+	return result, nil
 }
 
 // handleCreateSignatureOnCustomTokenTx - return a signature which is signed on raw custom token tx
