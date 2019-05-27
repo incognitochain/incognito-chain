@@ -31,6 +31,7 @@ type ShardPool struct {
 	mtx               *sync.RWMutex
 	config            ShardPoolConfig
 	cache             *lru.Cache
+	cValidBlock       chan *blockchain.ShardBlock
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
@@ -78,6 +79,7 @@ func GetShardPool(shardID byte) *ShardPool {
 		shardPool.config = defaultConfig
 		shardPool.pendingPool = make(map[uint64]*blockchain.ShardBlock)
 		shardPool.cache, _ = lru.New(shardPool.config.CacheSize)
+		shardPool.cValidBlock = make(chan *blockchain.ShardBlock, 100)
 	}
 	return shardPoolMap[shardID]
 }
@@ -368,7 +370,6 @@ func (self *ShardPool) GetAllBlockHeight() []uint64 {
 	for _, block := range self.pendingPool {
 		blockHeights = append(blockHeights, block.Header.Height)
 	}
-
 	return blockHeights
 }
 
@@ -386,4 +387,11 @@ func (self *ShardPool) GetBlockByHeight(height uint64) *blockchain.ShardBlock {
 		}
 	}
 	return nil
+}
+
+func (self *ShardPool) AddValidBlockToChan(block *blockchain.ShardBlock) {
+	self.cValidBlock <- block
+}
+func (self *ShardPool) GetValidBlockChan() chan *blockchain.ShardBlock {
+	return self.cValidBlock
 }
