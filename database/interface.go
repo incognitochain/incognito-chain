@@ -82,7 +82,6 @@ type DatabaseInterface interface {
 	// PedersenCommitment
 	StoreCommitments(tokenID *common.Hash, pubkey []byte, commitment [][]byte, shardID byte) error
 	StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, shardID byte) error
-	FetchCommitments(tokenID *common.Hash, shardID byte) ([][]byte, error)
 	HasCommitment(tokenID *common.Hash, commitment []byte, shardID byte) (bool, error)
 	HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) (bool, error)
 	GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error)
