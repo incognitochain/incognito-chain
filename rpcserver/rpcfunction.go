@@ -503,11 +503,18 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 
 // handleEstimateFeeWithEstimator -- get fee from estomator
 func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleEstimateFeeWithEstimator params: %+v", params)
 	// all params
 	arrayParams := common.InterfaceSlice(params)
-
+	if len(arrayParams) < 2 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+	}
 	// param #1: estimation fee coin per kb from client
-	defaultFeeCoinPerKb := int64(arrayParams[0].(float64))
+	defaultFeeCoinPerKbTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("defaultFeeCoinPerKbTemp is invalid"))
+	}
+	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbTemp)
 
 	// param #2: payment address
 	senderKeyParam := arrayParams[1]
@@ -524,20 +531,27 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 	}
+	Logger.log.Infof("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
 }
 
 // handleGetActiveShards - return active shard num
 func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetActiveShards params: %+v", params)
 	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+	Logger.log.Infof("handleGetActiveShards result: %+v", activeShards)
 	return activeShards, nil
 }
 
 func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return common.MAX_SHARD_NUMBER, nil
+	Logger.log.Infof("handleGetMaxShardsNumber params: %+v", params)
+	result := common.MAX_SHARD_NUMBER
+	Logger.log.Infof("handleGetMaxShardsNumber result: %+v", result)
+	return result, nil
 }
 
 func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetStakingAmount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) <= 0 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
@@ -550,6 +564,7 @@ func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan 
 	if stackingType == 0 {
 		amount = metadata.GetShardStateAmount()
 	}
+	Logger.log.Infof("handleGetStakingAmount result: %+v", amount)
 	return amount, nil
 }
 
