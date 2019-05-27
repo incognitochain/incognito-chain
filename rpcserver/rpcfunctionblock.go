@@ -19,12 +19,11 @@ import (
 
 // handleGetBestBlock implements the getbestblock command.
 func (rpcServer RpcServer) handleGetBestBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetBestBlock params: %+v", params)
 	result := jsonresult.GetBestBlockResult{
-		// BestBlocks: make(map[string]jsonresult.GetBestBlockItem),
 		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
 	}
 	for shardID, best := range rpcServer.config.BlockChain.BestState.Shard {
-		// result.BestBlocks[strconv.Itoa(int(shardID))] = jsonresult.GetBestBlockItem{
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:   best.BestBlock.Header.Height,
 			Hash:     best.BestBlockHash.String(),
@@ -33,13 +32,14 @@ func (rpcServer RpcServer) handleGetBestBlock(params interface{}, closeChan <-ch
 	}
 	beaconBestState := rpcServer.config.BlockChain.BestState.Beacon
 	if beaconBestState == nil {
+		Logger.log.Infof("handleGetBestBlock result: %+v", result)
 		return result, nil
 	}
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
 		Height: beaconBestState.BestBlock.Header.Height,
 		Hash:   beaconBestState.BestBlockHash.String(),
 	}
-
+	Logger.log.Infof("handleGetBestBlock result: %+v", result)
 	return result, nil
 }
 
@@ -64,27 +64,39 @@ func (rpcServer RpcServer) handleGetBestBlockHash(params interface{}, closeChan 
 handleRetrieveBlock RPC return information for block
 */
 func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleRetrieveBlock params: %+v", params)
 	paramsT, ok := params.([]interface{})
 	if ok && len(paramsT) >= 2 {
-		hashString := paramsT[0].(string)
+		hashString, ok := paramsT[0].(string)
+		if !ok {
+			Logger.log.Infof("handleRetrieveBlock result: %+v", nil)
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("hashString is invalid"))
+		}
 		hash, errH := common.Hash{}.NewHashFromStr(hashString)
 		if errH != nil {
+			Logger.log.Infof("handleRetrieveBlock result: %+v, err: %+v", nil, errH)
 			return nil, NewRPCError(ErrUnexpected, errH)
 		}
 		// block, errD := rpcServer.config.BlockChain.GetBlockByHash(hash)
 		block, _, errD := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
 		if errD != nil {
+			Logger.log.Infof("handleRetrieveBlock result: %+v, err: %+v", nil, errD)
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
 		result := jsonresult.GetBlockResult{}
 
-		verbosity := paramsT[1].(string)
+		verbosity, ok := paramsT[1].(string)
+		if !ok {
+			Logger.log.Infof("handleRetrieveBlock result: %+v", nil)
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("verbosity is invalid"))
+		}
 
 		shardID := block.Header.ShardID
 
 		if verbosity == "0" {
 			data, err := json.Marshal(block)
 			if err != nil {
+				Logger.log.Infof("handleRetrieveBlock result: %+v, err: %+v", nil, err)
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			result.Data = hex.EncodeToString(data)
@@ -140,6 +152,7 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 			if blockHeight < best.Header.Height {
 				nextHash, err := rpcServer.config.BlockChain.GetShardBlockByHeight(blockHeight+1, shardID)
 				if err != nil {
+					Logger.log.Infof("handleRetrieveBlock result: %+v, err: %+v", nil, err)
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
 				nextHashString = nextHash.Hash().String()
@@ -189,9 +202,10 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 				result.Txs = append(result.Txs, transactionT)
 			}
 		}
-
+		Logger.log.Infof("handleRetrieveBlock result: %+v", result)
 		return result, nil
 	}
+	Logger.log.Infof("handleRetrieveBlock result: %+v", nil)
 	return nil, nil
 }
 
@@ -199,15 +213,21 @@ func (rpcServer RpcServer) handleRetrieveBlock(params interface{}, closeChan <-c
 handleRetrieveBlock RPC return information for block
 */
 func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleRetrieveBeaconBlock params: %+v", params)
 	paramsT, ok := params.([]interface{})
 	if ok && len(paramsT) >= 2 {
-		hashString := paramsT[0].(string)
+		hashString, ok := paramsT[0].(string)
+		if !ok {
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("hashString is invalid"))
+		}
 		hash, errH := common.Hash{}.NewHashFromStr(hashString)
 		if errH != nil {
+			Logger.log.Infof("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errH)
 			return nil, NewRPCError(ErrUnexpected, errH)
 		}
 		block, _, errD := rpcServer.config.BlockChain.GetBeaconBlockByHash(hash)
 		if errD != nil {
+			Logger.log.Infof("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errD)
 			return nil, NewRPCError(ErrUnexpected, errD)
 		}
 
@@ -219,6 +239,7 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 		if blockHeight < best.Header.Height {
 			nextHash, err := rpcServer.config.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
 			if err != nil {
+				Logger.log.Infof("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, err)
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			nextHashString = nextHash.Hash().String()
@@ -239,20 +260,30 @@ func (rpcServer RpcServer) handleRetrieveBeaconBlock(params interface{}, closeCh
 			PreviousBlockHash: block.Header.PrevBlockHash.String(),
 			NextBlockHash:     nextHashString,
 		}
-
+		Logger.log.Infof("handleRetrieveBeaconBlock result: %+v, err: %+v", result, errD)
 		return result, nil
 	}
+	Logger.log.Infof("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, nil)
 	return nil, nil
 }
 
 // handleGetBlocks - get n top blocks from chain ID
 func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetBlocks params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) != 2 {
 		arrayParams = append(arrayParams, 0.0, 0.0)
 	}
-	numBlock := int(arrayParams[0].(float64))
-	shardIDParam := int(arrayParams[1].(float64))
+	numBlockTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("numblock is invalid"))
+	}
+	numBlock := int(numBlockTemp)
+	shardIDParamTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("shardIDParam is invalid"))
+	}
+	shardIDParam := int(shardIDParamTemp)
 	if shardIDParam != -1 {
 		result := make([]jsonresult.GetBlockResult, 0)
 		bestBlock := rpcServer.config.BlockChain.BestState.Shard[byte(shardIDParam)].BestBlock
@@ -262,6 +293,7 @@ func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan 
 			// block, errD := rpcServer.config.BlockChain.GetBlockByHash(previousHash)
 			block, size, errD := rpcServer.config.BlockChain.GetShardBlockByHash(previousHash)
 			if errD != nil {
+				Logger.log.Infof("handleGetBlocks result: %+v, err: %+v", nil, errD)
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
 			blockResult := jsonresult.GetBlockResult{}
@@ -272,6 +304,7 @@ func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan 
 				break
 			}
 		}
+		Logger.log.Infof("handleGetBlocks result: %+v", result)
 		return result, nil
 	} else {
 		result := make([]jsonresult.GetBlocksBeaconResult, 0)
@@ -292,6 +325,7 @@ func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan 
 				break
 			}
 		}
+		Logger.log.Infof("handleGetBlocks result: %+v", result)
 		return result, nil
 	}
 }
@@ -300,6 +334,7 @@ func (rpcServer RpcServer) handleGetBlocks(params interface{}, closeChan <-chan 
 getblockchaininfo RPC return information fo blockchain node
 */
 func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetBlockChainInfo params: %+v", params)
 	result := jsonresult.GetBlockChainInfoResult{
 		ChainName:    rpcServer.config.ChainParams.Name,
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
@@ -322,6 +357,7 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 		BlockProducer:    beaconBestState.BestBlock.Header.ProducerAddress.String(),
 		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
 	}
+	Logger.log.Infof("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
 }
 
