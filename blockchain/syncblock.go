@@ -587,11 +587,12 @@ func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
 	}
 }
 func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
+	fmt.Println("Insert Shard Block from pool")
 	currentInsert.Shards[shardID].Lock()
 	defer currentInsert.Shards[shardID].Unlock()
 	blks := blockchain.config.ShardPool[shardID].GetValidBlock()
 	if len(blks) > 0 {
-		Logger.log.Infof("Get %+v blocks from pool [%+v -> %+v] \n", len(blks), blks[0].Header.Height, blks[len(blks)-1].Header.Height)
+		fmt.Printf("Get %+v blocks from pool [%+v -> %+v] \n", len(blks), blks[0].Header.Height, blks[len(blks)-1].Header.Height)
 	}
 	for _, newBlk := range blks {
 		err := blockchain.InsertShardBlock(newBlk, false)

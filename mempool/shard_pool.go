@@ -392,6 +392,6 @@ func (self *ShardPool) GetBlockByHeight(height uint64) *blockchain.ShardBlock {
 func (self *ShardPool) AddValidBlockToChan(block *blockchain.ShardBlock) {
 	self.cValidBlock <- block
 }
-func (self *ShardPool) GetValidBlockChan() chan *blockchain.ShardBlock {
-	return self.cValidBlock
+func (self *ShardPool) GetValidBlockChan() *chan *blockchain.ShardBlock {
+	return &self.cValidBlock
 }
