@@ -191,15 +191,21 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 //Parameter #3—the list priv-key which be used to view utxo
 //
 func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
+	Logger.log.Infof("handleListUnspentOutputCoins params: %+v", params)
 	result := jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
 	// get component
 	paramsArray := common.InterfaceSlice(params)
-	min := int(paramsArray[0].(float64))
-	max := int(paramsArray[1].(float64))
+	var min int
+	var max int
+	if len(paramsArray) > 0 && paramsArray[0] != nil {
+		min = int(paramsArray[0].(float64))
+	}
+	if len(paramsArray) > 1 && paramsArray[1] != nil {
+		max = int(paramsArray[1].(float64))
+	}
 	_ = min
 	_ = max
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
@@ -246,10 +252,12 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		}
 		result.Outputs[priKeyStr] = item
 	}
+	Logger.log.Infof("handleListUnspentOutputCoins result: %+v", result)
 	return result, nil
 }
 
 func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleCheckHashValue params: %+v", params)
 	var (
 		isTransaction bool
 		isBlock       bool
@@ -263,12 +271,11 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected hash string value"))
 	}
 	// param #1: transaction Hash
-	// Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
+	Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
 	log.Printf("Check hash value  input Param %+v", hashParams)
 	hash, _ := common.Hash{}.NewHashFromStr(hashParams)
 
 	// Check block
-	// _, err := rpcServer.config.BlockChain.GetBlockByHash(hash)
 	_, _, err := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
 	if err != nil {
 		isBlock = false
