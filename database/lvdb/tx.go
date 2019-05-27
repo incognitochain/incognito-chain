@@ -126,17 +126,6 @@ func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin [
 func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
-	res, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-
-	var arrData [][]byte
-	if len(res) > 0 {
-		if err := json.Unmarshal(res, &arrData); err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
-		}
-	}
 
 	keySpec4 := append(key, pubkey...)
 	var arrDatabyPubkey [][]byte
@@ -150,8 +139,13 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 		}
 	}
 
-	// use for create proof random
-	lenData := uint64(len(arrData))
+	var lenData uint64
+	len, _ := db.GetCommitmentLength(tokenID, shardID)
+	if len == nil {
+		lenData = 0
+	} else {
+		lenData = len.Uint64()
+	}
 	for _, c := range commitments {
 		newIndex := new(big.Int).SetUint64(lenData).Bytes()
 		if lenData == 0 {
@@ -184,33 +178,7 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 		lenData++
 	}
 
-	arrData = append(arrData, commitments...)
-	b, err := json.Marshal(arrData)
-	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}
-	if err := db.lvdb.Put(key, b, nil); err != nil {
-		return err
-	}
 	return nil
-}
-
-// FetchCommitments - Get list commitments by shardID
-func (db *db) FetchCommitments(tokenID *common.Hash, shardID byte) ([][]byte, error) {
-	key := db.GetKey(string(commitmentsPrefix), tokenID)
-	key = append(key, shardID)
-	res, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-
-	var txs [][]byte
-	if len(res) > 0 {
-		if err := json.Unmarshal(res, &txs); err != nil {
-			return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
-		}
-	}
-	return txs, nil
 }
 
 // HasCommitment - Check commitment in list commitments by shardID
