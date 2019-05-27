@@ -47,7 +47,6 @@ func NewContractingRequestFromMap(data map[string]interface{}) (Metadata, error)
 	}
 
 	burnedAmount := uint64(data["BurnedAmount"].(float64))
-
 	tokenID, err := common.NewHashFromStr(data["TokenID"].(string))
 	if err != nil {
 		return nil, errors.Errorf("TokenID incorrect")
@@ -66,9 +65,9 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
-		return false, errors.New("the issuance request must be called by centralized website")
-	}
+	// if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
+	// 	return false, errors.New("the issuance request must be called by centralized website")
+	// }
 
 	bridgeTokenExisted, err := db.IsBridgeTokenExisted(&cReq.TokenID)
 	if err != nil {
