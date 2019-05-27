@@ -20,58 +20,32 @@ import (
 func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, shardID byte) error {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
-	res, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
+	keyStoreLen := append(key, []byte("len")...)
 
-	var arrayData [][]byte
-	if len(res) > 0 {
-		if err := json.Unmarshal(res, &arrayData); err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
-		}
+	var lenData int64
+	len, _ := db.GetSerialNumbersLength(tokenID, shardID)
+	if len == nil {
+		lenData = 0
+	} else {
+		lenData = len.Int64()
 	}
-
-	lenData := int64(len(arrayData))
 	for _, s := range serialNumbers {
 		newIndex := big.NewInt(lenData).Bytes()
 		if lenData == 0 {
 			newIndex = []byte{0}
 		}
+		// store serialNumber and index
 		keySpec1 := append(key, s...)
 		if err := db.lvdb.Put(keySpec1, newIndex, nil); err != nil {
 			return err
 		}
+		// store last index of array serialNumber
+		if err := db.lvdb.Put(keyStoreLen, newIndex, nil); err != nil {
+			return err
+		}
 		lenData++
 	}
-
-	arrayData = append(arrayData, serialNumbers...)
-	b, err := json.Marshal(arrayData)
-	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}
-	if err := db.lvdb.Put(key, b, nil); err != nil {
-		return err
-	}
 	return nil
-}
-
-// FetchSerialNumbers - Get list SerialNumbers by shardID
-func (db *db) FetchSerialNumbers(tokenID *common.Hash, shardID byte) ([][]byte, error) {
-	key := db.GetKey(string(serialNumbersPrefix), tokenID)
-	key = append(key, shardID)
-	res, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return make([][]byte, 0), database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-
-	var arrayData [][]byte
-	if len(res) > 0 {
-		if err := json.Unmarshal(res, &arrayData); err != nil {
-			return make([][]byte, 0), errors.Wrap(err, "json.Unmarshal")
-		}
-	}
-	return arrayData, nil
 }
 
 // HasSerialNumber - Check serialNumber in list SerialNumbers by shardID
@@ -86,6 +60,22 @@ func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, shardID
 		return true, nil
 	}
 	return false, nil
+}
+
+// GetCommitmentIndex - return index of commitment in db list
+func (db *db) GetSerialNumbersLength(tokenID *common.Hash, shardID byte) (*big.Int, error) {
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
+	key = append(key, shardID)
+	keyStoreLen := append(key, []byte("len")...)
+	data, err := db.Get(keyStoreLen)
+	if err != nil {
+		return nil, err
+	} else {
+		lenArray := new(big.Int).SetBytes(data)
+		lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
+		return lenArray, nil
+	}
+	return nil, nil
 }
 
 // CleanSerialNumbers - clear all list serialNumber in DB
@@ -177,7 +167,7 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 		if err := db.lvdb.Put(keySpec2, newIndex, nil); err != nil {
 			return err
 		}
-		// store length of array commitment
+		// store last index of array commitment
 		keySpec3 := append(key, []byte("len")...)
 		if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
 			return err

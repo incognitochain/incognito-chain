@@ -76,7 +76,6 @@ type DatabaseInterface interface {
 
 	// SerialNumber
 	StoreSerialNumbers(tokenID *common.Hash, serialNumber [][]byte, shardID byte) error
-	FetchSerialNumbers(tokenID *common.Hash, shardID byte) ([][]byte, error)
 	HasSerialNumber(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSerialNumbers() error
 
