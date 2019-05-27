@@ -23,7 +23,10 @@ func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, s
 	keyStoreLen := append(key, []byte("len")...)
 
 	var lenData int64
-	len, _ := db.GetSerialNumbersLength(tokenID, shardID)
+	len, err := db.GetSerialNumbersLength(tokenID, shardID)
+	if err != nil {
+		return err
+	}
 	if len == nil {
 		lenData = 0
 	} else {
@@ -140,7 +143,10 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 	}
 
 	var lenData uint64
-	len, _ := db.GetCommitmentLength(tokenID, shardID)
+	len, err := db.GetCommitmentLength(tokenID, shardID)
+	if err != nil {
+		return err
+	}
 	if len == nil {
 		lenData = 0
 	} else {
