@@ -103,6 +103,13 @@ var RpcHandler = map[string]commandHandler{
 	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
 	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
 
+	// Bridge
+	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
+	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
+	CreateAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
+	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
+	GetBridgeTokensAmounts:          RpcServer.handleGetBridgeTokensAmounts,
+
 	// wallet
 	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
 	DefragmentAccount:              RpcServer.handleDefragmentAccount,
