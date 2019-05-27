@@ -62,9 +62,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 }
 
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
-	fmt.Println("Shard block received from shard A", newBlk.Header.ShardID, newBlk.Header.Height)
+	//fmt.Println("Shard block received from shard A", newBlk.Header.ShardID, newBlk.Header.Height)
 	if _, ok := blockchain.syncStatus.Shards[newBlk.Header.ShardID]; ok {
-		fmt.Println("Shard block received from shard B", newBlk.Header.ShardID, newBlk.Header.Height)
+		//fmt.Println("Shard block received from shard B", newBlk.Header.ShardID, newBlk.Header.Height)
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
