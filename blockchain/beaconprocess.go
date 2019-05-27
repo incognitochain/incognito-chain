@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/metadata"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/constant-money/constant-chain/metadata"
 )
 
 /*
@@ -205,6 +206,12 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//=========Remove shard to beacon block in pool
 	//Logger.log.Info("Remove block from pool block with hash  ", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
+
+	err = blockchain.processBridgeInstructions(block)
+	if err != nil {
+		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+		return NewBlockChainError(UnExpectedError, err)
+	}
 
 	Logger.log.Infof("Finish Insert new block %+v, with hash %+v \n", block.Header.Height, *block.Hash())
 	if block.Header.Height%50 == 0 {
@@ -595,6 +602,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		if len(l) < 1 {
 			continue
 		}
+
 		if l[0] == SetAction {
 			bestStateBeacon.Params[l[1]] = l[2]
 		}
