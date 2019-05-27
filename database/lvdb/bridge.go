@@ -57,13 +57,21 @@ func (db *db) CountUpDepositedAmtByTokenID(
 	return nil
 }
 
+func buildBridgedTokensAmounts(item []byte, results [][]byte) [][]byte {
+	results = append(results, item)
+	return results
+}
+
 func (db *db) GetBridgeTokensAmounts() ([][]byte, error) {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(centralizedBridgePrefix), nil)
 	results := [][]byte{}
 	for iter.Next() {
 		value := iter.Value()
-		results = append(results, value)
+		bridgedTokensAmountBytes := make([]byte, len(value))
+		copy(bridgedTokensAmountBytes, value)
+		results = append(results, bridgedTokensAmountBytes)
 	}
+
 	iter.Release()
 	err := iter.Error()
 	if err != nil && err != lvdberr.ErrNotFound {

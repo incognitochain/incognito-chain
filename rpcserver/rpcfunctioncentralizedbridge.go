@@ -26,7 +26,7 @@ func (rpcServer RpcServer) handleGetBridgeTokensAmounts(params interface{}, clos
 		var tokenWithAmount lvdb.TokenWithAmount
 		err := json.Unmarshal(tokensAmtsBytes, &tokenWithAmount)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, dbErr)
+			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		tokenID := tokenWithAmount.TokenID
 		result.BridgeTokensAmounts[tokenID.String()] = jsonresult.GetBridgeTokensAmount{
