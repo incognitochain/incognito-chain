@@ -175,7 +175,7 @@ phase:
 								}
 							} else {
 								if userRole := protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Round); userRole == common.PROPOSER_ROLE {
-									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, nil, protocol.EngineCfg.UserKeySet)
+									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight(), protocol.EngineCfg.UserKeySet)
 									protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID)
 								}
 							}
