@@ -350,16 +350,28 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 
 	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
-
+	if len(arrayParams) < 3 {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
 	// Param #1: account "*" for all or a particular account
-	accountName := arrayParams[0].(string)
+	accountName, ok := arrayParams[0].(string)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
+	}
 
 	// Param #2: the minimum number of confirmations an output must have
-	min := int(arrayParams[1].(float64))
+	minTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("min is invalid"))
+	}
+	min := int(minTemp)
 	_ = min
 
 	// Param #3: passphrase to access local wallet of node
-	passPhrase := arrayParams[2].(string)
+	passPhrase, ok := arrayParams[2].(string)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
+	}
 
 	if passPhrase != rpcServer.config.Wallet.PassPhrase {
 		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
@@ -431,7 +443,13 @@ func (rpcServer RpcServer) handleListPrivacyCustomToken(params interface{}, clos
 // handleGetPublicKeyFromPaymentAddress - return base58check encode of public key which is got from payment address
 func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	paymentAddress := arrayParams[0].(string)
+	if len(arrayParams) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
+	paymentAddress, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("paymentAddress is invalid"))
+	}
 
 	key, err := wallet.Base58CheckDeserialize(paymentAddress)
 	if err != nil {
@@ -444,11 +462,22 @@ func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface
 // handleGetRecentTransactionsByBlockNumber - RPC return list rencent txs by number of confirmed blocks
 func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 2 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
 	// #param 1: number of confirmed blocks
-	numberOfBlock := uint64(arrayParams[0].(float64))
+	numOfBlockTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("numberOfBlock is invalid"))
+	}
+	numberOfBlock := uint64(numOfBlockTemp)
 
 	// #param 2: viewing key
-	senderKeySet, err := rpcServer.GetKeySetFromKeyParams(arrayParams[1].(string))
+	senderKeysetStr, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKeysetStr is invalid"))
+	}
+	senderKeySet, err := rpcServer.GetKeySetFromKeyParams(senderKeysetStr)
 	if err != nil {
 		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
 	}
@@ -535,9 +564,20 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	if len(arrayParams) < 4 {
 		return nil, NewRPCError(ErrRPCInvalidParams, nil)
 	}
-	senderKeyParam := arrayParams[0].(string)
-	maxVal := uint64(arrayParams[1].(float64))
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKeyParam is invalid"))
+	}
+	maxValTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("maxVal is invalid"))
+	}
+	maxVal := uint64(maxValTemp)
+	estimateFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("estimateFeeCoinPerKb is invalid"))
+	}
+	estimateFeeCoinPerKb := int64(estimateFeeCoinPerKbtemp)
 	// param #4: hasPrivacy flag: 1 or -1
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
