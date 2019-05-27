@@ -1,13 +1,14 @@
 package netsync
 
 import (
+	"fmt"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/patrickmn/go-cache"
 	"sync"
 	"sync/atomic"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/mempool"
 	"github.com/constant-money/constant-chain/peer"
@@ -18,8 +19,8 @@ import (
 const (
 	txCache                 = 10000
 	workers                 = 5
-	MsgLiveTime         = 5 * time.Second  // in second
-	MsgsCleanupInterval = 30 * time.Second //in second
+	MsgLiveTime         = 50 * time.Second  // in second
+	MsgsCleanupInterval = 300 * time.Second //in second
 )
 
 type NetSync struct {
@@ -60,7 +61,7 @@ type NetSyncCache struct {
 	txCache                 *cache.Cache
 	txCacheMtx              sync.Mutex
 	blockCacheMtx           sync.Mutex
-	CTxCache                chan common.Hash
+	CTxCache                <-chan common.Hash
 }
 
 func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgShardID *ShardIDConfig) *NetSync {
@@ -363,9 +364,13 @@ func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
 	//if oldBlock := netSync.IsOldShardBlock(msg.Block.Header.ShardID, msg.Block.Header.Height); !oldBlock {
+	fmt.Println("Shard Block Received In net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
 		if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+			fmt.Println("Shard Block NO Duplicate net Sync: ", msg.Block.Header.Height,  msg.Block.Header.ShardID, msg.Block.Header.Hash())
 			netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
+			return
 		}
+	fmt.Println("Shard Block Duplicate net Sync: ", msg.Block.Header.Height,  msg.Block.Header.ShardID, msg.Block.Header.Hash())
 	//}
 }
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
@@ -467,7 +472,6 @@ func (netSync *NetSync) HandleCacheBlock(blockHash common.Hash) bool {
 	defer netSync.Cache.blockCacheMtx.Unlock()
 	_, ok := netSync.Cache.blockCache.Get(blockHash.String())
 	if ok {
-		Logger.log.Infof("Shard Block Found In Cache")
 		return true
 	}
 	netSync.Cache.blockCache.Add(blockHash.String(),1, MsgLiveTime)
