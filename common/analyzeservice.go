@@ -26,6 +26,8 @@ const (
 	TxValidateByItSelfInPoolType     = "TxValidateByItSelfInPoolType"
 	TxInOneBlock                     = "TxInOneBlock"
 	DuplicateTxs                     = "DuplicateTxs"
+
+	CreateAndSaveTxViewPointFromBlock = "CreateAndSaveTxViewPointFromBlock"
 )
 
 // tag
@@ -41,14 +43,17 @@ const (
 	TxPrivacyOrNotMetric = "txprivacyornot"
 	BlockHeight          = "blockheight"
 	TxHash               = "txhash"
+
+	Func = "func"
 )
 
 //Tag value
 const (
-	TxPrivacy         = "privacy"
-	TxNormalPrivacy   = "normaltxprivacy"
-	TxNoPrivacy       = "noprivacy"
-	TxNormalNoPrivacy = "normaltxnoprivacy"
+	TxPrivacy                             = "privacy"
+	TxNormalPrivacy                       = "normaltxprivacy"
+	TxNoPrivacy                           = "noprivacy"
+	TxNormalNoPrivacy                     = "normaltxnoprivacy"
+	FuncCreateAndSaveTxViewPointFromBlock = "func-CreateAndSaveTxViewPointFromBlock"
 )
 
 func AnalyzeTimeSeriesTxSizeMetric(txSize string, metric string, value float64) {
@@ -75,6 +80,11 @@ func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64) {
 func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(TxHash, txHash, DuplicateTxs, value)
 }
+
+func AnalyzeFuncCreateAndSaveTxViewPointFromBlock(time float64) {
+	sendTimeSeriesTransactionMetricDataInfluxDB(Func, FuncCreateAndSaveTxViewPointFromBlock, CreateAndSaveTxViewPointFromBlock, time)
+}
+
 func sendTimeSeriesTransactionMetricDataInfluxDB(metricTag string, tagValue string, metric string, value ...float64) {
 	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GRAFANAURL")
