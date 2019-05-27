@@ -45,12 +45,12 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		return nil, errors.Errorf("TokenID incorrect")
 	}
 
-	depositedAmtStr := data["DepositedAmount"].(string)
-	depositedAmtInt, err := strconv.Atoi(depositedAmtStr)
-	if err != nil {
-		return nil, err
-	}
-	depositedAmt := uint64(depositedAmtInt)
+	// depositedAmtStr := data["DepositedAmount"].(string)
+	// depositedAmtInt, err := strconv.Atoi(depositedAmtStr)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	depositedAmt := uint64(data["DepositedAmount"].(float64))
 
 	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	if err != nil {
