@@ -223,7 +223,9 @@ func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, 
 
 	// all component
 	arrayParams := common.InterfaceSlice(params)
-
+	if len(arrayParams) != 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
+	}
 	// param #1: private key of sender
 	paymentAddressParam := arrayParams[0]
 	accountWithPaymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressParam.(string))
@@ -269,16 +271,28 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 
 	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
-
+	if len(arrayParams) < 3 {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
 	// Param #1: account "*" for all or a particular account
-	accountName := arrayParams[0].(string)
+	accountName, ok := arrayParams[0].(string)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
+	}
 
 	// Param #2: the minimum number of confirmations an output must have
-	min := int(arrayParams[1].(float64))
+	minTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("min is invalid"))
+	}
+	min := int(minTemp)
 	_ = min
 
 	// Param #3: passphrase to access local wallet of node
-	passPhrase := arrayParams[2].(string)
+	passPhrase, ok := arrayParams[2].(string)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
+	}
 
 	if passPhrase != rpcServer.config.Wallet.PassPhrase {
 		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
