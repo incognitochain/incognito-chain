@@ -109,4 +109,10 @@ const (
 
 	// utils
 	HashToIdenticon = "hashtoidenticon"
+
+	CreateIssuingRequest            = "createissuingrequest"
+	SendIssuingRequest              = "sendissuingrequest"
+	CreateAndSendIssuingRequest     = "createandsendissuingrequest"
+	CreateAndSendContractingRequest = "createandsendcontractingrequest"
+	GetBridgeTokensAmounts          = "getbridgetokensamounts"
 )
