@@ -88,33 +88,6 @@ func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, shardID
 	return false, nil
 }
 
-// HasSerialNumberIndex - Check serialNumber in list SerialNumbers by shardID
-/*func (db *db) HasSerialNumberIndex(serialNumberIndex int64, shardID byte) (bool, error) {
-	key := db.GetKey(string(serialNumbersPrefix), "")
-	key = append(key, shardID)
-	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
-	_, err := db.Get(keySpec)
-	if err != nil {
-		return false, err
-	} else {
-		return true, nil
-	}
-	return false, nil
-}*/
-
-/*func (db *db) GetSerialNumberByIndex(serialNumberIndex int64, shardID byte) ([]byte, error) {
-	key := db.GetKey(string(serialNumbersPrefix), "")
-	key = append(key, shardID)
-	keySpec := append(key, big.NewInt(serialNumberIndex).Bytes()...)
-	data, err := db.Get(keySpec)
-	if err != nil {
-		return data, err
-	} else {
-		return data, nil
-	}
-	return data, nil
-}*/
-
 // CleanSerialNumbers - clear all list serialNumber in DB
 func (db *db) CleanSerialNumbers() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(serialNumbersPrefix), nil)
