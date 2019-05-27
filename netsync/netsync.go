@@ -18,8 +18,8 @@ import (
 const (
 	txCache                 = 10000
 	workers                 = 5
-	MsgLiveTime         = 3 * time.Second  // in second
-	MsgsCleanupInterval = 10 * time.Second //in second
+	MsgLiveTime         = 5 * time.Second  // in second
+	MsgsCleanupInterval = 30 * time.Second //in second
 )
 
 type NetSync struct {
@@ -58,6 +58,8 @@ type NetSyncConfig struct {
 type NetSyncCache struct {
 	blockCache              *cache.Cache
 	txCache                 *cache.Cache
+	txCacheMtx              sync.Mutex
+	blockCacheMtx           sync.Mutex
 	CTxCache                chan common.Hash
 }
 
@@ -247,7 +249,7 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 	if !netSync.HandleTxWithRole(msg.Transaction) {
 		return
 	}
-	if isAdded := netSync.HandleCacheTx(msg.Transaction); !isAdded {
+	if isAdded := netSync.HandleCacheTx(*msg.Transaction.Hash()); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
 			Logger.log.Error(err)
@@ -271,7 +273,7 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 	if !netSync.HandleTxWithRole(msg.Transaction) {
 		return
 	}
-	if isAdded := netSync.HandleCacheTx(msg.Transaction); !isAdded {
+	if isAdded := netSync.HandleCacheTx(*msg.Transaction.Hash()); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 
 		if err != nil {
@@ -295,7 +297,7 @@ func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 	if !netSync.HandleTxWithRole(msg.Transaction) {
 		return
 	}
-	if isAdded := netSync.HandleCacheTx(msg.Transaction); !isAdded {
+	if isAdded := netSync.HandleCacheTx(*msg.Transaction.Hash()); !isAdded {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
 			Logger.log.Error(err)
@@ -352,26 +354,30 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 
 func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
-	if isAdded := netSync.HandleCacheBlock(*msg.Block.Hash()); !isAdded {
-		netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
-	}
+	//if oldBlock := netSync.IsOldBeaconBlock(msg.Block.Header.Height); !oldBlock {
+		if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+			netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
+		}
+	//}
 }
 func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
-	if isAdded := netSync.HandleCacheBlock(*msg.Block.Hash()); !isAdded {
-		netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
-	}
+	//if oldBlock := netSync.IsOldShardBlock(msg.Block.Header.ShardID, msg.Block.Header.Height); !oldBlock {
+		if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+			netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
+		}
+	//}
 }
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")
-	if isAdded := netSync.HandleCacheBlock(*msg.Block.Hash()); !isAdded {
+	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
 		netSync.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
 	}
 
 }
 func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Info("Handling new message ShardToBeacon")
-	if isAdded := netSync.HandleCacheBlock(*msg.Block.Hash()); !isAdded {
+	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
 		netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
 	}
 }
@@ -457,17 +463,20 @@ func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 	}
 }
 func (netSync *NetSync) HandleCacheBlock(blockHash common.Hash) bool {
-	
+	netSync.Cache.blockCacheMtx.Lock()
+	defer netSync.Cache.blockCacheMtx.Unlock()
 	_, ok := netSync.Cache.blockCache.Get(blockHash.String())
 	if ok {
+		Logger.log.Infof("Shard Block Found In Cache")
 		return true
 	}
 	netSync.Cache.blockCache.Add(blockHash.String(),1, MsgLiveTime)
 	return false
 }
 
-func (netSync *NetSync) HandleCacheTx(transaction metadata.Transaction) bool {
-	txHash := *transaction.Hash()
+func (netSync *NetSync) HandleCacheTx(txHash common.Hash) bool {
+	netSync.Cache.txCacheMtx.Lock()
+	defer netSync.Cache.txCacheMtx.Unlock()
 	_, ok := netSync.Cache.txCache.Get(txHash.String())
 	if ok {
 		return true
@@ -477,6 +486,8 @@ func (netSync *NetSync) HandleCacheTx(transaction metadata.Transaction) bool {
 }
 
 func (netSync *NetSync) HandleCacheTxHash(txHash common.Hash) {
+	netSync.Cache.txCacheMtx.Lock()
+	defer netSync.Cache.txCacheMtx.Unlock()
 	netSync.Cache.txCache.Add(txHash.String(),1, MsgLiveTime)
 }
 
@@ -523,4 +534,28 @@ func (netSync *NetSync) HandleCacheTxHashWoker(cTxCache <-chan common.Hash) {
 		go netSync.HandleCacheTxHash(job)
 		time.Sleep(time.Nanosecond)
 	}
+}
+
+//GET SHARD HEIGHT BY ROLE
+//func (netSync *NetSync) GetBestShardHeight(shardID byte) (uint64, bool) {
+	//netSync.ShardIDConfig.roleInCommitteesMtx.RLock()
+	//defer netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
+	//if netSync.ShardIDConfig.RoleInCommittees > - 1 {
+	//	return blockchain.GetBestStateShard(byte(netSync.ShardIDConfig.RoleInCommittees)).ShardHeight, true
+	//}
+	//return 0, false
+	//GET SHARD HEIGHT BY BLOCK
+//}
+
+//if old block return true, otherwise return false
+func (netSync *NetSync) IsOldShardBlock(shardID byte, blockHeight uint64) bool {
+	shardBestState, err := netSync.config.BlockChain.GetShardBestState(shardID)
+	// ignore if can't get shard best state
+	if err != nil {
+		return false
+	}
+	return shardBestState.ShardHeight >= blockHeight
+}
+func (netSync *NetSync) IsOldBeaconBlock(blockHeight uint64) bool {
+	return netSync.config.BlockChain.GetBeaconHeight() >= blockHeight
 }
