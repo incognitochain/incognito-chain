@@ -17,7 +17,7 @@ import (
 )
 
 // StoreSerialNumbers - store list serialNumbers by shardID
-func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumber []byte, shardID byte) error {
+func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, shardID byte) error {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
@@ -33,17 +33,19 @@ func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumber []byte, shar
 	}
 
 	lenData := int64(len(arrayData))
-	newIndex := big.NewInt(lenData).Bytes()
-	if lenData == 0 {
-		newIndex = []byte{0}
-	}
-	//keySpec1 := make([]byte, len(key))
-	keySpec1 := append(key, serialNumber...)
-	if err := db.lvdb.Put(keySpec1, newIndex, nil); err != nil {
-		return err
+	for _, s := range serialNumbers {
+		newIndex := big.NewInt(lenData).Bytes()
+		if lenData == 0 {
+			newIndex = []byte{0}
+		}
+		keySpec1 := append(key, s...)
+		if err := db.lvdb.Put(keySpec1, newIndex, nil); err != nil {
+			return err
+		}
+		lenData++
 	}
 
-	arrayData = append(arrayData, serialNumber)
+	arrayData = append(arrayData, serialNumbers...)
 	b, err := json.Marshal(arrayData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -158,7 +160,7 @@ func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin [
 }
 
 // StoreCommitments - store list commitments by shardID
-func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments []byte, shardID byte) error {
+func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	res, err := db.lvdb.Get(key, nil)
@@ -173,34 +175,6 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 		}
 	}
 
-	// use for create proof random
-	lenData := uint64(len(arrData))
-	newIndex := new(big.Int).SetUint64(lenData).Bytes()
-	if lenData == 0 {
-		newIndex = []byte{0}
-	}
-	//keySpec1 := make([]byte, len(key))
-	keySpec1 := append(key, newIndex...)
-	if err := db.lvdb.Put(keySpec1, commitments, nil); err != nil {
-		return err
-	}
-
-	// use for validate
-	//keySpec2 := make([]byte, len(key))
-	keySpec2 := append(key, commitments...)
-	if err := db.lvdb.Put(keySpec2, newIndex, nil); err != nil {
-		return err
-	}
-
-	// store length of array commitment
-	//keySpec3 := make([]byte, len(key))
-	keySpec3 := append(key, []byte("len")...)
-	if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
-		return err
-	}
-
-	// store for pubkey:[newindex1, newindex2]
-	//keySpec4 := make([]byte, len(key))
 	keySpec4 := append(key, pubkey...)
 	var arrDatabyPubkey [][]byte
 	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
@@ -212,16 +186,42 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	arrDatabyPubkey = append(arrDatabyPubkey, newIndex)
-	resByPubkey, err = json.Marshal(arrDatabyPubkey)
-	if err != nil {
-		return err
-	}
-	if err := db.lvdb.Put(keySpec4, resByPubkey, nil); err != nil {
-		return err
+
+	// use for create proof random
+	lenData := uint64(len(arrData))
+	for _, c := range commitments {
+		newIndex := new(big.Int).SetUint64(lenData).Bytes()
+		if lenData == 0 {
+			newIndex = []byte{0}
+		}
+		// use for create proof random
+		keySpec1 := append(key, newIndex...)
+		if err := db.lvdb.Put(keySpec1, c, nil); err != nil {
+			return err
+		}
+		// use for validate
+		keySpec2 := append(key, c...)
+		if err := db.lvdb.Put(keySpec2, newIndex, nil); err != nil {
+			return err
+		}
+		// store length of array commitment
+		keySpec3 := append(key, []byte("len")...)
+		if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
+			return err
+		}
+		// keySpec4 store for pubkey:[newindex1, newindex2]
+		arrDatabyPubkey = append(arrDatabyPubkey, newIndex)
+		resByPubkey, err = json.Marshal(arrDatabyPubkey)
+		if err != nil {
+			return err
+		}
+		if err := db.lvdb.Put(keySpec4, resByPubkey, nil); err != nil {
+			return err
+		}
+		lenData++
 	}
 
-	arrData = append(arrData, commitments)
+	arrData = append(arrData, commitments...)
 	b, err := json.Marshal(arrData)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
@@ -380,20 +380,17 @@ func (db *db) CleanCommitments() error {
 }
 
 // StoreSNDerivators - store list serialNumbers by shardID
-func (db *db) StoreSNDerivators(tokenID *common.Hash, data []byte, shardID byte) error {
+func (db *db) StoreSNDerivators(tokenID *common.Hash, sndArray [][]byte, shardID byte) error {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
-	_, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
 
 	// "snderivator-data:nil"
-	keySpec := append(key, data...)
-	if err := db.lvdb.Put(keySpec, []byte{}, nil); err != nil {
-		return err
+	for _, snd := range sndArray {
+		keySpec := append(key, snd...)
+		if err := db.lvdb.Put(keySpec, []byte{}, nil); err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 
