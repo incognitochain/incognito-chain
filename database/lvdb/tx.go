@@ -24,7 +24,7 @@ func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, s
 
 	var lenData int64
 	len, err := db.GetSerialNumbersLength(tokenID, shardID)
-	if err != nil {
+	if err != nil && len == nil {
 		return err
 	}
 	if len == nil {
@@ -72,13 +72,13 @@ func (db *db) GetSerialNumbersLength(tokenID *common.Hash, shardID byte) (*big.I
 	keyStoreLen := append(key, []byte("len")...)
 	data, err := db.Get(keyStoreLen)
 	if err != nil {
-		return nil, err
+		return new(big.Int).SetInt64(0), nil
 	} else {
 		lenArray := new(big.Int).SetBytes(data)
 		lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
 		return lenArray, nil
 	}
-	return nil, nil
+	return new(big.Int).SetInt64(0), nil
 }
 
 // CleanSerialNumbers - clear all list serialNumber in DB
@@ -144,7 +144,7 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 
 	var lenData uint64
 	len, err := db.GetCommitmentLength(tokenID, shardID)
-	if err != nil {
+	if err != nil && len == nil {
 		return err
 	}
 	if len == nil {
@@ -254,13 +254,13 @@ func (db *db) GetCommitmentLength(tokenID *common.Hash, shardID byte) (*big.Int,
 	keySpec := append(key, []byte("len")...)
 	data, err := db.Get(keySpec)
 	if err != nil {
-		return nil, err
+		return new(big.Int).SetInt64(0), err
 	} else {
 		lenArray := new(big.Int).SetBytes(data)
 		lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
 		return lenArray, nil
 	}
-	return nil, nil
+	return new(big.Int).SetInt64(0), nil
 }
 
 func (db *db) GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
