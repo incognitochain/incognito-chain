@@ -11,7 +11,6 @@ const (
 
 	EstimateFee              = "estimatefee"
 	EstimateFeeWithEstimator = "estimatefeewithestimator"
-	GetGenerate              = "getgenerate"
 
 	GetActiveShards    = "getactiveshards"
 	GetMaxShardsNumber = "getmaxshardsnumber"

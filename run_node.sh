@@ -31,6 +31,10 @@ fi
 if [ "$1" == "beacon-2" ]; then
 go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rnyr3YjfpLN9unAvAM2TGZhurt7gfcrjCkUv11DWf6gN79raFqrazCHArWsWyosZvGdw5s5cuzzYXgpxDj9sEieyKqKCZ97inpaAXUR" --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9425" --externaladdress "127.0.0.1:9425" --norpcauth --rpclisten "127.0.0.1:9342"
 fi
+# FullNode
+if [ "$1" == "full_node" ]; then
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --nodemode "relay" --datadir "data/full_node" --listen "127.0.0.1:9533" --externaladdress "127.0.0.1:9533" --norpcauth --rpclisten "127.0.0.1:9554" --enablewallet --wallet "wallet_fullnode" --walletpassphrase "12345678" --walletautoinit --relayshards "all"
+fi
 ######
 if [ "$1" == "shard-stake-1" ]; then
 go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe" --nodemode "auto" --datadir "data/shard-stake" --listen "127.0.0.1:9436" --externaladdress "127.0.0.1:9436" --norpcauth --rpclisten "127.0.0.1:9343" 
