@@ -123,6 +123,8 @@ func (sbsRes *BeaconBlockSalaryRes) Hash() *common.Hash {
 }
 
 func (sbsRes *BeaconBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instUsed []int,
 	shardID byte,
