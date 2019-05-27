@@ -285,6 +285,7 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 			IsBlock:       isBlock,
 			IsTransaction: false,
 		}
+		Logger.log.Infof("handleCheckHashValue result: %+v", result)
 		return result, nil
 	}
 	_, _, _, _, err1 := rpcServer.config.BlockChain.GetTransactionByHash(hash)
@@ -296,39 +297,37 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 			IsBlock:       false,
 			IsTransaction: isTransaction,
 		}
+		Logger.log.Infof("handleCheckHashValue result: %+v", result)
 		return result, nil
 	}
-	return jsonresult.HashValueDetail{
+	result := jsonresult.HashValueDetail{
 		IsBlock:       isBlock,
 		IsTransaction: isTransaction,
-	}, nil
+	}
+	Logger.log.Infof("handleCheckHashValue result: %+v", result)
+	return result, nil
 }
 
 /*
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (rpcServer RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetConnectionCount params: %+v", params)
 	if rpcServer.config.ConnMgr == nil || rpcServer.config.ConnMgr.ListeningPeer == nil {
 		return 0, nil
 	}
 	result := 0
 	listeningPeer := rpcServer.config.ConnMgr.ListeningPeer
 	result += len(listeningPeer.PeerConns)
+	Logger.log.Infof("handleGetConnectionCount result: %+v", result)
 	return result, nil
-}
-
-/*
-handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
-*/
-func (rpcServer RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// return rpcServer.config.IsGenerateNode, nil
-	return false, nil
 }
 
 /*
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetConnectionCount params: %+v", params)
 	if !rpcServer.config.IsMiningNode || rpcServer.config.MiningPubKeyB58 == "" {
 		return jsonresult.GetMiningInfoResult{
 			IsCommittee: false,
@@ -351,7 +350,7 @@ func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-c
 	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
 		result.ShardID = -1
 	}
-
+	Logger.log.Infof("handleGetConnectionCount result: %+v", result)
 	return result, nil
 }
 
