@@ -25,6 +25,30 @@ func main() {
 	log.Printf("Process cmd: %s", cfg.Command)
 	if ok, err := common.SliceExists(CmdList, cfg.Command); ok || err == nil {
 		switch cfg.Command {
+		case getprivacytokenid:
+			{
+				log.Printf("Params %+v", cfg)
+				if cfg.PNetwork == "" {
+					log.Println("Wrong param")
+					return
+				}
+				if cfg.PToken == "" {
+					log.Println("Wrong param")
+					return
+				}
+				tokenID := common.Hash{}
+
+				hashPNetWork := common.HashH([]byte(cfg.PNetwork))
+				log.Printf("hashPNetWork: %+v\n", hashPNetWork.String())
+				copy(tokenID[:16], hashPNetWork[:16])
+				log.Printf("tokenID: %+v\n", tokenID.String())
+
+				hashPToken := common.HashH([]byte(cfg.PToken))
+				log.Printf("hashPToken: %+v\n", hashPToken.String())
+				copy(tokenID[16:], hashPToken[:16])
+
+				log.Printf("Result tokenID: %+v\n", tokenID.String())
+			}
 		case CreateWalletCmd:
 			{
 				if cfg.WalletPassphrase == "" || cfg.WalletName == "" {
