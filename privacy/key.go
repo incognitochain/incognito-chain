@@ -104,16 +104,6 @@ func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	return addr
 }
 
-// NewPaymentAddressFromByte reverts a byte array to a payment address
-// TODO: remove this function 0xjacklope
-func NewPaymentAddressFromByte(b []byte) *PaymentAddress {
-	tmp := make([]byte, len(b))
-	copy(tmp, b)
-	paymentAddress := PaymentAddress{}
-	paymentAddress.SetBytes(tmp)
-	return &paymentAddress
-}
-
 // Size returns the size of a payment address
 func (addr *PaymentAddress) Size() int {
 	return len(addr.Pk) + len(addr.Tk)
