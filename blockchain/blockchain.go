@@ -532,20 +532,22 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		pubkey := k
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
+		publicKey := k
+		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
 		if err != nil {
 			return err
 		}
-		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+		lastByte := publicKeyBytes[len(publicKeyBytes)-1]
 		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if pubkeyShardID == shardID {
 			outputCoinArray := view.mapOutputCoins[k]
+			outputCoinBytesArray := make([][]byte, len(outputCoinArray))
 			for _, outputCoin := range outputCoinArray {
-				err = blockchain.config.DataBase.StoreOutputCoins(view.tokenID, pubkeyBytes, outputCoin.Bytes(), pubkeyShardID)
-				if err != nil {
-					return err
-				}
+				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+			}
+			err = blockchain.config.DataBase.StoreOutputCoins(view.tokenID, publicKeyBytes, outputCoinBytesArray, pubkeyShardID)
+			if err != nil {
+				return err
 			}
 		}
 	}
