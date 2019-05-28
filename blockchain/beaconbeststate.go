@@ -342,6 +342,79 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) 
 	return common.EmptyString, 0
 }
 
+func (bestStateBeacon *BestStateBeacon) GetPubkeyNodeRole(pubkey string) (string,  byte) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	
+	found := common.IndexOfStr(pubkey, bestStateBeacon.BeaconCommittee)
+	if found > -1 {
+		return common.BEACON_ROLE, 0
+	}
+	
+	found = common.IndexOfStr(pubkey, bestStateBeacon.BeaconPendingValidator)
+	if found > -1 {
+		return common.BEACON_ROLE, 0
+	}
+	
+	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
+		found := common.IndexOfStr(pubkey, pubkeyArr)
+		if found > -1 {
+			return common.SHARD_ROLE, shardID
+		}
+	}
+	
+	for shardID, pubkeyArr := range bestStateBeacon.ShardCommittee {
+		found := common.IndexOfStr(pubkey, pubkeyArr)
+		if found > -1 {
+			return common.SHARD_ROLE,shardID
+		}
+	}
+	
+	return common.EmptyString, 0
+}
+
+func (bestStateBeacon *BestStateBeacon) GetPubkeyChainRole(pubkey string, round int) (string) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	
+	found := common.IndexOfStr(pubkey, bestStateBeacon.BeaconPendingValidator)
+	if found > -1 {
+		return common.PENDING_ROLE
+	}
+	
+	found = common.IndexOfStr(pubkey, bestStateBeacon.BeaconCommittee)
+	if found > -1 {
+		tmpID := (bestStateBeacon.BeaconProposerIdx + round) % len(bestStateBeacon.BeaconCommittee)
+		if found == tmpID {
+			return common.PROPOSER_ROLE
+		}
+		return common.VALIDATOR_ROLE
+	}
+	
+	
+	
+	for _, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
+		found := common.IndexOfStr(pubkey, pubkeyArr)
+		if found > -1 {
+			return common.PENDING_ROLE
+		}
+	}
+	
+	for shardID, pubkeyArr := range bestStateBeacon.ShardCommittee {
+		found := common.IndexOfStr(pubkey, pubkeyArr)
+		if found > -1 {
+			bestStateShard := GetBestStateShard(shardID)
+			tmpID := (bestStateShard.ShardProposerIdx + round) % len(bestStateShard.ShardCommittee)
+			if found == tmpID {
+				return common.PROPOSER_ROLE
+			}
+			return common.VALIDATOR_ROLE
+		}
+	}
+	
+	return common.EmptyString
+}
+
 //This only happen if user is a beacon committee member.
 func (blockchain *BlockChain) RevertBeaconState() {
 
