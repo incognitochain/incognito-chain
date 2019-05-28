@@ -98,10 +98,8 @@ func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
 func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
 	numBytes := numInt.Bytes()
 	lenNumBytes := len(numBytes)
-
-	for i := 0; i < fixedSize-lenNumBytes; i++ {
-		numBytes = append([]byte{0}, numBytes...)
-	}
+	zeroBytes := make([]byte, fixedSize-lenNumBytes)
+	numBytes = append(zeroBytes, numBytes...)
 	return numBytes
 }
 
