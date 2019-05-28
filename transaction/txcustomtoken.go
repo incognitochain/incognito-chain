@@ -204,6 +204,7 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 		if len(tx.TxTokenData.Vins) == 0 {
 			return false, errors.New("Len Vins is 0")
 		}
+		totalVinAmount := uint64(0)
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
@@ -217,6 +218,14 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			if err != nil || !ok {
 				return false, err
 			}
+			totalVinAmount += vout.Value
+		}
+		totalVoutAmount := uint64(0)
+		for _, vout := range tx.TxTokenData.Vouts {
+			totalVoutAmount += vout.Value
+		}
+		if totalVinAmount != totalVoutAmount {
+			return false, errors.New("Vin amount <> Vout amount")
 		}
 		return true, nil
 	}
@@ -503,6 +512,9 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 				Value:          refundTokenAmount,
 			})
 		}
+		if refundTokenAmount < 0 {
+			return NewTransactionErr(WrongInput, errors.New("input value less than output value"))
+		}
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
 	txCustomToken.Type = common.TxCustomTokenType
@@ -645,6 +657,8 @@ func (tx *TxCustomToken) GetTokenID() *common.Hash {
 }
 
 func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []metadata.Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instsUsed []int,
 	shardID byte,
@@ -659,8 +673,8 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 		return false, nil
 	}
 	// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
-	// if !meta.IsMinerCreatedMetaType() {
-	// 	return false, nil
-	// }
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr)
+	if !meta.IsMinerCreatedMetaType() {
+		return false, nil
+	}
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr)
 }

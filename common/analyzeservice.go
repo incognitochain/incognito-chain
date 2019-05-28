@@ -12,67 +12,79 @@ import (
 
 // Measurement
 const (
-	TxPoolValidated  = "TxPoolValidated"
-	TxPoolValidatedWithType  = "TxPoolValidatedWithType"
-	TxPoolEntered  = "TxPoolEntered"
-	TxPoolEnteredWithType  = "TxPoolEnteredWithType"
-	TxPoolAddedAfterValidation  = "TxPoolAddedAfterValidation"
-	TxPoolRemoveAfterInBlock = "TxPoolRemoveAfterInBlock"
+	TxPoolValidated                  = "TxPoolValidated"
+	TxPoolValidatedWithType          = "TxPoolValidatedWithType"
+	TxPoolEntered                    = "TxPoolEntered"
+	TxPoolEnteredWithType            = "TxPoolEnteredWithType"
+	TxPoolAddedAfterValidation       = "TxPoolAddedAfterValidation"
+	TxPoolRemoveAfterInBlock         = "TxPoolRemoveAfterInBlock"
 	TxPoolRemoveAfterInBlockWithType = "TxPoolRemoveAfterInBlockWithType"
-	TxPoolRemoveAfterLifeTime = "TxPoolRemoveAfterLifeTime"
-	TxAddedIntoPoolType = "TxAddedIntoPoolType"
-	TxPoolPrivacyOrNot = "TxAddedIntoPoolType"
-	PoolSize = "PoolSize"
-	TxValidateByItSelfInPoolType = "TxValidateByItSelfInPoolType"
-	TxInOneBlock = "TxInOneBlock"
-	DuplicateTxs = "DuplicateTxs"
+	TxPoolRemoveAfterLifeTime        = "TxPoolRemoveAfterLifeTime"
+	TxAddedIntoPoolType              = "TxAddedIntoPoolType"
+	TxPoolPrivacyOrNot               = "TxAddedIntoPoolType"
+	PoolSize                         = "PoolSize"
+	TxValidateByItSelfInPoolType     = "TxValidateByItSelfInPoolType"
+	TxInOneBlock                     = "TxInOneBlock"
+	DuplicateTxs                     = "DuplicateTxs"
+
+	CreateAndSaveTxViewPointFromBlock = "CreateAndSaveTxViewPointFromBlock"
 )
+
 // tag
 const (
 	BeaconBlock = "BeaconBlock"
 	ShardBlock  = "ShardBlock"
-	
-	TxSizeMetric = "txsize"
+
+	TxSizeMetric         = "txsize"
 	TxSizeWithTypeMetric = "txsizewithtype"
-	PoolSizeMetric = "poolsize"
-	TxTypeMetic = "txtype"
-	VTBITxTypeMetic = "vtbitxtype"
+	PoolSizeMetric       = "poolsize"
+	TxTypeMetic          = "txtype"
+	VTBITxTypeMetic      = "vtbitxtype"
 	TxPrivacyOrNotMetric = "txprivacyornot"
-	BlockHeight = "blockheight"
-	TxHash = "txhash"
-	
+	BlockHeight          = "blockheight"
+	TxHash               = "txhash"
+
+	Func = "func"
 )
+
 //Tag value
 const (
-	TxPrivacy = "privacy"
-	TxNormalPrivacy = "normaltxprivacy"
-	TxNoPrivacy = "noprivacy"
-	TxNormalNoPrivacy = "normaltxnoprivacy"
+	TxPrivacy                             = "privacy"
+	TxNormalPrivacy                       = "normaltxprivacy"
+	TxNoPrivacy                           = "noprivacy"
+	TxNormalNoPrivacy                     = "normaltxnoprivacy"
+	FuncCreateAndSaveTxViewPointFromBlock = "func-CreateAndSaveTxViewPointFromBlock"
 )
-func AnalyzeTimeSeriesTxSizeMetric(txSize string, metric string, value float64){
+
+func AnalyzeTimeSeriesTxSizeMetric(txSize string, metric string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(TxSizeMetric, txSize, metric, value)
 }
-func AnalyzeTimeSeriesTxSizeWithTypeMetric(txSizeWithType string, metric string, value float64){
+func AnalyzeTimeSeriesTxSizeWithTypeMetric(txSizeWithType string, metric string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(TxSizeWithTypeMetric, txSizeWithType, metric, value)
 }
-func AnalyzeTimeSeriesTxsInOneBlockMetric(blockHeight string, value float64){
+func AnalyzeTimeSeriesTxsInOneBlockMetric(blockHeight string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(BlockHeight, blockHeight, TxInOneBlock, value)
 }
-func AnalyzeTimeSeriesTxTypeMetric(txType string, value float64){
+func AnalyzeTimeSeriesTxTypeMetric(txType string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(TxTypeMetic, txType, TxAddedIntoPoolType, value)
 }
-func AnalyzeTimeSeriesTxPrivacyOrNotMetric(txType string, value float64){
+func AnalyzeTimeSeriesTxPrivacyOrNotMetric(txType string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(TxPrivacyOrNotMetric, txType, TxPoolPrivacyOrNot, value)
 }
-func AnalyzeTimeSeriesVTBITxTypeMetric(txType string, value float64){
+func AnalyzeTimeSeriesVTBITxTypeMetric(txType string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(VTBITxTypeMetic, txType, TxValidateByItSelfInPoolType, value)
 }
-func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64){
+func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(PoolSizeMetric, numOfTxs, PoolSize, value)
 }
-func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64){
+func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64) {
 	sendTimeSeriesTransactionMetricDataInfluxDB(TxHash, txHash, DuplicateTxs, value)
 }
+
+func AnalyzeFuncCreateAndSaveTxViewPointFromBlock(time float64) {
+	sendTimeSeriesTransactionMetricDataInfluxDB(Func, FuncCreateAndSaveTxViewPointFromBlock, CreateAndSaveTxViewPointFromBlock, time)
+}
+
 func sendTimeSeriesTransactionMetricDataInfluxDB(metricTag string, tagValue string, metric string, value ...float64) {
 	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GRAFANAURL")
@@ -85,14 +97,14 @@ func sendTimeSeriesTransactionMetricDataInfluxDB(metricTag string, tagValue stri
 		log.Println("Create Request failed with err: ", err)
 		return
 	}
-	
+
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
 	defer cancel()
 	req = req.WithContext(ctx)
-	
+
 	client := &http.Client{}
 	//res, err := client.Do(req)
-	_,err = client.Do(req)
+	_, err = client.Do(req)
 	if err != nil {
 		log.Println("Push to Grafana error:", err)
 		return
@@ -109,13 +121,13 @@ func AnalyzeTimeSeriesShardBlockMetric(paymentAddress string, value float64) {
 }
 
 func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64) {
-	
+
 	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GrafanaURL")
 	if databaseUrl == "" {
 		return
 	}
-	
+
 	nodeName := os.Getenv("NodeName")
 	if nodeName == "" {
 		nodeName = id
@@ -123,7 +135,7 @@ func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64
 	if nodeName == "" || len(value) == 0 || value[0] == 0 || metric == "" {
 		return
 	}
-	
+
 	dataBinary := ""
 	if len(value) == 1 {
 		dataBinary = fmt.Sprintf("%s,node=%s value=%f %d000000000", metric, nodeName, value[0], time.Now().Unix())
@@ -139,14 +151,14 @@ func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64
 		log.Println("Create Request failed with err: ", err)
 		return
 	}
-	
+
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
 	defer cancel()
 	req = req.WithContext(ctx)
-	
+
 	client := &http.Client{}
 	//res, err := client.Do(req)
-	_,err = client.Do(req)
+	_, err = client.Do(req)
 	if err != nil {
 		log.Println("Push to Grafana error:", err)
 		return

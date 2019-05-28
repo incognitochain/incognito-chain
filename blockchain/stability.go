@@ -39,7 +39,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	beaconBestState *BestStateBeacon,
 ) ([][]string, error) {
 	instructions := [][]string{}
-
 	for _, inst := range shardBlockInstructions {
 		if len(inst) == 0 {
 			continue
@@ -47,25 +46,24 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction {
 			continue
 		}
-		// metaType, err := strconv.Atoi(inst[0])
-		// if err != nil {
-		// 	return [][]string{}, err
-		// }
+
 		newInst := [][]string{}
-		// switch metaType {
-		// // case metadata.IssuingRequestMeta:
-		// // 	newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			return [][]string{}, err
+		}
+		switch metaType {
+		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta:
+			newInst = [][]string{inst}
 
-		// // case metadata.ContractingRequestMeta:
-		// // 	newInst, err = buildInstructionsForContractingReq(shardID, contentStr, beaconBestState, accumulativeValues)
+		default:
+			continue
+		}
 
-		// default:
-		// 	continue
-		// }
-		// if err != nil {
-		// 	Logger.log.Error(err)
-		// 	continue
-		// }
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
 		if len(newInst) > 0 {
 			instructions = append(instructions, newInst...)
 		}
@@ -122,4 +120,30 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 		}
 	}
 	return resTxs, nil
+}
+
+func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(
+	txs []metadata.Transaction,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) ([]metadata.Transaction, error) {
+	respTxs := []metadata.Transaction{}
+	removeIds := []int{}
+	for i, tx := range txs {
+		var respTx metadata.Transaction
+		var err error
+
+		switch tx.GetMetadataType() {
+		case metadata.IssuingRequestMeta:
+			respTx, err = blockgen.buildIssuanceTx(tx, producerPrivateKey, shardID)
+		}
+
+		if err != nil {
+			// Remove this tx if cannot create corresponding response
+			removeIds = append(removeIds, i)
+		} else if respTx != nil {
+			respTxs = append(respTxs, respTx)
+		}
+	}
+	return respTxs, nil
 }

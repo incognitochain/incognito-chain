@@ -103,6 +103,13 @@ var RpcHandler = map[string]commandHandler{
 	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
 	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
 
+	// Bridge
+	CreateIssuingRequest:            RpcServer.handleCreateIssuingRequest,
+	SendIssuingRequest:              RpcServer.handleSendIssuingRequest,
+	CreateAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
+	CreateAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
+	GetBridgeTokensAmounts:          RpcServer.handleGetBridgeTokensAmounts,
+
 	// wallet
 	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
 	DefragmentAccount:              RpcServer.handleDefragmentAccount,
@@ -129,6 +136,24 @@ var RpcLimited = map[string]commandHandler{
 	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
 	SetTxFee:                           RpcServer.handleSetTxFee,
 	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
+}
+
+/*
+handleGetAllPeers - return all peers which this node connected
+*/
+func (rpcServer RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetAllPeers params: %+v", params)
+	result := jsonresult.GetAllPeersResult{}
+	peersMap := []string{}
+	peers := rpcServer.config.AddrMgr.AddressCache()
+	for _, peer := range peers {
+		for _, peerConn := range peer.PeerConns {
+			peersMap = append(peersMap, peerConn.RemoteRawAddress)
+		}
+	}
+	result.Peers = peersMap
+	Logger.log.Infof("handleGetAllPeers result: %+v", result)
+	return result, nil
 }
 
 func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
