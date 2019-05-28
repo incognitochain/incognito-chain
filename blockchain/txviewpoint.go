@@ -103,18 +103,18 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
 		if !ok {
-			pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-			if acceptedCommitments[pubkeyStr] == nil {
-				acceptedCommitments[pubkeyStr] = make([][]byte, 0)
+			publicKeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+			if acceptedCommitments[publicKeyStr] == nil {
+				acceptedCommitments[publicKeyStr] = make([][]byte, 0)
 			}
 			// get data for commitments
-			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.CoinCommitment.Compress())
+			acceptedCommitments[publicKeyStr] = append(acceptedCommitments[publicKeyStr], item.CoinDetails.CoinCommitment.Compress())
 
 			// get data for output coin
-			if acceptedOutputcoins[pubkeyStr] == nil {
-				acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
+			if acceptedOutputcoins[publicKeyStr] == nil {
+				acceptedOutputcoins[publicKeyStr] = make([]privacy.OutputCoin, 0)
 			}
-			acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
+			acceptedOutputcoins[publicKeyStr] = append(acceptedOutputcoins[publicKeyStr], *item)
 		}
 
 		// get data for Snderivators

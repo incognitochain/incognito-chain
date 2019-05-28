@@ -500,7 +500,7 @@ this is a list tx-in which are used by a new tx
 */
 func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, shardID byte) error {
 
-	// commitment
+	// commitment and output are the same key in map
 	keys := make([]string, 0, len(view.mapCommitments))
 	for k := range view.mapCommitments {
 		keys = append(keys, k)
@@ -516,41 +516,25 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 		lastByte := publicKeyBytes[len(publicKeyBytes)-1]
 		publicKeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if publicKeyShardID == shardID {
+			// commitment
 			commitmentsArray := view.mapCommitments[k]
 			err = blockchain.config.DataBase.StoreCommitments(view.tokenID, publicKeyBytes, commitmentsArray, view.shardID)
 			if err != nil {
 				return err
 			}
-		}
-	}
-
-	// outputs
-	keys = make([]string, 0, len(view.mapOutputCoins))
-	for k := range view.mapOutputCoins {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		publicKey := k
-		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
-		if err != nil {
-			return err
-		}
-		lastByte := publicKeyBytes[len(publicKeyBytes)-1]
-		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
-		if pubkeyShardID == shardID {
+			// outputs
 			outputCoinArray := view.mapOutputCoins[k]
 			outputCoinBytesArray := make([][]byte, len(outputCoinArray))
 			for _, outputCoin := range outputCoinArray {
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
-			err = blockchain.config.DataBase.StoreOutputCoins(view.tokenID, publicKeyBytes, outputCoinBytesArray, pubkeyShardID)
+			err = blockchain.config.DataBase.StoreOutputCoins(view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
 			if err != nil {
 				return err
 			}
 		}
 	}
+
 	return nil
 }
 
