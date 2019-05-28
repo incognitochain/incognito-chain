@@ -303,11 +303,7 @@ func (self *ShardPool) CleanOldBlock(latestBlockHeight uint64) {
 }
 
 func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
-	blocks := make([]*blockchain.ShardBlock, len(self.validPool))
-	copy(blocks, self.validPool)
-	return blocks
+	return self.validPool
 }
 func (self *ShardPool) GetPendingBlock() []*blockchain.ShardBlock {
 	self.mtx.RLock()
