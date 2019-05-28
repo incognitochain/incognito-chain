@@ -4,13 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"math/big"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -22,6 +15,11 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
+	"math/big"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 /*
@@ -561,7 +559,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
 // @note: this function only work for transaction transfer token/constant within shard
 func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
-	startTime := time.Now()
+	//startTime := time.Now()
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 	err := view.fetchTxViewPointFromBlock(blockchain.config.DataBase, block)
@@ -689,10 +687,10 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	if err != nil {
 		return err
 	}
-	endtime := time.Now()
-	runTime := endtime.Sub(startTime)
-	go common.AnalyzeFuncCreateAndSaveTxViewPointFromBlock(runTime.Seconds())
-	Logger.log.Critical("*** CreateAndSaveTxViewPointFromBlock  ***", block.Header.Height, runTime)
+	//endtime := time.Now()
+	//runTime := endtime.Sub(startTime)
+	//go common.AnalyzeFuncCreateAndSaveTxViewPointFromBlock(runTime.Seconds())
+	//Logger.log.Critical("*** CreateAndSaveTxViewPointFromBlock  ***", block.Header.Height, runTime)
 	return nil
 }
 
