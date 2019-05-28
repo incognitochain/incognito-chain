@@ -7,11 +7,11 @@ import (
 	"log"
 	"math/rand"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/metadata"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
-	
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
@@ -56,9 +56,13 @@ getaccount RPC returns the name of the account associated with the given address
 - Param #1: address
 */
 func (rpcServer RpcServer) handleGetAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	paramTemp, ok := params.(string)
+	if !ok {
+		return nil, nil
+	}
 	for _, account := range rpcServer.config.Wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(wallet.PaymentAddressType)
-		if address == params.(string) {
+		if address == paramTemp {
 			return account.Name, nil
 		}
 	}
@@ -72,8 +76,12 @@ Parameter #1—the account name
 Result—a list of addresses
 */
 func (rpcServer RpcServer) handleGetAddressesByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	paramTemp, ok := params.(string)
+	if !ok {
+		return nil, nil
+	}
 	result := jsonresult.GetAddressesByAccount{}
-	result.Addresses = rpcServer.config.Wallet.GetAddressesByAccount(params.(string))
+	result.Addresses = rpcServer.config.Wallet.GetAddressesByAccount(paramTemp)
 	return result, nil
 }
 
@@ -83,13 +91,14 @@ Parameter #1—an account name
 Result—a constant address
 */
 func (rpcServer RpcServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	//if rpcServer.config.BlockChain.IsReady(false, 0) {
+	paramTemp, ok := params.(string)
+	if !ok {
+		return nil, nil
+	}
 	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
 	randShard := rand.Int31n(int32(activeShards))
-	result := rpcServer.config.Wallet.GetAccountAddress(params.(string), byte(randShard))
+	result := rpcServer.config.Wallet.GetAccountAddress(paramTemp, byte(randShard))
 	return result, nil
-	//}
-	//return nil, NewRPCError(ErrUnexpected, errors.New("Can not get active shard"))
 }
 
 /*
@@ -99,7 +108,11 @@ Parameter #1—the address corresponding to the private key to get
 Result—the private key
 */
 func (rpcServer RpcServer) handleDumpPrivkey(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	result := rpcServer.config.Wallet.DumpPrivkey(params.(string))
+	paramTemp, ok := params.(string)
+	if !ok {
+		return nil, nil
+	}
+	result := rpcServer.config.Wallet.DumpPrivkey(paramTemp)
 	return result, nil
 }
 
@@ -110,48 +123,59 @@ handleImportAccount - import a new account by private-key
 - Param #3: passPhrase of wallet
 */
 func (rpcServer RpcServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleImportAccount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	privateKey := arrayParams[0].(string)
-	accountName := arrayParams[1].(string)
-	passPhrase := arrayParams[2].(string)
+	if len(arrayParams) < 3 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
+	privateKey, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("privateKey is invalid"))
+	}
+	accountName, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
+	}
+	passPhrase, ok := arrayParams[2].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
+	}
 	account, err := rpcServer.config.Wallet.ImportAccount(privateKey, accountName, passPhrase)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return wallet.KeySerializedData{
+	result := wallet.KeySerializedData{
 		PaymentAddress: account.Key.Base58CheckSerialize(wallet.PaymentAddressType),
 		Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 		ReadonlyKey:    account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
-	}, nil
+	}
+	Logger.log.Infof("handleImportAccount result: %+v", result)
+	return result, nil
 }
 
 func (rpcServer RpcServer) handleRemoveAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleRemoveAccount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
-	privateKey := arrayParams[0].(string)
-	accountName := arrayParams[1].(string)
-	passPhrase := arrayParams[2].(string)
+	if len(arrayParams) < 3 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
+	privateKey, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("privateKey is invalid"))
+	}
+	accountName, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
+	}
+	passPhrase, ok := arrayParams[2].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
+	}
 	err := rpcServer.config.Wallet.RemoveAccount(privateKey, accountName, passPhrase)
 	if err != nil {
 		return false, NewRPCError(ErrUnexpected, err)
 	}
 	return true, nil
-}
-
-/*
-handleGetAllPeers - return all peers which this node connected
-*/
-func (rpcServer RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
-	result := jsonresult.GetAllPeersResult{}
-	peersMap := []string{}
-	peers := rpcServer.config.AddrMgr.AddressCache()
-	for _, peer := range peers {
-		for _, peerConn := range peer.PeerConns {
-			peersMap = append(peersMap, peerConn.RemoteRawAddress)
-		}
-	}
-	result.Peers = peersMap
-	return result, nil
 }
 
 // handleGetBalanceByPrivatekey -  return balance of private key
@@ -199,7 +223,9 @@ func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, 
 
 	// all component
 	arrayParams := common.InterfaceSlice(params)
-
+	if len(arrayParams) != 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
+	}
 	// param #1: private key of sender
 	paymentAddressParam := arrayParams[0]
 	accountWithPaymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressParam.(string))
@@ -245,16 +271,28 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 
 	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
-
+	if len(arrayParams) < 3 {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
 	// Param #1: account "*" for all or a particular account
-	accountName := arrayParams[0].(string)
+	accountName, ok := arrayParams[0].(string)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
+	}
 
 	// Param #2: the minimum number of confirmations an output must have
-	min := int(arrayParams[1].(float64))
+	minTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("min is invalid"))
+	}
+	min := int(minTemp)
 	_ = min
 
 	// Param #3: passphrase to access local wallet of node
-	passPhrase := arrayParams[2].(string)
+	passPhrase, ok := arrayParams[2].(string)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
+	}
 
 	if passPhrase != rpcServer.config.Wallet.PassPhrase {
 		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
@@ -312,16 +350,28 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 
 	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
-
+	if len(arrayParams) < 3 {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
 	// Param #1: account "*" for all or a particular account
-	accountName := arrayParams[0].(string)
+	accountName, ok := arrayParams[0].(string)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
+	}
 
 	// Param #2: the minimum number of confirmations an output must have
-	min := int(arrayParams[1].(float64))
+	minTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("min is invalid"))
+	}
+	min := int(minTemp)
 	_ = min
 
 	// Param #3: passphrase to access local wallet of node
-	passPhrase := arrayParams[2].(string)
+	passPhrase, ok := arrayParams[2].(string)
+	if !ok {
+		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
+	}
 
 	if passPhrase != rpcServer.config.Wallet.PassPhrase {
 		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
@@ -393,7 +443,13 @@ func (rpcServer RpcServer) handleListPrivacyCustomToken(params interface{}, clos
 // handleGetPublicKeyFromPaymentAddress - return base58check encode of public key which is got from payment address
 func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	paymentAddress := arrayParams[0].(string)
+	if len(arrayParams) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
+	paymentAddress, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("paymentAddress is invalid"))
+	}
 
 	key, err := wallet.Base58CheckDeserialize(paymentAddress)
 	if err != nil {
@@ -406,11 +462,22 @@ func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface
 // handleGetRecentTransactionsByBlockNumber - RPC return list rencent txs by number of confirmed blocks
 func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 2 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
+	}
 	// #param 1: number of confirmed blocks
-	numberOfBlock := uint64(arrayParams[0].(float64))
+	numOfBlockTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("numberOfBlock is invalid"))
+	}
+	numberOfBlock := uint64(numOfBlockTemp)
 
 	// #param 2: viewing key
-	senderKeySet, err := rpcServer.GetKeySetFromKeyParams(arrayParams[1].(string))
+	senderKeysetStr, ok := arrayParams[1].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKeysetStr is invalid"))
+	}
+	senderKeySet, err := rpcServer.GetKeySetFromKeyParams(senderKeysetStr)
 	if err != nil {
 		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
 	}
@@ -497,9 +564,20 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	if len(arrayParams) < 4 {
 		return nil, NewRPCError(ErrRPCInvalidParams, nil)
 	}
-	senderKeyParam := arrayParams[0].(string)
-	maxVal := uint64(arrayParams[1].(float64))
-	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKeyParam is invalid"))
+	}
+	maxValTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("maxVal is invalid"))
+	}
+	maxVal := uint64(maxValTemp)
+	estimateFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("estimateFeeCoinPerKb is invalid"))
+	}
+	estimateFeeCoinPerKb := int64(estimateFeeCoinPerKbtemp)
 	// param #4: hasPrivacy flag: 1 or -1
 	hasPrivacy := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
