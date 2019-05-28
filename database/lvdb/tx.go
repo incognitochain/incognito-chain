@@ -97,12 +97,12 @@ func (db *db) CleanSerialNumbers() error {
 	return nil
 }
 
-func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, shardID byte) error {
+func (db *db) StoreOutputCoins(tokenID *common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
 	key := db.GetKey(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
 
 	// store for pubkey:[outcoint1, outcoint2, ...]
-	key = append(key, pubkey...)
+	key = append(key, publicKey...)
 	var arrDatabyPubkey [][]byte
 	resByPubkey, err := db.lvdb.Get(key, nil)
 	if err != nil && err != lvdberr.ErrNotFound {
@@ -113,7 +113,7 @@ func (db *db) StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin [
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
 		}
 	}
-	arrDatabyPubkey = append(arrDatabyPubkey, outputcoin)
+	arrDatabyPubkey = append(arrDatabyPubkey, outputCoinArr...)
 	resByPubkey, err = json.Marshal(arrDatabyPubkey)
 	if err != nil {
 		return err
