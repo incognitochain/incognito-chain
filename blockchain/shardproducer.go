@@ -409,8 +409,6 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		panic("TempTxPool Is not Empty")
 	}
 	currentSize := uint64(0)
-	startTime := time.Now()
-
 	// instsForValidations := [][]string{}
 	// for _, beaconBlock := range beaconBlocks {
 	// 	instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
