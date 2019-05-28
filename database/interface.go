@@ -75,15 +75,13 @@ type DatabaseInterface interface {
 	CleanBeaconBestState() error
 
 	// SerialNumber
-	StoreSerialNumbers(tokenID *common.Hash, data []byte, shardID byte) error
-	FetchSerialNumbers(tokenID *common.Hash, shardID byte) ([][]byte, error)
+	StoreSerialNumbers(tokenID *common.Hash, serialNumber [][]byte, shardID byte) error
 	HasSerialNumber(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
-	StoreCommitments(tokenID *common.Hash, pubkey []byte, commitment []byte, shardID byte) error
-	StoreOutputCoins(tokenID *common.Hash, pubkey []byte, outputcoin []byte, shardID byte) error
-	FetchCommitments(tokenID *common.Hash, shardID byte) ([][]byte, error)
+	StoreCommitments(tokenID *common.Hash, pubkey []byte, commitment [][]byte, shardID byte) error
+	StoreOutputCoins(tokenID *common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error
 	HasCommitment(tokenID *common.Hash, commitment []byte, shardID byte) (bool, error)
 	HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) (bool, error)
 	GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error)
@@ -94,7 +92,7 @@ type DatabaseInterface interface {
 	CleanCommitments() error
 
 	// SNDerivator
-	StoreSNDerivators(tokenID *common.Hash, data []byte, shardID byte) error
+	StoreSNDerivators(tokenID *common.Hash, sndArray [][]byte, shardID byte) error
 	//FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
 	HasSNDerivator(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSNDerivator() error
