@@ -4,12 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"math/big"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
-
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -21,6 +15,11 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
+	"math/big"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 /*
@@ -436,12 +435,12 @@ Uses an existing database to update the set of used tx by saving list nullifier 
 this is a list tx-out which are used by a new tx
 */
 func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
-	for _, item1 := range view.listSerialNumbers {
-		err := blockchain.config.DataBase.StoreSerialNumbers(view.tokenID, item1, view.shardID)
-		if err != nil {
-			return err
-		}
+	//for _, item1 := range view.listSerialNumbers {
+	err := blockchain.config.DataBase.StoreSerialNumbers(view.tokenID, view.listSerialNumbers, view.shardID)
+	if err != nil {
+		return err
 	}
+	//}
 	return nil
 }
 
@@ -467,14 +466,14 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 		// lastByte := pubkeyBytes[len(pubkeyBytes)-1]
 		// pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 		// if pubkeyShardID == shardID {
-		item1 := view.mapSnD[k]
-		for _, snd := range item1 {
-			err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, privacy.AddPaddingBigInt(&snd, privacy.BigIntSize), view.shardID)
-			if err != nil {
-				return err
-			}
-			// }
+		snDsArray := view.mapSnD[k]
+		//for _, snd := range snDsArray {
+		err := blockchain.config.DataBase.StoreSNDerivators(view.tokenID, snDsArray, view.shardID)
+		if err != nil {
+			return err
 		}
+		// }
+		//}
 	}
 
 	// for pubkey, items := range view.mapSnD {
@@ -502,7 +501,7 @@ this is a list tx-in which are used by a new tx
 */
 func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, shardID byte) error {
 
-	// commitment
+	// commitment and output are the same key in map
 	keys := make([]string, 0, len(view.mapCommitments))
 	for k := range view.mapCommitments {
 		keys = append(keys, k)
@@ -510,50 +509,33 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		pubkey := k
-		item1 := view.mapCommitments[k]
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
+		publicKey := k
+		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
 		if err != nil {
 			return err
 		}
-		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
-		if pubkeyShardID == shardID {
-			for _, com := range item1 {
-				err = blockchain.config.DataBase.StoreCommitments(view.tokenID, pubkeyBytes, com, view.shardID)
-				if err != nil {
-					return err
-				}
+		lastByte := publicKeyBytes[len(publicKeyBytes)-1]
+		publicKeyShardID := common.GetShardIDFromLastByte(lastByte)
+		if publicKeyShardID == shardID {
+			// commitment
+			commitmentsArray := view.mapCommitments[k]
+			err = blockchain.config.DataBase.StoreCommitments(view.tokenID, publicKeyBytes, commitmentsArray, view.shardID)
+			if err != nil {
+				return err
+			}
+			// outputs
+			outputCoinArray := view.mapOutputCoins[k]
+			outputCoinBytesArray := make([][]byte, len(outputCoinArray))
+			for _, outputCoin := range outputCoinArray {
+				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+			}
+			err = blockchain.config.DataBase.StoreOutputCoins(view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+			if err != nil {
+				return err
 			}
 		}
 	}
 
-	// outputs
-	keys = make([]string, 0, len(view.mapOutputCoins))
-	for k := range view.mapOutputCoins {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		pubkey := k
-		item1 := view.mapOutputCoins[k]
-
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
-		if err != nil {
-			return err
-		}
-		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
-		if pubkeyShardID == shardID {
-			for _, outcoin := range item1 {
-				err = blockchain.config.DataBase.StoreOutputCoins(view.tokenID, pubkeyBytes, outcoin.Bytes(), pubkeyShardID)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
 	return nil
 }
 
@@ -561,6 +543,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
 // @note: this function only work for transaction transfer token/constant within shard
 func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
+	//startTime := time.Now()
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(block.Header.ShardID)
 	err := view.fetchTxViewPointFromBlock(blockchain.config.DataBase, block)
@@ -688,7 +671,10 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	if err != nil {
 		return err
 	}
-
+	//endtime := time.Now()
+	//runTime := endtime.Sub(startTime)
+	//go common.AnalyzeFuncCreateAndSaveTxViewPointFromBlock(runTime.Seconds())
+	//Logger.log.Critical("*** CreateAndSaveTxViewPointFromBlock  ***", block.Header.Height, runTime)
 	return nil
 }
 
