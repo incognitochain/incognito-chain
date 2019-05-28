@@ -13,12 +13,12 @@ var walletObj *wallet.Wallet
 func loadWallet() (*wallet.Wallet, error) {
 	var walletObj *wallet.Wallet
 	walletObj = &wallet.Wallet{}
-	walletObj.Config = &wallet.WalletConfig{
+	walletObj.SetConfig(&wallet.WalletConfig{
 		DataDir:        cfg.DataDir,
 		DataFile:       cfg.WalletName,
 		DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
 		IncrementalFee: 0,
-	}
+	})
 	err := walletObj.LoadWallet(cfg.WalletPassphrase)
 	return walletObj, err
 }
@@ -26,13 +26,13 @@ func loadWallet() (*wallet.Wallet, error) {
 func createWallet() error {
 	var walletObj *wallet.Wallet
 	walletObj = &wallet.Wallet{}
-	walletObj.Config = &wallet.WalletConfig{
+	walletObj.SetConfig(&wallet.WalletConfig{
 		DataDir:        cfg.DataDir,
 		DataFile:       cfg.WalletName,
 		DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
 		IncrementalFee: 0,
-	}
-	if _, err := os.Stat(walletObj.Config.DataPath); os.IsNotExist(err) {
+	})
+	if _, err := os.Stat(walletObj.GetConfig().DataPath); os.IsNotExist(err) {
 		err1 := walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
 		if err1 != nil {
 			log.Println(err)
@@ -86,7 +86,7 @@ func createAccount(accountName string) (interface{}, error) {
 	}
 
 	if walletObj != nil {
-		account1 := walletObj.CreateNewAccount(accountName)
+		account1 := walletObj.CreateNewAccount(accountName, 0)
 		err := walletObj.Save(cfg.WalletPassphrase)
 		if err != nil {
 			return nil, err
