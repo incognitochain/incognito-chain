@@ -37,12 +37,12 @@ func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, s
 		if lenData == 0 {
 			newIndex = []byte{0}
 		}
-		// store serialNumber and index
+		// keySpec1 store serialNumber and index
 		keySpec1 := append(key, s...)
 		if err := db.lvdb.Put(keySpec1, newIndex, nil); err != nil {
 			return err
 		}
-		// store last index of array serialNumber
+		// keyStoreLen store last index of array serialNumber
 		if err := db.lvdb.Put(keyStoreLen, newIndex, nil); err != nil {
 			return err
 		}
@@ -130,6 +130,7 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
+	keySpec3 := append(key, []byte("len")...)
 	keySpec4 := append(key, pubkey...)
 	var arrDatabyPubkey [][]byte
 	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
@@ -157,18 +158,17 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 		if lenData == 0 {
 			newIndex = []byte{0}
 		}
-		// use for create proof random
+		// keySpec1 use for create proof random
 		keySpec1 := append(key, newIndex...)
 		if err := db.lvdb.Put(keySpec1, c, nil); err != nil {
 			return err
 		}
-		// use for validate
+		// keySpec2 use for validate
 		keySpec2 := append(key, c...)
 		if err := db.lvdb.Put(keySpec2, newIndex, nil); err != nil {
 			return err
 		}
-		// store last index of array commitment
-		keySpec3 := append(key, []byte("len")...)
+		// keySpec3 store last index of array commitment
 		if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
 			return err
 		}
