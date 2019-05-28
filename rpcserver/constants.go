@@ -11,7 +11,6 @@ const (
 
 	EstimateFee              = "estimatefee"
 	EstimateFeeWithEstimator = "estimatefeewithestimator"
-	GetGenerate              = "getgenerate"
 
 	GetActiveShards    = "getactiveshards"
 	GetMaxShardsNumber = "getmaxshardsnumber"
@@ -110,4 +109,10 @@ const (
 
 	// utils
 	HashToIdenticon = "hashtoidenticon"
+
+	CreateIssuingRequest            = "createissuingrequest"
+	SendIssuingRequest              = "sendissuingrequest"
+	CreateAndSendIssuingRequest     = "createandsendissuingrequest"
+	CreateAndSendContractingRequest = "createandsendcontractingrequest"
+	GetBridgeTokensAmounts          = "getbridgetokensamounts"
 )
