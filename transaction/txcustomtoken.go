@@ -376,7 +376,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	tokenParams *CustomTokenParamTx,
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
-	hasPrivacy bool,
+	hasPrivacyCoin bool,
 	shardID byte,
 ) *TransactionError {
 	var err error
@@ -386,7 +386,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 		paymentInfo,
 		inputCoin,
 		fee,
-		hasPrivacy,
+		hasPrivacyCoin,
 		db,
 		nil,
 		metaData)
