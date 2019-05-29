@@ -14,6 +14,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+// StoreCustomToken - store data about custom token
 // Key: token-init-{tokenID}
 // Value: txHash
 func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
@@ -24,6 +25,9 @@ func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
 	return nil
 }
 
+// StorePrivacyCustomToken - store data about privacy custom token when init
+// Key: privacy-token-init-{tokenID}
+// Value: txHash
 func (db *db) StorePrivacyCustomToken(tokenID *common.Hash, txHash []byte) error {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	if err := db.lvdb.Put(key, txHash, nil); err != nil {
