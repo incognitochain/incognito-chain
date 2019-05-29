@@ -112,7 +112,6 @@ type DatabaseInterface interface {
 	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error)     // get list of utxo of an paymentaddress.pubkey of a token
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                       // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                             // get all paymentaddress owner that have balance > 0 of a custom token
-	GetCustomTokenPaymentAddressesBalanceUnreward(tokenID *common.Hash) (map[string]uint64, error)
 
 	// privacy Custom token
 	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
