@@ -528,9 +528,13 @@ func (rpcServer RpcServer) handleGetListCustomTokenHolders(params interface{}, c
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("TokenID is invalid"))
 	}
 	tokenIDStr := arrayParams[0].(string)
-	tokenID := common.Hash{}
-	tokenID.NewHashFromStr(tokenIDStr)
-	result, err := rpcServer.config.BlockChain.GetListTokenHolders(&tokenID)
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+	if err != nil {
+		if len(arrayParams) < 1 {
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("TokenID is invalid"))
+		}
+	}
+	result, err := rpcServer.config.BlockChain.GetListTokenHolders(tokenID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
