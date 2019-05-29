@@ -10,6 +10,7 @@ import (
 	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 func (rpcServer RpcServer) handleGetBridgeTokensAmounts(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -58,6 +59,13 @@ func (rpcServer RpcServer) handleCreateAndSendIssuingRequest(params interface{},
 
 func (rpcServer RpcServer) handleCreateRawTxWithContractingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
+
+	if len(arrayParams) >= 5 {
+		hasPrivacyToken := int(arrayParams[5].(float64)) > 0
+		if hasPrivacyToken {
+			return nil, NewRPCError(ErrUnexpected, errors.New("The privacy mode must be disabled"))
+		}
+	}
 
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
