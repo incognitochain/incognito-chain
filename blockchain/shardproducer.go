@@ -399,6 +399,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	shardID byte,
 	beaconBlocks []*BeaconBlock,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+	startTime := time.Now()
 	sourceTxns := blockgen.GetPendingTxsV2()
 	txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
 	var elasped int64
@@ -408,8 +409,6 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		panic("TempTxPool Is not Empty")
 	}
 	currentSize := uint64(0)
-	startTime := time.Now()
-
 	// instsForValidations := [][]string{}
 	// for _, beaconBlock := range beaconBlocks {
 	// 	instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
@@ -452,7 +451,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		elasped = time.Since(startTime).Nanoseconds()
 		// @txsProcessTimeInBlockCreation is a constant for this current version
 		if elasped >= txsProcessTimeInBlockCreation {
-			//Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
+			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
 	}

@@ -15,8 +15,8 @@ type BlkTmplGenerator struct {
 	crossShardPool    map[byte]CrossShardPool
 	chain             *BlockChain
 	CQuit             chan struct{}
-	CPendingTxs       chan metadata.Transaction
-	CRemovedTxs       chan metadata.Transaction
+	CPendingTxs       <-chan metadata.Transaction
+	CRemovedTxs       <-chan metadata.Transaction
 	PendingTxs        map[common.Hash]metadata.Transaction
 	mtx               sync.RWMutex
 }

@@ -59,11 +59,11 @@ type TxPool struct {
 	TokenIDPool       map[common.Hash]string //Token ID List in Mempool
 	tokenIDMtx        sync.RWMutex
 	DuplicateTxs      map[common.Hash]uint64 //For testing
-	cCacheTx          chan common.Hash       //Caching received txs
+	cCacheTx          chan<- common.Hash       //Caching received txs
 	RoleInCommittees  int                    //Current Role of Node
-	CRoleInCommittees chan int
+	CRoleInCommittees <-chan int
 	roleMtx           sync.RWMutex
-	CPendingTxs       chan metadata.Transaction // channel to deliver txs to block gen
+	CPendingTxs       chan<- metadata.Transaction // channel to deliver txs to block gen
 	IsBlockGenStarted bool
 }
 

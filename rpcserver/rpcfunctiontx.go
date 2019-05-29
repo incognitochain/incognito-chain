@@ -291,7 +291,9 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
 			}
-			result.ProofDetail.ConvertFromProof(result.Proof)
+			if result.Proof != nil {
+				result.ProofDetail.ConvertFromProof(result.Proof)
+			}
 		}
 	case common.TxCustomTokenType:
 		{
@@ -319,7 +321,9 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
 			}
-			result.ProofDetail.ConvertFromProof(result.Proof)
+			if result.Proof != nil {
+				result.ProofDetail.ConvertFromProof(result.Proof)
+			}
 		}
 	case common.TxCustomTokenPrivacyType:
 		{
@@ -347,7 +351,9 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
 				result.Metadata = string(metaData)
 			}
-			result.ProofDetail.ConvertFromProof(result.Proof)
+			if result.Proof != nil {
+				result.ProofDetail.ConvertFromProof(result.Proof)
+			}
 		}
 	default:
 		{

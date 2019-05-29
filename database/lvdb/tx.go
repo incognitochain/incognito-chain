@@ -20,7 +20,6 @@ import (
 func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, shardID byte) error {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
-	keyStoreLen := append(key, []byte("len")...)
 
 	var lenData int64
 	len, err := db.GetSerialNumbersLength(tokenID, shardID)
@@ -43,6 +42,7 @@ func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, s
 			return err
 		}
 		// keyStoreLen store last index of array serialNumber
+		keyStoreLen := append(key, []byte("len")...)
 		if err := db.lvdb.Put(keyStoreLen, newIndex, nil); err != nil {
 			return err
 		}
@@ -130,7 +130,6 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
-	keySpec3 := append(key, []byte("len")...)
 	keySpec4 := append(key, pubkey...)
 	var arrDatabyPubkey [][]byte
 	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
@@ -169,6 +168,7 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 			return err
 		}
 		// keySpec3 store last index of array commitment
+		keySpec3 := append(key, []byte("len")...)
 		if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
 			return err
 		}
