@@ -4,6 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -13,13 +19,7 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
-	"math/big"
-	"sort"
-	"strconv"
-	"strings"
-	"sync"
 )
 
 /*
@@ -33,29 +33,29 @@ type BlockChain struct {
 	config    Config
 	chainLock sync.Mutex
 	//channel
-	cQuitSync  chan struct{}
-	syncStatus struct {
-		Beacon bool
-		Shards map[byte]struct{}
-		sync.Mutex
+	cQuitSync chan struct{}
+	// syncStatus struct {
+	// 	Beacon bool
+	// 	Shards map[byte]struct{}
+	// 	sync.Mutex
 
-		CurrentlySyncShardBlkByHash           map[byte]*cache.Cache
-		CurrentlySyncShardBlkByHeight         map[byte]*cache.Cache
-		CurrentlySyncBeaconBlkByHash          *cache.Cache
-		CurrentlySyncBeaconBlkByHeight        *cache.Cache
-		CurrentlySyncShardToBeaconBlkByHash   map[byte]*cache.Cache
-		CurrentlySyncShardToBeaconBlkByHeight map[byte]*cache.Cache
-		CurrentlySyncCrossShardBlkByHash      map[byte]*cache.Cache
-		CurrentlySyncCrossShardBlkByHeight    map[byte]*cache.Cache
+	// 	CurrentlySyncShardBlkByHash           map[byte]*cache.Cache
+	// 	CurrentlySyncShardBlkByHeight         map[byte]*cache.Cache
+	// 	CurrentlySyncBeaconBlkByHash          *cache.Cache
+	// 	CurrentlySyncBeaconBlkByHeight        *cache.Cache
+	// 	CurrentlySyncShardToBeaconBlkByHash   map[byte]*cache.Cache
+	// 	CurrentlySyncShardToBeaconBlkByHeight map[byte]*cache.Cache
+	// 	CurrentlySyncCrossShardBlkByHash      map[byte]*cache.Cache
+	// 	CurrentlySyncCrossShardBlkByHeight    map[byte]*cache.Cache
 
-		PeersState     map[libp2p.ID]*peerState
-		PeersStateLock sync.Mutex
-		IsReady        struct {
-			sync.Mutex
-			Beacon bool
-			Shards map[byte]bool
-		}
-	}
+	// 	PeersState     map[libp2p.ID]*peerState
+	// 	PeersStateLock sync.Mutex
+	// 	IsReady        struct {
+	// 		sync.Mutex
+	// 		Beacon bool
+	// 		Shards map[byte]bool
+	// 	}
+	// }
 	Synker           synker
 	ConsensusOngoing bool
 }
@@ -121,9 +121,13 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 
 	blockchain.cQuitSync = make(chan struct{})
-	blockchain.syncStatus.Shards = make(map[byte]struct{})
-	blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
-	blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
+	// blockchain.syncStatus.Shards = make(map[byte]struct{})
+	// blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
+	// blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
+	blockchain.Synker = synker{
+		blockchain: blockchain,
+		cQuit:      blockchain.cQuitSync,
+	}
 	return nil
 }
 
@@ -1148,28 +1152,28 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 	return result, nil
 }
 
-func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
-	// fmt.Println("SetReadyState", shard, shardID, ready)
-	blockchain.syncStatus.IsReady.Lock()
-	defer blockchain.syncStatus.IsReady.Unlock()
-	if shard {
-		blockchain.syncStatus.IsReady.Shards[shardID] = ready
-	} else {
-		blockchain.syncStatus.IsReady.Beacon = ready
-		if ready {
-			fmt.Println("blockchain is ready")
-		}
-	}
-}
+// func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
+// 	// fmt.Println("SetReadyState", shard, shardID, ready)
+// 	blockchain.syncStatus.IsReady.Lock()
+// 	defer blockchain.syncStatus.IsReady.Unlock()
+// 	if shard {
+// 		blockchain.syncStatus.IsReady.Shards[shardID] = ready
+// 	} else {
+// 		blockchain.syncStatus.IsReady.Beacon = ready
+// 		if ready {
+// 			fmt.Println("blockchain is ready")
+// 		}
+// 	}
+// }
 
-func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
-	blockchain.syncStatus.IsReady.Lock()
-	defer blockchain.syncStatus.IsReady.Unlock()
-	if shard {
-		if _, ok := blockchain.syncStatus.IsReady.Shards[shardID]; !ok {
-			return false
-		}
-		return blockchain.syncStatus.IsReady.Shards[shardID]
-	}
-	return blockchain.syncStatus.IsReady.Beacon
-}
+// func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
+// 	blockchain.syncStatus.IsReady.Lock()
+// 	defer blockchain.syncStatus.IsReady.Unlock()
+// 	if shard {
+// 		if _, ok := blockchain.syncStatus.IsReady.Shards[shardID]; !ok {
+// 			return false
+// 		}
+// 		return blockchain.syncStatus.IsReady.Shards[shardID]
+// 	}
+// 	return blockchain.syncStatus.IsReady.Beacon
+// }
