@@ -434,33 +434,37 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	// param #3: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
-	// param #4: hasPrivacy flag for constant
-	hasPrivacyConst := int(arrayParams[3].(float64)) > 0
+	// param #4: hasPrivacy flag for native coin
+	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 
 	// param #5: token component
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, listCustomTokenCrossShard, err := rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
-	/*mapCustomTokenCrossShard := make(map[common.Hash]bool)
-	for _, customTokenCrossShard := range listCustomTokenCrossShard {
-		mapCustomTokenCrossShard[customTokenCrossShard.TokenID] = true
-	}*/
+
 	_ = listCustomTokenCrossShard
 	_ = listCustomTokens
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
+
+	// param #6: hasPrivacyToken flag for token
+	hasPrivacyToken := true
+	if len(arrayParams) >= 5 {
+		hasPrivacyToken = int(arrayParams[5].(float64)) > 0
+	}
+
 	/****** END FEtch data from params *********/
 
 	/******* START choose output coins constant, which is used to create tx *****/
 	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
 		estimateFeeCoinPerKb, 0, senderKeySet,
-		shardIDSender, hasPrivacyConst, nil,
+		shardIDSender, hasPrivacyCoin, nil,
 		nil, tokenParams)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
 	if len(paymentInfos) == 0 && realFee == 0 {
-		hasPrivacyConst = false
+		hasPrivacyCoin = false
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
 
@@ -474,11 +478,10 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		inputCoins,
 		realFee,
 		tokenParams,
-		//listCustomTokens,
 		*rpcServer.config.Database,
-		hasPrivacyConst,
+		hasPrivacyCoin,
+		hasPrivacyToken,
 		shardIDSender,
-		//mapCustomTokenCrossShard,
 	)
 
 	if err.(*transaction.TransactionError) != nil {
