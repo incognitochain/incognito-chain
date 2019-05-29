@@ -230,40 +230,6 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 }
 
 /*
-	Get a list of UTXO that can be reward all payment address
-	PubKey: payment address
-	VoteAmount: a list of utxo
-	Each utxo consist of two part: txHash-index
-*/
-func (db *db) GetCustomTokenPaymentAddressesBalanceUnreward(tokenID *common.Hash) (map[string]uint64, error) {
-
-	results := make(map[string]uint64)
-	prefix := TokenPaymentAddressPrefix
-	prefix = append(prefix, Splitter...)
-	prefix = append(prefix, []byte(tokenID.String())...)
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-	for iter.Next() {
-		key := string(iter.Key())
-		value := string(iter.Value())
-		keys := strings.Split(key, string(Splitter))
-		values := strings.Split(value, string(Splitter))
-		// get unspent and unreward transaction output
-		if (strings.Compare(values[1], string(Unspent)) == 0) && (strings.Compare(values[2], string(Unreward)) == 0) {
-			paymentAddress := keys[2]
-			i, ok := results[paymentAddress]
-			if !ok {
-				fmt.Println("ERROR geting VoteAmount in GetCustomTokenAccountHistory of account", paymentAddress)
-			}
-			balance, _ := strconv.Atoi(values[0])
-			i += uint64(balance)
-			results[paymentAddress] = i
-		}
-	}
-	iter.Release()
-	return results, nil
-}
-
-/*
 	Get a list of UTXO of one address
 	Return a list of UTXO, each UTXO has format: txHash-index
 */
