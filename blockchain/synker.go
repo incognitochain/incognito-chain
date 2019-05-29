@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/common"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/patrickmn/go-cache"
@@ -72,7 +72,16 @@ func (synker *synker) Start() {
 	}
 	synker.Status.Beacon = true
 	synker.Status.CurrentlySyncBlks = cache.New(defaultMaxBlockSyncTime, defaultCacheCleanupTime)
-
+	synker.Status.Shards = make(map[byte]struct{})
+	synker.Status.IsLatest.Shards = make(map[byte]bool)
+	synker.States.PeersState = make(map[libp2p.ID]*peerState)
+	synker.States.ClosestState.ClosestShardsState = make(map[byte]ChainState)
+	synker.States.ClosestState.ShardToBeaconPool = make(map[byte]uint64)
+	synker.States.ClosestState.CrossShardPool = make(map[byte]map[byte]uint64)
+	synker.States.ClosestState.ShardsPool = make(map[byte]uint64)
+	synker.States.PoolsState.ShardToBeaconPool = make(map[byte][]uint64)
+	synker.States.PoolsState.CrossShardPool = make(map[byte][]uint64)
+	synker.States.PoolsState.ShardsPool = make(map[byte][]uint64)
 	synker.Status.Lock()
 	synker.startSyncRelayShards()
 	synker.Status.Unlock()
@@ -80,7 +89,6 @@ func (synker *synker) Start() {
 	broadcastTicker := time.NewTicker(defaultBroadcastStateTime)
 	insertPoolTicker := time.NewTicker(time.Millisecond * 100)
 	updateStatesTicker := time.NewTicker(defaultStateUpdateTime)
-
 	defer func() {
 		broadcastTicker.Stop()
 		insertPoolTicker.Stop()
@@ -96,48 +104,18 @@ func (synker *synker) Start() {
 			}
 		}
 	}()
-
-	var currentInsert = struct {
-		Shards map[byte]*sync.Mutex
-	}{
-		Shards: make(map[byte]*sync.Mutex),
-	}
-
-	go func() {
-		for {
-			blksCh := make(chan []*BeaconBlock, 100)
-			for _, blk := range <-blksCh {
-				err := synker.blockchain.InsertBeaconBlock(blk, false)
-				if err != nil && err.(*BlockChainError).Code != ErrCodeMessage[DuplicateBlockErr].code {
-					Logger.log.Error(err)
+	
+		go func() {
+			for {
+				select {
+				case <-synker.cQuit:
+					return
+				case <-insertPoolTicker.C:
+					synker.InsertBlockFromPool()
 				}
 			}
-		}
-	}()
-
-	go func() {
-		for {
-			synker.Status.Lock()
-			defer synker.Status.Unlock()
-			for shardID := range synker.Status.Shards {
-				go func(shardID byte) {
-					if _, ok := currentInsert.Shards[shardID]; !ok {
-						currentInsert.Shards[shardID] = &sync.Mutex{}
-					}
-					currentInsert.Shards[shardID].Lock()
-					defer currentInsert.Shards[shardID].Unlock()
-					// blks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
-					// for _, newBlk := range blks {
-					// 	err := synker.blockchain.InsertShardBlock(newBlk, false)
-					// 	if err != nil && err.(*BlockChainError).Code != ErrCodeMessage[DuplicateBlockErr].code {
-					// 		Logger.log.Error(err)
-					// 		break
-					// 	}
-					// }
-				}(shardID)
-			}
-		}
-	}()
+		}()
+	
 
 	for {
 		select {
@@ -669,4 +647,60 @@ func (synker *synker) GetCurrentSyncShards() []byte {
 		currentSyncShards = append(currentSyncShards, shardID)
 	}
 	return currentSyncShards
+}
+
+var lasttime = time.Now()
+var currentInsert = struct {
+	Beacon sync.Mutex
+	Shards map[byte]*sync.Mutex
+}{
+	Shards: make(map[byte]*sync.Mutex),
+}
+func (synker *synker) InsertBlockFromPool() {
+	// fmt.Println("InsertBlockFromPool")
+
+	if time.Since(lasttime) >= 30*time.Millisecond {
+		lasttime = time.Now()
+	} else {
+		return
+	}
+
+	go synker.InsertBeaconBlockFromPool()
+	
+	for shardID := range synker.Status.Shards {
+		if _, ok := currentInsert.Shards[shardID]; !ok {
+			currentInsert.Shards[shardID] = &sync.Mutex{}
+		}
+		go func(shardID byte) {
+			synker.InsertShardBlockFromPool(shardID)
+		}(shardID)
+
+	}
+}
+
+func (synker *synker) InsertBeaconBlockFromPool() {
+	currentInsert.Beacon.Lock()
+	defer currentInsert.Beacon.Unlock()
+	blks := synker.blockchain.config.BeaconPool.GetValidBlock()
+	for _, newBlk := range blks {
+		err := synker.blockchain.InsertBeaconBlock(newBlk, false)
+		if err != nil {
+			Logger.log.Error(err)
+			break
+		}
+	}
+}
+
+func (synker *synker) InsertShardBlockFromPool(shardID byte) {
+	currentInsert.Shards[shardID].Lock()
+	defer currentInsert.Shards[shardID].Unlock()
+	blks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
+	for _, newBlk := range blks {
+		err := synker.blockchain.InsertShardBlock(newBlk, false)
+		if err != nil {
+			//@Notice: remove or keep invalid block
+			Logger.log.Error(err)
+			break
+		}
+	}
 }
