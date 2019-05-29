@@ -99,7 +99,7 @@ func sendTimeSeriesMetricDataInfluxDBV2(metricTag string, tagValue string, metri
 	if databaseUrl == "" {
 		return nil
 	}
-	dataBinary := fmt.Sprintf("%s,%+v=%s value=%f %d000000000", metric, metricTag, tagValue, value[0], time.Now().UnixNano())
+	dataBinary := fmt.Sprintf("%s,%+v=%s value=%f %d", metric, metricTag, tagValue, value[0], time.Now().UnixNano())
 	req, err := http.NewRequest(http.MethodPost, databaseUrl, bytes.NewBuffer([]byte(dataBinary)))
 	if err != nil {
 		log.Println("Create Request failed with err: ", err)

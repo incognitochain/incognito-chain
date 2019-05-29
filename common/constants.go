@@ -10,6 +10,7 @@ const (
 	DateOutputFormat     = "2006-01-02T15:04:05.999999"
 	DateInputFormat      = "2006-01-02T15:04:05.999999"
 	NextForceUpdate      = "2019-06-15T23:59:00.000000"
+  FirstDateOfMonth     = "01T23:59:00.000000"
 )
 
 // for exit code
