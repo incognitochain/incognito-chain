@@ -3,7 +3,7 @@ package lvdb
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
+	"github.com/constant-money/constant-chain/database"
 	"log"
 	"strconv"
 	"strings"
@@ -14,6 +14,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+// StoreCustomToken - store data about custom token
 // Key: token-init-{tokenID}
 // Value: txHash
 func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
@@ -24,6 +25,9 @@ func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
 	return nil
 }
 
+// StorePrivacyCustomToken - store data about privacy custom token when init
+// Key: privacy-token-init-{tokenID}
+// Value: txHash
 func (db *db) StorePrivacyCustomToken(tokenID *common.Hash, txHash []byte) error {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	if err := db.lvdb.Put(key, txHash, nil); err != nil {
@@ -165,64 +169,33 @@ func (db *db) PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error
 /*
 	Return a list of all address with balance > 0
 */
-func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, error) {
-	results := [][]byte{}
-	tempsResult := make(map[string]bool)
-	prefix := TokenPaymentAddressPrefix
-	prefix = append(prefix, Splitter...)
-	prefix = append(prefix, (*tokenID)[:]...)
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-	for iter.Next() {
-		key := string(iter.Key())
-		value := string(iter.Value())
-		keys := strings.Split(key, string(Splitter))
-		values := strings.Split(value, string(Splitter))
-		if strings.Compare(values[1], string(Unspent)) == 0 {
-			paymentAddressStr := keys[2]
-			tempsResult[paymentAddressStr] = true
-		}
-	}
-	for key, value := range tempsResult {
-		if value {
-			results = append(results, []byte(key))
-		}
-	}
-	iter.Release()
-	return results, nil
-}
-
-/*
-	Return a list of all address with balance > 0
-*/
 func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error) {
 	results := make(map[string]uint64)
-	//tempsResult := make(map[string]bool)
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, []byte(tokenID.String())...)
-	//fmt.Println("GetCustomTokenPaymentAddressesBalance, prefix", prefix)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
 	for iter.Next() {
 		key := string(iter.Key())
 		value := string(iter.Value())
 		keys := strings.Split(key, string(Splitter))
 		values := strings.Split(value, string(Splitter))
-		fmt.Println("GetCustomTokenPaymentAddressesBalance, utxo information", value)
+		database.Logger.Log.Info("GetCustomTokenPaymentAddressesBalance, utxo information", value)
 		if strings.Compare(values[1], string(Unspent)) == 0 {
 			// Uncomment this to get balance of all account
 			paymentAddress := privacy.PaymentAddress{}
 			paymentAddressInBytes, _, _ := base58.Base58Check{}.Decode(keys[2])
 			paymentAddress.SetBytes(paymentAddressInBytes)
 			i, ok := results[base58.Base58Check{}.Encode(paymentAddress.Bytes(), 0x00)]
-			fmt.Println("GetCustomTokenListPaymentAddressesBalance, current balance", i)
+			database.Logger.Log.Info("GetCustomTokenListPaymentAddressesBalance, current balance", i)
 			if !ok {
-				fmt.Println("ERROR geting VoteAmount in GetCustomTokenAccountHistory of account", paymentAddress)
+				database.Logger.Log.Info("ERROR geting VoteAmount in GetCustomTokenAccountHistory of account", paymentAddress)
 			}
 			balance, _ := strconv.Atoi(values[0])
-			fmt.Println("GetCustomTokenListPaymentAddressesBalance, add balance", balance)
+			database.Logger.Log.Info("GetCustomTokenListPaymentAddressesBalance, add balance", balance)
 			i += uint64(balance)
 			results[base58.Base58Check{}.Encode(paymentAddress.Bytes(), 0x00)] = i
-			fmt.Println("GetCustomTokenListPaymentAddressesBalance, new balance", results[hex.EncodeToString(paymentAddress.Bytes())])
+			database.Logger.Log.Info("GetCustomTokenListPaymentAddressesBalance, new balance", results[hex.EncodeToString(paymentAddress.Bytes())])
 		}
 	}
 	iter.Release()

@@ -282,7 +282,7 @@ func (tx *TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetrie
 }
 
 func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
-	hasPrivacy bool,
+	hasPrivacyCoin bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
@@ -292,7 +292,7 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 	}
 	constantTokenID := &common.Hash{}
 	constantTokenID.SetBytes(common.ConstantID[:])
-	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+	if ok, err := customTokenTx.ValidateTransaction(hasPrivacyCoin, db, shardID, constantTokenID); !ok {
 		return false, err
 	}
 
@@ -306,13 +306,13 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 	return true, nil
 }
 
-func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
-	ok, error := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, tokenID)
+func (customTokenTx *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
+	ok, error := customTokenTx.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, tokenID)
 	if ok {
 		if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
 			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(false, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		} else {
-			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(true, db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
+			return customTokenTx.TxTokenPrivacyData.TxNormal.ValidateTransaction(customTokenTx.TxTokenPrivacyData.TxNormal.IsPrivacy(), db, shardID, &customTokenTx.TxTokenPrivacyData.PropertyID)
 		}
 	}
 	return false, error
