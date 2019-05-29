@@ -127,7 +127,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if blockchain.config.UserKeySet != nil {
 		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-			err = blockchain.SaveCurrentShardState(block)
+			blockchain.config.DataBase.CleanBackup(true, block.Header.ShardID)
+			err = blockchain.BackupCurrentShardState(block)
 			if err != nil {
 				return err
 			}
@@ -167,7 +168,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
 		for fromShardID, height := range expectedHeight {
 			if height != 0 {
-				blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+				blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
 			}
 		}
 	}()
@@ -441,7 +442,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 				for _, crossTransaction := range crossTransactions {
 					heights = append(heights, crossTransaction.BlockHeight)
 				}
-				blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
+				blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
 				return NewBlockChainError(CrossShardBlockError, errors.New("Cross Shard Block From Shard "+strconv.Itoa(int(fromShard))+" Not Found in Pool"))
 			}
 			sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
