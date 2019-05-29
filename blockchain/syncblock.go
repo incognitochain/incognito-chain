@@ -587,7 +587,6 @@ func (blockchain *BlockChain) InsertBeaconBlockFromPool() {
 	}
 }
 func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
-	fmt.Println("Insert Shard Block from pool")
 	currentInsert.Shards[shardID].Lock()
 	defer currentInsert.Shards[shardID].Unlock()
 	blks := blockchain.config.ShardPool[shardID].GetValidBlock()
@@ -597,11 +596,8 @@ func (blockchain *BlockChain) InsertShardBlockFromPool(shardID byte) {
 	for _, newBlk := range blks {
 		err := blockchain.InsertShardBlock(newBlk, false)
 		if err != nil {
-			if err.(*BlockChainError).Code != ErrCodeMessage[DuplicateBlockErr].code {
-				//@Notice: remove or keep invalid block
-				Logger.log.Error(err)
-				break
-			}
+			Logger.log.Error(err)
+			break
 		}
 	}
 }
