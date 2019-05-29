@@ -313,20 +313,6 @@ func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
 	return nil
 }
 
-func (db *db) FetchCommitteeByHeight(blkHeight uint64) ([]byte, error) {
-	key := append(beaconPrefix, shardIDPrefix...)
-	key = append(key, committeePrefix...)
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkHeight)
-	key = append(key, buf[:]...)
-
-	b, err := db.lvdb.Get(key, nil)
-	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
-	}
-	return b, nil
-}
-
 func (db *db) StoreCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
 	//key: bea-s-com-ep-{epoch}
 	//value: all shard committee

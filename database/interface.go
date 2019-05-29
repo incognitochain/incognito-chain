@@ -63,7 +63,6 @@ type DatabaseInterface interface {
 	StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
 
-	FetchCommitteeByHeight(uint64) ([]byte, error)
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
@@ -88,7 +87,6 @@ type DatabaseInterface interface {
 
 	// SNDerivator
 	StoreSNDerivators(tokenID *common.Hash, sndArray [][]byte, shardID byte) error
-	//FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
 	HasSNDerivator(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSNDerivator() error
 
