@@ -660,3 +660,13 @@ func (synker *synker) GetCrossShardPoolStateByHeight(fromShard byte) []uint64 {
 	}
 	return nil
 }
+
+func (synker *synker) GetCurrentSyncShards() []byte {
+	synker.Status.Lock()
+	defer synker.Status.Unlock()
+	var currentSyncShards []byte
+	for shardID := range synker.Status.Shards {
+		currentSyncShards = append(currentSyncShards, shardID)
+	}
+	return currentSyncShards
+}
