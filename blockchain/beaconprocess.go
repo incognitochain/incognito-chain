@@ -110,6 +110,18 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	} else {
 		Logger.log.Infof("BEACON %+v | SKIP Verify BestState with Block %+v \n", *block.Hash())
 	}
+
+	if blockchain.config.UserKeySet != nil {
+		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			blockchain.config.DataBase.CleanBackup(false, 0)
+			err := blockchain.BackupCurrentBeaconState(block)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	Logger.log.Infof("Update BestState with Beacon Block %+v \n", *block.Hash())
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee
@@ -140,21 +152,20 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		return err
 	}
 	// }
-	shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
-	if err != nil {
-		fmt.Println("No committee for this epoch")
-	}
-	shardCommittee := make(map[byte][]string)
-	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
-		fmt.Println("Fail to unmarshal shard committee")
-	}
+	// shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
+	// if err != nil {
+	// 	fmt.Println("No committee for this epoch")
+	// }
+	// shardCommittee := make(map[byte][]string)
+	// if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+	// 	fmt.Println("Fail to unmarshal shard committee")
+	// }
 	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 
 	if block.Body.ShardState != nil {
 		lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 		for fromShard, shardBlocks := range block.Body.ShardState {
-
 			go func(fromShard byte, shardBlocks []ShardState) {
 				GetBestStateBeacon().lockMu.Lock()
 				defer GetBestStateBeacon().lockMu.Unlock()
@@ -207,7 +218,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//Logger.log.Info("Remove block from pool block with hash  ", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
-	err = blockchain.processBridgeInstructions(block)
+	err := blockchain.processBridgeInstructions(block)
 	if err != nil {
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
