@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
 )
@@ -43,6 +43,7 @@ type ShardPool interface {
 	GetLatestValidBlockHeight() uint64
 	SetShardState(uint64)
 	GetAllBlockHeight() []uint64
+	GetValidBlockChan() *chan *ShardBlock
 }
 
 type BeaconPool interface {

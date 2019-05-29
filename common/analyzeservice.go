@@ -87,12 +87,7 @@ func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxHash, txHash, DuplicateTxs, value)
 }
 func AnalyzeTimeSeriesBlockPerSecondTimesMetric(shardID string, value float64, blockHeight uint64) {
-	err := sendTimeSeriesMetricDataInfluxDBV2(ShardID, shardID, NumOfBlockInsertToChain, value)
-	fmt.Println("Metric ERROR",err)
-	if err == nil {
-		blockpersecond += 1
-		fmt.Println("Total Metric Block", blockpersecond)
-	}
+	sendTimeSeriesMetricDataInfluxDBV2(ShardID, shardID, NumOfBlockInsertToChain, value)
 }
 func AnalyzeFuncCreateAndSaveTxViewPointFromBlock(time float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(Func, FuncCreateAndSaveTxViewPointFromBlock, CreateAndSaveTxViewPointFromBlock, time)
@@ -104,7 +99,7 @@ func sendTimeSeriesMetricDataInfluxDBV2(metricTag string, tagValue string, metri
 	if databaseUrl == "" {
 		return nil
 	}
-	dataBinary := fmt.Sprintf("%s,%+v=%s value=%f %d000000000", metric, metricTag, tagValue, value[0], time.Now().Unix())
+	dataBinary := fmt.Sprintf("%s,%+v=%s value=%f %d000000000", metric, metricTag, tagValue, value[0], time.Now().UnixNano())
 	req, err := http.NewRequest(http.MethodPost, databaseUrl, bytes.NewBuffer([]byte(dataBinary)))
 	if err != nil {
 		log.Println("Create Request failed with err: ", err)
