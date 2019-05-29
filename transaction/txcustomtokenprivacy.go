@@ -104,6 +104,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 	fee uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
 	db database.DatabaseInterface,
+	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
 	shardID byte,
@@ -118,7 +119,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 		hasPrivacyCoin,
 		db,
 		nil,
-		nil)
+		metaData)
 	if err.(*TransactionError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}

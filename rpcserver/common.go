@@ -399,6 +399,7 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 // buildRawCustomTokenTransaction ...
 func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	params interface{},
+	metaData metadata.Metadata,
 ) (*transaction.TxCustomTokenPrivacy, *RPCError) {
 	// all component
 	arrayParams := common.InterfaceSlice(params)
@@ -479,6 +480,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		realFee,
 		tokenParams,
 		*rpcServer.config.Database,
+		metaData,
 		hasPrivacyCoin,
 		hasPrivacyToken,
 		shardIDSender,
