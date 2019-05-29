@@ -5,11 +5,11 @@ import (
 )
 
 type DbLogger struct {
-	log common.Logger
+	Log common.Logger
 }
 
 func (dbLogger *DbLogger) Init(inst common.Logger) {
-	dbLogger.log = inst
+	dbLogger.Log = inst
 }
 
 // Global instant to use
