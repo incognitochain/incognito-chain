@@ -60,6 +60,7 @@ const (
 	ListCustomToken                            = "listcustomtoken"
 	ListPrivacyCustomToken                     = "listprivacycustomtoken"
 	CustomTokenTxs                             = "customtoken"
+	ListCustomTokenHolders                     = "customtokenholder"
 	PrivacyCustomTokenTxs                      = "privacycustomtoken"
 	CheckHashValue                             = "checkhashvalue"
 	GetListCustomTokenBalance                  = "getlistcustomtokenbalance"

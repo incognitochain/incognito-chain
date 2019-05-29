@@ -93,6 +93,7 @@ var RpcHandler = map[string]commandHandler{
 	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomToken,
 	ListCustomToken:                     RpcServer.handleListCustomToken,
 	CustomTokenTxs:                      RpcServer.handleCustomTokenDetail,
+	ListCustomTokenHolders:              RpcServer.handleGetListCustomTokenHolders,
 	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
 	// custom token which support privacy
