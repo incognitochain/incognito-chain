@@ -33,7 +33,6 @@ type DatabaseInterface interface {
 	StoreBeaconBlockHeader(interface{}, *common.Hash) error
 	FetchBeaconBlock(*common.Hash) ([]byte, error)
 	HasBeaconBlock(*common.Hash) (bool, error)
-	FetchBeaconBlockChain() ([]*common.Hash, error)
 	DeleteBeaconBlock(*common.Hash, uint64) error
 
 	//Crossshard
