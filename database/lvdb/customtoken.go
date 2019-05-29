@@ -165,35 +165,6 @@ func (db *db) PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error
 /*
 	Return a list of all address with balance > 0
 */
-func (db *db) GetCustomTokenListPaymentAddress(tokenID *common.Hash) ([][]byte, error) {
-	results := [][]byte{}
-	tempsResult := make(map[string]bool)
-	prefix := TokenPaymentAddressPrefix
-	prefix = append(prefix, Splitter...)
-	prefix = append(prefix, (*tokenID)[:]...)
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-	for iter.Next() {
-		key := string(iter.Key())
-		value := string(iter.Value())
-		keys := strings.Split(key, string(Splitter))
-		values := strings.Split(value, string(Splitter))
-		if strings.Compare(values[1], string(Unspent)) == 0 {
-			paymentAddressStr := keys[2]
-			tempsResult[paymentAddressStr] = true
-		}
-	}
-	for key, value := range tempsResult {
-		if value {
-			results = append(results, []byte(key))
-		}
-	}
-	iter.Release()
-	return results, nil
-}
-
-/*
-	Return a list of all address with balance > 0
-*/
 func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error) {
 	results := make(map[string]uint64)
 	prefix := TokenPaymentAddressPrefix

@@ -111,7 +111,6 @@ type DatabaseInterface interface {
 	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                                 // from token id get all custom txs
 	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error)     // get list of utxo of an paymentaddress.pubkey of a token
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                       // get balance of all paymentaddress of a token (only return payment address with balance > 0)
-	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error)                                             // get all paymentaddress owner that have balance > 0 of a custom token
 
 	// privacy Custom token
 	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
@@ -122,12 +121,6 @@ type DatabaseInterface interface {
 	StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error // store custom token cross shard privacy
 	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
 	PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool
-
-	// Reserve
-	// StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error
-	// GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)
-	// StoreContractingInfo(reqTxID common.Hash, amount uint64, redeem uint64, instType string) error
-	// GetContractingInfo(reqTxID common.Hash) (uint64, uint64, string, error)
 
 	// Centralized bridge
 	CountUpDepositedAmtByTokenID(*common.Hash, uint64) error
