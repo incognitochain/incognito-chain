@@ -1004,7 +1004,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawPrivacyCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params)
+	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
