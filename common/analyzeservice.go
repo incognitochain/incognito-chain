@@ -58,7 +58,10 @@ const (
 	FuncCreateAndSaveTxViewPointFromBlock = "func-CreateAndSaveTxViewPointFromBlock"
 	Beacon                                = "beacon"
 )
-
+// test value
+var (
+	blockpersecond int
+)
 func AnalyzeTimeSeriesTxSizeMetric(txSize string, metric string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxSizeMetric, txSize, metric, value)
 }
@@ -83,24 +86,29 @@ func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64) {
 func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxHash, txHash, DuplicateTxs, value)
 }
-func AnalyzeTimeSeriesNumOfBlockInsertToChainTimesMetric(shardID string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(ShardID, shardID, NumOfBlockInsertToChain, value)
+func AnalyzeTimeSeriesBlockPerSecondTimesMetric(shardID string, value float64, blockHeight uint64) {
+	err := sendTimeSeriesMetricDataInfluxDBV2(ShardID, shardID, NumOfBlockInsertToChain, value)
+	fmt.Println("Metric ERROR",err)
+	if err == nil {
+		blockpersecond += 1
+		fmt.Println("Total Metric Block", blockpersecond)
+	}
 }
 func AnalyzeFuncCreateAndSaveTxViewPointFromBlock(time float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(Func, FuncCreateAndSaveTxViewPointFromBlock, CreateAndSaveTxViewPointFromBlock, time)
 }
 
-func sendTimeSeriesMetricDataInfluxDBV2(metricTag string, tagValue string, metric string, value ...float64) {
+func sendTimeSeriesMetricDataInfluxDBV2(metricTag string, tagValue string, metric string, value ...float64) error {
 	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GRAFANAURL")
 	if databaseUrl == "" {
-		return
+		return nil
 	}
 	dataBinary := fmt.Sprintf("%s,%+v=%s value=%f %d000000000", metric, metricTag, tagValue, value[0], time.Now().Unix())
 	req, err := http.NewRequest(http.MethodPost, databaseUrl, bytes.NewBuffer([]byte(dataBinary)))
 	if err != nil {
 		log.Println("Create Request failed with err: ", err)
-		return
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
@@ -112,8 +120,9 @@ func sendTimeSeriesMetricDataInfluxDBV2(metricTag string, tagValue string, metri
 	_, err = client.Do(req)
 	if err != nil {
 		log.Println("Push to Grafana error:", err)
-		return
+		return err
 	}
+	return nil
 	//fmt.Println("Grafana Response: ", res)
 }
 

@@ -212,9 +212,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
 	}
-
+	
+	go common.AnalyzeTimeSeriesBlockPerSecondTimesMetric(common.Beacon, float64(1), block.Header.Height)
 	Logger.log.Infof("Finish Insert new block %+v, with hash %+v \n", block.Header.Height, *block.Hash())
-	go common.AnalyzeTimeSeriesNumOfBlockInsertToChainTimesMetric(common.Beacon, float64(1))
 	if block.Header.Height%50 == 0 {
 		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
 	}
