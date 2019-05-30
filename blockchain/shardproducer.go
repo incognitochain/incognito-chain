@@ -169,7 +169,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
-		BeaconHash:           *beaconHash,
+		BeaconHash:           beaconHash,
 		Epoch:                epoch,
 		Round:                round,
 	}

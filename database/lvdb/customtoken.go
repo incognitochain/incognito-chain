@@ -17,7 +17,7 @@ import (
 // StoreCustomToken - store data about custom token
 // Key: token-init-{tokenID}
 // Value: txHash
-func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
+func (db *db) StoreCustomToken(tokenID common.Hash, txHash []byte) error {
 	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	if err := db.lvdb.Put(key, txHash, nil); err != nil {
 		return err
@@ -28,7 +28,7 @@ func (db *db) StoreCustomToken(tokenID *common.Hash, txHash []byte) error {
 // StorePrivacyCustomToken - store data about privacy custom token when init
 // Key: privacy-token-init-{tokenID}
 // Value: txHash
-func (db *db) StorePrivacyCustomToken(tokenID *common.Hash, txHash []byte) error {
+func (db *db) StorePrivacyCustomToken(tokenID common.Hash, txHash []byte) error {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	if err := db.lvdb.Put(key, txHash, nil); err != nil {
 		return err
@@ -36,7 +36,7 @@ func (db *db) StorePrivacyCustomToken(tokenID *common.Hash, txHash []byte) error
 	return nil
 }
 
-func (db *db) StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
+func (db *db) StoreCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
 	key := db.GetKey(string(TokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
@@ -52,7 +52,7 @@ func (db *db) StoreCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight
 	return nil
 }
 
-func (db *db) StorePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
+func (db *db) StorePrivacyCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
 	key := db.GetKey(string(PrivacyTokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
@@ -68,7 +68,7 @@ func (db *db) StorePrivacyCustomTokenTx(tokenID *common.Hash, shardID byte, bloc
 	return nil
 }
 
-func (db *db) CustomTokenIDExisted(tokenID *common.Hash) bool {
+func (db *db) CustomTokenIDExisted(tokenID common.Hash) bool {
 	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	data, err := db.lvdb.Get(key, nil)
 	if err != nil {
@@ -80,7 +80,7 @@ func (db *db) CustomTokenIDExisted(tokenID *common.Hash) bool {
 	return true
 }
 
-func (db *db) PrivacyCustomTokenIDExisted(tokenID *common.Hash) bool {
+func (db *db) PrivacyCustomTokenIDExisted(tokenID common.Hash) bool {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	data, err := db.lvdb.Get(key, nil)
 	if err != nil {
@@ -92,7 +92,7 @@ func (db *db) PrivacyCustomTokenIDExisted(tokenID *common.Hash) bool {
 	return true
 }
 
-func (db *db) PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool {
+func (db *db) PrivacyCustomTokenIDCrossShardExisted(tokenID common.Hash) bool {
 	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
 	data, err := db.lvdb.Get(key, nil)
 	if err != nil {
@@ -134,33 +134,31 @@ func (db *db) ListPrivacyCustomToken() ([][]byte, error) {
 	return result, nil
 }
 
-func (db *db) CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
-	result := make([]*common.Hash, 0)
+func (db *db) CustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
+	result := make([]common.Hash, 0)
 	key := db.GetKey(string(TokenPrefix), tokenID)
 	// PubKey = token-{tokenID}
 	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	log.Println(string(key))
 	for iter.Next() {
 		value := iter.Value()
-		hash := common.Hash{}
-		hash.SetBytes(value)
-		result = append(result, &hash)
+		hash, _ := common.NewHash(value)
+		result = append(result, *hash)
 	}
 	iter.Release()
 	return result, nil
 }
 
-func (db *db) PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error) {
-	result := make([]*common.Hash, 0)
+func (db *db) PrivacyCustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
+	result := make([]common.Hash, 0)
 	key := db.GetKey(string(PrivacyTokenPrefix), tokenID)
 	// PubKey = token-{tokenID}
 	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	log.Println(string(key))
 	for iter.Next() {
 		value := iter.Value()
-		hash := common.Hash{}
-		hash.SetBytes(value)
-		result = append(result, &hash)
+		hash, _ := common.NewHash(value)
+		result = append(result, *hash)
 	}
 	iter.Release()
 	return result, nil
@@ -169,7 +167,7 @@ func (db *db) PrivacyCustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error
 /*
 	Return a list of all address with balance > 0
 */
-func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error) {
+func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error) {
 	results := make(map[string]uint64)
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
@@ -206,7 +204,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[s
 	Get a list of UTXO of one address
 	Return a list of UTXO, each UTXO has format: txHash-index
 */
-func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error) {
+func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) {
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, []byte(tokenID.String())...)
@@ -225,7 +223,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddr
 	return results, nil
 }
 
-func (db *db) StorePrivacyCustomTokenCrossShard(tokenID *common.Hash, tokenValue []byte) error {
+func (db *db) StorePrivacyCustomTokenCrossShard(tokenID  common.Hash, tokenValue []byte) error {
 	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
 	if err := db.lvdb.Put(key, tokenValue, nil); err != nil {
 		return err
