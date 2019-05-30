@@ -17,7 +17,7 @@ import (
 )
 
 // StoreSerialNumbers - store list serialNumbers by shardID
-func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, shardID byte) error {
+func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, shardID byte) error {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 
@@ -52,7 +52,7 @@ func (db *db) StoreSerialNumbers(tokenID *common.Hash, serialNumbers [][]byte, s
 }
 
 // HasSerialNumber - Check serialNumber in list SerialNumbers by shardID
-func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, shardID byte) (bool, error) {
+func (db *db) HasSerialNumber(tokenID common.Hash, serialNumber []byte, shardID byte) (bool, error) {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, serialNumber...)
@@ -66,7 +66,7 @@ func (db *db) HasSerialNumber(tokenID *common.Hash, serialNumber []byte, shardID
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func (db *db) GetSerialNumbersLength(tokenID *common.Hash, shardID byte) (*big.Int, error) {
+func (db *db) GetSerialNumbersLength(tokenID common.Hash, shardID byte) (*big.Int, error) {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 	keyStoreLen := append(key, []byte("len")...)
@@ -97,7 +97,7 @@ func (db *db) CleanSerialNumbers() error {
 	return nil
 }
 
-func (db *db) StoreOutputCoins(tokenID *common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
+func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
 	key := db.GetKey(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
 
@@ -126,7 +126,7 @@ func (db *db) StoreOutputCoins(tokenID *common.Hash, publicKey []byte, outputCoi
 }
 
 // StoreCommitments - store list commitments by shardID
-func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
+func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
@@ -188,7 +188,7 @@ func (db *db) StoreCommitments(tokenID *common.Hash, pubkey []byte, commitments 
 }
 
 // HasCommitment - Check commitment in list commitments by shardID
-func (db *db) HasCommitment(tokenID *common.Hash, commitment []byte, shardID byte) (bool, error) {
+func (db *db) HasCommitment(tokenID common.Hash, commitment []byte, shardID byte) (bool, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, commitment...)
@@ -201,7 +201,7 @@ func (db *db) HasCommitment(tokenID *common.Hash, commitment []byte, shardID byt
 	return false, nil
 }
 
-func (db *db) HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
+func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
@@ -214,7 +214,7 @@ func (db *db) HasCommitmentIndex(tokenID *common.Hash, commitmentIndex uint64, s
 	return false, nil
 }
 
-func (db *db) GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
+func (db *db) GetCommitmentByIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	//keySpec := make([]byte, len(key))
@@ -234,7 +234,7 @@ func (db *db) GetCommitmentByIndex(tokenID *common.Hash, commitmentIndex uint64,
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func (db *db) GetCommitmentIndex(tokenID *common.Hash, commitment []byte, shardID byte) (*big.Int, error) {
+func (db *db) GetCommitmentIndex(tokenID common.Hash, commitment []byte, shardID byte) (*big.Int, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, commitment...)
@@ -248,7 +248,7 @@ func (db *db) GetCommitmentIndex(tokenID *common.Hash, commitment []byte, shardI
 }
 
 // GetCommitmentIndex - return index of commitment in db list
-func (db *db) GetCommitmentLength(tokenID *common.Hash, shardID byte) (*big.Int, error) {
+func (db *db) GetCommitmentLength(tokenID common.Hash, shardID byte) (*big.Int, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, []byte("len")...)
@@ -263,7 +263,7 @@ func (db *db) GetCommitmentLength(tokenID *common.Hash, shardID byte) (*big.Int,
 	return new(big.Int).SetInt64(0), nil
 }
 
-func (db *db) GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
+func (db *db) GetCommitmentIndexsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
@@ -282,7 +282,7 @@ func (db *db) GetCommitmentIndexsByPubkey(tokenID *common.Hash, pubkey []byte, s
 	return arrDatabyPubkey, nil
 }
 
-func (db *db) GetOutcoinsByPubkey(tokenID *common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
+func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
 	key := db.GetKey(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
 
@@ -317,7 +317,7 @@ func (db *db) CleanCommitments() error {
 }
 
 // StoreSNDerivators - store list serialNumbers by shardID
-func (db *db) StoreSNDerivators(tokenID *common.Hash, sndArray [][]byte, shardID byte) error {
+func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID byte) error {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
 
@@ -332,7 +332,7 @@ func (db *db) StoreSNDerivators(tokenID *common.Hash, sndArray [][]byte, shardID
 }
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by shardID
-func (db *db) HasSNDerivator(tokenID *common.Hash, data []byte, shardID byte) (bool, error) {
+func (db *db) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error) {
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, data...)
@@ -400,7 +400,7 @@ func (db *db) CleanFeeEstimator() error {
   Key: prefixTx-txHash
 	H: blockHash-blockIndex
 */
-func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, index int) error {
+func (db *db) StoreTransactionIndex(txId common.Hash, blockHash  common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
@@ -414,25 +414,25 @@ func (db *db) StoreTransactionIndex(txId *common.Hash, blockHash *common.Hash, i
   Get Transaction by ID
 */
 
-func (db *db) GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *database.DatabaseError) {
+func (db *db) GetTransactionIndexById(txId common.Hash) (common.Hash, int, *database.DatabaseError) {
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 
 	res, err := db.Get([]byte(key))
 	if err != nil {
-		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 	reses := strings.Split(string(res), (string(Splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
-		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
 	index, err := strconv.Atoi(reses[1])
 	if err != nil {
-		return nil, -1, database.NewDatabaseError(database.ErrUnexpected, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.ErrUnexpected, err)
 	}
-	return hash, index, nil
+	return *hash, index, nil
 }
