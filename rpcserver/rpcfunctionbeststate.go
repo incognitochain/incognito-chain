@@ -51,6 +51,7 @@ func (rpcServer RpcServer) handleGetShardBestState(params interface{}, closeChan
 	return valueResult, nil
 }
 
+// handleGetCandidateList - return list candidate of committee
 func (rpcServer RpcServer) handleGetCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetCandidateList params: %+v", params)
 	CSWFCR := rpcServer.config.BlockChain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
@@ -68,6 +69,8 @@ func (rpcServer RpcServer) handleGetCandidateList(params interface{}, closeChan 
 	Logger.log.Infof("handleGetCandidateList result: %+v", result)
 	return result, nil
 }
+
+// handleGetCommitteeList - return current committee in network
 func (rpcServer RpcServer) handleGetCommitteeList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetCommitteeList params: %+v", params)
 	beaconCommittee := rpcServer.config.BlockChain.BestState.Beacon.BeaconCommittee

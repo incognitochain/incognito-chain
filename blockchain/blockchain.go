@@ -66,20 +66,19 @@ type BestState struct {
 
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
-	DataBase                  database.DatabaseInterface
-	Interrupt                 <-chan struct{}
-	ChainParams               *Params
-	RelayShards               []byte
-	NodeMode                  string
-	customTokenRewardSnapshot map[string]uint64 //snapshot reward
-	ShardToBeaconPool         ShardToBeaconPool
-	CrossShardPool            map[byte]CrossShardPool
-	BeaconPool                BeaconPool
-	ShardPool                 map[byte]ShardPool
-	TxPool                    TxPool
-	TempTxPool                TxPool
-	CRemovedTxs               chan metadata.Transaction
-	Server                    interface {
+	DataBase          database.DatabaseInterface
+	Interrupt         <-chan struct{}
+	ChainParams       *Params
+	RelayShards       []byte
+	NodeMode          string
+	ShardToBeaconPool ShardToBeaconPool
+	CrossShardPool    map[byte]CrossShardPool
+	BeaconPool        BeaconPool
+	ShardPool         map[byte]ShardPool
+	TxPool            TxPool
+	TempTxPool        TxPool
+	CRemovedTxs       chan metadata.Transaction
+	Server            interface {
 		BoardcastNodeState() error
 
 		PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error
@@ -607,14 +606,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			return err
 		}
 
-		// replace 1000 with proper value for snapshot
-		if block.Header.Height%1000 == 0 {
-			// list of unreward-utxo
-			blockchain.config.customTokenRewardSnapshot, err = blockchain.config.DataBase.GetCustomTokenPaymentAddressesBalance(&customTokenTx.TxTokenData.PropertyID)
-			if err != nil {
-				return err
-			}
-		}
 		if err != nil {
 			return err
 		}
@@ -764,7 +755,6 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
 	unspent := lvdb.Unspent
 	spent := lvdb.Spent
-	unreward := lvdb.Unreward
 
 	tokenKey := TokenPaymentAddressPrefix
 	tokenKey = append(tokenKey, Splitter...)
@@ -788,13 +778,13 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		if err != nil {
 			return err
 		}
-		// old value: {value}-unspent-unreward/reward
+		// old value: {value}-unspent
 		values := strings.Split(string(value), string(Splitter))
 		if strings.Compare(values[1], string(unspent)) != 0 {
 			return errors.New("Double Spend Detected")
 		}
-		// new value: {value}-spent-unreward/reward
-		newValues := values[0] + string(Splitter) + string(spent) + string(Splitter) + values[2]
+		// new value: {value}-spent
+		newValues := values[0] + string(Splitter) + string(spent)
 		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(newValues)); err != nil {
 			return err
 		}
@@ -833,8 +823,8 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		if err != nil {
 			return err
 		}
-		// init value: {value}-unspent-unreward
-		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter) + string(unreward)
+		// init value: {value}-unspent
+		paymentAddressValue := strconv.Itoa(int(value)) + string(Splitter) + string(unspent) + string(Splitter)
 		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
@@ -1086,10 +1076,6 @@ func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[str
 		return nil, err
 	}
 	return result, nil
-}
-
-func (blockchain *BlockChain) GetCustomTokenRewardSnapshot() map[string]uint64 {
-	return blockchain.config.customTokenRewardSnapshot
 }
 
 func (self *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
