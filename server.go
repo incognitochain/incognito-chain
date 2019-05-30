@@ -13,10 +13,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/addrmanager"
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
@@ -603,40 +604,45 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 }
 
 func (serverObject Server) CheckForceUpdateSourceCode() {
-	//now := time.Now()
-	//var year int
-	//var month int
-	//formatedNow := now.Format(common.DateInputFormat)
-	//res := strings.Split(formatedNow,"-")
-	//year, _ = strconv.Atoi(res[0])
-	//if res[1] == "12" {
-	//	month = 1
-	//	year += 1
-	//} else {
-	//	month,_ = strconv.Atoi(res[1])
-	//	month += 1
-	//}
-	//result := strconv.Itoa(year)+"-"+strconv.Itoa(month)+"-"+ common.FirstDateOfMonth
-	//Logger.log.Warn("\n*********************************************************************************\n" +
-	//	"* Detected a Force Updating Time for this source code from https://github.com/constant-money/constant-chain at " + result + " *" +
-	//	"\n*********************************************************************************\n")
-	//go func(nextUpdated string) {
-	//	for {
-	//		forceTime, _ := time.ParseInLocation(common.DateInputFormat, nextUpdated, time.Local)
-	//		fmt.Println(now)
-	//		fmt.Println(forceTime)
-	//		forced := now.After(forceTime)
-	//		if forced {
-	//			Logger.log.Error("\n*********************************************************************************\n" +
-	//				"We're exited because having a force update on this souce code." +
-	//				"\nPlease Update source code at https://github.com/constant-money/constant-chain" +
-	//				"\n*********************************************************************************\n")
-	//			os.Exit(common.ExitCodeForceUpdate)
-	//		}
-	//		Logger.log.Debug("Check time to force update source code from https://github.com/constant-money/constant-chain after " + common.NextForceUpdate)
-	//		time.Sleep(time.Second * 60) // each minute
-	//	}
-	//}(result)
+	now := time.Now()
+	var year int
+	var month int
+	var result string
+	formatedNow := now.Format(common.DateInputFormat)
+	res := strings.Split(formatedNow,"-")
+	year, _ = strconv.Atoi(res[0])
+	if res[1] == "12" {
+		month = 1
+		year += 1
+	} else {
+		month,_ = strconv.Atoi(res[1])
+		month += 1
+	}
+	if month >= 10 {
+		result = strconv.Itoa(year)+"-"+strconv.Itoa(month)+"-"+ common.FirstDateOfMonth
+	} else {
+		result = strconv.Itoa(year)+"-"+"0"+strconv.Itoa(month)+"-"+ common.FirstDateOfMonth
+	}
+	Logger.log.Warn("\n*********************************************************************************\n" +
+		"* Detected a Force Updating Time for this source code from https://github.com/constant-money/constant-chain at " + result + " *" +
+		"\n*********************************************************************************\n")
+	go func(nextUpdated string) {
+		for {
+			forceTime, _ := time.ParseInLocation(common.DateInputFormat, nextUpdated, time.Local)
+			fmt.Println(nextUpdated)
+			fmt.Println(forceTime)
+			forced := now.After(forceTime)
+			if forced {
+				Logger.log.Error("\n*********************************************************************************\n" +
+					"We're exited because having a force update on this souce code." +
+					"\nPlease Update source code at https://github.com/constant-money/constant-chain" +
+					"\n*********************************************************************************\n")
+				os.Exit(common.ExitCodeForceUpdate)
+			}
+			Logger.log.Debug("Check time to force update source code from https://github.com/constant-money/constant-chain after " + common.NextForceUpdate)
+			time.Sleep(time.Second * 60) // each minute
+		}
+	}(result)
 }
 
 /*
