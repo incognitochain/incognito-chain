@@ -65,10 +65,6 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	// if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
-	// 	return false, errors.New("the issuance request must be called by centralized website")
-	// }
-
 	bridgeTokenExisted, err := db.IsBridgeTokenExisted(&cReq.TokenID)
 	if err != nil {
 		return false, err
@@ -76,7 +72,6 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	if !bridgeTokenExisted {
 		return false, errors.New("the burning token is not existed in bridge tokens")
 	}
-
 	return true, nil
 }
 
