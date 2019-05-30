@@ -284,7 +284,7 @@ func (rpcServer RpcServer) revertTxToResponseObject(tx metadata.Transaction, blo
 				SigPubKey:   tempTx.SigPubKey,
 				Sig:         tempTx.Sig,
 			}
-			if len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
+			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
@@ -521,6 +521,27 @@ func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params inte
 	return txID, nil
 }
 
+// handleGetListCustomTokenHolders - return all custom token holder
+func (rpcServer RpcServer) handleGetListCustomTokenHolders(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("TokenID is invalid"))
+	}
+	tokenIDStr := arrayParams[0].(string)
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
+	if err != nil {
+		if len(arrayParams) < 1 {
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("TokenID is invalid"))
+		}
+	}
+	result, err := rpcServer.config.BlockChain.GetListTokenHolders(tokenID)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	return result, nil
+}
+
+// handleGetListCustomTokenBalance - return list token + balance for one account payment address
 func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetListCustomTokenBalance params: %+v", params)
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
@@ -565,6 +586,7 @@ func (rpcServer RpcServer) handleGetListCustomTokenBalance(params interface{}, c
 	return result, nil
 }
 
+// handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetListPrivacyCustomTokenBalance params: %+v", params)
 	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
@@ -1004,7 +1026,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawPrivacyCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params)
+	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)

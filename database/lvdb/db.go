@@ -54,7 +54,6 @@ var (
 	// centralized bridge
 	centralizedBridgePrefix = []byte("centralizedbridge-")
 
-	Unreward   = []byte("unreward")
 	Spent      = []byte("spent")
 	Unspent    = []byte("unspent")
 	Mintable   = []byte("mintable")
