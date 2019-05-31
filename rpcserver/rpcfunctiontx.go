@@ -379,7 +379,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
 	Logger.log.Infof("Get Transaction By Hash %+v", txHash)
 	db := *(rpcServer.config.Database)
-	shardID, blockHash, index, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(txHash)
+	shardID, blockHash, index, tx, err := rpcServer.config.BlockChain.GetTransactionByHash(*txHash)
 	if err != nil {
 		// maybe tx is still in tx mempool -> check mempool
 		tx, errM := rpcServer.config.TxMemPool.GetTx(txHash)
@@ -398,7 +398,7 @@ func (rpcServer RpcServer) handleGetTransactionByHash(params interface{}, closeC
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	result, err := rpcServer.revertTxToResponseObject(tx, blockHash, blockHeight, index, shardID)
+	result, err := rpcServer.revertTxToResponseObject(tx, &blockHash, blockHeight, index, shardID)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
@@ -948,7 +948,7 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 	for _, item := range serialNumbersStr {
 		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
-		ok, _ := db.HasSerialNumber(tokenID, serialNumber, shardIDSender)
+		ok, _ := db.HasSerialNumber(*tokenID, serialNumber, shardIDSender)
 		if ok || err != nil {
 			// serial number in db
 			result = append(result, true)
@@ -1009,7 +1009,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(rpcServer.config.Database)
-		ok, err := db.HasSNDerivator(tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), privacy.BigIntSize), shardIDSender)
+		ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), privacy.BigIntSize), shardIDSender)
 		if ok || err != nil {
 			// serial number in db
 			result = append(result, true)

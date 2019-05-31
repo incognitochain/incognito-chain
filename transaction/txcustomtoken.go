@@ -237,7 +237,7 @@ func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
 ) bool {
 	data := make(map[common.Hash]TxCustomToken)
 	for _, vin := range customTokenTx.TxTokenData.Vins {
-		_, _, _, utxo, err := bcr.GetTransactionByHash(&vin.TxCustomTokenID)
+		_, _, _, utxo, err := bcr.GetTransactionByHash(vin.TxCustomTokenID)
 		if err != nil {
 			// Logger.log.Error(err)
 			return false
@@ -464,7 +464,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 				//		return NewTransactionErr(CustomTokenExisted, nil)
 				//	}
 				//}
-				existed := db.CustomTokenIDExisted(&newHashInitToken)
+				existed := db.CustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
 					return NewTransactionErr(CustomTokenExisted, nil)
@@ -491,7 +491,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 		//if _, ok := listCustomTokens[*propertyID]; !ok {
 		//	return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 		//}
-		existed := db.CustomTokenIDExisted(propertyID)
+		existed := db.CustomTokenIDExisted(*propertyID)
 		if !existed {
 			return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 		}
@@ -600,7 +600,7 @@ func (tx *TxCustomToken) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever)
 		return nil, nil
 	}
 	prevTxID := vins[0].TxCustomTokenID
-	_, _, _, prevTx, err := bcr.GetTransactionByHash(&prevTxID)
+	_, _, _, prevTx, err := bcr.GetTransactionByHash(prevTxID)
 	if err != nil {
 		return nil, err
 	}
