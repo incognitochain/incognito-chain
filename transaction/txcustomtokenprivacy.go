@@ -290,9 +290,9 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 	if customTokenTx.TxTokenPrivacyData.Type == CustomTokenInit {
 		return true, nil
 	}
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
-	if ok, err := customTokenTx.ValidateTransaction(hasPrivacyCoin, db, shardID, constantTokenID); !ok {
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	if ok, err := customTokenTx.ValidateTransaction(hasPrivacyCoin, db, shardID, prvCoinID); !ok {
 		return false, err
 	}
 
