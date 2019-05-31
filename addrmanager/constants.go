@@ -3,9 +3,9 @@ package addrmanager
 import "time"
 
 const (
-	Version = 1
+	version = 1
 
-	// DumpAddressInterval is the interval used to dump the address
+	// dumpAddressInterval is the interval used to dump the address
 	// cache to disk for future use.
-	DumpAddressInterval = time.Second * 10
+	dumpAddressInterval = time.Second * 10
 )
