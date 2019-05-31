@@ -77,9 +77,9 @@ type DatabaseInterface interface {
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error
 	HasSerialNumber(tokenID common.Hash, data []byte, shardID byte) (bool, error)
-	BackupSerialNumber(tokenID common.Hash, shardID byte) error
-	RestoreSerialNumber(tokenID common.Hash, shardID byte) error
-	DeleteSerialNumber(tokenID common.Hash, data []byte, shardID byte) error
+	BackupSerialNumbersLen(tokenID common.Hash, shardID byte) error
+	RestoreSerialNumber(tokenID common.Hash, shardID byte, serialNumbers [][]byte) error
+	// DeleteSerialNumber(tokenID common.Hash, data []byte, shardID byte) error
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
@@ -93,10 +93,7 @@ type DatabaseInterface interface {
 	GetCommitmentIndexsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte) error
-	RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte, commitments []byte) error
-	DeleteCommitmentsIndex(tokenID common.Hash, shardID byte) error
-	BackupCommitments(tokenID common.Hash, shardID byte) error
-	RestoreCommitments(tokenID common.Hash, shardID byte) error
+	RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte, commitments [][]byte) error
 	BackupOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error
 	RestoreOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error
 	CleanCommitments() error
@@ -112,16 +109,16 @@ type DatabaseInterface interface {
 	CleanFeeEstimator() error
 
 	// Custom token
-	StoreCustomToken(tokenID common.Hash, data []byte) error                                                    // store custom token. Param: tokenID, txInitToken-id, data tx
+	StoreCustomToken(tokenID common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
 	DeleteCustomToken(tokenID common.Hash) error
 	StoreCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, shardID, block height, tx-id, data tx
 	DeleteCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error
-	ListCustomToken() ([][]byte, error)                                                                         // get list all custom token which issued in network, return init tx hash
-	CustomTokenIDExisted(tokenID common.Hash) bool                                                              // check tokenID existed in network, return init tx hash
-	PrivacyCustomTokenIDExisted(tokenID common.Hash) bool                                                       // check privacy tokenID existed in network
-	CustomTokenTxs(tokenID common.Hash) ([]common.Hash, error)                                                  // from token id get all custom txs
-	GetCustomTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error)     // get list of utxo of an paymentaddress.pubkey of a token
-	GetCustomTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error)                       // get balance of all paymentaddress of a token (only return payment address with balance > 0)
+	ListCustomToken() ([][]byte, error)                                                                     // get list all custom token which issued in network, return init tx hash
+	CustomTokenIDExisted(tokenID common.Hash) bool                                                          // check tokenID existed in network, return init tx hash
+	PrivacyCustomTokenIDExisted(tokenID common.Hash) bool                                                   // check privacy tokenID existed in network
+	CustomTokenTxs(tokenID common.Hash) ([]common.Hash, error)                                              // from token id get all custom txs
+	GetCustomTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
+	GetCustomTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error)                   // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 
 	// privacy Custom token
 	StorePrivacyCustomToken(tokenID common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
