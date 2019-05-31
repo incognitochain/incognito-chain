@@ -775,7 +775,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		// get commitments list from CommitmentIndices
 		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, proof.CommitmentIndices[i*privacy.CMRingSize+j], shardID)
+			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, proof.CommitmentIndices[i*privacy.CMRingSize+j], shardID)
 
 			if err != nil {
 				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database")

@@ -23,7 +23,7 @@ var (
 	stabilityPrefix         = []byte("sta-")
 	committeePrefix         = []byte("com-")
 	epochPrefix             = []byte("ep-")
-	shardIDPrefix           = []byte("s")
+	shardIDPrefix           = []byte("s-")
 	blockKeyPrefix          = []byte("b-")
 	blockHeaderKeyPrefix    = []byte("bh-")
 	blockKeyIdxPrefix       = []byte("i-")
@@ -103,7 +103,36 @@ func (db *db) Get(key []byte) ([]byte, error) {
 	return value, nil
 }
 
-func (db db) GetKey(keyType string, key interface{}) []byte {
+func (db db) GetKey(keyType string, key common.Hash) []byte {
+	var dbkey []byte
+	switch keyType {
+	case string(blockKeyPrefix):
+		dbkey = append(blockKeyPrefix, key[:]...)
+	case string(blockKeyIdxPrefix):
+		dbkey = append(blockKeyIdxPrefix, key[:]...)
+	case string(serialNumbersPrefix):
+		dbkey = append(serialNumbersPrefix, key[:]...)
+	case string(commitmentsPrefix):
+		dbkey = append(commitmentsPrefix, key[:]...)
+	case string(outcoinsPrefix):
+		dbkey = append(outcoinsPrefix, key[:]...)
+	case string(snderivatorsPrefix):
+		dbkey = append(snderivatorsPrefix, key[:]...)
+	case string(TokenPrefix):
+		dbkey = append(TokenPrefix, key[:]...)
+	case string(PrivacyTokenPrefix):
+		dbkey = append(PrivacyTokenPrefix, key[:]...)
+	case string(PrivacyTokenCrossShardPrefix):
+		dbkey = append(PrivacyTokenCrossShardPrefix, key[:]...)
+	case string(tokenInitPrefix):
+		dbkey = append(tokenInitPrefix, key[:]...)
+	case string(privacyTokenInitPrefix):
+		dbkey = append(privacyTokenInitPrefix, key[:]...)
+	}
+	return dbkey
+}
+
+func (db db) GetKeyOldVersion(keyType string, key interface{}) []byte {
 	var dbkey []byte
 	switch keyType {
 	case string(blockKeyPrefix):

@@ -83,8 +83,8 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 		return false, err
 	}
 
-	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(&iReq.TokenID)
-	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(&iReq.TokenID)
+	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(iReq.TokenID)
+	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(iReq.TokenID)
 	if !bridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
 		return false, errors.New("another custom token was already existed with the same token id")
 	}
