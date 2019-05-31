@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
@@ -65,29 +64,22 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	tx Transaction,
 	bcr BlockchainRetriever,
 ) (bool, error) {
-
-	fmt.Println("hahaha - len(txsInBlock): ", len(txsInBlock))
 	idx := -1
 	for i, txInBlock := range txsInBlock {
 		if txsUsed[i] > 0 ||
 			txInBlock.GetMetadataType() != IssuingRequestMeta ||
 			!bytes.Equal(iRes.RequestedTxID[:], txInBlock.Hash()[:]) {
-			fmt.Println("iRes.RequestedTxID: ", iRes.RequestedTxID[:])
-			fmt.Println("txInBlock.Hash(): ", txInBlock.Hash())
-			fmt.Println("hahaha - chet dk 1")
 			continue
 		}
 		issuingReqRaw := txInBlock.GetMetadata()
 		issuingReq, ok := issuingReqRaw.(*IssuingRequest)
 		if !ok {
-			fmt.Println("hahaha - chet dk 2")
 			continue
 		}
 		_, pk, amount, assetID := tx.GetTransferData()
 		if !bytes.Equal(issuingReq.ReceiverAddress.Pk[:], pk[:]) ||
 			issuingReq.DepositedAmount != amount ||
 			!bytes.Equal(issuingReq.TokenID[:], assetID[:]) {
-			fmt.Println("hahaha - chet dk 3")
 			continue
 		}
 

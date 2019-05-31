@@ -35,7 +35,6 @@ type DatabaseInterface interface {
 	StoreBeaconBlockHeader(interface{}, *common.Hash) error
 	FetchBeaconBlock(*common.Hash) ([]byte, error)
 	HasBeaconBlock(*common.Hash) (bool, error)
-	FetchBeaconBlockChain() ([]*common.Hash, error)
 	DeleteBeaconBlock(*common.Hash, uint64) error
 
 	//Crossshard
@@ -58,7 +57,7 @@ type DatabaseInterface interface {
 	GetTransactionIndexById(txId *common.Hash) (*common.Hash, int, *DatabaseError)
 	DeleteTransactionIndex(txId *common.Hash) error
 
-	// Best state of chain
+	// Best state of shard chain
 	StorePrevBestState([]byte, bool, byte) error
 	FetchPrevBestState(bool, byte) ([]byte, error)
 	CleanBackup(bool, byte) error
@@ -66,13 +65,12 @@ type DatabaseInterface interface {
 	FetchShardBestState(byte) ([]byte, error)
 	CleanShardBestState() error
 
-	// Best state of chain
+	// Best state of beacon chain
 	StoreBeaconBestState(interface{}) error
 	StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
 	DeleteCommitteeByEpoch(uint64) error
 
-	FetchCommitteeByHeight(uint64) ([]byte, error)
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
@@ -107,7 +105,6 @@ type DatabaseInterface interface {
 
 	// SNDerivator
 	StoreSNDerivators(tokenID *common.Hash, sndArray [][]byte, shardID byte) error
-	//FetchSNDerivator(tokenID *common.Hash, shardID byte) ([]big.Int, error)
 	HasSNDerivator(tokenID *common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSNDerivator() error
 
@@ -127,8 +124,6 @@ type DatabaseInterface interface {
 	CustomTokenTxs(tokenID *common.Hash) ([]*common.Hash, error)                                             // from token id get all custom txs
 	GetCustomTokenPaymentAddressUTXO(tokenID *common.Hash, paymentAddress []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
 	GetCustomTokenPaymentAddressesBalance(tokenID *common.Hash) (map[string]uint64, error)                   // get balance of all paymentaddress of a token (only return payment address with balance > 0)
-	GetCustomTokenListPaymentAddress(*common.Hash) ([][]byte, error) // get all paymentaddress owner that have balance > 0 of a custom token
-	GetCustomTokenPaymentAddressesBalanceUnreward(tokenID *common.Hash) (map[string]uint64, error)
 
 	// privacy Custom token
 	StorePrivacyCustomToken(tokenID *common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
@@ -142,12 +137,6 @@ type DatabaseInterface interface {
 	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
 	PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool
 	DeletePrivacyCustomTokenCrossShard(tokenID *common.Hash) error
-
-	// Reserve
-	// StoreIssuingInfo(reqTxID common.Hash, amount uint64, instType string) error
-	// GetIssuingInfo(reqTxID common.Hash) (uint64, string, error)
-	// StoreContractingInfo(reqTxID common.Hash, amount uint64, redeem uint64, instType string) error
-	// GetContractingInfo(reqTxID common.Hash) (uint64, uint64, string, error)
 
 	// Centralized bridge
 	CountUpDepositedAmtByTokenID(*common.Hash, uint64) error

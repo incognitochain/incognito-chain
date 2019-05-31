@@ -18,6 +18,7 @@ type IssuingRequest struct {
 	ReceiverAddress privacy.PaymentAddress
 	DepositedAmount uint64
 	TokenID         common.Hash
+	TokenName       string
 	MetadataBase
 }
 
@@ -25,6 +26,7 @@ func NewIssuingRequest(
 	receiverAddress privacy.PaymentAddress,
 	depositedAmount uint64,
 	tokenID common.Hash,
+	tokenName string,
 	metaType int,
 ) (*IssuingRequest, error) {
 	metadataBase := MetadataBase{
@@ -34,6 +36,7 @@ func NewIssuingRequest(
 		ReceiverAddress: receiverAddress,
 		DepositedAmount: depositedAmount,
 		TokenID:         tokenID,
+		TokenName:       tokenName,
 	}
 	issuingReq.MetadataBase = metadataBase
 	return issuingReq, nil
@@ -45,13 +48,12 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		return nil, errors.Errorf("TokenID incorrect")
 	}
 
-	// depositedAmtStr := data["DepositedAmount"].(string)
-	// depositedAmtInt, err := strconv.Atoi(depositedAmtStr)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	depositedAmt := uint64(data["DepositedAmount"].(float64))
+	tokenName, ok := data["TokenName"].(string)
+	if !ok {
+		return nil, errors.Errorf("TokenName incorrect")
+	}
 
+	depositedAmt := uint64(data["DepositedAmount"].(float64))
 	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	if err != nil {
 		return nil, errors.Errorf("ReceiveAddress incorrect")
@@ -61,6 +63,7 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		keyWallet.KeySet.PaymentAddress,
 		depositedAmt,
 		*tokenID,
+		tokenName,
 		IssuingRequestMeta,
 	)
 }
@@ -79,11 +82,12 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	if err != nil {
 		return false, err
 	}
-	normalCustomTokenExisted := db.CustomTokenIDExisted(&iReq.TokenID)
-	if !bridgeTokenExisted && normalCustomTokenExisted { // since normal custom tokens set contains bridge tokens
+
+	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(&iReq.TokenID)
+	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(&iReq.TokenID)
+	if !bridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
 		return false, errors.New("another custom token was already existed with the same token id")
 	}
-
 	return true, nil
 }
 
@@ -100,6 +104,9 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if len(iReq.TokenID) != common.HashSize {
 		return false, false, errors.New("Wrong request info's token id")
 	}
+	if iReq.TokenName == "" {
+		return false, false, errors.New("Wrong request info's token name")
+	}
 	return true, true, nil
 }
 
@@ -114,6 +121,7 @@ func (iReq *IssuingRequest) Hash() *common.Hash {
 	record := iReq.ReceiverAddress.String()
 	record += iReq.TokenID.String()
 	record += string(iReq.DepositedAmount)
+	record += iReq.TokenName
 	record += iReq.MetadataBase.Hash().String()
 
 	// final hash
