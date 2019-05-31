@@ -133,7 +133,7 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 		return fmt.Errorf("error reading %s: %+v", filePath, err)
 	}
 
-	if sam.Version != Version {
+	if sam.Version != version {
 		return fmt.Errorf("unknown version %+v in serialized addrmanager", sam.Version)
 	}
 	copy(addrManager.key[:], sam.Key[:])
@@ -187,7 +187,7 @@ func (addrManager *AddrManager) Stop() error {
 // addressHandler is the main handler for the address manager.  It must be run
 // as a goroutine.
 func (addrManager *AddrManager) addressHandler() {
-	dumpAddressTicker := time.NewTicker(DumpAddressInterval)
+	dumpAddressTicker := time.NewTicker(dumpAddressInterval)
 	defer dumpAddressTicker.Stop()
 out:
 	for {
