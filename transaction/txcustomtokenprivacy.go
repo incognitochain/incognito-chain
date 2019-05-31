@@ -291,7 +291,7 @@ func (customTokenTx *TxCustomTokenPrivacy) ValidateTxByItself(
 		return true, nil
 	}
 	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	constantTokenID.SetBytes(common.PRVCoinID[:])
 	if ok, err := customTokenTx.ValidateTransaction(hasPrivacyCoin, db, shardID, constantTokenID); !ok {
 		return false, err
 	}

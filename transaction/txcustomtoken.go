@@ -259,7 +259,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	shardID byte,
 ) (bool, error) {
 	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	constantTokenID.SetBytes(common.PRVCoinID[:])
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
 		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
 			return false, err

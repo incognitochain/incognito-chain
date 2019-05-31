@@ -32,7 +32,7 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 
 	// get list outputcoins tx
 	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	constantTokenID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(keyset, shardIDSender, constantTokenID)
 	if err != nil {
 		return nil, 0, NewRPCError(ErrGetOutputCoin, err)

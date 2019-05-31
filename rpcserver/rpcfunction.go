@@ -255,7 +255,7 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		tokenID.SetBytes(common.PRVCoinID[:])
 		outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
@@ -462,7 +462,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	constantTokenID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, constantTokenID)
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)

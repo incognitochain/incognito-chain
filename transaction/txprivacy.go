@@ -93,7 +93,7 @@ func (tx *Tx) Init(
 
 	if tokenID == nil {
 		tokenID = &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		tokenID.SetBytes(common.PRVCoinID[:])
 	}
 
 	// Calculate execution time
@@ -414,7 +414,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
-			tokenID.SetBytes(common.ConstantID[:])
+			tokenID.SetBytes(common.PRVCoinID[:])
 		}
 
 		sndOutputs := make([]*big.Int, len(tx.Proof.OutputCoins))
@@ -624,7 +624,7 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 
 func (tx *Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	unique, pk, amount := tx.GetUniqueReceiver()
-	return unique, pk, amount, &common.ConstantID
+	return unique, pk, amount, &common.PRVCoinID
 }
 
 func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
@@ -665,7 +665,7 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 ) error {
 
 	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	constantTokenID.SetBytes(common.PRVCoinID[:])
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardID)
@@ -905,7 +905,7 @@ func (tx *Tx) ValidateTxByItself(
 	shardID byte,
 ) (bool, error) {
 	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	constantTokenID.SetBytes(common.PRVCoinID[:])
 	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
 	if !ok {
 		return false, err
@@ -1069,7 +1069,7 @@ func (tx *Tx) InitTxSalary(
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		tokenID.SetBytes(common.PRVCoinID[:])
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
 		if err != nil {
 			return err
@@ -1121,7 +1121,7 @@ func (tx Tx) ValidateTxSalary(
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.ConstantID[:])
+	tokenID.SetBytes(common.PRVCoinID[:])
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
 		return false, err
 	}
