@@ -203,7 +203,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	}
 	// Verify parent hash exist or not
 	prevBlockHash := block.Header.PrevBlockHash
-	parentBlockData, err := blockchain.config.DataBase.FetchBlock(&prevBlockHash)
+	parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	if err != nil {
 		return NewBlockChainError(DBError, err)
 	}
@@ -260,7 +260,7 @@ func (blockchain *BlockChain) RevertShardState(shardID byte) error {
 	}
 
 	// DeleteIncomingCrossShard
-	blockchain.config.DataBase.DeleteBlock(currentBestStateBlk.Hash(), currentBestStateBlk.Header.Height, shardID)
+	blockchain.config.DataBase.DeleteBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height, shardID)
 	blockchain.BestState.Shard[shardID] = &shardBestState
 	if err := blockchain.StoreShardBestState(shardID); err != nil {
 		return err
