@@ -1,6 +1,6 @@
 package main
 
 const (
-	Version       = "1.0.0"
-	RpcServerPort = 9330
+	version       = "1.0.0"
+	rpcServerPort = 9330
 )
