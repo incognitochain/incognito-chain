@@ -16,7 +16,7 @@ type TokenWithAmount struct {
 }
 
 func (db *db) CountUpDepositedAmtByTokenID(
-	tokenID *common.Hash,
+	tokenID common.Hash,
 	amount uint64,
 ) error {
 	// don't need to have atomic operation here since instructions on beacon would be processed one by one, not in parallel
@@ -30,7 +30,7 @@ func (db *db) CountUpDepositedAmtByTokenID(
 	var newTokenWithAmount TokenWithAmount
 	if len(tokenWithAmtBytes) == 0 {
 		newTokenWithAmount = TokenWithAmount{
-			TokenID: tokenID,
+			TokenID: &tokenID,
 			Amount:  amount,
 		}
 	} else { // found existing amount info
@@ -81,7 +81,7 @@ func (db *db) GetBridgeTokensAmounts() ([][]byte, error) {
 }
 
 func (db *db) DeductAmtByTokenID(
-	tokenID *common.Hash,
+	tokenID common.Hash,
 	amount uint64,
 ) error {
 	// don't need to have atomic operation here since instructions on beacon would be processed one by one, not in parallel
@@ -123,7 +123,7 @@ func (db *db) DeductAmtByTokenID(
 }
 
 func (db *db) IsBridgeTokenExisted(
-	tokenID *common.Hash,
+	tokenID common.Hash,
 ) (bool, error) {
 	key := append(centralizedBridgePrefix, tokenID[:]...)
 	tokenWithAmtBytes, dbErr := db.lvdb.Get(key, nil)

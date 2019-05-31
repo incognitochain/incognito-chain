@@ -431,7 +431,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		}
 		blockchain.config.CrossShardPool[fromShard].UpdatePool()
 	}
-	blockchain.config.DataBase.DeleteBeaconBlock(*currentBestStateBlk.Hash(), currentBestStateBlk.Header.Height)
+	blockchain.config.DataBase.DeleteBeaconBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height)
 	blockchain.BestState.Beacon = &beaconBestState
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		return err
