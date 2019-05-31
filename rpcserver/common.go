@@ -185,11 +185,6 @@ func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]inter
 	}
 	voutsAmount := int64(0)
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	// get list custom token
-	//listCustomTokens, err := rpcServer.config.BlockChain.ListCustomToken()
-	//if err != nil {
-	//	return nil, nil, NewRPCError(ErrListCustomTokenNotFound, err)
-	//}
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
