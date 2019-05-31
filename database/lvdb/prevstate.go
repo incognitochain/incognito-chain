@@ -51,7 +51,7 @@ func (db *db) CleanBackup(isBeacon bool, shardID byte) error {
 	return nil
 }
 
-func (db *db) BackupCommitmentsOfPubkey(tokenID *common.Hash, shardID byte, pubkey []byte) error {
+func (db *db) BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte) error {
 	current := db.GetKey(string(commitmentsPrefix), tokenID)
 	current = append(current, shardID)
 
@@ -72,7 +72,7 @@ func (db *db) BackupCommitmentsOfPubkey(tokenID *common.Hash, shardID byte, pubk
 	}
 	return nil
 }
-func (db *db) RestoreCommitmentsOfPubkey(tokenID *common.Hash, shardID byte, pubkey []byte, commitments []byte) error {
+func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte, commitments []byte) error {
 	current := db.GetKey(string(commitmentsPrefix), tokenID)
 	current = append(current, shardID)
 
@@ -103,7 +103,7 @@ func (db *db) RestoreCommitmentsOfPubkey(tokenID *common.Hash, shardID byte, pub
 	return nil
 }
 
-func (db *db) BackupCommitments(tokenID *common.Hash, shardID byte) error {
+func (db *db) BackupCommitments(tokenID common.Hash, shardID byte) error {
 	current := db.GetKey(string(commitmentsPrefix), tokenID)
 	current = append(current, shardID)
 	key := getPrevPrefix(false, shardID)
@@ -134,7 +134,7 @@ func (db *db) BackupCommitments(tokenID *common.Hash, shardID byte) error {
 	return nil
 }
 
-func (db *db) DeleteCommitmentsIndex(tokenID *common.Hash, shardID byte) error {
+func (db *db) DeleteCommitmentsIndex(tokenID common.Hash, shardID byte) error {
 	current := db.GetKey(string(commitmentsPrefix), tokenID)
 	current = append(current, shardID)
 
@@ -163,7 +163,7 @@ func (db *db) DeleteCommitmentsIndex(tokenID *common.Hash, shardID byte) error {
 	return nil
 }
 
-func (db *db) RestoreCommitments(tokenID *common.Hash, shardID byte) error {
+func (db *db) RestoreCommitments(tokenID common.Hash, shardID byte) error {
 	current := db.GetKey(string(commitmentsPrefix), tokenID)
 	current = append(current, shardID)
 	prevkey := getPrevPrefix(false, shardID)
@@ -192,7 +192,7 @@ func (db *db) RestoreCommitments(tokenID *common.Hash, shardID byte) error {
 	return nil
 }
 
-func (db *db) BackupOutputCoin(tokenID *common.Hash, pubkey []byte, shardID byte) error {
+func (db *db) BackupOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error {
 	current := db.GetKey(string(outcoinsPrefix), tokenID)
 	current = append(current, shardID)
 	current = append(current, pubkey...)
@@ -213,7 +213,7 @@ func (db *db) BackupOutputCoin(tokenID *common.Hash, pubkey []byte, shardID byte
 	return nil
 }
 
-func (db *db) RestoreOutputCoin(tokenID *common.Hash, pubkey []byte, shardID byte) error {
+func (db *db) RestoreOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error {
 	current := db.GetKey(string(outcoinsPrefix), tokenID)
 	current = append(current, shardID)
 	current = append(current, pubkey...)
@@ -237,19 +237,19 @@ func (db *db) RestoreOutputCoin(tokenID *common.Hash, pubkey []byte, shardID byt
 	return nil
 }
 
-// func (db *db) BackupSNDerivators(tokenID *common.Hash, shardID byte) error {
+// func (db *db) BackupSNDerivators(tokenID common.Hash, shardID byte) error {
 // 	key := getPrevPrefix(false, shardID)
 
 // 	return nil
 // }
 
-// func (db *db) RestoreSNDerivators(tokenID *common.Hash, shardID byte) error {
+// func (db *db) RestoreSNDerivators(tokenID common.Hash, shardID byte) error {
 // 	key := getPrevPrefix(false, shardID)
 
 // 	return nil
 // }
 
-func (db *db) BackupSerialNumber(tokenID *common.Hash, shardID byte) error {
+func (db *db) BackupSerialNumber(tokenID common.Hash, shardID byte) error {
 	current := db.GetKey(string(serialNumbersPrefix), tokenID)
 	current = append(current, shardID)
 	res, err := db.lvdb.Get(current, nil)
@@ -267,7 +267,7 @@ func (db *db) BackupSerialNumber(tokenID *common.Hash, shardID byte) error {
 	return nil
 }
 
-func (db *db) RestoreSerialNumber(tokenID *common.Hash, shardID byte) error {
+func (db *db) RestoreSerialNumber(tokenID common.Hash, shardID byte) error {
 	current := db.GetKey(string(serialNumbersPrefix), tokenID)
 	current = append(current, shardID)
 	prevkey := getPrevPrefix(false, shardID)
@@ -282,7 +282,7 @@ func (db *db) RestoreSerialNumber(tokenID *common.Hash, shardID byte) error {
 	return nil
 }
 
-func (db *db) DeleteSerialNumber(tokenID *common.Hash, serialNumber []byte, shardID byte) error {
+func (db *db) DeleteSerialNumber(tokenID common.Hash, serialNumber []byte, shardID byte) error {
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 
@@ -300,7 +300,7 @@ func (db *db) DeleteSerialNumber(tokenID *common.Hash, serialNumber []byte, shar
 	return nil
 }
 
-func (db *db) DeleteTransactionIndex(txId *common.Hash) error {
+func (db *db) DeleteTransactionIndex(txId common.Hash) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	err := db.Delete([]byte(key))
 	if err != nil {
@@ -310,7 +310,7 @@ func (db *db) DeleteTransactionIndex(txId *common.Hash) error {
 
 }
 
-func (db *db) DeleteCustomToken(tokenID *common.Hash) error {
+func (db *db) DeleteCustomToken(tokenID common.Hash) error {
 	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
@@ -319,7 +319,7 @@ func (db *db) DeleteCustomToken(tokenID *common.Hash) error {
 	return nil
 }
 
-func (db *db) DeleteCustomTokenTx(tokenID *common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
+func (db *db) DeleteCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
 	key := db.GetKey(string(TokenPrefix), tokenID)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
@@ -335,7 +335,7 @@ func (db *db) DeleteCustomTokenTx(tokenID *common.Hash, txIndex int32, shardID b
 	return nil
 }
 
-func (db *db) DeletePrivacyCustomToken(tokenID *common.Hash) error {
+func (db *db) DeletePrivacyCustomToken(tokenID common.Hash) error {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
@@ -344,7 +344,7 @@ func (db *db) DeletePrivacyCustomToken(tokenID *common.Hash) error {
 	return nil
 }
 
-func (db *db) DeletePrivacyCustomTokenTx(tokenID *common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
+func (db *db) DeletePrivacyCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
 	key := db.GetKey(string(PrivacyTokenPrefix), tokenID)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
@@ -360,7 +360,7 @@ func (db *db) DeletePrivacyCustomTokenTx(tokenID *common.Hash, txIndex int32, sh
 	return nil
 }
 
-func (db *db) DeletePrivacyCustomTokenCrossShard(tokenID *common.Hash) error {
+func (db *db) DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error {
 	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
@@ -417,7 +417,7 @@ func (db *db) DeleteCommitteeByEpoch(blkEpoch uint64) error {
 	return nil
 }
 
-func (db *db) DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error {
+func (db *db) DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) error {
 	prefix := append([]byte{shardID}, shardBlkHash[:]...)
 	key := append(shardToBeaconKeyPrefix, prefix...)
 	if err := db.Delete(key); err != nil {
@@ -426,7 +426,7 @@ func (db *db) DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Has
 	return nil
 }
 
-func (db *db) DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error {
+func (db *db) DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error {
 	prefix := append([]byte{shardID}, append([]byte{crossShardID}, crossBlkHash[:]...)...)
 	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
 	key := append(crossShardKeyPrefix, prefix...)

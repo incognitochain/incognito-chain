@@ -376,7 +376,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	}
 	prevBlockHash := block.Header.PrevBlockHash
 	// Verify parent hash exist or not
-	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(&prevBlockHash)
+	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
 	if err != nil {
 		return NewBlockChainError(DBError, err)
 	}
@@ -420,7 +420,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 
 	for shardID, shardStates := range currentBestStateBlk.Body.ShardState {
 		for _, shardState := range shardStates {
-			blockchain.config.DataBase.DeleteAcceptedShardToBeacon(shardID, &shardState.Hash)
+			blockchain.config.DataBase.DeleteAcceptedShardToBeacon(shardID, shardState.Hash)
 		}
 	}
 
@@ -431,7 +431,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		}
 		blockchain.config.CrossShardPool[fromShard].UpdatePool()
 	}
-	blockchain.config.DataBase.DeleteBeaconBlock(currentBestStateBlk.Hash(), currentBestStateBlk.Header.Height)
+	blockchain.config.DataBase.DeleteBeaconBlock(*currentBestStateBlk.Hash(), currentBestStateBlk.Header.Height)
 	blockchain.BestState.Beacon = &beaconBestState
 	if err := blockchain.StoreBeaconBestState(); err != nil {
 		return err
