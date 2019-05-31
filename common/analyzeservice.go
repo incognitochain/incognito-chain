@@ -26,7 +26,7 @@ const (
 	TxValidateByItSelfInPoolType     = "TxValidateByItSelfInPoolType"
 	TxInOneBlock                     = "TxInOneBlock"
 	DuplicateTxs                     = "DuplicateTxs"
-
+	
 	CreateAndSaveTxViewPointFromBlock = "CreateAndSaveTxViewPointFromBlock"
 	
 	NumOfBlockInsertToChain         = "NumOfBlockInsertToChain"
@@ -36,7 +36,7 @@ const (
 const (
 	BeaconBlock = "BeaconBlock"
 	ShardBlock  = "ShardBlock"
-
+	
 	TxSizeMetric         = "txsize"
 	TxSizeWithTypeMetric = "txsizewithtype"
 	PoolSizeMetric       = "poolsize"
@@ -105,11 +105,11 @@ func sendTimeSeriesMetricDataInfluxDBV2(metricTag string, tagValue string, metri
 		log.Println("Create Request failed with err: ", err)
 		return err
 	}
-
+	
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
 	defer cancel()
 	req = req.WithContext(ctx)
-
+	
 	client := &http.Client{}
 	//res, err := client.Do(req)
 	_, err = client.Do(req)
@@ -130,13 +130,13 @@ func AnalyzeTimeSeriesShardBlockMetric(paymentAddress string, value float64) {
 }
 
 func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64) {
-
+	
 	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
 	databaseUrl := os.Getenv("GrafanaURL")
 	if databaseUrl == "" {
 		return
 	}
-
+	
 	nodeName := os.Getenv("NodeName")
 	if nodeName == "" {
 		nodeName = id
@@ -144,7 +144,7 @@ func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64
 	if nodeName == "" || len(value) == 0 || value[0] == 0 || metric == "" {
 		return
 	}
-
+	
 	dataBinary := ""
 	if len(value) == 1 {
 		dataBinary = fmt.Sprintf("%s,node=%s value=%f %d000000000", metric, nodeName, value[0], time.Now().Unix())
@@ -160,11 +160,11 @@ func sendTimeSeriesMetricDataInfluxDB(id string, metric string, value ...float64
 		log.Println("Create Request failed with err: ", err)
 		return
 	}
-
+	
 	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
 	defer cancel()
 	req = req.WithContext(ctx)
-
+	
 	client := &http.Client{}
 	//res, err := client.Do(req)
 	_, err = client.Do(req)
