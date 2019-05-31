@@ -17,7 +17,7 @@ func (blockchain *BlockChain) GetShardIDFromTx(txid string) (byte, error) {
 	var txHash = &common.Hash{}
 	(&common.Hash{}).Decode(txHash, txid)
 
-	blockHash, _, err := blockchain.config.DataBase.GetTransactionIndexById(txHash)
+	blockHash, _, err := blockchain.config.DataBase.GetTransactionIndexById(*txHash)
 	if err != nil {
 		return 0, NewBlockChainError(UnExpectedError, err)
 	}
@@ -33,7 +33,7 @@ func (blockchain *BlockChain) GetTxValue(txid string) (uint64, error) {
 	var txHash = &common.Hash{}
 	(&common.Hash{}).Decode(txHash, txid)
 
-	blockHash, index, err := blockchain.config.DataBase.GetTransactionIndexById(txHash)
+	blockHash, index, err := blockchain.config.DataBase.GetTransactionIndexById(*txHash)
 	if err != nil {
 		return 0, NewBlockChainError(UnExpectedError, err)
 	}

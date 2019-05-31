@@ -192,12 +192,12 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
 				fmt.Println("INIT Tx Custom Token Privacy/ newHashInitToken", newHashInitToken)
 
-				existed := db.PrivacyCustomTokenIDExisted(&newHashInitToken)
+				existed := db.PrivacyCustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network"))
 				}
-				existed = db.PrivacyCustomTokenIDCrossShardExisted(&newHashInitToken)
+				existed = db.PrivacyCustomTokenIDCrossShardExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed(crossshard)", newHashInitToken)
 					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network via cross shard"))
@@ -213,8 +213,8 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-			existed := db.PrivacyCustomTokenIDExisted(propertyID)
-			existedCross := db.PrivacyCustomTokenIDCrossShardExisted(propertyID)
+			existed := db.PrivacyCustomTokenIDExisted(*propertyID)
+			existedCross := db.PrivacyCustomTokenIDCrossShardExisted(*propertyID)
 			if !existed && !existedCross {
 				return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 			}

@@ -117,7 +117,7 @@ type BlockchainRetriever interface {
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
-	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
+	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
 	GetCurrentBeaconBlockHeight(byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
 	GetDatabase() database.DatabaseInterface
