@@ -60,21 +60,21 @@ phase:
 			}
 		case <-protocol.cTimeout:
 			if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
-				if protocol.RoundData.Layer == common.BEACON_ROLE {
-					var shToBcPoolStates []map[byte]uint64
-					for _, readyMsg := range readyMsgs {
-						shToBcPoolStates = append(shToBcPoolStates, readyMsg.PoolState)
-					}
-					shToBcPoolStates = append(shToBcPoolStates, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight())
-					protocol.RoundData.ClosestPoolState = GetClosestPoolState(shToBcPoolStates)
-				} else {
-					var crossShardsPoolStates []map[byte]uint64
-					for _, readyMsg := range readyMsgs {
-						crossShardsPoolStates = append(crossShardsPoolStates, readyMsg.PoolState)
-					}
-					crossShardsPoolStates = append(crossShardsPoolStates, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight())
-					protocol.RoundData.ClosestPoolState = GetClosestPoolState(crossShardsPoolStates)
-				}
+				// if protocol.RoundData.Layer == common.BEACON_ROLE {
+				// 	var shToBcPoolStates []map[byte]uint64
+				// 	for _, readyMsg := range readyMsgs {
+				// 		shToBcPoolStates = append(shToBcPoolStates, readyMsg.PoolState)
+				// 	}
+				// 	shToBcPoolStates = append(shToBcPoolStates, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight())
+				// 	protocol.RoundData.ClosestPoolState = GetClosestPoolState(shToBcPoolStates)
+				// } else {
+				// 	var crossShardsPoolStates []map[byte]uint64
+				// 	for _, readyMsg := range readyMsgs {
+				// 		crossShardsPoolStates = append(crossShardsPoolStates, readyMsg.PoolState)
+				// 	}
+				// 	crossShardsPoolStates = append(crossShardsPoolStates, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight())
+				// 	protocol.RoundData.ClosestPoolState = GetClosestPoolState(crossShardsPoolStates)
+				// }
 
 				fmt.Println("BFT: Propose block", time.Since(protocol.startTime).Seconds())
 
