@@ -48,7 +48,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	for _, in := range usableInputCoins {
 		usableCommitment := in.CoinDetails.CoinCommitment.Compress()
 		listUsableCommitments = append(listUsableCommitments, usableCommitment)
-		index, err := db.GetCommitmentIndex(tokenID, usableCommitment, shardID)
+		index, err := db.GetCommitmentIndex(*tokenID, usableCommitment, shardID)
 		if err != nil {
 			Logger.log.Error(err)
 			return
@@ -59,7 +59,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * randNum) - len(listUsableCommitments)
 	fmt.Printf("cpRandNum: %d\n", cpRandNum)
-	lenCommitment, err1 := db.GetCommitmentLength(tokenID, shardID)
+	lenCommitment, err1 := db.GetCommitmentLength(*tokenID, shardID)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return
@@ -75,11 +75,11 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	} else {
 		for i := 0; i < cpRandNum; i++ {
 			for {
-				lenCommitment, _ = db.GetCommitmentLength(tokenID, shardID)
+				lenCommitment, _ = db.GetCommitmentLength(*tokenID, shardID)
 				index, _ := common.RandBigIntN(lenCommitment)
-				ok, err := db.HasCommitmentIndex(tokenID, index.Uint64(), shardID)
+				ok, err := db.HasCommitmentIndex(*tokenID, index.Uint64(), shardID)
 				if ok && err == nil {
-					temp, _ := db.GetCommitmentByIndex(tokenID, index.Uint64(), shardID)
+					temp, _ := db.GetCommitmentByIndex(*tokenID, index.Uint64(), shardID)
 					if index2, err := common.SliceBytesExists(listUsableCommitments, temp); index2 == -1 && err == nil {
 						// random commitment not in commitments of usableinputcoin
 						commitmentIndexs = append(commitmentIndexs, index.Uint64())
@@ -107,7 +107,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
 func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte, db database.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(tokenID, privacy.AddPaddingBigInt(snd, privacy.BigIntSize), shardID)
+	ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(snd, privacy.BigIntSize), shardID)
 	if err != nil {
 		return false, err
 	}
