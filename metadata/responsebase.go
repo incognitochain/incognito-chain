@@ -10,16 +10,6 @@ type ResponseBase struct {
 	RequestedTxID common.Hash
 }
 
-func NewResponseBase(requestedTxID common.Hash, metaType int) *ResponseBase {
-	metadataBase := MetadataBase{
-		Type: metaType,
-	}
-	return &ResponseBase{
-		RequestedTxID: requestedTxID,
-		MetadataBase:  metadataBase,
-	}
-}
-
 func (bbRes *ResponseBase) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
