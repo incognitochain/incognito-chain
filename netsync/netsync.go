@@ -19,8 +19,8 @@ import (
 const (
 	txCache                 = 10000
 	workers                 = 5
-	MsgLiveTime         = 3 * time.Second  // in second
-	MsgsCleanupInterval = 10 * time.Second //in second
+	MsgLiveTime         = 30 * time.Second  // in second
+	MsgsCleanupInterval = 60 * time.Second //in second
 )
 
 type NetSync struct {
