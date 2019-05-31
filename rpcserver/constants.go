@@ -96,12 +96,6 @@ const (
 	SetTxFee                           = "settxfee"
 	GetRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
 
-	// multisig for board spending
-	CreateSignatureOnCustomTokenTx       = "createsignatureoncustomtokentx"
-	GetConstantCirculating               = "getconstantcirculating"
-	CreateAndSendTxWithMultiSigsReg      = "createandsendtxwithmultisigsreg"
-	CreateAndSendTxWithMultiSigsSpending = "createandsendtxwithmultisigsspending"
-
 	// walletsta
 	GetPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
 	DefragmentAccount              = "defragmentaccount"

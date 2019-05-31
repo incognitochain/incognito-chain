@@ -23,7 +23,7 @@ type AddrManager struct {
 
 	cQuit chan struct{}
 
-	addrIndex map[string]*peer.Peer // address key to KnownAddress for all addrs.
+	addrIndex map[string]*peer.Peer
 }
 
 type serializedKnownAddress struct {
@@ -91,8 +91,6 @@ func (addrManager *AddrManager) savePeers() error {
 // loadPeers loads the known address from the saved file.  If empty, missing, or
 // malformed file, just don't load anything and start fresh
 func (addrManager *AddrManager) loadPeers() {
-	//addrManager.mtx.Lock()
-	//defer addrManager.mtx.Unlock()
 	err := addrManager.deserializePeers(addrManager.peersFile)
 	if err != nil {
 		Logger.log.Errorf("Failed to parse file %s: %+v", addrManager.peersFile, err)
@@ -108,23 +106,16 @@ func (addrManager *AddrManager) loadPeers() {
 
 // NumAddresses returns the number of addresses known to the address manager.
 func (addrManager *AddrManager) numAddresses() int {
-	//return a.nTried + a.nNew
 	return len(addrManager.addrIndex)
 }
 
 // reset resets the address manager by reinitialising the random source
 // and allocating fresh empty bucket storage.
 func (addrManager *AddrManager) reset() {
-	//addrManager.mtx.Lock()
-	//defer addrManager.mtx.Unlock()
-
 	addrManager.addrIndex = make(map[string]*peer.Peer)
 }
 
 func (addrManager *AddrManager) deserializePeers(filePath string) error {
-	//addrManager.mtx.Lock()
-	//defer addrManager.mtx.Unlock()
-
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		return nil
