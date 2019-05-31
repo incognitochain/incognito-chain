@@ -15,8 +15,6 @@ type DatabaseInterface interface {
 
 	// Block
 	StoreShardBlock(interface{}, common.Hash, byte) error
-	StoreShardBlockHeader(interface{}, common.Hash, byte) error
-
 	FetchBlock(common.Hash) ([]byte, error)
 	HasBlock(common.Hash) (bool, error)
 	DeleteBlock(common.Hash, uint64, byte) error
@@ -31,7 +29,6 @@ type DatabaseInterface interface {
 
 	// Beacon
 	StoreBeaconBlock(interface{}, common.Hash) error
-	StoreBeaconBlockHeader(interface{}, common.Hash) error
 	FetchBeaconBlock(common.Hash) ([]byte, error)
 	HasBeaconBlock(common.Hash) (bool, error)
 	DeleteBeaconBlock(common.Hash, uint64) error

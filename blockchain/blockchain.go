@@ -409,14 +409,6 @@ func (blockchain *BlockChain) StoreShardBlock(block *ShardBlock) error {
 }
 
 /*
-	Store Only Block Header into database
-*/
-func (blockchain *BlockChain) StoreShardBlockHeader(block *ShardBlock) error {
-	//Logger.log.Infof("Store Block Header, block header %+v, block hash %+v, chain id %+v",block.Header, block.blockHash, block.Header.shardID)
-	return blockchain.config.DataBase.StoreShardBlockHeader(block.Header, block.Header.Hash(), block.Header.ShardID)
-}
-
-/*
 Save index(height) of block by block hash
 and
 Save block hash by index(height) of block
