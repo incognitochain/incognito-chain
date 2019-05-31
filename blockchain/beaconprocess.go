@@ -152,10 +152,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//=========Store cross shard state ==================================
 
 	if block.Body.ShardState != nil {
+
 		lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 		for fromShard, shardBlocks := range block.Body.ShardState {
-
-			go func(fromShard byte, shardBlocks []ShardState) {
+			func(fromShard byte, shardBlocks []ShardState) {
 				GetBestStateBeacon().lockMu.Lock()
 				defer GetBestStateBeacon().lockMu.Unlock()
 				for _, shardBlock := range shardBlocks {
@@ -168,7 +168,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 						}
 						lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
 						waitHeight := shardBlock.Height
-						//fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
+						fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
 						blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
 						//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
 						//dont care overwrite this value
