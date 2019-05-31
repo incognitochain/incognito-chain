@@ -203,7 +203,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	}
 	// Verify parent hash exist or not
 	prevBlockHash := block.Header.PrevBlockHash
-	parentBlockData, err := blockchain.config.DataBase.FetchBlock(&prevBlockHash)
+	parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	if err != nil {
 		return NewBlockChainError(DBError, err)
 	}
@@ -246,7 +246,7 @@ func (blockchain *BlockChain) RevertShardState(shardID byte) error {
 	}
 
 	for _, tx := range currentBestState.BestBlock.Body.Transactions {
-		if err := blockchain.config.DataBase.DeleteTransactionIndex(tx.Hash()); err != nil {
+		if err := blockchain.config.DataBase.DeleteTransactionIndex(*tx.Hash()); err != nil {
 			return err
 		}
 	}
@@ -260,7 +260,7 @@ func (blockchain *BlockChain) RevertShardState(shardID byte) error {
 	}
 
 	// DeleteIncomingCrossShard
-	blockchain.config.DataBase.DeleteBlock(currentBestStateBlk.Hash(), currentBestStateBlk.Header.Height, shardID)
+	blockchain.config.DataBase.DeleteBlock(*currentBestStateBlk.Hash(), currentBestStateBlk.Header.Height, shardID)
 	blockchain.BestState.Shard[shardID] = &shardBestState
 	if err := blockchain.StoreShardBestState(shardID); err != nil {
 		return err
@@ -351,7 +351,7 @@ func (blockchain *BlockChain) createBackupFromCrossTxViewPoint(block *ShardBlock
 }
 
 func (blockchain *BlockChain) backupSerialNumbersFromTxViewPoint(view TxViewPoint) error {
-	err := blockchain.config.DataBase.BackupSerialNumber(view.tokenID, view.shardID)
+	err := blockchain.config.DataBase.BackupSerialNumber(*view.tokenID, view.shardID)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (blockchain *BlockChain) backupCommitmentsFromTxViewPoint(view TxViewPoint)
 	}
 	sort.Strings(keys)
 
-	err := blockchain.config.DataBase.BackupCommitments(view.tokenID, view.shardID)
+	err := blockchain.config.DataBase.BackupCommitments(*view.tokenID, view.shardID)
 	if err != nil {
 		return err
 	}
@@ -381,7 +381,7 @@ func (blockchain *BlockChain) backupCommitmentsFromTxViewPoint(view TxViewPoint)
 		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
 		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if pubkeyShardID == view.shardID {
-			err = blockchain.config.DataBase.BackupCommitmentsOfPubkey(view.tokenID, view.shardID, pubkeyBytes)
+			err = blockchain.config.DataBase.BackupCommitmentsOfPubkey(*view.tokenID, view.shardID, pubkeyBytes)
 			if err != nil {
 				return err
 			}
@@ -405,7 +405,7 @@ func (blockchain *BlockChain) backupCommitmentsFromTxViewPoint(view TxViewPoint)
 		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
 		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if pubkeyShardID == view.shardID {
-			err = blockchain.config.DataBase.BackupOutputCoin(view.tokenID, pubkeyBytes, pubkeyShardID)
+			err = blockchain.config.DataBase.BackupOutputCoin(*view.tokenID, pubkeyBytes, pubkeyShardID)
 			if err != nil {
 				return err
 			}
@@ -427,20 +427,20 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				err = blockchain.config.DataBase.DeleteCustomToken(&customTokenTx.TxTokenData.PropertyID)
+				err = blockchain.config.DataBase.DeleteCustomToken(customTokenTx.TxTokenData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		case transaction.CustomTokenCrossShard:
 			{
-				err = blockchain.config.DataBase.DeleteCustomToken(&customTokenTx.TxTokenData.PropertyID)
+				err = blockchain.config.DataBase.DeleteCustomToken(customTokenTx.TxTokenData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		err = blockchain.config.DataBase.DeleteCustomTokenTx(&customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
+		err = blockchain.config.DataBase.DeleteCustomTokenTx(customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
 		if err != nil {
 			return err
 		}
@@ -453,13 +453,13 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 		switch privacyCustomTokenTx.TxTokenPrivacyData.Type {
 		case transaction.CustomTokenInit:
 			{
-				err = blockchain.config.DataBase.DeletePrivacyCustomToken(&privacyCustomTokenTx.TxTokenPrivacyData.PropertyID)
+				err = blockchain.config.DataBase.DeletePrivacyCustomToken(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		err = blockchain.config.DataBase.DeletePrivacyCustomTokenTx(&privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
+		err = blockchain.config.DataBase.DeletePrivacyCustomTokenTx(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
 		if err != nil {
 			return err
 		}
@@ -494,7 +494,7 @@ func (blockchain *BlockChain) restoreFromCrossTxViewPoint(block *ShardBlock) err
 
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		tokenID := privacyCustomTokenSubView.tokenID
-		if err := blockchain.config.DataBase.DeletePrivacyCustomTokenCrossShard(tokenID); err != nil {
+		if err := blockchain.config.DataBase.DeletePrivacyCustomTokenCrossShard(*tokenID); err != nil {
 			return err
 		}
 		err = blockchain.restoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView)
@@ -512,12 +512,12 @@ func (blockchain *BlockChain) restoreFromCrossTxViewPoint(block *ShardBlock) err
 
 func (blockchain *BlockChain) restoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
 	for _, item1 := range view.listSerialNumbers {
-		err := blockchain.config.DataBase.DeleteSerialNumber(view.tokenID, item1, view.shardID)
+		err := blockchain.config.DataBase.DeleteSerialNumber(*view.tokenID, item1, view.shardID)
 		if err != nil {
 			return err
 		}
 	}
-	err := blockchain.config.DataBase.RestoreSerialNumber(view.tokenID, view.shardID)
+	err := blockchain.config.DataBase.RestoreSerialNumber(*view.tokenID, view.shardID)
 	if err != nil {
 		return err
 	}
@@ -533,12 +533,12 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 	}
 	sort.Strings(keys)
 
-	err := blockchain.config.DataBase.DeleteCommitmentsIndex(view.tokenID, view.shardID)
+	err := blockchain.config.DataBase.DeleteCommitmentsIndex(*view.tokenID, view.shardID)
 	if err != nil {
 		return err
 	}
 
-	err = blockchain.config.DataBase.RestoreCommitments(view.tokenID, view.shardID)
+	err = blockchain.config.DataBase.RestoreCommitments(*view.tokenID, view.shardID)
 	if err != nil {
 		return err
 	}
@@ -554,7 +554,7 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if pubkeyShardID == view.shardID {
 			for _, com := range item1 {
-				err = blockchain.config.DataBase.RestoreCommitmentsOfPubkey(view.tokenID, view.shardID, pubkeyBytes, com)
+				err = blockchain.config.DataBase.RestoreCommitmentsOfPubkey(*view.tokenID, view.shardID, pubkeyBytes, com)
 				if err != nil {
 					return err
 				}
@@ -579,7 +579,7 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
 		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if pubkeyShardID == view.shardID {
-			err = blockchain.config.DataBase.RestoreOutputCoin(view.tokenID, pubkeyBytes, pubkeyShardID)
+			err = blockchain.config.DataBase.RestoreOutputCoin(*view.tokenID, pubkeyBytes, pubkeyShardID)
 			if err != nil {
 				return err
 			}
