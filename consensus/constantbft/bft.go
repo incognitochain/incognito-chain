@@ -21,14 +21,14 @@ type BFTProtocol struct {
 	pendingBlock interface{}
 
 	RoundData struct {
-		MinBeaconHeight  uint64
-		BestStateHash    common.Hash
-		IsProposer       bool
-		Layer            string
-		ShardID          byte
-		Committee        []string
-		ClosestPoolState map[byte]uint64
-		Round            int
+		MinBeaconHeight uint64
+		BestStateHash   common.Hash
+		IsProposer      bool
+		Layer           string
+		ShardID         byte
+		Committee       []string
+		// ClosestPoolState map[byte]uint64
+		Round int
 	}
 	multiSigScheme *multiSigScheme
 
@@ -96,7 +96,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	//fmt.Println("[db] CreateBlockMsg")
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
-		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState)
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestShardToBeaconPoolState())
 		go common.AnalyzeTimeSeriesBeaconBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
 		if err != nil {
 			Logger.log.Error(err)
@@ -127,7 +127,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		}
 	} else {
 
-		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.RoundData.ClosestPoolState, protocol.RoundData.MinBeaconHeight)
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestCrossShardPoolState(), protocol.RoundData.MinBeaconHeight)
 		go common.AnalyzeTimeSeriesShardBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
 		if err != nil {
 			Logger.log.Error(err)
