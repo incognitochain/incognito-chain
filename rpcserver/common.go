@@ -135,7 +135,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	/********* END Fetch all component to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacy, meta, nil, nil)
+	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacyCoin, meta, nil, nil)
 	if err1 != nil {
 		return nil, err1
 	}

@@ -80,7 +80,7 @@ func (tx *Tx) Init(
 ) *TransactionError {
 
 	Logger.log.Debugf("CREATING TX........\n")
-	tx.Version = TxVersion
+	tx.Version = txVersion
 	var err error
 
 	if len(inputCoins) > 255 {
@@ -700,8 +700,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	txN := tx
 	//check version
-	if txN.Version > TxVersion {
-		return false, errors.New("wrong tx version")
+	if txN.Version > txVersion {
+		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", txN.Version, txVersion))
 	}
 	// check LockTime before now
 	if int64(txN.LockTime) > time.Now().Unix() {
@@ -1042,7 +1042,7 @@ func (tx *Tx) InitTxSalary(
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 ) error {
-	tx.Version = TxVersion
+	tx.Version = txVersion
 	tx.Type = common.TxRewardType
 
 	if tx.LockTime == 0 {
