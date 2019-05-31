@@ -1,1 +1,1 @@
-# Client controller on command line for constant-chain
+# Client controller on command line for incognito-chain
