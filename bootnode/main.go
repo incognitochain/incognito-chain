@@ -12,7 +12,7 @@ var (
 
 func main() {
 	// Show version at startup.
-	log.Printf("Version %s\n", Version)
+	log.Printf("Version %s\n", version)
 
 	// load config
 	tcfg, err := loadConfig()
