@@ -35,9 +35,9 @@ func (rpcServer RpcServer) handleListAccounts(params interface{}, closeChan <-ch
 	for accountName, account := range accounts {
 		lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		constantTokenID := &common.Hash{}
-		constantTokenID.SetBytes(common.PRVCoinID[:])
-		outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, constantTokenID)
+		prvCoinID := &common.Hash{}
+		prvCoinID.SetBytes(common.PRVCoinID[:])
+		outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -202,9 +202,9 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 	// get balance for accountName in wallet
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
-	outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender, prvCoinID)
 	log.Println(err)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -239,9 +239,9 @@ func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, 
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
-	outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender, prvCoinID)
 	Logger.log.Infof("OutCoins: %+v", outcoints)
 	Logger.log.Infof("shardIDSender: %+v", shardIDSender)
 	Logger.log.Infof("accountWithPaymentAddress.KeySet: %+v", accountWithPaymentAddress.KeySet)
@@ -298,14 +298,14 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
 	}
 
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
 	if accountName == "*" {
 		// get balance for all accounts in wallet
 		for _, account := range rpcServer.config.Wallet.MasterAccount.Child {
 			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, constantTokenID)
+			outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -319,7 +319,7 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 				// get balance for accountName in wallet
 				lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 				shardIDSender := common.GetShardIDFromLastByte(lastByte)
-				outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, constantTokenID)
+				outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
 				if err != nil {
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
@@ -382,9 +382,9 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 			// get balance for accountName in wallet
 			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			constantTokenID := &common.Hash{}
-			constantTokenID.SetBytes(common.PRVCoinID[:])
-			outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, constantTokenID)
+			prvCoinID := &common.Hash{}
+			prvCoinID.SetBytes(common.PRVCoinID[:])
+			outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
@@ -591,9 +591,9 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
-	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}

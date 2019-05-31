@@ -664,11 +664,11 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	db database.DatabaseInterface,
 ) error {
 
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardID)
+		ok, err := db.HasSerialNumber(prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
 		}
@@ -904,9 +904,9 @@ func (tx *Tx) ValidateTxByItself(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 ) (bool, error) {
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
-	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID)
 	if !ok {
 		return false, err
 	}
