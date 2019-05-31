@@ -25,7 +25,7 @@ type ShardToBeaconPool struct {
 var shardToBeaconPool *ShardToBeaconPool = nil
 
 func InitShardToBeaconPool() {
-	GetShardToBeaconPool().SetShardState(blockchain.GetBestStateBeacon().BestShardHeight)
+	GetShardToBeaconPool().SetShardState(blockchain.GetBestStateBeacon().GetBestShardHeight())
 }
 
 // get singleton instance of ShardToBeacon pool
