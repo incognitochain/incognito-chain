@@ -461,9 +461,9 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
-	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}

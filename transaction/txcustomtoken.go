@@ -258,10 +258,10 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 ) (bool, error) {
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.PRVCoinID[:])
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
-		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID); !ok {
 			return false, err
 		}
 		if len(customTokenTx.TxTokenData.Vouts) != 1 {
@@ -274,7 +274,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	}
 	//Process CustomToken CrossShard
 	if customTokenTx.TxTokenData.Type == CustomTokenCrossShard {
-		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID); !ok {
 			return false, err
 		}
 		if len(customTokenTx.listUtxo) != 0 {
@@ -291,7 +291,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	if !ok {
 		return false, errors.New("getListUTXOFromTxCustomToken")
 	}
-	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID); !ok {
 		return false, err
 	}
 	if customTokenTx.Metadata != nil {

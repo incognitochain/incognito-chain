@@ -620,8 +620,8 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		// get balance for accountName in wallet
 		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		constantTokenID := &common.Hash{}
-		constantTokenID.SetBytes(common.PRVCoinID[:])
+		prvCoinID := &common.Hash{}
+		prvCoinID.SetBytes(common.PRVCoinID[:])
 		outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
 			Logger.log.Infof("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
@@ -651,8 +651,8 @@ func (rpcServer RpcServer) handleGetListPrivacyCustomTokenBalance(params interfa
 		// get balance for accountName in wallet
 		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		constantTokenID := &common.Hash{}
-		constantTokenID.SetBytes(common.PRVCoinID[:])
+		prvCoinID := &common.Hash{}
+		prvCoinID.SetBytes(common.PRVCoinID[:])
 		outcoints, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
