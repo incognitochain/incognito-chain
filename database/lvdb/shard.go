@@ -45,39 +45,6 @@ func (db *db) StoreShardBlock(v interface{}, hash common.Hash, shardID byte) err
 }
 
 /*
-	Store new shard block header, this function should work with light mode as instead of store whole block
-	Store 2 new record per new one block if success
-	Record 1: Use to query all block in one shard
-	- Key: s{shardID}bh{blockHash}
-	- Value: bh{blockHash}
-	Record 2: Use to query a block by hash
-	- Key: bh{blockHash}
-	- Value: {blockHeader}
-*/
-func (db *db) StoreShardBlockHeader(v interface{}, hash common.Hash, shardID byte) error {
-	var (
-		// PubKey should look like this {bh-blockhash}:block
-		keyBlockHash = db.GetKey(string(blockHeaderKeyPrefix), hash)
-		// PubKey should look like this s10{bh-[blockhash]}:{bh-[blockhash]}
-		keyShardBlockHeader = append(append(shardIDPrefix, shardID), keyBlockHash...)
-	)
-	if ok, _ := db.HasValue(keyShardBlockHeader); ok {
-		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %s already exists", hash.String()))
-	}
-	val, err := json.Marshal(v)
-	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}
-	if err := db.Put(keyShardBlockHeader, keyBlockHash); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
-	}
-	if err := db.Put(keyBlockHash, val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
-	}
-	return nil
-}
-
-/*
 	Query a block existence by hash. Return true if block exist otherwise false
 */
 func (db *db) HasBlock(hash common.Hash) (bool, error) {

@@ -84,29 +84,6 @@ func (db *db) StoreBeaconBlock(v interface{}, hash common.Hash) error {
 	return nil
 }
 
-// for lightmode only
-func (db *db) StoreBeaconBlockHeader(v interface{}, hash common.Hash) error {
-	var (
-		key = append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
-
-		keyB = append(blockKeyPrefix, hash[:]...)
-	)
-	if ok, _ := db.HasValue(key); ok {
-		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %s already exists", hash.String()))
-	}
-	val, err := json.Marshal(v)
-	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}
-	if err := db.Put(key, keyB); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
-	}
-	if err := db.Put(keyB, val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
-	}
-	return nil
-}
-
 func (db *db) HasBeaconBlock(hash common.Hash) (bool, error) {
 	key := append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
 	_, err := db.HasValue(key)
