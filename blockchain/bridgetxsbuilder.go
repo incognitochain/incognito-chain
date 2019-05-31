@@ -15,29 +15,31 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 	issuingReq := tx.GetMetadata().(*metadata.IssuingRequest)
 
 	issuingTokenID := issuingReq.TokenID
+	issuingTokenName := issuingReq.TokenName
 	issuingRes := metadata.NewIssuingResponse(
 		*tx.Hash(),
 		metadata.IssuingResponseMeta,
 	)
 
-	txTokenVout := transaction.TxTokenVout{
-		Value:          issuingReq.DepositedAmount,
+	receiver := &privacy.PaymentInfo{
+		Amount:         issuingReq.DepositedAmount,
 		PaymentAddress: issuingReq.ReceiverAddress,
 	}
 	var propertyID [common.HashSize]byte
 	copy(propertyID[:], issuingTokenID[:])
 	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenParamTx{
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
 		PropertyID:     propID.String(),
-		PropertyName:   propID.String(),
-		PropertySymbol: propID.String(),
+		PropertyName:   issuingTokenName,
+		PropertySymbol: issuingTokenName,
 		Amount:         issuingReq.DepositedAmount,
 		TokenTxType:    transaction.CustomTokenInit,
-		Receiver:       []transaction.TxTokenVout{txTokenVout},
+		Receiver:       []*privacy.PaymentInfo{receiver},
+		TokenInput:     []*privacy.InputCoin{},
 		Mintable:       true,
 	}
 
-	resTx := &transaction.TxCustomToken{}
+	resTx := &transaction.TxCustomTokenPrivacy{}
 	initErr := resTx.Init(
 		producerPrivateKey,
 		[]*privacy.PaymentInfo{},
@@ -46,6 +48,7 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 		tokenParams,
 		blockgen.chain.config.DataBase,
 		issuingRes,
+		false,
 		false,
 		shardID,
 	)

@@ -8,7 +8,6 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) StoreCrossShardNextHeight(fromShard, toShard byte, curHeight uint64, nextHeight uint64) error {
@@ -256,23 +255,6 @@ func (db *db) GetBeaconBlockHashByIndex(idx uint64) (*common.Hash, error) {
 	return h, nil
 }
 
-func (db *db) FetchBeaconBlockChain() ([]*common.Hash, error) {
-	keys := []*common.Hash{}
-	prefix := append(beaconPrefix, blockKeyPrefix...)
-	// prefix: bea-b-...
-	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
-	for iter.Next() {
-		h := new(common.Hash)
-		_ = h.SetBytes(iter.Key()[len(prefix):])
-		keys = append(keys, h)
-	}
-	iter.Release()
-	if err := iter.Error(); err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
-	}
-	return keys, nil
-}
-
 //StoreCrossShard store which crossShardBlk from which shard has been include in which beacon block height
 func (db *db) StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error {
 	buf := make([]byte, 8)
@@ -329,20 +311,6 @@ func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
-}
-
-func (db *db) FetchCommitteeByHeight(blkHeight uint64) ([]byte, error) {
-	key := append(beaconPrefix, shardIDPrefix...)
-	key = append(key, committeePrefix...)
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkHeight)
-	key = append(key, buf[:]...)
-
-	b, err := db.lvdb.Get(key, nil)
-	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
-	}
-	return b, nil
 }
 
 func (db *db) StoreCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
