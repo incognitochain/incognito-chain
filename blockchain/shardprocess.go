@@ -211,6 +211,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	blockchain.config.ShardPool[block.Header.ShardID].RemoveBlock(block.Header.Height)
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, blockHash)
+	shardIdForMetric := strconv.Itoa(int(block.Header.ShardID))
+	go common.AnalyzeTimeSeriesBlockPerSecondTimesMetric(shardIdForMetric, float64(1), block.Header.Height)
 	return nil
 }
 
