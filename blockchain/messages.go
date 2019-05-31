@@ -206,16 +206,18 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
 		return
 	}
 
-	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
-	for fromShardID, height := range expectedHeight {
-		// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
-		blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, toShardID, "")
-	}
-
-	if err != nil {
-		if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
-			Logger.log.Error(err)
-			return
+	if blockchain.IsReady(true, block.ToShardID) {
+		expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
+		for fromShardID, height := range expectedHeight {
+			// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
+			blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, toShardID, "")
+		}
+		if err != nil {
+			if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
+				Logger.log.Error(err)
+				return
+			}
 		}
 	}
+
 }
