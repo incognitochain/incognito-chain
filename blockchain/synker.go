@@ -674,7 +674,6 @@ func (synker *synker) GetCurrentSyncShards() []byte {
 	return currentSyncShards
 }
 
-// var lasttime = time.Now()
 var currentInsert = struct {
 	Beacon sync.Mutex
 	Shards map[byte]*sync.Mutex
@@ -683,16 +682,10 @@ var currentInsert = struct {
 }
 
 func (synker *synker) InsertBlockFromPool() {
-	// // fmt.Println("InsertBlockFromPool")
-
-	// if time.Since(lasttime) >= 30*time.Millisecond {
-	// 	lasttime = time.Now()
-	// } else {
-	// 	return
-	// }
 
 	go synker.InsertBeaconBlockFromPool()
 
+	synker.Status.Lock()
 	for shardID := range synker.Status.Shards {
 		if _, ok := currentInsert.Shards[shardID]; !ok {
 			currentInsert.Shards[shardID] = &sync.Mutex{}
@@ -700,8 +693,8 @@ func (synker *synker) InsertBlockFromPool() {
 		go func(shardID byte) {
 			synker.InsertShardBlockFromPool(shardID)
 		}(shardID)
-
 	}
+	synker.Status.Unlock()
 }
 
 func (synker *synker) InsertBeaconBlockFromPool() {
@@ -729,4 +722,20 @@ func (synker *synker) InsertShardBlockFromPool(shardID byte) {
 			break
 		}
 	}
+}
+
+func (synker *synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
+	result := make(map[byte]uint64)
+	for shardID, height := range synker.States.ClosestState.ShardToBeaconPool {
+		result[shardID] = height
+	}
+	return result
+}
+
+func (synker *synker) GetClosestCrossShardPoolState() map[byte]uint64 {
+	result := make(map[byte]uint64)
+	for shardID, height := range synker.States.ClosestState.ClosestShardsState {
+		result[shardID] = height
+	}
+	return result
 }
