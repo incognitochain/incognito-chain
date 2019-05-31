@@ -10,7 +10,6 @@ import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -38,25 +37,6 @@ func NewContractingRequest(
 	}
 	contractingReq.MetadataBase = metadataBase
 	return contractingReq, nil
-}
-
-func NewContractingRequestFromMap(data map[string]interface{}) (Metadata, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(data["BurnerAddress"].(string))
-	if err != nil {
-		return nil, errors.Errorf("BurnerAddress incorrect")
-	}
-
-	burnedAmount := uint64(data["BurnedAmount"].(float64))
-	tokenID, err := common.NewHashFromStr(data["TokenID"].(string))
-	if err != nil {
-		return nil, errors.Errorf("TokenID incorrect")
-	}
-	return NewContractingRequest(
-		keyWallet.KeySet.PaymentAddress,
-		burnedAmount,
-		*tokenID,
-		ContractingRequestMeta,
-	)
 }
 
 func (cReq *ContractingRequest) ValidateTxWithBlockChain(
