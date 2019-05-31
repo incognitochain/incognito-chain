@@ -86,7 +86,9 @@ func (rpcServer RpcServer) handleGetAddressesByAccount(params interface{}, close
 }
 
 /*
-getaccountaddress RPC returns the current coin address for receiving payments to this account. If the account doesn’t exist, it creates both the account and a new address for receiving payment. Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
+getaccountaddress RPC returns the current coin address for receiving payments to this account.
+If the account doesn’t exist, it creates both the account and a new address for receiving payment.
+Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
 Parameter #1—an account name
 Result—a constant address
 */
