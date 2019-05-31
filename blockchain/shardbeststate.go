@@ -351,7 +351,7 @@ func (blockchain *BlockChain) createBackupFromCrossTxViewPoint(block *ShardBlock
 }
 
 func (blockchain *BlockChain) backupSerialNumbersFromTxViewPoint(view TxViewPoint) error {
-	err := blockchain.config.DataBase.BackupSerialNumber(*view.tokenID, view.shardID)
+	err := blockchain.config.DataBase.BackupSerialNumbersLen(*view.tokenID, view.shardID)
 	if err != nil {
 		return err
 	}
@@ -366,11 +366,6 @@ func (blockchain *BlockChain) backupCommitmentsFromTxViewPoint(view TxViewPoint)
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-
-	err := blockchain.config.DataBase.BackupCommitments(*view.tokenID, view.shardID)
-	if err != nil {
-		return err
-	}
 
 	for _, k := range keys {
 		pubkey := k
@@ -511,13 +506,7 @@ func (blockchain *BlockChain) restoreFromCrossTxViewPoint(block *ShardBlock) err
 }
 
 func (blockchain *BlockChain) restoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
-	for _, item1 := range view.listSerialNumbers {
-		err := blockchain.config.DataBase.DeleteSerialNumber(*view.tokenID, item1, view.shardID)
-		if err != nil {
-			return err
-		}
-	}
-	err := blockchain.config.DataBase.RestoreSerialNumber(*view.tokenID, view.shardID)
+	err := blockchain.config.DataBase.RestoreSerialNumber(*view.tokenID, view.shardID, view.listSerialNumbers)
 	if err != nil {
 		return err
 	}
@@ -533,16 +522,6 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 	}
 	sort.Strings(keys)
 
-	err := blockchain.config.DataBase.DeleteCommitmentsIndex(*view.tokenID, view.shardID)
-	if err != nil {
-		return err
-	}
-
-	err = blockchain.config.DataBase.RestoreCommitments(*view.tokenID, view.shardID)
-	if err != nil {
-		return err
-	}
-
 	for _, k := range keys {
 		pubkey := k
 		item1 := view.mapCommitments[k]
@@ -553,11 +532,9 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
 		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
 		if pubkeyShardID == view.shardID {
-			for _, com := range item1 {
-				err = blockchain.config.DataBase.RestoreCommitmentsOfPubkey(*view.tokenID, view.shardID, pubkeyBytes, com)
-				if err != nil {
-					return err
-				}
+			err = blockchain.config.DataBase.RestoreCommitmentsOfPubkey(*view.tokenID, view.shardID, pubkeyBytes, item1)
+			if err != nil {
+				return err
 			}
 		}
 	}
