@@ -578,8 +578,8 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("estimateFeeCoinPerKb is invalid"))
 	}
 	estimateFeeCoinPerKb := int64(estimateFeeCoinPerKbtemp)
-	// param #4: hasPrivacy flag: 1 or -1
-	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	// param #4: hasPrivacyCoin flag: 1 or -1
+	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
 
 	// param #1: private key of sender
@@ -612,7 +612,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	}
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
 	// check real fee(nano constant) per tx
-	realFee, _, _ := rpcServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, nil, nil)
+	realFee, _, _ := rpcServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
@@ -630,16 +630,15 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	// START create tx
 	// missing flag for privacy
 	// false by default
-	//fmt.Printf("#inputCoins: %d\n", len(inputCoins))
 	tx := transaction.Tx{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
 		paymentInfos,
 		inputCoins,
 		realFee,
-		hasPrivacy,
+		hasPrivacyCoin,
 		*rpcServer.config.Database,
-		nil, // use for constant coin -> nil is valid
+		nil, // use for prv coin -> nil is valid
 		meta,
 	)
 	// END create tx

@@ -75,7 +75,7 @@ func (tx *Tx) Init(
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
-	tokenID *common.Hash, // default is nil -> use for constant coin
+	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 ) *TransactionError {
 
