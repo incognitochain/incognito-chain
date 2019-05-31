@@ -166,12 +166,12 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	//Update Cross shard pool: remove invalid block
 	go func() {
 		blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.BestState.Shard[shardID].BestCrossShard)
-		expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
-		for fromShardID, height := range expectedHeight {
-			if height != 0 {
-				blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
-			}
-		}
+		//expectedHeight, _ := blockchain.config.CrossShardPool[shardID].UpdatePool()
+		//for fromShardID, height := range expectedHeight {
+		//	if height != 0 {
+		//		blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, shardID, "")
+		//	}
+		//}
 	}()
 
 	go func() {
