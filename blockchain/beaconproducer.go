@@ -53,7 +53,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	blkTmplGenerator.chain.chainLock.Lock()
 	// fmt.Printf("Beacon Produce: BeaconBestState Original %+v \n", blkTmplGenerator.chain.BestState.Beacon)
 	// produce new block with current beststate
-	tempMarshal, err := json.Marshal(*blkTmplGenerator.chain.BestState.Beacon)
+	tempMarshal, err := blkTmplGenerator.chain.BestState.Beacon.MarshalJSON()
 	if err != nil {
 		blkTmplGenerator.chain.chainLock.Unlock()
 		return nil, NewBlockChainError(MashallJsonError, err)

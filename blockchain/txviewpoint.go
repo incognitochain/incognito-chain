@@ -81,7 +81,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	// Append into accepttedNullifiers if this serial number haven't exist yet
 	for _, item := range proof.InputCoins {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(tokenID, serialNum, shardID)
+		ok, err := db.HasSerialNumber(*tokenID, serialNum, shardID)
 		if err != nil {
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
@@ -98,7 +98,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 		commitment := item.CoinDetails.CoinCommitment.Compress()
 		pubkey := item.CoinDetails.PublicKey.Compress()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-		ok, err := db.HasCommitment(tokenID, commitment, shardID)
+		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
 		if err != nil {
 			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
@@ -119,7 +119,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 
 		// get data for Snderivators
 		snD := item.CoinDetails.SNDerivator
-		ok, err = db.HasSNDerivator(tokenID, privacy.AddPaddingBigInt(snD, privacy.BigIntSize), shardID)
+		ok, err = db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(snD, privacy.BigIntSize), shardID)
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
@@ -343,7 +343,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 		commitment := item.CoinDetails.CoinCommitment.Compress()
 		pubkey := item.CoinDetails.PublicKey.Compress()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-		ok, err := db.HasCommitment(tokenID, commitment, shardID)
+		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
 		if err != nil {
 			return acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
@@ -364,7 +364,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 
 		// get data for Snderivators
 		snD := item.CoinDetails.SNDerivator
-		ok, err = db.HasSNDerivator(tokenID, privacy.AddPaddingBigInt(snD, privacy.BigIntSize), shardID)
+		ok, err = db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(snD, privacy.BigIntSize), shardID)
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
