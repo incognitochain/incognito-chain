@@ -250,11 +250,13 @@ func (synker *synker) UpdateState() {
 								RCS.ShardToBeaconBlks[shardID] = make(map[libp2p.ID][]uint64)
 							}
 							RCS.ShardToBeaconBlks[shardID][peerID] = blkHeights
-							if synker.States.ClosestState.ShardToBeaconPool[shardID] == synker.States.PoolsState.ShardToBeaconPool[shardID][len(synker.States.PoolsState.ShardToBeaconPool[shardID])-1] {
-								synker.States.ClosestState.ShardToBeaconPool[shardID] = blkHeights[len(blkHeights)-1]
-							} else {
-								if blkHeights[len(blkHeights)-1] < synker.States.ClosestState.ShardToBeaconPool[shardID] {
+							if len(synker.States.PoolsState.ShardToBeaconPool[shardID]) > 0 {
+								if synker.States.ClosestState.ShardToBeaconPool[shardID] == synker.States.PoolsState.ShardToBeaconPool[shardID][len(synker.States.PoolsState.ShardToBeaconPool[shardID])-1] {
 									synker.States.ClosestState.ShardToBeaconPool[shardID] = blkHeights[len(blkHeights)-1]
+								} else {
+									if blkHeights[len(blkHeights)-1] < synker.States.ClosestState.ShardToBeaconPool[shardID] {
+									synker.States.ClosestState.ShardToBeaconPool[shardID] = blkHeights[len(blkHeights)-1]
+									}
 								}
 							}
 						}
@@ -281,11 +283,13 @@ func (synker *synker) UpdateState() {
 								RCS.CrossShardBlks[shardID] = make(map[libp2p.ID][]uint64)
 							}
 							RCS.CrossShardBlks[shardID][peerID] = blkHeights
-							if synker.States.ClosestState.CrossShardPool[shardID] == synker.States.PoolsState.CrossShardPool[shardID][len(synker.States.PoolsState.CrossShardPool[shardID])-1] {
-								synker.States.ClosestState.CrossShardPool[shardID] = blkHeights[len(blkHeights)-1]
-							} else {
-								if blkHeights[len(blkHeights)-1] < synker.States.ClosestState.CrossShardPool[shardID] {
+							if len(synker.States.PoolsState.CrossShardPool[shardID]) > 0 {
+								if synker.States.ClosestState.CrossShardPool[shardID] == synker.States.PoolsState.CrossShardPool[shardID][len(synker.States.PoolsState.CrossShardPool[shardID])-1] {
 									synker.States.ClosestState.CrossShardPool[shardID] = blkHeights[len(blkHeights)-1]
+								} else {
+									if blkHeights[len(blkHeights)-1] < synker.States.ClosestState.CrossShardPool[shardID] {
+										synker.States.ClosestState.CrossShardPool[shardID] = blkHeights[len(blkHeights)-1]
+									}
 								}
 							}
 						}
@@ -734,7 +738,7 @@ func (synker *synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
 
 func (synker *synker) GetClosestCrossShardPoolState() map[byte]uint64 {
 	result := make(map[byte]uint64)
-	for shardID, height := range synker.States.ClosestState.ClosestShardsState {
+	for shardID, height := range synker.States.ClosestState.CrossShardPool {
 		result[shardID] = height
 	}
 	return result
