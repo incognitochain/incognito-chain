@@ -14,7 +14,7 @@ const (
 )
 
 type MessageBFTReady struct {
-	PoolState     map[byte]uint64
+	// PoolState     map[byte]uint64
 	BestStateHash common.Hash
 	Round         int
 	Pubkey        string
@@ -54,7 +54,7 @@ func (msg *MessageBFTReady) SetSenderID(senderID peer.ID) error {
 
 func (msg *MessageBFTReady) SignMsg(keySet *cashec.KeySet) error {
 	dataBytes := []byte{}
-	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.PoolState))...)
+	// dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.PoolState))...)
 	dataBytes = append(dataBytes, msg.BestStateHash.GetBytes()...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Round))...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
@@ -66,7 +66,7 @@ func (msg *MessageBFTReady) SignMsg(keySet *cashec.KeySet) error {
 
 func (msg *MessageBFTReady) VerifyMsgSanity() error {
 	dataBytes := []byte{}
-	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.PoolState))...)
+	// dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.PoolState))...)
 	dataBytes = append(dataBytes, msg.BestStateHash.GetBytes()...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Round))...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
