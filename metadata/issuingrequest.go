@@ -78,7 +78,7 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 		return false, errors.New("the issuance request must be called by centralized website")
 	}
 
-	bridgeTokenExisted, err := db.IsBridgeTokenExisted(&iReq.TokenID)
+	bridgeTokenExisted, err := db.IsBridgeTokenExisted(iReq.TokenID)
 	if err != nil {
 		return false, err
 	}

@@ -19,15 +19,15 @@ type DatabaseInterface interface {
 	HasBlock(common.Hash) (bool, error)
 	DeleteBlock(common.Hash, uint64, byte) error
 
-	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash *common.Hash) error
-	HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error
-	GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) (uint64, error)
-	DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash *common.Hash) error
+	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash common.Hash) error
+	HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error
+	GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) (uint64, error)
+	DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error
 
-	StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash *common.Hash) error
-	HasAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error
-	GetAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) (uint64, error)
-	DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash *common.Hash) error
+	StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash common.Hash) error
+	HasAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) error
+	GetAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) (uint64, error)
+	DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) error
 
 	// Beacon
 	StoreBeaconBlock(interface{}, common.Hash) error
@@ -121,10 +121,10 @@ type DatabaseInterface interface {
 	PrivacyCustomTokenIDCrossShardExisted(tokenID common.Hash) bool
 
 	// Centralized bridge
-	CountUpDepositedAmtByTokenID(*common.Hash, uint64) error
-	DeductAmtByTokenID(*common.Hash, uint64) error
+	CountUpDepositedAmtByTokenID(common.Hash, uint64) error
+	DeductAmtByTokenID(common.Hash, uint64) error
 	GetBridgeTokensAmounts() ([][]byte, error)
-	IsBridgeTokenExisted(*common.Hash) (bool, error)
+	IsBridgeTokenExisted(common.Hash) (bool, error)
 
 	Close() error
 }
