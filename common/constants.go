@@ -35,14 +35,13 @@ const (
 const (
 	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock        = 1000
-	MinBlockWaitTime     = 2               // second
 	MinBeaconBlkInterval = 3 * time.Second //second
 	MinShardBlkInterval  = 5 * time.Second //second
 )
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	ConstantID = Hash{4} // To send Constant in custom token
+	PRVCoinID = Hash{4} // To send Constant in custom token
 )
 
 // centralized website's pubkey

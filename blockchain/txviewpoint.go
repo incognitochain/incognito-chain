@@ -141,7 +141,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make(map[string][][]byte)
 	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	constantTokenID.SetBytes(common.PRVCoinID[:])
 	for indexTx, tx := range transactions {
 		switch tx.GetType() {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
@@ -311,7 +311,7 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
 		crossTxTokenData:            make(map[int32]*transaction.TxTokenData),
 	}
-	result.tokenID.SetBytes(common.ConstantID[:])
+	result.tokenID.SetBytes(common.PRVCoinID[:])
 	return result
 }
 
@@ -379,7 +379,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedSnD := make(map[string][][]byte)
 	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	constantTokenID.SetBytes(common.PRVCoinID[:])
 	//@NOTICE: this function just work for Normal Transaction
 	for _, crossTransactions := range allShardCrossTransactions {
 		for _, crossTransaction := range crossTransactions {
