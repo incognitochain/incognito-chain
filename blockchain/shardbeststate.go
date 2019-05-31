@@ -260,7 +260,7 @@ func (blockchain *BlockChain) RevertShardState(shardID byte) error {
 	}
 
 	// DeleteIncomingCrossShard
-	blockchain.config.DataBase.DeleteBlock(*currentBestStateBlk.Hash(), currentBestStateBlk.Header.Height, shardID)
+	blockchain.config.DataBase.DeleteBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height, shardID)
 	blockchain.BestState.Shard[shardID] = &shardBestState
 	if err := blockchain.StoreShardBestState(shardID); err != nil {
 		return err
