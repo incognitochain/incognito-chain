@@ -131,6 +131,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 			blockchain.config.DataBase.StoreAcceptedShardToBeacon(shardID, block.Header.Height, &shardState.Hash)
 		}
 	}
+
 	// if committee of this epoch isn't store yet then store it
 	// @NOTICE: Change to height
 	Logger.log.Infof("Store Committee in Height %+v \n", block.Header.Height)
@@ -152,36 +153,33 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//=========Store cross shard state ==================================
 
 	if block.Body.ShardState != nil {
-
+		GetBestStateBeacon().lockMu.Lock()
 		lastCrossShardState := GetBestStateBeacon().LastCrossShardState
 		for fromShard, shardBlocks := range block.Body.ShardState {
-			func(fromShard byte, shardBlocks []ShardState) {
-				GetBestStateBeacon().lockMu.Lock()
-				defer GetBestStateBeacon().lockMu.Unlock()
-				for _, shardBlock := range shardBlocks {
-					for _, toShard := range shardBlock.CrossShard {
-						if fromShard == toShard {
-							continue
-						}
-						if lastCrossShardState[fromShard] == nil {
-							lastCrossShardState[fromShard] = make(map[byte]uint64)
-						}
-						lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
-						waitHeight := shardBlock.Height
-						fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
-						blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
-						//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
-						//dont care overwrite this value
-						blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, waitHeight, 0)
-						if lastCrossShardState[fromShard] == nil {
-							lastCrossShardState[fromShard] = make(map[byte]uint64)
-						}
-						lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
+			for _, shardBlock := range shardBlocks {
+				for _, toShard := range shardBlock.CrossShard {
+					if fromShard == toShard {
+						continue
 					}
+					if lastCrossShardState[fromShard] == nil {
+						lastCrossShardState[fromShard] = make(map[byte]uint64)
+					}
+					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
+					waitHeight := shardBlock.Height
+					fmt.Println("StoreCrossShardNextHeight", fromShard, toShard, lastHeight, waitHeight)
+					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, lastHeight, waitHeight)
+					//beacon process shard_to_beacon in order so cross shard next height also will be saved in order
+					//dont care overwrite this value
+					blockchain.config.DataBase.StoreCrossShardNextHeight(fromShard, toShard, waitHeight, 0)
+					if lastCrossShardState[fromShard] == nil {
+						lastCrossShardState[fromShard] = make(map[byte]uint64)
+					}
+					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
 				}
-				blockchain.config.CrossShardPool[fromShard].UpdatePool()
-			}(fromShard, shardBlocks)
+			}
+			blockchain.config.CrossShardPool[fromShard].UpdatePool()
 		}
+		GetBestStateBeacon().lockMu.Unlock()
 	}
 
 	// ************ Store block at last
