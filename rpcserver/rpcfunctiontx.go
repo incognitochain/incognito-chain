@@ -27,7 +27,7 @@ import (
 //Parameter #1—the minimum number of confirmations an output must have
 //Parameter #2—the maximum number of confirmations an output may have
 //Parameter #3—the list paymentaddress-readonlykey which be used to view list outputcoin
-//Parameter #4 - optional - token id - default constant coin
+//Parameter #4 - optional - token id - default prv coin
 func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleListOutputCoins params: %+v", params)
 	result := jsonresult.ListOutputCoins{
@@ -57,7 +57,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 	//#3: list key component
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
 
-	//#4: optional token type - default constant coin
+	//#4: optional token type - default prv coin
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.PRVCoinID[:])
 	if len(paramsArray) > 3 {
@@ -929,7 +929,7 @@ func (rpcServer RpcServer) handleHasSerialNumbers(params interface{}, closeChan 
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
 	}
 
-	// #3: optional - token ID - default is constant coin
+	// #3: optional - token ID - default is prv coin
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.PRVCoinID[:]) // default is constant
 	if len(arrayParams) > 2 {
@@ -990,7 +990,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, errors.New("snDerivatorStr is invalid"))
 	}
 
-	// #3: optional - token ID - default is constant coin
+	// #3: optional - token ID - default is prv coin
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.PRVCoinID[:]) // default is constant
 	if len(arrayParams) > 2 {
