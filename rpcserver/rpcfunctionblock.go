@@ -356,6 +356,7 @@ func (rpcServer RpcServer) handleGetBlockChainInfo(params interface{}, closeChan
 		Hash:             beaconBestState.BestBlock.Hash().String(),
 		BlockProducer:    beaconBestState.BestBlock.Header.ProducerAddress.String(),
 		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
+		Epoch:            beaconBestState.Epoch,
 	}
 	Logger.log.Infof("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
