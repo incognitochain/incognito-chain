@@ -613,6 +613,7 @@ func (ef *FeeEstimator) Save() FeeEstimatorState {
 	binary.Write(w, binary.BigEndian, &ef.minRegisteredBlocks)
 	binary.Write(w, binary.BigEndian, &ef.lastKnownHeight)
 	binary.Write(w, binary.BigEndian, &ef.numBlocksRegistered)
+	binary.Write(w, binary.BigEndian, &ef.limitFee)
 
 	// Put all the observed transactions in a sorted list.
 	var txCount uint32
@@ -679,6 +680,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	binary.Read(r, binary.BigEndian, &ef.minRegisteredBlocks)
 	binary.Read(r, binary.BigEndian, &ef.lastKnownHeight)
 	binary.Read(r, binary.BigEndian, &ef.numBlocksRegistered)
+	binary.Read(r, binary.BigEndian, &ef.limitFee)
 
 	// Read transactions.
 	var numObserved uint32
