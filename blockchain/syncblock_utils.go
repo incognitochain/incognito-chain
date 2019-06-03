@@ -32,14 +32,14 @@ func getBlkNeedToGetByHeight(prefix string, fromHeight uint64, toHeight uint64, 
 					if latestBatchEnd+1 == blkHeight {
 						blkBatchsNeedToGet[latestBatchBegin] = blkHeight
 					} else {
-						blkBatchsNeedToGet[blkHeight] = blkHeight
 						latestBatchBegin = blkHeight
 					}
 				}
 			} else {
-				blkBatchsNeedToGet[blkHeight] = blkHeight
 				latestBatchBegin = blkHeight
 			}
+		} else {
+			latestBatchBegin = blkHeight
 		}
 	}
 	return blkBatchsNeedToGet
