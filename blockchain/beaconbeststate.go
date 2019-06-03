@@ -3,10 +3,16 @@ package blockchain
 import (
 	"encoding/binary"
 	"encoding/json"
-	"github.com/constant-money/constant-chain/common"
+	"errors"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
+
+	"github.com/constant-money/constant-chain/common"
+
+	"github.com/constant-money/constant-chain/cashec"
+	"github.com/constant-money/constant-chain/common/base58"
 )
 
 // BestState houses information about the current best block and other info
@@ -342,12 +348,107 @@ func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) 
 	return common.EmptyString, 0
 }
 
-//This only happen if user is a beacon committee member.
-func (blockchain *BlockChain) RevertBeaconState() {
+func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *BeaconBlock) error {
+	prevBST, err := blockchain.config.DataBase.FetchPrevBestState(true, 0)
+	if err != nil {
+		return err
+	}
+	beaconBestState := BestStateBeacon{}
+	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
+		return err
+	}
 
+	blkHash := block.Header.Hash()
+	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
+	err = cashec.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
+	if err != nil {
+		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
+	}
+	//verify producer
+	producerPosition := (beaconBestState.BeaconProposerIdx + block.Header.Round) % len(beaconBestState.BeaconCommittee)
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	if strings.Compare(tempProducer, producerPk) != 0 {
+		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	}
+	//verify version
+	if block.Header.Version != VERSION {
+		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+	}
+	prevBlockHash := block.Header.PrevBlockHash
+	// Verify parent hash exist or not
+	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
+	if err != nil {
+		return NewBlockChainError(DBError, err)
+	}
+	parentBlock := NewBeaconBlock()
+	json.Unmarshal(parentBlockBytes, &parentBlock)
+	// Verify block height with parent block
+	if parentBlock.Header.Height+1 != block.Header.Height {
+		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	}
+
+	return nil
 }
 
-func (blockchain *BlockChain) SaveCurrentBeaconState(block *BeaconBlock) error {
+//This only happen if user is a beacon committee member.
+func (blockchain *BlockChain) RevertBeaconState() error {
+	//Steps:
+	// 1. Restore current beststate to previous beststate
+	// 2. Set beacon/shardtobeacon pool state
+	// 3. Delete newly inserted block
+	// 4. Delete data store by block
+	blockchain.chainLock.Lock()
+	defer blockchain.chainLock.Unlock()
+	currentBestState := blockchain.BestState.Beacon
+	currentBestStateBlk := currentBestState.BestBlock
 
+	prevBST, err := blockchain.config.DataBase.FetchPrevBestState(true, 0)
+	if err != nil {
+		return err
+	}
+	beaconBestState := BestStateBeacon{}
+	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
+		return err
+	}
+
+	blockchain.config.BeaconPool.SetBeaconState(beaconBestState.BeaconHeight)
+	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
+
+	if err := blockchain.config.DataBase.DeleteCommitteeByEpoch(currentBestStateBlk.Header.Height); err != nil {
+		return err
+	}
+
+	for shardID, shardStates := range currentBestStateBlk.Body.ShardState {
+		for _, shardState := range shardStates {
+			blockchain.config.DataBase.DeleteAcceptedShardToBeacon(shardID, shardState.Hash)
+		}
+	}
+
+	lastCrossShardState := beaconBestState.LastCrossShardState
+	for fromShard, toShards := range lastCrossShardState {
+		for toShard, height := range toShards {
+			blockchain.config.DataBase.RestoreCrossShardNextHeights(fromShard, toShard, height)
+		}
+		blockchain.config.CrossShardPool[fromShard].UpdatePool()
+	}
+	blockchain.config.DataBase.DeleteBeaconBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height)
+	blockchain.BestState.Beacon = &beaconBestState
+	if err := blockchain.StoreBeaconBestState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error {
+	//Steps:
+	// 1. Backup beststate
+	tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
+
+	if err := blockchain.config.DataBase.StorePrevBestState(tempMarshal, true, 0); err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
 	return nil
 }

@@ -46,64 +46,60 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 			}
 		}
 	}
-	blockchain.syncStatus.Lock()
-	for shardID := range blockchain.syncStatus.Shards {
+	blockchain.Synker.Status.Lock()
+	for shardID := range blockchain.Synker.Status.Shards {
 		if shardState, ok := (*shard)[shardID]; ok {
 			if shardState.Height > blockchain.BestState.Shard[shardID].ShardHeight {
 				pState.Shard[shardID] = &shardState
 			}
 		}
 	}
-	blockchain.syncStatus.Unlock()
+	blockchain.Synker.Status.Unlock()
 
-	blockchain.syncStatus.PeersStateLock.Lock()
-	blockchain.syncStatus.PeersState[pState.Peer] = pState
-	blockchain.syncStatus.PeersStateLock.Unlock()
+	blockchain.Synker.States.Lock()
+	blockchain.Synker.States.PeersState[pState.Peer] = pState
+	blockchain.Synker.States.Unlock()
 }
 
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	fmt.Println("Shard block received from shard A", newBlk.Header.ShardID, newBlk.Header.Height)
-	if _, ok := blockchain.syncStatus.Shards[newBlk.Header.ShardID]; ok {
+	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
 		fmt.Println("Shard block received from shard B", newBlk.Header.ShardID, newBlk.Header.Height)
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
-			blkHash := newBlk.Header.Hash()
-			err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
-			if err != nil {
-				Logger.log.Error(err)
-				return
-			}
-
 			if blockchain.config.UserKeySet != nil {
+				// if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
+				// 	if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
+				// 		return
+				// 	}
+				// 	blockchain.RevertShardState(newBlk.Header.ShardID)
+				// }
 				userRole := currentShardBestState.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 				fmt.Println("Shard block received 1", userRole)
 
 				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 					fmt.Println("Shard block received 2", currentShardBestState.ShardHeight, newBlk.Header.Height)
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
-						fmt.Println("Shard block received 3", blockchain.ConsensusOngoing, blockchain.IsReady(true, newBlk.Header.ShardID))
-						if blockchain.IsReady(true, newBlk.Header.ShardID) == false {
+						fmt.Println("Shard block received 3", blockchain.ConsensusOngoing, blockchain.Synker.IsLatest(true, newBlk.Header.ShardID))
+						if blockchain.Synker.IsLatest(true, newBlk.Header.ShardID) == false {
 							Logger.log.Info("Insert New Shard Block to pool", newBlk.Header.Height)
-							err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+							err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 							if err != nil {
 								Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
 							}
 						} else if !blockchain.ConsensusOngoing {
 							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
-							err = blockchain.InsertShardBlock(newBlk, false)
+							err := blockchain.InsertShardBlock(newBlk, false)
 							if err != nil {
 								Logger.log.Error(err)
 							}
 						}
 						return
 					}
-					if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
-
-					}
 				}
 			}
 
-			err = blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
+			err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 			if err != nil {
 				Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
 			}
@@ -112,9 +108,10 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 }
 
 func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
-	if blockchain.syncStatus.Beacon {
+	if blockchain.Synker.Status.Beacon {
 		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
-		if blockchain.BestState.Beacon.BeaconHeight < newBlk.Header.Height {
+		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
+			// currentBeaconBestState := blockchain.BestState.Beacon
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
@@ -122,15 +119,24 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				Logger.log.Error(err)
 				return
 			} else {
-				if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 && blockchain.config.UserKeySet != nil {
-					if !blockchain.ConsensusOngoing {
-						userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
-						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-							fmt.Println("Beacon block insert", newBlk.Header.Height)
-							err = blockchain.InsertBeaconBlock(newBlk, false)
-							if err != nil {
-								Logger.log.Error(err)
-								return
+				if blockchain.config.UserKeySet != nil {
+					// if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
+					// 	if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
+					// 		return
+					// 	}
+					// 	blockchain.RevertBeaconState()
+					// }
+
+					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+						if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
+							if !blockchain.ConsensusOngoing {
+								fmt.Println("Beacon block insert", newBlk.Header.Height)
+								err = blockchain.InsertBeaconBlock(newBlk, false)
+								if err != nil {
+									Logger.log.Error(err)
+									return
+								}
 							}
 						}
 					}
@@ -155,7 +161,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 		return
 	}
 
-	if blockchain.IsReady(false, 0) {
+	if blockchain.Synker.IsLatest(false, 0) {
 
 		fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
 		blkHash := block.Header.Hash()
@@ -184,7 +190,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 		}
 		if from != 0 && to != 0 {
 			fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
-			blockchain.SyncBlkShardToBeacon(block.Header.ShardID, false, false, false, nil, nil, from, to, "")
+			blockchain.Synker.SyncBlkShardToBeacon(block.Header.ShardID, false, false, false, nil, nil, from, to, "")
 		}
 	}
 }
@@ -200,11 +206,11 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
 		return
 	}
 
-	if blockchain.IsReady(true, block.ToShardID) {
+	if blockchain.Synker.IsLatest(true, block.ToShardID) {
 		expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
 		for fromShardID, height := range expectedHeight {
 			// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
-			blockchain.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, toShardID, "")
+			blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, toShardID, "")
 		}
 		if err != nil {
 			if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {

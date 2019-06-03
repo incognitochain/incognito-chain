@@ -4,9 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/databasemp"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/transaction"
 	"log"
 	"net"
 	"os"
@@ -17,6 +14,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/transaction"
 
 	"github.com/constant-money/constant-chain/addrmanager"
 	"github.com/constant-money/constant-chain/blockchain"
@@ -451,7 +452,6 @@ func (serverObj *Server) Stop() error {
 	}
 
 	serverObj.consensusEngine.Stop()
-	serverObj.blockChain.StopSync()
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
 	return nil
@@ -530,7 +530,7 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
-	go serverObj.blockChain.StartSyncBlk()
+	go serverObj.blockChain.Synker.Start()
 
 	if cfg.NodeMode != common.NODEMODE_RELAY {
 		err := serverObj.consensusEngine.Start()
@@ -609,19 +609,19 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 	var month int
 	var result string
 	formatedNow := now.Format(common.DateInputFormat)
-	res := strings.Split(formatedNow,"-")
+	res := strings.Split(formatedNow, "-")
 	year, _ = strconv.Atoi(res[0])
 	if res[1] == "12" {
 		month = 1
 		year += 1
 	} else {
-		month,_ = strconv.Atoi(res[1])
+		month, _ = strconv.Atoi(res[1])
 		month += 1
 	}
 	if month >= 10 {
-		result = strconv.Itoa(year)+"-"+strconv.Itoa(month)+"-"+ common.FirstDateOfMonth
+		result = strconv.Itoa(year) + "-" + strconv.Itoa(month) + "-" + common.FirstDateOfMonth
 	} else {
-		result = strconv.Itoa(year)+"-"+"0"+strconv.Itoa(month)+"-"+ common.FirstDateOfMonth
+		result = strconv.Itoa(year) + "-" + "0" + strconv.Itoa(month) + "-" + common.FirstDateOfMonth
 	}
 	Logger.log.Warn("\n*********************************************************************************\n" +
 		"* Detected a Force Updating Time for this source code from https://github.com/constant-money/constant-chain at " + result + " *" +
@@ -1375,7 +1375,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	for _, shardID := range serverObj.blockChain.GetCurrentSyncShards() {
+	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
 			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
 			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,

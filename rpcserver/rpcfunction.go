@@ -301,7 +301,7 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 	hash, _ := common.Hash{}.NewHashFromStr(hashParams)
 
 	// Check block
-	_, _, err := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
+	_, _, err := rpcServer.config.BlockChain.GetShardBlockByHash(*hash)
 	if err != nil {
 		isBlock = false
 	} else {
@@ -313,7 +313,7 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 		Logger.log.Infof("handleCheckHashValue result: %+v", result)
 		return result, nil
 	}
-	_, _, _, _, err1 := rpcServer.config.BlockChain.GetTransactionByHash(hash)
+	_, _, _, _, err1 := rpcServer.config.BlockChain.GetTransactionByHash(*hash)
 	if err1 != nil {
 		isTransaction = false
 	} else {
