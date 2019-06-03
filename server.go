@@ -1216,6 +1216,20 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 	return serverObj.PushMessageToAll(msg)
 }
 
+func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool, peerID libp2p.ID) error {
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetBlockBeacon).BlkHeights = heights
+	msg.(*wire.MessageGetBlockBeacon).BySpecificHeight = true
+	msg.(*wire.MessageGetBlockBeacon).FromPool = getFromPool
+	if peerID != "" {
+		return serverObj.PushMessageToPeer(msg, peerID)
+	}
+	return serverObj.PushMessageToAll(msg)
+}
+
 func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
 	if err != nil {
@@ -1238,6 +1252,22 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, from)
 	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, to)
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, shardID)
+	}
+	return serverObj.PushMessageToPeer(msg, peerID)
+
+}
+
+func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetBlockShard).BlkHeights = heights
+	msg.(*wire.MessageGetBlockShard).BySpecificHeight = true
+	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, shardID)
 	}
