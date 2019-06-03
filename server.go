@@ -212,7 +212,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					Logger.log.Debug("Init NewFeeEstimator")
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
-						mempool.DefaultEstimateFeeMinRegisteredBlocks)
+						mempool.DefaultEstimateFeeMinRegisteredBlocks,
+						cfg.LimitFee)
 				} else {
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
