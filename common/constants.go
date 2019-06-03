@@ -35,16 +35,13 @@ const (
 const (
 	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock        = 1000
-	MinTxsInBlock        = 10                   // minium txs for block to get immediate process (meaning no wait time)
-	MinBlockWaitTime     = 2                    // second
-	MaxBlockWaitTime     = 4 - MinBlockWaitTime // second
-	MinBeaconBlkInterval = 3 * time.Second      //second
-	MinShardBlkInterval  = 5 * time.Second      //second
+	MinBeaconBlkInterval = 3 * time.Second //second
+	MinShardBlkInterval  = 5 * time.Second //second
 )
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	ConstantID = Hash{4} // To send Constant in custom token
+	PRVCoinID = Hash{4} // To send Constant in custom token
 )
 
 // centralized website's pubkey
@@ -55,8 +52,6 @@ var (
 
 // board addresses
 const (
-	// DCBAddress     = "1NHpWKZYCLQeGKSSsJewsA8p3nsPoAZbmEmtsuBqd6yU7KJnzJZVt39b7AgP"
-	// GOVAddress     = "1NHoFQ3Nr8fQm3ZLk2ACSgZXjVH6JobpuV65RD3QAEEGe76KknMQhGbc4g8P"
 	BurningAddress = "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c"
 )
 
@@ -78,10 +73,4 @@ const (
 	PENDING_ROLE   = "pending"
 
 	MAX_SHARD_NUMBER = 2
-)
-
-// Units converter
-const (
-	WeiToMilliEtherRatio = int64(1000000000000000)
-	WeiToEtherRatio      = int64(1000000000000000000)
 )

@@ -4,15 +4,15 @@ import "time"
 
 const (
 	// listen all interface
-	LocalHost         = "0.0.0.0"
-	MaxRetryConn      = 15
-	RetryConnDuration = 10 * time.Second
-	ProtocolId        = "/blockchain/1.0.0"
-	DelimMessageByte  = '\n'
-	DelimMessageStr   = "\n"
+	localHost         = "0.0.0.0"
+	maxRetryConn      = 15
+	retryConnDuration = 10 * time.Second
+	protocolId        = "/blockchain/1.0.0"
+	delimMessageByte  = '\n'
+	delimMessageStr   = "\n"
 
-	MsgLiveTime         = 3 * time.Second  // in second
-	MsgsCleanupInterval = MsgLiveTime * 10 //in second
+	msgLiveTime         = 3 * time.Second  // in second
+	msgsCleanupInterval = msgLiveTime * 10 //in second
 )
 
 // ConnState can be either pending, established, disconnected or failed.  When
@@ -20,11 +20,9 @@ const (
 // established or failed depending on the connection result.  An established
 // connection which was disconnected is categorized as disconnected.
 const (
-	ConnPending ConnState = iota
-	ConnFailing
-	ConnCanceled
-	ConnEstablished
-	ConnDisconnected
+	connPending ConnState = iota
+	connCanceled
+	connEstablished
 )
 
 const (
