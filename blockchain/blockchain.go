@@ -78,6 +78,7 @@ type Config struct {
 	TxPool            TxPool
 	TempTxPool        TxPool
 	CRemovedTxs       chan metadata.Transaction
+	FeeEstimator      map[byte]FeeEstimator
 	Server            interface {
 		BoardcastNodeState() error
 
@@ -138,6 +139,13 @@ func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 
 func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
 	blockchain.config.TempTxPool = temptxpool
+}
+
+func (blockchain *BlockChain) SetFeeEstimator(feeEstimator FeeEstimator, shardID byte) {
+	if len(blockchain.config.FeeEstimator) == 0 {
+		blockchain.config.FeeEstimator = make(map[byte]FeeEstimator)
+	}
+	blockchain.config.FeeEstimator[shardID] = feeEstimator
 }
 
 func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Transaction) {
