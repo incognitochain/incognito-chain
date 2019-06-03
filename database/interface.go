@@ -90,7 +90,6 @@ type DatabaseInterface interface {
 	GetCommitmentByIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error)
 	GetCommitmentIndex(tokenID common.Hash, commitment []byte, shardID byte) (*big.Int, error)
 	GetCommitmentLength(tokenID common.Hash, shardID byte) (*big.Int, error)
-	GetCommitmentIndexsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte) error
 	RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte, commitments [][]byte) error
