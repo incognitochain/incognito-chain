@@ -218,6 +218,13 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 				} else {
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
+			} else {
+				Logger.log.Errorf("Failed to get fee estimator from DB %v", err)
+				Logger.log.Debug("Init NewFeeEstimator")
+				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
+					mempool.DefaultEstimateFeeMaxRollback,
+					mempool.DefaultEstimateFeeMinRegisteredBlocks,
+					cfg.LimitFee)
 			}
 		}
 	} else {
