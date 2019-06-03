@@ -150,7 +150,7 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
-	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(&blk.Header.PrevBlockHash)
+	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(blk.Header.PrevBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil

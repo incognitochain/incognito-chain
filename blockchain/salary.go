@@ -34,7 +34,7 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 	var txHash = &common.Hash{}
 	(&common.Hash{}).Decode(txHash, tx)
 
-	blockHash, index, err := blockgen.chain.config.DataBase.GetTransactionIndexById(txHash)
+	blockHash, index, err := blockgen.chain.config.DataBase.GetTransactionIndexById(*txHash)
 	if err != nil {
 		abc := NewBlockChainError(UnExpectedError, err)
 		Logger.log.Error(abc)

@@ -243,7 +243,7 @@ func (tx *Tx) Init(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, err := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
+		temp, err := db.GetCommitmentByIndex(*tokenID, cmIndex, shardID)
 		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
@@ -542,7 +542,7 @@ func (tx *Tx) ListNullifiers() [][]byte {
 
 // CheckCMExistence returns true if cm exists in cm list
 func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
-	ok, err := db.HasCommitment(tokenID, cm, shardID)
+	ok, err := db.HasCommitment(*tokenID, cm, shardID)
 	return ok, err
 }
 
@@ -668,7 +668,7 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(prvCoinID, serialNumber, shardID)
+		ok, err := db.HasSerialNumber(*prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
 		}

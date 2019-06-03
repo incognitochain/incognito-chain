@@ -45,7 +45,7 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	bridgeTokenExisted, err := db.IsBridgeTokenExisted(&cReq.TokenID)
+	bridgeTokenExisted, err := db.IsBridgeTokenExisted(cReq.TokenID)
 	if err != nil {
 		return false, err
 	}

@@ -78,13 +78,13 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 		return false, errors.New("the issuance request must be called by centralized website")
 	}
 
-	bridgeTokenExisted, err := db.IsBridgeTokenExisted(&iReq.TokenID)
+	bridgeTokenExisted, err := db.IsBridgeTokenExisted(iReq.TokenID)
 	if err != nil {
 		return false, err
 	}
 
-	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(&iReq.TokenID)
-	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(&iReq.TokenID)
+	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(iReq.TokenID)
+	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(iReq.TokenID)
 	if !bridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
 		return false, errors.New("another custom token was already existed with the same token id")
 	}
