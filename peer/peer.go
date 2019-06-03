@@ -129,9 +129,9 @@ type outMsg struct {
 
 func (peerObj *Peer) HashToPool(hash string) error {
 	if peerObj.messagePoolNew == nil {
-		peerObj.messagePoolNew = cache.New(MsgLiveTime, MsgsCleanupInterval)
+		peerObj.messagePoolNew = cache.New(msgLiveTime, msgsCleanupInterval)
 	}
-	return peerObj.messagePoolNew.Add(hash, 1, MsgLiveTime)
+	return peerObj.messagePoolNew.Add(hash, 1, msgLiveTime)
 }
 
 func (peerObj *Peer) CheckHashPool(hash string) bool {
@@ -167,7 +167,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 
 	ip := strings.Split(peerObj.ListeningAddress.String(), ":")[0]
 	if len(ip) == 0 {
-		ip = LocalHost
+		ip = localHost
 	}
 	Logger.log.Info(ip)
 	port := strings.Split(peerObj.ListeningAddress.String(), ":")[1]
@@ -230,7 +230,7 @@ func (peerObj *Peer) Start() {
 	Logger.log.Info("RemotePeer start")
 	// ping to bootnode for test env
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
-	peerObj.Host.SetStreamHandler(ProtocolId, peerObj.PushStream)
+	peerObj.Host.SetStreamHandler(protocolId, peerObj.PushStream)
 
 	go peerObj.processConn()
 
@@ -439,7 +439,7 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 		return nil, nil
 	}
 
-	stream, err := peerObj.Host.NewStream(context.Background(), peer.PeerID, ProtocolId)
+	stream, err := peerObj.Host.NewStream(context.Background(), peer.PeerID, protocolId)
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		if cConn != nil {
@@ -481,7 +481,7 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 	}()
 
 	peerConn.RetryCount = 0
-	peerConn.updateConnState(ConnEstablished)
+	peerConn.updateConnState(connEstablished)
 
 	go peerObj.handleConnected(&peerConn)
 
@@ -563,7 +563,7 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	go peerConn.OutMessageHandler(rw)
 
 	peerConn.RetryCount = 0
-	peerConn.updateConnState(ConnEstablished)
+	peerConn.updateConnState(connEstablished)
 
 	go peerObj.handleConnected(&peerConn)
 
@@ -620,7 +620,7 @@ func (peerObj *Peer) Stop() {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
 	for _, peerConn := range peerObj.PeerConns {
-		peerConn.updateConnState(ConnCanceled)
+		peerConn.updateConnState(connCanceled)
 	}
 
 	close(peerObj.cStop)
@@ -633,7 +633,7 @@ handleConnected - set established flag to a peer when being connected
 func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.RetryCount = 0
-	peerConn.updateConnState(ConnEstablished)
+	peerConn.updateConnState(connEstablished)
 
 	peerObj.ConnEstablished(peerConn.RemotePeer)
 
@@ -647,7 +647,7 @@ handleDisconnected - handle connected peer when it is disconnected, remove and r
 */
 func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
-	peerConn.updateConnState(ConnCanceled)
+	peerConn.updateConnState(connCanceled)
 	if peerConn.GetIsOutbound() && !peerConn.GetIsForceClose() {
 		go peerObj.retryPeerConnection(peerConn)
 	}
@@ -674,12 +674,12 @@ func (peerObj *Peer) handleFailed(peerConn *PeerConn) {
 retryPeerConnection - retry to connect to peer when being disconnected
 */
 func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
-	time.AfterFunc(RetryConnDuration, func() {
+	time.AfterFunc(retryConnDuration, func() {
 		Logger.log.Infof("Retry Zero RemotePeer Connection %s", peerConn.RemoteRawAddress)
 		peerConn.RetryCount += 1
 
-		if peerConn.RetryCount < MaxRetryConn {
-			peerConn.updateConnState(ConnPending)
+		if peerConn.RetryCount < maxRetryConn {
+			peerConn.updateConnState(connPending)
 			cConn := make(chan *PeerConn)
 			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, cConn)
 			p := <-cConn
