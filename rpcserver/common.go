@@ -493,7 +493,9 @@ func (rpcServer RpcServer) estimateFeeWithEstimator(defaultFee int64, shardID by
 			estimateFeeCoinPerKb = uint64(temp)
 		}
 		if estimateFeeCoinPerKb == 0 {
-			estimateFeeCoinPerKb = rpcServer.config.FeeEstimator[shardID].GetLimitFee()
+			if feeEstimator, ok := rpcServer.config.FeeEstimator[shardID]; ok {
+				estimateFeeCoinPerKb = feeEstimator.GetLimitFee()
+			}
 		}
 	} else {
 		estimateFeeCoinPerKb = uint64(defaultFee)
