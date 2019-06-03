@@ -1,11 +1,11 @@
 package main
 
 const (
-	CreateWalletCmd        = "createwallet"
-	ListWalletAccountCmd   = "listaccounts"
-	GetWalletAccountCmd    = "getaccount"
-	CreateWalletAccountCmd = "createaccount"
-	getprivacytokenid      = "getprivacytokenid"
+	createWalletCmd        = "createwallet"
+	listWalletAccountCmd   = "listaccounts"
+	getWalletAccountCmd    = "getaccount"
+	createWalletAccountCmd = "createaccount"
+	getPrivacyTokenID      = "getprivacytokenid"
 )
 
-var CmdList = []string{CreateWalletCmd, ListWalletAccountCmd, GetWalletAccountCmd, CreateWalletAccountCmd}
+var CmdList = []string{createWalletCmd, listWalletAccountCmd, getWalletAccountCmd, createWalletAccountCmd, getPrivacyTokenID}

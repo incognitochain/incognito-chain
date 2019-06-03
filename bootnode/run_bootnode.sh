@@ -1,4 +1,4 @@
-APP_NAME="constant-bootnode"
+APP_NAME="incognito-bootnode"
 
 file="$GOPATH/bin/$APP_NAME"
 echo $file

@@ -25,7 +25,7 @@ func main() {
 	log.Printf("Process cmd: %s", cfg.Command)
 	if ok, err := common.SliceExists(CmdList, cfg.Command); ok || err == nil {
 		switch cfg.Command {
-		case getprivacytokenid:
+		case getPrivacyTokenID:
 			{
 				log.Printf("Params %+v", cfg)
 				if cfg.PNetwork == "" {
@@ -49,7 +49,7 @@ func main() {
 
 				log.Printf("Result tokenID: %+v\n", tokenID.String())
 			}
-		case CreateWalletCmd:
+		case createWalletCmd:
 			{
 				if cfg.WalletPassphrase == "" || cfg.WalletName == "" {
 					log.Println("Wrong param")
@@ -61,7 +61,7 @@ func main() {
 					return
 				}
 			}
-		case ListWalletAccountCmd:
+		case listWalletAccountCmd:
 			{
 				if cfg.WalletPassphrase == "" || cfg.WalletName == "" {
 					log.Println("Wrong param")
@@ -79,7 +79,7 @@ func main() {
 				}
 				log.Println(string(result))
 			}
-		case GetWalletAccountCmd:
+		case getWalletAccountCmd:
 			{
 				if cfg.WalletPassphrase == "" || cfg.WalletName == "" || cfg.WalletAccountName == "" {
 					log.Println("Wrong param")
@@ -97,7 +97,7 @@ func main() {
 				}
 				log.Println(string(result))
 			}
-		case CreateWalletAccountCmd:
+		case createWalletAccountCmd:
 			{
 				if cfg.WalletPassphrase == "" || cfg.WalletName == "" || cfg.WalletAccountName == "" {
 					log.Println("Wrong param")
