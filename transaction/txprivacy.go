@@ -75,12 +75,12 @@ func (tx *Tx) Init(
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
-	tokenID *common.Hash, // default is nil -> use for constant coin
+	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 ) *TransactionError {
 
 	Logger.log.Debugf("CREATING TX........\n")
-	tx.Version = TxVersion
+	tx.Version = txVersion
 	var err error
 
 	if len(inputCoins) > 255 {
@@ -93,7 +93,7 @@ func (tx *Tx) Init(
 
 	if tokenID == nil {
 		tokenID = &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		tokenID.SetBytes(common.PRVCoinID[:])
 	}
 
 	// Calculate execution time
@@ -414,7 +414,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
-			tokenID.SetBytes(common.ConstantID[:])
+			tokenID.SetBytes(common.PRVCoinID[:])
 		}
 
 		sndOutputs := make([]*big.Int, len(tx.Proof.OutputCoins))
@@ -624,7 +624,7 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 
 func (tx *Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	unique, pk, amount := tx.GetUniqueReceiver()
-	return unique, pk, amount, &common.ConstantID
+	return unique, pk, amount, &common.PRVCoinID
 }
 
 func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
@@ -664,11 +664,11 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	db database.DatabaseInterface,
 ) error {
 
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(*constantTokenID, serialNumber, shardID)
+		ok, err := db.HasSerialNumber(*prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
 		}
@@ -700,8 +700,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	txN := tx
 	//check version
-	if txN.Version > TxVersion {
-		return false, errors.New("wrong tx version")
+	if txN.Version > txVersion {
+		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", txN.Version, txVersion))
 	}
 	// check LockTime before now
 	if int64(txN.LockTime) > time.Now().Unix() {
@@ -904,9 +904,9 @@ func (tx *Tx) ValidateTxByItself(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 ) (bool, error) {
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID)
 	if !ok {
 		return false, err
 	}
@@ -1042,7 +1042,7 @@ func (tx *Tx) InitTxSalary(
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 ) error {
-	tx.Version = TxVersion
+	tx.Version = txVersion
 	tx.Type = common.TxRewardType
 
 	if tx.LockTime == 0 {
@@ -1069,7 +1069,7 @@ func (tx *Tx) InitTxSalary(
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		tokenID.SetBytes(common.PRVCoinID[:])
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
 		if err != nil {
 			return err
@@ -1121,7 +1121,7 @@ func (tx Tx) ValidateTxSalary(
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.ConstantID[:])
+	tokenID.SetBytes(common.PRVCoinID[:])
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
 		return false, err
 	}
