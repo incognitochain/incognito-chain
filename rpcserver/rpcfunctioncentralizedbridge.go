@@ -39,7 +39,7 @@ func (rpcServer RpcServer) handleGetBridgeTokensAmounts(params interface{}, clos
 }
 
 func (rpcServer RpcServer) handleCreateIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	constructor := metaConstructors[CreateAndSendIssuingRequest]
+	constructor := metaConstructors[createAndSendIssuingRequest]
 	return rpcServer.createRawTxWithMetadata(params, closeChan, constructor)
 }
 
