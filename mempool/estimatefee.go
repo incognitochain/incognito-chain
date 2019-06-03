@@ -148,6 +148,9 @@ type FeeEstimator struct {
 	// Transactions that have been removed from the bins. This allows us to
 	// revert in case of an orphaned block.
 	dropped []*registeredBlock
+
+	// min fee which be needed for payment on tx(per Kb data)
+	limitFee uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
@@ -162,6 +165,7 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32) *FeeEstimator {
 		maxReplacements:     estimateFeeMaxReplacements,
 		observed:            make(map[common.Hash]*observedTransaction),
 		dropped:             make([]*registeredBlock, 0, maxRollback),
+		limitFee:            1,
 	}
 }
 
@@ -720,4 +724,8 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	}
 
 	return ef, nil
+}
+
+func (ef FeeEstimator) GetLimitFee() uint64 {
+	return ef.limitFee
 }

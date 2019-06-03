@@ -1084,11 +1084,6 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, blockchain.config.DataBase)
 }
 
-// GetFeePerKbTx - return fee (per kb of tx)
-func (blockchain BlockChain) GetFeePerKbTx() uint64 {
-	return 0
-}
-
 // GetRecentTransactions - find all recent history txs which are created by user
 // by number of block, maximum is 100 newest blocks
 func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, shardID byte) (map[string]metadata.Transaction, error) {
