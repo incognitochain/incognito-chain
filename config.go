@@ -43,6 +43,7 @@ const (
 	defaultNodeMode               = common.NODEMODE_RELAY
 	defaultTxPoolTTL              = uint(86400) * 10 // in second
 	defaultTxPoolMaxTx            = uint64(20000)
+	defaultLimitFee               = uint64(1)
 	// For wallet
 	defaultWalletName     = "wallet"
 	defaultPersistMempool = false
@@ -123,6 +124,7 @@ type config struct {
 
 	TxPoolTTL   uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
 	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
+	LimitFee    uint64 `long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.01 PRV"`
 
 	LoadMempool    bool `long:"loadmempool" description:"Load transactions from Mempool database"`
 	PersistMempool bool `long:"persistmempool" description:"Persistence transaction in memepool database"`
@@ -301,6 +303,7 @@ func loadConfig() (*config, []string, error) {
 		TxPoolTTL:            defaultTxPoolTTL,
 		TxPoolMaxTx:          defaultTxPoolMaxTx,
 		PersistMempool:       defaultPersistMempool,
+		LimitFee:             defaultLimitFee,
 	}
 
 	// Service options which are only added on Windows.
