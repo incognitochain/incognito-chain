@@ -694,7 +694,17 @@ func (blockchain *BlockChain) StoreIncomingCrossShard(block *ShardBlock) error {
 	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
 	for crossShard, crossBlks := range crossShardMap {
 		for _, crossBlk := range crossBlks {
-			blockchain.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, &crossBlk)
+			blockchain.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, crossBlk)
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) DeleteIncomingCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			blockchain.config.DataBase.DeleteIncomingCrossShard(block.Header.ShardID, crossShard, crossBlk)
 		}
 	}
 	return nil

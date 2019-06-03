@@ -40,7 +40,7 @@ func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]ui
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBFTReady).PoolState = poolState
+	// msg.(*wire.MessageBFTReady).PoolState = poolState
 	msg.(*wire.MessageBFTReady).BestStateHash = bestStateHash
 	msg.(*wire.MessageBFTReady).Round = round
 	msg.(*wire.MessageBFTReady).Pubkey = userKeySet.GetPublicKeyB58()

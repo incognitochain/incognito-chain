@@ -60,21 +60,21 @@ phase:
 			}
 		case <-protocol.cTimeout:
 			if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
-				if protocol.RoundData.Layer == common.BEACON_ROLE {
-					var shToBcPoolStates []map[byte]uint64
-					for _, readyMsg := range readyMsgs {
-						shToBcPoolStates = append(shToBcPoolStates, readyMsg.PoolState)
-					}
-					shToBcPoolStates = append(shToBcPoolStates, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight())
-					protocol.RoundData.ClosestPoolState = GetClosestPoolState(shToBcPoolStates)
-				} else {
-					var crossShardsPoolStates []map[byte]uint64
-					for _, readyMsg := range readyMsgs {
-						crossShardsPoolStates = append(crossShardsPoolStates, readyMsg.PoolState)
-					}
-					crossShardsPoolStates = append(crossShardsPoolStates, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight())
-					protocol.RoundData.ClosestPoolState = GetClosestPoolState(crossShardsPoolStates)
-				}
+				// if protocol.RoundData.Layer == common.BEACON_ROLE {
+				// 	var shToBcPoolStates []map[byte]uint64
+				// 	for _, readyMsg := range readyMsgs {
+				// 		shToBcPoolStates = append(shToBcPoolStates, readyMsg.PoolState)
+				// 	}
+				// 	shToBcPoolStates = append(shToBcPoolStates, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight())
+				// 	protocol.RoundData.ClosestPoolState = GetClosestPoolState(shToBcPoolStates)
+				// } else {
+				// 	var crossShardsPoolStates []map[byte]uint64
+				// 	for _, readyMsg := range readyMsgs {
+				// 		crossShardsPoolStates = append(crossShardsPoolStates, readyMsg.PoolState)
+				// 	}
+				// 	crossShardsPoolStates = append(crossShardsPoolStates, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight())
+				// 	protocol.RoundData.ClosestPoolState = GetClosestPoolState(crossShardsPoolStates)
+				// }
 
 				fmt.Println("BFT: Propose block", time.Since(protocol.startTime).Seconds())
 
@@ -136,9 +136,12 @@ phase:
 				protocol.forwardMsg(msg)
 				if protocol.RoundData.Layer == common.BEACON_ROLE {
 					pendingBlk := blockchain.BeaconBlock{}
-					pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
-
-					err := protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
+					err := pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+					err = protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
@@ -147,8 +150,12 @@ phase:
 					protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 				} else {
 					pendingBlk := blockchain.ShardBlock{}
-					pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
-					err := protocol.EngineCfg.BlockChain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoundData.ShardID)
+					err := pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+					err = protocol.EngineCfg.BlockChain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoundData.ShardID)
 					if err != nil {
 						Logger.log.Error(err)
 						continue

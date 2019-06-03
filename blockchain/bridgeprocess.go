@@ -44,7 +44,7 @@ func (bc *BlockChain) processIssuingReq(inst []string) error {
 		return err
 	}
 	md := issuingReqAction.Meta
-	err = bc.GetDatabase().CountUpDepositedAmtByTokenID(&md.TokenID, md.DepositedAmount)
+	err = bc.GetDatabase().CountUpDepositedAmtByTokenID(md.TokenID, md.DepositedAmount)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (bc *BlockChain) processContractingReq(inst []string) error {
 		return err
 	}
 	md := contractingReqAction.Meta
-	err = bc.GetDatabase().DeductAmtByTokenID(&md.TokenID, md.BurnedAmount)
+	err = bc.GetDatabase().DeductAmtByTokenID(md.TokenID, md.BurnedAmount)
 	if err != nil {
 		return err
 	}
