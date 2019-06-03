@@ -183,6 +183,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Server:            serverObj,
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
@@ -237,6 +238,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+	}
+	for shardID, feeEstimator := range serverObj.feeEstimator {
+		serverObj.blockChain.SetFeeEstimator(feeEstimator, shardID)
 	}
 	// create mempool tx
 	serverObj.memPool = &mempool.TxPool{}
