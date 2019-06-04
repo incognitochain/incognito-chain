@@ -275,9 +275,11 @@ func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID by
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
 	}
 	for iter.Next() {
-		value := iter.Value()
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
 		arrDatabyPubkey = append(arrDatabyPubkey, value)
 	}
+	iter.Release()
 	return arrDatabyPubkey, nil
 }
 
