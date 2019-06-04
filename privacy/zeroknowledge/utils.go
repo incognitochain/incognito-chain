@@ -2,7 +2,6 @@ package zkp
 
 import (
 	"github.com/constant-money/constant-chain/common"
-	"math"
 	"math/big"
 
 	"github.com/constant-money/constant-chain/privacy"
@@ -37,7 +36,7 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 		sizeOutputCoins := nOutput * privacy.OutputCoinsNoPrivacySize
 
 		sizeProof := uint64(FlagSize + sizeSNNoPrivacyProof + sizeInputCoins + sizeOutputCoins)
-		return uint64(math.Ceil(float64(sizeProof) / 1024))
+		return uint64(sizeProof)
 	}
 
 	FlagSize := 14 + 7*nInput + 4*nOutput
