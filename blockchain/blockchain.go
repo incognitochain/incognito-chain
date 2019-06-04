@@ -530,7 +530,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 			}
 			// outputs
 			outputCoinArray := view.mapOutputCoins[k]
-			outputCoinBytesArray := make([][]byte, len(outputCoinArray))
+			outputCoinBytesArray := make([][]byte, 0)
 			for _, outputCoin := range outputCoinArray {
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
