@@ -547,71 +547,50 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)
 
-	// just choose output coins have value less than amount for Knapsack algorithm
-	sumValueKnapsack := uint64(0)
-	valuesKnapsack := make([]uint64, 0)
-	outCoinKnapsack := make([]*privacy.OutputCoin, 0)
-	outCoinUnknapsack := make([]*privacy.OutputCoin, 0)
+	// try to make the total spent higher than the badLimit
+	badLimit := amount + 10
+	var outCoinOverLimit *privacy.OutputCoin
+	outCoinsUnderLimit := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value > amount {
-			outCoinUnknapsack = append(outCoinUnknapsack, outCoin)
+		if outCoin.CoinDetails.Value < badLimit {
+			outCoinsUnderLimit = append(outCoinsUnderLimit, outCoin)
+		} else if outCoinOverLimit == nil {
+			outCoinOverLimit = outCoin
+		} else if outCoinOverLimit.CoinDetails.Value < outCoin.CoinDetails.Value {
+			remainOutputCoins = append(remainOutputCoins, outCoin)
 		} else {
-			sumValueKnapsack += outCoin.CoinDetails.Value
-			valuesKnapsack = append(valuesKnapsack, outCoin.CoinDetails.Value)
-			outCoinKnapsack = append(outCoinKnapsack, outCoin)
+			remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
+			outCoinOverLimit = outCoin
 		}
 	}
 
-	// target
-	target := int64(sumValueKnapsack - amount)
+	sort.Slice(outCoinsUnderLimit, func(i, j int) bool {
+		return outCoinsUnderLimit[i].CoinDetails.Value < outCoinsUnderLimit[j].CoinDetails.Value
+	})
 
-	// if target > 1000, using Greedy algorithm
-	// if target > 0, using Knapsack algorithm to choose coins
-	// if target == 0, coins need to be spent is coins for Knapsack, we don't need to run Knapsack to find solution
-	// if target < 0, instead of using Knapsack, we get the coin that has value is minimum in list unKnapsack coins
-	if target > 1000 {
-		choices := privacy.Greedy(outCoins, amount)
-		for i, choice := range choices {
-			if choice {
-				totalResultOutputCoinAmount += outCoins[i].CoinDetails.Value
-				resultOutputCoins = append(resultOutputCoins, outCoins[i])
-			} else {
-				remainOutputCoins = append(remainOutputCoins, outCoins[i])
-			}
+	for _, outCoin := range outCoinsUnderLimit {
+		if totalResultOutputCoinAmount < badLimit {
+			totalResultOutputCoinAmount += outCoin.CoinDetails.Value
+			resultOutputCoins = append(resultOutputCoins, outCoin)
+		} else {
+			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
-	} else if target > 0 {
-		choices := privacy.Knapsack(valuesKnapsack, uint64(target))
-		for i, choice := range choices {
-			if !choice {
-				totalResultOutputCoinAmount += outCoinKnapsack[i].CoinDetails.Value
-				resultOutputCoins = append(resultOutputCoins, outCoinKnapsack[i])
-			} else {
-				remainOutputCoins = append(remainOutputCoins, outCoinKnapsack[i])
-			}
-		}
-		remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack...)
-	} else if target == 0 {
-		totalResultOutputCoinAmount = sumValueKnapsack
-		resultOutputCoins = outCoinKnapsack
-		remainOutputCoins = outCoinUnknapsack
+	}
+
+	if totalResultOutputCoinAmount < badLimit && outCoinOverLimit != nil {
+		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
+		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
+		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.Value
 	} else {
-		if len(outCoinUnknapsack) == 0 {
-			return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, errors.New("Not enough coin")
-		} else {
-			sort.Slice(outCoinUnknapsack, func(i, j int) bool {
-				return outCoinUnknapsack[i].CoinDetails.Value < outCoinUnknapsack[j].CoinDetails.Value
-			})
-			resultOutputCoins = append(resultOutputCoins, outCoinUnknapsack[0])
-			totalResultOutputCoinAmount = outCoinUnknapsack[0].CoinDetails.Value
-			for i := 1; i < len(outCoinUnknapsack); i++ {
-				remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack[i])
-			}
-			remainOutputCoins = append(remainOutputCoins, outCoinKnapsack...)
-		}
+		remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
 	}
 
-	return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
+	if totalResultOutputCoinAmount < amount {
+		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, errors.New("Not enough coin")
+	} else {
+		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
+	}
 }
 
 // GetPaymentAddressFromPrivateKeyParams- deserialize a private key string
