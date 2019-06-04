@@ -547,8 +547,14 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)
 
-	// try to make the total spent higher than the badLimit
-	badLimit := amount + 10
+	// try to make the total spent higher than the badLimit, so that the changes won't be too small
+	badLimit := amount
+	if amount <= 100 {
+		badLimit += amount / 10
+	} else {
+		badLimit += 10
+	}
+
 	var outCoinOverLimit *privacy.OutputCoin
 	outCoinsUnderLimit := make([]*privacy.OutputCoin, 0)
 
@@ -578,7 +584,8 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 		}
 	}
 
-	if totalResultOutputCoinAmount < badLimit && outCoinOverLimit != nil {
+	if totalResultOutputCoinAmount < badLimit && outCoinOverLimit != nil &&
+		(outCoinOverLimit.CoinDetails.Value <= 2*amount || totalResultOutputCoinAmount < amount) {
 		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
 		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
 		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.Value
