@@ -148,12 +148,15 @@ type FeeEstimator struct {
 	// Transactions that have been removed from the bins. This allows us to
 	// revert in case of an orphaned block.
 	dropped []*registeredBlock
+
+	// min fee which be needed for payment on tx(per Kb data)
+	limitFee uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
-func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32) *FeeEstimator {
+func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *FeeEstimator {
 	return &FeeEstimator{
 		maxRollback:         maxRollback,
 		minRegisteredBlocks: minRegisteredBlocks,
@@ -162,6 +165,7 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32) *FeeEstimator {
 		maxReplacements:     estimateFeeMaxReplacements,
 		observed:            make(map[common.Hash]*observedTransaction),
 		dropped:             make([]*registeredBlock, 0, maxRollback),
+		limitFee:            limitFee,
 	}
 }
 
@@ -609,6 +613,7 @@ func (ef *FeeEstimator) Save() FeeEstimatorState {
 	binary.Write(w, binary.BigEndian, &ef.minRegisteredBlocks)
 	binary.Write(w, binary.BigEndian, &ef.lastKnownHeight)
 	binary.Write(w, binary.BigEndian, &ef.numBlocksRegistered)
+	binary.Write(w, binary.BigEndian, &ef.limitFee)
 
 	// Put all the observed transactions in a sorted list.
 	var txCount uint32
@@ -675,6 +680,7 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	binary.Read(r, binary.BigEndian, &ef.minRegisteredBlocks)
 	binary.Read(r, binary.BigEndian, &ef.lastKnownHeight)
 	binary.Read(r, binary.BigEndian, &ef.numBlocksRegistered)
+	binary.Read(r, binary.BigEndian, &ef.limitFee)
 
 	// Read transactions.
 	var numObserved uint32
@@ -720,4 +726,8 @@ func RestoreFeeEstimator(data FeeEstimatorState) (*FeeEstimator, error) {
 	}
 
 	return ef, nil
+}
+
+func (ef FeeEstimator) GetLimitFee() uint64 {
+	return ef.limitFee
 }

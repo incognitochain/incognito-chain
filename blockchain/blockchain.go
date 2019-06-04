@@ -78,6 +78,7 @@ type Config struct {
 	TxPool            TxPool
 	TempTxPool        TxPool
 	CRemovedTxs       chan metadata.Transaction
+	FeeEstimator      map[byte]FeeEstimator
 	Server            interface {
 		BoardcastNodeState() error
 
@@ -138,6 +139,13 @@ func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 
 func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
 	blockchain.config.TempTxPool = temptxpool
+}
+
+func (blockchain *BlockChain) SetFeeEstimator(feeEstimator FeeEstimator, shardID byte) {
+	if len(blockchain.config.FeeEstimator) == 0 {
+		blockchain.config.FeeEstimator = make(map[byte]FeeEstimator)
+	}
+	blockchain.config.FeeEstimator[shardID] = feeEstimator
 }
 
 func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Transaction) {
@@ -522,7 +530,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 			}
 			// outputs
 			outputCoinArray := view.mapOutputCoins[k]
-			outputCoinBytesArray := make([][]byte, len(outputCoinArray))
+			outputCoinBytesArray := make([][]byte, 0)
 			for _, outputCoin := range outputCoinArray {
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
@@ -1082,11 +1090,6 @@ func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privac
 
 func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte) (bool, error) {
 	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, blockchain.config.DataBase)
-}
-
-// GetFeePerKbTx - return fee (per kb of tx)
-func (blockchain BlockChain) GetFeePerKbTx() uint64 {
-	return 0
 }
 
 // GetRecentTransactions - find all recent history txs which are created by user
