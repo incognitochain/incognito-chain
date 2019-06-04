@@ -183,6 +183,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Server:            serverObj,
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
@@ -212,10 +213,18 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					Logger.log.Debug("Init NewFeeEstimator")
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
-						mempool.DefaultEstimateFeeMinRegisteredBlocks)
+						mempool.DefaultEstimateFeeMinRegisteredBlocks,
+						cfg.LimitFee)
 				} else {
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
+			} else {
+				Logger.log.Errorf("Failed to get fee estimator from DB %v", err)
+				Logger.log.Debug("Init NewFeeEstimator")
+				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
+					mempool.DefaultEstimateFeeMaxRollback,
+					mempool.DefaultEstimateFeeMinRegisteredBlocks,
+					cfg.LimitFee)
 			}
 		}
 	} else {
@@ -236,6 +245,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+	}
+	for shardID, feeEstimator := range serverObj.feeEstimator {
+		serverObj.blockChain.SetFeeEstimator(feeEstimator, shardID)
 	}
 	// create mempool tx
 	serverObj.memPool = &mempool.TxPool{}

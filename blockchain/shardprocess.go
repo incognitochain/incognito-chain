@@ -215,6 +215,12 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	shardIdForMetric := strconv.Itoa(int(block.Header.ShardID))
 	go common.AnalyzeTimeSeriesBlockPerSecondTimesMetric(shardIdForMetric, float64(1), block.Header.Height)
 	//blockchain.config.ShardPool[block.Header.ShardID].RemoveBlock(block.Header.Height)
+
+	// call FeeEstimator for processing
+	if feeEstimator, ok := blockchain.config.FeeEstimator[block.Header.ShardID]; ok {
+		go feeEstimator.RegisterBlock(block)
+	}
+
 	return nil
 }
 

@@ -88,3 +88,7 @@ type TxPool interface {
 	// Check tx validate by it self
 	// ValidateTxByItSelf(tx metadata.Transaction) bool
 }
+
+type FeeEstimator interface {
+	RegisterBlock(block *ShardBlock) error
+}
