@@ -119,7 +119,9 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 	key = append(key, shardID)
 
 	// keySpec3 store last index of array commitment
-	keySpec3 := append(key, []byte("len")...)
+	keySpec3 := make([]byte, len(key)+len("len"))
+	temp := append(key, []byte("len")...)
+	copy(keySpec3, temp)
 
 	var lenData uint64
 	len, err := db.GetCommitmentLength(tokenID, shardID)
