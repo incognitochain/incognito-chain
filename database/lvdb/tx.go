@@ -1,7 +1,6 @@
 package lvdb
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -12,7 +11,6 @@ import (
 	"math/big"
 
 	"github.com/pkg/errors"
-	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -97,6 +95,25 @@ func (db *db) CleanSerialNumbers() error {
 	return nil
 }
 
+//StoreOutputCoins - store all output coin of pubkey
+// key: [outcoinsPrefix][tokenID][shardID][hash(output)]
+// value: output in bytes
+func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
+	key := db.GetKey(string(outcoinsPrefix), tokenID)
+	key = append(key, shardID)
+
+	key = append(key, publicKey...)
+	for _, outputCoin := range outputCoinArr {
+		keyTemp := append(key, common.HashB(outputCoin)...)
+		if err := db.lvdb.Put(keyTemp, outputCoin, nil); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+/* deprecated func
 func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
 	key := db.GetKey(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
@@ -123,24 +140,15 @@ func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoin
 	}
 
 	return nil
-}
+}*/
 
 // StoreCommitments - store list commitments by shardID
 func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
-	keySpec4 := append(key, pubkey...)
-	var arrDatabyPubkey [][]byte
-	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-	if len(resByPubkey) > 0 {
-		if err := json.Unmarshal(resByPubkey, &arrDatabyPubkey); err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
-		}
-	}
+	// keySpec3 store last index of array commitment
+	keySpec3 := append(key, []byte("len")...)
 
 	var lenData uint64
 	len, err := db.GetCommitmentLength(tokenID, shardID)
@@ -167,18 +175,8 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 		if err := db.lvdb.Put(keySpec2, newIndex, nil); err != nil {
 			return err
 		}
-		// keySpec3 store last index of array commitment
-		keySpec3 := append(key, []byte("len")...)
+
 		if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
-			return err
-		}
-		// keySpec4 store for pubkey:[newindex1, newindex2]
-		arrDatabyPubkey = append(arrDatabyPubkey, newIndex)
-		resByPubkey, err = json.Marshal(arrDatabyPubkey)
-		if err != nil {
-			return err
-		}
-		if err := db.lvdb.Put(keySpec4, resByPubkey, nil); err != nil {
 			return err
 		}
 		lenData++
@@ -263,25 +261,29 @@ func (db *db) GetCommitmentLength(tokenID common.Hash, shardID byte) (*big.Int, 
 	return new(big.Int).SetInt64(0), nil
 }
 
-func (db *db) GetCommitmentIndexsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
-	key := db.GetKey(string(commitmentsPrefix), tokenID)
+//GetOutcoinsByPubkey - get all output coin of pubkey
+// key: [outcoinsPrefix][tokenID][shardID][hash(output)]
+// value: output in bytes
+func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
+	key := db.GetKey(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
 
-	//keySpec4 := make([]byte, len(key))
-	keySpec4 := append(key, pubkey...)
-	var arrDatabyPubkey [][]byte
-	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	key = append(key, pubkey...)
+	arrDatabyPubkey := make([][]byte, 0)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	if iter.Error() != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
 	}
-	if len(resByPubkey) > 0 {
-		if err := json.Unmarshal(resByPubkey, &arrDatabyPubkey); err != nil {
-			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
-		}
+	for iter.Next() {
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		arrDatabyPubkey = append(arrDatabyPubkey, value)
 	}
+	iter.Release()
 	return arrDatabyPubkey, nil
 }
 
+/* deprecated func
 func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
 	key := db.GetKey(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
@@ -298,7 +300,7 @@ func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID by
 		}
 	}
 	return arrDatabyPubkey, nil
-}
+}*/
 
 // CleanCommitments - clear all list commitments in DB
 func (db *db) CleanCommitments() error {
@@ -400,7 +402,7 @@ func (db *db) CleanFeeEstimator() error {
   Key: prefixTx-txHash
 	H: blockHash-blockIndex
 */
-func (db *db) StoreTransactionIndex(txId common.Hash, blockHash  common.Hash, index int) error {
+func (db *db) StoreTransactionIndex(txId common.Hash, blockHash common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
 	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
