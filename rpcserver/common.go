@@ -563,7 +563,7 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 			outCoinsUnderLimit = append(outCoinsUnderLimit, outCoin)
 		} else if outCoinOverLimit == nil {
 			outCoinOverLimit = outCoin
-		} else if outCoinOverLimit.CoinDetails.Value < outCoin.CoinDetails.Value {
+		} else if outCoinOverLimit.CoinDetails.Value > outCoin.CoinDetails.Value {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		} else {
 			remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
@@ -585,7 +585,7 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 	}
 
 	if totalResultOutputCoinAmount < badLimit && outCoinOverLimit != nil &&
-		(outCoinOverLimit.CoinDetails.Value <= 2*amount || totalResultOutputCoinAmount < amount) {
+		(outCoinOverLimit.CoinDetails.Value > 2*amount || totalResultOutputCoinAmount < amount) {
 		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
 		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
 		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.Value
