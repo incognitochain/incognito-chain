@@ -509,18 +509,23 @@ func (tx *Tx) GetTxActualSize() uint64 {
 	sizeTx += uint64(8)                // int64
 	sizeTx += uint64(8)
 
-	sizeTx += uint64(len(tx.SigPubKey))
-	sizeTx += uint64(len(tx.Sig))
+	sigPubKey := uint64(len(tx.SigPubKey))
+	sizeTx += sigPubKey
+	sig := uint64(len(tx.Sig))
+	sizeTx += sig
 	if tx.Proof != nil {
-		sizeTx += uint64(len(tx.Proof.Bytes()))
+		proof := uint64(len(tx.Proof.Bytes()))
+		sizeTx += proof
 	}
 
 	sizeTx += uint64(1)
-	sizeTx += uint64(len(tx.Info))
+	info := uint64(len(tx.Info))
+	sizeTx += info
 
 	meta := tx.Metadata
 	if meta != nil {
-		sizeTx += meta.CalculateSize()
+		metaSize := meta.CalculateSize()
+		sizeTx += metaSize
 	}
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
