@@ -133,10 +133,9 @@ type DatabaseInterface interface {
 	DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error
 
 	// Centralized bridge
-	CountUpDepositedAmtByTokenID(common.Hash, uint64) error
-	DeductAmtByTokenID(common.Hash, uint64) error
 	GetBridgeTokensAmounts() ([][]byte, error)
 	IsBridgeTokenExisted(common.Hash) (bool, error)
+	UpdateAmtByTokenID(common.Hash, uint64, string) error
 
 	Close() error
 }
