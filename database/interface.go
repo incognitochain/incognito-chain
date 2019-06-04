@@ -93,8 +93,7 @@ type DatabaseInterface interface {
 	GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte) error
 	RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte, commitments [][]byte) error
-	BackupOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error
-	RestoreOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error
+	DeleteOutputCoin(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error
 	CleanCommitments() error
 
 	// SNDerivator
