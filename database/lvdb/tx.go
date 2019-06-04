@@ -113,42 +113,15 @@ func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoin
 	return nil
 }
 
-/* deprecated func
-func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
-	key := db.GetKey(string(outcoinsPrefix), tokenID)
-	key = append(key, shardID)
-
-	// store for pubkey:[outcoint1, outcoint2, ...]
-	key = append(key, publicKey...)
-	var arrDatabyPubkey [][]byte
-	resByPubkey, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-	if len(resByPubkey) > 0 {
-		if err := json.Unmarshal(resByPubkey, &arrDatabyPubkey); err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
-		}
-	}
-	arrDatabyPubkey = append(arrDatabyPubkey, outputCoinArr...)
-	resByPubkey, err = json.Marshal(arrDatabyPubkey)
-	if err != nil {
-		return err
-	}
-	if err := db.lvdb.Put(key, resByPubkey, nil); err != nil {
-		return err
-	}
-
-	return nil
-}*/
-
 // StoreCommitments - store list commitments by shardID
 func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
 	// keySpec3 store last index of array commitment
-	keySpec3 := append(key, []byte("len")...)
+	keySpec3 := make([]byte, len(key)+len("len"))
+	temp := append(key, []byte("len")...)
+	copy(keySpec3, temp)
 
 	var lenData uint64
 	len, err := db.GetCommitmentLength(tokenID, shardID)
@@ -282,25 +255,6 @@ func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID by
 	iter.Release()
 	return arrDatabyPubkey, nil
 }
-
-/* deprecated func
-func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
-	key := db.GetKey(string(outcoinsPrefix), tokenID)
-	key = append(key, shardID)
-
-	key = append(key, pubkey...)
-	var arrDatabyPubkey [][]byte
-	resByPubkey, err := db.lvdb.Get(key, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-	if len(resByPubkey) > 0 {
-		if err := json.Unmarshal(resByPubkey, &arrDatabyPubkey); err != nil {
-			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Unmarshal"))
-		}
-	}
-	return arrDatabyPubkey, nil
-}*/
 
 // CleanCommitments - clear all list commitments in DB
 func (db *db) CleanCommitments() error {
