@@ -339,3 +339,35 @@ func (db *db) DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlk
 	}
 	return nil
 }
+
+func (db *db) BackupBridgedTokenByTokenID(tokenID common.Hash) error {
+	key := append(centralizedBridgePrefix, tokenID[:]...)
+	backupKey := getPrevPrefix(true, 0)
+	backupKey = append(backupKey, key...)
+
+	tokenWithAmtBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	}
+
+	if err := db.lvdb.Put(backupKey, tokenWithAmtBytes, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *db) RestoreBridgedTokenByTokenID(tokenID common.Hash) error {
+	key := append(centralizedBridgePrefix, tokenID[:]...)
+	backupKey := getPrevPrefix(true, 0)
+	backupKey = append(backupKey, key...)
+
+	tokenWithAmtBytes, dbErr := db.lvdb.Get(backupKey, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	}
+
+	if err := db.lvdb.Put(key, tokenWithAmtBytes, nil); err != nil {
+		return err
+	}
+	return nil
+}

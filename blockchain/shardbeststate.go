@@ -390,22 +390,22 @@ func (blockchain *BlockChain) backupCommitmentsFromTxViewPoint(view TxViewPoint)
 	}
 	sort.Strings(keys)
 
-	for _, k := range keys {
-		pubkey := k
+	// for _, k := range keys {
+	// 	pubkey := k
 
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
-		if err != nil {
-			return err
-		}
-		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
-		if pubkeyShardID == view.shardID {
-			err = blockchain.config.DataBase.BackupOutputCoin(*view.tokenID, pubkeyBytes, pubkeyShardID)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	// 	pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	lastByte := pubkeyBytes[len(pubkeyBytes)-1]
+	// 	pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
+	// 	if pubkeyShardID == view.shardID {
+	// 		err = blockchain.config.DataBase.BackupOutputCoin(*view.tokenID, pubkeyBytes, pubkeyShardID)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 
@@ -464,7 +464,7 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 			return err
 		}
 
-		err = blockchain.restoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView)
+		err = blockchain.restoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
 		if err != nil {
 			return err
 		}
@@ -475,7 +475,7 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 		return err
 	}
 
-	err = blockchain.restoreCommitmentsFromTxViewPoint(*view)
+	err = blockchain.restoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
 	if err != nil {
 		return err
 	}
@@ -492,13 +492,13 @@ func (blockchain *BlockChain) restoreFromCrossTxViewPoint(block *ShardBlock) err
 		if err := blockchain.config.DataBase.DeletePrivacyCustomTokenCrossShard(*tokenID); err != nil {
 			return err
 		}
-		err = blockchain.restoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView)
+		err = blockchain.restoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = blockchain.restoreCommitmentsFromTxViewPoint(*view)
+	err = blockchain.restoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
 	if err != nil {
 		return err
 	}
@@ -513,7 +513,7 @@ func (blockchain *BlockChain) restoreSerialNumbersFromTxViewPoint(view TxViewPoi
 	return nil
 }
 
-func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint) error {
+func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint, shardID byte) error {
 
 	// commitment
 	keys := make([]string, 0, len(view.mapCommitments))
@@ -540,23 +540,21 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 	}
 
 	// outputs
-	keys = make([]string, 0, len(view.mapOutputCoins))
-	for k := range view.mapOutputCoins {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
 	for _, k := range keys {
-		pubkey := k
-
-		pubkeyBytes, _, err := base58.Base58Check{}.Decode(pubkey)
+		publicKey := k
+		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
 		if err != nil {
 			return err
 		}
-		lastByte := pubkeyBytes[len(pubkeyBytes)-1]
-		pubkeyShardID := common.GetShardIDFromLastByte(lastByte)
-		if pubkeyShardID == view.shardID {
-			err = blockchain.config.DataBase.RestoreOutputCoin(*view.tokenID, pubkeyBytes, pubkeyShardID)
+		lastByte := publicKeyBytes[len(publicKeyBytes)-1]
+		publicKeyShardID := common.GetShardIDFromLastByte(lastByte)
+		if publicKeyShardID == shardID {
+			outputCoinArray := view.mapOutputCoins[k]
+			outputCoinBytesArray := make([][]byte, 0)
+			for _, outputCoin := range outputCoinArray {
+				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+			}
+			err = blockchain.config.DataBase.DeleteOutputCoin(*view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
 			if err != nil {
 				return err
 			}
