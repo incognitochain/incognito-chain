@@ -53,7 +53,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		// }
 		newInst := [][]string{}
 		// switch metaType {
-		// // case metadata.IssuingRequestMeta:
+		// // case metadata.ShardBlockSalaryRequestMeta:
 		// // 	newInst, err = buildInstructionsForIssuingReq(shardID, contentStr, beaconBestState, accumulativeValues)
 
 		// // case metadata.ContractingRequestMeta:
@@ -98,19 +98,19 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 				continue
 			}
 			if shardToProcess == int(shardID) {
-				metaType, err := strconv.Atoi(l[0])
-				if err != nil {
-					return nil, err
-				}
+				// metaType, err := strconv.Atoi(l[0])
+				// if err != nil {
+				// 	return nil, err
+				// }
 				// var newIns []string
-				switch metaType {
-				case metadata.BeaconSalaryRequestMeta:
-					txs, err := blockgen.buildBeaconSalaryRes(l[0], l[3], producerPrivateKey)
-					if err != nil {
-						return nil, err
-					}
-					resTxs = append(resTxs, txs...)
-				}
+				// switch metaType {
+				// case metadata.BeaconSalaryRequestMeta:
+				// 	txs, err := blockgen.buildBeaconSalaryRes(l[0], l[3], producerPrivateKey)
+				// 	if err != nil {
+				// 		return nil, err
+				// 	}
+				// 	resTxs = append(resTxs, txs...)
+				// }
 
 			}
 			if l[0] == StakeAction || l[0] == RandomAction {
