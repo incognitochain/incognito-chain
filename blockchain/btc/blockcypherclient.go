@@ -45,7 +45,7 @@ func (self *BlockCypherClient)GetNonceByTimestamp(timestamp int64) (int, int64, 
 		if err != nil {
 			return 0, 0, -1, err
 		}
-		_, blockTimestamp, err = self.GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
+		blockTimestamp,_, err = self.GetTimeStampAndNonceByBlockHeight(blockHeight)
 		if err != nil {
 			return 0, 0, -1, err
 		}
@@ -55,7 +55,7 @@ func (self *BlockCypherClient)GetNonceByTimestamp(timestamp int64) (int, int64, 
 		if blockTimestamp > timestamp {
 			for blockTimestamp > timestamp {
 				blockHeight--
-				_, blockTimestamp, err = self.GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
+				blockTimestamp,_, err = self.GetTimeStampAndNonceByBlockHeight(blockHeight)
 				if err != nil {
 					return 0, 0, -1, err
 				}
@@ -73,7 +73,7 @@ func (self *BlockCypherClient)GetNonceByTimestamp(timestamp int64) (int, int64, 
 				if blockHeight > chainHeight {
 					return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Timestamp is greater than timestamp of highest block"))
 				}
-				_, blockTimestamp, err = self.GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
+				blockTimestamp, _, err = self.GetTimeStampAndNonceByBlockHeight(blockHeight)
 				if err != nil {
 					return 0, 0, -1, err
 				}
@@ -85,8 +85,7 @@ func (self *BlockCypherClient)GetNonceByTimestamp(timestamp int64) (int, int64, 
 				}
 			}
 		}
-		nonce, _, err := self.GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), true)
-		_, timestamp, err := self.GetNonceOrTimeStampByBlock(strconv.Itoa(blockHeight), false)
+		timestamp, nonce, err := self.GetTimeStampAndNonceByBlockHeight(blockHeight)
 		if err != nil {
 			return 0, 0, -1, err
 		}
@@ -124,11 +123,11 @@ func (self *BlockCypherClient) GetCurrentChainTimeStamp() (int64, error) {
 
 //true for nonce, false for time
 // return param:
-// #param 1: nonce -> flag true
-// #param 2: timestamp -> flag false
-func (self *BlockCypherClient) GetNonceOrTimeStampByBlock(blockHeight string, nonceOrTime bool) (int64, int64, error) {
+// #param 1: timestamp -> flag false
+// #param 2: nonce -> flag true
+func (self *BlockCypherClient) GetTimeStampAndNonceByBlockHeight(blockHeight int) (int64, int64, error) {
 	time.Sleep(1 * time.Second)
-	resp, err := http.Get("https://api.blockcypher.com/v1/btc/main/blocks/" + blockHeight + "?start=1&limit=1")
+	resp, err := http.Get("https://api.blockcypher.com/v1/btc/main/blocks/" + strconv.Itoa(blockHeight) + "?start=1&limit=1")
 	if err != nil {
 		return -1, MAX_TIMESTAMP, NewBTCAPIError(APIError, err)
 	}
@@ -139,17 +138,17 @@ func (self *BlockCypherClient) GetNonceOrTimeStampByBlock(blockHeight string, no
 			return -1, MAX_TIMESTAMP, NewBTCAPIError(UnExpectedError, err)
 		}
 		block := make(map[string]interface{})
-		json.Unmarshal(blockBytes, &block)
-		if nonceOrTime {
-			return int64(block["nonce"].(float64)), -1, nil
-		} else {
-			timeTime, err := time.Parse(time.RFC3339, block["time"].(string))
-			if err != nil {
-				return -1, MAX_TIMESTAMP, NewBTCAPIError(UnExpectedError, err)
-			}
-			timeInt64 := makeTimestamp(timeTime)
-			return -1, timeInt64, nil
+		err = json.Unmarshal(blockBytes, &block)
+		if err != nil {
+			return -1, MAX_TIMESTAMP, NewBTCAPIError(UnmashallJsonBlockError, errors.New("Can't get nonce or timestamp"))
 		}
+		nonce := int64(block["nonce"].(float64))
+		timeTime, err := time.Parse(time.RFC3339, block["time"].(string))
+		if err != nil {
+			return -1, MAX_TIMESTAMP, NewBTCAPIError(UnExpectedError, err)
+		}
+		timeInt64 := makeTimestamp(timeTime)
+		return nonce, timeInt64, nil
 	}
 	return -1, MAX_TIMESTAMP, NewBTCAPIError(UnExpectedError, errors.New("Can't get nonce or timestamp"))
 }
