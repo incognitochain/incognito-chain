@@ -73,7 +73,10 @@ func (db *db) BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubke
 	backupKeySpec3 := append(prevkey, keySpec3...)
 	res, err := db.lvdb.Get(keySpec3, nil)
 	if err != nil {
-		return err
+		if err != lvdberr.ErrNotFound {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return nil
 	}
 
 	if err := db.lvdb.Put(backupKeySpec3, res, nil); err != nil {
@@ -120,6 +123,9 @@ func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubk
 	if err != nil {
 		if err != lvdberr.ErrNotFound {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		if err := db.lvdb.Delete(keySpec3, nil); err != nil {
+			return err
 		}
 	}
 
