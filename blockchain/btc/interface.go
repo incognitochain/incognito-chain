@@ -1,4 +1,4 @@
-package btcapi
+package btc
 
 type RandomClient interface {
 	GetNonceByTimestamp(timestamp int64) (int, int64, int64, error)
