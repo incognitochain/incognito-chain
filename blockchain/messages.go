@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
@@ -64,6 +65,12 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	fmt.Println("Shard block received from shard A", newBlk.Header.ShardID, newBlk.Header.Height)
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
+		if _, ok := currentInsert.Shards[newBlk.Header.ShardID]; !ok {
+			currentInsert.Shards[newBlk.Header.ShardID] = &sync.Mutex{}
+		}
+
+		currentInsert.Shards[newBlk.Header.ShardID].Lock()
+		defer currentInsert.Shards[newBlk.Header.ShardID].Unlock()
 		fmt.Println("Shard block received from shard B", newBlk.Header.ShardID, newBlk.Header.Height)
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
