@@ -193,17 +193,13 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 					tokenIDs = append(tokenIDs, tokenID)
 				}
 			}
+
+			//Remove tx out of pool
+			blockchain.config.TxPool.RemoveTx(tx, true)
+			blockchain.config.CRemovedTxs <- tx
 		}
 		blockchain.config.TxPool.RemoveCandidateList(candidates)
 		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
-
-		//Remove tx out of pool
-		for _, tx := range block.Body.Transactions {
-			go func(tx metadata.Transaction) {
-				blockchain.config.TxPool.RemoveTx(tx, true)
-				blockchain.config.CRemovedTxs <- tx
-			}(tx)
-		}
 	}()
 
 	//========Store new  Shard block and new shard bestState
