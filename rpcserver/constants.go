@@ -110,4 +110,7 @@ const (
 	createAndSendIssuingRequest     = "createandsendissuingrequest"
 	createAndSendContractingRequest = "createandsendcontractingrequest"
 	getBridgeTokensAmounts          = "getbridgetokensamounts"
+
+	revertbeaconchain = "revertbeaconchain"
+	revertshardchain  = "revertshardchain"
 )

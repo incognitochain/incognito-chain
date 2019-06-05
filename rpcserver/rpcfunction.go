@@ -118,6 +118,10 @@ var RpcHandler = map[string]commandHandler{
 	getStackingAmount: RpcServer.handleGetStakingAmount,
 
 	hashToIdenticon: RpcServer.handleHashToIdenticon,
+
+	//revert
+	revertbeaconchain: RpcServer.handleRevertBeacon,
+	revertshardchain:  RpcServer.handleRevertShard,
 }
 
 // Commands that are available to a limited user
