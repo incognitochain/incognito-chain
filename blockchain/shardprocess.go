@@ -326,15 +326,14 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(DBError, err)
 	}
 	parentBlock := ShardBlock{}
-	json.Unmarshal(parentBlockData, &parentBlock)
+	err = json.Unmarshal(parentBlockData, &parentBlock)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
 	// Verify block height with parent block
 	if parentBlock.Header.Height+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
-	// Verify epoch with parent block
-	// if block.Header.Height%EPOCH == 0 && parentBlock.Header.Epoch != block.Header.Epoch-1 {
-	// 	return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
-	// }
 	// Verify timestamp with parent block
 	if block.Header.Timestamp <= parentBlock.Header.Timestamp {
 		return NewBlockChainError(TimestampError, errors.New("timestamp of new block can't equal to parent block"))
