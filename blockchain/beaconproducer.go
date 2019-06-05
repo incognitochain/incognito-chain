@@ -82,15 +82,21 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
 	beaconBlock.Header.Round = round
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
+	rewardByEpochInstruction := [][]string{}
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
+		rewardByEpochInstruction, err = blkTmplGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch)
+		if err != nil {
+			return nil, err
+		}
 		beaconBlock.Header.Epoch++
 	}
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	//fmt.Println("[db] NewBlockBeacon GetShardState")
 	tempShardState, staker, swap, stabilityInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
-	beaconBlockRewardIns, err := metadata.BuildInstForBeaconSalary(blkTmplGenerator.chain.getRewardAmount(beaconBlock.Header.Height), beaconBlock.Header.Height, &beaconBlock.Header.ProducerAddress)
-	tempInstruction = append(tempInstruction, beaconBlockRewardIns)
+	if len(rewardByEpochInstruction) != 0 {
+		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
+	}
 	//fmt.Println("BeaconProducer/tempInstruction", tempInstruction)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
@@ -201,7 +207,6 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(beaconBestState *BestSta
 			err1 := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 			fmt.Println("Beacon Producer/ Validate Agg Signature for shard", shardID, err1 == nil)
 			if err1 != nil {
-				panic("wtf")
 				break
 			}
 			if index != 0 && err1 != nil {
@@ -369,6 +374,17 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 			}
 			if l[0] == SwapAction {
 				swapers = append(swapers, l)
+			}
+			if l[0] == strconv.Itoa(metadata.BlockRewardInfoMeta) {
+				if len(l) != 3 {
+					continue
+				}
+				blkRewardInfo, err := metadata.NewBlockRewardInfoFromStr(l[2])
+				if err != nil {
+					continue
+				}
+				reward := blockChain.getRewardAmount(blkRewardInfo.ShardBlockHeight) + blkRewardInfo.TxsFee
+				blockChain.GetDatabase().AddShardRewardRequest(beaconBestState.Epoch, shardID, reward)
 			}
 		}
 	}

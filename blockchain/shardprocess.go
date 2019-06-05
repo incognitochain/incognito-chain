@@ -70,9 +70,6 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
 	}
-	if err := block.VerifyBlockReward(blockchain); err != nil {
-		return err
-	}
 	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for signing", shardID, block.Header.Height, *block.Hash())
 	return nil
 }
@@ -210,7 +207,12 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	blockchain.config.ShardPool[block.Header.ShardID].RemoveBlock(block.Header.Height)
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, *block.Hash())
-	return nil
+	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
+	if err != nil {
+		return err
+	}
+	err = blockchain.updateDatabaseFromShardBlock(block)
+	return err
 }
 
 /*
@@ -419,7 +421,10 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	if len(invalidTxs) > 0 {
 		return NewBlockChainError(TransactionError, errors.New(fmt.Sprintf("There are %d invalid txs...", len(invalidTxs))))
 	}
-
+	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(&block.Body)
+	if err != nil {
+		return err
+	}
 	// Get cross shard block from pool
 	// @NOTICE: COMMENT to bypass verify cross shard block
 	if isPresig {
@@ -503,7 +508,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
-	return nil
+	return err
 }
 
 /*
