@@ -1,4 +1,4 @@
-package btcapi
+package btc
 
 const (
 	NONCE= "nonce"
