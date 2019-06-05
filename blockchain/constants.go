@@ -56,7 +56,7 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet            = 0x255
+	Testnet            = 0x04
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
