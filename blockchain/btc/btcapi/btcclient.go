@@ -24,6 +24,18 @@ func NewBTCClient(user string, password string, ip string, port string) *BTCClie
 		Port: port,
 	}
 }
+func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, int64, error) {
+
+}
+func (btcClient *BTCClient) VerifyNonceWithTimestamp(timestamp int64, nonce int64) (bool, error) {
+
+}
+func (btcClient *BTCClient) GetCurrentChainTimeStamp() (int64, error) {
+
+}
+func (btcClient *BTCClient) GetNonceOrTimeStampByBlock(blockHeight string, nonceOrTime bool) (int64, int64, error) {
+
+}
 
 func (btcClient *BTCClient) GetBlockchainInfo() (map[string]interface{}, error) {
 	var result = make(map[string]interface{})
