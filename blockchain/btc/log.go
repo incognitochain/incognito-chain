@@ -1,4 +1,4 @@
-package btcapi
+package btc
 
 import "github.com/constant-money/constant-chain/common"
 
