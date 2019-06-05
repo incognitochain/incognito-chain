@@ -11,4 +11,8 @@ func main() {
 	var btcClient = btcapi.NewBTCClient("admin","autonomous", "159.65.142.153","8332")
 	res, err := btcClient.GetBlockchainInfo()
 	fmt.Println(res,err)
+	blockHeight, err := btcClient.GetBestBlockHeight()
+	fmt.Println(blockHeight,err)
+	timeStamp, err := btcClient.GetChainTimeStamp()
+	fmt.Println(timeStamp,err)
 }
