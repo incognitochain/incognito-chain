@@ -126,5 +126,11 @@ type DatabaseInterface interface {
 	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
 	PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool
 
+	// block reward
+	AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uint64) error
+	GetRewardOfShardByEpoch(epoch uint64, shardID byte) (uint64, error)
+	AddCommitteeReward(committeeAddress []byte, amount uint64) error
+	GetCommitteeReward(committeeAddress []byte) (uint64, error)
+	RemoveCommitteeReward(committeeAddress []byte, amount uint64) error
 	Close() error
 }

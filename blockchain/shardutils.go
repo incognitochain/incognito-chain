@@ -135,11 +135,10 @@ func CreateShardInstructionsFromTransactionAndIns(
 	if err != nil {
 		return nil, err
 	}
-
+	totalTxsFee := uint64(0)
 	for _, tx := range transactions {
-		if tx.GetMetadataType() != 38 {
-			//fmt.Println("[voting] - CreateShardInstructionsFromTransactionAndIns: ", tx.GetMetadataType())
-		}
+		totalTxsFee += tx.GetTxFee()
+
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
@@ -269,7 +268,7 @@ func VerifyMerkleTree(finalHash common.Hash, merklePath []common.Hash, merkleRoo
 		i = i / 2
 	}
 	merkleRootPointer := &merkleRoot
-	if !merkleRootPointer.IsEqual(&finalHash){
+	if !merkleRootPointer.IsEqual(&finalHash) {
 		return false
 	} else {
 		return true

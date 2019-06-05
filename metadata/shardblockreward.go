@@ -1,30 +1,37 @@
 package metadata
 
 import (
+	"encoding/json"
+	"strconv"
+
+	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/privacy"
 
 	// "errors"
 
 	"github.com/constant-money/constant-chain/database"
 )
 
-// type ShardBlockSalaryRes struct {
-// 	MetadataBase
-// 	ShardBlockHeight         uint64
-// 	ProducerAddress          privacy.PaymentAddress
-// 	ShardBlockSalaryInfoHash common.Hash
-// }
+type ShardBlockSalaryResponse struct {
+	MetadataBase
+	ShardBlockHeight         uint64
+	ProducerAddress          *privacy.PaymentAddress
+	ShardBlockSalaryInfoHash *common.Hash
+}
+
+type ShardBlockRewardInfo struct {
+	ShardReward uint64
+	Epoch       uint64
+}
 
 type ShardBlockRewardMeta struct {
 	MetadataBase
 }
 
-// type ShardBlockSalaryInfo struct {
-// 	ShardBlockSalary uint64
-// 	ShardBlockFee    uint64
-// 	PayToAddress     *privacy.PaymentAddress
-// 	ShardBlockHeight uint64
-// 	InfoHash         *common.Hash
-// }
+type BlockRewardInfo struct {
+	TxsFee           uint64
+	ShardBlockHeight uint64
+}
 
 // func NewShardBlockSalaryRes(
 // 	shardBlockHeight uint64,
@@ -50,6 +57,37 @@ func NewShardBlockRewardMeta() *ShardBlockRewardMeta {
 	return &ShardBlockRewardMeta{
 		MetadataBase: metadataBase,
 	}
+}
+
+func BuildInstForShardReward(reward, epoch uint64, shardID byte) ([][]string, error) {
+	resIns := [][]string{}
+	shardBlockRewardInfo := ShardBlockRewardInfo{
+		Epoch:       epoch,
+		ShardReward: reward,
+	}
+
+	contentStr, err := json.Marshal(shardBlockRewardInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	returnedInst := []string{
+		strconv.Itoa(ShardBlockRewardRequestMeta),
+		strconv.Itoa(int(shardID)),
+		"shardRewardInst",
+		string(contentStr),
+	}
+	resIns = append(resIns, returnedInst)
+	return resIns, nil
+}
+
+func NewShardBlockRewardInfoFromString(inst string) (*ShardBlockRewardInfo, error) {
+	Ins := &ShardBlockRewardInfo{}
+	err := json.Unmarshal([]byte(inst), Ins)
+	if err != nil {
+		return nil, err
+	}
+	return Ins, nil
 }
 
 // func (sbsRes *ShardBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64) bool {
@@ -93,17 +131,6 @@ func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateSanityData(bcr Blockch
 // func (sbsRes *ShardBlockSalaryRes) ValidateMetadataByItself() bool {
 // 	// The validation just need to check at tx level, so returning true here
 // 	return true
-// }
-
-// func (sbsRes *ShardBlockSalaryRes) Hash() *common.Hash {
-// 	record := sbsRes.ProducerAddress.String()
-// 	record += string(sbsRes.ShardBlockHeight)
-// 	record += sbsRes.ShardBlockSalaryInfoHash.String()
-
-// 	// final hash
-// 	record += sbsRes.MetadataBase.Hash().String()
-// 	hash := common.HashH([]byte(record))
-// 	return &hash
 // }
 
 // func (sbsRes *ShardBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
@@ -154,4 +181,57 @@ func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateSanityData(bcr Blockch
 // 		return false, errors.Errorf("Salary amount in ShardBlockSalaryRes tx %s is not matched to instruction's", tx.Hash().String())
 // 	}
 // 	return true, nil
+// }
+// func (shardBlockSalaryRequest *ShardBlockSalaryRequest) GetStringFormat() ([]string, error) {
+// 	content, err := json.Marshal(shardBlockSalaryRequest)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return []string{
+// 		strconv.Itoa(ShardBlockSalaryRequestMeta),
+// 		strconv.Itoa(BeaconOnly),
+// 		string(content),
+// 	}, nil
+// }
+
+func NewBlockRewardInfo(
+	txsFee uint64,
+	shardBlockHeight uint64,
+) *BlockRewardInfo {
+	return &BlockRewardInfo{
+		TxsFee:           txsFee,
+		ShardBlockHeight: shardBlockHeight,
+	}
+}
+
+func NewBlockRewardInfoFromStr(
+	inst string,
+) (*BlockRewardInfo, error) {
+	Ins := &BlockRewardInfo{}
+	err := json.Unmarshal([]byte(inst), Ins)
+	if err != nil {
+		return nil, err
+	}
+	return Ins, nil
+}
+
+func (blockRewardInfo *BlockRewardInfo) GetStringFormat() ([]string, error) {
+	content, err := json.Marshal(blockRewardInfo)
+	if err != nil {
+		return nil, err
+	}
+	return []string{
+		strconv.Itoa(BlockRewardInfoMeta),
+		strconv.Itoa(BeaconOnly),
+		string(content),
+	}, nil
+}
+
+// func NewShardBlockSalaryRequestFromStr(inst string) (*ShardBlockSalaryRequest, error) {
+// 	Ins := &ShardBlockSalaryRequest{}
+// 	err := json.Unmarshal([]byte(inst), Ins)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return Ins, nil
 // }

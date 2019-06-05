@@ -110,4 +110,7 @@ const (
 
 	// utils
 	HashToIdenticon = "hashtoidenticon"
+
+	// reward
+	CreateRawWithDrawTransaction = "withdrawreward"
 )

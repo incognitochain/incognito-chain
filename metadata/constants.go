@@ -10,11 +10,15 @@ const (
 
 	ResponseBaseMeta             = 35
 	ShardBlockReward             = 36
-	ShardBlockSalaryRequestMeta  = 37
+	BlockRewardInfoMeta          = 37
 	ShardBlockSalaryResponseMeta = 38
-	BeaconSalaryRequestMeta      = 39
+	BeaconRewardRequestMeta      = 39
 	BeaconSalaryResponseMeta     = 40
 	ReturnStakingMeta            = 41
+	DevRewardRequestMeta         = 42
+	ShardBlockRewardRequestMeta  = 43
+	WithDrawRewardRequestMeta    = 44
+	WithDrawRewardResponseMeta   = 45
 
 	//statking
 	ShardStakingMeta  = 63
@@ -32,3 +36,11 @@ var minerCreatedMetaTypes = []int{
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
+const (
+	AllShards  = -1
+	BeaconOnly = -2
+)
+
+const (
+	WithDrawFee = 20
+)

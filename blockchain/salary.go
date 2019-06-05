@@ -1,8 +1,10 @@
 package blockchain
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -11,6 +13,11 @@ import (
 	"github.com/constant-money/constant-chain/transaction"
 	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
+)
+
+const (
+	ForDev                       = float32(1)
+	DurationHalfLifeRewardForDev = uint64(1000)
 )
 
 // func getMiningReward(isForBeacon bool, blkHeight uint64) uint64 {
@@ -80,42 +87,42 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 	return returnStakingTx, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
-	instType string,
-	contentStr string,
-	blkProducerPrivateKey *privacy.PrivateKey,
-) ([]metadata.Transaction, error) {
+// func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
+// 	instType string,
+// 	contentStr string,
+// 	blkProducerPrivateKey *privacy.PrivateKey,
+// ) ([]metadata.Transaction, error) {
 
-	var beaconSalaryInfo metadata.BeaconSalaryInfo
-	err := json.Unmarshal([]byte(contentStr), &beaconSalaryInfo)
-	if err != nil {
-		return nil, err
-	}
-	if beaconSalaryInfo.PayToAddress == nil || beaconSalaryInfo.InfoHash == nil {
-		return nil, errors.Errorf("Can not Parse from contentStr")
-	}
+// 	var beaconSalaryInfo metadata.BeaconSalaryInfo
+// 	err := json.Unmarshal([]byte(contentStr), &beaconSalaryInfo)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if beaconSalaryInfo.PayToAddress == nil || beaconSalaryInfo.InfoHash == nil {
+// 		return nil, errors.Errorf("Can not Parse from contentStr")
+// 	}
 
-	salaryResMeta := metadata.NewBeaconBlockSalaryRes(
-		beaconSalaryInfo.BeaconBlockHeight,
-		beaconSalaryInfo.PayToAddress,
-		beaconSalaryInfo.InfoHash,
-		metadata.BeaconSalaryResponseMeta,
-	)
+// 	salaryResMeta := metadata.NewBeaconBlockSalaryRes(
+// 		beaconSalaryInfo.BeaconBlockHeight,
+// 		beaconSalaryInfo.PayToAddress,
+// 		beaconSalaryInfo.InfoHash,
+// 		metadata.BeaconSalaryResponseMeta,
+// 	)
 
-	salaryResTx := new(transaction.Tx)
-	err = salaryResTx.InitTxSalary(
-		beaconSalaryInfo.BeaconSalary,
-		beaconSalaryInfo.PayToAddress,
-		blkProducerPrivateKey,
-		blockgen.chain.GetDatabase(),
-		salaryResMeta,
-	)
-	//fmt.Println("SA: beacon salary", beaconSalaryInfo, salaryResTx.CalculateTxValue(), salaryResTx.Hash().String())
-	if err != nil {
-		return nil, err
-	}
-	return []metadata.Transaction{salaryResTx}, nil
-}
+// 	salaryResTx := new(transaction.Tx)
+// 	err = salaryResTx.InitTxSalary(
+// 		beaconSalaryInfo.BeaconSalary,
+// 		beaconSalaryInfo.PayToAddress,
+// 		blkProducerPrivateKey,
+// 		blockgen.chain.GetDatabase(),
+// 		salaryResMeta,
+// 	)
+// 	//fmt.Println("SA: beacon salary", beaconSalaryInfo, salaryResTx.CalculateTxValue(), salaryResTx.Hash().String())
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return []metadata.Transaction{salaryResTx}, nil
+// }
 
 // func (blockgen *BlkTmplGenerator) buildBeaconRewardTx(inst metadata.BeaconSalaryInfo, producerPriKey *privacy.PrivateKey) error {
 // 	n := inst.BeaconBlockHeight / blockgen.chain.config.ChainParams.RewardHalflife
@@ -138,4 +145,189 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 		reward /= 2
 	}
 	return reward
+}
+
+func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]string, error) {
+	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
+	totalRewards := make([]uint64, numberOfActiveShards)
+	totalRewardForBeacon := uint64(0)
+	totalRewardForDev := uint64(0)
+	totalShareReward := uint64(0)
+	var err error
+	forDev := ForDev
+	for i := uint64(0); i < epoch/DurationHalfLifeRewardForDev; i++ {
+		forDev /= 2
+	}
+	constForCalReward := (1.0 + forDev) / (float32(numberOfActiveShards) + (1.0 + forDev))
+
+	for ID := 0; ID < numberOfActiveShards; ID++ {
+		totalRewards[ID], err = blockchain.GetDatabase().GetRewardOfShardByEpoch(epoch, byte(ID))
+		if err != nil {
+			return nil, err
+		}
+		shareReward := uint64(float32(totalRewards[ID]) * constForCalReward)
+		totalShareReward += shareReward
+		totalRewards[ID] -= shareReward
+	}
+	totalRewardForDev = uint64(float32(totalShareReward) * forDev / 10)
+	totalRewardForBeacon = totalShareReward - totalRewardForDev
+	var resInst [][]string
+	var instRewardForBeacons [][]string
+	var instRewardForDev [][]string
+	var instRewardForShards [][]string
+	instRewardForBeacons, err = blockchain.BuildInstRewardForBeacons(epoch, totalRewardForBeacon)
+	if err != nil {
+		return nil, err
+	}
+	instRewardForDev, err = blockchain.BuildInstRewardForDev(epoch, totalRewardForDev)
+	if err != nil {
+		return nil, err
+	}
+	instRewardForShards, err = blockchain.BuildInstRewardForShards(epoch, totalRewards)
+	if err != nil {
+		return nil, err
+	}
+	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForDev, instRewardForShards)
+	return resInst, nil
+}
+
+func (blockchain *BlockChain) shareRewardForShardCommittee(epoch, totalReward uint64, listCommitee []string) error {
+	reward := totalReward / uint64(len(listCommitee))
+	for i, committee := range listCommitee {
+		committeeBytes, err := hex.DecodeString(committee)
+		if err != nil {
+			for j := i - 1; j >= 0; j-- {
+				committeeBytesTemp, _ := hex.DecodeString(listCommitee[j])
+				err = blockchain.GetDatabase().RemoveCommitteeReward(committeeBytesTemp, reward)
+			}
+			return err
+		}
+		err = blockchain.GetDatabase().AddCommitteeReward(committeeBytes, reward)
+		if err != nil {
+			for j := i - 1; j >= 0; j-- {
+				committeeBytesTemp, _ := hex.DecodeString(listCommitee[j])
+				err = blockchain.GetDatabase().RemoveCommitteeReward(committeeBytesTemp, reward)
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
+	beaconBlocks []*BeaconBlock,
+	shardID byte,
+) error {
+
+	shardCommittee := make(map[byte][]string)
+	isInit := false
+	epoch := uint64(0)
+	db := blockchain.GetDatabase()
+	// listShardCommittee := blockchain.GetDatabase().FetchCommitteeByEpoch
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			if l[0] == StakeAction || l[0] == RandomAction {
+				continue
+			}
+			if len(l) <= 2 {
+				continue
+			}
+			shardToProcess, err := strconv.Atoi(l[1])
+			if err != nil {
+				continue
+			}
+			if shardToProcess == int(shardID) {
+				metaType, err := strconv.Atoi(l[0])
+				if err != nil {
+					return err
+				}
+				switch metaType {
+				case metadata.BeaconRewardRequestMeta:
+					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[2])
+					if err != nil {
+						return err
+					}
+					err = db.AddCommitteeReward(beaconBlkRewardInfo.PayToAddress.Bytes(), beaconBlkRewardInfo.BeaconReward)
+					if err != nil {
+						return err
+					}
+					continue
+
+				case metadata.DevRewardRequestMeta:
+					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
+					if err != nil {
+						return err
+					}
+					devAddressBytes, err := hex.DecodeString(common.DevAddress)
+					if err != nil {
+						return err
+					}
+					err = db.AddCommitteeReward(devAddressBytes, devRewardInfo.DevReward)
+					if err != nil {
+						return err
+					}
+					continue
+
+				case metadata.ShardBlockRewardRequestMeta:
+					shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
+					if err != nil {
+						return err
+					}
+					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+						isInit = true
+						epoch = shardRewardInfo.Epoch
+						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(epoch)
+						if err != nil {
+							return err
+						}
+						json.Unmarshal(temp, &shardCommittee)
+					}
+					err = blockchain.shareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
+					if err != nil {
+						return err
+					}
+					continue
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) updateDatabaseFromShardBlock(
+	shardBlock *ShardBlock,
+) error {
+	db := blockchain.GetDatabase()
+	for _, tx := range shardBlock.Body.Transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
+			receivers, amounts := tx.GetReceivers()
+			err := db.RemoveCommitteeReward(receivers[0], amounts[0])
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey) (metadata.Transaction, error) {
+	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
+		return nil, errors.New("Can not understand this request!")
+	}
+	receiverBytes := (*txRequest).GetSender()
+	receiverPayment := privacy.NewPaymentAddressFromByte(receiverBytes)
+	if len(receiverBytes) == 0 {
+		return nil, errors.New("Can not get payment address of request's sender")
+	}
+	amount, err := blockchain.GetDatabase().GetCommitteeReward(receiverBytes)
+	if (amount == 0) || (err != nil) {
+		return nil, errors.New("Not enough reward")
+	}
+	responseMeta, err := metadata.NewWithDrawRewardResponse((*txRequest).Hash())
+	if err != nil {
+		return nil, err
+	}
+	txRes := new(transaction.Tx)
+	txRes.InitTxSalary(amount, receiverPayment, blkProducerPrivateKey, blockchain.GetDatabase(), responseMeta)
+	return txRes, nil
 }

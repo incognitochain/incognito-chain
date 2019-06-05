@@ -55,6 +55,11 @@ var (
 	Unspent    = []byte("unspent")
 	Mintable   = []byte("mintable")
 	UnMintable = []byte("unmintable")
+
+	//epoch reward
+	ShardRequestRewardPrefix        = []byte("shardrequestreward-")
+	BeaconBlockProposeCounterPrefix = []byte("beaconblockproposecounter-")
+	CommitteeRewardPrefix           = []byte("committee-reward-")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
