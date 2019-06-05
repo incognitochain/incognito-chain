@@ -30,25 +30,25 @@ Timestamp of blockHeight 577267  is: 	1444501387
 Nonce of blockHeight 577268  is: 3338477159
 Timestamp of blockHeight 577268  is: 1444502621
 */
-func TestGetNonceByTimestamp(t *testing.T) {
-	timestamp1 := 1544500800
-	timestamp2 := 1444500800
-	res, err := GetNonceByTimestamp(int64(timestamp1))
-	if err != nil {
-		t.Errorf("Error geting nonce: %s", err)
-	}
-	if res != int64(4121500227) {
-		t.Errorf("Error geting nonce %d with err: %s", res, err)
-	}
-
-	res, err = GetNonceByTimestamp(int64(timestamp2))
-	if err != nil {
-		t.Errorf("Error geting nonce: %s", err)
-	}
-	if res != int64(3374249745) {
-		t.Errorf("Error geting nonce %d with err: %s", res, err)
-	}
-}
+//func TestGetNonceByTimestamp(t *testing.T) {
+//	timestamp1 := 1544500800
+//	timestamp2 := 1444500800
+//	res, err := GetNonceByTimestamp(int64(timestamp1))
+//	if err != nil {
+//		t.Errorf("Error geting nonce: %s", err)
+//	}
+//	if res != int64(4121500227) {
+//		t.Errorf("Error geting nonce %d with err: %s", res, err)
+//	}
+//
+//	res, err = GetNonceByTimestamp(int64(timestamp2))
+//	if err != nil {
+//		t.Errorf("Error geting nonce: %s", err)
+//	}
+//	if res != int64(3374249745) {
+//		t.Errorf("Error geting nonce %d with err: %s", res, err)
+//	}
+//}
 
 func TestGetNonceByBlock(t *testing.T) {
 	// curl https://api.blockcypher.com/v1/btc/test3/blocks/00000000001be2d75acc520630a117874316c07fd7a724afae1a5d99038f4f4a
