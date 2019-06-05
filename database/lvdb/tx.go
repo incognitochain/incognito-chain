@@ -183,7 +183,12 @@ func (db *db) HasCommitment(tokenID common.Hash, commitment []byte, shardID byte
 func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
-	keySpec := append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
+	var keySpec []byte
+	if commitmentIndex == 0 {
+		keySpec = append(key, byte(0))
+	} else {
+		keySpec = append(key, new(big.Int).SetUint64(commitmentIndex).Bytes()...)
+	}
 	_, err := db.Get(keySpec)
 	if err != nil {
 		return false, err
