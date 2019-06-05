@@ -23,6 +23,10 @@ type CountResult struct {
 	Success int
 	Fail int
 }
+func (rpcServer RpcServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	rpcServer.config.TxMemPool.SendTransactionToBlockGen()
+	return nil, nil
+}
 func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	Logger.log.Critical(arrayParams)

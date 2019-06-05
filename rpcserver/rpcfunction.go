@@ -70,6 +70,7 @@ var RpcHandler = map[string]commandHandler{
 
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
+	unlockMempool:         RpcServer.handleUnlockMempool,
 	//=================================
 
 	//pool

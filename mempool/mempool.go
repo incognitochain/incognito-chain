@@ -479,12 +479,17 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		Logger.log.Error(err)
 	} else {
 		if tp.IsBlockGenStarted {
-			go func(tx metadata.Transaction) {
-				tp.CPendingTxs <- tx
-			}(tx)
+			//go func(tx metadata.Transaction) {
+			//	tp.CPendingTxs <- tx
+			//}(tx)
 		}
 	}
 	return hash, txDesc, err
+}
+func (tp *TxPool) SendTransactionToBlockGen() {
+	for _, txdesc := range tp.pool {
+		tp.CPendingTxs <- txdesc.Desc.Tx
+	}
 }
 func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
 	tp.pool[txHash].IsFowardMessage = true
