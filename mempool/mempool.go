@@ -356,6 +356,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	}
 	return nil
 }
+// TODO: comment validate
 func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool) (*common.Hash, *TxDesc, error) {
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
@@ -366,15 +367,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 		}
 	}
 	startValidate := time.Now()
-	err := tp.ValidateTransaction(tx)
+	// no validate
+	//err := tp.ValidateTransaction(tx)
 	elapsed := float64(time.Since(startValidate).Seconds())
-	//if isNewTransaction {
+	
 	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolValidated, elapsed)
 	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolValidatedWithType, elapsed)
-	//}
-	if err != nil {
-		return nil, nil, err
-	}
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	txFee := tx.GetTxFee()
