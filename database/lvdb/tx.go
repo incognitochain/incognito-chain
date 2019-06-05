@@ -223,15 +223,23 @@ func (db *db) GetCommitmentLength(tokenID common.Hash, shardID byte) (*big.Int, 
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, []byte("len")...)
-	data, err := db.Get(keySpec)
+	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return new(big.Int).SetInt64(0), err
+		return nil, err
 	} else {
-		lenArray := new(big.Int).SetBytes(data)
-		lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
-		return lenArray, nil
+		if !hasValue {
+			return nil, nil
+		} else {
+			data, err := db.Get(keySpec)
+			if err != nil {
+				return nil, err
+			} else {
+				lenArray := new(big.Int).SetBytes(data)
+				lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
+				return lenArray, nil
+			}
+		}
 	}
-	return new(big.Int).SetInt64(0), nil
 }
 
 //GetOutcoinsByPubkey - get all output coin of pubkey
