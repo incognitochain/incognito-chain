@@ -201,6 +201,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	go func() {
 		for _, tx := range txToRemove {
 			blockgen.txPool.RemoveTx(tx, false)
+			blockgen.chain.config.CRemovedTxs <- tx
 		}
 	}()
 
@@ -444,9 +445,9 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		}
 		currentSize += tempSize
 		txsToAdd = append(txsToAdd, tempTx)
-		if len(txsToAdd) == MaxTxsInBlock {
-			break
-		}
+		//if len(txsToAdd) >= MaxTxsInBlock {
+		//	break
+		//}
 		// Time bound condition for block creation
 		elasped = time.Since(startTime).Nanoseconds()
 		// @txsProcessTimeInBlockCreation is a constant for this current version
