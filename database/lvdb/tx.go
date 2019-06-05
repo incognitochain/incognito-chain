@@ -68,15 +68,23 @@ func (db *db) GetSerialNumbersLength(tokenID common.Hash, shardID byte) (*big.In
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 	keyStoreLen := append(key, []byte("len")...)
-	data, err := db.Get(keyStoreLen)
+	hasValue, err := db.HasValue(keyStoreLen)
 	if err != nil {
-		return new(big.Int).SetInt64(0), nil
+		return nil, err
 	} else {
-		lenArray := new(big.Int).SetBytes(data)
-		lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
-		return lenArray, nil
+		if !hasValue {
+			return nil, nil
+		} else {
+			data, err := db.Get(keyStoreLen)
+			if err != nil {
+				return new(big.Int).SetInt64(0), nil
+			} else {
+				lenArray := new(big.Int).SetBytes(data)
+				lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
+				return lenArray, nil
+			}
+		}
 	}
-	return new(big.Int).SetInt64(0), nil
 }
 
 // CleanSerialNumbers - clear all list serialNumber in DB
