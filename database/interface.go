@@ -135,6 +135,8 @@ type DatabaseInterface interface {
 	GetBridgeTokensAmounts() ([][]byte, error)
 	IsBridgeTokenExisted(common.Hash) (bool, error)
 	UpdateAmtByTokenID(common.Hash, uint64, string) error
+	BackupBridgedTokenByTokenID(tokenID common.Hash) error
+	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
 
 	Close() error
 }
