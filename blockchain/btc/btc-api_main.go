@@ -13,6 +13,7 @@ func main() {
 	fmt.Println(res,err)
 	blockHeight, err := btcClient.GetBestBlockHeight()
 	fmt.Println(blockHeight,err)
-	timeStamp, err := btcClient.GetChainTimeStamp()
-	fmt.Println(timeStamp,err)
+	timeStamp,nonce, err := btcClient.GetChainTimeStampAndNonce()
+	fmt.Println(timeStamp,nonce, err)
+	fmt.Println(btcClient.GetTimeStampAndNonceByBlockHeigh(579358))
 }
