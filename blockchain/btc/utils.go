@@ -1,10 +1,9 @@
-package btcapi
+package btc
 
 import (
 	"errors"
 	"fmt"
 	"math"
-	"strconv"
 	"time"
 )
 
@@ -44,7 +43,7 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 			if math.Abs(float64(diff)) < 3 {
 				return estimateBlockHeight, nil
 			}
-			_, blockTimestamp, err := self.GetNonceOrTimeStampByBlock(strconv.Itoa(estimateBlockHeight), false)
+			blockTimestamp, _, err := self.GetTimeStampAndNonceByBlockHeight(estimateBlockHeight)
 			// fmt.Printf("Try to estimate block with timestamp %d \n", blockTimestamp)
 			if err != nil {
 				return -1, err
