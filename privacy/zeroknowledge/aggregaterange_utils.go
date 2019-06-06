@@ -5,6 +5,7 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 	"math"
 	"math/big"
+	"sync"
 )
 
 type InnerProductWitness struct {
@@ -239,10 +240,16 @@ func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
 		GPrime := make([]*privacy.EllipticPoint, nPrime)
 		HPrime := make([]*privacy.EllipticPoint, nPrime)
 
-		for i := range GPrime {
-			GPrime[i] = G[i].ScalarMult(xInverse).Add(G[i+nPrime].ScalarMult(x))
-			HPrime[i] = H[i].ScalarMult(x).Add(H[i+nPrime].ScalarMult(xInverse))
+		var wg sync.WaitGroup
+		wg.Add(len(GPrime))
+		for i := 0; i < len(GPrime); i++ {
+			go func(i int, wg *sync.WaitGroup) {
+				defer wg.Done()
+				GPrime[i] = G[i].ScalarMult(xInverse).Add(G[i+nPrime].ScalarMult(x))
+				HPrime[i] = H[i].ScalarMult(x).Add(H[i+nPrime].ScalarMult(xInverse))
+			}(i, &wg)
 		}
+		wg.Wait()
 
 		xSquare := new(big.Int).Mul(x, x)
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)

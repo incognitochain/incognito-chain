@@ -2,7 +2,8 @@ package zkp
 
 import (
 	"math/big"
-	
+	"sync"
+
 	"github.com/constant-money/constant-chain/privacy"
 )
 
@@ -26,21 +27,21 @@ type AggregatedRangeProof struct {
 }
 
 func (proof *AggregatedRangeProof) ValidateSanity() bool {
-	for i:=0; i< len(proof.cmsValue); i++{
-		if !proof.cmsValue[i].IsSafe(){
+	for i := 0; i < len(proof.cmsValue); i++ {
+		if !proof.cmsValue[i].IsSafe() {
 			return false
 		}
 	}
-	if !proof.a.IsSafe(){
+	if !proof.a.IsSafe() {
 		return false
 	}
-	if !proof.s.IsSafe(){
+	if !proof.s.IsSafe() {
 		return false
 	}
-	if !proof.t1.IsSafe(){
+	if !proof.t1.IsSafe() {
 		return false
 	}
-	if !proof.t2.IsSafe(){
+	if !proof.t2.IsSafe() {
 		return false
 	}
 	if proof.tauX.BitLen() > 256 {
@@ -502,9 +503,15 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	// HPrime = H^(y^(1-i)
 	tmp := new(big.Int)
 	HPrime := make([]*privacy.EllipticPoint, n*numValuePad)
+	var wg sync.WaitGroup
+	wg.Add(len(HPrime))
 	for i := 0; i < n*numValuePad; i++ {
-		HPrime[i] = AggParam.H[i].ScalarMult(tmp.Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			HPrime[i] = AggParam.H[i].ScalarMult(tmp.Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
+		}(i, &wg)
 	}
+	wg.Wait()
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
 	deltaYZ := new(big.Int).Sub(z, zSquare)
