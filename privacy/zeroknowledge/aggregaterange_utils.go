@@ -241,11 +241,14 @@ func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
 		HPrime := make([]*privacy.EllipticPoint, nPrime)
 
 		var wg sync.WaitGroup
-		wg.Add(len(GPrime))
+		wg.Add(len(GPrime) * 2)
 		for i := 0; i < len(GPrime); i++ {
 			go func(i int, wg *sync.WaitGroup) {
 				defer wg.Done()
 				GPrime[i] = G[i].ScalarMult(xInverse).Add(G[i+nPrime].ScalarMult(x))
+			}(i, &wg)
+			go func(i int, wg *sync.WaitGroup) {
+				defer wg.Done()
 				HPrime[i] = H[i].ScalarMult(x).Add(H[i+nPrime].ScalarMult(xInverse))
 			}(i, &wg)
 		}
