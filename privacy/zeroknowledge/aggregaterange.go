@@ -2,7 +2,8 @@ package zkp
 
 import (
 	"math/big"
-	
+	"sync"
+
 	"github.com/constant-money/constant-chain/privacy"
 )
 
@@ -26,21 +27,21 @@ type AggregatedRangeProof struct {
 }
 
 func (proof *AggregatedRangeProof) ValidateSanity() bool {
-	for i:=0; i< len(proof.cmsValue); i++{
-		if !proof.cmsValue[i].IsSafe(){
+	for i := 0; i < len(proof.cmsValue); i++ {
+		if !proof.cmsValue[i].IsSafe() {
 			return false
 		}
 	}
-	if !proof.a.IsSafe(){
+	if !proof.a.IsSafe() {
 		return false
 	}
-	if !proof.s.IsSafe(){
+	if !proof.s.IsSafe() {
 		return false
 	}
-	if !proof.t1.IsSafe(){
+	if !proof.t1.IsSafe() {
 		return false
 	}
-	if !proof.t2.IsSafe(){
+	if !proof.t2.IsSafe() {
 		return false
 	}
 	if proof.tauX.BitLen() > 256 {
@@ -502,9 +503,15 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	// HPrime = H^(y^(1-i)
 	tmp := new(big.Int)
 	HPrime := make([]*privacy.EllipticPoint, n*numValuePad)
+	var wg sync.WaitGroup
+	wg.Add(len(HPrime))
 	for i := 0; i < n*numValuePad; i++ {
-		HPrime[i] = AggParam.H[i].ScalarMult(tmp.Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			HPrime[i] = AggParam.H[i].ScalarMult(tmp.Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
+		}(i, &wg)
 	}
+	wg.Wait()
 
 	// g^tHat * h^tauX = V^(z^2) * g^delta(y,z) * T1^x * T2^(x^2)
 	deltaYZ := new(big.Int).Sub(z, zSquare)
@@ -536,7 +543,24 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
 	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.VALUE)
-	right1 := privacy.PedCom.G[privacy.VALUE].ScalarMult(deltaYZ).Add(proof.t1.ScalarMult(x)).Add(proof.t2.ScalarMult(xSquare))
+
+	var temp1, temp2, temp3 *privacy.EllipticPoint
+
+	wg.Add(3)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		temp1 = privacy.PedCom.G[privacy.VALUE].ScalarMult(deltaYZ)
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		temp2 = proof.t1.ScalarMult(x)
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		temp3 = proof.t2.ScalarMult(xSquare)
+	}(&wg)
+	wg.Wait()
+	right1 := temp1.Add(temp2).Add(temp3)
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	for i, cm := range tmpcmsValue {
