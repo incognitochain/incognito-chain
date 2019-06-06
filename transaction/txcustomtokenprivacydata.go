@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"strconv"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/constant-money/constant-chain/wallet"
-	"strconv"
 )
 
 type TxTokenPrivacyData struct {
@@ -66,6 +67,7 @@ type CustomTokenPrivacyParamTx struct {
 	TokenTxType    int                    `json:"TokenTxType"`
 	Receiver       []*privacy.PaymentInfo `json:"TokenReceiver"`
 	TokenInput     []*privacy.InputCoin   `json:"TokenInput"`
+	Mintable       bool                   `json:"TokenMintable"`
 }
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx

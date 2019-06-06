@@ -17,7 +17,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/addrmanager"
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/connmanager"
@@ -405,7 +405,7 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 	if jsonErr.(*RPCError) != nil && r.Method != "OPTIONS" {
 		// Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 		fmt.Println(request.Method)
-		if request.Method != GetTransactionByHash {
+		if request.Method != getTransactionByHash {
 			log.Printf("RPC function process with err \n %+v", jsonErr)
 		}
 	}

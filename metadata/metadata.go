@@ -79,6 +79,8 @@ func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever Bl
 }
 
 func (mb *MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instsUsed []int,
 	shardID byte,
@@ -115,7 +117,7 @@ type BlockchainRetriever interface {
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
-	GetTransactionByHash(*common.Hash) (byte, *common.Hash, int, Transaction, error)
+	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
 	GetCurrentBeaconBlockHeight(byte) uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
 	GetDatabase() database.DatabaseInterface
@@ -136,7 +138,7 @@ type Metadata interface {
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, Transaction, BlockchainRetriever) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
 }
 
@@ -182,5 +184,5 @@ type Transaction interface {
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
-	VerifyMinerCreatedTxBeforeGettingInBlock([][]string, []int, byte, BlockchainRetriever) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever) (bool, error)
 }

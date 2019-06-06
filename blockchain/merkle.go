@@ -84,6 +84,7 @@ func (merkle Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) [
 
 	return merkles
 }
+
 func (merkle Merkle) BuildMerkleTreeOfHashes(shardsHash []*common.Hash, length int) []*common.Hash {
 	// Calculate how many entries are required to hold the binary merkle
 	// tree as a linear array and create an array of that size.
@@ -92,10 +93,7 @@ func (merkle Merkle) BuildMerkleTreeOfHashes(shardsHash []*common.Hash, length i
 	merkles := make([]*common.Hash, arraySize)
 
 	// Create the base transaction hashes and populate the array with them.
-	// Create the base transaction hashes and populate the array with them.
-	for i := range shardsHash {
-		merkles[i] = shardsHash[i]
-	}
+	copy(merkles, shardsHash)
 	for i := len(shardsHash); i < len(merkles); i++ {
 		merkles[i], _ = common.Hash{}.NewHashFromStr("")
 	}
@@ -240,24 +238,3 @@ func CalcMerkleRoot(txns []metadata.Transaction) common.Hash {
 	merkles := Merkle{}.BuildMerkleTreeStore(utilTxns)
 	return *merkles[len(merkles)-1]
 }
-
-/*
-// UpdateMerkleTreeForBlock adds all transaction's commitments in a block to the newest merkle tree
-*/
-/*func UpdateMerkleTreeForBlock(tree *client.IncMerkleTree, block *Block) error {
-	for _, blockTx := range block.Transactions {
-		if blockTx.GetType() == common.TxNormalType || blockTx.GetType() == common.TxSalaryType {
-			tx, ok := blockTx.(*transaction.TxNormal)
-			if ok == false {
-				return NewBlockChainError(UnExpectedError, fmt.Errorf("Transaction in block not valid"))
-			}
-
-			for _, desc := range tx.Descs {
-				for _, cm := range desc.Commitments {
-					tree.AddNewNode(cm[:])
-				}
-			}
-		}
-	}
-	return nil
-}*/

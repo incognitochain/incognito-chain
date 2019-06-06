@@ -134,6 +134,8 @@ func (sbsRes *BeaconBlockSalaryRes) Hash() *common.Hash {
 }
 
 // func (sbsRes *BeaconBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
+// 	txsInBlock []Transaction,
+// 	txsUsed []int,
 // 	insts [][]string,
 // 	instUsed []int,
 // 	shardID byte,
@@ -174,6 +176,9 @@ func (sbsRes *BeaconBlockSalaryRes) Hash() *common.Hash {
 // 	if (!bytes.Equal(beaconSalaryInfo.PayToAddress.Pk[:], sbsRes.ProducerAddress.Pk[:])) ||
 // 		(!bytes.Equal(beaconSalaryInfo.PayToAddress.Tk[:], sbsRes.ProducerAddress.Tk[:])) {
 // 		return false, errors.Errorf("Producer address in BeaconBlockSalaryResponse tx %s is not matched to instruction's", tx.Hash().String())
+// 	}
+// 	if beaconSalaryInfo.BeaconBlockHeight != sbsRes.BeaconBlockHeight {
+// 		return false, errors.Errorf("ShardBlockHeight in BeaconBlockSalaryResponse tx %s is not matched to instruction's", tx.Hash().String())
 // 	}
 
 // 	if beaconSalaryInfo.BeaconSalary != tx.CalculateTxValue() {

@@ -4,18 +4,20 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/databasemp"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/transaction"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/transaction"
 
 	"github.com/constant-money/constant-chain/addrmanager"
 	"github.com/constant-money/constant-chain/blockchain"
@@ -181,6 +183,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Server:            serverObj,
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
@@ -210,10 +213,18 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					Logger.log.Debug("Init NewFeeEstimator")
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
-						mempool.DefaultEstimateFeeMinRegisteredBlocks)
+						mempool.DefaultEstimateFeeMinRegisteredBlocks,
+						cfg.LimitFee)
 				} else {
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
+			} else {
+				Logger.log.Errorf("Failed to get fee estimator from DB %v", err)
+				Logger.log.Debug("Init NewFeeEstimator")
+				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
+					mempool.DefaultEstimateFeeMaxRollback,
+					mempool.DefaultEstimateFeeMinRegisteredBlocks,
+					cfg.LimitFee)
 			}
 		}
 	} else {
@@ -234,6 +245,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
+	}
+	for shardID, feeEstimator := range serverObj.feeEstimator {
+		serverObj.blockChain.SetFeeEstimator(feeEstimator, shardID)
 	}
 	// create mempool tx
 	serverObj.memPool = &mempool.TxPool{}
@@ -450,7 +464,6 @@ func (serverObj *Server) Stop() error {
 	}
 
 	serverObj.consensusEngine.Stop()
-	serverObj.blockChain.StopSync()
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
 	return nil
@@ -529,7 +542,7 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
-	go serverObj.blockChain.StartSyncBlk()
+	go serverObj.blockChain.Synker.Start()
 
 	if cfg.NodeMode != common.NODEMODE_RELAY {
 		err := serverObj.consensusEngine.Start()
@@ -603,17 +616,32 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 }
 
 func (serverObject Server) CheckForceUpdateSourceCode() {
-	if common.NextForceUpdate == "" {
-		return
+	now := time.Now()
+	var year int
+	var month int
+	var result string
+	formatedNow := now.Format(common.DateInputFormat)
+	res := strings.Split(formatedNow, "-")
+	year, _ = strconv.Atoi(res[0])
+	if res[1] == "12" {
+		month = 1
+		year += 1
+	} else {
+		month, _ = strconv.Atoi(res[1])
+		month += 1
+	}
+	if month >= 10 {
+		result = strconv.Itoa(year) + "-" + strconv.Itoa(month) + "-" + common.FirstDateOfMonth
+	} else {
+		result = strconv.Itoa(year) + "-" + "0" + strconv.Itoa(month) + "-" + common.FirstDateOfMonth
 	}
 	Logger.log.Warn("\n*********************************************************************************\n" +
-		"* Detected a Force Updating Time for this source code from https://github.com/constant-money/constant-chain at " + common.NextForceUpdate + " *" +
+		"* Detected a Force Updating Time for this source code from https://github.com/constant-money/constant-chain at " + result + " *" +
 		"\n*********************************************************************************\n")
-	go func() {
-		for true {
-			now := time.Now()
-			forceTime, _ := time.ParseInLocation(common.DateInputFormat, common.NextForceUpdate, time.Local)
-			fmt.Println(now)
+	go func(nextUpdated string) {
+		for {
+			forceTime, _ := time.ParseInLocation(common.DateInputFormat, nextUpdated, time.Local)
+			fmt.Println(nextUpdated)
 			fmt.Println(forceTime)
 			forced := now.After(forceTime)
 			if forced {
@@ -626,7 +654,7 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 			Logger.log.Debug("Check time to force update source code from https://github.com/constant-money/constant-chain after " + common.NextForceUpdate)
 			time.Sleep(time.Second * 60) // each minute
 		}
-	}()
+	}(result)
 }
 
 /*
@@ -1200,6 +1228,20 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 	return serverObj.PushMessageToAll(msg)
 }
 
+func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool, peerID libp2p.ID) error {
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetBlockBeacon).BlkHeights = heights
+	msg.(*wire.MessageGetBlockBeacon).BySpecificHeight = true
+	msg.(*wire.MessageGetBlockBeacon).FromPool = getFromPool
+	if peerID != "" {
+		return serverObj.PushMessageToPeer(msg, peerID)
+	}
+	return serverObj.PushMessageToAll(msg)
+}
+
 func (serverObj *Server) PushMessageGetBlockBeaconByHash(blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
 	if err != nil {
@@ -1222,6 +1264,22 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, from)
 	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, to)
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	if peerID == "" {
+		return serverObj.PushMessageToShard(msg, shardID)
+	}
+	return serverObj.PushMessageToPeer(msg, peerID)
+
+}
+
+func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, heights []uint64, getFromPool bool, peerID libp2p.ID) error {
+	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockShard)
+	if err != nil {
+		return err
+	}
+	msg.(*wire.MessageGetBlockShard).BlkHeights = heights
+	msg.(*wire.MessageGetBlockShard).BySpecificHeight = true
+	msg.(*wire.MessageGetBlockShard).ShardID = shardID
+	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, shardID)
 	}
@@ -1359,7 +1417,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	for _, shardID := range serverObj.blockChain.GetCurrentSyncShards() {
+	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
 			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
 			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
