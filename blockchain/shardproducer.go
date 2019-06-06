@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -114,6 +115,12 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if err != nil {
 		return nil, err
 	}
+	rewardInfoInstructions, err := block.getBlockRewardInst(prevBlock.Header.Height + 1)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, err
+	}
+	fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
 	//============End Build Body===========
 
 	//============Build Header=============
@@ -138,6 +145,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	for _, value := range instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
+	totalInstructions = append(totalInstructions, rewardInfoInstructions...)
 	instructionsHash, err := GenerateHashFromStringArray(totalInstructions)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)

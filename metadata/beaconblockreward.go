@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/common/base58"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
@@ -17,23 +18,23 @@ type BlockRewardAcceptInstruction struct {
 }
 
 type BeaconRewardInfo struct {
-	BeaconReward uint64
-	PayToAddress *privacy.PaymentAddress
-	InfoHash     *common.Hash
+	BeaconReward   uint64
+	PayToPublicKey string
+	InfoHash       *common.Hash
 }
 
 func (beaconRewardInfo *BeaconRewardInfo) hash() *common.Hash {
 	record := string(beaconRewardInfo.BeaconReward)
-	record += beaconRewardInfo.PayToAddress.String()
+	record += beaconRewardInfo.PayToPublicKey
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func BuildInstForBeaconReward(reward uint64, payToAddress *privacy.PaymentAddress) ([]string, error) {
-
+func BuildInstForBeaconReward(reward uint64, payToPublicKey string) ([]string, error) {
+	b, _, _ := base58.Base58Check{}.Decode(payToPublicKey)
 	beaconRewardInfo := BeaconRewardInfo{
-		PayToAddress: payToAddress,
-		BeaconReward: reward,
+		PayToPublicKey: payToPublicKey,
+		BeaconReward:   reward,
 	}
 
 	beaconRewardInfo.InfoHash = beaconRewardInfo.hash()
@@ -45,7 +46,7 @@ func BuildInstForBeaconReward(reward uint64, payToAddress *privacy.PaymentAddres
 
 	returnedInst := []string{
 		strconv.Itoa(BeaconRewardRequestMeta),
-		strconv.Itoa(int(common.GetShardIDFromLastByte(payToAddress.Bytes()[len(payToAddress.Bytes())-1]))),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(b[len(b)-1]))),
 		"beaconRewardInst",
 		string(contentStr),
 	}

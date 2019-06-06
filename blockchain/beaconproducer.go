@@ -86,6 +86,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		rewardByEpochInstruction, err = blkTmplGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch)
 		if err != nil {
+			fmt.Printf("[ndh]-[ERROR] -- --- -- --- %+v\n", err)
 			return nil, err
 		}
 		beaconBlock.Header.Epoch++
@@ -352,9 +353,10 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 
 	instructions := shardBlock.Instructions
 	Logger.log.Critical(instructions)
-
+	fmt.Printf("[ndh]-[INFO] - - Instruction from shard: %+v\n", len(shardBlock.Instructions))
 	// Validate swap instruction => for testing
 	for _, l := range shardBlock.Instructions {
+		fmt.Printf("[ndh]-[INFO] - - Instruction from shard: %+v\n", l)
 		if len(l) > 0 {
 			if l[0] == SwapAction {
 				if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
@@ -368,6 +370,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 		Logger.log.Criticalf("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
 	}
 	for _, l := range instructions {
+		fmt.Printf("[ndh]-[INFO] - - Instruction from shard: %+v\n", l)
 		if len(l) > 0 {
 			if l[0] == StakeAction {
 				stakers = append(stakers, l)
@@ -376,6 +379,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 				swapers = append(swapers, l)
 			}
 			if l[0] == strconv.Itoa(metadata.BlockRewardInfoMeta) {
+
 				if len(l) != 3 {
 					continue
 				}
@@ -384,7 +388,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 					continue
 				}
 				reward := blockChain.getRewardAmount(blkRewardInfo.ShardBlockHeight) + blkRewardInfo.TxsFee
-				blockChain.GetDatabase().AddShardRewardRequest(beaconBestState.Epoch, shardID, reward)
+				blockChain.config.DataBase.AddShardRewardRequest(beaconBestState.Epoch, shardID, reward)
 			}
 		}
 	}

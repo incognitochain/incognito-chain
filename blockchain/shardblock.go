@@ -170,13 +170,12 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		Logger.log.Error(err)
 		return nil
 	}
-
-	block.Instructions = append(block.Instructions, instructions...)
-	rewardInfoInstructions, err := blk.getBlockRewardInst(blk.Header.Height)
+	rewardInfoInstructions, err := blk.getBlockRewardInst(block.Header.Height)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
 	}
+	block.Instructions = append(block.Instructions, instructions...)
 	block.Instructions = append(block.Instructions, rewardInfoInstructions)
 	return &block
 }

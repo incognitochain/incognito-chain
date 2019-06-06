@@ -374,6 +374,11 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		Logger.log.Error(err)
 		return nil
 	}
+	rewardInfoInstructions, err := block.getBlockRewardInst(block.Header.Height)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
@@ -381,6 +386,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	for _, value := range block.Body.Instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
+	totalInstructions = append(totalInstructions, rewardInfoInstructions...)
 	isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
