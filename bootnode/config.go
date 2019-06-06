@@ -19,7 +19,7 @@ func newConfigParser(cfg *config, options flags.Options) *flags.Parser {
 
 func loadConfig() (*config, error) {
 	cfg := config{
-		RPCPort: RpcServerPort,
+		RPCPort: rpcServerPort,
 	}
 
 	//preCfg := cfg

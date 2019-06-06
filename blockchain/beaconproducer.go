@@ -53,7 +53,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	blkTmplGenerator.chain.chainLock.Lock()
 	// fmt.Printf("Beacon Produce: BeaconBestState Original %+v \n", blkTmplGenerator.chain.BestState.Beacon)
 	// produce new block with current beststate
-	tempMarshal, err := json.Marshal(*blkTmplGenerator.chain.BestState.Beacon)
+	tempMarshal, err := blkTmplGenerator.chain.BestState.Beacon.MarshalJSON()
 	if err != nil {
 		blkTmplGenerator.chain.chainLock.Unlock()
 		return nil, NewBlockChainError(MashallJsonError, err)
@@ -67,6 +67,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBestState.CandidateShardWaitingForNextRandom = blkTmplGenerator.chain.BestState.Beacon.CandidateShardWaitingForNextRandom
 	beaconBestState.CandidateBeaconWaitingForCurrentRandom = blkTmplGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
 	beaconBestState.CandidateBeaconWaitingForNextRandom = blkTmplGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
+
 	if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 		blkTmplGenerator.chain.chainLock.Unlock()
 		panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
@@ -106,7 +107,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	//============Process new block with beststate
 	fmt.Println("Beacon Candidate", beaconBestState.CandidateBeaconWaitingForCurrentRandom)
 	if len(beaconBlock.Body.Instructions) != 0 {
-		//Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+		Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
 	}
 	beaconBestState.Update(beaconBlock, blkTmplGenerator.chain)
 	//============End Process new block with beststate
@@ -278,7 +279,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && !bestStateBeacon.IsGetRandomNumber {
 		var err error
 		// COMMENT FOR TESTING
-		// chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
+		// chainTimeStamp, err := btc.GetCurrentChainTimeStamp()
 		// UNCOMMENT FOR TESTING
 		chainTimeStamp := bestStateBeacon.CurrentRandomTimeStamp + 1
 		if err != nil {
@@ -483,7 +484,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
 	//COMMENT FOR TESTING
 	// msg := make(chan string)
-	// go btcapi.GenerateRandomNumber(timestamp, msg)
+	// go btc.GenerateRandomNumber(timestamp, msg)
 	// res := <-msg
 	// reses := strings.Split(res, (","))
 	strs := []string{}

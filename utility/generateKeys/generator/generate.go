@@ -3,6 +3,7 @@ package generator
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/constant-money/constant-chain/common"
 	"strconv"
 
 	"github.com/constant-money/constant-chain/cashec"
@@ -20,8 +21,8 @@ func GenerateAddress(seeds []string) ([]string, error) {
 	return pubAddresses, nil
 }
 func GenerateAddressByShard(shardID byte) ([]string, error) {
-	var pubAddresses []string
-	for i := 0; i < 100000; i++ {
+	var privateKeys []string
+	for i := 100000; i < 103000; i++ {
 		seed := strconv.Itoa(i)
 		key, _ := wallet.NewMasterKey([]byte(seed))
 		var i int
@@ -36,6 +37,7 @@ func GenerateAddressByShard(shardID byte) ([]string, error) {
 				fmt.Printf("PublicKey %+v \n ", base58.Base58Check{}.Encode(child.KeySet.PaymentAddress.Pk, common.ZeroByte))
 				fmt.Printf("PaymentAddress: %+v \n", paymentAddress)
 				fmt.Printf("PrivateKey: %+v \n ", privAddr)
+				privateKeys = append(privateKeys, privAddr)
 				k++
 				if k == 3 {
 					break
@@ -44,7 +46,7 @@ func GenerateAddressByShard(shardID byte) ([]string, error) {
 			i++
 		}
 	}
-	return pubAddresses, nil
+	return privateKeys, nil
 }
 func GenerateAddressByte(seeds [][]byte) ([]string, []string, error) {
 	var privateKeys []string

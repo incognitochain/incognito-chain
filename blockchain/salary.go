@@ -40,13 +40,13 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 	var txHash = &common.Hash{}
 	(&common.Hash{}).Decode(txHash, tx)
 
-	blockHash, index, err := blockgen.chain.config.DataBase.GetTransactionIndexById(txHash)
+	blockHash, index, err := blockgen.chain.config.DataBase.GetTransactionIndexById(*txHash)
 	if err != nil {
 		abc := NewBlockChainError(UnExpectedError, err)
 		Logger.log.Error(abc)
 		return nil, abc
 	}
-	block, err1, _ := blockgen.chain.GetShardBlockByHash(blockHash)
+	block, _, err1 := blockgen.chain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
 		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return nil, NewBlockChainError(UnExpectedError, err1)

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
@@ -149,7 +150,7 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 	block.ProducerSig = blk.ProducerSig
 	block.Header = blk.Header
 	block.Instructions = blk.Body.Instructions
-	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(&blk.Header.PrevBlockHash)
+	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(blk.Header.PrevBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -189,7 +190,7 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 		shardID := common.GetShardIDFromLastByte(byte(i))
 		if shardID != blk.Header.ShardID {
 			crossShard, err := blk.CreateCrossShardBlock(shardID)
-			//fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, shardID, crossShard)
+			fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, shardID, crossShard)
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
 			}
@@ -201,6 +202,7 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, error) {
 	crossShard := &CrossShardBlock{}
 	crossOutputCoin, crossTxTokenData, crossCustomTokenPrivacyData := getCrossShardData(block.Body.Transactions, shardID)
+	//fmt.Println("CS:", len(crossOutputCoin), len(crossTxTokenData), len(crossCustomTokenPrivacyData))
 	// Return nothing if nothing to cross
 	if len(crossOutputCoin) == 0 && len(crossTxTokenData) == 0 && len(crossCustomTokenPrivacyData) == 0 {
 		//fmt.Println("CreateCrossShardBlock no crossshard", block.Header.Height)

@@ -69,7 +69,7 @@ func (engine *Engine) Start() error {
 			case <-engine.cQuit:
 				return
 			default:
-				if !engine.config.BlockChain.IsReady(false, 0) {
+				if !engine.config.BlockChain.Synker.IsLatest(false, 0) {
 					time.Sleep(time.Millisecond * 100)
 				} else {
 					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), engine.currentBFTRound)
@@ -94,7 +94,7 @@ func (engine *Engine) Start() error {
 						}
 					case common.SHARD_ROLE:
 						if engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO {
-							if !engine.config.BlockChain.IsReady(true, shardID) {
+							if !engine.config.BlockChain.Synker.IsLatest(true, shardID) {
 								time.Sleep(time.Millisecond * 100)
 							} else {
 								engine.config.BlockChain.ConsensusOngoing = true
@@ -194,7 +194,6 @@ func (engine *Engine) execBeaconRole() {
 	} else {
 		Logger.log.Error(err)
 	}
-	return
 }
 
 func (engine *Engine) execShardRole(shardID byte) {
@@ -203,7 +202,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		engine.currentBFTRound = 1
 	}
-	engine.config.BlockChain.SyncShard(shardID)
+	engine.config.BlockChain.Synker.SyncShard(shardID)
 	bftProtocol := &BFTProtocol{
 		cBFTMsg:   engine.cBFTMsg,
 		EngineCfg: &engine.config,

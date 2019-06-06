@@ -33,8 +33,7 @@ func (protocol *BFTProtocol) phasePropose() error {
 		}
 	})
 
-	var readyMsgs map[string]*wire.MessageBFTReady
-	readyMsgs = make(map[string]*wire.MessageBFTReady)
+	readyMsgs := make(map[string]*wire.MessageBFTReady)
 
 	fmt.Println("BFT: Listen for ready msg", time.Since(protocol.startTime).Seconds())
 phase:
@@ -61,21 +60,21 @@ phase:
 			}
 		case <-protocol.cTimeout:
 			if len(readyMsgs) >= (2*len(protocol.RoundData.Committee)/3)-1 {
-				if protocol.RoundData.Layer == common.BEACON_ROLE {
-					var shToBcPoolStates []map[byte]uint64
-					for _, readyMsg := range readyMsgs {
-						shToBcPoolStates = append(shToBcPoolStates, readyMsg.PoolState)
-					}
-					shToBcPoolStates = append(shToBcPoolStates, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight())
-					protocol.RoundData.ClosestPoolState = GetClosestPoolState(shToBcPoolStates)
-				} else {
-					var crossShardsPoolStates []map[byte]uint64
-					for _, readyMsg := range readyMsgs {
-						crossShardsPoolStates = append(crossShardsPoolStates, readyMsg.PoolState)
-					}
-					crossShardsPoolStates = append(crossShardsPoolStates, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight())
-					protocol.RoundData.ClosestPoolState = GetClosestPoolState(crossShardsPoolStates)
-				}
+				// if protocol.RoundData.Layer == common.BEACON_ROLE {
+				// 	var shToBcPoolStates []map[byte]uint64
+				// 	for _, readyMsg := range readyMsgs {
+				// 		shToBcPoolStates = append(shToBcPoolStates, readyMsg.PoolState)
+				// 	}
+				// 	shToBcPoolStates = append(shToBcPoolStates, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight())
+				// 	protocol.RoundData.ClosestPoolState = GetClosestPoolState(shToBcPoolStates)
+				// } else {
+				// 	var crossShardsPoolStates []map[byte]uint64
+				// 	for _, readyMsg := range readyMsgs {
+				// 		crossShardsPoolStates = append(crossShardsPoolStates, readyMsg.PoolState)
+				// 	}
+				// 	crossShardsPoolStates = append(crossShardsPoolStates, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight())
+				// 	protocol.RoundData.ClosestPoolState = GetClosestPoolState(crossShardsPoolStates)
+				// }
 
 				fmt.Println("BFT: Propose block", time.Since(protocol.startTime).Seconds())
 
@@ -137,9 +136,12 @@ phase:
 				protocol.forwardMsg(msg)
 				if protocol.RoundData.Layer == common.BEACON_ROLE {
 					pendingBlk := blockchain.BeaconBlock{}
-					pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
-
-					err := protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
+					err := pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+					err = protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
@@ -148,8 +150,12 @@ phase:
 					protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 				} else {
 					pendingBlk := blockchain.ShardBlock{}
-					pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
-					err := protocol.EngineCfg.BlockChain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoundData.ShardID)
+					err := pendingBlk.UnmarshalJSON(msg.(*wire.MessageBFTPropose).Block)
+					if err != nil {
+						Logger.log.Error(err)
+						continue
+					}
+					err = protocol.EngineCfg.BlockChain.VerifyPreSignShardBlock(&pendingBlk, protocol.RoundData.ShardID)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
@@ -176,7 +182,7 @@ phase:
 								}
 							} else {
 								if userRole := protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Round); userRole == common.PROPOSER_ROLE {
-									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, nil, protocol.EngineCfg.UserKeySet)
+									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight(), protocol.EngineCfg.UserKeySet)
 									protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID)
 								}
 							}
@@ -210,8 +216,8 @@ func (protocol *BFTProtocol) phasePrepare() error {
 		protocol.forwardMsg(msg)
 	})
 
-	var collectedRiList map[string][]byte //map of members and their Ri
-	collectedRiList = make(map[string][]byte)
+	//map of members and their Ri
+	collectedRiList := make(map[string][]byte)
 	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = protocol.multiSigScheme.personal.Ri
 phase:
 	for {
@@ -233,7 +239,7 @@ phase:
 		case msg := <-protocol.cBFTMsg:
 			if msg.MessageType() == wire.CmdBFTPrepare {
 				fmt.Println("BFT: Prepare msg received", time.Since(protocol.startTime).Seconds())
-				if common.IndexOfStr(msg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Compare(protocol.multiSigScheme.dataToSig[:], msg.(*wire.MessageBFTPrepare).BlkHash[:]) == 0 {
+				if common.IndexOfStr(msg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Equal(protocol.multiSigScheme.dataToSig[:], msg.(*wire.MessageBFTPrepare).BlkHash[:]) {
 					if _, ok := collectedRiList[msg.(*wire.MessageBFTPrepare).Pubkey]; !ok {
 						collectedRiList[msg.(*wire.MessageBFTPrepare).Pubkey] = msg.(*wire.MessageBFTPrepare).Ri
 						protocol.forwardMsg(msg)
