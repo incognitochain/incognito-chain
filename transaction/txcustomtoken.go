@@ -20,7 +20,6 @@ import (
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
 // and contain data(vin, vout) to support issuing and transfer a custom token(token from end-user, look like erc-20)
 // Dev or end-user can use this class tx to create an token type which use personal purpose
-// In particular of constant network, some special token (DCB token, GOV token, BOND token, ....) used this class tx to implement something
 type TxCustomToken struct {
 	Tx                      // inherit from normal tx of constant(supporting privacy)
 	TxTokenData TxTokenData // vin - vout format
@@ -73,7 +72,7 @@ func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
 	mr metadata.MempoolRetriever,
 ) error {
-	if customTokenTx.Type == common.TxSalaryType || customTokenTx.Type == common.TxReturnStakingType {
+	if customTokenTx.Type == common.TxRewardType || customTokenTx.Type == common.TxReturnStakingType {
 		return errors.New("can not receive a salary tx | return staking tx from other node, this is a violation")
 	}
 
@@ -124,7 +123,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	if customTokenTx.GetType() == common.TxSalaryType {
+	if customTokenTx.GetType() == common.TxRewardType {
 		return NewTransactionErr(UnexpectedErr, errors.New("Wrong salary tx"))
 	}
 	if customTokenTx.GetType() == common.TxReturnStakingType {
@@ -205,6 +204,7 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 		if len(tx.TxTokenData.Vins) == 0 {
 			return false, errors.New("Len Vins is 0")
 		}
+		totalVinAmount := uint64(0)
 		for _, vin := range tx.TxTokenData.Vins {
 			keySet := cashec.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
@@ -218,6 +218,14 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 			if err != nil || !ok {
 				return false, err
 			}
+			totalVinAmount += vout.Value
+		}
+		totalVoutAmount := uint64(0)
+		for _, vout := range tx.TxTokenData.Vouts {
+			totalVoutAmount += vout.Value
+		}
+		if totalVinAmount != totalVoutAmount {
+			return false, errors.New("Vin amount <> Vout amount")
 		}
 		return true, nil
 	}
@@ -229,7 +237,7 @@ func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
 ) bool {
 	data := make(map[common.Hash]TxCustomToken)
 	for _, vin := range customTokenTx.TxTokenData.Vins {
-		_, _, _, utxo, err := bcr.GetTransactionByHash(&vin.TxCustomTokenID)
+		_, _, _, utxo, err := bcr.GetTransactionByHash(vin.TxCustomTokenID)
 		if err != nil {
 			// Logger.log.Error(err)
 			return false
@@ -250,10 +258,10 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 ) (bool, error) {
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
-		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID); !ok {
 			return false, err
 		}
 		if len(customTokenTx.TxTokenData.Vouts) != 1 {
@@ -266,7 +274,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	}
 	//Process CustomToken CrossShard
 	if customTokenTx.TxTokenData.Type == CustomTokenCrossShard {
-		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID); !ok {
 			return false, err
 		}
 		if len(customTokenTx.listUtxo) != 0 {
@@ -283,7 +291,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	if !ok {
 		return false, errors.New("getListUTXOFromTxCustomToken")
 	}
-	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID); !ok {
+	if ok, err := customTokenTx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID); !ok {
 		return false, err
 	}
 	if customTokenTx.Metadata != nil {
@@ -366,10 +374,9 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	inputCoin []*privacy.InputCoin,
 	fee uint64,
 	tokenParams *CustomTokenParamTx,
-	//listCustomTokens map[common.Hash]TxCustomToken,
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
-	hasPrivacy bool,
+	hasPrivacyCoin bool,
 	shardID byte,
 ) *TransactionError {
 	var err error
@@ -379,7 +386,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 		paymentInfo,
 		inputCoin,
 		fee,
-		hasPrivacy,
+		hasPrivacyCoin,
 		db,
 		nil,
 		metaData)
@@ -457,7 +464,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 				//		return NewTransactionErr(CustomTokenExisted, nil)
 				//	}
 				//}
-				existed := db.CustomTokenIDExisted(&newHashInitToken)
+				existed := db.CustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
 					return NewTransactionErr(CustomTokenExisted, nil)
@@ -484,7 +491,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 		//if _, ok := listCustomTokens[*propertyID]; !ok {
 		//	return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 		//}
-		existed := db.CustomTokenIDExisted(propertyID)
+		existed := db.CustomTokenIDExisted(*propertyID)
 		if !existed {
 			return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
 		}
@@ -503,6 +510,9 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 				PaymentAddress: tokenParams.vins[0].PaymentAddress,
 				Value:          refundTokenAmount,
 			})
+		}
+		if refundTokenAmount < 0 {
+			return NewTransactionErr(WrongInput, errors.New("input value less than output value"))
 		}
 		txCustomToken.TxTokenData.Vouts = VoutsTemp
 	}
@@ -590,7 +600,7 @@ func (tx *TxCustomToken) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever)
 		return nil, nil
 	}
 	prevTxID := vins[0].TxCustomTokenID
-	_, _, _, prevTx, err := bcr.GetTransactionByHash(&prevTxID)
+	_, _, _, prevTx, err := bcr.GetTransactionByHash(prevTxID)
 	if err != nil {
 		return nil, err
 	}
@@ -646,6 +656,8 @@ func (tx *TxCustomToken) GetTokenID() *common.Hash {
 }
 
 func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []metadata.Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instsUsed []int,
 	shardID byte,
@@ -660,8 +672,8 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 		return false, nil
 	}
 	// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
-	// if !meta.IsMinerCreatedMetaType() {
-	// 	return false, nil
-	// }
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr)
+	if !meta.IsMinerCreatedMetaType() {
+		return false, nil
+	}
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr)
 }

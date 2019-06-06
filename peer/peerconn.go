@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"sync"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
 	"github.com/libp2p/go-libp2p-peer"
@@ -118,7 +118,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 
-		str, errR := peerConn.ReadString(rw, DelimMessageByte, SPAM_MESSAGE_SIZE)
+		str, errR := peerConn.ReadString(rw, delimMessageByte, SPAM_MESSAGE_SIZE)
 		if errR != nil {
 			peerConn.SetIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
@@ -130,7 +130,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			return
 		}
 
-		if str != DelimMessageStr {
+		if str != delimMessageStr {
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
@@ -328,7 +328,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
 					Logger.log.Infof("OutMessageHandler with raw bytes")
 					message := hex.EncodeToString(*outMsg.rawBytes)
-					message += DelimMessageStr
+					message += delimMessageStr
 					sendString = message
 					Logger.log.Infof("Send a messageHex raw bytes to %s", peerConn.RemotePeer.PeerID.Pretty())
 				} else {
@@ -366,7 +366,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					messageHex := hex.EncodeToString(messageBytes)
 					//Logger.log.Infof("Content in hex encode: %s", string(messageHex))
 					// add end character to messageHex (delim '\n')
-					messageHex += DelimMessageStr
+					messageHex += delimMessageStr
 
 					// send on p2p stream
 					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.RemotePeer.PeerID.Pretty())

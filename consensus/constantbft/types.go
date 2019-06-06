@@ -11,11 +11,6 @@ type ChainInfo struct {
 	ChainsHeight            []int
 }
 
-type swapSig struct {
-	Validator string
-	SwapSig   string
-}
-
 type serverInterface interface {
 	// list functions callback which are assigned from Server struct
 	GetPeerIDsFromPublicKey(string) []libp2p.ID

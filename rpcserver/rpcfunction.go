@@ -20,98 +20,104 @@ type commandHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, 
 // Commands valid for normal user
 var RpcHandler = map[string]commandHandler{
 
-	StartProfiling: RpcServer.handleStartProfiling,
-	StopProfiling:  RpcServer.handleStopProfiling,
+	startProfiling: RpcServer.handleStartProfiling,
+	stopProfiling:  RpcServer.handleStopProfiling,
 	// node
-	GetNetworkInfo:           RpcServer.handleGetNetWorkInfo,
-	GetConnectionCount:       RpcServer.handleGetConnectionCount,
-	GetAllPeers:              RpcServer.handleGetAllPeers,
-	EstimateFee:              RpcServer.handleEstimateFee,
-	EstimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
-	GetGenerate:              RpcServer.handleGetGenerate,
-	GetActiveShards:          RpcServer.handleGetActiveShards,
-	GetMaxShardsNumber:       RpcServer.handleGetMaxShardsNumber,
+	getNetworkInfo:           RpcServer.handleGetNetWorkInfo,
+	getConnectionCount:       RpcServer.handleGetConnectionCount,
+	getAllPeers:              RpcServer.handleGetAllPeers,
+	estimateFee:              RpcServer.handleEstimateFee,
+	estimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
+	getActiveShards:          RpcServer.handleGetActiveShards,
+	getMaxShardsNumber:       RpcServer.handleGetMaxShardsNumber,
 
 	//pool
-	GetMiningInfo:               RpcServer.handleGetMiningInfo,
-	GetRawMempool:               RpcServer.handleGetRawMempool,
-	GetNumberOfTxsInMempool:     RpcServer.handleGetNumberOfTxsInMempool,
-	GetMempoolEntry:             RpcServer.handleMempoolEntry,
-	GetShardToBeaconPoolStateV2: RpcServer.handleGetShardToBeaconPoolStateV2,
-	GetCrossShardPoolStateV2:    RpcServer.handleGetCrossShardPoolStateV2,
-	GetShardPoolStateV2:         RpcServer.handleGetShardPoolStateV2,
-	GetBeaconPoolStateV2:        RpcServer.handleGetBeaconPoolStateV2,
-	GetShardToBeaconPoolState:   RpcServer.handleGetShardToBeaconPoolState,
-	GetCrossShardPoolState:      RpcServer.handleGetCrossShardPoolState,
-	GetNextCrossShard:           RpcServer.handleGetNextCrossShard,
+	getMiningInfo:               RpcServer.handleGetMiningInfo,
+	getRawMempool:               RpcServer.handleGetRawMempool,
+	getNumberOfTxsInMempool:     RpcServer.handleGetNumberOfTxsInMempool,
+	getMempoolEntry:             RpcServer.handleMempoolEntry,
+	getShardToBeaconPoolStateV2: RpcServer.handleGetShardToBeaconPoolStateV2,
+	getCrossShardPoolStateV2:    RpcServer.handleGetCrossShardPoolStateV2,
+	getShardPoolStateV2:         RpcServer.handleGetShardPoolStateV2,
+	getBeaconPoolStateV2:        RpcServer.handleGetBeaconPoolStateV2,
+	getShardToBeaconPoolState:   RpcServer.handleGetShardToBeaconPoolState,
+	getCrossShardPoolState:      RpcServer.handleGetCrossShardPoolState,
+	getNextCrossShard:           RpcServer.handleGetNextCrossShard,
 	// block
-	GetBestBlock:        RpcServer.handleGetBestBlock,
-	GetBestBlockHash:    RpcServer.handleGetBestBlockHash,
-	RetrieveBlock:       RpcServer.handleRetrieveBlock,
-	RetrieveBeaconBlock: RpcServer.handleRetrieveBeaconBlock,
-	GetBlocks:           RpcServer.handleGetBlocks,
-	GetBlockChainInfo:   RpcServer.handleGetBlockChainInfo,
-	GetBlockCount:       RpcServer.handleGetBlockCount,
-	GetBlockHash:        RpcServer.handleGetBlockHash,
-	CheckHashValue:      RpcServer.handleCheckHashValue, // get data in blockchain from hash value
-	GetBlockHeader:      RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
-	GetCrossShardBlock:  RpcServer.handleGetCrossShardBlock,
+	getBestBlock:        RpcServer.handleGetBestBlock,
+	getBestBlockHash:    RpcServer.handleGetBestBlockHash,
+	retrieveBlock:       RpcServer.handleRetrieveBlock,
+	retrieveBeaconBlock: RpcServer.handleRetrieveBeaconBlock,
+	getBlocks:           RpcServer.handleGetBlocks,
+	getBlockChainInfo:   RpcServer.handleGetBlockChainInfo,
+	getBlockCount:       RpcServer.handleGetBlockCount,
+	getBlockHash:        RpcServer.handleGetBlockHash,
+	checkHashValue:      RpcServer.handleCheckHashValue, // get data in blockchain from hash value
+	getBlockHeader:      RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
+	getCrossShardBlock:  RpcServer.handleGetCrossShardBlock,
 
 	// transaction
-	ListOutputCoins:                 RpcServer.handleListOutputCoins,
-	CreateRawTransaction:            RpcServer.handleCreateRawTransaction,
-	SendRawTransaction:              RpcServer.handleSendRawTransaction,
-	CreateAndSendTransaction:        RpcServer.handleCreateAndSendTx,
-	GetMempoolInfo:                  RpcServer.handleGetMempoolInfo,
-	GetTransactionByHash:            RpcServer.handleGetTransactionByHash,
-	CreateAndSendStakingTransaction: RpcServer.handleCreateAndSendStakingTx,
-	RandomCommitments:               RpcServer.handleRandomCommitments,
-	HasSerialNumbers:                RpcServer.handleHasSerialNumbers,
-	HasSnDerivators:                 RpcServer.handleHasSnDerivators,
+	listOutputCoins:                 RpcServer.handleListOutputCoins,
+	createRawTransaction:            RpcServer.handleCreateRawTransaction,
+	sendRawTransaction:              RpcServer.handleSendRawTransaction,
+	createAndSendTransaction:        RpcServer.handleCreateAndSendTx,
+	getMempoolInfo:                  RpcServer.handleGetMempoolInfo,
+	getTransactionByHash:            RpcServer.handleGetTransactionByHash,
+	createAndSendStakingTransaction: RpcServer.handleCreateAndSendStakingTx,
+	randomCommitments:               RpcServer.handleRandomCommitments,
+	hasSerialNumbers:                RpcServer.handleHasSerialNumbers,
+	hasSnDerivators:                 RpcServer.handleHasSnDerivators,
 
 	//======Testing and Benchmark======
-	GetAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
 	//=================================
 
 	//pool
 
 	// Beststate
-	GetCandidateList:              RpcServer.handleGetCandidateList,
-	GetCommitteeList:              RpcServer.handleGetCommitteeList,
-	GetBlockProducerList:          RpcServer.handleGetBlockProducerList,
-	GetShardBestState:             RpcServer.handleGetShardBestState,
-	GetBeaconBestState:            RpcServer.handleGetBeaconBestState,
-	GetBeaconPoolState:            RpcServer.handleGetBeaconPoolState,
-	GetShardPoolState:             RpcServer.handleGetShardPoolState,
-	GetShardPoolLatestValidHeight: RpcServer.handleGetShardPoolLatestValidHeight,
-	CanPubkeyStake:                RpcServer.handleCanPubkeyStake,
-	GetTotalTransaction:           RpcServer.handleGetTotalTransaction,
+	getCandidateList:              RpcServer.handleGetCandidateList,
+	getCommitteeList:              RpcServer.handleGetCommitteeList,
+	getBlockProducerList:          RpcServer.handleGetBlockProducerList,
+	getShardBestState:             RpcServer.handleGetShardBestState,
+	getBeaconBestState:            RpcServer.handleGetBeaconBestState,
+	getBeaconPoolState:            RpcServer.handleGetBeaconPoolState,
+	getShardPoolState:             RpcServer.handleGetShardPoolState,
+	getShardPoolLatestValidHeight: RpcServer.handleGetShardPoolLatestValidHeight,
+	canPubkeyStake:                RpcServer.handleCanPubkeyStake,
+	getTotalTransaction:           RpcServer.handleGetTotalTransaction,
 
 	// custom token
-	CreateRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
-	SendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
-	CreateAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
-	ListUnspentCustomToken:              RpcServer.handleListUnspentCustomToken,
-	ListCustomToken:                     RpcServer.handleListCustomToken,
-	CustomToken:                         RpcServer.handleCustomTokenDetail,
-	GetListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
+	createRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
+	sendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
+	createAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
+	listUnspentCustomToken:              RpcServer.handleListUnspentCustomToken,
+	listCustomToken:                     RpcServer.handleListCustomToken,
+	customTokenTxs:                      RpcServer.handleCustomTokenDetail,
+	listCustomTokenHolders:              RpcServer.handleGetListCustomTokenHolders,
+	getListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
 
 	// custom token which support privacy
-	CreateRawPrivacyCustomTokenTransaction:     RpcServer.handleCreateRawPrivacyCustomTokenTransaction,
-	SendRawPrivacyCustomTokenTransaction:       RpcServer.handleSendRawPrivacyCustomTokenTransaction,
-	CreateAndSendPrivacyCustomTokenTransaction: RpcServer.handleCreateAndSendPrivacyCustomTokenTransaction,
-	ListPrivacyCustomToken:                     RpcServer.handleListPrivacyCustomToken,
-	PrivacyCustomToken:                         RpcServer.handlePrivacyCustomTokenDetail,
-	GetListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
+	createRawPrivacyCustomTokenTransaction:     RpcServer.handleCreateRawPrivacyCustomTokenTransaction,
+	sendRawPrivacyCustomTokenTransaction:       RpcServer.handleSendRawPrivacyCustomTokenTransaction,
+	createAndSendPrivacyCustomTokenTransaction: RpcServer.handleCreateAndSendPrivacyCustomTokenTransaction,
+	listPrivacyCustomToken:                     RpcServer.handleListPrivacyCustomToken,
+	privacyCustomTokenTxs:                      RpcServer.handlePrivacyCustomTokenDetail,
+	getListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
+
+	// Bridge
+	createIssuingRequest:            RpcServer.handleCreateIssuingRequest,
+	sendIssuingRequest:              RpcServer.handleSendIssuingRequest,
+	createAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
+	createAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
+	getBridgeTokensAmounts:          RpcServer.handleGetBridgeTokensAmounts,
 
 	// wallet
-	GetPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
-	DefragmentAccount:              RpcServer.handleDefragmentAccount,
+	getPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
+	defragmentAccount:              RpcServer.handleDefragmentAccount,
 
-	GetStackingAmount: RpcServer.handleGetStakingAmount,
+	getStackingAmount: RpcServer.handleGetStakingAmount,
 
-	HashToIdenticon: RpcServer.handleHashToIdenticon,
-
+	hashToIdenticon: RpcServer.handleHashToIdenticon,
 	//reward
 	CreateRawWithDrawTransaction: RpcServer.handleCreateRawWithDrawTransaction,
 }
@@ -119,20 +125,38 @@ var RpcHandler = map[string]commandHandler{
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	ListAccounts:                       RpcServer.handleListAccounts,
-	GetAccount:                         RpcServer.handleGetAccount,
-	GetAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
-	GetAccountAddress:                  RpcServer.handleGetAccountAddress,
-	DumpPrivkey:                        RpcServer.handleDumpPrivkey,
-	ImportAccount:                      RpcServer.handleImportAccount,
-	RemoveAccount:                      RpcServer.handleRemoveAccount,
-	ListUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
-	GetBalance:                         RpcServer.handleGetBalance,
-	GetBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
-	GetBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
-	GetReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
-	SetTxFee:                           RpcServer.handleSetTxFee,
-	GetRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
+	listAccounts:                       RpcServer.handleListAccounts,
+	getAccount:                         RpcServer.handleGetAccount,
+	getAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
+	getAccountAddress:                  RpcServer.handleGetAccountAddress,
+	dumpPrivkey:                        RpcServer.handleDumpPrivkey,
+	importAccount:                      RpcServer.handleImportAccount,
+	removeAccount:                      RpcServer.handleRemoveAccount,
+	listUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
+	getBalance:                         RpcServer.handleGetBalance,
+	getBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
+	getBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
+	getReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
+	setTxFee:                           RpcServer.handleSetTxFee,
+	getRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
+}
+
+/*
+handleGetAllPeers - return all peers which this node connected
+*/
+func (rpcServer RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetAllPeers params: %+v", params)
+	result := jsonresult.GetAllPeersResult{}
+	peersMap := []string{}
+	peers := rpcServer.config.AddrMgr.AddressCache()
+	for _, peer := range peers {
+		for _, peerConn := range peer.PeerConns {
+			peersMap = append(peersMap, peerConn.RemoteRawAddress)
+		}
+	}
+	result.Peers = peersMap
+	Logger.log.Infof("handleGetAllPeers result: %+v", result)
+	return result, nil
 }
 
 func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -194,15 +218,21 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 //Parameter #3—the list priv-key which be used to view utxo
 //
 func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Info(params)
+	Logger.log.Infof("handleListUnspentOutputCoins params: %+v", params)
 	result := jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
 	// get component
 	paramsArray := common.InterfaceSlice(params)
-	min := int(paramsArray[0].(float64))
-	max := int(paramsArray[1].(float64))
+	var min int
+	var max int
+	if len(paramsArray) > 0 && paramsArray[0] != nil {
+		min = int(paramsArray[0].(float64))
+	}
+	if len(paramsArray) > 1 && paramsArray[1] != nil {
+		max = int(paramsArray[1].(float64))
+	}
 	_ = min
 	_ = max
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
@@ -227,7 +257,7 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		tokenID.SetBytes(common.PRVCoinID[:])
 		outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
@@ -249,10 +279,12 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		}
 		result.Outputs[priKeyStr] = item
 	}
+	Logger.log.Infof("handleListUnspentOutputCoins result: %+v", result)
 	return result, nil
 }
 
 func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleCheckHashValue params: %+v", params)
 	var (
 		isTransaction bool
 		isBlock       bool
@@ -266,13 +298,12 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected hash string value"))
 	}
 	// param #1: transaction Hash
-	// Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
+	Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
 	log.Printf("Check hash value  input Param %+v", hashParams)
 	hash, _ := common.Hash{}.NewHashFromStr(hashParams)
 
 	// Check block
-	// _, err := rpcServer.config.BlockChain.GetBlockByHash(hash)
-	_, err, _ := rpcServer.config.BlockChain.GetShardBlockByHash(hash)
+	_, _, err := rpcServer.config.BlockChain.GetShardBlockByHash(*hash)
 	if err != nil {
 		isBlock = false
 	} else {
@@ -281,9 +312,10 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 			IsBlock:       isBlock,
 			IsTransaction: false,
 		}
+		Logger.log.Infof("handleCheckHashValue result: %+v", result)
 		return result, nil
 	}
-	_, _, _, _, err1 := rpcServer.config.BlockChain.GetTransactionByHash(hash)
+	_, _, _, _, err1 := rpcServer.config.BlockChain.GetTransactionByHash(*hash)
 	if err1 != nil {
 		isTransaction = false
 	} else {
@@ -292,39 +324,37 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 			IsBlock:       false,
 			IsTransaction: isTransaction,
 		}
+		Logger.log.Infof("handleCheckHashValue result: %+v", result)
 		return result, nil
 	}
-	return jsonresult.HashValueDetail{
+	result := jsonresult.HashValueDetail{
 		IsBlock:       isBlock,
 		IsTransaction: isTransaction,
-	}, nil
+	}
+	Logger.log.Infof("handleCheckHashValue result: %+v", result)
+	return result, nil
 }
 
 /*
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (rpcServer RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetConnectionCount params: %+v", params)
 	if rpcServer.config.ConnMgr == nil || rpcServer.config.ConnMgr.ListeningPeer == nil {
 		return 0, nil
 	}
 	result := 0
 	listeningPeer := rpcServer.config.ConnMgr.ListeningPeer
 	result += len(listeningPeer.PeerConns)
+	Logger.log.Infof("handleGetConnectionCount result: %+v", result)
 	return result, nil
-}
-
-/*
-handleGetGenerate - RPC returns true if the node is set to generate blocks using its CPU
-*/
-func (rpcServer RpcServer) handleGetGenerate(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	// return rpcServer.config.IsGenerateNode, nil
-	return false, nil
 }
 
 /*
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetMiningInfo params: %+v", params)
 	if !rpcServer.config.IsMiningNode || rpcServer.config.MiningPubKeyB58 == "" {
 		return jsonresult.GetMiningInfoResult{
 			IsCommittee: false,
@@ -347,7 +377,7 @@ func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-c
 	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
 		result.ShardID = -1
 	}
-
+	Logger.log.Infof("handleGetMiningInfo result: %+v", result)
 	return result, nil
 }
 
@@ -356,34 +386,43 @@ handleGetRawMempool - RPC returns all transaction ids in memory pool as a json a
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (rpcServer RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetRawMempool params: %+v", params)
 	result := jsonresult.GetRawMempoolResult{
 		TxHashes: rpcServer.config.TxMemPool.ListTxs(),
 	}
+	Logger.log.Infof("handleGetRawMempool result: %+v", result)
 	return result, nil
 }
 
 func (rpcServer RpcServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return len(rpcServer.config.TxMemPool.ListTxs()), nil
+	Logger.log.Infof("handleGetNumberOfTxsInMempool params: %+v", params)
+	result := len(rpcServer.config.TxMemPool.ListTxs())
+	Logger.log.Infof("handleGetNumberOfTxsInMempool result: %+v", result)
+	return result, nil
 }
 
 /*
 handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
 func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleMempoolEntry params: %+v", params)
 	// Param #1: hash string of tx(tx id)
 	if params == nil {
 		params = ""
 	}
 	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
+		Logger.log.Infof("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	result := jsonresult.GetMempoolEntryResult{}
 	result.Tx, err = rpcServer.config.TxMemPool.GetTx(txID)
 	if err != nil {
+		Logger.log.Infof("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	Logger.log.Infof("handleMempoolEntry result: %+v", result)
 	return result, nil
 }
 
@@ -391,17 +430,32 @@ func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-ch
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleEstimateFee params: %+v", params)
 	/******* START Fetch all component to ******/
 	// all component
 	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+	}
 	// param #1: private key of sender
-	senderKeyParam := arrayParams[0]
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Sender private key is invalid"))
+	}
 	// param #3: estimation fee coin per kb
-	defaultFeeCoinPerKb := int64(arrayParams[2].(float64))
+	defaultFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Default FeeCoinPerKbtemp is invalid"))
+	}
+	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbtemp)
 	// param #4: hasPrivacy flag for constant
-	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	hashPrivacyTemp, ok := arrayParams[3].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("hasPrivacy is invalid"))
+	}
+	hasPrivacy := int(hashPrivacyTemp) > 0
 
-	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
+	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
 		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
@@ -409,9 +463,9 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
@@ -471,16 +525,24 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 		EstimateTxSizeInKb:   estimateTxSizeInKb,
 	}
+	Logger.log.Infof("handleEstimateFee result: %+v", result)
 	return result, nil
 }
 
 // handleEstimateFeeWithEstimator -- get fee from estomator
 func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleEstimateFeeWithEstimator params: %+v", params)
 	// all params
 	arrayParams := common.InterfaceSlice(params)
-
+	if len(arrayParams) < 2 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+	}
 	// param #1: estimation fee coin per kb from client
-	defaultFeeCoinPerKb := int64(arrayParams[0].(float64))
+	defaultFeeCoinPerKbTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("defaultFeeCoinPerKbTemp is invalid"))
+	}
+	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbTemp)
 
 	// param #2: payment address
 	senderKeyParam := arrayParams[1]
@@ -497,20 +559,27 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 	}
+	Logger.log.Infof("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
 }
 
 // handleGetActiveShards - return active shard num
 func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetActiveShards params: %+v", params)
 	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+	Logger.log.Infof("handleGetActiveShards result: %+v", activeShards)
 	return activeShards, nil
 }
 
 func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return common.MAX_SHARD_NUMBER, nil
+	Logger.log.Infof("handleGetMaxShardsNumber params: %+v", params)
+	result := common.MAX_SHARD_NUMBER
+	Logger.log.Infof("handleGetMaxShardsNumber result: %+v", result)
+	return result, nil
 }
 
 func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetStakingAmount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) <= 0 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
@@ -523,6 +592,7 @@ func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan 
 	if stackingType == 0 {
 		amount = metadata.GetShardStateAmount()
 	}
+	Logger.log.Infof("handleGetStakingAmount result: %+v", amount)
 	return amount, nil
 }
 

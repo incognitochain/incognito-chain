@@ -10,6 +10,7 @@ const (
 	DateOutputFormat     = "2006-01-02T15:04:05.999999"
 	DateInputFormat      = "2006-01-02T15:04:05.999999"
 	NextForceUpdate      = "2019-06-15T23:59:00.000000"
+	FirstDateOfMonth     = "01T23:59:00.000000"
 )
 
 // for exit code
@@ -23,7 +24,7 @@ const (
 // For all Transaction information
 const (
 	TxNormalType             = "n"  // normal tx(send and receive coin)
-	TxSalaryType             = "s"  // salary tx(gov pay salary for block producer)
+	TxRewardType             = "s"  // reward tx
 	TxReturnStakingType      = "rs" //
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
@@ -34,26 +35,19 @@ const (
 const (
 	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock        = 1000
-	MinTxsInBlock        = 10                   // minium txs for block to get immediate process (meaning no wait time)
-	MinBlockWaitTime     = 2                    // second
-	MaxBlockWaitTime     = 4 - MinBlockWaitTime // second
-	MinBeaconBlkInterval = 1 * time.Second      //second
-	MinShardBlkInterval  = 2 * time.Second      //second
+	MinBeaconBlkInterval = 3 * time.Second //second
+	MinShardBlkInterval  = 5 * time.Second //second
 )
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	// 	BondTokenID      = Hash{0, 0, 0, 0, 0, 0, 0, 0} // first 8 bytes must be 0
-	// 	DCBTokenID       = Hash{1}
-	// 	GOVTokenID       = Hash{2}
-	ConstantID = Hash{4} // To send Constant in custom token
-// 	DCBVotingTokenID = Hash{5}
-// 	GOVVotingTokenID = Hash{6}
+	PRVCoinID = Hash{4} // To send Constant in custom token
 )
 
 // centralized website's pubkey
 var (
 	CentralizedWebsitePubKey = []byte{2, 194, 130, 176, 102, 36, 183, 114, 109, 135, 49, 114, 177, 92, 214, 31, 25, 4, 72, 103, 196, 161, 36, 69, 121, 102, 159, 24, 31, 131, 101, 20, 0}
+	// CentralizedWebsitePubKey = []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0}
 )
 
 // board addresses
@@ -82,10 +76,4 @@ const (
 	PENDING_ROLE   = "pending"
 
 	MAX_SHARD_NUMBER = 2
-)
-
-// Units converter
-const (
-	WeiToMilliEtherRatio = int64(1000000000000000)
-	WeiToEtherRatio      = int64(1000000000000000000)
 )

@@ -144,12 +144,12 @@ func (tp *TxPool) validateTxIndependProperties(tx metadata.Transaction) error {
 	}
 
 	// check fee of tx
-	minFeePerKbTx := tp.config.BlockChain.GetFeePerKbTx()
+	limitFee := tp.config.FeeEstimator[shardID].limitFee
 	txFee := tx.GetTxFee()
-	ok = tx.CheckTransactionFee(minFeePerKbTx)
+	ok = tx.CheckTransactionFee(limitFee)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, minFeePerKbTx*tx.GetTxActualSize()))
+		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize()))
 		return err
 	}
 	// end check with policy

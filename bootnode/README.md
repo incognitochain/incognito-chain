@@ -12,8 +12,8 @@
 ### Build and RUN
 - Run `cd ./bootnode`
 - Run `sh ./build.sh`
-- Run `constant-bootnode -p 9330`
-- Run `constant-bootnode -h` to view helping
+- Run `incognito-bootnode -p 9330`
+- Run `incognito-bootnode -h` to view helping
 ### Run directly
 - Run `cd ./bootnode`
 - Or run `sh ./run_bootnode.sh -p 9330`

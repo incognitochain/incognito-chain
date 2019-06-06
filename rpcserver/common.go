@@ -31,9 +31,9 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	}
 
 	// get list outputcoins tx
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(keyset, shardIDSender, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(keyset, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, 0, NewRPCError(ErrGetOutputCoin, err)
 	}
@@ -130,12 +130,12 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	// param #3: estimation fee nano constant per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
-	// param #4: hasPrivacy flag: 1 or -1
-	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	// param #4: hasPrivacyCoin flag: 1 or -1
+	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacy, meta, nil, nil)
+	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacyCoin, meta, nil, nil)
 	if err1 != nil {
 		return nil, err1
 	}
@@ -155,9 +155,9 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 		paymentInfos,
 		inputCoins,
 		realFee,
-		hasPrivacy,
+		hasPrivacyCoin,
 		*rpcServer.config.Database,
-		nil, // use for constant coin -> nil is valid
+		nil, // use for prv coin -> nil is valid
 		meta,
 	)
 	// END create tx
@@ -185,11 +185,6 @@ func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]inter
 	}
 	voutsAmount := int64(0)
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	// get list custom token
-	//listCustomTokens, err := rpcServer.config.BlockChain.ListCustomToken()
-	//if err != nil {
-	//	return nil, nil, NewRPCError(ErrListCustomTokenNotFound, err)
-	//}
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
@@ -289,8 +284,8 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	// param #3: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
-	// param #4: hasPrivacy flag
-	hasPrivacy := int(arrayParams[3].(float64)) > 0
+	// param #4: hasPrivacyCoin flag
+	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 
 	// param #5: token params
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
@@ -301,13 +296,13 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	}
 	/******* START choose output coins constant, which is used to create tx *****/
 	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0,
-		senderKeySet, shardIDSender, hasPrivacy,
+		senderKeySet, shardIDSender, hasPrivacyCoin,
 		metaData, tokenParams, nil)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
 	if len(paymentInfos) == 0 && realFee == 0 {
-		hasPrivacy = false
+		hasPrivacyCoin = false
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
 
@@ -324,7 +319,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		//listCustomTokens,
 		*rpcServer.config.Database,
 		metaData,
-		hasPrivacy,
+		hasPrivacyCoin,
 		shardIDSender,
 	)
 	if err.(*transaction.TransactionError) != nil {
@@ -353,10 +348,6 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
 
 	// get list custom token
-	/*listCustomTokens, listCustomTokenCrossShard, err := rpcServer.config.BlockChain.ListPrivacyCustomToken()
-	if err != nil {
-		return nil, nil, nil, NewRPCError(ErrListCustomTokenNotFound, err)
-	}*/
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
@@ -364,11 +355,6 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			if err != nil {
 				return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, err)
 			}
-			//if _, ok := listCustomTokens[*tokenID]; !ok {
-			//	if _, ok := listCustomTokenCrossShard[*tokenID]; !ok {
-			//		return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
-			//	}
-			//}
 			existed := rpcServer.config.BlockChain.PrivacyCustomTokenIDExisted(tokenID)
 			existedCrossShard := rpcServer.config.BlockChain.PrivacyCustomTokenIDCrossShardExisted(tokenID)
 			if !existed && !existedCrossShard {
@@ -392,13 +378,13 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			}
 		}
 	}
-	//return tokenParams, listCustomTokens, listCustomTokenCrossShard, nil
 	return tokenParams, nil, nil, nil
 }
 
 // buildRawCustomTokenTransaction ...
 func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	params interface{},
+	metaData metadata.Metadata,
 ) (*transaction.TxCustomTokenPrivacy, *RPCError) {
 	// all component
 	arrayParams := common.InterfaceSlice(params)
@@ -434,33 +420,37 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	// param #3: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
 
-	// param #4: hasPrivacy flag for constant
-	hasPrivacyConst := int(arrayParams[3].(float64)) > 0
+	// param #4: hasPrivacy flag for native coin
+	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 
 	// param #5: token component
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, listCustomTokenCrossShard, err := rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
-	/*mapCustomTokenCrossShard := make(map[common.Hash]bool)
-	for _, customTokenCrossShard := range listCustomTokenCrossShard {
-		mapCustomTokenCrossShard[customTokenCrossShard.TokenID] = true
-	}*/
+
 	_ = listCustomTokenCrossShard
 	_ = listCustomTokens
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
+
+	// param #6: hasPrivacyToken flag for token
+	hasPrivacyToken := true
+	if len(arrayParams) >= 5 {
+		hasPrivacyToken = int(arrayParams[5].(float64)) > 0
+	}
+
 	/****** END FEtch data from params *********/
 
 	/******* START choose output coins constant, which is used to create tx *****/
 	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
 		estimateFeeCoinPerKb, 0, senderKeySet,
-		shardIDSender, hasPrivacyConst, nil,
+		shardIDSender, hasPrivacyCoin, nil,
 		nil, tokenParams)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
 	if len(paymentInfos) == 0 && realFee == 0 {
-		hasPrivacyConst = false
+		hasPrivacyCoin = false
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
 
@@ -474,11 +464,11 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		inputCoins,
 		realFee,
 		tokenParams,
-		//listCustomTokens,
 		*rpcServer.config.Database,
-		hasPrivacyConst,
+		metaData,
+		hasPrivacyCoin,
+		hasPrivacyToken,
 		shardIDSender,
-		//mapCustomTokenCrossShard,
 	)
 
 	if err.(*transaction.TransactionError) != nil {
@@ -503,7 +493,9 @@ func (rpcServer RpcServer) estimateFeeWithEstimator(defaultFee int64, shardID by
 			estimateFeeCoinPerKb = uint64(temp)
 		}
 		if estimateFeeCoinPerKb == 0 {
-			estimateFeeCoinPerKb = rpcServer.config.BlockChain.GetFeePerKbTx()
+			if feeEstimator, ok := rpcServer.config.FeeEstimator[shardID]; ok {
+				estimateFeeCoinPerKb = feeEstimator.GetLimitFee()
+			}
 		}
 	} else {
 		estimateFeeCoinPerKb = uint64(defaultFee)
@@ -531,7 +523,13 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 	if rpcServer.config.Wallet != nil {
 		estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.GetConfig().IncrementalFee)
 	}
-	estimateTxSizeInKb = transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams)
+
+	limitFee := uint64(0)
+	if feeEstimator, ok := rpcServer.config.FeeEstimator[shardID]; ok {
+		limitFee = feeEstimator.GetLimitFee()
+	}
+	estimateTxSizeInKb = transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee)
+
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb
 }

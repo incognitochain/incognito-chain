@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/constant-money/constant-chain/utility/generateKeys/generator"
+	"io/ioutil"
 )
 
 type KeyPair struct {
@@ -14,5 +16,7 @@ type KeyPairs struct {
 }
 
 func main() {
-	generator.GenerateAddressByShard(0)
+	keys, _ := generator.GenerateAddressByShard(1)
+	file, _ := json.MarshalIndent(keys, "", " ")
+	_ = ioutil.WriteFile("private-keys-shard-1.json", file, 0644)
 }

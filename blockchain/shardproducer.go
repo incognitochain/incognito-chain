@@ -169,11 +169,11 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
 		CrossTransactionRoot: *crossTransactionRoot,
 		InstructionsRoot:     instructionsHash,
-		CrossShards:          CreateCrossShardByteArray(txsToAdd, shardID),
+		CrossShards:          CreateCrossShardByteArray(block.Body.Transactions, shardID),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
-		BeaconHash:           *beaconHash,
+		BeaconHash:           beaconHash,
 		Epoch:                epoch,
 		Round:                round,
 	}
@@ -209,7 +209,13 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	}()
 
 	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
+	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
+	if err != nil {
+		return nil, err
+	}
+	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
+
+	stabilityResponseTxs, err = blockgen.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -339,11 +345,11 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 	currentSize := uint64(0)
 	startTime := time.Now()
 
-	instsForValidations := [][]string{}
-	for _, beaconBlock := range beaconBlocks {
-		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
-	}
-	instUsed := make([]int, len(instsForValidations))
+	// instsForValidations := [][]string{}
+	// for _, beaconBlock := range beaconBlocks {
+	// 	instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
+	// }
+	// instUsed := make([]int, len(instsForValidations))
 
 	for _, txDesc := range sourceTxns {
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
@@ -357,11 +363,14 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain)
-		if err != nil || !ok {
-			txToRemove = append(txToRemove, tx)
-			continue
-		}
+		// ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(
+		// 	[]metadata.Transaction{}, []int{},
+		// 	instsForValidations, instUsed, shardID, blockgen.chain,
+		// )
+		// if err != nil || !ok {
+		// 	txToRemove = append(txToRemove, tx)
+		// 	continue
+		// }
 
 		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
@@ -394,6 +403,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	shardID byte,
 	beaconBlocks []*BeaconBlock,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+	startTime := time.Now()
 	sourceTxns := blockgen.GetPendingTxsV2()
 	txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
 	var elasped int64
@@ -403,16 +413,14 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		panic("TempTxPool Is not Empty")
 	}
 	currentSize := uint64(0)
-	startTime := time.Now()
-
-	instsForValidations := [][]string{}
-	for _, beaconBlock := range beaconBlocks {
-		instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
-	}
-	instUsed := make([]int, len(instsForValidations))
-	// accumulatedData := component.UsedInstData{
-	// 	TradeActivated: map[string]bool{},
+	// instsForValidations := [][]string{}
+	// for _, beaconBlock := range beaconBlocks {
+	// 	instsForValidations = append(instsForValidations, beaconBlock.Body.Instructions...)
 	// }
+	// instUsed := make([]int, len(instsForValidations))
+	// // accumulatedData := component.UsedInstData{
+	// // 	TradeActivated: map[string]bool{},
+	// // }
 
 	for _, tx := range sourceTxns {
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
@@ -425,11 +433,11 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 			txToRemove = append(txToRemove, tx)
 			continue
 		}
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain)
-		if err != nil || !ok {
-			txToRemove = append(txToRemove, tx)
-			continue
-		}
+		// ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(instsForValidations, instUsed, shardID, blockgen.chain)
+		// if err != nil || !ok {
+		// 	txToRemove = append(txToRemove, tx)
+		// 	continue
+		// }
 
 		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
@@ -447,7 +455,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		elasped = time.Since(startTime).Nanoseconds()
 		// @txsProcessTimeInBlockCreation is a constant for this current version
 		if elasped >= txsProcessTimeInBlockCreation {
-			//Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
+			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
 	}
@@ -488,7 +496,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	// var wg sync.WaitGroup
 
 	for _, fromShardID := range keys {
-		crossTxTokenDataList, _ := crossTxTokenDataMap[byte(fromShardID)]
+		crossTxTokenDataList := crossTxTokenDataMap[byte(fromShardID)]
 		//crossTxTokenData is already sorted by block height
 		for _, crossTxTokenData := range crossTxTokenDataList {
 			for _, txTokenData := range crossTxTokenData.TxTokenData {

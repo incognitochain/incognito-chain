@@ -75,12 +75,12 @@ func (tx *Tx) Init(
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
-	tokenID *common.Hash, // default is nil -> use for constant coin
+	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
 ) *TransactionError {
 
 	Logger.log.Debugf("CREATING TX........\n")
-	tx.Version = TxVersion
+	tx.Version = txVersion
 	var err error
 
 	if len(inputCoins) > 255 {
@@ -93,7 +93,7 @@ func (tx *Tx) Init(
 
 	if tokenID == nil {
 		tokenID = &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		tokenID.SetBytes(common.PRVCoinID[:])
 	}
 
 	// Calculate execution time
@@ -243,7 +243,7 @@ func (tx *Tx) Init(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, err := db.GetCommitmentByIndex(tokenID, cmIndex, shardID)
+		temp, err := db.GetCommitmentByIndex(*tokenID, cmIndex, shardID)
 		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
@@ -393,7 +393,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	Logger.log.Debugf("VALIDATING TX........\n")
 	// start := time.Now()
 	// Verify tx signature
-	if tx.GetType() == common.TxSalaryType {
+	if tx.GetType() == common.TxRewardType {
 		return tx.ValidateTxSalary(db)
 	}
 	if tx.GetType() == common.TxReturnStakingType {
@@ -414,7 +414,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
-			tokenID.SetBytes(common.ConstantID[:])
+			tokenID.SetBytes(common.PRVCoinID[:])
 		}
 
 		sndOutputs := make([]*big.Int, len(tx.Proof.OutputCoins))
@@ -509,18 +509,23 @@ func (tx *Tx) GetTxActualSize() uint64 {
 	sizeTx += uint64(8)                // int64
 	sizeTx += uint64(8)
 
-	sizeTx += uint64(len(tx.SigPubKey))
-	sizeTx += uint64(len(tx.Sig))
+	sigPubKey := uint64(len(tx.SigPubKey))
+	sizeTx += sigPubKey
+	sig := uint64(len(tx.Sig))
+	sizeTx += sig
 	if tx.Proof != nil {
-		sizeTx += uint64(len(tx.Proof.Bytes()))
+		proof := uint64(len(tx.Proof.Bytes()))
+		sizeTx += proof
 	}
 
 	sizeTx += uint64(1)
-	sizeTx += uint64(len(tx.Info))
+	info := uint64(len(tx.Info))
+	sizeTx += info
 
 	meta := tx.Metadata
 	if meta != nil {
-		sizeTx += meta.CalculateSize()
+		metaSize := meta.CalculateSize()
+		sizeTx += metaSize
 	}
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
@@ -542,7 +547,7 @@ func (tx *Tx) ListNullifiers() [][]byte {
 
 // CheckCMExistence returns true if cm exists in cm list
 func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
-	ok, err := db.HasCommitment(tokenID, cm, shardID)
+	ok, err := db.HasCommitment(*tokenID, cm, shardID)
 	return ok, err
 }
 
@@ -563,7 +568,7 @@ func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 
 func (tx *Tx) IsSalaryTx() bool {
 	// Check normal tx(not an action tx)
-	if tx.GetType() != common.TxSalaryType {
+	if tx.GetType() != common.TxRewardType {
 		return false
 	}
 	// Check nullifiers in every Descs
@@ -624,7 +629,7 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 
 func (tx *Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	unique, pk, amount := tx.GetUniqueReceiver()
-	return unique, pk, amount, &common.ConstantID
+	return unique, pk, amount, &common.PRVCoinID
 }
 
 func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
@@ -650,7 +655,7 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.
 }
 
 func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	//if tx.Type == common.TxSalaryType || tx.Type == common.TxReturnStakingType {
+	//if tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType {
 	//	return errors.New("can not receive a salary tx from other node, this is a violation")
 	//}
 	poolNullifiers := mr.GetSerialNumbers()
@@ -664,11 +669,11 @@ func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
 	db database.DatabaseInterface,
 ) error {
 
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
-		ok, err := db.HasSerialNumber(constantTokenID, serialNumber, shardID)
+		ok, err := db.HasSerialNumber(*prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
 		}
@@ -681,7 +686,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	if tx.GetType() == common.TxSalaryType || tx.GetType() == common.TxReturnStakingType {
+	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
 	if tx.Metadata != nil {
@@ -700,8 +705,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	txN := tx
 	//check version
-	if txN.Version > TxVersion {
-		return false, errors.New("wrong tx version")
+	if txN.Version > txVersion {
+		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", txN.Version, txVersion))
 	}
 	// check LockTime before now
 	if int64(txN.LockTime) > time.Now().Unix() {
@@ -724,12 +729,12 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	}
 	// check Type is normal or salary tx
 	switch txN.Type {
-	case common.TxNormalType, common.TxSalaryType, common.TxCustomTokenType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
+	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
 	default:
 		return false, errors.New("wrong tx type")
 	}
 
-	//if txN.Type != common.TxNormalType && txN.Type != common.TxSalaryType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
+	//if txN.Type != common.TxNormalType && txN.Type != common.TxRewardType && txN.Type != common.TxCustomTokenType && txN.Type != common.TxCustomTokenPrivacyType { // only 1 byte
 	//	return false, errors.New("wrong tx type")
 	//}
 
@@ -904,9 +909,9 @@ func (tx *Tx) ValidateTxByItself(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 ) (bool, error) {
-	constantTokenID := &common.Hash{}
-	constantTokenID.SetBytes(common.ConstantID[:])
-	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, constantTokenID)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID)
 	if !ok {
 		return false, err
 	}
@@ -967,7 +972,7 @@ func (tx *Tx) IsPrivacy() bool {
 }
 
 func (tx *Tx) ValidateType() bool {
-	return tx.Type == common.TxNormalType || tx.Type == common.TxSalaryType || tx.Type == common.TxReturnStakingType
+	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
 func (tx *Tx) IsCoinsBurning() bool {
@@ -1042,8 +1047,8 @@ func (tx *Tx) InitTxSalary(
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 ) error {
-	tx.Version = TxVersion
-	tx.Type = common.TxSalaryType
+	tx.Version = txVersion
+	tx.Type = common.TxRewardType
 
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()
@@ -1069,7 +1074,7 @@ func (tx *Tx) InitTxSalary(
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.ConstantID[:])
+		tokenID.SetBytes(common.PRVCoinID[:])
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
 		if err != nil {
 			return err
@@ -1121,7 +1126,7 @@ func (tx Tx) ValidateTxSalary(
 	lastByte := tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.OutputCoins[0].CoinDetails.PublicKey.Compress())-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.ConstantID[:])
+	tokenID.SetBytes(common.PRVCoinID[:])
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.OutputCoins[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
 		return false, err
 	}
@@ -1151,6 +1156,8 @@ func (tx Tx) GetTokenID() *common.Hash {
 }
 
 func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []metadata.Transaction,
+	txsUsed []int,
 	insts [][]string,
 	instsUsed []int,
 	shardID byte,
@@ -1166,12 +1173,12 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 			return false, nil
 		}
 		// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
-		// if !meta.IsMinerCreatedMetaType() {
-		// 	return false, nil
-		// }
+		if !meta.IsMinerCreatedMetaType() {
+			return false, nil
+		}
 	}
 	if meta != nil {
-		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(insts, instsUsed, shardID, tx, bcr)
+		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr)
 	}
 	return true, nil
 }

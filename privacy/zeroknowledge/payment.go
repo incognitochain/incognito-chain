@@ -13,7 +13,7 @@ import (
 
 // PaymentWitness contains all of witness for proving when spending coins
 type PaymentWitness struct {
-	privateKey        *big.Int
+	privateKey         *big.Int
 	RandSK             *big.Int
 	inputCoins         []*privacy.InputCoin
 	outputCoins        []*privacy.OutputCoin
@@ -699,69 +699,66 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	return proof, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
-	// has no privacy
-	if !hasPrivacy {
-		var sumInputValue, sumOutputValue uint64
-		sumInputValue = 0
-		sumOutputValue = 0
+func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+	var sumInputValue, sumOutputValue uint64
+	sumInputValue = 0
+	sumOutputValue = 0
 
-		pubKeyLastByteSender := pubKey[len(pubKey)-1]
-		senderShardID := common.GetShardIDFromLastByte(pubKeyLastByteSender)
-		cmShardIDSender := privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{senderShardID}))
+	pubKeyLastByteSender := pubKey[len(pubKey)-1]
+	senderShardID := common.GetShardIDFromLastByte(pubKeyLastByteSender)
+	cmShardIDSender := privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{senderShardID}))
 
-		for i := 0; i < len(proof.InputCoins); i++ {
-			// Check input coins' Serial number is created from input coins' input and sender's spending key
-			if !proof.SNNoPrivacyProof[i].Verify(nil) {
-				privacy.Logger.Log.Errorf("Failed verify serial number no privacy\n")
-				return false
-			}
-
-			// Check input coins' cm is calculated correctly
-			cmTmp := proof.InputCoins[i].CoinDetails.PublicKey
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(proof.InputCoins[i].CoinDetails.Value))))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(proof.InputCoins[i].CoinDetails.SNDerivator))
-			cmTmp = cmTmp.Add(cmShardIDSender)
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.InputCoins[i].CoinDetails.Randomness))
-			if !cmTmp.IsEqual(proof.InputCoins[i].CoinDetails.CoinCommitment) {
-				privacy.Logger.Log.Errorf("Input coins %v commitment wrong!\n", i)
-				return false
-			}
-
-			// Calculate sum of input values
-			sumInputValue += proof.InputCoins[i].CoinDetails.Value
-		}
-
-		for i := 0; i < len(proof.OutputCoins); i++ {
-			// Check output coins' cm is calculated correctly
-			cmTmp := proof.OutputCoins[i].CoinDetails.PublicKey
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value))))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(proof.OutputCoins[i].CoinDetails.SNDerivator))
-			shardID := common.GetShardIDFromLastByte(proof.OutputCoins[i].CoinDetails.GetPubKeyLastByte())
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
-			cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.OutputCoins[i].CoinDetails.Randomness))
-			if !cmTmp.IsEqual(proof.OutputCoins[i].CoinDetails.CoinCommitment) {
-				privacy.Logger.Log.Errorf("Output coins %v commitment wrong!\n", i)
-				return false
-			}
-
-			// Calculate sum of output values
-			sumOutputValue += proof.OutputCoins[i].CoinDetails.Value
-		}
-
-		// check if sum of input values equal sum of output values
-		if sumInputValue != sumOutputValue + fee {
-			privacy.Logger.Log.Infof("sumInputValue: %v\n", sumInputValue)
-			privacy.Logger.Log.Infof("sumOutputValue: %v\n", sumOutputValue)
-			privacy.Logger.Log.Infof("fee: %v\n", fee)
-			privacy.Logger.Log.Errorf("Sum of inputs is not equal sum of output!\n")
+	for i := 0; i < len(proof.InputCoins); i++ {
+		// Check input coins' Serial number is created from input coins' input and sender's spending key
+		if !proof.SNNoPrivacyProof[i].Verify(nil) {
+			privacy.Logger.Log.Errorf("Failed verify serial number no privacy\n")
 			return false
 		}
-		return true
 
+		// Check input coins' cm is calculated correctly
+		cmTmp := proof.InputCoins[i].CoinDetails.PublicKey
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(proof.InputCoins[i].CoinDetails.Value))))
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(proof.InputCoins[i].CoinDetails.SNDerivator))
+		cmTmp = cmTmp.Add(cmShardIDSender)
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.InputCoins[i].CoinDetails.Randomness))
+		if !cmTmp.IsEqual(proof.InputCoins[i].CoinDetails.CoinCommitment) {
+			privacy.Logger.Log.Errorf("Input coins %v commitment wrong!\n", i)
+			return false
+		}
+
+		// Calculate sum of input values
+		sumInputValue += proof.InputCoins[i].CoinDetails.Value
 	}
 
-	// if hasPrivacy == true
+	for i := 0; i < len(proof.OutputCoins); i++ {
+		// Check output coins' cm is calculated correctly
+		cmTmp := proof.OutputCoins[i].CoinDetails.PublicKey
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.VALUE].ScalarMult(big.NewInt(int64(proof.OutputCoins[i].CoinDetails.Value))))
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SND].ScalarMult(proof.OutputCoins[i].CoinDetails.SNDerivator))
+		shardID := common.GetShardIDFromLastByte(proof.OutputCoins[i].CoinDetails.GetPubKeyLastByte())
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.SHARDID].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.OutputCoins[i].CoinDetails.Randomness))
+		if !cmTmp.IsEqual(proof.OutputCoins[i].CoinDetails.CoinCommitment) {
+			privacy.Logger.Log.Errorf("Output coins %v commitment wrong!\n", i)
+			return false
+		}
+
+		// Calculate sum of output values
+		sumOutputValue += proof.OutputCoins[i].CoinDetails.Value
+	}
+
+	// check if sum of input values equal sum of output values
+	if sumInputValue != sumOutputValue+fee {
+		privacy.Logger.Log.Infof("sumInputValue: %v\n", sumInputValue)
+		privacy.Logger.Log.Infof("sumOutputValue: %v\n", sumOutputValue)
+		privacy.Logger.Log.Infof("fee: %v\n", fee)
+		privacy.Logger.Log.Errorf("Sum of inputs is not equal sum of output!\n")
+		return false
+	}
+	return true
+}
+
+func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
 	// verify for input coins
 	cmInputSum := make([]*privacy.EllipticPoint, len(proof.OneOfManyProof))
 	for i := 0; i < len(proof.OneOfManyProof); i++ {
@@ -775,7 +772,7 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 		// get commitments list from CommitmentIndices
 		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentBytes, err := db.GetCommitmentByIndex(tokenID, proof.CommitmentIndices[i*privacy.CMRingSize+j], shardID)
+			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, proof.CommitmentIndices[i*privacy.CMRingSize+j], shardID)
 
 			if err != nil {
 				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database")
@@ -855,4 +852,13 @@ func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee 
 	}
 
 	return true
+}
+
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+	// has no privacy
+	if !hasPrivacy {
+		return proof.verifyNoPrivacy(pubKey, fee, db, shardID, tokenID)
+	}
+
+	return proof.verifyHasPrivacy(pubKey, fee, db, shardID, tokenID)
 }

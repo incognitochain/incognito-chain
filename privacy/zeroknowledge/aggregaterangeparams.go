@@ -5,6 +5,7 @@ import (
 	"github.com/constant-money/constant-chain/privacy"
 	"github.com/pkg/errors"
 	"math/big"
+	"sync"
 )
 
 /***** Bullet proof component *****/
@@ -22,10 +23,16 @@ func newBulletproofParams(m int) *BulletproofParams {
 	gen.G = make([]*privacy.EllipticPoint, capacity)
 	gen.H = make([]*privacy.EllipticPoint, capacity)
 
+	var wg sync.WaitGroup
+	wg.Add(capacity)
 	for i := 0; i < capacity; i++ {
-		gen.G[i] = privacy.PedCom.G[0].Hash(int64(5 + i))
-		gen.H[i] = privacy.PedCom.G[0].Hash(int64(5 + i + capacity))
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			gen.G[i] = privacy.PedCom.G[0].Hash(int64(5 + i))
+			gen.H[i] = privacy.PedCom.G[0].Hash(int64(5 + i + capacity))
+		}(i, &wg)
 	}
+	wg.Wait()
 	gen.U = new(privacy.EllipticPoint)
 	gen.U = gen.H[0].Hash(int64(5 + 2*capacity))
 
@@ -39,9 +46,16 @@ func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*
 	}
 
 	res := new(privacy.EllipticPoint).Zero()
-	for i := 0; i < len(a); i++ {
-		res = res.Add(g[i].ScalarMult(a[i])).Add(h[i].ScalarMult(b[i]))
+	var wg sync.WaitGroup
+	lenA := len(a)
+	wg.Add(lenA)
+	for i := 0; i < lenA; i++ {
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			res = res.Add(g[i].ScalarMult(a[i])).Add(h[i].ScalarMult(b[i]))
+		}(i, &wg)
 	}
+	wg.Wait()
 	return res, nil
 }
 
