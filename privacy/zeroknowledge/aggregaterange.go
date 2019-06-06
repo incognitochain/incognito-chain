@@ -543,7 +543,24 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
 	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.VALUE)
-	right1 := privacy.PedCom.G[privacy.VALUE].ScalarMult(deltaYZ).Add(proof.t1.ScalarMult(x)).Add(proof.t2.ScalarMult(xSquare))
+
+	var temp1, temp2, temp3 *privacy.EllipticPoint
+
+	wg.Add(3)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		temp1 = privacy.PedCom.G[privacy.VALUE].ScalarMult(deltaYZ)
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		temp2 = proof.t1.ScalarMult(x)
+	}(&wg)
+	go func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		temp3 = proof.t2.ScalarMult(xSquare)
+	}(&wg)
+	wg.Wait()
+	right1 := temp1.Add(temp2).Add(temp3)
 
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	for i, cm := range tmpcmsValue {
