@@ -48,7 +48,7 @@ func (withDrawRewardRequest *WithDrawRewardRequest) ValidateTxWithBlockChain(txr
 		return false, errors.New("This transaction can not be privacy")
 	}
 	sender := txr.GetSender()
-	value, err := db.GetCommitteeReward(sender)
+	value, err := db.GetCommitteeReward(sender[:33])
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}
@@ -81,7 +81,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if len(receivers) != 1 {
 		return false, errors.New("Wrong receiver")
 	}
-	value, err := db.GetCommitteeReward(receivers[0])
+	value, err := db.GetCommitteeReward(receivers[0][:33])
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}

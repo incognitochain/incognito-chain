@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -75,7 +74,7 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 		txData.CalculateTxValue(),
 		&keyWallet.KeySet.PaymentAddress,
 		blkProducerPrivateKey,
-		blockgen.chain.GetDatabase(),
+		blockgen.chain.config.DataBase,
 		returnStakingMeta,
 	)
 	//modify the type of the salary transaction
@@ -114,7 +113,7 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 // 		beaconSalaryInfo.BeaconSalary,
 // 		beaconSalaryInfo.PayToAddress,
 // 		blkProducerPrivateKey,
-// 		blockgen.chain.GetDatabase(),
+// 		blockgen.chain.config.DataBase,
 // 		salaryResMeta,
 // 	)
 // 	//fmt.Println("SA: beacon salary", beaconSalaryInfo, salaryResTx.CalculateTxValue(), salaryResTx.Hash().String())
@@ -194,19 +193,19 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 func (blockchain *BlockChain) shareRewardForShardCommittee(epoch, totalReward uint64, listCommitee []string) error {
 	reward := totalReward / uint64(len(listCommitee))
 	for i, committee := range listCommitee {
-		committeeBytes, err := hex.DecodeString(committee)
+		committeeBytes, _, err := base58.Base58Check{}.Decode(committee)
 		if err != nil {
 			for j := i - 1; j >= 0; j-- {
-				committeeBytesTemp, _ := hex.DecodeString(listCommitee[j])
-				err = blockchain.GetDatabase().RemoveCommitteeReward(committeeBytesTemp, reward)
+				committeeBytes, _, _ := base58.Base58Check{}.Decode(listCommitee[j])
+				_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward)
 			}
 			return err
 		}
-		err = blockchain.GetDatabase().AddCommitteeReward(committeeBytes, reward)
+		err = blockchain.config.DataBase.AddCommitteeReward(committeeBytes, reward)
 		if err != nil {
 			for j := i - 1; j >= 0; j-- {
-				committeeBytesTemp, _ := hex.DecodeString(listCommitee[j])
-				err = blockchain.GetDatabase().RemoveCommitteeReward(committeeBytesTemp, reward)
+				committeeBytes, _, _ := base58.Base58Check{}.Decode(listCommitee[j])
+				_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward)
 			}
 			return err
 		}
@@ -222,8 +221,8 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 	shardCommittee := make(map[byte][]string)
 	isInit := false
 	epoch := uint64(0)
-	db := blockchain.GetDatabase()
-	// listShardCommittee := blockchain.GetDatabase().FetchCommitteeByEpoch
+	db := blockchain.config.DataBase
+	// listShardCommittee := blockchain.config.DataBase.FetchCommitteeByEpoch
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == StakeAction || l[0] == RandomAction {
@@ -247,7 +246,11 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 					if err != nil {
 						return err
 					}
-					err = db.AddCommitteeReward(beaconBlkRewardInfo.PayToAddress.Bytes(), beaconBlkRewardInfo.BeaconReward)
+					publicKeyCommittee, _, err := base58.Base58Check{}.Decode(beaconBlkRewardInfo.PayToPublicKey)
+					if err != nil {
+						return err
+					}
+					err = db.AddCommitteeReward(publicKeyCommittee, beaconBlkRewardInfo.BeaconReward)
 					if err != nil {
 						return err
 					}
@@ -258,11 +261,11 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 					if err != nil {
 						return err
 					}
-					devAddressBytes, err := hex.DecodeString(common.DevAddress)
+					keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(common.BurningAddress)
 					if err != nil {
 						return err
 					}
-					err = db.AddCommitteeReward(devAddressBytes, devRewardInfo.DevReward)
+					err = db.AddCommitteeReward(keyWalletBurningAccount.KeySet.PaymentAddress.Pk, devRewardInfo.DevReward)
 					if err != nil {
 						return err
 					}
@@ -297,7 +300,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 	shardBlock *ShardBlock,
 ) error {
-	db := blockchain.GetDatabase()
+	db := blockchain.config.DataBase
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			receivers, amounts := tx.GetReceivers()
@@ -319,7 +322,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metada
 	if len(receiverBytes) == 0 {
 		return nil, errors.New("Can not get payment address of request's sender")
 	}
-	amount, err := blockchain.GetDatabase().GetCommitteeReward(receiverBytes)
+	amount, err := blockchain.config.DataBase.GetCommitteeReward(receiverPayment.Pk)
 	if (amount == 0) || (err != nil) {
 		return nil, errors.New("Not enough reward")
 	}
@@ -328,6 +331,6 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metada
 		return nil, err
 	}
 	txRes := new(transaction.Tx)
-	txRes.InitTxSalary(amount, receiverPayment, blkProducerPrivateKey, blockchain.GetDatabase(), responseMeta)
+	txRes.InitTxSalary(amount, receiverPayment, blkProducerPrivateKey, blockchain.config.DataBase, responseMeta)
 	return txRes, nil
 }

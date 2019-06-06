@@ -1227,12 +1227,13 @@ func (blockchain *BlockChain) IsReady(shard bool, shardID byte) bool {
 func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch, totalReward uint64) ([][]string, error) {
 	resInst := [][]string{}
 	baseReward := totalReward / uint64(blockchain.BestState.Beacon.BeaconCommitteeSize)
-	for _, paymentAddressStr := range blockchain.BestState.Beacon.BeaconCommittee {
-		paymentAddress, err := privacy.NewPaymentAddressFromString(paymentAddressStr)
+	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
+		b, _, err := base58.Base58Check{}.Decode(publickeyStr)
+		fmt.Printf("[ndh] PaymentAddress string- - - - - %+v\n", b)
 		if err != nil {
 			return nil, err
 		}
-		singleInst, err := metadata.BuildInstForBeaconReward(baseReward, paymentAddress)
+		singleInst, err := metadata.BuildInstForBeaconReward(baseReward, publickeyStr)
 		if err != nil {
 			return nil, err
 		}
@@ -1291,11 +1292,12 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			txRequestTable[requester.String()] = tx
 		}
 	}
-	db := blockchain.GetDatabase()
+	db := blockchain.config.DataBase
+	numberOfTxResponse := 0
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			requesters, amounts := tx.GetReceivers()
-			amount, err := db.GetCommitteeReward(requesters[0])
+			amount, err := db.GetCommitteeReward(requesters[0][:33])
 			if (amount == 0) || (err != nil) {
 				return errors.New("Not enough reward")
 			}
@@ -1306,7 +1308,11 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			if txRequestTable[requester.String()].Hash().Cmp(tx.GetMetadata().Hash()) != 0 {
 				return errors.New("This response dont match with any request")
 			}
+			numberOfTxResponse++
 		}
+	}
+	if len(txRequestTable) != numberOfTxResponse {
+		return errors.New("Not match request and response")
 	}
 	return nil
 }
