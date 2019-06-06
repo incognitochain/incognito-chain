@@ -1,13 +1,14 @@
-package btcapi
+package main
 
 import (
 	"fmt"
+	"github.com/constant-money/constant-chain/blockchain/btc"
 )
 
 func main() {
 	//res, err := btcapi.GetCurrentChainTimeStamp()
 	//fmt.Printf("res %+v \n error %+v", res, err)
-	var btcClient = NewBTCClient("admin","autonomous", "159.65.142.153","8332")
+	var btcClient = btc.NewBTCClient("admin","autonomous", "159.65.142.153","8332")
 	res, err := btcClient.GetBlockchainInfo()
 	fmt.Println(res,err)
 	blockHeight, err := btcClient.GetBestBlockHeight()
