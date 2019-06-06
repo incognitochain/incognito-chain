@@ -258,7 +258,18 @@ func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
 		xSquareInverse := new(big.Int).ModInverse(xSquare, privacy.Curve.Params().N)
 
 		//PPrime := l.ScalarMult(xSquare).Add(p).Add(r.ScalarMult(xSquareInverse)) // x^2 * l + P + xInverse^2 * r
-		PPrime := proof.l[i].ScalarMult(xSquare).Add(p).Add(proof.r[i].ScalarMult(xSquareInverse)) // x^2 * l + P + xInverse^2 * r
+		var temp1, temp2 *privacy.EllipticPoint
+		wg.Add(2)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			temp1 = proof.l[i].ScalarMult(xSquare)
+		}(&wg)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			temp2 = proof.r[i].ScalarMult(xSquareInverse)
+		}(&wg)
+		wg.Wait()
+		PPrime := temp1.Add(p).Add(temp2) // x^2 * l + P + xInverse^2 * r
 
 		p = PPrime
 		G = GPrime
@@ -371,10 +382,17 @@ func powerVector(base *big.Int, n int) []*big.Int {
 	res := make([]*big.Int, n)
 	res[0] = big.NewInt(1)
 
+	var wg sync.WaitGroup
+	wg.Add(n - 1)
 	for i := 1; i < n; i++ {
-		res[i] = new(big.Int).Mul(res[i-1], base)
-		res[i].Mod(res[i], privacy.Curve.Params().N)
+		go func(i int, wg *sync.WaitGroup) {
+			//res[i] = new(big.Int).Mul(res[i-1], base)
+			//res[i].Mod(res[i], privacy.Curve.Params().N)
+			defer wg.Done()
+			res[i] = new(big.Int).Exp(base, new(big.Int).SetInt64(int64(i)), privacy.Curve.Params().N)
+		}(i, &wg)
 	}
+	wg.Wait()
 	return res
 }
 
