@@ -1,8 +1,14 @@
 package lvdb
 
 import (
+	"fmt"
+
 	"github.com/constant-money/constant-chain/common"
+	"github.com/constant-money/constant-chain/database"
 	"github.com/pkg/errors"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
+	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) AddShardRewardRequest(
@@ -10,20 +16,24 @@ func (db *db) AddShardRewardRequest(
 	shardID byte,
 	rewardAmount uint64,
 ) error {
+	fmt.Printf("[ndh]-[DATABASE] AddShardRewardRequest- - - %+v %+v %+v\n", epoch, shardID, rewardAmount)
 	key, err := NewKeyAddShardRewardRequest(epoch, shardID)
 	if err != nil {
 		return err
 	}
 	oldValue, err := db.Get(key)
 	if err != nil {
+		fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 0- - - %+v\n", err)
 		err1 := db.Put(key, common.Uint64ToBytes(rewardAmount))
+		fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 1- - - %+v\n", err1)
 		if err1 != nil {
 			return err1
 		}
 	} else {
 		newValue := common.BytesToUint64(oldValue)
 		newValue += rewardAmount
-		db.Put(key, common.Uint64ToBytes(newValue))
+		err = db.Put(key, common.Uint64ToBytes(newValue))
+		fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 2- - - %+v\n", err)
 	}
 	return nil
 }
@@ -41,11 +51,22 @@ func (db *db) AddDevReward(reward uint64) error {
 }
 
 func (db *db) GetRewardOfShardByEpoch(epoch uint64, shardID byte) (uint64, error) {
+	fmt.Printf("[ndh]-[DATABASE] GetRewardOfShardByEpoch- - - %+v %+v\n", epoch, shardID)
 	key, err := NewKeyAddShardRewardRequest(epoch, shardID)
+	dbDetails := ViewDetailDBByPrefix(db, ShardRequestRewardPrefix)
+	for _, value := range dbDetails {
+		fmt.Printf("[ndh] - - - %+v\n", value)
+	}
 	if err != nil {
+		fmt.Printf("[ndh]-[ERROR] 0 --- %+v\n", err)
 		return 0, err
 	}
 	rewardAmount, err := db.Get(key)
+	if err != nil {
+		fmt.Printf("[ndh]-[ERROR] 1 --- %+v\n", err)
+		return 0, err
+	}
+	fmt.Printf("[ndh] - - - %+v\n", rewardAmount)
 	return common.BytesToUint64(rewardAmount), err
 }
 
@@ -102,4 +123,42 @@ func (db *db) RemoveCommitteeReward(committeeAddress []byte, amount uint64) erro
 		db.Put(key, common.Uint64ToBytes(newValue))
 	}
 	return nil
+}
+
+func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator {
+	return db.lvdb.NewIterator(slice, ro)
+}
+
+func ViewDBByPrefix(db database.DatabaseInterface, prefix []byte) map[string]string {
+	begin := prefix
+	// +1 to search in that range
+	end := common.BytesPlusOne(prefix)
+
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchRange, nil)
+	res := make(map[string]string)
+	for iter.Next() {
+		res[string(iter.Key())] = string(iter.Value())
+	}
+	return res
+}
+
+func ViewDetailDBByPrefix(db database.DatabaseInterface, prefix []byte) map[string][]byte {
+	begin := prefix
+	// +1 to search in that range
+	end := common.BytesPlusOne(prefix)
+
+	searchRange := util.Range{
+		Start: begin,
+		Limit: end,
+	}
+	iter := db.NewIterator(&searchRange, nil)
+	res := make(map[string][]byte)
+	for iter.Next() {
+		res[string(iter.Key())] = iter.Key()
+	}
+	return res
 }

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 )
 
 type DevRewardInfo struct {
@@ -25,11 +25,10 @@ func BuildInstForDevReward(reward uint64) ([]string, error) {
 		return nil, err
 	}
 
-	devAddress, err := privacy.NewPaymentAddressFromString(common.DevAddress)
-
+	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	returnedInst := []string{
 		strconv.Itoa(DevRewardRequestMeta),
-		strconv.Itoa(int(common.GetShardIDFromLastByte(devAddress.Bytes()[len(devAddress.Bytes())-1]))),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletBurningAccount.KeySet.PaymentAddress.Pk[32]))),
 		"devRewardInst",
 		string(contentStr),
 	}

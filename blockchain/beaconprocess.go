@@ -261,6 +261,14 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	if (block.Header.Height != 1) && (block.Header.Height%common.EPOCH == 1) && (parentBlockInterface.Header.Epoch != block.Header.Epoch-1) {
 		return NewBlockChainError(EpochError, errors.New("lock height and Epoch is not compatiable"))
 	}
+	rewardByEpochInstruction := [][]string{}
+	if block.Header.Height%common.EPOCH == 1 {
+		rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(block.Header.Epoch - 1)
+		if err != nil {
+			fmt.Printf("[ndh]-[ERROR] -- --- -- --- %+v\n", err)
+			return err
+		}
+	}
 	// Verify timestamp with parent block
 	//jackalope: temporary commment for debug purpose
 	//if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
@@ -364,6 +372,9 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		}
 
 		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+		if len(rewardByEpochInstruction) != 0 {
+			tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
+		}
 		fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
 		tempInstructionArr := []string{}
 		for _, strs := range tempInstruction {
