@@ -298,10 +298,16 @@ func vectorAdd(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 	}
 
 	res := make([]*big.Int, len(a))
+	var wg sync.WaitGroup
+	wg.Add(len(a))
 	for i := range a {
-		res[i] = new(big.Int).Add(a[i], b[i])
-		res[i] = res[i].Mod(res[i], privacy.Curve.Params().N)
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			res[i] = new(big.Int).Add(a[i], b[i])
+			res[i] = res[i].Mod(res[i], privacy.Curve.Params().N)
+		}(i, &wg)
 	}
+	wg.Wait()
 	return res, nil
 }
 
@@ -343,10 +349,16 @@ func hadamardProduct(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 	}
 
 	res := make([]*big.Int, len(a))
+	var wg sync.WaitGroup
+	wg.Add(len(a))
 	for i := 0; i < len(res); i++ {
-		res[i] = new(big.Int).Mul(a[i], b[i])
-		res[i].Mod(res[i], privacy.Curve.Params().N)
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			res[i] = new(big.Int).Mul(a[i], b[i])
+			res[i].Mod(res[i], privacy.Curve.Params().N)
+		}(i, &wg)
 	}
+	wg.Wait()
 
 	return res, nil
 }
@@ -367,10 +379,16 @@ func powerVector(base *big.Int, n int) []*big.Int {
 func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
 	res := make([]*big.Int, len(v))
 
+	var wg sync.WaitGroup
+	wg.Add(len(v))
 	for i := range v {
-		res[i] = new(big.Int).Add(v[i], s)
-		res[i].Mod(res[i], privacy.Curve.Params().N)
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			res[i] = new(big.Int).Add(v[i], s)
+			res[i].Mod(res[i], privacy.Curve.Params().N)
+		}(i, &wg)
 	}
+	wg.Wait()
 	return res
 }
 
@@ -378,10 +396,16 @@ func vectorAddScalar(v []*big.Int, s *big.Int) []*big.Int {
 func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
 	res := make([]*big.Int, len(v))
 
+	var wg sync.WaitGroup
+	wg.Add(len(v))
 	for i := range v {
-		res[i] = new(big.Int).Mul(v[i], s)
-		res[i].Mod(res[i], privacy.Curve.Params().N)
+		go func(i int, wg *sync.WaitGroup) {
+			defer wg.Done()
+			res[i] = new(big.Int).Mul(v[i], s)
+			res[i].Mod(res[i], privacy.Curve.Params().N)
+		}(i, &wg)
 	}
+	wg.Wait()
 	return res
 }
 
