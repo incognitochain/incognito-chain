@@ -16,7 +16,7 @@ type KeyPairs struct {
 }
 
 func main() {
-	keys, _ := generator.GenerateAddressByShard(0)
+	keys, _ := generator.GenerateAddressByShard(1)
 	file, _ := json.MarshalIndent(keys, "", " ")
-	_ = ioutil.WriteFile("private-keys-shard-0.json", file, 0644)
+	_ = ioutil.WriteFile("private-keys-shard-1.json", file, 0644)
 }
