@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	main2 "github.com/constant-money/constant-chain/blockchain/btc"
 	"github.com/constant-money/constant-chain/databasemp"
 	"os"
 	"path/filepath"
-
+	
 	"github.com/constant-money/constant-chain/addrmanager"
 	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/blockchain/btc/btcapi"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/connmanager"
 	"github.com/constant-money/constant-chain/consensus/constantbft"
@@ -71,7 +71,7 @@ func init() {
 	blockchain.Logger.Init(blockchainLogger)
 	constantbft.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
-	btcapi.Logger.Init(randomLogger)
+	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
 	privacy.Logger.Init(privacyLogger)
 	databasemp.Logger.Init(dbmpLogger)
