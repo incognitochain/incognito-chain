@@ -113,10 +113,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		fmt.Printf("\n\nerrorrrrrrrrrrrrrrrrrrr\n\n\n\n%+v\n\n\n\n", err.Error())
 		return nil, err
 	} else {
-		fmt.Printf("\n\neiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\n\n\n%+v \n %+v \n\n\n", len(block.Body.Transactions), block.Body.Transactions[len(block.Body.Transactions)-1])
+		Logger.log.Criticalf("\n\n\n Number of Transaction %+v \n\n\n", len(block.Body.Transactions))
 	}
 	if len(instructions) != 0 {
-		Logger.log.Critical("Shard Producer: Instruction", instructions)
+		Logger.log.Info("Shard Producer: Instruction", instructions)
 	}
 	//============End Build Body===========
 
@@ -198,9 +198,9 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
+	go blockgen.txPool.RemoveTx(txToRemove, false)
 	go func() {
 		for _, tx := range txToRemove {
-			go blockgen.txPool.RemoveTx(tx, false)
 			blockgen.chain.config.CRemovedTxs <- tx
 		}
 	}()

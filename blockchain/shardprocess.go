@@ -197,9 +197,9 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 
 		//Remove tx out of pool
+		go blockchain.config.TxPool.RemoveTx(block.Body.Transactions, true)
 		for _, tx := range block.Body.Transactions {
 			go func(tx metadata.Transaction) {
-				go blockchain.config.TxPool.RemoveTx(tx, true)
 				if blockchain.config.IsBlockGenStarted {
 					blockchain.config.CRemovedTxs <- tx
 				}
