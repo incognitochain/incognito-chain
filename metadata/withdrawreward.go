@@ -3,10 +3,13 @@ package metadata
 import (
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
+	"github.com/constant-money/constant-chain/privacy"
+	"github.com/constant-money/constant-chain/wallet"
 	"github.com/pkg/errors"
 )
 
 type WithDrawRewardRequest struct {
+	privacy.PaymentAddress
 	MetadataBase
 }
 
@@ -14,8 +17,15 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	metadataBase := MetadataBase{
 		Type: WithDrawRewardRequestMeta,
 	}
+	requesterPaymentStr := data["PaymentAddress"].(string)
+	requesterPublicKeySet, err := wallet.Base58CheckDeserialize(requesterPaymentStr)
+	if err != nil {
+
+		return nil, err
+	}
 	return &WithDrawRewardRequest{
-		MetadataBase: metadataBase,
+		MetadataBase:   metadataBase,
+		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
 	}, nil
 }
 
@@ -81,7 +91,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if len(receivers) != 1 {
 		return false, errors.New("Wrong receiver")
 	}
-	value, err := db.GetCommitteeReward(receivers[0][:33])
+	value, err := db.GetCommitteeReward(receivers[0])
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}

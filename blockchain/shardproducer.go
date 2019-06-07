@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -99,9 +98,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 			Transactions:      make([]metadata.Transaction, 0),
 		},
 	}
-	//for i, tx1 := range txsToAdd {
-	//	Logger.log.Warn(i, tx1.GetType(), tx1.GetMetadata(), "\n")
-	//}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
@@ -115,12 +111,16 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if err != nil {
 		return nil, err
 	}
-	rewardInfoInstructions, err := block.getBlockRewardInst(prevBlock.Header.Height + 1)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
+	totalTxsFee := uint64(0)
+	for _, tx := range block.Body.Transactions {
+		totalTxsFee += tx.GetTxFee()
 	}
-	fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
+	// rewardInfoInstructions, err := block.getBlockRewardInst(prevBlock.Header.Height + 1)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return nil, err
+	// }
+	// fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
 	//============End Build Body===========
 
 	//============Build Header=============
@@ -145,7 +145,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	for _, value := range instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
-	totalInstructions = append(totalInstructions, rewardInfoInstructions...)
 	instructionsHash, err := GenerateHashFromStringArray(totalInstructions)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
@@ -174,6 +173,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
 		BeaconHash:           beaconHash,
+		TotalTxsFee:          totalTxsFee,
 		Epoch:                epoch,
 		Round:                round,
 	}

@@ -33,6 +33,8 @@ type ShardHeader struct {
 
 	BeaconHeight uint64 //Beacon check point
 	BeaconHash   common.Hash
+
+	TotalTxsFee uint64
 }
 
 func (shardHeader *ShardHeader) String() string {
@@ -53,6 +55,7 @@ func (shardHeader *ShardHeader) String() string {
 	res += shardHeader.PendingValidatorRoot.String()
 	res += shardHeader.BeaconHash.String()
 	res += fmt.Sprintf("%v", shardHeader.BeaconHeight)
+	res += fmt.Sprintf("%v", shardHeader.TotalTxsFee)
 	for _, value := range shardHeader.CrossShards {
 		res += string(value)
 	}
