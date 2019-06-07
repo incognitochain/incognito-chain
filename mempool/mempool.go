@@ -479,9 +479,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		Logger.log.Error(err)
 	} else {
 		if tp.IsBlockGenStarted {
-			//go func(tx metadata.Transaction) {
-			//	tp.CPendingTxs <- tx
-			//}(tx)
+			go func(tx metadata.Transaction) {
+				tp.CPendingTxs <- tx
+			}(tx)
 		}
 	}
 	return hash, txDesc, err
