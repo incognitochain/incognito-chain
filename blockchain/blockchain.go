@@ -1230,10 +1230,13 @@ func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalReward
 }
 
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBody *ShardBody, blkProducerPrivateKey *privacy.PrivateKey) error {
+	fmt.Printf("\n\n\n\n\n\nbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb %+v \n\n\n\n\n", len(blkBody.Transactions))
 	txRequestTable := map[string]metadata.Transaction{}
 	txsRes := []metadata.Transaction{}
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			fmt.Printf("%+v", tx.GetMetadata())
+
 			requester := base58.Base58Check{}.Encode(tx.GetSender(), VERSION)
 			txRequestTable[requester] = tx
 		}
@@ -1246,6 +1249,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 		txsRes = append(txsRes, txRes)
 	}
 	blkBody.Transactions = append(blkBody.Transactions, txsRes...)
+	fmt.Printf("\n\n\n\n\n\nbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n\n\n\n\n")
 	return nil
 }
 
