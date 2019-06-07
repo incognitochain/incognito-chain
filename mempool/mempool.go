@@ -392,14 +392,11 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 }
 
 // remove transaction for pool
-func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
+func (tp *TxPool) removeTx(tx *metadata.Transaction) {
 	//Logger.log.Infof((*tx).Hash().String())
 	if _, exists := tp.pool[*(*tx).Hash()]; exists {
 		delete(tp.pool, *(*tx).Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-		return nil
-	} else {
-		return errors.New("not exist tx in pool")
 	}
 }
 
@@ -519,41 +516,42 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
+func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	// remove transaction from database mempool
-	txDesc, ok := tp.pool[*tx.Hash()]
-	if !ok {
-		return nil
-	}
-	startTime := txDesc.StartTime
-	if tp.config.PersistMempool {
-		tp.RemoveTransactionFromDatabaseMP(tx.Hash())
-	}
-	err := tp.removeTx(&tx)
-	// remove tx coin hash from pool
-	txHash := tx.Hash()
-	if txHash != nil {
-		tp.RemoveTxCoinHashH(*txHash)
-	}
-	if isInBlock {
-		txType := tx.GetType()
-		if txType == common.TxNormalType {
-			if tx.IsPrivacy() {
-				txType = common.TxNormalPrivacy
-			} else {
-				txType = common.TxNormalNoPrivacy
-			}
+	for _, tx := range txs {
+		txDesc, ok := tp.pool[*tx.Hash()]
+		if !ok {
+			continue
 		}
-		elapsed := float64(time.Since(startTime).Seconds())
-		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
-		go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
+		startTime := txDesc.StartTime
+		if tp.config.PersistMempool {
+			tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+		}
+		tp.removeTx(&tx)
+		// remove tx coin hash from pool
+		txHash := tx.Hash()
+		if txHash != nil {
+			tp.RemoveTxCoinHashH(*txHash)
+		}
+		if isInBlock {
+			txType := tx.GetType()
+			if txType == common.TxNormalType {
+				if tx.IsPrivacy() {
+					txType = common.TxNormalPrivacy
+				} else {
+					txType = common.TxNormalNoPrivacy
+				}
+			}
+			elapsed := float64(time.Since(startTime).Seconds())
+			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
+			go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
+		}
+		size := tp.CalPoolSize()
+		go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 	}
-	size := tp.CalPoolSize()
-	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
-
-	return err
+	return
 }
 
 // GetTx get transaction info by hash
