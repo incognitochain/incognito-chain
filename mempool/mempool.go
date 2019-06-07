@@ -178,7 +178,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	tp.pool[*tx.Hash()] = txD
 	//==================================================
-	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
+	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListSerialNumbers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
