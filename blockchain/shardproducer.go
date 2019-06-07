@@ -402,7 +402,8 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	startTime := time.Now()
 	sourceTxns := blockgen.GetPendingTxsV2()
-	txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
+	txsProcessTimeInBlockCreation := int64(common.MinShardBlkInterval.Nanoseconds())
+	//txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
 	var elasped int64
 	Logger.log.Critical("Number of transaction get from pool: ", len(sourceTxns))
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
@@ -420,6 +421,17 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	// // }
 
 	for _, tx := range sourceTxns {
+		if tx.IsPrivacy(){
+			txsProcessTimeInBlockCreation = common.MinShardBlkInterval.Nanoseconds() - time.Duration(500*time.Millisecond).Nanoseconds()
+		} else {
+			txsProcessTimeInBlockCreation = common.MinShardBlkInterval.Nanoseconds() - time.Duration(50*time.Millisecond).Nanoseconds()
+		}
+		elasped = time.Since(startTime).Nanoseconds()
+		// @txsProcessTimeInBlockCreation is a constant for this current version
+		if elasped >= txsProcessTimeInBlockCreation {
+			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
+			break
+		}
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if txShardID != shardID {
@@ -449,12 +461,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		//	break
 		//}
 		// Time bound condition for block creation
-		elasped = time.Since(startTime).Nanoseconds()
-		// @txsProcessTimeInBlockCreation is a constant for this current version
-		if elasped >= txsProcessTimeInBlockCreation {
-			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
-			break
-		}
+
 	}
 	//if len(txsToAdd) != 0 {
 	//	TxsAverageProcessTime = elasped/int64(len(txsToAdd))
