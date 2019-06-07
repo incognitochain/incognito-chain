@@ -131,7 +131,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
-	cRemovedTxs := make(chan metadata.Transaction)
+	cRemovedTxs := make(chan metadata.Transaction, 500)
 	cRoleInCommitteesMempool := make(chan int)
 	cRoleInCommitteesNetSync := make(chan int)
 	cTxCache := make(chan common.Hash, 100)
