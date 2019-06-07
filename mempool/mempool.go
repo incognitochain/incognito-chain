@@ -49,8 +49,8 @@ type TxPool struct {
 	mtx               sync.RWMutex
 	config            Config
 	pool              map[common.Hash]*TxDesc
-	poolSerialNumbers map[common.Hash][][]byte
-	txCoinHashHPool   map[common.Hash][]common.Hash
+	poolSerialNumbers map[common.Hash][][]byte      // [txHash]:list serialNumbers of input coin
+	txCoinHashHPool   map[common.Hash][]common.Hash // [txHash]:list hash of input coin
 	coinHashHPool     map[common.Hash]bool
 	cMtx              sync.RWMutex
 	Scantime          time.Duration

@@ -640,13 +640,13 @@ func (tx *Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	return false, nil, 0
 }
 
-func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
+func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers map[common.Hash][][]byte) error {
 	if tx.Proof == nil {
 		return nil
 	}
-	for _, temp1 := range poolNullifiers {
+	for _, listSerialNumbers := range poolSerialNumbers {
 		for _, desc := range tx.Proof.InputCoins {
-			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
+			if ok, err := common.SliceBytesExists(listSerialNumbers, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
 				return errors.New("double spend")
 			}
 		}
