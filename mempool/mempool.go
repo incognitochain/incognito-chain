@@ -49,8 +49,8 @@ type TxPool struct {
 	mtx               sync.RWMutex
 	config            Config
 	pool              map[common.Hash]*TxDesc
-	poolSerialNumbers map[common.Hash][][]byte
-	txCoinHashHPool   map[common.Hash][]common.Hash
+	poolSerialNumbers map[common.Hash][][]byte      // [txHash]:list serialNumbers of input coin
+	txCoinHashHPool   map[common.Hash][]common.Hash // [txHash]:list hash of input coin
 	coinHashHPool     map[common.Hash]bool
 	cMtx              sync.RWMutex
 	Scantime          time.Duration
@@ -178,7 +178,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	tp.pool[*tx.Hash()] = txD
 	//==================================================
-	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListNullifiers()
+	tp.poolSerialNumbers[*tx.Hash()] = txD.Desc.Tx.ListSerialNumbers()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
@@ -648,6 +648,8 @@ func (tp *TxPool) ListTxs() []string {
 List all tx ids in mempool
 */
 func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
+	tp.mtx.RLock()
+	defer tp.mtx.Unlock()
 	result := make([]metadata.Transaction, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx)
@@ -701,6 +703,7 @@ func (tp *TxPool) RemoveTxCoinHashH(txHashH common.Hash) error {
 			}
 		}
 		delete(tp.txCoinHashHPool, txHashH)
+		delete(tp.poolSerialNumbers, txHashH)
 	}
 	return nil
 }
