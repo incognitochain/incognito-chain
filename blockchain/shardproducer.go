@@ -200,7 +200,8 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	}
 	go func() {
 		for _, tx := range txToRemove {
-			blockgen.txPool.RemoveTx(tx, false)
+			go blockgen.txPool.RemoveTx(tx, false)
+			blockgen.chain.config.CRemovedTxs <- tx
 		}
 	}()
 
