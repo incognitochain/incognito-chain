@@ -170,13 +170,12 @@ func (db *db) HasCommitment(tokenID common.Hash, commitment []byte, shardID byte
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, commitment...)
-	_, err := db.Get(keySpec)
+	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, nil
+		return false, err
 	} else {
-		return true, nil
+		return hasValue, nil
 	}
-	return false, nil
 }
 
 func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
