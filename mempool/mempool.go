@@ -528,7 +528,9 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 		return nil
 	}
 	startTime := txDesc.StartTime
-	tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+	if tp.config.PersistMempool {
+		tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+	}
 	err := tp.removeTx(&tx)
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
