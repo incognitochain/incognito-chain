@@ -695,7 +695,7 @@ func (tp *TxPool) RemoveTxCoinHashH(txHashH common.Hash) error {
 			}
 		}
 		delete(tp.txCoinHashHPool, txHashH)
-		delete(tp.poolSerialNumbers, txHashH)
+		//delete(tp.poolSerialNumbers, txHashH)
 	}
 	return nil
 }
