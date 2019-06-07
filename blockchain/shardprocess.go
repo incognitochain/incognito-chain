@@ -218,10 +218,16 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
+		fmt.Printf("[ndh]  - - - [error]1: %+v\n", err)
 		return err
 	}
 	err = blockchain.updateDatabaseFromShardBlock(block)
-	return err
+	if err != nil {
+		fmt.Printf("[ndh]  - - - [error]2: %+v\n", err)
+		return err
+	}
+	fmt.Printf("[ndh]  - - - nonerror \n")
+	return nil
 }
 
 /*
