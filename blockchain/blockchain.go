@@ -79,6 +79,7 @@ type Config struct {
 	TempTxPool        TxPool
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
+	IsBlockGenStarted bool
 	Server            interface {
 		BoardcastNodeState() error
 
@@ -114,7 +115,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 
 	blockchain.config = *config
-
+	blockchain.config.IsBlockGenStarted = false
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
@@ -132,7 +133,9 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	return nil
 }
-
+func (blockchain *BlockChain) SetIsBlockGenStarted(value bool) {
+	blockchain.config.IsBlockGenStarted = value
+}
 func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 	blockchain.config.TxPool = txpool
 }
@@ -436,7 +439,7 @@ func (blockchain *BlockChain) StoreTransactionIndex(txHash *common.Hash, blockHa
 }
 
 /*
-Uses an existing database to update the set of used tx by saving list nullifier of privacy,
+Uses an existing database to update the set of used tx by saving list serialNumber of privacy,
 this is a list tx-out which are used by a new tx
 */
 func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
@@ -651,7 +654,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		}
 	}
 
-	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
+	// Update the list serialNumber and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
 	err = blockchain.StoreSerialNumbersFromTxViewPoint(*view)
@@ -732,7 +735,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 		}
 	}
 
-	// Update the list nullifiers and commitment, snd set using the state of the used tx view point. This
+	// Update the list serialNumber and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
 	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
@@ -874,7 +877,7 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 
 /*
 GetListOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
-With private-key, we can check unspent tx by check nullifiers from database
+With private-key, we can check unspent tx by check serialNumber from database
 - Param #1: keyset - (priv-key, payment-address, readonlykey)
 in case priv-key: return unspent outputcoin tx
 in case readonly-key: return all outputcoin tx with amount value
