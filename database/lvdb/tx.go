@@ -54,13 +54,12 @@ func (db *db) HasSerialNumber(tokenID common.Hash, serialNumber []byte, shardID 
 	key := db.GetKey(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, serialNumber...)
-	_, err := db.Get(keySpec)
+	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, nil
+		return false, err
 	} else {
-		return true, nil
+		return hasValue, nil
 	}
-	return false, nil
 }
 
 // GetCommitmentIndex - return index of commitment in db list
@@ -313,13 +312,12 @@ func (db *db) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bo
 	key := db.GetKey(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, data...)
-	_, err := db.Get(keySpec)
+	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, nil
+		return false, err
 	} else {
-		return true, nil
+		return hasValue, nil
 	}
-	return false, nil
 }
 
 // CleanCommitments - clear all list commitments in DB
