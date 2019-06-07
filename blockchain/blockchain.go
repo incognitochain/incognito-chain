@@ -133,7 +133,9 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	return nil
 }
-
+func (blockchain *BlockChain) SetIsBlockGenStarted(value bool) {
+	blockchain.config.IsBlockGenStarted = value
+}
 func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 	blockchain.config.TxPool = txpool
 }
