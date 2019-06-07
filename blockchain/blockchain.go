@@ -79,6 +79,7 @@ type Config struct {
 	TempTxPool        TxPool
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
+	IsBlockGenStarted bool
 	Server            interface {
 		BoardcastNodeState() error
 
@@ -114,7 +115,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 
 	blockchain.config = *config
-
+	blockchain.config.IsBlockGenStarted = false
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
@@ -132,7 +133,9 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	return nil
 }
-
+func (blockchain *BlockChain) SetIsBlockGenStarted(value bool) {
+	blockchain.config.IsBlockGenStarted = value
+}
 func (blockchain *BlockChain) AddTxPool(txpool TxPool) {
 	blockchain.config.TxPool = txpool
 }
