@@ -484,11 +484,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 			//go func(tx metadata.Transaction) {
 			//	tp.CPendingTxs <- tx
 			//}(tx)
-		}
-		if tp.IsUnlockMempool {
-			go func(tx metadata.Transaction) {
-				tp.CPendingTxs <- tx
-			}(tx)
+			if tp.IsUnlockMempool {
+				go func(tx metadata.Transaction) {
+					tp.CPendingTxs <- tx
+				}(tx)
+			}
 		}
 	}
 	return hash, txDesc, err
