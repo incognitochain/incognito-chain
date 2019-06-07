@@ -1231,8 +1231,8 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 	txsRes := []metadata.Transaction{}
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requester := privacy.NewPaymentAddressFromByte(tx.GetSender())
-			txRequestTable[requester.String()] = tx
+			requester := base58.Base58Check{}.Encode(tx.GetSender(), VERSION)
+			txRequestTable[requester] = tx
 		}
 	}
 	for _, value := range txRequestTable {
@@ -1250,8 +1250,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	txRequestTable := map[string]metadata.Transaction{}
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requester := privacy.NewPaymentAddressFromByte(tx.GetSender())
-			txRequestTable[requester.String()] = tx
+			requester := base58.Base58Check{}.Encode(tx.GetSender(), VERSION)
+			txRequestTable[requester] = tx
 		}
 	}
 	db := blockchain.config.DataBase
@@ -1259,17 +1259,21 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			requesters, amounts := tx.GetReceivers()
-			amount, err := db.GetCommitteeReward(requesters[0][:33])
+			amount, err := db.GetCommitteeReward(requesters[0])
 			if (amount == 0) || (err != nil) {
 				return errors.New("Not enough reward")
 			}
 			if amount != amounts[0] {
 				return errors.New("Wrong amount")
 			}
-			requester := privacy.NewPaymentAddressFromByte(requesters[0])
-			if txRequestTable[requester.String()].Hash().Cmp(tx.GetMetadata().Hash()) != 0 {
+			requester := base58.Base58Check{}.Encode(requesters[0], VERSION)
+			if txRequestTable[requester] == nil {
 				return errors.New("This response dont match with any request")
 			}
+			if txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()) != 0 {
+				return errors.New("This response dont match with any request")
+			}
+			txRequestTable[requester] = nil
 			numberOfTxResponse++
 		}
 	}

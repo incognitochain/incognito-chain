@@ -313,16 +313,42 @@ func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 	return nil
 }
 
+func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
+	beaconBlock *BeaconBlock,
+) error {
+	db := blockchain.config.DataBase
+	for _, inst := range beaconBlock.Body.Instructions {
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			return err
+		}
+		switch metaType {
+		case metadata.AcceptedBlockRewardInfoMeta:
+			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
+			if err != nil {
+				return err
+			}
+			totalReward := blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight) + acceptedBlkRewardInfo.TxsFee
+			err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, totalReward)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+	}
+	return nil
+}
+
 func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey) (metadata.Transaction, error) {
 	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
 		return nil, errors.New("Can not understand this request!")
 	}
 	receiverBytes := (*txRequest).GetSender()
-	receiverPayment := privacy.NewPaymentAddressFromByte(receiverBytes)
+	requestDetail := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
 	if len(receiverBytes) == 0 {
 		return nil, errors.New("Can not get payment address of request's sender")
 	}
-	amount, err := blockchain.config.DataBase.GetCommitteeReward(receiverPayment.Pk)
+	amount, err := blockchain.config.DataBase.GetCommitteeReward(requestDetail.PaymentAddress.Pk)
 	if (amount == 0) || (err != nil) {
 		return nil, errors.New("Not enough reward")
 	}
@@ -331,6 +357,6 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metada
 		return nil, err
 	}
 	txRes := new(transaction.Tx)
-	txRes.InitTxSalary(amount, receiverPayment, blkProducerPrivateKey, blockchain.config.DataBase, responseMeta)
+	txRes.InitTxSalary(amount, &requestDetail.PaymentAddress, blkProducerPrivateKey, blockchain.config.DataBase, responseMeta)
 	return txRes, nil
 }

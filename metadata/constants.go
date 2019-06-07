@@ -9,7 +9,7 @@ const (
 
 	ResponseBaseMeta             = 35
 	ShardBlockReward             = 36
-	BlockRewardInfoMeta          = 37
+	AcceptedBlockRewardInfoMeta  = 37
 	ShardBlockSalaryResponseMeta = 38
 	BeaconRewardRequestMeta      = 39
 	BeaconSalaryResponseMeta     = 40
