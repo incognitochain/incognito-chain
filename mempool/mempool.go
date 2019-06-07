@@ -641,7 +641,7 @@ List all tx ids in mempool
 */
 func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 	tp.mtx.RLock()
-	defer tp.mtx.Unlock()
+	defer tp.mtx.RUnlock()
 	result := make([]metadata.Transaction, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx)
