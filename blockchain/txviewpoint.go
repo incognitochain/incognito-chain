@@ -36,7 +36,7 @@ type TxViewPoint struct {
 }
 
 /*
-ListSerialNumbers returns list nullifers which is contained in TxViewPoint
+ListSerialNumbers returns list serialNumber which is contained in TxViewPoint
 */
 // #1: joinSplitDescType is "Coin" Or "Bond" or other token
 func (view *TxViewPoint) ListSerialNumbers() [][]byte {
@@ -60,7 +60,7 @@ func (view *TxViewPoint) ListSerialNumnbersEclipsePoint() []*privacy.EllipticPoi
 	return result
 }
 
-// fetch from desc of tx to get nullifiers and commitments
+// fetch from desc of tx to get serialNumber and commitments
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 func (view *TxViewPoint) processFetchTxViewPoint(
 	shardID byte,
@@ -68,25 +68,25 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	proof *zkp.PaymentProof,
 	tokenID *common.Hash,
 ) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]big.Int, error) {
-	acceptedNullifiers := make([][]byte, 0)
+	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make(map[string][]big.Int)
 	if proof == nil {
-		return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
+		return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 	}
 	// Get data for serialnumbers
 	// Process input of transaction
 	// Get Serial numbers of input
-	// Append into accepttedNullifiers if this serial number haven't exist yet
+	// Append into accepttedSerialNumbers if this serial number haven't exist yet
 	for _, item := range proof.InputCoins {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(*tokenID, serialNum, shardID)
 		if err != nil {
-			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
 		if !ok {
-			acceptedNullifiers = append(acceptedNullifiers, serialNum)
+			acceptedSerialNumbers = append(acceptedSerialNumbers, serialNum)
 		}
 	}
 
@@ -100,7 +100,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
 		if err != nil {
-			return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
 		}
 		if !ok {
 			publicKeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
@@ -124,12 +124,12 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
 	}
-	return acceptedNullifiers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
+	return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
 /*
 fetchTxViewPointFromBlock get list serialnumber and commitments, output coins from txs in block and check if they are not in Main chain db
-return a tx view point which contains list new nullifiers and new commitments from block
+return a tx view point which contains list new serialNumbers and new commitments from block
 // (note: still storage full data of commitments, serialnumbers, snderivator to check double spend)
 */
 
@@ -295,7 +295,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 }
 
 /*
-Create a TxNormal view point, which contains data about nullifiers and commitments
+Create a TxNormal view point, which contains data about serialNumbers and commitments
 */
 func NewTxViewPoint(shardID byte) *TxViewPoint {
 	result := &TxViewPoint{
