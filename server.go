@@ -552,6 +552,7 @@ func (serverObj Server) Start() {
 			return
 		} else {
 			serverObj.memPool.IsBlockGenStarted = true
+			serverObj.blockChain.SetIsBlockGenStarted(true)
 		}
 	}
 
