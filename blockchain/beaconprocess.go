@@ -214,8 +214,12 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//=========Remove shard to beacon block in pool
 	//Logger.log.Info("Remove block from pool block with hash  ", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
-
-	err := blockchain.processBridgeInstructions(block)
+	err := blockchain.updateDatabaseFromBeaconBlock(block)
+	if err != nil {
+		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	err = blockchain.processBridgeInstructions(block)
 	if err != nil {
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
@@ -278,14 +282,6 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	if (block.Header.Height != 1) && (block.Header.Height%common.EPOCH == 1) && (parentBlockInterface.Header.Epoch != block.Header.Epoch-1) {
 		return NewBlockChainError(EpochError, errors.New("lock height and Epoch is not compatiable"))
 	}
-	rewardByEpochInstruction := [][]string{}
-	if block.Header.Height%common.EPOCH == 1 {
-		rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(block.Header.Epoch - 1)
-		if err != nil {
-			fmt.Printf("[ndh]-[ERROR] -- --- -- --- %+v\n", err)
-			return err
-		}
-	}
 	// Verify timestamp with parent block
 	//jackalope: temporary commment for debug purpose
 	//if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
@@ -314,12 +310,21 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
+		rewardByEpochInstruction := [][]string{}
+		if block.Header.Height%common.EPOCH == 1 {
+			rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(block.Header.Epoch - 1)
+			if err != nil {
+				fmt.Printf("[ndh]-[ERROR] -- --- -- --- %+v\n", err)
+				return err
+			}
+		}
 		// @UNCOMMENT TO TEST
 		beaconBestState := BestStateBeacon{}
 		tempShardStates := make(map[byte][]ShardState)
 		validStakers := [][]string{}
 		validSwappers := make(map[byte][][]string)
 		stabilityInstructions := [][]string{}
+		acceptedBlockRewardInstructions := [][]string{}
 		tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
 		err = json.Unmarshal(tempMarshal, &beaconBestState)
 		if err != nil {
@@ -377,18 +382,19 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					}
 				}
 				for _, shardBlock := range shardBlocks {
-					tempShardState, validStaker, validSwapper, stabilityInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
+					tempShardState, validStaker, validSwapper, stabilityInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
 					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 					validStakers = append(validStakers, validStaker...)
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
 					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
+					acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				}
 			} else {
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 			}
 		}
 
-		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions, acceptedBlockRewardInstructions)
 		if len(rewardByEpochInstruction) != 0 {
 			tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 		}

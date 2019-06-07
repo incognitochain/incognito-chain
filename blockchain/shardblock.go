@@ -171,13 +171,8 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		Logger.log.Error(err)
 		return nil
 	}
-	rewardInfoInstructions, err := blk.getBlockRewardInst(block.Header.Height)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
+
 	block.Instructions = append(block.Instructions, instructions...)
-	block.Instructions = append(block.Instructions, rewardInfoInstructions)
 	return &block
 }
 
@@ -230,13 +225,13 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	return crossShard, nil
 }
 
-func (block *ShardBlock) getBlockRewardInst(blockHeight uint64) ([]string, error) {
-	txsFee := uint64(0)
+// func (block *ShardBlock) getBlockRewardInst(blockHeight uint64) ([]string, error) {
+// 	txsFee := uint64(0)
 
-	for _, tx := range block.Body.Transactions {
-		txsFee += tx.GetTxFee()
-	}
-	blkRewardInfo := metadata.NewBlockRewardInfo(txsFee, blockHeight)
-	inst, err := blkRewardInfo.GetStringFormat()
-	return inst, err
-}
+// 	for _, tx := range block.Body.Transactions {
+// 		txsFee += tx.GetTxFee()
+// 	}
+// 	blkRewardInfo := metadata.NewBlockRewardInfo(txsFee, blockHeight)
+// 	inst, err := blkRewardInfo.GetStringFormat()
+// 	return inst, err
+// }
