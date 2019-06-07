@@ -152,7 +152,7 @@ type Transaction interface {
 	GetTxActualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
-	ListNullifiers() [][]byte
+	ListSerialNumbers() [][]byte
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(minFeePerKbTx uint64) bool
 	IsSalaryTx() bool
