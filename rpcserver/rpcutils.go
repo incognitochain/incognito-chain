@@ -35,17 +35,19 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 
 	tx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
+		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error 0 %+v \n\n\n\n\n\n", err)
 		return nil, err
 	}
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
-		// return hex for a new tx
+		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error %+v \n\n\n\n\n\n", errMarshal)
 		return nil, NewRPCError(ErrUnexpected, errMarshal)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
+	Logger.log.Infof("\n\n\n\n\n\n\n createRawTxWithMetadata OK \n\n\n\n\n\n")
 	return result, nil
 }
 

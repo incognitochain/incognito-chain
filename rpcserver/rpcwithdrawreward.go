@@ -10,8 +10,6 @@ func (rpcServer RpcServer) handleCreateRawWithDrawTransaction(params interface{}
 	// params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
 	arrayParams[1] = nil
-	arrayParams[2] = nil
-	arrayParams[3] = false
 	return rpcServer.createRawTxWithMetadata(
 		arrayParams,
 		closeChan,
