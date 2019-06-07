@@ -72,7 +72,7 @@ type TxPool interface {
 	HaveTransaction(hash *common.Hash) bool
 
 	// RemoveTx remove tx from tx resource
-	RemoveTx(tx metadata.Transaction, isInBlock bool) error
+	RemoveTx(txs []metadata.Transaction, isInBlock bool)
 
 	RemoveCandidateList([]string)
 
