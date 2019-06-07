@@ -156,6 +156,9 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 	//===============End Create Header
+	for _, inst := range beaconBlock.Body.Instructions {
+		fmt.Printf("[ndh] - - Beacon block instruction %+v \n", inst)
+	}
 	return beaconBlock, nil
 }
 
@@ -367,9 +370,10 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	stakers := [][]string{}
 	swapers := [][]string{}
 	stabilityInstructions := [][]string{}
-	acceptedRewardInstructions, err := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height).GetStringFormat()
+	acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
+	acceptedRewardInstructions, err := acceptedBlockRewardInfo.GetStringFormat()
 	if err != nil {
-		panic("Cant create acceptedRewardInstructions")
+		panic("[ndh] Cant create acceptedRewardInstructions")
 	}
 	//Get Shard State from Block
 	shardState := ShardState{}

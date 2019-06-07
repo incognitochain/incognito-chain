@@ -318,14 +318,22 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 ) error {
 	db := blockchain.config.DataBase
 	for _, inst := range beaconBlock.Body.Instructions {
+		if inst[0] == StakeAction || inst[0] == RandomAction {
+			continue
+		}
+		if len(inst) <= 2 {
+			continue
+		}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
+			fmt.Printf("[ndh] error - - %+v\n", err)
 			return err
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
+				fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			totalReward := blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight) + acceptedBlkRewardInfo.TxsFee
@@ -336,6 +344,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 			continue
 		}
 	}
+	fmt.Printf("[ndh] non error \n")
 	return nil
 }
 
