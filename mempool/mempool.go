@@ -65,6 +65,7 @@ type TxPool struct {
 	roleMtx           sync.RWMutex
 	CPendingTxs       chan<- metadata.Transaction // channel to deliver txs to block gen
 	IsBlockGenStarted bool
+	IsUnlockMempool   bool
 }
 
 /*
@@ -83,6 +84,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
 	tp.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
+	tp.IsUnlockMempool = false
 }
 func (tp *TxPool) InitChannelMempool(cCacheTx chan common.Hash, cRoleInCommittees chan int, cPendingTxs chan metadata.Transaction) {
 	tp.cCacheTx = cCacheTx
@@ -479,6 +481,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		Logger.log.Error(err)
 	} else {
 		if tp.IsBlockGenStarted {
+			//go func(tx metadata.Transaction) {
+			//	tp.CPendingTxs <- tx
+			//}(tx)
+		}
+		if tp.IsUnlockMempool {
 			go func(tx metadata.Transaction) {
 				tp.CPendingTxs <- tx
 			}(tx)
@@ -490,6 +497,7 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 	for _, txdesc := range tp.pool {
 		tp.CPendingTxs <- txdesc.Desc.Tx
 	}
+	tp.IsUnlockMempool = true
 }
 func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
 	tp.pool[txHash].IsFowardMessage = true
