@@ -370,11 +370,9 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	}
 	startValidate := time.Now()
 	// no validate
-	if !isNewTransaction {
-		err := tp.ValidateTransaction(tx)
-		if err != nil {
-			return nil, nil, err
-		}
+	err := tp.ValidateTransaction(tx)
+	if err != nil {
+		return nil, nil, err
 	}
 	elapsed := float64(time.Since(startValidate).Seconds())
 	
@@ -494,6 +492,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	return hash, txDesc, err
 }
 func (tp *TxPool) SendTransactionToBlockGen() {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	for _, txdesc := range tp.pool {
 		tp.CPendingTxs <- txdesc.Desc.Tx
 	}
