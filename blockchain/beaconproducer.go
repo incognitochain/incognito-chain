@@ -276,7 +276,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && !bestStateBeacon.IsGetRandomNumber {
 		var err error
 		// COMMENT FOR TESTING
-		// chainTimeStamp, err := btcapi.GetCurrentChainTimeStamp()
+		// chainTimeStamp, err := btc.GetCurrentChainTimeStamp()
 		// UNCOMMENT FOR TESTING
 		chainTimeStamp := bestStateBeacon.CurrentRandomTimeStamp + 1
 		if err != nil {
@@ -467,7 +467,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(beaconBestState *BestStateB
 func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
 	//COMMENT FOR TESTING
 	// msg := make(chan string)
-	// go btcapi.GenerateRandomNumber(timestamp, msg)
+	// go btc.GenerateRandomNumber(timestamp, msg)
 	// res := <-msg
 	// reses := strings.Split(res, (","))
 	strs := []string{}

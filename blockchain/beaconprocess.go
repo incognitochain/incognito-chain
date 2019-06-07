@@ -536,7 +536,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	// 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 	// 			return NewBlockChainError(UnExpectedError, err)
 	// 		}
-	// 		isOk, err = btcapi.VerifyNonceWithTimestamp(bestStateBeacon.CurrentRandomTimeStamp, int64(temp))
+	// 		isOk, err = btc.VerifyNonceWithTimestamp(bestStateBeacon.CurrentRandomTimeStamp, int64(temp))
 	// 		Logger.log.Infof("Verify Random number %+v", isOk)
 	// 		if err != nil {
 	// 			Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
