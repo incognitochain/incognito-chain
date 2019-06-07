@@ -216,6 +216,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 	err := blockchain.updateDatabaseFromBeaconBlock(block)
 	if err != nil {
+		fmt.Printf("[ndh] - - - [Error here] %+v \n", err)
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
 	}
