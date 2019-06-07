@@ -535,7 +535,7 @@ func (tx *Tx) GetType() string {
 	return tx.Type
 }
 
-func (tx *Tx) ListNullifiers() [][]byte {
+func (tx *Tx) ListSerialNumbers() [][]byte {
 	result := [][]byte{}
 	if tx.Proof != nil {
 		for _, d := range tx.Proof.InputCoins {
@@ -571,7 +571,7 @@ func (tx *Tx) IsSalaryTx() bool {
 	if tx.GetType() != common.TxRewardType {
 		return false
 	}
-	// Check nullifiers in every Descs
+	// Check serialNumber in every Descs
 	if len(tx.Proof.InputCoins) == 0 {
 		return true
 	}
@@ -658,8 +658,8 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	//if tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType {
 	//	return errors.New("can not receive a salary tx from other node, this is a violation")
 	//}
-	poolNullifiers := mr.GetSerialNumbers()
-	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
+	poolSerialNumbers := mr.GetSerialNumbers()
+	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
