@@ -56,11 +56,11 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet            = 0x254
+	Testnet            = 0x253
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 	
-	TestNetShardCommitteeSize  = 12
+	TestNetShardCommitteeSize  = 16
 	TestNetBeaconCommitteeSize = 4
 	TestNetActiveShards        = 2
 	
@@ -100,6 +100,10 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"16gGNuW3e7jf4125TWNKyhm8wkEb5sggbC3juJ15YcPuA6TFe5J", //shard 0
 	"15wAKpAHph28Mr3HcPsVyQmXDm4GvdE7E3aNG5q2g8rJH7fjRy2", //shard 0
 	"14xigQHFhQfvt6edebYrfovAwgVUG3BUh1Ax3gWvE6CW3VZUwjJ", //shard 0
+	"14xGoftt4xsYjSN63rhs2mWU4feqKCoe3f1FpztW8sW78BLSMZW", //shard 0
+	"15WxuiLV4XN4UjtgBCfxRPQKpMPh2wzi7BrUhrwbVKASJMnToxP", //shard 0
+	"17JLAMk5aXmgDRoRZ6XNk26nS5o54sVwu7DuB94nmwpmQR94dME", //shard 0
+	"17c1m1MWp9Kyu4dmghQCWc4eM2kwNSaHE2i9aaLkhVd5nrNeUuH", //shard 0
 	
 	// Committee of shard 1
 	"14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3", //shard 1
@@ -114,6 +118,10 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"186dkkeebuaHEjo99BX1omYSKdJNwah2dLsCRadHFxSqyY2E7bP", //shard 1
 	"166S7YKvwYWYwaykFPGLnewqBwf5bydg7cR7Livog9TokvzXsqA", //shard 1
 	"17qg9rs5PysAQJfhwYAAgBWAVTxq91vVq3h8sNAzpWeWVSRdKmN", //shard 1
+	"15JPGWmC5ebFxg5zs6tXbWuAJBok3kd7pNfpnDZCesNLkbJbJsZ", //shard 1
+	"17RM5fdYn7yAhxe3yU4mSR18y3TGkTaoa4Ph3HaVwfY3sRCNMVZ", //shard 1
+	"168RLoj25TCmzq32LEARGWX2d8SAHvS4egiLYtwLkp41csGWHUG", //shard 1
+	"165bmHpowcdfmpLzc2RYPjDqBckmNwDo6fXXNKVTJhCG5huuXq5", //shard 1
 }
 
 // END CONSTANT for network TESTNET
