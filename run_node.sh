@@ -33,7 +33,7 @@ go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rnyr3Yjfp
 fi
 # FullNode
 if [ "$1" == "full_node" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --nodemode "relay" --datadir "data/full_node" --listen "127.0.0.1:9533" --externaladdress "127.0.0.1:9533" --norpcauth --rpclisten "127.0.0.1:9554" --enablewallet --wallet "wallet_fullnode" --walletpassphrase "12345678" --walletautoinit --relayshards "all"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --nodemode "relay" --datadir "data/full_node" --listen "127.0.0.1:9533" --externaladdress "127.0.0.1:9533" --norpcauth --rpclisten "127.0.0.1:9554" --enablewallet --wallet "wallet_fullnode" --walletpassphrase "12345678" --walletautoinit --relayshards "all"  --txpoolmaxtx 100000
 fi
 ######
 if [ "$1" == "shard-stake-1" ]; then
