@@ -23,7 +23,7 @@ func main() {
 			fmt.Print(err)
 			panic(err)
 		}
-		privateKeys := readTxsFromFile("private-keys-shard-0-1.json")
+		privateKeys := readTxsFromFile("private-keys-shard-1-1.json")
 		fmt.Println(len(privateKeys))
 		for _, privateKey := range privateKeys {
 			txs := initTx("1000", privateKey, db)
