@@ -369,7 +369,6 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 		}
 	}
 	startValidate := time.Now()
-	// no validate
 	err := tp.ValidateTransaction(tx)
 	if err != nil {
 		return nil, nil, err
