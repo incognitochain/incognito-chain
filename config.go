@@ -42,7 +42,7 @@ const (
 	defaultFastStartup            = true
 	defaultNodeMode               = common.NODEMODE_RELAY
 	defaultTxPoolTTL              = uint(86400) * 10 // in second
-	defaultTxPoolMaxTx            = uint64(20000)
+	defaultTxPoolMaxTx            = uint64(50000)
 	defaultLimitFee               = uint64(1)
 	// For wallet
 	defaultWalletName     = "wallet"

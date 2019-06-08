@@ -22,7 +22,7 @@ func GenerateAddress(seeds []string) ([]string, error) {
 }
 func GenerateAddressByShard(shardID byte) ([]string, error) {
 	var privateKeys []string
-	for i := 100000; i < 103000; i++ {
+	for i := 200000; i < 230000; i++ {
 		seed := strconv.Itoa(i)
 		key, _ := wallet.NewMasterKey([]byte(seed))
 		var i int
