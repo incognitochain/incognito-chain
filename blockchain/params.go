@@ -1,5 +1,9 @@
 package blockchain
 
+import (
+	"github.com/constant-money/constant-chain/blockchain/benchmark"
+)
+
 /*
 Params defines a network by its component. These component may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -54,9 +58,7 @@ var genesisParamsTestnetNew = GenesisParams{
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
 	//@Notice: InitTxsForBenchmark is for testing and benchmark only
-	InitialConstant: append(InitTxsShard0, append(InitTxsShard1, append(InitTxsShard0_1, append(InitTxsShard0_2, append(InitTxsShard0_3, append(InitTxsShard0_4, append(InitTxsShard0_5, append(InitTxsShard0_6, append(InitTxsShard0_7, append(InitTxsShard0_8, append(InitTxsShard0_9, append(InitTxsShard0_10, InitTxsShard1_1...)...)...)...)...)...)...)...)...)...)...)...),
-	//InitialConstant: append(TestnetInitConstant, InitTxsShard0...),
-	//InitialConstant: TestnetInitConstant,
+	InitialConstant: append(benchmark.InitTxsShard0, append(benchmark.InitTxsShard1, append(benchmark.InitTxsShard0_1, append(benchmark.InitTxsShard0_2, append(benchmark.InitTxsShard0_3, append(benchmark.InitTxsShard0_4, append(benchmark.InitTxsShard0_5, append(benchmark.InitTxsShard0_6, append(benchmark.InitTxsShard0_7, append(benchmark.InitTxsShard0_8, append(benchmark.InitTxsShard0_9, append(benchmark.InitTxsShard0_10, benchmark.InitTxsShard1_1...)...)...)...)...)...)...)...)...)...)...)...),
 }
 
 var ChainTestParam = Params{
