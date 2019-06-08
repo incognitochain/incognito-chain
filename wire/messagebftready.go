@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MaxBFTReadyPayload = 1000 // 1 Kb
+	MaxBFTReadyPayload = 2000 // 1 Kb
 )
 
 type MessageBFTReady struct {

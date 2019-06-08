@@ -1,9 +1,9 @@
 package constantbft
 
 const (
-	ListenTimeout  = 15  //in s
-	PrepareTimeout = 10  //in s
-	CommitTimeout  = 15  //in s
+	ListenTimeout  = 20  //in s
+	PrepareTimeout = 20  //in s
+	CommitTimeout  = 20  //in s
 	DelayTime      = 50 // in ms
 )
 
