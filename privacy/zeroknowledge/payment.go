@@ -772,24 +772,25 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		// get commitments list from CommitmentIndices
 		commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
 		for j := 0; j < privacy.CMRingSize; j++ {
-			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, proof.CommitmentIndices[i*privacy.CMRingSize+j], shardID)
+			index := proof.CommitmentIndices[i*privacy.CMRingSize+j]
+			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, index, shardID)
 
 			if err != nil {
-				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database")
+				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database", index, err)
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 			commitments[j] = new(privacy.EllipticPoint)
 			err = commitments[j].Decompress(commitmentBytes)
 			if err != nil {
-				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database")
+				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
 
 			commitments[j], err = commitments[j].Sub(cmInputSum[i])
 			if err != nil {
-				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs")
+				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs", index, err)
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false
 			}
