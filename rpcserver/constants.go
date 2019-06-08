@@ -75,6 +75,7 @@ const (
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile = "getandsendtxsfromfile"
+	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
 	unlockMempool         = "unlockmempool"
 	//==================================================
 
