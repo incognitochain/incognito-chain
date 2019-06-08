@@ -29,6 +29,7 @@ var minerCreatedMetaTypes = []int{
 	BeaconSalaryResponseMeta,
 	IssuingResponseMeta,
 	ReturnStakingMeta,
+	WithDrawRewardResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock

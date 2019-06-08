@@ -1235,9 +1235,8 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 	txsRes := []metadata.Transaction{}
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			fmt.Printf("%+v", tx.GetMetadata())
-
-			requester := base58.Base58Check{}.Encode(tx.GetSender(), VERSION)
+			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
 			txRequestTable[requester] = tx
 		}
 	}
@@ -1257,7 +1256,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	txRequestTable := map[string]metadata.Transaction{}
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			requester := base58.Base58Check{}.Encode(tx.GetSender(), VERSION)
+			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
 			txRequestTable[requester] = tx
 		}
 	}
