@@ -54,7 +54,7 @@ var genesisParamsTestnetNew = GenesisParams{
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
 	//@Notice: InitTxsForBenchmark is for testing and benchmark only
-	InitialConstant: append(InitTxsShard0, append(InitTxsShard1, append(InitTxsShard0_1, InitTxsShard1_1...)...)...),
+	InitialConstant: append(InitTxsShard0, append(InitTxsShard1, append(InitTxsShard0_1, append(InitTxsShard0_2, append(InitTxsShard0_3, append(InitTxsShard0_4, append(InitTxsShard0_5, append(InitTxsShard0_6, append(InitTxsShard0_7, append(InitTxsShard0_8, append(InitTxsShard0_9, append(InitTxsShard0_10, InitTxsShard1_1...)...)...)...)...)...)...)...)...)...)...)...),
 	//InitialConstant: append(TestnetInitConstant, InitTxsShard0...),
 	//InitialConstant: TestnetInitConstant,
 }

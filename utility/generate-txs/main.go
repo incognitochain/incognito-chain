@@ -23,13 +23,15 @@ func main() {
 			fmt.Print(err)
 			panic(err)
 		}
-		privateKeys := readTxsFromFile("private-keys-shard-1.json")
+		privateKeys := readTxsFromFile("private-keys-shard-0-1.json")
+		fmt.Println(len(privateKeys))
 		for _, privateKey := range privateKeys {
 			txs := initTx("1000", privateKey, db)
 			transactions = append(transactions, txs[0])
 		}
+	fmt.Println(len(transactions))
 		file, _ := json.MarshalIndent(transactions, "", " ")
-		_ = ioutil.WriteFile("shard1-init-txs.json", file, 0644)
+		_ = ioutil.WriteFile("shard1-1-init-txs.json", file, 0644)
 }
 func readTxsFromFile(filename string) []string {
 	// Open our jsonFile
