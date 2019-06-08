@@ -164,6 +164,9 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 		if err != nil {
 			return nil, err
 		}
+		if totalRewards[ID] == 0 {
+			continue
+		}
 		shareReward := uint64(float32(totalRewards[ID]) * constForCalReward)
 		totalShareReward += shareReward
 		totalRewards[ID] -= shareReward
@@ -242,7 +245,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 				}
 				switch metaType {
 				case metadata.BeaconRewardRequestMeta:
-					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[2])
+					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
 					if err != nil {
 						return err
 					}
@@ -352,11 +355,14 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metada
 	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
 		return nil, errors.New("Can not understand this request!")
 	}
-	receiverBytes := (*txRequest).GetSender()
+	// requestMeta := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
+	// requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
+	// receiverBytes := requestMeta.PaymentAddress.Pk
 	requestDetail := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
-	if len(receiverBytes) == 0 {
-		return nil, errors.New("Can not get payment address of request's sender")
-	}
+	// requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
+	// if len(receiverBytes) == 0 {
+	// 	return nil, errors.New("Can not get payment address of request's sender")
+	// }
 	amount, err := blockchain.config.DataBase.GetCommitteeReward(requestDetail.PaymentAddress.Pk)
 	if (amount == 0) || (err != nil) {
 		return nil, errors.New("Not enough reward")
