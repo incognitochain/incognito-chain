@@ -102,7 +102,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 		bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 		txFee := tx.GetTxFee()
 		txD := createTxDescMempool(tx, bestHeight, txFee)
-		tp.addTx(txD, false)
+		tp.addTx(txD, false, nil)
 	}
 
 	return nil
