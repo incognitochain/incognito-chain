@@ -3,29 +3,12 @@ package metadata
 import (
 	"encoding/json"
 	"strconv"
-
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/privacy"
-
 	// "errors"
-
-	"github.com/constant-money/constant-chain/database"
 )
-
-type ShardBlockSalaryResponse struct {
-	MetadataBase
-	ShardBlockHeight         uint64
-	ProducerAddress          *privacy.PaymentAddress
-	ShardBlockSalaryInfoHash *common.Hash
-}
 
 type ShardBlockRewardInfo struct {
 	ShardReward uint64
 	Epoch       uint64
-}
-
-type ShardBlockRewardMeta struct {
-	MetadataBase
 }
 
 type AcceptedBlockRewardInfo struct {
@@ -50,15 +33,6 @@ type AcceptedBlockRewardInfo struct {
 // 		MetadataBase:             metadataBase,
 // 	}
 // }
-
-func NewShardBlockRewardMeta() *ShardBlockRewardMeta {
-	metadataBase := MetadataBase{
-		Type: ShardBlockReward,
-	}
-	return &ShardBlockRewardMeta{
-		MetadataBase: metadataBase,
-	}
-}
 
 func BuildInstForShardReward(reward, epoch uint64, shardID byte) ([][]string, error) {
 	resIns := [][]string{}
@@ -90,49 +64,6 @@ func NewShardBlockRewardInfoFromString(inst string) (*ShardBlockRewardInfo, erro
 	}
 	return Ins, nil
 }
-
-// func (sbsRes *ShardBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64) bool {
-// 	// no need to have fee for this tx
-// 	return true
-// }
-
-// func (sbsRes *ShardBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-// 	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
-// 	return false, nil
-// }
-
-func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
-	return false, nil
-}
-
-// func (sbsRes *ShardBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-// 	if len(sbsRes.ProducerAddress.Pk) == 0 {
-// 		return false, false, errors.New("Wrong request info's producer address")
-// 	}
-// 	if len(sbsRes.ProducerAddress.Tk) == 0 {
-// 		return false, false, errors.New("Wrong request info's producer address")
-// 	}
-// 	// if sbsRes.ShardBlockHeight == 0 {
-// 	// 	return false, false, errors.New("Wrong request info's shard block height")
-// 	// }
-// 	return false, true, nil
-// }
-
-func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
-	return true
-}
-
-func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-	// The validation just need to check at tx level, so returning true here
-	return true, true, nil
-}
-
-// func (sbsRes *ShardBlockSalaryRes) ValidateMetadataByItself() bool {
-// 	// The validation just need to check at tx level, so returning true here
-// 	return true
-// }
 
 // func (sbsRes *ShardBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
 // 	insts [][]string,
