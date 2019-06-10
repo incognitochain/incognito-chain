@@ -39,27 +39,6 @@ func newBulletproofParams(m int) *BulletproofParams {
 	return gen
 }
 
-
-//// CommitAll commits a list of PCM_CAPACITY value(s)
-//func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
-//	if len(a) != len(b) || len(g) != len(h) || len(a) != len(g) {
-//		return nil, errors.New("invalid input")
-//	}
-//
-//	res := new(privacy.EllipticPoint).Zero()
-//	var wg sync.WaitGroup
-//	lenA := len(a)
-//	wg.Add(lenA)
-//	for i := 0; i < lenA; i++ {
-//		go func(i int, wg *sync.WaitGroup) {
-//			defer wg.Done()
-//			res = res.Add(g[i].ScalarMult(a[i])).Add(h[i].ScalarMult(b[i]))
-//		}(i, &wg)
-//	}
-//	wg.Wait()
-//	return res, nil
-//}
-
 // CommitAll commits a list of PCM_CAPACITY value(s)
 func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
 	if len(a) != len(b) || len(g) != len(h) || len(a) != len(g) {
@@ -67,8 +46,24 @@ func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*
 	}
 
 	res := new(privacy.EllipticPoint).Zero()
+	var wg sync.WaitGroup
+	var tmp1, tmp2 *privacy.EllipticPoint
+
 	for i := 0; i < len(a); i++ {
-		res = res.Add(g[i].ScalarMult(a[i])).Add(h[i].ScalarMult(b[i]))
+		wg.Add(2)
+		go func(i int, wg *sync.WaitGroup){
+			defer wg.Done()
+			tmp1 = g[i].ScalarMult(a[i])
+		}(i, &wg)
+
+		go func(i int, wg *sync.WaitGroup){
+			defer wg.Done()
+			tmp2 = h[i].ScalarMult(b[i])
+		}(i, &wg)
+
+		wg.Wait()
+
+		res = res.Add(tmp1).Add(tmp2)
 	}
 	return res, nil
 }
