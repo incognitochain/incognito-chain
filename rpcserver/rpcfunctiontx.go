@@ -127,7 +127,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawTransaction(params, nil)
+	tx, inputCoinsHash, err := rpcServer.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -143,6 +143,7 @@ func (rpcServer RpcServer) handleCreateRawTransaction(params interface{}, closeC
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 		ShardID:         txShardID,
 	}
+	result.SetInputCoinsHash(inputCoinsHash)
 	Logger.log.Infof("handleCreateRawTransaction result: %+v", result)
 	return result, nil
 }
@@ -158,11 +159,15 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-
 	if err != nil {
 		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
+	inputCoinsHash := make([]common.Hash, 0)
+	if len(arrayParams) > 1 {
+		inputCoinsHash = arrayParams[1].([]common.Hash)
+	}
+
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -170,7 +175,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, inputCoinsHash)
 	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		mempoolErr, ok := err.(mempool.MempoolTxError)
@@ -222,6 +227,7 @@ func (rpcServer RpcServer) handleCreateAndSendTx(params interface{}, closeChan <
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
+	newParam = append(newParam, tx.GetInputCoinsHash())
 	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*RPCError) != nil {
 		Logger.log.Infof("handleCreateAndSendTx result: %+v, err: %+v", nil, err)
@@ -423,7 +429,7 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
+	tx, inputCoins, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -442,6 +448,7 @@ func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(params interfac
 		TokenAmount:     tx.TxTokenData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
+	result.SetInputCoinsHash(inputCoins)
 	Logger.log.Infof("handleCreateRawCustomTokenTransaction result: %+v", result)
 	return result, nil
 }
@@ -456,20 +463,23 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("param is invalid"))
 	}
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-
 	if err != nil {
 		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
+	inputCoinsHash := make([]common.Hash, 0)
+	if len(arrayParams) > 1 {
+		inputCoinsHash = arrayParams[1].([]common.Hash)
+	}
+
 	tx := transaction.TxCustomToken{}
-	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, inputCoinsHash)
 	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -512,6 +522,7 @@ func (rpcServer RpcServer) handleCreateAndSendCustomTokenTransaction(params inte
 	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
+	newParam = append(newParam, tx.GetInputCoinsHash())
 	txID, err := rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
 	if err != nil {
 		Logger.log.Infof("handleCreateAndSendCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1026,7 +1037,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawPrivacyCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params, nil)
+	tx, inputCoinsHash, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -1045,6 +1056,7 @@ func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(params i
 		TokenAmount:     tx.TxTokenPrivacyData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
+	result.SetInputCoinsHash(inputCoinsHash)
 	Logger.log.Infof("handleCreateRawPrivacyCustomTokenTransaction result: %+v", result)
 	return result, nil
 }
@@ -1063,11 +1075,15 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 		return nil, NewRPCError(ErrSendTxData, errors.New("Param is invalid"))
 	}
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-
 	if err != nil {
 		Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
+	inputCoinsHash := make([]common.Hash, 0)
+	if len(arrayParams) > 1 {
+		inputCoinsHash = arrayParams[1].([]common.Hash)
+	}
+
 	tx := transaction.TxCustomTokenPrivacy{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -1075,7 +1091,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, inputCoinsHash)
 	//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1155,7 +1171,7 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 
 	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	tx, err := rpcServer.buildRawTransaction(params, metadata)
+	tx, inputCoinsHash, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		Logger.log.Infof("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
@@ -1173,6 +1189,7 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, common.ZeroByte),
 		ShardID:         txShardID,
 	}
+	result.SetInputCoinsHash(inputCoinsHash)
 	Logger.log.Infof("handleCreateRawStakingTransaction result: %+v", result)
 	return result, nil
 }
@@ -1192,6 +1209,7 @@ func (rpcServer RpcServer) handleCreateAndSendStakingTx(params interface{}, clos
 
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
+	newParam = append(newParam, tx.GetInputCoinsHash())
 	sendResult, err := rpcServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*RPCError) != nil {
 		Logger.log.Infof("handleCreateAndSendStakingTx result: %+v, err: %+v", nil, err)
