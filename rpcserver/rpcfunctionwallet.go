@@ -625,8 +625,6 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	paymentInfo.Amount = uint64(amount) - realFee
 
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(outCoins)
-	// build hash array for input coin
-	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
 	/******* END GET output native coins(PRV), which is used to create tx *****/
 	// START create tx
@@ -652,7 +650,8 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	// pool inCoinsH
 	txHash := tx.Hash()
 	if txHash != nil {
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
+		// build hash array for input coin
+		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoins)
 	}
 
 	return &tx, nil

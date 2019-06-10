@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"github.com/constant-money/constant-chain/privacy"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -649,19 +650,22 @@ func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 	return result
 }
 
-// PrePoolTxCoinHashH -
-func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Hash) error {
-	tp.cMtx.Lock()
-	defer tp.cMtx.Unlock()
-	tp.txCoinHashHPool[txHashH] = coinHashHs
+// PrePoolTxCoinHashH - store tx hash with
+func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, inputCoins []*privacy.InputCoin) error {
+	inCoinHs := make([]common.Hash, 0)
+	for _, inCoin := range inputCoins {
+		hash := inCoin.CoinDetails.HashH()
+		if hash != nil {
+			inCoinHs = append(inCoinHs, *hash)
+		}
+	}
+	tp.txCoinHashHPool[txHashH] = inCoinHs
 	return nil
 }
 
 // addTxCoinHashH - add hash of output coin
 //// which use to check double spend in memppol
 func (tp *TxPool) AddTxCoinHashH(txHashH common.Hash) error {
-	tp.cMtx.Lock()
-	defer tp.cMtx.Unlock()
 	inCoinHs, ok := tp.txCoinHashHPool[txHashH]
 	if ok {
 		for _, inCoinH := range inCoinHs {
