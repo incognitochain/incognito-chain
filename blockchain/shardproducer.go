@@ -113,6 +113,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if err != nil {
 		return nil, err
 	}
+	//TODO calculate fee for another tx type
 	totalTxsFee := uint64(0)
 	for _, tx := range block.Body.Transactions {
 		totalTxsFee += tx.GetTxFee()

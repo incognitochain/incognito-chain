@@ -1193,13 +1193,10 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch, totalReward uint6
 	resInst := [][]string{}
 	baseReward := totalReward / uint64(blockchain.BestState.Beacon.BeaconCommitteeSize)
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
-		b, _, err := base58.Base58Check{}.Decode(publickeyStr)
-		fmt.Printf("[ndh] PaymentAddress string- - - - - %+v\n", b)
-		if err != nil {
-			return nil, err
-		}
+
 		singleInst, err := metadata.BuildInstForBeaconReward(baseReward, publickeyStr)
 		if err != nil {
+			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseReward)
 			return nil, err
 		}
 		resInst = append(resInst, singleInst)
@@ -1211,6 +1208,7 @@ func (blockchain *BlockChain) BuildInstRewardForDev(epoch, totalReward uint64) (
 	resInst := [][]string{}
 	devRewardInst, err := metadata.BuildInstForDevReward(totalReward)
 	if err != nil {
+		Logger.log.Errorf("BuildInstRewardForDev error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
 		return nil, err
 	}
 	resInst = append(resInst, devRewardInst)
@@ -1222,6 +1220,7 @@ func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalReward
 	for i, reward := range totalRewards {
 		shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
 		if err != nil {
+			Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
 			return nil, err
 		}
 		resInst = append(resInst, shardRewardInst...)
@@ -1230,7 +1229,7 @@ func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalReward
 }
 
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBody *ShardBody, blkProducerPrivateKey *privacy.PrivateKey) error {
-	fmt.Printf("\n\n\n\n\n\nbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb %+v \n\n\n\n\n", len(blkBody.Transactions))
+
 	txRequestTable := map[string]metadata.Transaction{}
 	txsRes := []metadata.Transaction{}
 	for _, tx := range blkBody.Transactions {
@@ -1243,12 +1242,13 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
+			Logger.log.Errorf("buildWithDrawTransactionResponse for tx %+v, error: %+v\n", value, err)
 			return err
 		}
 		txsRes = append(txsRes, txRes)
 	}
 	blkBody.Transactions = append(blkBody.Transactions, txsRes...)
-	fmt.Printf("\n\n\n\n\n\nbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n\n\n\n\n")
+
 	return nil
 }
 
