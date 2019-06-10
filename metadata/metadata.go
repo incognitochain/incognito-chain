@@ -107,7 +107,7 @@ type TxDesc struct {
 
 // Interface for mempool which is used in metadata
 type MempoolRetriever interface {
-	GetSerialNumbers() map[common.Hash][][]byte
+	GetSerialNumbersHashH() map[common.Hash][]common.Hash
 	GetTxsInMem() map[common.Hash]TxDesc
 }
 
@@ -152,7 +152,7 @@ type Transaction interface {
 	GetTxActualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
-	ListSerialNumbers() [][]byte
+	ListSerialNumbersHashH() []common.Hash
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(minFeePerKbTx uint64) bool
 	IsSalaryTx() bool
