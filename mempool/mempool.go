@@ -549,19 +549,20 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		if txHash != nil {
 			tp.RemoveTxCoinHashH(*txHash)
 		}
-		if isInBlock {
-			txType := tx.GetType()
-			if txType == common.TxNormalType {
-				if tx.IsPrivacy() {
-					txType = common.TxNormalPrivacy
-				} else {
-					txType = common.TxNormalNoPrivacy
-				}
+		txType := tx.GetType()
+		if txType == common.TxNormalType {
+			if tx.IsPrivacy() {
+				txType = common.TxNormalPrivacy
+			} else {
+				txType = common.TxNormalNoPrivacy
 			}
+		}
+		if isInBlock {
 			elapsed := float64(time.Since(startTime).Seconds())
 			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
 			go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
 		}
+		go common.AnalyzeTimeSeriesTxRemovedMetric(txType, float64(1))
 		size := tp.CalPoolSize()
 		go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 	}
