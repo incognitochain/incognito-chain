@@ -22,13 +22,14 @@ const (
 	TxPoolRemoveAfterInBlockWithType = "TxPoolRemoveAfterInBlockWithType"
 	TxPoolRemoveAfterLifeTime        = "TxPoolRemoveAfterLifeTime"
 	TxAddedIntoPoolType              = "TxAddedIntoPoolType"
-	TxPoolPrivacyOrNot               = "TxAddedIntoPoolType"
+	TxPoolPrivacyOrNot               = "TxPoolPrivacyOrNot"
 	PoolSize                         = "PoolSize"
 	TxValidateByItSelfInPoolType     = "TxValidateByItSelfInPoolType"
 	TxInOneBlock                     = "TxInOneBlock"
 	DuplicateTxs                     = "DuplicateTxs"
 	CreateAndSaveTxViewPointFromBlock = "CreateAndSaveTxViewPointFromBlock"
 	NumOfBlockInsertToChain         = "NumOfBlockInsertToChain"
+	TxRemovedFromPool                   = "TxRemovedFromPool"
 )
 
 // tag
@@ -84,6 +85,9 @@ func AnalyzeTimeSeriesTxsInOneBlockMetric(blockHeight string, value float64) {
 }
 func AnalyzeTimeSeriesTxTypeMetric(txType string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxAddedIntoPoolType, value)
+}
+func AnalyzeTimeSeriesTxRemovedMetric(txType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxRemovedFromPool, value)
 }
 func AnalyzeTimeSeriesTxPrivacyOrNotMetric(txType string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxPrivacyOrNotMetric, txType, TxPoolPrivacyOrNot, value)
