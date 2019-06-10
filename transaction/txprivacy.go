@@ -545,6 +545,17 @@ func (tx *Tx) ListSerialNumbers() [][]byte {
 	return result
 }
 
+func (tx *Tx) ListSerialNumbersHashH() []common.Hash {
+	result := []common.Hash{}
+	if tx.Proof != nil {
+		for _, d := range tx.Proof.InputCoins {
+			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+			result = append(result, hash)
+		}
+	}
+	return result
+}
+
 // CheckCMExistence returns true if cm exists in cm list
 func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	ok, err := db.HasCommitment(*tokenID, cm, shardID)
@@ -640,14 +651,17 @@ func (tx *Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	return false, nil, 0
 }
 
-func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers map[common.Hash][][]byte) error {
+func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers map[common.Hash][]common.Hash) error {
 	if tx.Proof == nil {
 		return nil
 	}
 	for _, listSerialNumbers := range poolSerialNumbers {
-		for _, desc := range tx.Proof.InputCoins {
-			if ok, err := common.SliceBytesExists(listSerialNumbers, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
-				return errors.New("double spend")
+		for _, serialNumberHash := range listSerialNumbers {
+			for _, desc := range tx.Proof.InputCoins {
+				hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+				if serialNumberHash.IsEqual(&hash) {
+					return errors.New("double spend")
+				}
 			}
 		}
 	}
@@ -658,7 +672,7 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	//if tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType {
 	//	return errors.New("can not receive a salary tx from other node, this is a violation")
 	//}
-	poolSerialNumbers := mr.GetSerialNumbers()
+	poolSerialNumbers := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
 }
 

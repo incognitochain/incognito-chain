@@ -541,7 +541,7 @@ func (rpcServer RpcServer) handleDefragmentAccount(params interface{}, closeChan
 */
 func (rpcServer RpcServer) createRawDefragmentAccountTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	var err error
-	tx, inputCoinsHash, err := rpcServer.buildRawDefragmentAccountTransaction(params, nil)
+	tx, err := rpcServer.buildRawDefragmentAccountTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -557,28 +557,27 @@ func (rpcServer RpcServer) createRawDefragmentAccountTransaction(params interfac
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 		ShardID:         txShardID,
 	}
-	result.SetInputCoinsHash(inputCoinsHash)
 	return result, nil
 }
 
 // buildRawDefragmentAccountTransaction
-func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, []common.Hash, *RPCError) {
+func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 4 {
-		return nil, nil, NewRPCError(ErrRPCInvalidParams, nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, nil)
 	}
 	senderKeyParam, ok := arrayParams[0].(string)
 	if !ok {
-		return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKeyParam is invalid"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKeyParam is invalid"))
 	}
 	maxValTemp, ok := arrayParams[1].(float64)
 	if !ok {
-		return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("maxVal is invalid"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("maxVal is invalid"))
 	}
 	maxVal := uint64(maxValTemp)
 	estimateFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
 	if !ok {
-		return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("estimateFeeCoinPerKb is invalid"))
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("estimateFeeCoinPerKb is invalid"))
 	}
 	estimateFeeCoinPerKb := int64(estimateFeeCoinPerKbtemp)
 	// param #4: hasPrivacyCoin flag: 1 or -1
@@ -588,7 +587,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	// param #1: private key of sender
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
-		return nil, nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -598,16 +597,16 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
 	if err != nil {
-		return nil, nil, NewRPCError(ErrGetOutputCoin, err)
+		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 	// remove out coin in mem pool
 	outCoins, err = rpcServer.filterMemPoolOutCoinsToSpent(outCoins)
 	if err != nil {
-		return nil, nil, NewRPCError(ErrGetOutputCoin, err)
+		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 	outCoins, amount := rpcServer.calculateOutputCoinsByMinValue(outCoins, maxVal)
 	if len(outCoins) == 0 {
-		return nil, nil, NewRPCError(ErrGetOutputCoin, nil)
+		return nil, NewRPCError(ErrGetOutputCoin, nil)
 	}
 	paymentInfo := &privacy.PaymentInfo{
 		Amount:         uint64(amount),
@@ -621,7 +620,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	}
 
 	if uint64(amount) < realFee {
-		return nil, nil, NewRPCError(ErrGetOutputCoin, err)
+		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 	paymentInfo.Amount = uint64(amount) - realFee
 
@@ -645,13 +644,10 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	// END create tx
 
 	if err.(*transaction.TransactionError) != nil {
-		return nil, nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
-	// build hash array for input coin
-	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
-
-	return &tx, inputCoinHs, nil
+	return &tx, nil
 }
 
 //calculateOutputCoinsByMinValue

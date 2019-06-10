@@ -33,7 +33,7 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	tx, inputCoinsHash, err := rpcServer.buildRawTransaction(params, meta)
+	tx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,6 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
-	result.SetInputCoinsHash(inputCoinsHash)
 	return result, nil
 }
 
@@ -58,7 +57,7 @@ func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}
 	if errCons != nil {
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
-	tx, inputCoinsHash, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
+	tx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -73,7 +72,6 @@ func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
-	result.SetInputCoinsHash(inputCoinsHash)
 	return result, nil
 }
 
@@ -85,10 +83,6 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	inputCoinsHash := make([]common.Hash, 0)
-	if len(arrayParams) > 1 {
-		inputCoinsHash = arrayParams[1].([]common.Hash)
-	}
 
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
@@ -97,7 +91,7 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, inputCoinsHash)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -130,10 +124,6 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	inputCoinsHash := make([]common.Hash, 0)
-	if len(arrayParams) > 1 {
-		inputCoinsHash = arrayParams[1].([]common.Hash)
-	}
 
 	tx := transaction.TxCustomToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
@@ -142,7 +132,7 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, inputCoinsHash)
+	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

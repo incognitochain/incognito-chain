@@ -253,7 +253,7 @@ func (tx *TxCustomTokenPrivacy) ValidateType() bool {
 }
 
 func (tx *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	poolSerialNumbers := mr.GetSerialNumbers()
+	poolSerialNumbers := mr.GetSerialNumbersHashH()
 	err := tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)

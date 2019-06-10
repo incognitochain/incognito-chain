@@ -80,7 +80,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					continue
 				}
 				if !isSent {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, nil)
+					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 					if err != nil {
 						fail++
 						continue
@@ -89,7 +89,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 						continue
 					}
 				} else {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, nil)
+					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 					//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -121,7 +121,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					continue
 				}
 				if !isSent {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, nil)
+					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 					if err != nil {
 						fail++
 						continue
@@ -130,7 +130,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 						continue
 					}
 				} else {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, nil)
+					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 					//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
@@ -161,7 +161,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 				continue
 			}
 			if !isSent {
-				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, nil)
+				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 				if err != nil {
 					fail++
 					continue
@@ -170,7 +170,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					continue
 				}
 			} else {
-				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx, nil)
+				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 				//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++

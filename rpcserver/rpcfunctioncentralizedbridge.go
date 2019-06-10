@@ -87,7 +87,7 @@ func (rpcServer RpcServer) handleCreateRawTxWithContractingReq(params interface{
 		*tokenID,
 		metadata.ContractingRequestMeta,
 	)
-	customTokenTx, inputCoinsHash, rpcErr := rpcServer.buildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := rpcServer.buildRawPrivacyCustomTokenTransaction(params, meta)
 	// rpcErr := err1.(*RPCError)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
@@ -103,7 +103,6 @@ func (rpcServer RpcServer) handleCreateRawTxWithContractingReq(params interface{
 		TxID:            customTokenTx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
-	result.SetInputCoinsHash(inputCoinsHash)
 	return result, nil
 }
 

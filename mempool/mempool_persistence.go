@@ -124,7 +124,7 @@ func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
 			continue
 		}
 
-		tp.addTx(&txDesc, false, nil)
+		tp.addTx(&txDesc, false)
 		txDescs = append(txDescs, txDesc)
 	}
 	return txDescs, nil
