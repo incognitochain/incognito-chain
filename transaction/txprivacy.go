@@ -535,16 +535,6 @@ func (tx *Tx) GetType() string {
 	return tx.Type
 }
 
-func (tx *Tx) ListSerialNumbers() [][]byte {
-	result := [][]byte{}
-	if tx.Proof != nil {
-		for _, d := range tx.Proof.InputCoins {
-			result = append(result, d.CoinDetails.SerialNumber.Compress())
-		}
-	}
-	return result
-}
-
 func (tx *Tx) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
 	if tx.Proof != nil {
@@ -651,11 +641,11 @@ func (tx *Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	return false, nil, 0
 }
 
-func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers map[common.Hash][]common.Hash) error {
+func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
 	if tx.Proof == nil {
 		return nil
 	}
-	for _, listSerialNumbers := range poolSerialNumbers {
+	for _, listSerialNumbers := range poolSerialNumbersHashH {
 		for _, serialNumberHash := range listSerialNumbers {
 			for _, desc := range tx.Proof.InputCoins {
 				hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
@@ -669,8 +659,8 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers map[comm
 }
 
 func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	poolSerialNumbers := mr.GetSerialNumbersHashH()
-	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
+	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
+	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
