@@ -24,8 +24,10 @@ type Engine struct {
 
 	currentBFTBlkHeight uint64
 	currentBFTRound     int
-	prevRoundUserLayer  string
-	userLayer           string
+	// prevRoundUserLayer  string
+	userLayer string
+	retries   int
+	userPk    string
 }
 
 type EngineConfig struct {
@@ -59,7 +61,8 @@ func (engine *Engine) Start() error {
 	go engine.config.BlockGen.Start(engine.cQuit)
 	engine.cBFTMsg = make(chan wire.Message)
 	engine.started = true
-	Logger.log.Info("Start consensus with key", engine.config.UserKeySet.GetPublicKeyB58())
+	engine.userPk = engine.userPk
+	Logger.log.Info("Start consensus with key", engine.userPk)
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 
 	time.AfterFunc(DelayTime*time.Millisecond, func() {
@@ -72,7 +75,7 @@ func (engine *Engine) Start() error {
 				if !engine.config.BlockChain.Synker.IsLatest(false, 0) {
 					time.Sleep(time.Millisecond * 100)
 				} else {
-					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), engine.currentBFTRound)
+					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, engine.currentBFTRound)
 					if engine.config.NodeMode == common.NODEMODE_BEACON && userRole == common.SHARD_ROLE {
 						userRole = common.EmptyString
 					}
@@ -84,7 +87,7 @@ func (engine *Engine) Start() error {
 					case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
 						engine.userLayer = common.BEACON_ROLE
 					}
-					engine.config.Server.UpdateConsensusState(engine.userLayer, engine.config.UserKeySet.GetPublicKeyB58(), nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.GetShardCommittee())
+					engine.config.Server.UpdateConsensusState(engine.userLayer, engine.userPk, nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.GetShardCommittee())
 					switch engine.userLayer {
 					case common.BEACON_ROLE:
 						if engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO {
@@ -129,7 +132,13 @@ func (engine *Engine) execBeaconRole() {
 		// reset round
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		engine.currentBFTRound = 1
+		engine.retries = 0
 	}
+	if engine.retries >= MaxNormalRetryTime {
+		timeSinceLastBlk := time.Since(time.Unix(engine.config.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
+		engine.currentBFTRound = int(timeSinceLastBlk.Seconds()) % int(common.MinBeaconBlkInterval.Seconds())
+	}
+
 	bftProtocol := &BFTProtocol{
 		cBFTMsg:   engine.cBFTMsg,
 		EngineCfg: &engine.config,
@@ -139,7 +148,7 @@ func (engine *Engine) execBeaconRole() {
 	bftProtocol.RoundData.Layer = common.BEACON_ROLE
 	bftProtocol.RoundData.Committee = make([]string, len(engine.config.BlockChain.BestState.Beacon.BeaconCommittee))
 	copy(bftProtocol.RoundData.Committee, engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
-	roundRole, _ := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.Round)
+	roundRole, _ := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, bftProtocol.RoundData.Round)
 	var (
 		err    error
 		resBlk interface{}
@@ -155,7 +164,8 @@ func (engine *Engine) execBeaconRole() {
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
-			engine.prevRoundUserLayer = engine.userLayer
+			engine.retries++
+			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
 		engine.config.CRoleInCommitteesMempool <- -1
@@ -167,7 +177,8 @@ func (engine *Engine) execBeaconRole() {
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
-			engine.prevRoundUserLayer = engine.userLayer
+			engine.retries++
+			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
 		engine.config.CRoleInCommitteesMempool <- -1
@@ -191,6 +202,7 @@ func (engine *Engine) execBeaconRole() {
 		} else {
 			engine.config.Server.PushMessageToAll(newBeaconBlockMsg)
 		}
+		engine.retries = 0
 	} else {
 		Logger.log.Error(err)
 	}
@@ -201,6 +213,11 @@ func (engine *Engine) execShardRole(shardID byte) {
 		// reset
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Shard[shardID].ShardHeight + 1
 		engine.currentBFTRound = 1
+		engine.retries = 0
+	}
+	if engine.retries >= MaxNormalRetryTime {
+		timeSinceLastBlk := time.Since(time.Unix(engine.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp, 0))
+		engine.currentBFTRound = int(timeSinceLastBlk.Seconds()) % int(common.MinShardBlkInterval.Seconds())
 	}
 	engine.config.BlockChain.Synker.SyncShard(shardID)
 	bftProtocol := &BFTProtocol{
@@ -218,7 +235,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		err    error
 		resBlk interface{}
 	)
-	roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.config.UserKeySet.GetPublicKeyB58(), bftProtocol.RoundData.Round)
+	roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.userPk, bftProtocol.RoundData.Round)
 	Logger.log.Infof("My shard role %+v, ShardID %+v \n", roundRole, shardID)
 	go func() {
 		engine.config.CRoleInCommitteesMempool <- int(shardID)
@@ -231,7 +248,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
-			engine.prevRoundUserLayer = engine.userLayer
+			engine.retries++
+			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
 		bftProtocol.RoundData.IsProposer = false
@@ -239,11 +257,11 @@ func (engine *Engine) execShardRole(shardID byte) {
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
-			engine.prevRoundUserLayer = engine.userLayer
+			engine.retries++
+			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
 		err = errors.New("Not your turn yet")
-		time.Sleep(time.Millisecond * 300)
 	}
 
 	if err == nil {
@@ -276,6 +294,15 @@ func (engine *Engine) execShardRole(shardID byte) {
 				}
 			}
 		}()
+		//PUSH TO ALL
+		newShardBlock := resBlk.(*blockchain.ShardBlock)
+		newShardBlockMsg, err := MakeMsgShardBlock(newShardBlock)
+		if err != nil {
+			Logger.log.Error("Make new shard block message error", err)
+		} else {
+			engine.config.Server.PushMessageToAll(newShardBlockMsg)
+		}
+		engine.retries = 0
 	} else {
 		Logger.log.Error(err)
 	}
