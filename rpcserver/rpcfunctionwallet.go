@@ -628,7 +628,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	// build hash array for input coin
 	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
-	/******* END GET output coins constant, which is used to create tx *****/
+	/******* END GET output native coins(PRV), which is used to create tx *****/
 	// START create tx
 	// missing flag for privacy
 	// false by default
