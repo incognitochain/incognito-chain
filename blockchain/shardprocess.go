@@ -202,14 +202,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 					tokenIDs = append(tokenIDs, tokenID)
 				}
 			}
-
-			//Remove tx out of pool
-			//optimise this: remove txlist from pool
-			blockchain.config.TxPool.RemoveTx(tx, true)
 			if blockchain.config.IsBlockGenStarted {
 				blockchain.config.CRemovedTxs <- tx
 			}
 		}
+		blockchain.config.TxPool.RemoveTxList(block.Body.Transactions, true)
 		blockchain.config.TxPool.RemoveCandidateList(candidates)
 		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 	}()
