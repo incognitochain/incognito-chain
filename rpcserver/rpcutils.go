@@ -33,7 +33,7 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	tx, _, err := rpcServer.buildRawTransaction(params, meta)
+	tx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}
 	if errCons != nil {
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
-	tx, _, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
+	tx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
