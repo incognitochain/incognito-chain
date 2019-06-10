@@ -134,7 +134,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
 
-	/******* START choose output coins constant, which is used to create tx *****/
+	/******* START choose output native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacyCoin, meta, nil, nil)
 	if err1 != nil {
 		return nil, err1
@@ -143,7 +143,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	// build hash array for input coin
 	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
-	/******* END GET output coins constant, which is used to create tx *****/
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
 	// START create tx
 	// missing flag for privacy
@@ -294,7 +294,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
-	/******* START choose output coins constant, which is used to create tx *****/
+	/******* START choose output coins native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0,
 		senderKeySet, shardIDSender, hasPrivacyCoin,
 		metaData, tokenParams, nil)
@@ -304,7 +304,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	if len(paymentInfos) == 0 && realFee == 0 {
 		hasPrivacyCoin = false
 	}
-	/******* END GET output coins constant, which is used to create tx *****/
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
 	// build hash array for input coin
 	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
@@ -442,7 +442,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 
 	/****** END FEtch data from params *********/
 
-	/******* START choose output coins constant, which is used to create tx *****/
+	/******* START choose output native coins(PRV), which is used to create tx *****/
 	inputCoins, realFeePrv, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
 		estimateFeeCoinPerKb, 0, senderKeySet,
 		shardIDSender, hasPrivacyCoin, nil,
@@ -453,7 +453,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	if len(paymentInfos) == 0 && realFeePrv == 0 {
 		hasPrivacyCoin = false
 	}
-	/******* END GET output coins constant, which is used to create tx *****/
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
 	// build hash array for input coin
 	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
