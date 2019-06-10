@@ -127,7 +127,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawTransaction(params, nil)
+	tx, _, err := rpcServer.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -158,7 +158,6 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-
 	if err != nil {
 		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
@@ -423,7 +422,7 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
+	tx, _, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -456,13 +455,12 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("param is invalid"))
 	}
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-
 	if err != nil {
 		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
+
 	tx := transaction.TxCustomToken{}
-	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1026,7 +1024,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawPrivacyCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params, nil)
+	tx, _, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -1063,11 +1061,11 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 		return nil, NewRPCError(ErrSendTxData, errors.New("Param is invalid"))
 	}
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
-
 	if err != nil {
 		Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
+
 	tx := transaction.TxCustomTokenPrivacy{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
@@ -1155,7 +1153,7 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 
 	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	tx, err := rpcServer.buildRawTransaction(params, metadata)
+	tx, _, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		Logger.log.Infof("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)

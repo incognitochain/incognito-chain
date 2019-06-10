@@ -8,7 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/mempool"
 	"github.com/constant-money/constant-chain/peer"
@@ -56,11 +56,11 @@ type NetSyncConfig struct {
 	}
 }
 type NetSyncCache struct {
-	blockCache              *cache.Cache
-	txCache                 *cache.Cache
-	txCacheMtx              sync.Mutex
-	blockCacheMtx           sync.Mutex
-	CTxCache                <-chan common.Hash
+	blockCache    *cache.Cache
+	txCache       *cache.Cache
+	txCacheMtx    sync.Mutex
+	blockCacheMtx sync.Mutex
+	CTxCache      <-chan common.Hash
 }
 
 func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgShardID *ShardIDConfig) *NetSync {
@@ -71,7 +71,7 @@ func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgSha
 	blockCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	txCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	netSync.Cache = &NetSyncCache{
-		txCache:                 txCache,
+		txCache:    txCache,
 		blockCache: blockCache,
 	}
 	netSync.Cache.CTxCache = cTxCache
@@ -355,21 +355,21 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
 	//if oldBlock := netSync.IsOldBeaconBlock(msg.Block.Header.Height); !oldBlock {
-		if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
-			netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
-		}
+	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+		netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
+	}
 	//}
 }
 func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
 	//if oldBlock := netSync.IsOldShardBlock(msg.Block.Header.ShardID, msg.Block.Header.Height); !oldBlock {
 	fmt.Println("Shard Block Received In net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
-		if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
-			fmt.Println("Shard Block NO Duplicate net Sync: ", msg.Block.Header.Height,  msg.Block.Header.ShardID, msg.Block.Header.Hash())
-			netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
-			return
-		}
-	fmt.Println("Shard Block Duplicate net Sync: ", msg.Block.Header.Height,  msg.Block.Header.ShardID, msg.Block.Header.Hash())
+	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+		fmt.Println("Shard Block NO Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
+		netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
+		return
+	}
+	fmt.Println("Shard Block Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
 	//}
 }
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
@@ -473,7 +473,7 @@ func (netSync *NetSync) HandleCacheBlock(blockHash common.Hash) bool {
 	if ok {
 		return true
 	}
-	netSync.Cache.blockCache.Add(blockHash.String(),1, MsgLiveTime)
+	netSync.Cache.blockCache.Add(blockHash.String(), 1, MsgLiveTime)
 	return false
 }
 
@@ -484,14 +484,14 @@ func (netSync *NetSync) HandleCacheTx(txHash common.Hash) bool {
 	if ok {
 		return true
 	}
-	netSync.Cache.txCache.Add(txHash.String(),1, MsgLiveTime)
+	netSync.Cache.txCache.Add(txHash.String(), 1, MsgLiveTime)
 	return false
 }
 
 func (netSync *NetSync) HandleCacheTxHash(txHash common.Hash) {
 	netSync.Cache.txCacheMtx.Lock()
 	defer netSync.Cache.txCacheMtx.Unlock()
-	netSync.Cache.txCache.Add(txHash.String(),1, MsgLiveTime)
+	netSync.Cache.txCache.Add(txHash.String(), 1, MsgLiveTime)
 }
 
 func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
@@ -541,13 +541,13 @@ func (netSync *NetSync) HandleCacheTxHashWoker(cTxCache <-chan common.Hash) {
 
 //GET SHARD HEIGHT BY ROLE
 //func (netSync *NetSync) GetBestShardHeight(shardID byte) (uint64, bool) {
-	//netSync.ShardIDConfig.roleInCommitteesMtx.RLock()
-	//defer netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
-	//if netSync.ShardIDConfig.RoleInCommittees > - 1 {
-	//	return blockchain.GetBestStateShard(byte(netSync.ShardIDConfig.RoleInCommittees)).ShardHeight, true
-	//}
-	//return 0, false
-	//GET SHARD HEIGHT BY BLOCK
+//netSync.ShardIDConfig.roleInCommitteesMtx.RLock()
+//defer netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
+//if netSync.ShardIDConfig.RoleInCommittees > - 1 {
+//	return blockchain.GetBestStateShard(byte(netSync.ShardIDConfig.RoleInCommittees)).ShardHeight, true
+//}
+//return 0, false
+//GET SHARD HEIGHT BY BLOCK
 //}
 
 //if old block return true, otherwise return false
