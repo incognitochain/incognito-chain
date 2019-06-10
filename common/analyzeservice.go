@@ -48,6 +48,17 @@ const (
 	TxHash               = "txhash"
 	ShardID              = "shardid"
 	Func = "func"
+
+)
+
+//Tag value
+const (
+	TxPrivacy                             = "privacy"
+	TxNormalPrivacy                       = "normaltxprivacy"
+	TxNoPrivacy                           = "noprivacy"
+	TxNormalNoPrivacy                     = "normaltxnoprivacy"
+	FuncCreateAndSaveTxViewPointFromBlock = "func-CreateAndSaveTxViewPointFromBlock"
+	Beacon                                = "beacon"
 	Condition1                      = "condition1"
 	Condition2                      = "condition2"
 	Condition3                      = "condition3"
@@ -59,16 +70,6 @@ const (
 	Condition9                      = "condition9"
 	Condition10                      = "condition10"
 	Condition11                      = "condition11"
-)
-
-//Tag value
-const (
-	TxPrivacy                             = "privacy"
-	TxNormalPrivacy                       = "normaltxprivacy"
-	TxNoPrivacy                           = "noprivacy"
-	TxNormalNoPrivacy                     = "normaltxnoprivacy"
-	FuncCreateAndSaveTxViewPointFromBlock = "func-CreateAndSaveTxViewPointFromBlock"
-	Beacon                                = "beacon"
 )
 // test value
 var (
