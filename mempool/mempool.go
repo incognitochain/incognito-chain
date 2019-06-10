@@ -670,9 +670,13 @@ func (tp *TxPool) addInputCoinsHashH(txHashH common.Hash, inputCoinsHash []commo
 // ValidateCoinHashH - check outputcoin which is
 // used by a tx in mempool
 func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
-	_, ok := tp.inputCoinsHashHPool[coinHashH]
-	if ok {
-		return errors.New("Coin is in used")
+	for txHash, inputCoinsHash := range tp.inputCoinsHashHPool {
+		_ = txHash
+		for _, inputCoinHash := range inputCoinsHash {
+			if inputCoinHash.IsEqual(&coinHashH) {
+				return errors.New("Coin is in used")
+			}
+		}
 	}
 	return nil
 }
