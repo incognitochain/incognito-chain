@@ -251,7 +251,7 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		return
 	}
 	if isAdded := netSync.HandleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, nil)
+		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
 			Logger.log.Error(err)
 
@@ -275,7 +275,7 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 		return
 	}
 	if isAdded := netSync.HandleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, nil)
+		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 
 		if err != nil {
 			Logger.log.Error(err)
@@ -299,7 +299,7 @@ func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 		return
 	}
 	if isAdded := netSync.HandleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, nil)
+		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
