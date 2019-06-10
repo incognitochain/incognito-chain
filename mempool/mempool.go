@@ -3,16 +3,15 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/privacy"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
+	
 	"github.com/constant-money/constant-chain/cashec"
-
+	
 	"github.com/constant-money/constant-chain/databasemp"
-
+	
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
@@ -63,6 +62,7 @@ type TxPool struct {
 	roleMtx                sync.RWMutex
 	CPendingTxs            chan<- metadata.Transaction // channel to deliver txs to block gen
 	IsBlockGenStarted      bool
+	IsUnlockMempool        bool
 }
 
 /*
@@ -536,32 +536,34 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	// remove transaction from database mempool
-	txDesc, ok := tp.pool[*tx.Hash()]
-	if !ok {
-		return nil
-	}
-	startTime := txDesc.StartTime
-	tp.RemoveTransactionFromDatabaseMP(tx.Hash())
-	err := tp.removeTx(&tx)
-	// remove serialNumbersHashH
-	delete(tp.poolSerialNumbersHashH, *(tx.Hash()))
-	if isInBlock {
-		txType := tx.GetType()
-		if txType == common.TxNormalType {
-			if tx.IsPrivacy() {
-				txType = common.TxNormalPrivacy
-			} else {
-				txType = common.TxNormalNoPrivacy
-			}
+	for _, tx := range txs {
+		txDesc, ok := tp.pool[*tx.Hash()]
+		if !ok {
+			continue
 		}
+		startTime := txDesc.StartTime
+		tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+		tp.removeTx(&tx)
+		// remove serialNumbersHashH
+		delete(tp.poolSerialNumbersHashH, *(tx.Hash()))
 		if isInBlock {
-			elapsed := float64(time.Since(startTime).Seconds())
-			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
-			go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
+			txType := tx.GetType()
+			if txType == common.TxNormalType {
+				if tx.IsPrivacy() {
+					txType = common.TxNormalPrivacy
+				} else {
+					txType = common.TxNormalNoPrivacy
+				}
+			}
+			if isInBlock {
+				elapsed := float64(time.Since(startTime).Seconds())
+				go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
+				go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
+			}
+			go common.AnalyzeTimeSeriesTxRemovedMetric(txType, float64(1))
+			size := tp.CalPoolSize()
+			go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 		}
-		go common.AnalyzeTimeSeriesTxRemovedMetric(txType, float64(1))
-		size := tp.CalPoolSize()
-		go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 	}
 	return
 }
