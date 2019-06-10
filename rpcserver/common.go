@@ -343,6 +343,7 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 		TokenInput:     nil,
+		Fee:            uint64(tokenParamsRaw["TokenFee"].(float64)),
 	}
 	voutsAmount := int64(0)
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
@@ -442,14 +443,14 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	/****** END FEtch data from params *********/
 
 	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
+	inputCoins, realFeePrv, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
 		estimateFeeCoinPerKb, 0, senderKeySet,
 		shardIDSender, hasPrivacyCoin, nil,
 		nil, tokenParams)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
-	if len(paymentInfos) == 0 && realFee == 0 {
+	if len(paymentInfos) == 0 && realFeePrv == 0 {
 		hasPrivacyCoin = false
 	}
 	/******* END GET output coins constant, which is used to create tx *****/
@@ -462,7 +463,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		&senderKeySet.PrivateKey,
 		nil,
 		inputCoins,
-		realFee,
+		realFeePrv,
 		tokenParams,
 		*rpcServer.config.Database,
 		metaData,
