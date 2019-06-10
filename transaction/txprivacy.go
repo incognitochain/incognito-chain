@@ -645,13 +645,16 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map
 	if tx.Proof == nil {
 		return nil
 	}
+	temp := make(map[common.Hash]interface{})
+	for _, desc := range tx.Proof.InputCoins {
+		hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+		temp[hash] = nil
+	}
+
 	for _, listSerialNumbers := range poolSerialNumbersHashH {
 		for _, serialNumberHash := range listSerialNumbers {
-			for _, desc := range tx.Proof.InputCoins {
-				hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
-				if serialNumberHash.IsEqual(&hash) {
-					return errors.New("double spend")
-				}
+			if _, ok := temp[serialNumberHash]; ok {
+				return errors.New("double spend")
 			}
 		}
 	}
