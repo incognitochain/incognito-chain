@@ -568,6 +568,9 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	}
 
 	if !left1.IsEqual(right1) {
+		privacy.Logger.Log.Error("Statement 1 failed:")
+		privacy.Logger.Log.Error("Left 1: %v\n", left1)
+		privacy.Logger.Log.Error("Right 1: %v\n", right1)
 		return false
 	}
 
