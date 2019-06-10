@@ -13,6 +13,7 @@ import (
 // Measurement
 const (
 	TxPoolValidated                  = "TxPoolValidated"
+	TxPoolValidatedDetails          = "TxPoolValidatedDetails"
 	TxPoolValidatedWithType          = "TxPoolValidatedWithType"
 	TxPoolEntered                    = "TxPoolEntered"
 	TxPoolEnteredWithType            = "TxPoolEnteredWithType"
@@ -26,9 +27,7 @@ const (
 	TxValidateByItSelfInPoolType     = "TxValidateByItSelfInPoolType"
 	TxInOneBlock                     = "TxInOneBlock"
 	DuplicateTxs                     = "DuplicateTxs"
-	
 	CreateAndSaveTxViewPointFromBlock = "CreateAndSaveTxViewPointFromBlock"
-	
 	NumOfBlockInsertToChain         = "NumOfBlockInsertToChain"
 )
 
@@ -41,12 +40,24 @@ const (
 	TxSizeWithTypeMetric = "txsizewithtype"
 	PoolSizeMetric       = "poolsize"
 	TxTypeMetic          = "txtype"
+	ValidateCondition          = "validatecond"
 	VTBITxTypeMetic      = "vtbitxtype"
 	TxPrivacyOrNotMetric = "txprivacyornot"
 	BlockHeight          = "blockheight"
 	TxHash               = "txhash"
 	ShardID              = "shardid"
 	Func = "func"
+	Condition1                      = "condition1"
+	Condition2                      = "condition2"
+	Condition3                      = "condition3"
+	Condition4                      = "condition4"
+	Condition5                      = "condition5"
+	Condition6                      = "condition6"
+	Condition7                      = "condition7"
+	Condition8                      = "condition8"
+	Condition9                      = "condition9"
+	Condition10                      = "condition10"
+	Condition11                      = "condition11"
 )
 
 //Tag value
@@ -88,6 +99,9 @@ func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64) {
 }
 func AnalyzeTimeSeriesBlockPerSecondTimesMetric(shardID string, value float64, blockHeight uint64) {
 	sendTimeSeriesMetricDataInfluxDBV2(ShardID, shardID, NumOfBlockInsertToChain, value)
+}
+func AnalyzeTimeSeriesTxValidationTimeMetric(conditionType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(ValidateCondition, conditionType, TxPoolValidatedDetails, value)
 }
 func AnalyzeFuncCreateAndSaveTxViewPointFromBlock(time float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(Func, FuncCreateAndSaveTxViewPointFromBlock, CreateAndSaveTxViewPointFromBlock, time)
