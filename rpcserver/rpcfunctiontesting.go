@@ -21,7 +21,7 @@ For testing and benchmark only
 */
 type CountResult struct {
 	Success int
-	Fail int
+	Fail    int
 }
 func (rpcServer RpcServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	rpcServer.config.TxMemPool.SendTransactionToBlockGen()
@@ -47,21 +47,21 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	case "privacy3000_3":
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-3000.3.json"
 	case "noprivacy9000":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-9000.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-9000.json"
 	case "noprivacy":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-5000.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-5000.json"
 	case "privacy":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-5000.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-privacy-5000.json"
 	case "cstoken":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-cstoken-5000.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-cstoken-5000.json"
 	case "cstokenprivacy":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-cstokenprivacy-5000.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-cstokenprivacy-5000.json"
 	default:
-		return CountResult{}, NewRPCError(ErrUnexpected,errors.New("Can't find file"))
+		return CountResult{}, NewRPCError(ErrUnexpected, errors.New("Can't find file"))
 	}
-	
+
 	Logger.log.Critical("Getting Transactions from file: ", datadir+filename)
-	file, err := ioutil.ReadFile(datadir+filename)
+	file, err := ioutil.ReadFile(datadir + filename)
 	if err != nil {
 		Logger.log.Error("Fail to get Transactions from file: ", err)
 	}
@@ -69,7 +69,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	count := 0
 	_ = json.Unmarshal([]byte(file), &data)
 	Logger.log.Criticalf("Get %+v Transactions from file \n", len(data.Txs))
-	intervalDuration := time.Duration(interval)*time.Millisecond
+	intervalDuration := time.Duration(interval) * time.Millisecond
 	for index, txBase58Data := range data.Txs {
 		<-time.Tick(intervalDuration)
 		Logger.log.Critical("Number of Transaction: ", index)
@@ -79,7 +79,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 			fail++
 			continue
 		}
-		switch(txType) {
+		switch txType {
 		case "cstoken":
 			{
 				var tx transaction.TxCustomToken
@@ -203,7 +203,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 			success++
 		}
 	}
-	return CountResult{Success: success, Fail:fail}, nil
+	return CountResult{Success: success, Fail: fail}, nil
 }
 
 func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
