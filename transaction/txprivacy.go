@@ -509,18 +509,23 @@ func (tx *Tx) GetTxActualSize() uint64 {
 	sizeTx += uint64(8)                // int64
 	sizeTx += uint64(8)
 
-	sizeTx += uint64(len(tx.SigPubKey))
-	sizeTx += uint64(len(tx.Sig))
+	sigPubKey := uint64(len(tx.SigPubKey))
+	sizeTx += sigPubKey
+	sig := uint64(len(tx.Sig))
+	sizeTx += sig
 	if tx.Proof != nil {
-		sizeTx += uint64(len(tx.Proof.Bytes()))
+		proof := uint64(len(tx.Proof.Bytes()))
+		sizeTx += proof
 	}
 
 	sizeTx += uint64(1)
-	sizeTx += uint64(len(tx.Info))
+	info := uint64(len(tx.Info))
+	sizeTx += info
 
 	meta := tx.Metadata
 	if meta != nil {
-		sizeTx += meta.CalculateSize()
+		metaSize := meta.CalculateSize()
+		sizeTx += metaSize
 	}
 	return uint64(math.Ceil(float64(sizeTx) / 1024))
 }
@@ -530,7 +535,7 @@ func (tx *Tx) GetType() string {
 	return tx.Type
 }
 
-func (tx *Tx) ListNullifiers() [][]byte {
+func (tx *Tx) ListSerialNumbers() [][]byte {
 	result := [][]byte{}
 	if tx.Proof != nil {
 		for _, d := range tx.Proof.InputCoins {
@@ -566,7 +571,7 @@ func (tx *Tx) IsSalaryTx() bool {
 	if tx.GetType() != common.TxRewardType {
 		return false
 	}
-	// Check nullifiers in every Descs
+	// Check serialNumber in every Descs
 	if len(tx.Proof.InputCoins) == 0 {
 		return true
 	}
@@ -635,13 +640,13 @@ func (tx *Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	return false, nil, 0
 }
 
-func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolNullifiers map[common.Hash][][]byte) error {
+func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers map[common.Hash][][]byte) error {
 	if tx.Proof == nil {
 		return nil
 	}
-	for _, temp1 := range poolNullifiers {
+	for _, listSerialNumbers := range poolSerialNumbers {
 		for _, desc := range tx.Proof.InputCoins {
-			if ok, err := common.SliceBytesExists(temp1, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
+			if ok, err := common.SliceBytesExists(listSerialNumbers, desc.CoinDetails.SerialNumber.Compress()); ok > -1 || err != nil {
 				return errors.New("double spend")
 			}
 		}
@@ -653,8 +658,8 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	//if tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType {
 	//	return errors.New("can not receive a salary tx from other node, this is a violation")
 	//}
-	poolNullifiers := mr.GetSerialNumbers()
-	return tx.validateDoubleSpendTxWithCurrentMempool(poolNullifiers)
+	poolSerialNumbers := mr.GetSerialNumbers()
+	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type

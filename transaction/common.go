@@ -118,17 +118,15 @@ func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte,
 func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo,
 	hasPrivacy bool, metadata metadata.Metadata,
 	customTokenParams *CustomTokenParamTx,
-	privacyCustomTokenParams *CustomTokenPrivacyParamTx) uint64 {
+	privacyCustomTokenParams *CustomTokenPrivacyParamTx,
+	limitFee uint64) uint64 {
 
 	sizeVersion := uint64(1)  // int8
 	sizeType := uint64(5)     // string, max : 5
 	sizeLockTime := uint64(8) // int64
 	sizeFee := uint64(8)      // uint64
 
-	sizeInfo := uint64(0)
-	if hasPrivacy {
-		sizeInfo = uint64(64)
-	}
+	sizeInfo := uint64(512)
 
 	sizeSigPubKey := uint64(privacy.SigPubKeySize)
 	sizeSig := uint64(privacy.SigNoPrivacySize)
@@ -136,7 +134,14 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 		sizeSig = uint64(privacy.SigPrivacySize)
 	}
 
-	sizeProof := zkp.EstimateProofSize(len(inputCoins), len(payments), hasPrivacy)
+	sizeProof := uint64(0)
+	if len(inputCoins) != 0 || len(payments) != 0 {
+		sizeProof = zkp.EstimateProofSize(len(inputCoins), len(payments), hasPrivacy)
+	} else {
+		if limitFee > 0 {
+			sizeProof = zkp.EstimateProofSize(1, 1, hasPrivacy)
+		}
+	}
 
 	sizePubKeyLastByte := uint64(1)
 
