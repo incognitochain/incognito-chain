@@ -651,7 +651,7 @@ func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 }
 
 // PrePoolTxCoinHashH - store tx hash with
-func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, inputCoins []*privacy.InputCoin) error {
+func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, inputCoins []*privacy.InputCoin) {
 	inCoinHs := make([]common.Hash, 0)
 	for _, inCoin := range inputCoins {
 		hash := inCoin.CoinDetails.HashH()
@@ -660,7 +660,6 @@ func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, inputCoins []*privacy.
 		}
 	}
 	tp.txCoinHashHPool[txHashH] = inCoinHs
-	return nil
 }
 
 // addTxCoinHashH - add hash of output coin
