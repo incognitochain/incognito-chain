@@ -73,7 +73,7 @@ type TxPool interface {
 
 	// RemoveTx remove tx from tx resource
 	RemoveTx(tx metadata.Transaction, isInBlock bool) error
-
+	RemoveTxList(tx []metadata.Transaction, isInBlock bool)
 	RemoveCandidateList([]string)
 
 	RemoveTokenIDList([]string)
