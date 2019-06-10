@@ -87,7 +87,7 @@ func (rpcServer RpcServer) handleCreateRawTxWithContractingReq(params interface{
 		*tokenID,
 		metadata.ContractingRequestMeta,
 	)
-	customTokenTx, _, rpcErr := rpcServer.buildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := rpcServer.buildRawPrivacyCustomTokenTransaction(params, meta)
 	// rpcErr := err1.(*RPCError)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
