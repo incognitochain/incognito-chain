@@ -5,6 +5,7 @@ ENV commit=$commit
 
 COPY ./constant /
 COPY ./bootnode /
+COPY ./keylist.json /
 
 RUN chmod +x /constant
 RUN chmod +x /bootnode
