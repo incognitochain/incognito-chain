@@ -647,14 +647,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 		return nil, nil, NewRPCError(ErrCreateTxData, err)
 	}
 
-	// pool inCoinsH
-	txHash := tx.Hash()
-	if txHash != nil {
-		// build hash array for input coin
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoins)
-	}
-
-	return &tx, inputCoins, nil
+	return &tx, nil
 }
 
 //calculateOutputCoinsByMinValue
