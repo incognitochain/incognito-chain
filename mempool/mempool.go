@@ -45,26 +45,24 @@ type TxDesc struct {
 // TxPool is transaction pool
 type TxPool struct {
 	// The following variables must only be used atomically.
-	lastUpdated       int64 // last time pool was updated
-	mtx               sync.RWMutex
-	config            Config
-	pool              map[common.Hash]*TxDesc
-	poolSerialNumbers map[common.Hash][][]byte      // [txHash]:list serialNumbers of input coin
-	txCoinHashHPool   map[common.Hash][]common.Hash // [txHash]:list hash of input coin
-	coinHashHPool     map[common.Hash]bool
-	cMtx              sync.RWMutex
-	Scantime          time.Duration
-	CandidatePool     map[common.Hash]string //Candidate List in mempool
-	candidateMtx      sync.RWMutex
-	TokenIDPool       map[common.Hash]string //Token ID List in Mempool
-	tokenIDMtx        sync.RWMutex
-	DuplicateTxs      map[common.Hash]uint64 //For testing
-	cCacheTx          chan<- common.Hash     //Caching received txs
-	RoleInCommittees  int                    //Current Role of Node
-	CRoleInCommittees <-chan int
-	roleMtx           sync.RWMutex
-	CPendingTxs       chan<- metadata.Transaction // channel to deliver txs to block gen
-	IsBlockGenStarted bool
+	lastUpdated         int64 // last time pool was updated
+	mtx                 sync.RWMutex
+	config              Config
+	pool                map[common.Hash]*TxDesc
+	poolSerialNumbers   map[common.Hash][][]byte      // [txHash]:list serialNumbers of input coin
+	inputCoinsHashHPool map[common.Hash][]common.Hash // [txHash]:list hash of input coin
+	Scantime            time.Duration
+	CandidatePool       map[common.Hash]string //Candidate List in mempool
+	candidateMtx        sync.RWMutex
+	TokenIDPool         map[common.Hash]string //Token ID List in Mempool
+	tokenIDMtx          sync.RWMutex
+	DuplicateTxs        map[common.Hash]uint64 //For testing
+	cCacheTx            chan<- common.Hash     //Caching received txs
+	RoleInCommittees    int                    //Current Role of Node
+	CRoleInCommittees   <-chan int
+	roleMtx             sync.RWMutex
+	CPendingTxs         chan<- metadata.Transaction // channel to deliver txs to block gen
+	IsBlockGenStarted   bool
 }
 
 /*
@@ -75,11 +73,10 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.Scantime = 1 * time.Hour
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
-	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
-	tp.coinHashHPool = make(map[common.Hash]bool)
+	//tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
+	tp.inputCoinsHashHPool = make(map[common.Hash][]common.Hash)
 	tp.TokenIDPool = make(map[common.Hash]string)
 	tp.CandidatePool = make(map[common.Hash]string)
-	tp.cMtx = sync.RWMutex{}
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
 	tp.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
@@ -156,8 +153,11 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *Tx
 
 /*
 // add transaction into pool
+// #1: tx
+// #2: store into db
+// #3: default nil, contain input coins hash, which are used for creating this tx
 */
-func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
+func (tp *TxPool) addTx(txD *TxDesc, isStore bool, inputCoinsHash []common.Hash) {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 
@@ -190,8 +190,8 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 
 		}
 	}
-	if txHash != nil {
-		tp.AddTxCoinHashH(*txHash)
+	if txHash != nil && len(inputCoinsHash) > 0 {
+		tp.addInputCoinsHashH(*txHash, inputCoinsHash)
 	}
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
@@ -356,7 +356,14 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	}
 	return nil
 }
-func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool) (*common.Hash, *TxDesc, error) {
+
+/*
+// maybeAcceptTransaction into pool
+// #1: tx
+// #2: store into db
+// #3: default nil, contain input coins hash, which are used for creating this tx
+*/
+func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool, inputCoinsHash []common.Hash) (*common.Hash, *TxDesc, error) {
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -380,7 +387,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txFee := tx.GetTxFee()
 	txD := createTxDescMempool(tx, bestHeight, txFee)
 	startAdd := time.Now()
-	tp.addTx(txD, isStore)
+	tp.addTx(txD, isStore, inputCoinsHash)
 	if isNewTransaction {
 		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
 		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
@@ -432,7 +439,9 @@ func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
 // be added to the orphan pool.
 //
 // This function is safe for concurrent access.
-func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
+// #1: tx
+// #2: default nil, contain input coins hash, which are used for creating this tx
+func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, inputCoinsHash []common.Hash) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	go func(txHash common.Hash) {
@@ -455,7 +464,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		return nil, nil, errors.New("Pool reach max number of transaction")
 	}
 	startAdd := time.Now()
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true, inputCoinsHash)
 	// fmt.Printf("[db] pool maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), hash, err)
 	elapsed := float64(time.Since(startAdd).Seconds())
 
@@ -491,7 +500,7 @@ func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
+	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false, nil)
 	// fmt.Printf("[db] pool bp maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), tx.Hash(), err)
 	if err != nil {
 		Logger.log.Error(err)
@@ -517,7 +526,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 	// remove tx coin hash from pool
 	txHash := tx.Hash()
 	if txHash != nil {
-		tp.RemoveTxCoinHashH(*txHash)
+		tp.removeInputCoinsHashH(*txHash)
 	}
 	if isInBlock {
 		txType := tx.GetType()
@@ -649,54 +658,30 @@ func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 	return result
 }
 
-// PrePoolTxCoinHashH -
-func (tp *TxPool) PrePoolTxCoinHashH(txHashH common.Hash, coinHashHs []common.Hash) error {
-	tp.cMtx.Lock()
-	defer tp.cMtx.Unlock()
-	tp.txCoinHashHPool[txHashH] = coinHashHs
-	return nil
-}
-
-// addTxCoinHashH - add hash of output coin
+// addInputCoinsHashH - add hash of output coin
 //// which use to check double spend in memppol
-func (tp *TxPool) AddTxCoinHashH(txHashH common.Hash) error {
-	tp.cMtx.Lock()
-	defer tp.cMtx.Unlock()
-	inCoinHs, ok := tp.txCoinHashHPool[txHashH]
-	if ok {
-		for _, inCoinH := range inCoinHs {
-			tp.coinHashHPool[inCoinH] = true
-		}
+func (tp *TxPool) addInputCoinsHashH(txHashH common.Hash, inputCoinsHash []common.Hash) {
+	tp.inputCoinsHashHPool[txHashH] = make([]common.Hash, 0)
+	for _, inCoinH := range inputCoinsHash {
+		tp.inputCoinsHashHPool[txHashH] = append(tp.inputCoinsHashHPool[txHashH], inCoinH)
 	}
-	return nil
 }
 
 // ValidateCoinHashH - check outputcoin which is
 // used by a tx in mempool
 func (tp *TxPool) ValidateCoinHashH(coinHashH common.Hash) error {
-	tp.cMtx.Lock()
-	defer tp.cMtx.Unlock()
-	_, ok := tp.coinHashHPool[coinHashH]
+	_, ok := tp.inputCoinsHashHPool[coinHashH]
 	if ok {
 		return errors.New("Coin is in used")
 	}
 	return nil
 }
 
-// removeTxCoinHashH remove hash of output coin
+// removeInputCoinsHashH remove hash of output coin
 // which use to check double spend in memppol
-func (tp *TxPool) RemoveTxCoinHashH(txHashH common.Hash) error {
-	tp.cMtx.Lock()
-	defer tp.cMtx.Unlock()
-	if coinHashHs, okTxHashH := tp.txCoinHashHPool[txHashH]; okTxHashH {
-		for _, coinHashH := range coinHashHs {
-			if _, okCoinHashH := tp.coinHashHPool[coinHashH]; okCoinHashH {
-				delete(tp.coinHashHPool, coinHashH)
-			}
-		}
-		delete(tp.txCoinHashHPool, txHashH)
-		delete(tp.poolSerialNumbers, txHashH)
-	}
+func (tp *TxPool) removeInputCoinsHashH(txHashH common.Hash) error {
+	delete(tp.inputCoinsHashHPool, txHashH)
+	delete(tp.poolSerialNumbers, txHashH)
 	return nil
 }
 
@@ -746,22 +731,19 @@ func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 }
 
 func (tp *TxPool) EmptyPool() bool {
-	tp.cMtx.Lock()
 	tp.candidateMtx.Lock()
 	tp.tokenIDMtx.Lock()
-	defer tp.cMtx.Unlock()
 	defer tp.candidateMtx.Unlock()
 	defer tp.tokenIDMtx.Unlock()
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.inputCoinsHashHPool) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
 		return true
 	}
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbers = make(map[common.Hash][][]byte)
-	tp.txCoinHashHPool = make(map[common.Hash][]common.Hash)
-	tp.coinHashHPool = make(map[common.Hash]bool)
+	tp.inputCoinsHashHPool = make(map[common.Hash][]common.Hash)
 	tp.CandidatePool = make(map[common.Hash]string)
 	tp.TokenIDPool = make(map[common.Hash]string)
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.txCoinHashHPool) == 0 && len(tp.coinHashHPool) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbers) == 0 && len(tp.inputCoinsHashHPool) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
 		return true
 	}
 	return false
@@ -795,7 +777,6 @@ func (tp *TxPool) MonitorPool() {
 			startTime := txDesc.StartTime
 			delete(tp.pool, txHash)
 			delete(tp.poolSerialNumbers, txHash)
-			delete(tp.txCoinHashHPool, txHash)
 			delete(tp.CandidatePool, txHash)
 			delete(tp.TokenIDPool, txHash)
 			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(startTime).Seconds()))

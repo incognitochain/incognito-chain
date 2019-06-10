@@ -92,7 +92,7 @@ func (rpcServer RpcServer) makeArrayInputCoinHashHs(inputCoins []*privacy.InputC
 	return inCoinHs
 }
 
-func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
+func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, []common.Hash, *RPCError) {
 	Logger.log.Infof("Params: \n%+v\n\n\n", params)
 
 	/******* START Fetch all component to ******/
@@ -103,7 +103,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
-		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+		return nil, nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -118,7 +118,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
+			return nil, nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
@@ -137,11 +137,8 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	/******* START choose output native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacyCoin, meta, nil, nil)
 	if err1 != nil {
-		return nil, err1
+		return nil, nil, err1
 	}
-
-	// build hash array for input coin
-	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
@@ -163,16 +160,13 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	// END create tx
 
 	if err.(*transaction.TransactionError) != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, nil, NewRPCError(ErrCreateTxData, err)
 	}
 
-	// pool inCoinsH
-	txHash := tx.Hash()
-	if txHash != nil {
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
-	}
+	// build hash array for input coin
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
-	return &tx, nil
+	return &tx, inputCoinHs, nil
 }
 
 func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
@@ -250,7 +244,7 @@ func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]inter
 func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	params interface{},
 	metaData metadata.Metadata,
-) (*transaction.TxCustomToken, *RPCError) {
+) (*transaction.TxCustomToken, []common.Hash, *RPCError) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -258,7 +252,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
-		return nil, err.(*RPCError)
+		return nil, nil, err.(*RPCError)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -272,7 +266,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	for paymentAddressStr, amount := range receiversPaymentAddressParam {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
+			return nil, nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
@@ -292,22 +286,19 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	tokenParams, listCustomTokens, err := rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
 	_ = listCustomTokens
 	if err.(*RPCError) != nil {
-		return nil, err.(*RPCError)
+		return nil, nil, err.(*RPCError)
 	}
 	/******* START choose output coins native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0,
 		senderKeySet, shardIDSender, hasPrivacyCoin,
 		metaData, tokenParams, nil)
 	if err.(*RPCError) != nil {
-		return nil, err.(*RPCError)
+		return nil, nil, err.(*RPCError)
 	}
 	if len(paymentInfos) == 0 && realFee == 0 {
 		hasPrivacyCoin = false
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
-
-	// build hash array for input coin
-	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
@@ -323,16 +314,13 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		shardIDSender,
 	)
 	if err.(*transaction.TransactionError) != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, nil, NewRPCError(ErrCreateTxData, err)
 	}
 
-	// pool inCoinsH
-	txHash := tx.Hash()
-	if txHash != nil {
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
-	}
+	// build hash array for input coin
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
-	return tx, nil
+	return tx, inputCoinHs, nil
 }
 
 func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
@@ -386,7 +374,7 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	params interface{},
 	metaData metadata.Metadata,
-) (*transaction.TxCustomTokenPrivacy, *RPCError) {
+) (*transaction.TxCustomTokenPrivacy, []common.Hash, *RPCError) {
 	// all component
 	arrayParams := common.InterfaceSlice(params)
 
@@ -395,7 +383,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
-		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+		return nil, nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -409,7 +397,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
+			return nil, nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
@@ -431,7 +419,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	_ = listCustomTokenCrossShard
 	_ = listCustomTokens
 	if err.(*RPCError) != nil {
-		return nil, err.(*RPCError)
+		return nil, nil, err.(*RPCError)
 	}
 
 	// param #6: hasPrivacyToken flag for token
@@ -448,15 +436,12 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		shardIDSender, hasPrivacyCoin, nil,
 		nil, tokenParams)
 	if err.(*RPCError) != nil {
-		return nil, err.(*RPCError)
+		return nil, nil, err.(*RPCError)
 	}
 	if len(paymentInfos) == 0 && realFeePrv == 0 {
 		hasPrivacyCoin = false
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
-
-	// build hash array for input coin
-	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
@@ -473,16 +458,13 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	)
 
 	if err.(*transaction.TransactionError) != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, nil, NewRPCError(ErrCreateTxData, err)
 	}
 
-	// pool inCoinsH
-	txHash := tx.Hash()
-	if txHash != nil {
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
-	}
+	// build hash array for input coin
+	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
 
-	return tx, nil
+	return tx, inputCoinHs, nil
 }
 
 // estimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
