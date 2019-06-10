@@ -669,9 +669,6 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers map[comm
 }
 
 func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	//if tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType {
-	//	return errors.New("can not receive a salary tx from other node, this is a violation")
-	//}
 	poolSerialNumbers := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
 }
