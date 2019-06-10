@@ -283,7 +283,14 @@ func (proof *InnerProductProof) Verify(AggParam *BulletproofParams) bool {
 	rightPoint = rightPoint.Add(H[0].ScalarMult(proof.b))
 	rightPoint = rightPoint.Add(AggParam.U.ScalarMult(c))
 
-	return rightPoint.IsEqual(p)
+	res :=  rightPoint.IsEqual(p)
+	if !res {
+		privacy.Logger.Log.Error("Inner product argument failed:")
+		privacy.Logger.Log.Error("p: %v\n", p)
+		privacy.Logger.Log.Error("rightPoint: %v\n", rightPoint)
+	}
+
+	return res
 }
 
 // pad returns number has format 2^k that it is the nearest number to num
