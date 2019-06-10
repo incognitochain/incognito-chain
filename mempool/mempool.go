@@ -234,6 +234,7 @@ Param#2: isStore: store transaction to persistence storage only work for transac
 func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	var shardID byte
 	var err error
+	var now time.Time
 	txHash := tx.Hash()
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
@@ -243,6 +244,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 			txType = common.TxNormalNoPrivacy
 		}
 	}
+	now = time.Now()
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
@@ -251,16 +253,18 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return err
 	}
-
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition1, float64(time.Since(now).Seconds()))
 	// check version
+	now = time.Now()
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
 		return err
 	}
-
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition2, float64(time.Since(now).Seconds()))
 	// check actual size
+	now = time.Now()
 	actualSize := tx.GetTxActualSize()
 	Logger.log.Debugf("Transaction %+v 's size %+v \n", *txHash, actualSize)
 	if actualSize >= common.MaxBlockSize || actualSize >= common.MaxTxSize {
@@ -268,15 +272,17 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return err
 	}
-
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition3, float64(time.Since(now).Seconds()))
 	// A standalone transaction must not be a salary transaction.
+	now = time.Now()
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return err
 	}
-
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition4, float64(time.Since(now).Seconds()))
 	// check fee of tx
+	now = time.Now()
 	limitFee := tp.config.FeeEstimator[shardID].limitFee
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(limitFee)
@@ -285,25 +291,29 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize()))
 		return err
 	}
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition5, float64(time.Since(now).Seconds()))
 	// end check with policy
-
+	now = time.Now()
 	ok = tx.ValidateType()
 	if !ok {
 		return err
 	}
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition6, float64(time.Since(now).Seconds()))
 	// check tx with all txs in current mempool
+	now = time.Now()
 	err = tx.ValidateTxWithCurrentMempool(tp)
 	if err != nil {
 		return err
 	}
-
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition7, float64(time.Since(now).Seconds()))
 	// sanity data
+	now = time.Now()
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
 		err := MempoolTxError{}
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return err
 	}
-
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition8, float64(time.Since(now).Seconds()))
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	startValidate := time.Now()
@@ -318,13 +328,16 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidTx, errors.New(messageError))
 		return err
 	}
-
+	
 	// validate tx with data of blockchain
+	now = time.Now()
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
 	if err != nil {
 		return err
 	}
-
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition9, float64(time.Since(now).Seconds()))
+	
+	now = time.Now()
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
@@ -340,8 +353,9 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 			}
 		}
 	}
-
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition10, float64(time.Since(now).Seconds()))
 	// check duplicate stake public key ONLY with staking transaction
+	now = time.Now()
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
@@ -356,6 +370,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 			}
 		}
 	}
+	go common.AnalyzeTimeSeriesTxValidationTimeMetric(common.Condition11, float64(time.Since(now).Seconds()))
 	return nil
 }
 // TODO: comment validate
