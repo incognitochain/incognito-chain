@@ -127,7 +127,7 @@ func (rpcServer RpcServer) handleListOutputCoins(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawTransaction(params, nil)
+	tx, _, err := rpcServer.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -423,7 +423,7 @@ func (self RpcServer) handleGetBlockProducerList(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
+	tx, _, err := rpcServer.buildRawCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -1026,7 +1026,7 @@ func (rpcServer RpcServer) handleHasSnDerivators(params interface{}, closeChan <
 func (rpcServer RpcServer) handleCreateRawPrivacyCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCreateRawPrivacyCustomTokenTransaction params: %+v", params)
 	var err error
-	tx, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params, nil)
+	tx, _, err := rpcServer.buildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -1155,7 +1155,7 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 
 	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	tx, err := rpcServer.buildRawTransaction(params, metadata)
+	tx, _, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		Logger.log.Infof("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
