@@ -38,8 +38,9 @@ type Tx struct {
 	// Metadata
 	Metadata metadata.Metadata
 
-	sigPrivKey []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
-	cachedHash *common.Hash // cached hash data of tx
+	sigPrivKey       []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	cachedHash       *common.Hash // cached hash data of tx
+	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
 func (tx *Tx) UnmarshalJSON(data []byte) error {
@@ -488,7 +489,6 @@ func (tx *Tx) Hash() *common.Hash {
 		return tx.cachedHash
 	}
 	bytes := []byte(tx.String())
-	//Logger.log.Infof("\n\n\n\n TX bytes when hashing: %v\n", bytes)
 	hash := common.HashH(bytes)
 	tx.cachedHash = &hash
 	return &hash
@@ -504,6 +504,9 @@ func (tx *Tx) GetTxFee() uint64 {
 
 // GetTxActualSize computes the actual size of a given transaction in kilobyte
 func (tx *Tx) GetTxActualSize() uint64 {
+	if tx.cachedActualSize != nil {
+		return *tx.cachedActualSize
+	}
 	sizeTx := uint64(1)                // int8
 	sizeTx += uint64(len(tx.Type) + 1) // string
 	sizeTx += uint64(8)                // int64
@@ -527,7 +530,9 @@ func (tx *Tx) GetTxActualSize() uint64 {
 		metaSize := meta.CalculateSize()
 		sizeTx += metaSize
 	}
-	return uint64(math.Ceil(float64(sizeTx) / 1024))
+	result := uint64(math.Ceil(float64(sizeTx) / 1024))
+	tx.cachedActualSize = &result
+	return *tx.cachedActualSize
 }
 
 // GetType returns the type of the transaction
