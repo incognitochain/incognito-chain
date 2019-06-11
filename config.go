@@ -660,8 +660,5 @@ func (conf *config) GetUserKeySet() (*cashec.KeySet, error) {
 		return nil, err
 	}
 	KeySetUser.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
-	// lastByte := KeySetUser.PaymentAddress.Pk[len(KeySetUser.PaymentAddress.Pk)-1]
-	// shardIDSender, err := common.GetTxSenderChain(lastByte)
-	// Logger.log.Info("shardID: ", shardIDSender)
 	return KeySetUser, nil
 }

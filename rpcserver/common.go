@@ -81,17 +81,6 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	return inputCoins, realFee, nil
 }
 
-func (rpcServer RpcServer) makeArrayInputCoinHashHs(inputCoins []*privacy.InputCoin) []common.Hash {
-	inCoinHs := make([]common.Hash, 0)
-	for _, inCoin := range inputCoins {
-		hash := inCoin.CoinDetails.HashH()
-		if hash != nil {
-			inCoinHs = append(inCoinHs, *hash)
-		}
-	}
-	return inCoinHs
-}
-
 func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	Logger.log.Infof("Params: \n%+v\n\n\n", params)
 
@@ -134,16 +123,13 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
 
-	/******* START choose output coins constant, which is used to create tx *****/
+	/******* START choose output native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacyCoin, meta, nil, nil)
 	if err1 != nil {
 		return nil, err1
 	}
 
-	// build hash array for input coin
-	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
-
-	/******* END GET output coins constant, which is used to create tx *****/
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
 	// START create tx
 	// missing flag for privacy
@@ -164,12 +150,6 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
-	}
-
-	// pool inCoinsH
-	txHash := tx.Hash()
-	if txHash != nil {
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
 	}
 
 	return &tx, nil
@@ -294,7 +274,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
-	/******* START choose output coins constant, which is used to create tx *****/
+	/******* START choose output coins native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0,
 		senderKeySet, shardIDSender, hasPrivacyCoin,
 		metaData, tokenParams, nil)
@@ -304,10 +284,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	if len(paymentInfos) == 0 && realFee == 0 {
 		hasPrivacyCoin = false
 	}
-	/******* END GET output coins constant, which is used to create tx *****/
-
-	// build hash array for input coin
-	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
@@ -326,12 +303,6 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
-	// pool inCoinsH
-	txHash := tx.Hash()
-	if txHash != nil {
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
-	}
-
 	return tx, nil
 }
 
@@ -343,6 +314,7 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 		TokenInput:     nil,
+		Fee:            uint64(tokenParamsRaw["TokenFee"].(float64)),
 	}
 	voutsAmount := int64(0)
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
@@ -441,28 +413,25 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 
 	/****** END FEtch data from params *********/
 
-	/******* START choose output coins constant, which is used to create tx *****/
-	inputCoins, realFee, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
+	/******* START choose output native coins(PRV), which is used to create tx *****/
+	inputCoins, realFeePrv, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
 		estimateFeeCoinPerKb, 0, senderKeySet,
 		shardIDSender, hasPrivacyCoin, nil,
 		nil, tokenParams)
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
-	if len(paymentInfos) == 0 && realFee == 0 {
+	if len(paymentInfos) == 0 && realFeePrv == 0 {
 		hasPrivacyCoin = false
 	}
-	/******* END GET output coins constant, which is used to create tx *****/
-
-	// build hash array for input coin
-	inputCoinHs := rpcServer.makeArrayInputCoinHashHs(inputCoins)
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
 		nil,
 		inputCoins,
-		realFee,
+		realFeePrv,
 		tokenParams,
 		*rpcServer.config.Database,
 		metaData,
@@ -473,12 +442,6 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
-	}
-
-	// pool inCoinsH
-	txHash := tx.Hash()
-	if txHash != nil {
-		rpcServer.config.TxMemPool.PrePoolTxCoinHashH(*txHash, inputCoinHs)
 	}
 
 	return tx, nil
@@ -537,11 +500,8 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 func (rpcServer RpcServer) filterMemPoolOutCoinsToSpent(outCoins []*privacy.OutputCoin) (remainOutputCoins []*privacy.OutputCoin, err error) {
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		hash := outCoin.CoinDetails.HashH()
-		if hash != nil {
-			if rpcServer.config.TxMemPool.ValidateCoinHashH(*hash) == nil {
-				remainOutputCoins = append(remainOutputCoins, outCoin)
-			}
+		if rpcServer.config.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.SerialNumber.Compress()) == nil {
+			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
 	return remainOutputCoins, nil
@@ -553,71 +513,49 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)
 
-	// just choose output coins have value less than amount for Knapsack algorithm
-	sumValueKnapsack := uint64(0)
-	valuesKnapsack := make([]uint64, 0)
-	outCoinKnapsack := make([]*privacy.OutputCoin, 0)
-	outCoinUnknapsack := make([]*privacy.OutputCoin, 0)
+	// either take the smallest coins, or a single largest one
+	var outCoinOverLimit *privacy.OutputCoin
+	outCoinsUnderLimit := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value > amount {
-			outCoinUnknapsack = append(outCoinUnknapsack, outCoin)
+		if outCoin.CoinDetails.Value < amount {
+			outCoinsUnderLimit = append(outCoinsUnderLimit, outCoin)
+		} else if outCoinOverLimit == nil {
+			outCoinOverLimit = outCoin
+		} else if outCoinOverLimit.CoinDetails.Value > outCoin.CoinDetails.Value {
+			remainOutputCoins = append(remainOutputCoins, outCoin)
 		} else {
-			sumValueKnapsack += outCoin.CoinDetails.Value
-			valuesKnapsack = append(valuesKnapsack, outCoin.CoinDetails.Value)
-			outCoinKnapsack = append(outCoinKnapsack, outCoin)
+			remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
+			outCoinOverLimit = outCoin
 		}
 	}
 
-	// target
-	target := int64(sumValueKnapsack - amount)
+	sort.Slice(outCoinsUnderLimit, func(i, j int) bool {
+		return outCoinsUnderLimit[i].CoinDetails.Value < outCoinsUnderLimit[j].CoinDetails.Value
+	})
 
-	// if target > 1000, using Greedy algorithm
-	// if target > 0, using Knapsack algorithm to choose coins
-	// if target == 0, coins need to be spent is coins for Knapsack, we don't need to run Knapsack to find solution
-	// if target < 0, instead of using Knapsack, we get the coin that has value is minimum in list unKnapsack coins
-	if target > 1000 {
-		choices := privacy.Greedy(outCoins, amount)
-		for i, choice := range choices {
-			if choice {
-				totalResultOutputCoinAmount += outCoins[i].CoinDetails.Value
-				resultOutputCoins = append(resultOutputCoins, outCoins[i])
-			} else {
-				remainOutputCoins = append(remainOutputCoins, outCoins[i])
-			}
+	for _, outCoin := range outCoinsUnderLimit {
+		if totalResultOutputCoinAmount < amount {
+			totalResultOutputCoinAmount += outCoin.CoinDetails.Value
+			resultOutputCoins = append(resultOutputCoins, outCoin)
+		} else {
+			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
-	} else if target > 0 {
-		choices := privacy.Knapsack(valuesKnapsack, uint64(target))
-		for i, choice := range choices {
-			if !choice {
-				totalResultOutputCoinAmount += outCoinKnapsack[i].CoinDetails.Value
-				resultOutputCoins = append(resultOutputCoins, outCoinKnapsack[i])
-			} else {
-				remainOutputCoins = append(remainOutputCoins, outCoinKnapsack[i])
-			}
-		}
-		remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack...)
-	} else if target == 0 {
-		totalResultOutputCoinAmount = sumValueKnapsack
-		resultOutputCoins = outCoinKnapsack
-		remainOutputCoins = outCoinUnknapsack
+	}
+
+	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.Value > 2*amount || totalResultOutputCoinAmount < amount) {
+		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
+		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
+		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.Value
+	} else if outCoinOverLimit != nil {
+		remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
+	}
+
+	if totalResultOutputCoinAmount < amount {
+		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, errors.New("Not enough coin")
 	} else {
-		if len(outCoinUnknapsack) == 0 {
-			return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, errors.New("Not enough coin")
-		} else {
-			sort.Slice(outCoinUnknapsack, func(i, j int) bool {
-				return outCoinUnknapsack[i].CoinDetails.Value < outCoinUnknapsack[j].CoinDetails.Value
-			})
-			resultOutputCoins = append(resultOutputCoins, outCoinUnknapsack[0])
-			totalResultOutputCoinAmount = outCoinUnknapsack[0].CoinDetails.Value
-			for i := 1; i < len(outCoinUnknapsack); i++ {
-				remainOutputCoins = append(remainOutputCoins, outCoinUnknapsack[i])
-			}
-			remainOutputCoins = append(remainOutputCoins, outCoinKnapsack...)
-		}
+		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
 	}
-
-	return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
 }
 
 // GetPaymentAddressFromPrivateKeyParams- deserialize a private key string

@@ -37,7 +37,3 @@ const (
 	AllShards  = -1
 	BeaconOnly = -2
 )
-
-const (
-	WithDrawFee = 20
-)
