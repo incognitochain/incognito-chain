@@ -488,7 +488,6 @@ func (tx *Tx) Hash() *common.Hash {
 		return tx.cachedHash
 	}
 	bytes := []byte(tx.String())
-	//Logger.log.Infof("\n\n\n\n TX bytes when hashing: %v\n", bytes)
 	hash := common.HashH(bytes)
 	tx.cachedHash = &hash
 	return &hash
