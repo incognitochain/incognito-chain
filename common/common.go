@@ -416,3 +416,11 @@ func ByteEqual(a []byte, b []byte) bool {
 	}
 	return true
 }
+
+func AppendSliceString(arrayStrings ...[][]string) [][]string {
+	res := [][]string{}
+	for _, arrayString := range arrayStrings {
+		res = append(res, arrayString...)
+	}
+	return res
+}
