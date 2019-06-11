@@ -215,17 +215,13 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 	go func() {
 		var err error
 		respTxsShard, err = blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
-		if err != nil {
-			errCh <- err
-		}
+		errCh <- err
 	}()
 
 	go func() {
 		var err error
 		respTxsBeacon, err = blockgen.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
-		if err != nil {
-			errCh <- err
-		}
+		errCh <- err
 	}()
 
 	nilCount := 0
