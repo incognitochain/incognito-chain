@@ -20,6 +20,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	//============Build body=============
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	fmt.Printf("[ndh] Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
 		return nil, err
@@ -99,25 +100,30 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 			Transactions:      make([]metadata.Transaction, 0),
 		},
 	}
-	//for i, tx1 := range txsToAdd {
-	//	Logger.log.Warn(i, tx1.GetType(), tx1.GetMetadata(), "\n")
-	//}
 	for _, tx := range txsToAdd {
 		if err := block.AddTransaction(tx); err != nil {
 			return nil, err
 		}
 	}
 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
-	err = block.Body.addBlockReward(blockgen.chain.getRewardAmount(prevBlock.Header.Height+1), prevBlock.Header.Height+1, producerKeySet.PaymentAddress, producerKeySet.PrivateKey, blockgen.chain.GetDatabase())
-	if err != nil {
-		fmt.Printf("\n\nerrorrrrrrrrrrrrrrrrrrr\n\n\n\n%+v\n\n\n\n", err.Error())
-		return nil, err
-	} else {
-		fmt.Printf("\n\neiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\n\n\n%+v \n %+v \n\n\n", len(block.Body.Transactions), block.Body.Transactions[len(block.Body.Transactions)-1])
-	}
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)
 	}
+	err = blockgen.chain.BuildResponseTransactionFromTxsWithMetadata(&block.Body, &producerKeySet.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	//TODO calculate fee for another tx type
+	totalTxsFee := uint64(0)
+	for _, tx := range block.Body.Transactions {
+		totalTxsFee += tx.GetTxFee()
+	}
+	// rewardInfoInstructions, err := block.getBlockRewardInst(prevBlock.Header.Height + 1)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return nil, err
+	// }
+	// fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
 	//============End Build Body===========
 
 	//============Build Header=============
@@ -170,6 +176,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
 		BeaconHash:           beaconHash,
+		TotalTxsFee:          totalTxsFee,
 		Epoch:                epoch,
 		Round:                round,
 	}
