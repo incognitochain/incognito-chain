@@ -20,17 +20,21 @@ const (
 	TxPoolAddedAfterValidation       = "TxPoolAddedAfterValidation"
 	TxPoolRemoveAfterInBlock         = "TxPoolRemoveAfterInBlock"
 	TxPoolRemoveAfterInBlockWithType = "TxPoolRemoveAfterInBlockWithType"
-	TxPoolRemoveAfterLifeTime        = "TxPoolRemoveAfterLifeTime"
-	TxAddedIntoPoolType              = "TxAddedIntoPoolType"
-	TxPoolPrivacyOrNot               = "TxPoolPrivacyOrNot"
-	PoolSize                         = "PoolSize"
-	TxValidateByItSelfInPoolType     = "TxValidateByItSelfInPoolType"
-	TxInOneBlock                     = "TxInOneBlock"
-	DuplicateTxs                     = "DuplicateTxs"
+	TxPoolRemoveAfterLifeTime         = "TxPoolRemoveAfterLifeTime"
+	TxAddedIntoPoolType               = "TxAddedIntoPoolType"
+	TxPoolPrivacyOrNot                = "TxPoolPrivacyOrNot"
+	PoolSize                          = "PoolSize"
+	TxValidateByItSelfInPoolType      = "TxValidateByItSelfInPoolType"
+	TxInOneBlock                      = "TxInOneBlock"
+	DuplicateTxs                      = "DuplicateTxs"
 	CreateAndSaveTxViewPointFromBlock = "CreateAndSaveTxViewPointFromBlock"
-	NumOfBlockInsertToChain         = "NumOfBlockInsertToChain"
-	TxRemovedFromPool                   = "TxRemovedFromPool"
-)
+	NumOfBlockInsertToChain           = "NumOfBlockInsertToChain"
+	TxPoolRemovedNumber               = "TxPoolRemovedNumber"
+	TxPoolRemovedTime                 = "TxPoolRemovedTime"
+	TxPoolRemovedTimeDetails          = "TxPoolRemovedTimeDetails"
+	TxPoolTxBeginEnter                = "TxPoolTxBeginEnter"
+	TxPoolTxEntered                   = "TxPoolTxEntered"
+ )
 
 // tag
 const (
@@ -88,7 +92,13 @@ func AnalyzeTimeSeriesTxTypeMetric(txType string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxAddedIntoPoolType, value)
 }
 func AnalyzeTimeSeriesTxRemovedMetric(txType string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxRemovedFromPool, value)
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxPoolRemovedNumber, value)
+}
+func AnalyzeTimeSeriesTxBeginEnterMetric(txType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxPoolTxBeginEnter, value)
+}
+func AnalyzeTimeSeriesTxEnteredMetric(txType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxPoolTxEntered, value)
 }
 func AnalyzeTimeSeriesTxPrivacyOrNotMetric(txType string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxPrivacyOrNotMetric, txType, TxPoolPrivacyOrNot, value)
@@ -105,8 +115,14 @@ func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64) {
 func AnalyzeTimeSeriesBlockPerSecondTimesMetric(shardID string, value float64, blockHeight uint64) {
 	sendTimeSeriesMetricDataInfluxDBV2(ShardID, shardID, NumOfBlockInsertToChain, value)
 }
-func AnalyzeTimeSeriesTxValidationTimeMetric(conditionType string, value float64) {
+func AnalyzeTimeSeriesTxRemovedTimeMetric(txType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxPoolRemovedTime, value)
+}
+func AnalyzeTimeSeriesTxValidationTimeDetailsMetric(conditionType string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(ValidateCondition, conditionType, TxPoolValidatedDetails, value)
+}
+func AnalyzeTimeSeriesTxRemovedTimeDetailsTimeMetric(conditionType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(ValidateCondition, conditionType, TxPoolRemovedTimeDetails, value)
 }
 func AnalyzeFuncCreateAndSaveTxViewPointFromBlock(time float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(Func, FuncCreateAndSaveTxViewPointFromBlock, CreateAndSaveTxViewPointFromBlock, time)
