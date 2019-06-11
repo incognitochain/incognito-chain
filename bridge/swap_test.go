@@ -89,27 +89,31 @@ func TestTransfer(t *testing.T) {
 	fmt.Println(p.BalanceOf(auth.From))
 
 	// Test calling swapBeacon
+	const comm_height = 1
 	inst_length := 100
 	beacon_length := 1000
 	bridge_length := 1000
 	newComRoot := [32]byte{}
 	inst := make([]byte, inst_length)
-	beaconInstPath := [3][32]byte{}
-	beaconPathIsLeft := [3]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+	for i := 0; i < inst_length; i++ {
+		inst[i] = byte(1)
+	}
+	beaconInstPath := [comm_height][32]byte{}
+	beaconPathIsLeft := [comm_height]bool{}
 	beaconInstRoot := [32]byte{}
 	beaconBlkData := make([]byte, beacon_length)
 	beaconBlkHash := [32]byte{}
-	beaconSignerPubkeys := [3][32]byte{}
+	beaconSignerPubkeys := [comm_height][32]byte{}
 	beaconSignerSig := [32]byte{}
-	beaconSignerPaths := [3][32]byte{}
-	bridgeInstPath := [3][32]byte{}
-	bridgePathIsLeft := [3]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+	beaconSignerPaths := [comm_height][32]byte{}
+	bridgeInstPath := [comm_height][32]byte{}
+	bridgePathIsLeft := [comm_height]bool{}
 	bridgeInstRoot := [32]byte{}
 	bridgeBlkData := make([]byte, bridge_length)
 	bridgeBlkHash := [32]byte{0}
-	bridgeSignerPubkeys := [3][32]byte{}
+	bridgeSignerPubkeys := [comm_height][32]byte{}
 	bridgeSignerSig := [32]byte{0}
-	bridgeSignerPaths := [3][32]byte{}
+	bridgeSignerPaths := [comm_height][32]byte{}
 	if _, err = p.c.SwapBeacon(
 		auth,
 		newComRoot,
@@ -139,6 +143,24 @@ func TestTransfer(t *testing.T) {
 
 	x2, y2 := p.c.ParseSwapBeaconInst(nil, nil)
 	fmt.Println(x2, y2)
+
+	x3, _ := p.c.GetHash(nil, inst)
+	fmt.Printf("%x\n", x3)
+
+	x4 := crypto.Keccak256(inst[:])
+	fmt.Printf("%x\n", x4)
+
+	leaf := [32]byte{1, 2, 3}
+	right := [32]byte{}
+	comb := append(leaf[:], right[:]...)
+	path := [1][32]byte{right}
+	left := [1]bool{false}
+	r := crypto.Keccak256(comb)
+	root := [32]byte{}
+	copy(root[:], r)
+	leaf = [32]byte{1, 2, 3}
+	x5, _ := p.c.InMerkleTree(nil, leaf, root, path, left)
+	fmt.Println(x5)
 }
 
 func TestMyErc20(t *testing.T) {
