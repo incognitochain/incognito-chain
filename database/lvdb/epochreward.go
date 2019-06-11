@@ -5,9 +5,6 @@ import (
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) AddShardRewardRequest(
@@ -47,14 +44,6 @@ func (db *db) GetRewardOfShardByEpoch(epoch uint64, shardID byte) (uint64, error
 	}
 	fmt.Printf("[ndh] - - - %+v\n", rewardAmount)
 	return common.BytesToUint64(rewardAmount), nil
-}
-
-func (db *db) AddBeaconBlockProposer(
-	epoch uint64,
-	beaconPaymentAddress []byte,
-	beaconBlockHeight uint64,
-) error {
-	return nil
 }
 
 func (db *db) AddCommitteeReward(committeeAddress []byte, amount uint64) error {
@@ -114,8 +103,4 @@ func (db *db) RemoveCommitteeReward(committeeAddress []byte, amount uint64) erro
 		}
 	}
 	return nil
-}
-
-func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator {
-	return db.lvdb.NewIterator(slice, ro)
 }
