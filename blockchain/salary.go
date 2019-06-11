@@ -16,7 +16,7 @@ import (
 
 const (
 	ForDev                       = float32(1)
-	DurationHalfLifeRewardForDev = uint64(1000)
+	DurationHalfLifeRewardForDev = uint64(63072000) // 10 years
 )
 
 // func getMiningReward(isForBeacon bool, blkHeight uint64) uint64 {
