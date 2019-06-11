@@ -35,17 +35,19 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 
 	tx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
+		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error 0 %+v \n\n\n\n\n\n", err)
 		return nil, err
 	}
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
-		// return hex for a new tx
+		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error %+v \n\n\n\n\n\n", errMarshal)
 		return nil, NewRPCError(ErrUnexpected, errMarshal)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
+	Logger.log.Infof("\n\n\n\n\n\n\n createRawTxWithMetadata OK \n\n\n\n\n\n")
 	return result, nil
 }
 
@@ -80,10 +82,10 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
-
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	// fmt.Printf("[db] sendRawTx received tx: %+v\n", tx)
@@ -121,10 +123,10 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
-
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+
 	tx := transaction.TxCustomToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	fmt.Printf("%+v\n", tx)

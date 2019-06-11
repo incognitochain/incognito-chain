@@ -501,14 +501,13 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	yVector := powerVector(y, n*numValuePad)
 
 	// HPrime = H^(y^(1-i)
-	tmp := new(big.Int)
 	HPrime := make([]*privacy.EllipticPoint, n*numValuePad)
 	var wg sync.WaitGroup
 	wg.Add(len(HPrime))
 	for i := 0; i < n*numValuePad; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			HPrime[i] = AggParam.H[i].ScalarMult(tmp.Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
+			HPrime[i] = AggParam.H[i].ScalarMult(new(big.Int).Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
 		}(i, &wg)
 	}
 	wg.Wait()
@@ -568,6 +567,9 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	}
 
 	if !left1.IsEqual(right1) {
+		privacy.Logger.Log.Error("Statement 1 failed:")
+		privacy.Logger.Log.Error("Left 1: %v\n", left1)
+		privacy.Logger.Log.Error("Right 1: %v\n", right1)
 		return false
 	}
 

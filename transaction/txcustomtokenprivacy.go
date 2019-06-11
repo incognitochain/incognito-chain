@@ -103,7 +103,7 @@ func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoin []*privacy.InputCoin,
-	fee uint64,
+	feeNativeCoin uint64,
 	tokenParams *CustomTokenPrivacyParamTx,
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
@@ -117,7 +117,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 	err = normalTx.Init(senderKey,
 		paymentInfo,
 		inputCoin,
-		fee,
+		feeNativeCoin,
 		hasPrivacyCoin,
 		db,
 		nil,
@@ -229,7 +229,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 			err := temp.Init(senderKey,
 				tokenParams.Receiver,
 				tokenParams.TokenInput,
-				0,
+				tokenParams.Fee,
 				hasPrivacyToken,
 				db,
 				propertyID,
@@ -253,8 +253,8 @@ func (tx *TxCustomTokenPrivacy) ValidateType() bool {
 }
 
 func (tx *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
-	poolSerialNumbers := mr.GetSerialNumbers()
-	err := tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbers)
+	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
+	err := tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
