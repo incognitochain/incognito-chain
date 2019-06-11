@@ -1,6 +1,6 @@
-MAX_COMM_HEIGHT: constant(uint256) = 1 # support up to 2 ** 3 = 8 committee members
-MAX_COMM_SIZE: constant(uint256) = 2 ** MAX_COMM_HEIGHT
-PUBKEY_LENGTH: constant(uint256) = MAX_COMM_SIZE * MAX_COMM_HEIGHT
+COMM_PATH_LENGTH: constant(uint256) = 1 # support up to 2 ** 3 = 8 committee members
+COMM_SIZE: constant(uint256) = 2 ** COMM_PATH_LENGTH
+PUBKEY_LENGTH: constant(uint256) = COMM_SIZE * COMM_PATH_LENGTH
 INST_LENGTH: constant(uint256) = 100
 BEACON_BLOCK_LENGTH: constant(uint256) = 1000
 BRIDGE_BLOCK_LENGTH: constant(uint256) = 1000
@@ -30,19 +30,19 @@ def __init__(_name: string[10], _symbol: string[10], _decimals: uint256, _totalS
 @constant
 @public
 def get() -> uint256:
-    return MAX_COMM_SIZE
+    return COMM_SIZE
 
 @constant
 @public
-def parseSwapBeaconInst(inst: bytes[INST_LENGTH]) -> bytes32[MAX_COMM_SIZE]:
-    comm: bytes32[MAX_COMM_SIZE]
+def parseSwapBeaconInst(inst: bytes[INST_LENGTH]) -> bytes32[COMM_SIZE]:
+    comm: bytes32[COMM_SIZE]
     return comm
 
 @constant
 @public
-def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[MAX_COMM_HEIGHT], left: bool[MAX_COMM_HEIGHT]) -> bool:
+def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[COMM_PATH_LENGTH], left: bool[MAX_COMM_HEIGHT]) -> bool:
     hash: bytes32 = leaf
-    for i in range(MAX_COMM_HEIGHT):
+    for i in range(COMM_PATH_LENGTH):
         if left[i]:
             hash = keccak256(concat(path[i], hash))
         else:
@@ -63,21 +63,21 @@ def getHash256(inst: bytes[INST_LENGTH]) -> bytes32:
 def swapBeacon(
     newCommRoot: bytes32,
     inst: bytes[INST_LENGTH], # content of swap instruction
-    beaconInstPath: bytes32[MAX_COMM_HEIGHT],
-    beaconInstPathIsLeft: bool[MAX_COMM_HEIGHT],
+    beaconInstPath: bytes32[COMM_PATH_LENGTH],
+    beaconInstPathIsLeft: bool[COMM_PATH_LENGTH],
     beaconInstRoot: bytes32,
     beaconBlkData: bytes[BEACON_BLOCK_LENGTH], # the rest of the beacon block
     beaconBlkHash: bytes32,
-    beaconSignerPubkeys: bytes32[MAX_COMM_HEIGHT],
+    beaconSignerPubkeys: bytes32[COMM_PATH_LENGTH],
     beaconSignerSig: bytes32, # aggregated signature of some committee members
     beaconSignerPaths: bytes32[PUBKEY_LENGTH],
     beaconSignerPathIsLeft: bool[PUBKEY_LENGTH],
-    bridgeInstPath: bytes32[MAX_COMM_HEIGHT],
-    bridgeInstPathIsLeft: bool[MAX_COMM_HEIGHT],
+    bridgeInstPath: bytes32[COMM_PATH_LENGTH],
+    bridgeInstPathIsLeft: bool[COMM_PATH_LENGTH],
     bridgeInstRoot: bytes32,
     bridgeBlkData: bytes[BRIDGE_BLOCK_LENGTH], # the rest of the bridge block
     bridgeBlkHash: bytes32,
-    bridgeSignerPubkeys: bytes32[MAX_COMM_HEIGHT],
+    bridgeSignerPubkeys: bytes32[COMM_PATH_LENGTH],
     bridgeSignerSig: bytes32,
     bridgeSignerPaths: bytes32[PUBKEY_LENGTH],
     bridgeSignerPathIsLeft: bool[PUBKEY_LENGTH]
@@ -94,16 +94,16 @@ def swapBeacon(
 
     # TODO: Check if beaconSignerSig is valid
 
-    # Check if beaconSignerPubkeys are in beaconCommRoot
+    # Check if beaconSignerPubkeys are in merkle tree with root beaconCommRoot
     count: uint256 = 0
-    for i in range(MAX_COMM_SIZE):
+    for i in range(COMM_SIZE):
         if convert(beaconSignerPubkeys[i], uint256) == 0:
             continue
 
-        path: bytes32[MAX_COMM_HEIGHT]
-        left: bool[MAX_COMM_HEIGHT]
-        h: int128 = convert(MAX_COMM_HEIGHT, int128)
-        for j in range(MAX_COMM_HEIGHT):
+        path: bytes32[COMM_PATH_LENGTH]
+        left: bool[COMM_PATH_LENGTH]
+        h: int128 = convert(COMM_PATH_LENGTH, int128)
+        for j in range(COMM_PATH_LENGTH):
             path[j] = beaconSignerPaths[i * h + j]
             left[j] = beaconSignerPathIsLeft[i * h + j]
 
