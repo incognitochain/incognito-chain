@@ -68,6 +68,7 @@ type CustomTokenPrivacyParamTx struct {
 	Receiver       []*privacy.PaymentInfo `json:"TokenReceiver"`
 	TokenInput     []*privacy.InputCoin   `json:"TokenInput"`
 	Mintable       bool                   `json:"TokenMintable"`
+	Fee            uint64                 `json:"TokenFee"`
 }
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
