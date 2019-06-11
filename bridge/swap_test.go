@@ -93,7 +93,7 @@ func TestTransfer(t *testing.T) {
 	inst_length := 100
 	beacon_length := 1000
 	bridge_length := 1000
-	newComRoot := [32]byte{}
+	newCommRoot := [32]byte{}
 	inst := make([]byte, inst_length)
 	for i := 0; i < inst_length; i++ {
 		inst[i] = byte(1)
@@ -116,7 +116,7 @@ func TestTransfer(t *testing.T) {
 	bridgeSignerPaths := [comm_height][32]byte{}
 	if _, err = p.c.SwapBeacon(
 		auth,
-		newComRoot,
+		newCommRoot,
 		inst,
 		beaconInstPath,
 		beaconPathIsLeft,
