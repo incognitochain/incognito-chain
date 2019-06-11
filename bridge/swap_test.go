@@ -87,6 +87,58 @@ func TestTransfer(t *testing.T) {
 		t.Errorf("transfer failed, new balance = %v, expected %v", v, e)
 	}
 	fmt.Println(p.BalanceOf(auth.From))
+
+	// Test calling swapBeacon
+	inst_length := 100
+	beacon_length := 1000
+	bridge_length := 1000
+	newComRoot := [32]byte{}
+	inst := make([]byte, inst_length)
+	beaconInstPath := [3][32]byte{}
+	beaconPathIsLeft := [3]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+	beaconInstRoot := [32]byte{}
+	beaconBlkData := make([]byte, beacon_length)
+	beaconBlkHash := [32]byte{}
+	beaconSignerPubkeys := [3][32]byte{}
+	beaconSignerSig := [32]byte{}
+	beaconSignerPaths := [3][32]byte{}
+	bridgeInstPath := [3][32]byte{}
+	bridgePathIsLeft := [3]*big.Int{big.NewInt(0), big.NewInt(0), big.NewInt(0)}
+	bridgeInstRoot := [32]byte{}
+	bridgeBlkData := make([]byte, bridge_length)
+	bridgeBlkHash := [32]byte{0}
+	bridgeSignerPubkeys := [3][32]byte{}
+	bridgeSignerSig := [32]byte{0}
+	bridgeSignerPaths := [3][32]byte{}
+	if _, err = p.c.SwapBeacon(
+		auth,
+		newComRoot,
+		inst,
+		beaconInstPath,
+		beaconPathIsLeft,
+		beaconInstRoot,
+		beaconBlkData,
+		beaconBlkHash,
+		beaconSignerPubkeys,
+		beaconSignerSig,
+		beaconSignerPaths,
+		bridgeInstPath,
+		bridgePathIsLeft,
+		bridgeInstRoot,
+		bridgeBlkData,
+		bridgeBlkHash,
+		bridgeSignerPubkeys,
+		bridgeSignerSig,
+		bridgeSignerPaths,
+	); err != nil {
+		fmt.Println("err:", err)
+	}
+
+	x, y := p.c.Get(nil)
+	fmt.Println(x, y)
+
+	x2, y2 := p.c.ParseSwapBeaconInst(nil, nil)
+	fmt.Println(x2, y2)
 }
 
 func TestMyErc20(t *testing.T) {
