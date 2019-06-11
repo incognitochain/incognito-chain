@@ -133,7 +133,6 @@ func (tx *Tx) Init(
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
-		Logger.log.Error("aaaaaaaaaaaaaaaaaaaaaaaaaa", tx, "\n")
 		err := tx.signTx()
 		if err != nil {
 			Logger.log.Error(err)

@@ -1163,3 +1163,129 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 // 	}
 // 	return blockchain.syncStatus.IsReady.Beacon
 // }
+
+// func (blockchain *BlockChain) BuildAcceptRewardInstructions(rewardInstructionsRequest [][]string, beaconHeight uint64, beaconPaymentAddress *privacy.PaymentAddress) ([][]string, error) {
+// 	resIns := [][]string{}
+// 	totalBeaconReward := blockchain.getRewardAmount(beaconHeight)
+// 	var shardRewards map[string]uint64
+// 	var shardPaymentAddress map[string]*privacy.PaymentAddress
+// 	for _, rewardRequestIns := range rewardInstructionsRequest {
+// 		rewardRequest, err := metadata.NewShardBlockSalaryRequestFromStr(rewardRequestIns[2])
+// 		if err != nil {
+// 			return [][]string{}, err
+// 		}
+// 		totalBeaconReward += rewardRequest.TxsFeeForBeacon
+// 		shardAddressStr := rewardRequest.PayToAddress.String()
+// 		if shardRewards[shardAddressStr] == 0 {
+// 			shardPaymentAddress[shardAddressStr] = rewardRequest.PayToAddress
+// 		}
+// 		shardRewards[shardAddressStr] += rewardRequest.TxsFeeForShard + blockchain.getRewardAmount(rewardRequest.ShardBlockHeight)
+// 	}
+// 	beaconRewardIns, err := metadata.BuildInstForBeaconSalary(totalBeaconReward, beaconHeight, beaconPaymentAddress)
+// 	if err != nil {
+// 		return [][]string{}, err
+// 	}
+// 	resIns = append(resIns, beaconRewardIns)
+// 	return resIns, nil
+// }
+
+func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch, totalReward uint64) ([][]string, error) {
+	resInst := [][]string{}
+	baseReward := totalReward / uint64(blockchain.BestState.Beacon.BeaconCommitteeSize)
+	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
+
+		singleInst, err := metadata.BuildInstForBeaconReward(baseReward, publickeyStr)
+		if err != nil {
+			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseReward)
+			return nil, err
+		}
+		resInst = append(resInst, singleInst)
+	}
+	return resInst, nil
+}
+
+func (blockchain *BlockChain) BuildInstRewardForDev(epoch, totalReward uint64) ([][]string, error) {
+	resInst := [][]string{}
+	devRewardInst, err := metadata.BuildInstForDevReward(totalReward)
+	if err != nil {
+		Logger.log.Errorf("BuildInstRewardForDev error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
+		return nil, err
+	}
+	resInst = append(resInst, devRewardInst)
+	return resInst, nil
+}
+
+func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalRewards []uint64) ([][]string, error) {
+	resInst := [][]string{}
+	for i, reward := range totalRewards {
+		shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
+		if err != nil {
+			Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
+			return nil, err
+		}
+		resInst = append(resInst, shardRewardInst...)
+	}
+	return resInst, nil
+}
+
+func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBody *ShardBody, blkProducerPrivateKey *privacy.PrivateKey) error {
+
+	txRequestTable := map[string]metadata.Transaction{}
+	txsRes := []metadata.Transaction{}
+	for _, tx := range blkBody.Transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
+			txRequestTable[requester] = tx
+		}
+	}
+	for _, value := range txRequestTable {
+		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
+		if err != nil {
+			Logger.log.Errorf("buildWithDrawTransactionResponse for tx %+v, error: %+v\n", value, err)
+			return err
+		}
+		txsRes = append(txsRes, txRes)
+	}
+	blkBody.Transactions = append(blkBody.Transactions, txsRes...)
+
+	return nil
+}
+
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blkBody *ShardBody) error {
+	txRequestTable := map[string]metadata.Transaction{}
+	for _, tx := range blkBody.Transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
+			txRequestTable[requester] = tx
+		}
+	}
+	db := blockchain.config.DataBase
+	numberOfTxResponse := 0
+	for _, tx := range blkBody.Transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
+			requesters, amounts := tx.GetReceivers()
+			amount, err := db.GetCommitteeReward(requesters[0])
+			if (amount == 0) || (err != nil) {
+				return errors.New("Not enough reward")
+			}
+			if amount != amounts[0] {
+				return errors.New("Wrong amount")
+			}
+			requester := base58.Base58Check{}.Encode(requesters[0], VERSION)
+			if txRequestTable[requester] == nil {
+				return errors.New("This response dont match with any request")
+			}
+			if txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()) != 0 {
+				return errors.New("This response dont match with any request")
+			}
+			txRequestTable[requester] = nil
+			numberOfTxResponse++
+		}
+	}
+	if len(txRequestTable) != numberOfTxResponse {
+		return errors.New("Not match request and response")
+	}
+	return nil
+}
