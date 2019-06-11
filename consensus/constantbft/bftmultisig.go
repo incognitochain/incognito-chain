@@ -32,19 +32,19 @@ type multiSigScheme struct {
 		ValidatorsIdxAggSig []int
 		SigningCommittee    []string
 	}
-	cryptoScheme *privacy.MultiSigScheme
+	scheme *privacy.MultiSigScheme
 }
 
 func (multiSig *multiSigScheme) Init(userKeySet *cashec.KeySet, committee []string) {
 	multiSig.combine.SigningCommittee = make([]string, len(committee))
 	copy(multiSig.combine.SigningCommittee, committee)
-	multiSig.cryptoScheme = new(privacy.MultiSigScheme)
-	multiSig.cryptoScheme.Init()
-	multiSig.cryptoScheme.Keyset.Set(&userKeySet.PrivateKey, &userKeySet.PaymentAddress.Pk)
+	multiSig.scheme = new(privacy.MultiSigScheme)
+	multiSig.scheme.Init()
+	multiSig.scheme.Keyset.Set(&userKeySet.PrivateKey, &userKeySet.PaymentAddress.Pk)
 }
 
 func (multiSig *multiSigScheme) Prepare() error {
-	myRiECCPoint, myrBigInt := multiSig.cryptoScheme.GenerateRandom()
+	myRiECCPoint, myrBigInt := multiSig.scheme.GenerateRandom()
 	myRi := myRiECCPoint.Compress()
 	myr := myrBigInt.Bytes()
 	for len(myr) < privacy.BigIntSize {
@@ -82,7 +82,7 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 	}
 	sort.Ints(multiSig.combine.ValidatorsIdxR)
 
-	commitSig := multiSig.cryptoScheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
+	commitSig := multiSig.scheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
 
 	multiSig.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), common.ZeroByte)
 	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), common.ZeroByte)
@@ -152,6 +152,6 @@ func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs map[string]bftC
 	multiSig.combine.R = R
 	multiSig.combine.ValidatorsIdxR = make([]int, len(validatorsIdxR))
 	copy(multiSig.combine.ValidatorsIdxR, validatorsIdxR)
-	aggregatedSig := multiSig.cryptoScheme.CombineMultiSig(listSigOfSigners)
+	aggregatedSig := multiSig.scheme.CombineMultiSig(listSigOfSigners)
 	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), common.ZeroByte), nil
 }
