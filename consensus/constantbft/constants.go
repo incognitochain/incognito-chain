@@ -1,8 +1,8 @@
 package constantbft
 
 const (
-	ListenTimeout      = 10 //in s
-	PrepareTimeout     = 8  //in s
+	ListenTimeout      = 8  //in s
+	PrepareTimeout     = 5  //in s
 	CommitTimeout      = 5  //in s
 	DelayTime          = 50 // in ms
 	MaxNormalRetryTime = 2

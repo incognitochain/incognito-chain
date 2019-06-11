@@ -13,7 +13,6 @@ import (
 	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/metadata"
 )
 
 /*
@@ -216,8 +215,13 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//=========Remove shard to beacon block in pool
 	//Logger.log.Info("Remove block from pool block with hash  ", *block.Hash(), block.Header.Height, blockchain.BestState.Beacon.BestShardHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
-
-	err := blockchain.processBridgeInstructions(block)
+	err := blockchain.updateDatabaseFromBeaconBlock(block)
+	if err != nil {
+		fmt.Printf("[ndh] - - - [Error here] %+v \n", err)
+		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	err = blockchain.processBridgeInstructions(block)
 	if err != nil {
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
@@ -308,12 +312,21 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
+		rewardByEpochInstruction := [][]string{}
+		if block.Header.Height%common.EPOCH == 1 {
+			rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(block.Header.Epoch - 1)
+			if err != nil {
+				fmt.Printf("[ndh]-[ERROR] -- --- -- --- %+v\n", err)
+				return err
+			}
+		}
 		// @UNCOMMENT TO TEST
 		beaconBestState := BestStateBeacon{}
 		tempShardStates := make(map[byte][]ShardState)
 		validStakers := [][]string{}
 		validSwappers := make(map[byte][][]string)
 		stabilityInstructions := [][]string{}
+		acceptedBlockRewardInstructions := [][]string{}
 		tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
 		err = json.Unmarshal(tempMarshal, &beaconBestState)
 		if err != nil {
@@ -371,28 +384,27 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					}
 				}
 				for _, shardBlock := range shardBlocks {
-					tempShardState, validStaker, validSwapper, stabilityInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
+					tempShardState, validStaker, validSwapper, stabilityInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
 					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 					validStakers = append(validStakers, validStaker...)
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
 					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
+					acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				}
 			} else {
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 			}
 		}
 
-		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions)
+		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions, acceptedBlockRewardInstructions)
+		if len(rewardByEpochInstruction) != 0 {
+			tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
+		}
 		fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
 		tempInstructionArr := []string{}
 		for _, strs := range tempInstruction {
 			tempInstructionArr = append(tempInstructionArr, strs...)
 		}
-		beaconBlockRewardIns, err := metadata.BuildInstForBeaconSalary(blockchain.getRewardAmount(block.Header.Height), block.Header.Height, &block.Header.ProducerAddress)
-		if err != nil {
-			return NewBlockChainError(HashError, fmt.Errorf("Fail to generate hash for instruction %+v", err))
-		}
-		tempInstructionArr = append(tempInstructionArr, beaconBlockRewardIns...)
 		tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
 		if err != nil {
 			return NewBlockChainError(HashError, errors.New("Fail to generate hash for instruction"))

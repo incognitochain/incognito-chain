@@ -118,6 +118,8 @@ var RpcHandler = map[string]commandHandler{
 	getStackingAmount: RpcServer.handleGetStakingAmount,
 
 	hashToIdenticon: RpcServer.handleHashToIdenticon,
+	//reward
+	CreateRawWithDrawTransaction: RpcServer.handleCreateAndSendWithDrawTransaction,
 
 	//revert
 	revertbeaconchain: RpcServer.handleRevertBeacon,

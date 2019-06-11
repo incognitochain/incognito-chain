@@ -45,9 +45,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ReturnStakingMeta:
 		md = &ReturnStakingMetadata{}
 
-	case ShardBlockReward:
-		md = &ShardBlockRewardMeta{}
-
+	case WithDrawRewardRequestMeta:
+		md = &WithDrawRewardRequest{}
+	case WithDrawRewardResponseMeta:
+		md = &WithDrawRewardResponse{}
 	default:
 		fmt.Printf("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
