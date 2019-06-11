@@ -30,7 +30,7 @@ type ShardBlockRewardMeta struct {
 
 type AcceptedBlockRewardInfo struct {
 	ShardID          byte
-	TxsFee           uint64
+	TxsFee           map[common.Hash]uint64
 	ShardBlockHeight uint64
 }
 
@@ -197,7 +197,7 @@ func (shardBlockRewardMeta *ShardBlockRewardMeta) ValidateSanityData(bcr Blockch
 
 func NewAcceptedBlockRewardInfo(
 	shardID byte,
-	txsFee uint64,
+	txsFee map[common.Hash]uint64,
 	shardBlockHeight uint64,
 ) *AcceptedBlockRewardInfo {
 	return &AcceptedBlockRewardInfo{

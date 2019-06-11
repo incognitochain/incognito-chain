@@ -113,9 +113,11 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if err != nil {
 		return nil, err
 	}
-	totalTxsFee := uint64(0)
+
+	totalTxsFee := make(map[common.Hash]uint64)
 	for _, tx := range block.Body.Transactions {
-		totalTxsFee += tx.GetTxFee()
+		txTokenID := tx.GetTokenID()
+		totalTxsFee[*txTokenID] += tx.GetTxFee()
 	}
 	// rewardInfoInstructions, err := block.getBlockRewardInst(prevBlock.Header.Height + 1)
 	// if err != nil {
