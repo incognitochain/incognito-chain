@@ -165,17 +165,10 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		} else {
 			Logger.log.Criticalf("Add tx %+v to mempool database success \n", *txHash)
 		}
-		//_, err = tp.GetTransactionFromDatabaseMP(txD.Desc.Tx.Hash())
-		//if err != nil {
-		//	Logger.log.Error("Fail To Get Transaction from DBMP ", err)
-		//} else {
-		//	Logger.log.Criticalf("Tx %+v from Pool Desc %+v \n", *txD.Desc.Tx.Hash(), txD)
-		//	Logger.log.Criticalf("Success Get Transaction %+v from DBMP %+v \n", *txDesc.Desc.Tx.Hash(), txDesc)
-		//}
 	}
-	tp.pool[*tx.Hash()] = txD
+	tp.pool[*txHash] = txD
 	//==================================================
-	tp.poolSerialNumbersHashH[*tx.Hash()] = txD.Desc.Tx.ListSerialNumbersHashH()
+	tp.poolSerialNumbersHashH[*txHash] = txD.Desc.Tx.ListSerialNumbersHashH()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	// Record this tx for fee estimation if enabled. only apply for normal tx
 	if tx.GetType() == common.TxNormalType {
@@ -189,9 +182,17 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
-		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-			tp.AddCandiateToList(*txHash, pubkey)
+		metadataType := tx.GetMetadata().GetType()
+		switch metadataType {
+		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
+			{
+				publicKey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
+				tp.AddCandiateToList(*txHash, publicKey)
+			}
+		default:
+			{
+				Logger.log.Debug("Metadata Type:", metadataType)
+			}
 		}
 	}
 	if tx.GetType() == common.TxCustomTokenType {
@@ -201,7 +202,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 			tp.AddTokenIDToList(*txHash, tokenID)
 		}
 	}
-	//Logger.log.Infof("Add Transaction %+v Successs \n", tx.Hash().String())
+	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
 }
 
 /*
@@ -274,7 +275,7 @@ func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
 	ok = tx.CheckTransactionFee(limitFee)
 	if !ok {
 		err := MempoolTxError{}
-		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize()))
+		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
 		return err
 	}
 	// end check with policy
@@ -651,11 +652,12 @@ func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 
 // ValidateSerialNumberHashH - check serialNumberHashH which is
 // used by a tx in mempool
-func (tp *TxPool) ValidateSerialNumberHashH(serialNumberHashH common.Hash) error {
-	for txHash, inputCoinsHash := range tp.poolSerialNumbersHashH {
+func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
+	hash := common.HashH(serialNumber)
+	for txHash, serialNumbersHashH := range tp.poolSerialNumbersHashH {
 		_ = txHash
-		for _, inputCoinHash := range inputCoinsHash {
-			if inputCoinHash.IsEqual(&serialNumberHashH) {
+		for _, serialNumberHashH := range serialNumbersHashH {
+			if serialNumberHashH.IsEqual(&hash) {
 				return errors.New("Coin is in used")
 			}
 		}

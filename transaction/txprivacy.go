@@ -38,8 +38,9 @@ type Tx struct {
 	// Metadata
 	Metadata metadata.Metadata
 
-	sigPrivKey []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
-	cachedHash *common.Hash // cached hash data of tx
+	sigPrivKey       []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
+	cachedHash       *common.Hash // cached hash data of tx
+	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
 func (tx *Tx) UnmarshalJSON(data []byte) error {
@@ -487,7 +488,6 @@ func (tx *Tx) Hash() *common.Hash {
 		return tx.cachedHash
 	}
 	bytes := []byte(tx.String())
-	//Logger.log.Infof("\n\n\n\n TX bytes when hashing: %v\n", bytes)
 	hash := common.HashH(bytes)
 	tx.cachedHash = &hash
 	return &hash
@@ -503,6 +503,9 @@ func (tx *Tx) GetTxFee() uint64 {
 
 // GetTxActualSize computes the actual size of a given transaction in kilobyte
 func (tx *Tx) GetTxActualSize() uint64 {
+	if tx.cachedActualSize != nil {
+		return *tx.cachedActualSize
+	}
 	sizeTx := uint64(1)                // int8
 	sizeTx += uint64(len(tx.Type) + 1) // string
 	sizeTx += uint64(8)                // int64
@@ -526,7 +529,9 @@ func (tx *Tx) GetTxActualSize() uint64 {
 		metaSize := meta.CalculateSize()
 		sizeTx += metaSize
 	}
-	return uint64(math.Ceil(float64(sizeTx) / 1024))
+	result := uint64(math.Ceil(float64(sizeTx) / 1024))
+	tx.cachedActualSize = &result
+	return *tx.cachedActualSize
 }
 
 // GetType returns the type of the transaction
@@ -705,14 +710,13 @@ func (tx *Tx) ValidateTxWithBlockChain(
 	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
 }
 
-func (tx *Tx) validateNormalTxSanityData() (bool, error) {
-	txN := tx
+func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	//check version
-	if txN.Version > txVersion {
-		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", txN.Version, txVersion))
+	if tx.Version > txVersion {
+		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
 	}
 	// check LockTime before now
-	if int64(txN.LockTime) > time.Now().Unix() {
+	if int64(tx.LockTime) > time.Now().Unix() {
 		return false, errors.New("wrong tx locktime")
 	}
 
@@ -727,11 +731,11 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 		return false, err
 	}
 
-	if len(txN.SigPubKey) != privacy.SigPubKeySize {
+	if len(tx.SigPubKey) != privacy.SigPubKeySize {
 		return false, errors.New("wrong tx Sig PK")
 	}
 	// check Type is normal or salary tx
-	switch txN.Type {
+	switch tx.Type {
 	case common.TxNormalType, common.TxRewardType, common.TxCustomTokenType, common.TxCustomTokenPrivacyType, common.TxReturnStakingType: //is valid
 	default:
 		return false, errors.New("wrong tx type")
@@ -742,7 +746,7 @@ func (tx *Tx) validateNormalTxSanityData() (bool, error) {
 	//}
 
 	// check info field
-	if len(txN.Info) > 512 {
+	if len(tx.Info) > 512 {
 		return false, errors.New("wrong tx info length")
 	}
 
