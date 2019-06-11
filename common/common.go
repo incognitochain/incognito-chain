@@ -274,7 +274,6 @@ func IndexOfStr(item string, list []string) int {
 	}
 	return -1
 }
-
 func IndexOfStrInHashMap(v string, m map[Hash]string) int {
 	for _, value := range m {
 		if strings.Compare(value, v) == 0 {
@@ -297,6 +296,10 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	// but they variables can still be expanded via POSIX-style $VARIABLE.
 	return filepath.Clean(os.ExpandEnv(path))
 }
+
+/*func ConstantToMiliConstant(constant uint64) uint64 {
+	return constant * uint64(math.Pow(10, NanoConstant))
+}*/
 
 func Max(x, y int) int {
 	if x > y {
@@ -352,6 +355,10 @@ func Int32ToBytes(value int32) []byte {
 	return b
 }
 
+func BytesToUint64(b []byte) uint64 {
+	return binary.LittleEndian.Uint64(b)
+}
+
 func Uint64ToBytes(value uint64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, value)
@@ -368,6 +375,20 @@ func BoolToByte(value bool) byte {
 		bitSetVar = 1
 	}
 	return bitSetVar
+}
+
+func BytesPlusOne(b []byte) []byte {
+	res := make([]byte, len(b))
+	for i := len(b) - 1; i >= 0; i-- {
+		if b[i] < 0xff {
+			copy(res[0:i], b[0:i])
+			res[i] = b[i] + 1
+			break
+		} else {
+			res[i] = 0
+		}
+	}
+	return res
 }
 
 func IndexOfByte(item byte, arrays []byte) int {
@@ -403,18 +424,6 @@ func (s *ErrorSaver) Get() error {
 func CheckError(errs ...error) error {
 	errSaver := &ErrorSaver{}
 	return errSaver.Save(errs...)
-}
-
-func ByteEqual(a []byte, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func AppendSliceString(arrayStrings ...[][]string) [][]string {
