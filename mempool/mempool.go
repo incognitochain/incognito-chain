@@ -813,11 +813,6 @@ func (tp *TxPool) RemoveTxList(txs []metadata.Transaction, isInBlock bool) {
 		startTime := txDesc.StartTime
 		go tp.RemoveTransactionFromDatabaseMP(tx.Hash())
 		tp.removeTx(&tx)
-		// remove tx coin hash from pool
-		txHash := tx.Hash()
-		if txHash != nil {
-			tp.RemoveTxCoinHashH(*txHash)
-		}
 		if isInBlock {
 			txType := tx.GetType()
 			if txType == common.TxNormalType {
