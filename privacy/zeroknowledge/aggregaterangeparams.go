@@ -47,15 +47,24 @@ func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*
 
 	res := new(privacy.EllipticPoint).Zero()
 	var wg sync.WaitGroup
-	lenA := len(a)
-	wg.Add(lenA)
-	for i := 0; i < lenA; i++ {
-		go func(i int, wg *sync.WaitGroup) {
+	var tmp1, tmp2 *privacy.EllipticPoint
+
+	for i := 0; i < len(a); i++ {
+		wg.Add(2)
+		go func(i int, wg *sync.WaitGroup){
 			defer wg.Done()
-			res = res.Add(g[i].ScalarMult(a[i])).Add(h[i].ScalarMult(b[i]))
+			tmp1 = g[i].ScalarMult(a[i])
 		}(i, &wg)
+
+		go func(i int, wg *sync.WaitGroup){
+			defer wg.Done()
+			tmp2 = h[i].ScalarMult(b[i])
+		}(i, &wg)
+
+		wg.Wait()
+
+		res = res.Add(tmp1).Add(tmp2)
 	}
-	wg.Wait()
 	return res, nil
 }
 
