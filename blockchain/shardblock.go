@@ -102,41 +102,41 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	return nil
 }
 
-func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
-	hasBlockReward := false
-	txsFee := uint64(0)
-	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadataType() == metadata.ShardBlockReward {
-			if hasBlockReward {
-				return errors.New("This block contains more than one coinbase transaction for shard block producer!")
-			}
-			hasBlockReward = true
-		} else {
-			txsFee += tx.GetTxFee()
-		}
-	}
-	if !hasBlockReward {
-		return errors.New("This block dont have coinbase tx for shard block producer")
-	}
-	numberOfTxs := len(shardBlock.Body.Transactions)
-	if shardBlock.Body.Transactions[numberOfTxs-1].GetMetadataType() != metadata.ShardBlockReward {
-		return errors.New("Coinbase transaction must be the last transaction")
-	}
+// func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
+// 	hasBlockReward := false
+// 	txsFee := uint64(0)
+// 	for _, tx := range shardBlock.Body.Transactions {
+// 		if tx.GetMetadataType() == metadata.ShardBlockReward {
+// 			if hasBlockReward {
+// 				return errors.New("This block contains more than one coinbase transaction for shard block producer!")
+// 			}
+// 			hasBlockReward = true
+// 		} else {
+// 			txsFee += tx.GetTxFee()
+// 		}
+// 	}
+// 	if !hasBlockReward {
+// 		return errors.New("This block dont have coinbase tx for shard block producer")
+// 	}
+// 	numberOfTxs := len(shardBlock.Body.Transactions)
+// 	if shardBlock.Body.Transactions[numberOfTxs-1].GetMetadataType() != metadata.ShardBlockReward {
+// 		return errors.New("Coinbase transaction must be the last transaction")
+// 	}
 
-	receivers, values := shardBlock.Body.Transactions[numberOfTxs-1].GetReceivers()
-	if len(receivers) != 1 {
-		return errors.New("Wrong receiver")
-	}
-	if !common.ByteEqual(receivers[0], shardBlock.Header.ProducerAddress.Pk) {
-		return errors.New("Wrong receiver")
-	}
-	reward := blockchain.getRewardAmount(shardBlock.Header.Height)
-	reward += txsFee
-	if reward != values[0] {
-		return errors.New("Wrong reward value")
-	}
-	return nil
-}
+// 	receivers, values := shardBlock.Body.Transactions[numberOfTxs-1].GetReceivers()
+// 	if len(receivers) != 1 {
+// 		return errors.New("Wrong receiver")
+// 	}
+// 	if !common.ByteEqual(receivers[0], shardBlock.Header.ProducerAddress.Pk) {
+// 		return errors.New("Wrong receiver")
+// 	}
+// 	reward := blockchain.getRewardAmount(shardBlock.Header.Height)
+// 	reward += txsFee
+// 	if reward != values[0] {
+// 		return errors.New("Wrong reward value")
+// 	}
+// 	return nil
+// }
 
 func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
 	block := ShardToBeaconBlock{}
@@ -171,6 +171,7 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		Logger.log.Error(err)
 		return nil
 	}
+
 	block.Instructions = append(block.Instructions, instructions...)
 	return &block
 }
@@ -223,3 +224,14 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 	crossShard.ToShardID = shardID
 	return crossShard, nil
 }
+
+// func (block *ShardBlock) getBlockRewardInst(blockHeight uint64) ([]string, error) {
+// 	txsFee := uint64(0)
+
+// 	for _, tx := range block.Body.Transactions {
+// 		txsFee += tx.GetTxFee()
+// 	}
+// 	blkRewardInfo := metadata.NewBlockRewardInfo(txsFee, blockHeight)
+// 	inst, err := blkRewardInfo.GetStringFormat()
+// 	return inst, err
+// }

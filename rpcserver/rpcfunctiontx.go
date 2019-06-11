@@ -159,13 +159,13 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
@@ -175,10 +175,11 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 		mempoolErr, ok := err.(mempool.MempoolTxError)
 		if ok {
 			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
+				Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 				return nil, NewRPCError(ErrRejectInvalidFee, mempoolErr)
 			}
 		}
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
@@ -187,14 +188,14 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	// broadcast Message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
 	}
 
@@ -202,7 +203,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
 	}
-	Logger.log.Infof("handleSendRawTransaction result: %+v", result)
+	Logger.log.Infof("\n\n\n\n\n\nhandleSendRawTransaction result: %+v\n\n\n\n\n", result)
 	return result, nil
 }
 

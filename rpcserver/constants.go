@@ -111,6 +111,9 @@ const (
 	createAndSendContractingRequest = "createandsendcontractingrequest"
 	getBridgeTokensAmounts          = "getbridgetokensamounts"
 
+	// reward
+	CreateRawWithDrawTransaction = "withdrawreward"
+
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"
 )
