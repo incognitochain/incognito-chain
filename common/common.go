@@ -3,7 +3,6 @@ package common
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/gob"
 	"encoding/json"
@@ -17,12 +16,9 @@ import (
 	"reflect"
 	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 	"unicode"
 
-	peer "github.com/libp2p/go-libp2p-peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/pkg/errors"
 )
 
@@ -220,14 +216,6 @@ func ParseListener(addr string, netType string) (*SimpleAddr, error) {
 }
 
 /*
-JsonUnmarshallByteArray - because golang default base64 encode for byte[] data
-*/
-func JsonUnmarshallByteArray(string string) []byte {
-	bytes, _ := base64.StdEncoding.DecodeString(string)
-	return bytes
-}
-
-/*
 SliceExists - Check slice contain item
 */
 func SliceExists(slice interface{}, item interface{}) (bool, error) {
@@ -261,18 +249,6 @@ func GetShardIDFromLastByte(b byte) byte {
 	return byte(int(b) % MAX_SHARD_NUMBER)
 }
 
-func IntArrayEquals(a []int, b []int) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func IndexOfStr(item string, list []string) int {
 	for k, v := range list {
 		if strings.Compare(item, v) == 0 {
@@ -288,24 +264,6 @@ func IndexOfStrInHashMap(v string, m map[Hash]string) int {
 		}
 	}
 	return -1
-}
-func ValidateNodeAddress(nodeAddr string) bool {
-	if len(nodeAddr) == 0 {
-		return false
-	}
-
-	strs := strings.Split(nodeAddr, "/ipfs/")
-	if len(strs) != 2 {
-		return false
-	}
-
-	_, err := multiaddr.NewMultiaddr(strs[0])
-	if err != nil {
-		return false
-	}
-
-	_, err = peer.IDB58Decode(strs[1])
-	return err == nil
 }
 
 // cleanAndExpandPath expands environment variables and leading ~ in the
@@ -327,13 +285,6 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 }*/
 
 func Max(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func Maxint32(x, y int32) int32 {
 	if x > y {
 		return x
 	}
@@ -363,61 +314,6 @@ func CheckDuplicateBigIntArray(arr []*big.Int) bool {
 
 func RandBigIntN(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
-}
-
-func IntArrayToString(A []int, delim string) string {
-	var buffer bytes.Buffer
-	for i := 0; i < len(A); i++ {
-		buffer.WriteString(strconv.Itoa(A[i]))
-		if i != len(A)-1 {
-			buffer.WriteString(delim)
-		}
-	}
-
-	return buffer.String()
-}
-
-// ECDSASigToByteArray converts signature to byte array
-func ECDSASigToByteArray(r, s *big.Int) (sig []byte) {
-	sig = append(sig, r.Bytes()...)
-	sig = append(sig, s.Bytes()...)
-	return
-}
-
-// FromByteArrayToECDSASig converts a byte array to signature
-func FromByteArrayToECDSASig(sig []byte) (r, s *big.Int) {
-	r = new(big.Int).SetBytes(sig[0:32])
-	s = new(big.Int).SetBytes(sig[32:64])
-	return
-}
-
-func Uint32ToString(I uint32) string {
-	return strconv.FormatUint(uint64(I), 10)
-}
-
-//return slice of 4 element as little endian
-func Uint32ToBytes(value uint32) []byte {
-	b := make([]byte, 4)
-	binary.LittleEndian.PutUint32(b, value)
-	return b
-}
-
-func ByteToBytes(value byte) []byte {
-	return []byte{value}
-}
-
-func BytesToUint32(b []byte) uint32 {
-	return binary.LittleEndian.Uint32(b)
-}
-
-func Uint8ToBytes(value uint8) []byte {
-	b := make([]byte, 1)
-	b[0] = byte(value)
-	return b
-}
-
-func BytesToUint8(b []byte) uint8 {
-	return uint8(b[0])
 }
 
 func CompareStringArray(src []string, dst []string) bool {
@@ -464,30 +360,6 @@ func BoolToByte(value bool) byte {
 	return bitSetVar
 }
 
-func SliceInterfaceToSliceByte(Arr []interface{}) []byte {
-	res := make([]byte, 0)
-	for _, element := range Arr {
-		res = append(res, element.(byte))
-	}
-	return res
-}
-
-func SliceInterfaceToSliceSliceByte(Arr []interface{}) [][]byte {
-	res := make([][]byte, 0)
-	for _, element := range Arr {
-		res = append(res, element.([]byte))
-	}
-	return res
-}
-
-func SliceInterfaceToSliceString(Arr []interface{}) []string {
-	res := make([]string, 0)
-	for _, element := range Arr {
-		res = append(res, element.(string))
-	}
-	return res
-}
-
 func BytesPlusOne(b []byte) []byte {
 	res := make([]byte, len(b))
 	for i := len(b) - 1; i >= 0; i-- {
@@ -509,41 +381,6 @@ func IndexOfByte(item byte, arrays []byte) int {
 		}
 	}
 	return -1
-}
-
-// MilliEtherValue converts amount of milliether to cent using current price of ether
-func MilliEtherValue(a uint64, p uint64) uint64 {
-	milliEtherToEtherRatio := big.NewInt(1000)
-	v := big.NewInt(int64(a))
-	v.Mul(v, big.NewInt(int64(p)))
-	v.Quo(v, milliEtherToEtherRatio)
-	return v.Uint64()
-}
-
-// CentInMilliEther converts amount of cent to milliether using current price of ether
-func CentInMilliEther(a uint64, p uint64) uint64 {
-	milliEtherToEtherRatio := big.NewInt(1000)
-	v := big.NewInt(int64(a))
-	v.Mul(v, milliEtherToEtherRatio)
-	v.Quo(v, big.NewInt(int64(p)))
-	return v.Uint64()
-}
-
-func FileLog(fromShard bool, info string) {
-	shardFile := "~/shard.txt"
-	beaconFile := "~/beacon.txt"
-	var foName string
-	if fromShard {
-		foName = shardFile
-	} else {
-		foName = beaconFile
-	}
-	fo, err := os.Open(foName)
-	defer fo.Sync()
-	if err != nil {
-		fo, _ = os.Create(foName)
-	}
-	fo.WriteString(info + "\n")
 }
 
 type ErrorSaver struct {
@@ -572,14 +409,10 @@ func CheckError(errs ...error) error {
 	return errSaver.Save(errs...)
 }
 
-func ByteEqual(a []byte, b []byte) bool {
-	if len(a) != len(b) {
-		return false
+func AppendSliceString(arrayStrings ...[][]string) [][]string {
+	res := [][]string{}
+	for _, arrayString := range arrayStrings {
+		res = append(res, arrayString...)
 	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
+	return res
 }
