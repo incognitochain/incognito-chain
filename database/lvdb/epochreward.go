@@ -5,7 +5,6 @@ import (
 
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
-	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -99,16 +98,14 @@ func (db *db) RemoveCommitteeReward(committeeAddress []byte, amount uint64) erro
 	}
 	oldValue, isExist := db.Get(key)
 	if isExist != nil {
-		err := db.Put(key, common.Uint64ToBytes(amount))
-		if err != nil {
-			return err
-		}
+		return nil
 	} else {
 		newValue := common.BytesToUint64(oldValue)
-		if amount > newValue {
-			return errors.New("Not enough reward to remove")
+		if amount < newValue {
+			newValue -= amount
+		} else {
+			newValue = 0
 		}
-		newValue -= amount
 		err := db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
 			return err
