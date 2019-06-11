@@ -61,7 +61,7 @@ func (engine *Engine) Start() error {
 	go engine.config.BlockGen.Start(engine.cQuit)
 	engine.cBFTMsg = make(chan wire.Message)
 	engine.started = true
-	engine.userPk = engine.userPk
+	engine.userPk = engine.config.UserKeySet.GetPublicKeyB58()
 	Logger.log.Info("Start consensus with key", engine.userPk)
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 
