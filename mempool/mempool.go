@@ -651,11 +651,12 @@ func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 
 // ValidateSerialNumberHashH - check serialNumberHashH which is
 // used by a tx in mempool
-func (tp *TxPool) ValidateSerialNumberHashH(serialNumberHashH common.Hash) error {
-	for txHash, inputCoinsHash := range tp.poolSerialNumbersHashH {
+func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
+	hash := common.HashH(serialNumber)
+	for txHash, serialNumbersHashH := range tp.poolSerialNumbersHashH {
 		_ = txHash
-		for _, inputCoinHash := range inputCoinsHash {
-			if inputCoinHash.IsEqual(&serialNumberHashH) {
+		for _, serialNumberHashH := range serialNumbersHashH {
+			if serialNumberHashH.IsEqual(&hash) {
 				return errors.New("Coin is in used")
 			}
 		}
