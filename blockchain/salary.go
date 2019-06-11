@@ -264,11 +264,11 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 					if err != nil {
 						return err
 					}
-					keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(common.BurningAddress)
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
 					if err != nil {
 						return err
 					}
-					err = db.AddCommitteeReward(keyWalletBurningAccount.KeySet.PaymentAddress.Pk, devRewardInfo.DevReward)
+					err = db.AddCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, devRewardInfo.DevReward)
 					if err != nil {
 						return err
 					}
