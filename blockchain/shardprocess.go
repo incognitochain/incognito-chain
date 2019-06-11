@@ -546,7 +546,10 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 		if len(bestStateShard.ShardCommittee) > 3 && len(block.ValidatorsIdx[1]) < (len(bestStateShard.ShardCommittee)>>1) {
 			return NewBlockChainError(SignatureError, errors.New("block validators and Shard committee is not compatible"))
 		}
-		ValidateAggSignature(block.ValidatorsIdx, bestStateShard.ShardCommittee, block.AggregatedSig, block.R, block.Hash())
+		err := ValidateAggSignature(block.ValidatorsIdx, bestStateShard.ShardCommittee, block.AggregatedSig, block.R, block.Hash())
+		if err != nil {
+			return err
+		}
 	}
 	//=============End Verify Aggegrate signature
 	if bestStateShard.ShardHeight+1 != block.Header.Height {
