@@ -45,8 +45,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ReturnStakingMeta:
 		md = &ReturnStakingMetadata{}
 
-	case ShardBlockReward:
-		md = &ShardBlockRewardMeta{}
 	case WithDrawRewardRequestMeta:
 		md = &WithDrawRewardRequest{}
 	case WithDrawRewardResponseMeta:

@@ -25,10 +25,10 @@ func BuildInstForDevReward(reward uint64) ([]string, error) {
 		return nil, err
 	}
 
-	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
+	keyWalletDevAccount, _ := wallet.Base58CheckDeserialize(common.DevAddress)
 	returnedInst := []string{
 		strconv.Itoa(DevRewardRequestMeta),
-		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletBurningAccount.KeySet.PaymentAddress.Pk[32]))),
+		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[32]))),
 		"devRewardInst",
 		string(contentStr),
 	}

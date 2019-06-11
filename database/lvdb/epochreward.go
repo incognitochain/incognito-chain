@@ -38,18 +38,6 @@ func (db *db) AddShardRewardRequest(
 	return nil
 }
 
-func (db *db) AddShardCommitteeReward(reward uint64, shardPaymentAddress []byte) error {
-	return nil
-}
-
-func (db *db) AddBeaconCommitteeReward(reward uint64, beaconPaymentAddress []byte) error {
-	return nil
-}
-
-func (db *db) AddDevReward(reward uint64) error {
-	return nil
-}
-
 func (db *db) GetRewardOfShardByEpoch(epoch uint64, shardID byte) (uint64, error) {
 	fmt.Printf("[ndh]-[DATABASE] GetRewardOfShardByEpoch- - - %+v %+v\n", epoch, shardID)
 	key, _ := NewKeyAddShardRewardRequest(epoch, shardID)
