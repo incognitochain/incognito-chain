@@ -137,8 +137,8 @@ func CreateShardInstructionsFromTransactionAndIns(
 	if err != nil {
 		return nil, err
 	}
-
 	for _, tx := range transactions {
+
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
