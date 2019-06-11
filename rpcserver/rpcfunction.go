@@ -118,6 +118,8 @@ var RpcHandler = map[string]commandHandler{
 	getStackingAmount: RpcServer.handleGetStakingAmount,
 
 	hashToIdenticon: RpcServer.handleHashToIdenticon,
+	//reward
+	CreateRawWithDrawTransaction: RpcServer.handleCreateAndSendWithDrawTransaction,
 }
 
 // Commands that are available to a limited user
