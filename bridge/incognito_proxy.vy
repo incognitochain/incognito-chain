@@ -1,4 +1,4 @@
-MAX_COMM_HEIGHT: constant(uint256) = 3 # support up to 2 ** 3 = 8 committee members
+MAX_COMM_HEIGHT: constant(uint256) = 1 # support up to 2 ** 3 = 8 committee members
 MAX_COMM_SIZE: constant(uint256) = 2 ** MAX_COMM_HEIGHT
 INST_LENGTH: constant(uint256) = 100
 BEACON_BLOCK_LENGTH: constant(uint256) = 1000
@@ -36,12 +36,33 @@ def parseSwapBeaconInst(inst: bytes[INST_LENGTH]) -> bytes32[MAX_COMM_SIZE]:
     comm: bytes32[MAX_COMM_SIZE]
     return comm
 
+@constant
+@public
+def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[MAX_COMM_HEIGHT], left: bool[MAX_COMM_HEIGHT]) -> bool:
+    hash: bytes32 = leaf
+    for i in range(MAX_COMM_HEIGHT):
+        if left[i]:
+            hash = keccak256(concat(path[i], hash))
+        else:
+            hash = keccak256(concat(hash, path[i]))
+    return hash == root
+
+@constant
+@public
+def getHash(inst: bytes[INST_LENGTH]) -> bytes32:
+    return keccak256(inst)
+
+@constant
+@public
+def getHash256(inst: bytes[INST_LENGTH]) -> bytes32:
+    return sha256(inst)
+
 @public
 def swapBeacon(
     newComRoot: bytes32,
     inst: bytes[INST_LENGTH], # content of swap instruction
     beaconInstPath: bytes32[MAX_COMM_HEIGHT],
-    beaconPathIsLeft: uint256[MAX_COMM_HEIGHT],
+    beaconPathIsLeft: bool[MAX_COMM_HEIGHT],
     beaconInstRoot: bytes32,
     beaconBlkData: bytes[BEACON_BLOCK_LENGTH], # the rest of the beacon block
     beaconBlkHash: bytes32,
@@ -49,7 +70,7 @@ def swapBeacon(
     beaconSignerSig: bytes32, # aggregated signature of some committee members
     beaconSignerPaths: bytes32[MAX_COMM_HEIGHT],
     bridgeInstPath: bytes32[MAX_COMM_HEIGHT],
-    bridgePathIsLeft: uint256[MAX_COMM_HEIGHT],
+    bridgePathIsLeft: bool[MAX_COMM_HEIGHT],
     bridgeInstRoot: bytes32,
     bridgeBlkData: bytes[BRIDGE_BLOCK_LENGTH], # the rest of the bridge block
     bridgeBlkHash: bytes32,
@@ -58,6 +79,10 @@ def swapBeacon(
     bridgeSignerPaths: bytes32[MAX_COMM_HEIGHT],
 ) -> bool:
     # Check if beaconInst is in beaconInstRoot
+    instHash: bytes32 = sha3(inst)
+    if not self.inMerkleTree(instHash, beaconInstRoot, beaconInstPath, beaconPathIsLeft):
+        raise "instruction invalid"
+
     # Check if beaconInstRoot is in beaconBlkHash
     # Check if beaconSignerSig is valid
     # Check if beaconSignerPubkeys are in beaconCommRoot
@@ -66,6 +91,8 @@ def swapBeacon(
     # Check if bridgeInstRoot is in bridgeBlkHash
     # Check if bridgeSignerSig is valid
     # Check if bridgeSignerPubkeys are in bridgeCommRoot
+
+    # Update beacon committee merkle root
     return True
 
 @private
