@@ -245,23 +245,6 @@ func GetBytes(key interface{}) []byte {
 	return buf.Bytes()
 }
 
-func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
-	s := reflect.ValueOf(slice)
-
-	if s.Kind() != reflect.Slice {
-		return -1, errors.New("SliceBytesExists() given a non-slice type")
-	}
-
-	for i := 0; i < s.Len(); i++ {
-		interfaceItem := s.Index(i).Interface()
-		if bytes.Equal(interfaceItem.([]byte), item.([]byte)) {
-			return int64(i), nil
-		}
-	}
-
-	return -1, nil
-}
-
 func GetShardIDFromLastByte(b byte) byte {
 	return byte(int(b) % MAX_SHARD_NUMBER)
 }
