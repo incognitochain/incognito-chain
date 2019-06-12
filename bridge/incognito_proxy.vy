@@ -1,10 +1,11 @@
-COMM_PATH_LENGTH: constant(uint256) = 1 # support up to 2 ** 3 = 8 committee members
+COMM_PATH_LENGTH: constant(uint256) = 1 # support up to 2 ** COMM_PATH_LENGTH committee members
 COMM_SIZE: constant(uint256) = 2 ** COMM_PATH_LENGTH
 PUBKEY_LENGTH: constant(uint256) = COMM_SIZE * COMM_PATH_LENGTH
+
+INST_PATH_LENGTH: constant(uint256) = 1 # up to 2 ** INST_PATH_LENGTH instructions
 INST_LENGTH: constant(uint256) = 100
-BEACON_BLOCK_LENGTH: constant(uint256) = 500
-BRIDGE_BLOCK_LENGTH: constant(uint256) = 250
-MIN_SIGN: constant(uint256) = 1
+
+MIN_SIGN: constant(uint256) = 2
 
 Transfer: event({_from: indexed(address), _to: indexed(address), _value: uint256})
 Approve: event({_owner: indexed(address), _spender: indexed(address), _value: uint256})
@@ -64,11 +65,11 @@ def getHash256(inst: bytes[INST_LENGTH]) -> bytes32:
 def verifyInst(
     commRoot: bytes32,
     instHash: bytes32,
-    instPath: bytes32[COMM_PATH_LENGTH],
-    instPathIsLeft: bool[COMM_PATH_LENGTH],
+    instPath: bytes32[INST_PATH_LENGTH],
+    instPathIsLeft: bool[INST_PATH_LENGTH],
     instRoot: bytes32,
     blkHash: bytes32,
-    signerPubkeys: bytes32[COMM_PATH_LENGTH],
+    signerPubkeys: bytes32[COMM_SIZE],
     signerSig: bytes32,
     signerPaths: bytes32[PUBKEY_LENGTH],
     signerPathIsLeft: bool[PUBKEY_LENGTH]
@@ -107,21 +108,21 @@ def verifyInst(
 def swapBeacon(
     newCommRoot: bytes32,
     inst: bytes[INST_LENGTH], # content of swap instruction
-    beaconInstPath: bytes32[COMM_PATH_LENGTH],
-    beaconInstPathIsLeft: bool[COMM_PATH_LENGTH],
+    beaconInstPath: bytes32[INST_PATH_LENGTH],
+    beaconInstPathIsLeft: bool[INST_PATH_LENGTH],
     beaconInstRoot: bytes32,
-    beaconBlkData: bytes[BEACON_BLOCK_LENGTH], # the rest of the beacon block
+    beaconBlkData: bytes32, # hash of the rest of the beacon block
     beaconBlkHash: bytes32,
-    beaconSignerPubkeys: bytes32[COMM_PATH_LENGTH],
+    beaconSignerPubkeys: bytes32[COMM_SIZE],
     beaconSignerSig: bytes32, # aggregated signature of some committee members
     beaconSignerPaths: bytes32[PUBKEY_LENGTH],
     beaconSignerPathIsLeft: bool[PUBKEY_LENGTH],
-    bridgeInstPath: bytes32[COMM_PATH_LENGTH],
-    bridgeInstPathIsLeft: bool[COMM_PATH_LENGTH],
+    bridgeInstPath: bytes32[INST_PATH_LENGTH],
+    bridgeInstPathIsLeft: bool[INST_PATH_LENGTH],
     bridgeInstRoot: bytes32,
-    bridgeBlkData: bytes[BRIDGE_BLOCK_LENGTH], # the rest of the bridge block
+    bridgeBlkData: bytes32, # hash of the rest of the bridge block
     bridgeBlkHash: bytes32,
-    bridgeSignerPubkeys: bytes32[COMM_PATH_LENGTH],
+    bridgeSignerPubkeys: bytes32[COMM_SIZE],
     bridgeSignerSig: bytes32,
     bridgeSignerPaths: bytes32[PUBKEY_LENGTH],
     bridgeSignerPathIsLeft: bool[PUBKEY_LENGTH]
