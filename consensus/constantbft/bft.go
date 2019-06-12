@@ -127,7 +127,7 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		}
 	} else {
 
-		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestCrossShardPoolState(), protocol.RoundData.MinBeaconHeight)
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestCrossShardPoolState(), protocol.RoundData.MinBeaconHeight, start)
 		go common.AnalyzeTimeSeriesShardBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
 		if err != nil {
 			Logger.log.Error(err)
