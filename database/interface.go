@@ -141,11 +141,11 @@ type DatabaseInterface interface {
 	UpdateAmtByTokenID(common.Hash, uint64, string) error
 
 	// block reward
-	AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uint64) error
-	GetRewardOfShardByEpoch(epoch uint64, shardID byte) (uint64, error)
-	AddCommitteeReward(committeeAddress []byte, amount uint64) error
-	GetCommitteeReward(committeeAddress []byte) (uint64, error)
-	RemoveCommitteeReward(committeeAddress []byte, amount uint64) error
+	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error
+	GetRewardOfShardByEpoch(epoch uint64, shardID byte, tokenID common.Hash) (uint64, error)
+	AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
+	GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error)
+	RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
 	NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator
 
 	Close() error

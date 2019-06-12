@@ -1266,7 +1266,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			requesters, amounts := tx.GetReceivers()
-			amount, err := db.GetCommitteeReward(requesters[0])
+			// TODO: Check for every TokenIDs
+			amount, err := db.GetCommitteeReward(requesters[0], common.PRVCoinID)
 			if (amount == 0) || (err != nil) {
 				return errors.New("Not enough reward")
 			}
