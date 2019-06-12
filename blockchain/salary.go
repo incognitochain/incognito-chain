@@ -340,7 +340,6 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 				return err
 			}
 
-			// TODO: implement for every TokenID of TxsFee, using PRVCoinID for fallback compability for now
 			totalReward := blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight) + acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]
 			err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, totalReward)
 			if err != nil {
