@@ -159,13 +159,13 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	base58CheckData := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	
@@ -175,10 +175,11 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 		mempoolErr, ok := err.(mempool.MempoolTxError)
 		if ok {
 			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
+				Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 				return nil, NewRPCError(ErrRejectInvalidFee, mempoolErr)
 			}
 		}
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	
@@ -187,22 +188,22 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	// broadcast Message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 	
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 	
 	txID := tx.Hash().String()
 	result := jsonresult.CreateTransactionResult{
 		TxID: txID,
 	}
-	Logger.log.Infof("handleSendRawTransaction result: %+v", result)
+	Logger.log.Infof("\n\n\n\n\n\nhandleSendRawTransaction result: %+v\n\n\n\n\n", result)
 	return result, nil
 }
 
@@ -487,7 +488,7 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	//Mark Fowarded transaction
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 	result := tx.Hash()
 	Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v", result)
@@ -1092,7 +1093,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	//Mark forwarded message
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 	result := tx.Hash()
 	Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction result: %+v", result)
@@ -1150,9 +1151,9 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
-	
-	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
-	
+
+	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), rpcServer.config.ChainParams.StakingAmountShard)
+
 	tx, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
