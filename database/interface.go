@@ -137,5 +137,12 @@ type DatabaseInterface interface {
 	IsBridgeTokenExisted(common.Hash) (bool, error)
 	UpdateAmtByTokenID(common.Hash, uint64, string) error
 
+	// block reward
+	AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uint64) error
+	GetRewardOfShardByEpoch(epoch uint64, shardID byte) (uint64, error)
+	AddCommitteeReward(committeeAddress []byte, amount uint64) error
+	GetCommitteeReward(committeeAddress []byte) (uint64, error)
+	RemoveCommitteeReward(committeeAddress []byte, amount uint64) error
+
 	Close() error
 }
