@@ -1,6 +1,8 @@
 package metadata
 
 import (
+	"fmt"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/database"
 	"github.com/constant-money/constant-chain/privacy"
@@ -18,6 +20,9 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		Type: WithDrawRewardRequestMeta,
 	}
 	requesterPaymentStr := data["PaymentAddress"].(string)
+	for key, value := range data {
+		fmt.Printf("[ndh]- - - - Key %+v; value %+v\n", key, value)
+	}
 	requesterPublicKeySet, err := wallet.Base58CheckDeserialize(requesterPaymentStr)
 	if err != nil {
 		return nil, err

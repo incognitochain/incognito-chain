@@ -66,7 +66,7 @@ const (
 	TestNetStakingAmountShard  = 175000
 
 	//board and proposal parameters
-	TestnetBasicReward                = 500      //500 mili PRV
+	TestnetBasicReward                = 50       //500 mili PRV
 	TestnetRewardHalflife             = 31536000 //5 year
 	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 )
