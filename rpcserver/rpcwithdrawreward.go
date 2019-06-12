@@ -1,8 +1,12 @@
 package rpcserver
 
 import (
+	"fmt"
+
 	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/metadata"
+	"github.com/constant-money/constant-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 func (rpcServer RpcServer) handleCreateRawWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -10,6 +14,14 @@ func (rpcServer RpcServer) handleCreateRawWithDrawTransaction(params interface{}
 	// params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
 	arrayParams[1] = nil
+	param := map[string]interface{}{}
+	keyWallet, err := wallet.Base58CheckDeserialize(arrayParams[0].(string))
+	if err != nil {
+		return []byte{}, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
+	}
+	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
+	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(0)
+	arrayParams[4] = interface{}(param)
 	return rpcServer.createRawTxWithMetadata(
 		arrayParams,
 		closeChan,
