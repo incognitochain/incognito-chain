@@ -50,8 +50,6 @@ var genesisParamsTestnetNew = GenesisParams{
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
 	//@Notice: InitTxsForBenchmark is for testing and benchmark only
-	//InitialConstant: append(TestnetInitConstant, append(InitTxsShard0_1, InitTxsShard1_1...)...),
-	//InitialConstant: append(TestnetInitConstant, InitTxsShard0...),
 	InitialConstant: TestnetInitConstant,
 }
 
