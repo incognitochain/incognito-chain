@@ -20,7 +20,7 @@ func (rpcServer RpcServer) handleCreateRawWithDrawTransaction(params interface{}
 		return []byte{}, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
 	}
 	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
-	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(0)
+	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
 	arrayParams[4] = interface{}(param)
 	return rpcServer.createRawTxWithMetadata(
 		arrayParams,
