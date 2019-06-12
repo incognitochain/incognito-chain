@@ -129,7 +129,7 @@ func (tx *Tx) Init(
 	Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
 
 	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
-		Logger.log.Infof("CREATE TX CUSTOM TOKEN\n")
+		Logger.log.Infof("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.Fee = fee
 		tx.sigPrivKey = *senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender

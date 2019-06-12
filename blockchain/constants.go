@@ -28,11 +28,11 @@ const (
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
+	MainNetStakingAmountShard  = 175000
 
 	//board and proposal parameters
 	MainnetBasicReward                = 0
 	MainnetRewardHalflife             = 100000
-	MainnetFeePerTxKb                 = 0
 	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
@@ -63,11 +63,11 @@ const (
 	TestNetShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize = 4
 	TestNetActiveShards        = 2
+	TestNetStakingAmountShard  = 175000
 
 	//board and proposal parameters
 	TestnetBasicReward                = 50       //500 mili PRV
 	TestnetRewardHalflife             = 31536000 //5 year
-	TestnetFeePerTxKb                 = 2
 	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 )
 
