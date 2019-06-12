@@ -581,7 +581,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 					txMsg.(*wire.MessageTx).Transaction = normalTx
 					err = serverObj.PushMessageToAll(txMsg)
 					if err == nil {
-						serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
+						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 					}
 				}
 			case common.TxCustomTokenType:
@@ -594,7 +594,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 					txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
 					err = serverObj.PushMessageToAll(txMsg)
 					if err == nil {
-						serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
+						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 					}
 				}
 			case common.TxCustomTokenPrivacyType:
@@ -607,7 +607,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 					txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
 					err = serverObj.PushMessageToAll(txMsg)
 					if err == nil {
-						serverObj.memPool.MarkFowardedTransaction(*tx.Hash())
+						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 					}
 				}
 			}

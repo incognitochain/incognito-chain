@@ -588,13 +588,14 @@ func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan 
 	if len(arrayParams) <= 0 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
 	}
-	stackingType := int64(arrayParams[0].(float64))
+	stackingType := int(arrayParams[0].(float64))
 	amount := uint64(0)
+	stakingData, _ := metadata.NewStakingMetadata(stackingType, "", rpcServer.config.ChainParams.StakingAmountShard)
 	if stackingType == 1 {
-		amount = metadata.GetBeaconStakeAmount()
+		amount = stakingData.GetBeaconStakeAmount()
 	}
 	if stackingType == 0 {
-		amount = metadata.GetShardStateAmount()
+		amount = stakingData.GetShardStateAmount()
 	}
 	Logger.log.Infof("handleGetStakingAmount result: %+v", amount)
 	return amount, nil
