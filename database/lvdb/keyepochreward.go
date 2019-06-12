@@ -8,44 +8,57 @@ import (
 func NewKeyAddShardRewardRequest(
 	epoch uint64,
 	shardID byte,
+	tokenID common.Hash,
 ) ([]byte, error) {
 	res := []byte{}
 	res = append(res, ShardRequestRewardPrefix...)
 	res = append(res, common.Uint64ToBytes(epoch)...)
 	res = append(res, shardID)
+	res = append(res, tokenID.GetBytes()...)
 	return res, nil
 }
 
 func NewKeyAddCommitteeReward(
 	committeeAddress []byte,
+	tokenID common.Hash,
 ) ([]byte, error) {
 	res := []byte{}
 	res = append(res, CommitteeRewardPrefix...)
 	res = append(res, committeeAddress...)
+	res = append(res, tokenID.GetBytes()...)
 	return res, nil
 }
 
 func ParseKeyAddShardRewardRequest(key []byte) (
 	epoch uint64,
 	shardID byte,
+	tokenID common.Hash,
 	err error,
 ) {
-	bytesArray, err := ParseKeyToSlice(key, []int{len(ShardRequestRewardPrefix), 4, 1})
+	bytesArray, err := ParseKeyToSlice(key, []int{len(ShardRequestRewardPrefix), 4, 1, common.HashSize})
+	if err != nil {
+		return epoch, shardID, tokenID, err
+	}
 	epoch = common.BytesToUint64(bytesArray[1])
 	shardID = bytesArray[2][0]
-	return
+	tmpTokenID, err := common.NewHash(bytesArray[3])
+	tokenID = *tmpTokenID
+	return epoch, shardID, tokenID, err
 }
 
 func ParseKeyAddCommitteeReward(key []byte) (
 	committeeAddress []byte,
+	tokenID common.Hash,
 	err error,
 ) {
-	bytesArray, err := ParseKeyToSlice(key, []int{len(ShardRequestRewardPrefix), 66})
+	bytesArray, err := ParseKeyToSlice(key, []int{len(ShardRequestRewardPrefix), 66, common.HashSize})
 	if err != nil {
-		return nil, err
+		return nil, tokenID, err
 	}
 	committeeAddress = bytesArray[1]
-	return committeeAddress, err
+	tmpTokenID, err := common.NewHash(bytesArray[2])
+	tokenID = *tmpTokenID
+	return committeeAddress, tokenID, err
 }
 
 func ParseKeyToSlice(key []byte, length []int) ([][]byte, error) {

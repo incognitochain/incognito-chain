@@ -11,6 +11,7 @@ import (
 type WithDrawRewardRequest struct {
 	privacy.PaymentAddress
 	MetadataBase
+	TokenIDs []common.Hash
 }
 
 func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, error) {
@@ -31,6 +32,7 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 type WithDrawRewardResponse struct {
 	MetadataBase
 	TxRequest *common.Hash
+	TokenIDs  []common.Hash
 }
 
 func NewWithDrawRewardResponse(txRequestID *common.Hash) (Metadata, error) {
@@ -54,10 +56,19 @@ func (withDrawRewardRequest *WithDrawRewardRequest) CheckTransactionFee(tr Trans
 
 func (withDrawRewardRequest *WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	if txr.IsPrivacy() {
-		return false, errors.New("This transaction can not be privacy")
+		return false, errors.New("This transaction is not private")
 	}
-	value, err := db.GetCommitteeReward(withDrawRewardRequest.PaymentAddress.Pk)
-	if (err != nil) || (value == 0) {
+	isPositive := false
+	for _, tokenID := range withDrawRewardRequest.TokenIDs {
+		value, err := db.GetCommitteeReward(withDrawRewardRequest.PaymentAddress.Pk, tokenID)
+		if err != nil {
+			return false, err
+		}
+		if value > 0 {
+			isPositive = true
+		}
+	}
+	if !isPositive {
 		return false, errors.New("Not enough reward")
 	}
 	receivers, _ := txr.GetReceivers()
@@ -83,13 +94,14 @@ func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Tra
 
 func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	if txr.IsPrivacy() {
-		return false, errors.New("This transaction can not be privacy")
+		return false, errors.New("This transaction is not private")
 	}
 	receivers, amounts := txr.GetReceivers()
 	if len(receivers) != 1 {
 		return false, errors.New("Wrong receiver")
 	}
-	value, err := db.GetCommitteeReward(receivers[0])
+	// TODO: Check for every TokenID
+	value, err := db.GetCommitteeReward(receivers[0], common.PRVCoinID)
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}
