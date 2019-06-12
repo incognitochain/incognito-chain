@@ -20,6 +20,7 @@ type Params struct {
 	DefaultPort         string
 	ShardCommitteeSize  int
 	BeaconCommitteeSize int
+	StakingAmountShard  uint64
 	ActiveShards        int
 	// GenesisBlock defines the first block of the chain.
 	GenesisBeaconBlock *BeaconBlock
@@ -35,9 +36,7 @@ type GenesisParams struct {
 
 	InitialConstant []string
 
-	BasicReward    uint64
-	RewardHalflife uint64
-	FeePerTxKb     uint64
+	FeePerTxKb uint64
 
 	RandomNumber uint64
 
@@ -49,9 +48,6 @@ type GenesisParams struct {
 // FOR TESTNET
 var genesisParamsTestnetNew = GenesisParams{
 	InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
-	BasicReward:                         TestnetBasicReward,
-	RewardHalflife:                      TestnetRewardHalflife,
-	FeePerTxKb:                          TestnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
@@ -67,12 +63,13 @@ var ChainTestParam = Params{
 	DefaultPort:         TestnetDefaultPort,
 	ShardCommitteeSize:  TestNetShardCommitteeSize,  //TestNetShardCommitteeSize,
 	BeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+	StakingAmountShard:  TestNetStakingAmountShard,
 	ActiveShards:        TestNetActiveShards,
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
-	BasicReward:        genesisParamsTestnetNew.BasicReward,
-	RewardHalflife:     genesisParamsTestnetNew.RewardHalflife,
+	BasicReward:        TestnetBasicReward,
+	RewardHalflife:     TestnetRewardHalflife,
 }
 
 // END TESTNET
@@ -80,9 +77,6 @@ var ChainTestParam = Params{
 // FOR MAINNET
 var genesisParamsMainnetNew = GenesisParams{
 	InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
-	BasicReward:                         MainnetBasicReward,
-	RewardHalflife:                      MainnetRewardHalflife,
-	FeePerTxKb:                          MainnetFeePerTxKb,
 	RandomNumber:                        0,
 	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
@@ -96,10 +90,11 @@ var ChainMainParam = Params{
 	DefaultPort:         MainnetDefaultPort,
 	ShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
 	BeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
+	StakingAmountShard:  MainNetStakingAmountShard,
 	ActiveShards:        MainNetActiveShards,
 	// blockChain parameters
 	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
 	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
-	BasicReward:        genesisParamsMainnetNew.BasicReward,
-	RewardHalflife:     genesisParamsMainnetNew.RewardHalflife,
+	BasicReward:        MainnetBasicReward,
+	RewardHalflife:     MainnetRewardHalflife,
 }

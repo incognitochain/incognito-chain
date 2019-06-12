@@ -70,9 +70,6 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	if err := shardBestState.VerifyPostProcessingShardBlock(block, shardID); err != nil {
 		return err
 	}
-	if err := block.VerifyBlockReward(blockchain); err != nil {
-		return err
-	}
 	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for signing", shardID, block.Header.Height, *block.Hash())
 	return nil
 }
@@ -221,7 +218,17 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if feeEstimator, ok := blockchain.config.FeeEstimator[block.Header.ShardID]; ok {
 		go feeEstimator.RegisterBlock(block)
 	}
-
+	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
+	if err != nil {
+		fmt.Printf("[ndh]  - - - [error]1: %+v\n", err)
+		return err
+	}
+	err = blockchain.updateDatabaseFromShardBlock(block)
+	if err != nil {
+		fmt.Printf("[ndh]  - - - [error]2: %+v\n", err)
+		return err
+	}
+	fmt.Printf("[ndh]  - - - nonerror \n")
 	return nil
 }
 
@@ -368,8 +375,17 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil
+		return err
 	}
+
+	totalTxsFee := uint64(0)
+	for _, tx := range block.Body.Transactions {
+		totalTxsFee += tx.GetTxFee()
+	}
+	if block.Header.TotalTxsFee != totalTxsFee {
+		return errors.New("Wrong blockheader totalTxs fee")
+	}
+
 	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(
 		block.Body.Transactions,
 		blockchain,
@@ -430,7 +446,10 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	if len(invalidTxs) > 0 {
 		return NewBlockChainError(TransactionError, fmt.Errorf("There are %d invalid txs", len(invalidTxs)))
 	}
-
+	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(&block.Body)
+	if err != nil {
+		return err
+	}
 	// Get cross shard block from pool
 	// @NOTICE: COMMENT to bypass verify cross shard block
 	if isPresig {
@@ -514,7 +533,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
-	return nil
+	return err
 }
 
 /*

@@ -245,23 +245,6 @@ func GetBytes(key interface{}) []byte {
 	return buf.Bytes()
 }
 
-func SliceBytesExists(slice interface{}, item interface{}) (int64, error) {
-	s := reflect.ValueOf(slice)
-
-	if s.Kind() != reflect.Slice {
-		return -1, errors.New("SliceBytesExists() given a non-slice type")
-	}
-
-	for i := 0; i < s.Len(); i++ {
-		interfaceItem := s.Index(i).Interface()
-		if bytes.Equal(interfaceItem.([]byte), item.([]byte)) {
-			return int64(i), nil
-		}
-	}
-
-	return -1, nil
-}
-
 func GetShardIDFromLastByte(b byte) byte {
 	return byte(int(b) % MAX_SHARD_NUMBER)
 }
@@ -274,7 +257,6 @@ func IndexOfStr(item string, list []string) int {
 	}
 	return -1
 }
-
 func IndexOfStrInHashMap(v string, m map[Hash]string) int {
 	for _, value := range m {
 		if strings.Compare(value, v) == 0 {
@@ -297,6 +279,10 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	// but they variables can still be expanded via POSIX-style $VARIABLE.
 	return filepath.Clean(os.ExpandEnv(path))
 }
+
+/*func ConstantToMiliConstant(constant uint64) uint64 {
+	return constant * uint64(math.Pow(10, NanoConstant))
+}*/
 
 func Max(x, y int) int {
 	if x > y {
@@ -352,6 +338,10 @@ func Int32ToBytes(value int32) []byte {
 	return b
 }
 
+func BytesToUint64(b []byte) uint64 {
+	return binary.LittleEndian.Uint64(b)
+}
+
 func Uint64ToBytes(value uint64) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, value)
@@ -405,14 +395,10 @@ func CheckError(errs ...error) error {
 	return errSaver.Save(errs...)
 }
 
-func ByteEqual(a []byte, b []byte) bool {
-	if len(a) != len(b) {
-		return false
+func AppendSliceString(arrayStrings ...[][]string) [][]string {
+	res := [][]string{}
+	for _, arrayString := range arrayStrings {
+		res = append(res, arrayString...)
 	}
-	for i := 0; i < len(a); i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
+	return res
 }

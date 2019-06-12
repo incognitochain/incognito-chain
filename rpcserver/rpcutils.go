@@ -35,17 +35,19 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 
 	tx, err := rpcServer.buildRawTransaction(params, meta)
 	if err != nil {
+		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error 0 %+v \n\n\n\n\n\n", err)
 		return nil, err
 	}
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
-		// return hex for a new tx
+		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error %+v \n\n\n\n\n\n", errMarshal)
 		return nil, NewRPCError(ErrUnexpected, errMarshal)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
+	Logger.log.Infof("\n\n\n\n\n\n\n createRawTxWithMetadata OK \n\n\n\n\n\n")
 	return result, nil
 }
 
@@ -107,9 +109,9 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
 	}
@@ -148,9 +150,9 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
 	}

@@ -261,7 +261,7 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 			if err != nil {
 				Logger.log.Error(err)
 			} else {
-				netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
+				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
 			}
 		}
 	}
@@ -285,7 +285,7 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 			if err != nil {
 				Logger.log.Error(err)
 			} else {
-				netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
+				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
 			}
 		}
 	}
@@ -308,7 +308,7 @@ func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 			if err != nil {
 				Logger.log.Error(err)
 			} else {
-				netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
+				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
 			}
 		}
 	}
