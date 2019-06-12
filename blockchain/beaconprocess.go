@@ -111,6 +111,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		Logger.log.Infof("BEACON %+v | SKIP Verify BestState with Block %+v \n", blockHash)
 	}
 
+	// Backup beststate
 	// if blockchain.config.UserKeySet != nil {
 	// 	userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 	// 	if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {

@@ -51,81 +51,32 @@ func (db *db) CleanBackup(isBeacon bool, shardID byte) error {
 	return nil
 }
 
-// func (db *db) BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte) error {
-// 	current := db.GetKey(string(commitmentsPrefix), tokenID)
-// 	current = append(current, shardID)
-
-// 	keySpec4 := append(current, pubkey...)
-// 	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
-// 	if err != nil {
-// 		if err != lvdberr.ErrNotFound {
-// 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-// 		}
-// 		return nil
-// 	}
-// 	if len(resByPubkey) > 0 {
-// 		key := getPrevPrefix(false, shardID)
-// 		key = append(key, keySpec4...)
-// 		if err := db.lvdb.Put(key, resByPubkey, nil); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
-// func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte, commitments []byte) error {
-// 	current := db.GetKey(string(commitmentsPrefix), tokenID)
-// 	current = append(current, shardID)
-
-// 	keySpec2 := append(current, commitments...)
-// 	err := db.Delete(keySpec2)
-// 	if err != nil {
-// 		return database.NewDatabaseError(database.ErrUnexpected, err)
-// 	}
-
-// 	keySpec4 := append(current, pubkey...)
-// 	prevkey := getPrevPrefix(false, shardID)
-// 	prevkey = append(prevkey, keySpec4...)
-
-// 	resByPubkey, err := db.lvdb.Get(prevkey, nil)
-// 	if err != nil && err != lvdberr.ErrNotFound {
-// 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-// 	}
-// 	if len(resByPubkey) > 0 {
-// 		if err := db.lvdb.Put(keySpec4, resByPubkey, nil); err != nil {
-// 			return err
-// 		}
-// 	} else {
-// 		if err := db.Delete(keySpec4); err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 func (db *db) BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte) error {
 	//backup keySpec3 & keySpec4
 	prevkey := getPrevPrefix(false, shardID)
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
-	keySpec4 := append(key, pubkey...)
-	backupKeySpec4 := append(prevkey, keySpec4...)
-	resByPubkey, err := db.lvdb.Get(keySpec4, nil)
-	if err != nil {
-		if err != lvdberr.ErrNotFound {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-		}
-	}
-	if err := db.lvdb.Put(backupKeySpec4, resByPubkey, nil); err != nil {
-		return err
-	}
+	// keySpec4 := append(key, pubkey...)
+	// backupKeySpec4 := append(prevkey, keySpec4...)
+	// resByPubkey, err := db.lvdb.Get(keySpec4, nil)
+	// if err != nil {
+	// 	if err != lvdberr.ErrNotFound {
+	// 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	// 	}
+	// }
+	// if err := db.lvdb.Put(backupKeySpec4, resByPubkey, nil); err != nil {
+	// 	return err
+	// }
 
 	keySpec3 := append(key, []byte("len")...)
 	backupKeySpec3 := append(prevkey, keySpec3...)
 	res, err := db.lvdb.Get(keySpec3, nil)
 	if err != nil {
-		return err
+		if err != lvdberr.ErrNotFound {
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		}
+		return nil
 	}
 
 	if err := db.lvdb.Put(backupKeySpec3, res, nil); err != nil {
@@ -173,85 +124,46 @@ func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubk
 		if err != lvdberr.ErrNotFound {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
+		if err := db.lvdb.Delete(keySpec3, nil); err != nil {
+			return err
+		}
 	}
 
 	if err := db.lvdb.Put(keySpec3, res, nil); err != nil {
 		return err
 	}
 
-	keySpec4 := append(key, pubkey...)
-	prevKeySpec4 := append(key, pubkey...)
-	prevKeySpec4 = append(prevkey, prevKeySpec4...)
+	// keySpec4 := append(key, pubkey...)
+	// prevKeySpec4 := append(key, pubkey...)
+	// prevKeySpec4 = append(prevkey, prevKeySpec4...)
 
-	resByPubkey, err := db.lvdb.Get(prevKeySpec4, nil)
-	if err != nil {
-		if err != lvdberr.ErrNotFound {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-		}
-	}
+	// resByPubkey, err := db.lvdb.Get(prevKeySpec4, nil)
+	// if err != nil {
+	// 	if err != lvdberr.ErrNotFound {
+	// 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	// 	}
+	// }
 
-	if err := db.lvdb.Put(keySpec4, resByPubkey, nil); err != nil {
-		return err
-	}
+	// if err := db.lvdb.Put(keySpec4, resByPubkey, nil); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
-func (db *db) BackupOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error {
-	current := db.GetKey(string(outcoinsPrefix), tokenID)
-	current = append(current, shardID)
-	current = append(current, pubkey...)
-	resByPubkey, err := db.lvdb.Get(current, nil)
-	if err != nil {
-		if err != lvdberr.ErrNotFound {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-		}
-		return nil
-	}
-	if len(resByPubkey) > 0 {
-		key := getPrevPrefix(false, shardID)
-		key = append(key, current...)
-		if err := db.lvdb.Put(key, resByPubkey, nil); err != nil {
+func (db *db) DeleteOutputCoin(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
+	key := db.GetKey(string(outcoinsPrefix), tokenID)
+	key = append(key, shardID)
+
+	key = append(key, publicKey...)
+	for _, outputCoin := range outputCoinArr {
+		keyTemp := append(key, common.HashB(outputCoin)...)
+		if err := db.lvdb.Delete(keyTemp, nil); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
-
-func (db *db) RestoreOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error {
-	current := db.GetKey(string(outcoinsPrefix), tokenID)
-	current = append(current, shardID)
-	current = append(current, pubkey...)
-	prevkey := getPrevPrefix(false, shardID)
-	prevkey = append(prevkey, current...)
-
-	resByPubkey, err := db.lvdb.Get(prevkey, nil)
-	if err != nil && err != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-	if len(resByPubkey) > 0 {
-		if err := db.lvdb.Put(current, resByPubkey, nil); err != nil {
-			return err
-		}
-	} else {
-		err = db.Delete(current)
-		if err != nil {
-			return database.NewDatabaseError(database.ErrUnexpected, err)
-		}
-	}
-	return nil
-}
-
-// func (db *db) BackupSNDerivators(tokenID common.Hash, shardID byte) error {
-// 	key := getPrevPrefix(false, shardID)
-
-// 	return nil
-// }
-
-// func (db *db) RestoreSNDerivators(tokenID common.Hash, shardID byte) error {
-// 	key := getPrevPrefix(false, shardID)
-
-// 	return nil
-// }
 
 func (db *db) BackupSerialNumbersLen(tokenID common.Hash, shardID byte) error {
 	current := db.GetKey(string(serialNumbersPrefix), tokenID)
@@ -429,6 +341,38 @@ func (db *db) DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlk
 	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
 	key := append(crossShardKeyPrefix, prefix...)
 	if err := db.Delete(key); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *db) BackupBridgedTokenByTokenID(tokenID common.Hash) error {
+	key := append(centralizedBridgePrefix, tokenID[:]...)
+	backupKey := getPrevPrefix(true, 0)
+	backupKey = append(backupKey, key...)
+
+	tokenWithAmtBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	}
+
+	if err := db.lvdb.Put(backupKey, tokenWithAmtBytes, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *db) RestoreBridgedTokenByTokenID(tokenID common.Hash) error {
+	key := append(centralizedBridgePrefix, tokenID[:]...)
+	backupKey := getPrevPrefix(true, 0)
+	backupKey = append(backupKey, key...)
+
+	tokenWithAmtBytes, dbErr := db.lvdb.Get(backupKey, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	}
+
+	if err := db.lvdb.Put(key, tokenWithAmtBytes, nil); err != nil {
 		return err
 	}
 	return nil
