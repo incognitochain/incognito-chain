@@ -2,8 +2,8 @@ COMM_PATH_LENGTH: constant(uint256) = 1 # support up to 2 ** 3 = 8 committee mem
 COMM_SIZE: constant(uint256) = 2 ** COMM_PATH_LENGTH
 PUBKEY_LENGTH: constant(uint256) = COMM_SIZE * COMM_PATH_LENGTH
 INST_LENGTH: constant(uint256) = 100
-BEACON_BLOCK_LENGTH: constant(uint256) = 1000
-BRIDGE_BLOCK_LENGTH: constant(uint256) = 1000
+BEACON_BLOCK_LENGTH: constant(uint256) = 500
+BRIDGE_BLOCK_LENGTH: constant(uint256) = 250
 MIN_SIGN: constant(uint256) = 1
 
 Transfer: event({_from: indexed(address), _to: indexed(address), _value: uint256})
@@ -40,7 +40,7 @@ def parseSwapBeaconInst(inst: bytes[INST_LENGTH]) -> bytes32[COMM_SIZE]:
 
 @constant
 @public
-def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[COMM_PATH_LENGTH], left: bool[MAX_COMM_HEIGHT]) -> bool:
+def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[COMM_PATH_LENGTH], left: bool[COMM_PATH_LENGTH]) -> bool:
     hash: bytes32 = leaf
     for i in range(COMM_PATH_LENGTH):
         if left[i]:
@@ -58,6 +58,50 @@ def getHash(inst: bytes[INST_LENGTH]) -> bytes32:
 @public
 def getHash256(inst: bytes[INST_LENGTH]) -> bytes32:
     return sha256(inst)
+
+@constant
+@public
+def verifyInst(
+    commRoot: bytes32,
+    instHash: bytes32,
+    instPath: bytes32[COMM_PATH_LENGTH],
+    instPathIsLeft: bool[COMM_PATH_LENGTH],
+    instRoot: bytes32,
+    blkHash: bytes32,
+    signerPubkeys: bytes32[COMM_PATH_LENGTH],
+    signerSig: bytes32,
+    signerPaths: bytes32[PUBKEY_LENGTH],
+    signerPathIsLeft: bool[PUBKEY_LENGTH]
+) -> bool:
+    # Check if inst is in merkle tree with root instRoot
+    if not self.inMerkleTree(instHash, instRoot, instPath, instPathIsLeft):
+        raise "instruction is not in merkle tree"
+
+    # TODO: Check if signerSig is valid
+
+    # Check if signerPubkeys are in merkle tree with root commRoot
+    count: uint256 = 0
+    for i in range(COMM_SIZE):
+        if convert(signerPubkeys[i], uint256) == 0:
+            continue
+
+        path: bytes32[COMM_PATH_LENGTH]
+        left: bool[COMM_PATH_LENGTH]
+        h: int128 = convert(COMM_PATH_LENGTH, int128)
+        for j in range(COMM_PATH_LENGTH):
+            path[j] = signerPaths[i * h + j]
+            left[j] = signerPathIsLeft[i * h + j]
+
+        if not self.inMerkleTree(signerPubkeys[i], commRoot, path, left):
+            assert 1 == 0
+
+        count += 1
+
+    # Check if enough validators signed this block
+    if count < MIN_SIGN:
+        raise "not enough signature"
+
+    return True
 
 @public
 def swapBeacon(
@@ -82,46 +126,49 @@ def swapBeacon(
     bridgeSignerPaths: bytes32[PUBKEY_LENGTH],
     bridgeSignerPathIsLeft: bool[PUBKEY_LENGTH]
 ) -> bool:
-    # Check if beaconInst is in merkle tree with root beaconInstRoot
+    # Check if beaconInstRoot is in block with hash beaconBlkHash
     instHash: bytes32 = sha3(inst)
-    if not self.inMerkleTree(instHash, beaconInstRoot, beaconInstPath, beaconInstPathIsLeft):
-        raise "instruction is not in merkle tree"
+    blk: bytes32 = sha3(concat(instHash, beaconBlkData))
+    if not blk == beaconBlkHash:
+        raise "instruction merkle root is not in beacon block"
 
-    # Check if beaconInstRoot is in beaconBlkHash
-    blkHash: bytes32 = sha3(concat(instHash, beaconBlkData))
-    if not blkHash == beaconBlkHash:
-        raise "instruction merkle root is not in block"
+    # Check that inst is in beacon block
+    if not self.verifyInst(
+        self.beaconCommRoot,
+        instHash,
+        beaconInstPath,
+        beaconInstPathIsLeft,
+        beaconInstRoot,
+        beaconBlkHash,
+        beaconSignerPubkeys,
+        beaconSignerSig,
+        beaconSignerPaths,
+        beaconSignerPathIsLeft
+    ):
+        raise "failed verify beacon instruction"
 
-    # TODO: Check if beaconSignerSig is valid
+    # Check if bridgeInstRoot is in block with hash bridgeBlkHash
+    blk = sha3(concat(instHash, bridgeBlkData))
+    if not blk == bridgeBlkHash:
+        raise "instruction merkle root is not in bridge block"
 
-    # Check if beaconSignerPubkeys are in merkle tree with root beaconCommRoot
-    count: uint256 = 0
-    for i in range(COMM_SIZE):
-        if convert(beaconSignerPubkeys[i], uint256) == 0:
-            continue
-
-        path: bytes32[COMM_PATH_LENGTH]
-        left: bool[COMM_PATH_LENGTH]
-        h: int128 = convert(COMM_PATH_LENGTH, int128)
-        for j in range(COMM_PATH_LENGTH):
-            path[j] = beaconSignerPaths[i * h + j]
-            left[j] = beaconSignerPathIsLeft[i * h + j]
-
-        if not self.inMerkleTree(beaconSignerPubkeys[i], self.beaconCommRoot, path, left):
-            assert 1 == 0
-
-        count += 1
-
-    # Check if enough validators signed this block
-    if count < MIN_SIGN:
-        raise "not enough signature"
-
-    # Check if bridgeInst is in merkle tree with root bridgeInstRoot
-    # Check if bridgeInstRoot is in bridgeBlkHash
-    # Check if bridgeSignerSig is valid
-    # Check if bridgeSignerPubkeys are in bridgeCommRoot
+    # Check that inst is in bridge block
+    if not self.verifyInst(
+        self.bridgeCommRoot,
+        instHash,
+        bridgeInstPath,
+        bridgeInstPathIsLeft,
+        bridgeInstRoot,
+        bridgeBlkHash,
+        bridgeSignerPubkeys,
+        bridgeSignerSig,
+        bridgeSignerPaths,
+        bridgeSignerPathIsLeft
+    ):
+        raise "failed verify bridge instruction"
 
     # Update beacon committee merkle root
+    self.beaconCommRoot = newCommRoot
     return True
 
 @private
