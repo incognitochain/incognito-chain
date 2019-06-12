@@ -4,10 +4,6 @@ import (
 	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 func (db *db) AddShardRewardRequest(
@@ -47,14 +43,6 @@ func (db *db) GetRewardOfShardByEpoch(epoch uint64, shardID byte) (uint64, error
 	}
 	fmt.Printf("[ndh] - - - %+v\n", rewardAmount)
 	return common.BytesToUint64(rewardAmount), nil
-}
-
-func (db *db) AddBeaconBlockProposer(
-	epoch uint64,
-	beaconPaymentAddress []byte,
-	beaconBlockHeight uint64,
-) error {
-	return nil
 }
 
 func (db *db) AddCommitteeReward(committeeAddress []byte, amount uint64) error {
@@ -112,42 +100,4 @@ func (db *db) RemoveCommitteeReward(committeeAddress []byte, amount uint64) erro
 		}
 	}
 	return nil
-}
-
-func (db *db) NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator {
-	return db.lvdb.NewIterator(slice, ro)
-}
-
-func ViewDBByPrefix(db database.DatabaseInterface, prefix []byte) map[string]string {
-	begin := prefix
-	// +1 to search in that range
-	end := common.BytesPlusOne(prefix)
-
-	searchRange := util.Range{
-		Start: begin,
-		Limit: end,
-	}
-	iter := db.NewIterator(&searchRange, nil)
-	res := make(map[string]string)
-	for iter.Next() {
-		res[string(iter.Key())] = string(iter.Value())
-	}
-	return res
-}
-
-func ViewDetailDBByPrefix(db database.DatabaseInterface, prefix []byte) map[string][]byte {
-	begin := prefix
-	// +1 to search in that range
-	end := common.BytesPlusOne(prefix)
-
-	searchRange := util.Range{
-		Start: begin,
-		Limit: end,
-	}
-	iter := db.NewIterator(&searchRange, nil)
-	res := make(map[string][]byte)
-	for iter.Next() {
-		res[string(iter.Key())] = iter.Key()
-	}
-	return res
 }
