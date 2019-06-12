@@ -360,20 +360,6 @@ func BoolToByte(value bool) byte {
 	return bitSetVar
 }
 
-func BytesPlusOne(b []byte) []byte {
-	res := make([]byte, len(b))
-	for i := len(b) - 1; i >= 0; i-- {
-		if b[i] < 0xff {
-			copy(res[0:i], b[0:i])
-			res[i] = b[i] + 1
-			break
-		} else {
-			res[i] = 0
-		}
-	}
-	return res
-}
-
 func IndexOfByte(item byte, arrays []byte) int {
 	for k, v := range arrays {
 		if v == item {

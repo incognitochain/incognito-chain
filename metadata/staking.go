@@ -13,16 +13,17 @@ import (
 
 type StakingMetadata struct {
 	MetadataBase
-	PaymentAddress string
+	PaymentAddress     string
+	StakingAmountShard uint64
 }
 
-func NewStakingMetadata(stakingType int, paymentAdd string) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, paymentAdd string, stakingAmountShard uint64) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
 
-	return &StakingMetadata{*metadataBase, paymentAdd}, nil
+	return &StakingMetadata{*metadataBase, paymentAdd, stakingAmountShard}, nil
 }
 
 /*
@@ -72,10 +73,10 @@ func (sm *StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
-	if sm.Type == ShardStakingMeta && amount != GetShardStateAmount() {
+	if sm.Type == ShardStakingMeta && amount != sm.GetShardStateAmount() {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if sm.Type == BeaconStakingMeta && amount != GetBeaconStakeAmount() {
+	if sm.Type == BeaconStakingMeta && amount != sm.GetBeaconStakeAmount() {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 	return true, true, nil
@@ -104,12 +105,10 @@ func (sm *StakingMetadata) CalculateSize() uint64 {
 	return calculateSize(sm)
 }
 
-func GetBeaconStakeAmount() uint64 {
-	const STAKE_BEACON_AMOUNT = 20000
-	return STAKE_BEACON_AMOUNT
+func (sm StakingMetadata) GetBeaconStakeAmount() uint64 {
+	return sm.StakingAmountShard * 3
 }
 
-func GetShardStateAmount() uint64 {
-	const STAKE_SHARD_AMOUNT = 100
-	return STAKE_SHARD_AMOUNT
+func (sm StakingMetadata) GetShardStateAmount() uint64 {
+	return sm.StakingAmountShard
 }
