@@ -1152,7 +1152,7 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
+	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), rpcServer.config.ChainParams.StakingAmountShard)
 
 	tx, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {
