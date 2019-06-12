@@ -205,19 +205,19 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 		Logger.log.Info("Creating empty block...")
 	}
 	go blockgen.txPool.RemoveTx(txToRemove, false)
-	var respTxsShard, respTxsBeacon []metadata.Transaction
-	var errCh chan error
-	errCh = make(chan error)
-
 	go func() {
 		for _, tx := range txToRemove {
 			blockgen.chain.config.CRemovedTxs <- tx
 		}
 	}()
+	
+	var respTxsShard, respTxsBeacon []metadata.Transaction
+	var errCh chan error
+	errCh = make(chan error)
 	go func(){
-	    		var err error
-	    		respTxsShard, err = blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
-	    		errCh <- err
+		var err error
+		respTxsShard, err = blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
+		errCh <- err
 	}()
 
 	go func() {
