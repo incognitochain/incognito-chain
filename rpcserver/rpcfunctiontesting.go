@@ -231,7 +231,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 	case "noprivacy":
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-9000.json"
 		filenames = append(filenames, filename)
-		for i := 2 ;i <= 3; i++ {
+		for i := 2 ;i <= 5; i++ {
 			filename := "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-10000."+fmt.Sprintf("%d",i)+".json"
 			filenames = append(filenames, filename)
 		}
