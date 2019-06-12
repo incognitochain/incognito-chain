@@ -122,6 +122,10 @@ var RpcHandler = map[string]commandHandler{
 	hashToIdenticon: RpcServer.handleHashToIdenticon,
 	//reward
 	CreateRawWithDrawTransaction: RpcServer.handleCreateAndSendWithDrawTransaction,
+
+	//revert
+	revertbeaconchain: RpcServer.handleRevertBeacon,
+	revertshardchain:  RpcServer.handleRevertShard,
 }
 
 // Commands that are available to a limited user
