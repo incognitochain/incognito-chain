@@ -48,6 +48,12 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-3000.3.json"
 	case "noprivacy9000":
 		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-9000.json"
+	case "noprivacy10000_2":
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-10000.2.json"
+	case "noprivacy10000_3":
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-10000.3.json"
+	case "noprivacy10000_4":
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-10000.4.json"
 	case "noprivacy":
 		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-5000.json"
 	case "privacy":
