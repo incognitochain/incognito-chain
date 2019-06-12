@@ -205,24 +205,40 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 		Logger.log.Info("Creating empty block...")
 	}
 	go blockgen.txPool.RemoveTx(txToRemove, false)
+	var respTxsShard, respTxsBeacon []metadata.Transaction
+	var errCh chan error
+	errCh = make(chan error)
+
 	go func() {
 		for _, tx := range txToRemove {
 			blockgen.chain.config.CRemovedTxs <- tx
 		}
 	}()
+	go func(){
+	    		var err error
+	    		respTxsShard, err = blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
+	    		errCh <- err
+	}()
 
-	// Process stability tx, create response txs if needed
-	stabilityResponseTxs, err := blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
-	if err != nil {
-		return nil, err
-	}
-	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
+	go func() {
+		var err error
+		respTxsBeacon, err = blockgen.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
+		errCh <- err
+	}()
 
-	stabilityResponseTxs, err = blockgen.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
-	if err != nil {
-		return nil, err
+	nilCount := 0
+	for {
+		err := <-errCh
+		if err != nil {
+			return nil, err
+		}
+		nilCount++
+		if nilCount == 2 {
+			break
+		}
 	}
-	txsToAdd = append(txsToAdd, stabilityResponseTxs...)
+	txsToAdd = append(txsToAdd, respTxsShard...)
+	txsToAdd = append(txsToAdd, respTxsBeacon...)
 	return txsToAdd, nil
 }
 
