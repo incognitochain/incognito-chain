@@ -268,15 +268,13 @@ func (protocol *BFTProtocol) phaseCommit() error {
 		protocol.closeTimeoutCh()
 	})
 
-	time.AfterFunc(DelayTime*time.Millisecond, func() {
-		msg, err := MakeMsgBFTCommit(protocol.multiSigScheme.combine.CommitSig, protocol.multiSigScheme.combine.R, protocol.multiSigScheme.combine.ValidatorsIdxR, protocol.EngineCfg.UserKeySet)
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
-		fmt.Println("BFT: Sending out commit msg", time.Since(protocol.startTime).Seconds())
-		protocol.forwardMsg(msg)
-	})
+	msg, err := MakeMsgBFTCommit(protocol.multiSigScheme.combine.CommitSig, protocol.multiSigScheme.combine.R, protocol.multiSigScheme.combine.ValidatorsIdxR, protocol.EngineCfg.UserKeySet)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+	protocol.forwardMsg(msg)
+
 	var phaseData struct {
 		Sigs map[string]map[string]bftCommittedSig //map[R]map[Pubkey]CommittedSig
 	}
