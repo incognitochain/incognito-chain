@@ -385,7 +385,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	}
 	go common.AnalyzeTimeSeriesTxBeginEnterMetric(txType, float64(1))
 	startValidate := time.Now()
-	err := tp.ValidateTransaction(tx)
+	err := tp.validateTransaction(tx)
 	if err != nil {
 		return nil, nil, err
 	}
