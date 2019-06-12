@@ -196,7 +196,7 @@ func (rpcServer RpcServer) handleSendRawTransaction(params interface{}, closeCha
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
 		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 
 	txID := tx.Hash().String()
@@ -488,7 +488,7 @@ func (rpcServer RpcServer) handleSendRawCustomTokenTransaction(params interface{
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	//Mark Fowarded transaction
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 	result := tx.Hash()
 	Logger.log.Infof("handleSendRawCustomTokenTransaction result: %+v", result)
@@ -1093,7 +1093,7 @@ func (rpcServer RpcServer) handleSendRawPrivacyCustomTokenTransaction(params int
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	//Mark forwarded message
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 	result := tx.Hash()
 	Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction result: %+v", result)
@@ -1152,7 +1152,7 @@ func (rpcServer RpcServer) handleCreateRawStakingTransaction(params interface{},
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
+	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), rpcServer.config.ChainParams.StakingAmountShard)
 
 	tx, err := rpcServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {

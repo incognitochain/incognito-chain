@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/constant-money/constant-chain/blockchain"
@@ -17,7 +18,7 @@ import (
 func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo,
 	estimateFeeCoinPerKb int64, numBlock uint64, keyset *cashec.KeySet, shardIDSender byte,
 	hasPrivacy bool,
-	metadata metadata.Metadata,
+	metadataParam metadata.Metadata,
 	customTokenParams *transaction.CustomTokenParamTx,
 	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx,
 ) ([]*privacy.InputCoin, uint64, *RPCError) {
@@ -63,8 +64,20 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	// check real fee(nano constant) per tx
 	realFee, _, _ := rpcServer.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
-		metadata, customTokenParams,
+		metadataParam, customTokenParams,
 		privacyCustomTokenParams)
+
+	if totalAmmount == 0 && realFee == 0 {
+		metadataType := metadataParam.GetType()
+		switch metadataType {
+		case metadata.WithDrawRewardRequestMeta:
+			{
+				return nil, realFee, nil
+			}
+		}
+		return nil, realFee, NewRPCError(ErrRejectInvalidFee, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
+	}
+
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
 	if needToPayFee > 0 {
