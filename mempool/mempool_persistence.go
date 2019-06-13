@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/databasemp/lvdb"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/databasemp/lvdb"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type TempDesc struct {
@@ -118,7 +118,7 @@ func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
 			tp.RemoveTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
 		}
 		//if not validated by current blockchain db then remove
-		err = tp.ValidateTransaction(txDesc.Desc.Tx)
+		err = tp.validateTransaction(txDesc.Desc.Tx)
 		if err != nil {
 			tp.RemoveTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
 			continue

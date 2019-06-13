@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
-	"github.com/constant-money/constant-chain/transaction"
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/wire"
 )
 
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
@@ -109,9 +109,9 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
 	}
@@ -150,9 +150,9 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
 	err = rpcServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	rpcServer.config.TxMemPool.MarkFowardedTransaction(*tx.Hash())
+	rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
 	}
