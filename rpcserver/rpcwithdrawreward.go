@@ -3,9 +3,9 @@ package rpcserver
 import (
 	"fmt"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -37,4 +37,23 @@ func (rpcServer RpcServer) handleCreateAndSendWithDrawTransaction(params interfa
 		RpcServer.handleCreateRawWithDrawTransaction,
 		RpcServer.handleSendRawTransaction,
 	)
+}
+
+// Get the reward amount of a private key
+func (rpcServer RpcServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
+	}
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	rewardAmount, err := (*rpcServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	return rewardAmount, nil
 }

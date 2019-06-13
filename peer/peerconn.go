@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-peer"
 )
 
