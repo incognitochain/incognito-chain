@@ -956,16 +956,6 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 			go _peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MESSAGE_TO_PEER, nil)
 		}
 		listen.PeerConnsMtx.Unlock()
-		// send message get blocks
-
-		//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *serverObj.blockChain.BestState.BestBlockHash
-		//println(peerConn.ListenerPeer.PeerId.String())
-		//msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
-		//if err != nil {
-		//	return
-		//}
-		//peerConn.QueueMessageWithEncoding(msgNew, nil)
 	} else {
 		peerConn.VerValid = true
 	}
