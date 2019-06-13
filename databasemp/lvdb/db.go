@@ -10,6 +10,7 @@ import (
 type db struct {
 	lvdb *leveldb.DB
 }
+
 var (
 	txKeyPrefix = []byte("tx-")
 	Splitter    = []byte("-[-]-")
@@ -63,4 +64,3 @@ func (db *db) Get(key []byte) ([]byte, error) {
 	}
 	return value, nil
 }
-

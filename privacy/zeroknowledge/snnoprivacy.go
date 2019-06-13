@@ -53,7 +53,6 @@ func (proof *SNNoPrivacyProof) ValidateSanity() bool {
 	return proof.zSeed.BitLen() <= 256
 }
 
-
 func (pro *SNNoPrivacyProof) isNil() bool {
 	if pro.stmt.output == nil {
 		return true
@@ -255,7 +254,7 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	rightPoint2 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
 	rightPoint2 = rightPoint2.Add(pro.tOutput)
 
-	if !leftPoint2.IsEqual(rightPoint2){
+	if !leftPoint2.IsEqual(rightPoint2) {
 		privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
 		return false
 	}

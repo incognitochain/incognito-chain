@@ -2,7 +2,7 @@ package lvdb
 
 import (
 	"errors"
-	
+
 	"github.com/incognitochain/incognito-chain/database"
 )
 

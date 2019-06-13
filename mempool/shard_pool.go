@@ -2,9 +2,9 @@ package mempool
 
 import (
 	"errors"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	lru "github.com/hashicorp/golang-lru"
 	"sort"
 	"sync"
 	"time"

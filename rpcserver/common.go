@@ -3,7 +3,7 @@ package rpcserver
 import (
 	"fmt"
 	"sort"
-	
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
