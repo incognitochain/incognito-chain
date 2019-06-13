@@ -76,18 +76,18 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			if blockchain.config.UserKeySet != nil {
 				// Revert beststate
-				// if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
-				// 	fmt.Println("FORK SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
-				// 	if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
-				// 		Logger.log.Error(err)
-				// 		return
-				// 	}
-				// 	if err := blockchain.RevertShardState(newBlk.Header.ShardID); err != nil {
-				// 		Logger.log.Error(err)
-				// 		return
-				// 	}
-				// 	fmt.Println("REVERTED SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
-				// }
+				if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
+					fmt.Println("FORK SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
+					if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					if err := blockchain.RevertShardState(newBlk.Header.ShardID); err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					fmt.Println("REVERTED SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
+				}
 
 				userRole := currentShardBestState.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 				fmt.Println("Shard block received 1", userRole)
