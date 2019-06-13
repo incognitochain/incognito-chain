@@ -1,6 +1,7 @@
 package bft2
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -36,7 +37,8 @@ func (e *BFTEngine) createCurrentView() View {
 	view.Round = e.getCurrentRound()
 	view.Role = e.Chain.GetRole()
 	view.Height = e.Chain.GetHeight()
-	view.CommitteeSize = = e.Chain.GetCommitteeSize()
+	view.CommitteeSize = e.Chain.GetCommitteeSize()
+	view.PeerID = e.PeerID
 	//nodeType, shardID := blockchain.GetBestStateBeacon().GetPubkeyNodeRole(e.UserKeySet.GetPublicKeyB58())
 	//round := e.predictCurrentRound(nodeType, shardID)
 	//role := blockchain.GetBestStateBeacon().GetPubkeyChainRole(e.UserKeySet.GetPublicKeyB58(), round)
@@ -118,3 +120,10 @@ func (e *BFTEngine) createCurrentView() View {
 //e.IsReady = false
 //}
 //}
+
+func (e *BFTEngine) debug(s ...interface{}) {
+	if e.PeerID == "1" {
+		fmt.Println(s...)
+	}
+
+}

@@ -1,7 +1,10 @@
 package bft2
 
 import (
+	"fmt"
 	"github.com/constant-money/constant-chain/wire"
+	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -31,9 +34,19 @@ type Chain struct {
 	Block      []Block
 	Role       Role
 	Committees []string
+	Pubkey     string
+	Env        TestFrameWork
 }
 
-func (s *Chain) PushMessageToValidator(wire.Message) error {
+func (s *Chain) PushMessageToValidator(m wire.Message) error {
+	for _, node := range s.Env.nodeList {
+		switch v := m.(type) {
+		case *View:
+			node.ViewMsgCh <- *(m.(*View))
+		default:
+			fmt.Printf("I don't know about type %T!\n", v)
+		}
+	}
 	return nil
 }
 
@@ -61,17 +74,25 @@ func (s *Chain) GetCommitteeSize() int {
 	return len(s.Committees)
 }
 
+func (s *Chain) GetPubKey() string {
+	return s.Pubkey
+}
+
 var NODE_NUM = 6
 var testFramework = TestFrameWork{nodeList: make([]*BFTEngine, NODE_NUM)}
 
 func TestBFTEngine_Start(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < NODE_NUM; i++ {
 		newNode := new(BFTEngine)
-		newNode.Chain = &Chain{Block: []Block{{1}}, Role: Role{"shard", "validator", 0}, Committees: Committees}
+		newNode.Chain = &Chain{Block: []Block{{1}}, Role: Role{"shard", "validator", 0}, Committees: Committees[:NODE_NUM], Pubkey: Committees[i], Env: testFramework}
 		newNode.IsReady = false
-
-		testFramework.nodeList = append(testFramework.nodeList, newNode)
+		newNode.PeerID = strconv.Itoa(i)
+		testFramework.nodeList[i] = newNode
 		newNode.Start()
 	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	wg.Wait()
 
 }

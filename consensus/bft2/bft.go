@@ -2,8 +2,6 @@ package bft2
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/cashec"
 	"github.com/constant-money/constant-chain/wire"
 	"time"
 )
@@ -39,6 +37,7 @@ type ChainInterface interface {
 	IsReady() bool
 	GetRole() Role
 	GetHeight() uint64
+	GetCommitteeSize() int
 }
 
 type BlockInterface interface {
@@ -83,9 +82,9 @@ type BFTState struct {
 }
 
 type BFTEngine struct {
+	PeerID         string
 	CurrentState   *BFTState
 	ValidatorsView map[string]View
-	UserKeySet     *cashec.KeySet
 	NextStateCh    chan string
 	Chain          ChainInterface
 	IsReady        bool
@@ -96,6 +95,12 @@ type BFTEngine struct {
 }
 
 func (e *BFTEngine) Start() {
+	e.ViewMsgCh = make(chan View)
+	e.ProposeMsgCh = make(chan ProposeMsg)
+	e.PrepareMsgCh = make(chan PrepareMsg)
+	e.CommitMsgCh = make(chan CommitMsg)
+	e.NextStateCh = make(chan string)
+
 	//var stateCache = make(map[uint64]BFTState)
 	//var curentState = BFTState{}
 
@@ -126,22 +131,21 @@ func (e *BFTEngine) Start() {
 		}
 	}()
 
-	for { //action react pattern
-		select {
-		case s := <-e.NextStateCh:
-			e.nextState(s)
-		case <-e.ProposeMsgCh:
-		case <-e.PrepareMsgCh:
-		case <-e.CommitMsgCh:
+	go func() {
+		for { //action react pattern
+			select {
+			case s := <-e.NextStateCh:
+				e.nextState(s)
+			case <-e.ProposeMsgCh:
+			case <-e.PrepareMsgCh:
+			case <-e.CommitMsgCh:
 
-		case view := <-e.ViewMsgCh: //update view of other nodes
-			nodeType, shardID := blockchain.GetBestStateBeacon().GetPubkeyNodeRole(view.PubKey)
-			curView := e.createCurrentView()
-			if nodeType == curView.Role.nodeType && shardID == curView.Role.shardID {
-				e.ValidatorsView[view.PubKey] = view
+			case view := <-e.ViewMsgCh: //update view of other nodes
+				e.debug("receive view", view)
+
 			}
 		}
-	}
+	}()
 
 }
 
