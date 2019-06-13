@@ -2,17 +2,17 @@ package netsync
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/metadata"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/patrickmn/go-cache"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/mempool"
-	"github.com/constant-money/constant-chain/peer"
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
@@ -262,7 +262,7 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 			if err != nil {
 				Logger.log.Error(err)
 			} else {
-				netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
+				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
 			}
 		}
 	}
@@ -286,7 +286,7 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 			if err != nil {
 				Logger.log.Error(err)
 			} else {
-				netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
+				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
 			}
 		}
 	}
@@ -309,7 +309,7 @@ func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 			if err != nil {
 				Logger.log.Error(err)
 			} else {
-				netSync.config.TxMemPool.MarkFowardedTransaction(*msg.Transaction.Hash())
+				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 package peer
 
-import "github.com/constant-money/constant-chain/common"
+import "github.com/incognitochain/incognito-chain/common"
 
 type PeerLoger struct {
 	log common.Logger

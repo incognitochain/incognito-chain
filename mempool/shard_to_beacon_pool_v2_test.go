@@ -3,7 +3,7 @@ package mempool
 import (
 	"testing"
 
-	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain"
 )
 
 var (

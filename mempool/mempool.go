@@ -8,16 +8,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/constant-money/constant-chain/cashec"
+	"github.com/incognitochain/incognito-chain/cashec"
 
-	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/databasemp"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 // config is a descriptor containing the memory pool configuration.
@@ -187,7 +187,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
 			{
 				publicKey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-				tp.AddCandiateToList(*txHash, publicKey)
+				tp.addCandidateToList(*txHash, publicKey)
 			}
 		default:
 			{
@@ -199,7 +199,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.AddTokenIDToList(*txHash, tokenID)
+			tp.addTokenIDToList(*txHash, tokenID)
 		}
 	}
 	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
@@ -223,8 +223,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 
 Param#2: isStore: store transaction to persistence storage only work for transaction come from user (not for validation process)
 */
-
-func (tp *TxPool) ValidateTransaction(tx metadata.Transaction) error {
+func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	var shardID byte
 	var err error
 	txHash := tx.Hash()
@@ -368,7 +367,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 		}
 	}
 	startValidate := time.Now()
-	err := tp.ValidateTransaction(tx)
+	err := tp.validateTransaction(tx)
 	elapsed := float64(time.Since(startValidate).Seconds())
 	//if isNewTransaction {
 	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolValidated, elapsed)
@@ -403,7 +402,7 @@ func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
 }
 
 // Check relay shard and public key role before processing transaction
-func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
+func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	if common.IndexOfByte(senderShardID, tp.config.RelayShards) > -1 {
 		return true
@@ -411,7 +410,7 @@ func (tp *TxPool) CheckRelayShard(tx metadata.Transaction) bool {
 	return false
 }
 
-func (tp *TxPool) CheckPublicKeyRole(tx metadata.Transaction) bool {
+func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	tp.roleMtx.RLock()
 	if tp.RoleInCommittees > -1 && byte(tp.RoleInCommittees) == senderShardID {
@@ -442,7 +441,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	go func(txHash common.Hash) {
 		tp.cCacheTx <- txHash
 	}(*tx.Hash())
-	if !tp.CheckRelayShard(tx) && !tp.CheckPublicKeyRole(tx) {
+	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
 		err := errors.New("Unexpected Transaction Source Shard")
 		Logger.log.Error(err)
 		return &common.Hash{}, &TxDesc{}, err
@@ -466,7 +465,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolEntered, elapsed)
 	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolEnteredWithType, elapsed)
 
-	size := tp.CalPoolSize()
+	size := tp.calPoolSize()
 
 	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 	go common.AnalyzeTimeSeriesTxTypeMetric(tx.GetType(), float64(1))
@@ -487,7 +486,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	return hash, txDesc, err
 }
-func (tp *TxPool) MarkFowardedTransaction(txHash common.Hash) {
+
+func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
 	tp.pool[txHash].IsFowardMessage = true
 }
 
@@ -533,7 +533,7 @@ func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
 		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
 		go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
 	}
-	size := tp.CalPoolSize()
+	size := tp.calPoolSize()
 	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 
 	return err
@@ -567,9 +567,11 @@ func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
 func (tp *TxPool) GetPool() map[common.Hash]*TxDesc {
 	return tp.pool
 }
+
 func (tp *TxPool) LockPool() {
 	tp.mtx.Lock()
 }
+
 func (tp *TxPool) UnlockPool() {
 	tp.mtx.Unlock()
 }
@@ -665,7 +667,7 @@ func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
 	return nil
 }
 
-func (tp *TxPool) AddCandiateToList(txHash common.Hash, candidate string) {
+func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
 	tp.CandidatePool[txHash] = candidate
@@ -687,7 +689,8 @@ func (tp *TxPool) RemoveCandidateList(candidate []string) {
 		delete(tp.CandidatePool, txHash)
 	}
 }
-func (tp *TxPool) AddTokenIDToList(txHash common.Hash, tokenID string) {
+
+func (tp *TxPool) addTokenIDToList(txHash common.Hash, tokenID string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
 	tp.TokenIDPool[txHash] = tokenID
@@ -728,7 +731,7 @@ func (tp *TxPool) EmptyPool() bool {
 	return false
 }
 
-func (tp *TxPool) CalPoolSize() uint64 {
+func (tp *TxPool) calPoolSize() uint64 {
 	var totalSize uint64
 	for _, txDesc := range tp.pool {
 		size := txDesc.Desc.Tx.GetTxActualSize()
@@ -737,7 +740,7 @@ func (tp *TxPool) CalPoolSize() uint64 {
 	return totalSize
 }
 
-func (tp *TxPool) MonitorPool() {
+func (tp *TxPool) monitorPool() {
 	if tp.config.TxLifeTime == 0 {
 		return
 	}
@@ -759,7 +762,7 @@ func (tp *TxPool) MonitorPool() {
 			delete(tp.CandidatePool, txHash)
 			delete(tp.TokenIDPool, txHash)
 			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(startTime).Seconds()))
-			size := tp.CalPoolSize()
+			size := tp.calPoolSize()
 			go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 		}
 		tp.mtx.Unlock()
@@ -767,7 +770,7 @@ func (tp *TxPool) MonitorPool() {
 }
 
 func (tp *TxPool) Start(cQuit chan struct{}) {
-	go tp.MonitorPool()
+	go tp.monitorPool()
 	for {
 		select {
 		case <-cQuit:
