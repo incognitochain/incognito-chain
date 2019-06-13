@@ -7,11 +7,11 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/incognitochain/incognito-chain/cashec"
-	
+
 	"github.com/incognitochain/incognito-chain/databasemp"
-	
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -844,4 +844,36 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 			}
 		}
 	}
+}
+
+// RemoveTx safe remove transaction for pool
+func (tp *TxPool) RemoveTxList(txs []metadata.Transaction, isInBlock bool) {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+	// remove transaction from database mempool
+	for _, tx := range txs {
+		txDesc, ok := tp.pool[*tx.Hash()]
+		if !ok {
+			continue
+		}
+		startTime := txDesc.StartTime
+		go tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+		tp.removeTx(&tx)
+		if isInBlock {
+			txType := tx.GetType()
+			if txType == common.TxNormalType {
+				if tx.IsPrivacy() {
+					txType = common.TxNormalPrivacy
+				} else {
+					txType = common.TxNormalNoPrivacy
+				}
+			}
+			elapsed := float64(time.Since(startTime).Seconds())
+			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
+			go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
+		}
+		size := tp.calPoolSize()
+		go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
+	}
+	return
 }

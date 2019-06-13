@@ -115,6 +115,7 @@ const (
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
+	getRewardAmount              = "getrewardamount"
 
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"

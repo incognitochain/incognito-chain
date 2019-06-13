@@ -51,12 +51,12 @@ func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*
 
 	for i := 0; i < len(a); i++ {
 		wg.Add(2)
-		go func(i int, wg *sync.WaitGroup){
+		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
 			tmp1 = g[i].ScalarMult(a[i])
 		}(i, &wg)
 
-		go func(i int, wg *sync.WaitGroup){
+		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
 			tmp2 = h[i].ScalarMult(b[i])
 		}(i, &wg)

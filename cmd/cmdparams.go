@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/fatih/color"
 	"github.com/jessevdk/go-flags"
 	"os"
 	"path/filepath"

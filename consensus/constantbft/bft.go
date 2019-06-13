@@ -18,9 +18,9 @@ type BFTProtocol struct {
 
 	phase string
 
-	pendingBlock interface{}
-
-	RoundData struct {
+	pendingBlock    interface{}
+	blockCreateTime time.Duration
+	RoundData       struct {
 		MinBeaconHeight uint64
 		BestStateHash   common.Hash
 		IsProposer      bool
@@ -92,12 +92,14 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 
 func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
+	var elasped time.Duration
 	var msg wire.Message
 	//fmt.Println("[db] CreateBlockMsg")
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestShardToBeaconPoolState())
 		go common.AnalyzeTimeSeriesBeaconBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
+		elasped = time.Since(start)
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
@@ -129,6 +131,8 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestCrossShardPoolState(), protocol.RoundData.MinBeaconHeight, start)
 		go common.AnalyzeTimeSeriesShardBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
+
+		elasped = time.Since(start)
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
@@ -157,12 +161,12 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			}
 		}
 	}
-	elasped := time.Since(start)
 	Logger.log.Critical("BFT: Block create time is", elasped)
 	select {
 	case <-protocol.proposeCh:
 		Logger.log.Critical("☠︎ Oops block create time longer than timeout")
 	default:
+		protocol.blockCreateTime = elasped
 		protocol.proposeCh <- msg
 	}
 }
@@ -246,4 +250,17 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			}
 		}
 	}
+}
+
+func getTimeout(phase string, committeeSize int) time.Duration {
+	assumedDelay := time.Duration(committeeSize) * MaxNetworkDelayTime
+	switch phase {
+	case "listen":
+		return assumedDelay + ListenTimeout
+	case "prepare":
+		return assumedDelay + PrepareTimeout
+	case "commit":
+		return assumedDelay + CommitTimeout
+	}
+	return 0
 }

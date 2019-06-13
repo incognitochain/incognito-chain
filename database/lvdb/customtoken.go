@@ -223,7 +223,7 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddre
 	return results, nil
 }
 
-func (db *db) StorePrivacyCustomTokenCrossShard(tokenID  common.Hash, tokenValue []byte) error {
+func (db *db) StorePrivacyCustomTokenCrossShard(tokenID common.Hash, tokenValue []byte) error {
 	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
 	if err := db.lvdb.Put(key, tokenValue, nil); err != nil {
 		return err
