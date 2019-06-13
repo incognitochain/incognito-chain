@@ -60,7 +60,7 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 	
-	TestNetShardCommitteeSize  = 8
+	TestNetShardCommitteeSize  = 16
 	TestNetBeaconCommitteeSize = 4
 	TestNetActiveShards        = 2
 	TestNetStakingAmountShard  = 175000
