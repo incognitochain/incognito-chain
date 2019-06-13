@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/database"
-	_ "github.com/constant-money/constant-chain/database/lvdb"
-	"github.com/constant-money/constant-chain/transaction"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/incognitochain/incognito-chain/database"
+	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func main() {

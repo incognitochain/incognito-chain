@@ -3,14 +3,14 @@ package lvdb
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/constant-money/constant-chain/database"
+	"github.com/incognitochain/incognito-chain/database"
 	"log"
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 

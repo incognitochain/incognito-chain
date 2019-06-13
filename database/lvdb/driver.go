@@ -3,7 +3,7 @@ package lvdb
 import (
 	"errors"
 	
-	"github.com/constant-money/constant-chain/database"
+	"github.com/incognitochain/incognito-chain/database"
 )
 
 func init() {

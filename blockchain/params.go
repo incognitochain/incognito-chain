@@ -1,7 +1,7 @@
 package blockchain
 
 import (
-	"github.com/constant-money/constant-chain/blockchain/benchmark"
+	"github.com/incognitochain/incognito-chain/blockchain/benchmark"
 )
 
 /*
