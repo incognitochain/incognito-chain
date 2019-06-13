@@ -3,10 +3,7 @@ package database
 import (
 	"math/big"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/syndtr/goleveldb/leveldb/iterator"
-	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/syndtr/goleveldb/leveldb/util"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
@@ -146,7 +143,6 @@ type DatabaseInterface interface {
 	AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
 	GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error)
 	RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
-	NewIterator(slice *util.Range, ro *opt.ReadOptions) iterator.Iterator
 
 	Close() error
 }

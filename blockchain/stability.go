@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // build actions from txs and ins at shard

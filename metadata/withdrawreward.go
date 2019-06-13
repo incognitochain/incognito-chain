@@ -1,10 +1,12 @@
 package metadata
 
 import (
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/wallet"
+	"fmt"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
 
@@ -19,6 +21,9 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		Type: WithDrawRewardRequestMeta,
 	}
 	requesterPaymentStr := data["PaymentAddress"].(string)
+	for key, value := range data {
+		fmt.Printf("[ndh]- - - - Key %+v; value %+v\n", key, value)
+	}
 	requesterPublicKeySet, err := wallet.Base58CheckDeserialize(requesterPaymentStr)
 	if err != nil {
 		return nil, err
