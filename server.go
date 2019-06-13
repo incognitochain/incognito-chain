@@ -951,10 +951,11 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		}
 		msgSA.(*wire.MessageAddr).RawPeers = rawPeers
 		var doneChan chan<- struct{}
+		listen.PeerConnsMtx.Lock()
 		for _, _peerConn := range listen.PeerConns {
 			go _peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MESSAGE_TO_PEER, nil)
 		}
-
+		listen.PeerConnsMtx.Unlock()
 		// send message get blocks
 
 		//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
