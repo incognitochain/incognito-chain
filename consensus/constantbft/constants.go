@@ -1,11 +1,13 @@
 package constantbft
 
+import "time"
+
 const (
-	ListenTimeout      = 15  //in s
-	PrepareTimeout     = 15  //in s
-	CommitTimeout      = 15  //in s
-	DelayTime          = 0 // in ms
-	MaxNormalRetryTime = 2
+	ListenTimeout       = 5 * time.Second        //in s
+	PrepareTimeout      = 3 * time.Second        //in s
+	CommitTimeout       = 3 * time.Second        //in s
+	MaxNetworkDelayTime = 150 * time.Millisecond // in ms
+	MaxNormalRetryTime  = 2
 )
 
 const (

@@ -25,4 +25,3 @@ func openDriver(args ...interface{}) (databasemp.DatabaseInterface, error) {
 	}
 	return open(dbPath)
 }
-

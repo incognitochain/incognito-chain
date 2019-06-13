@@ -14,10 +14,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jessevdk/go-flags"
 )
 

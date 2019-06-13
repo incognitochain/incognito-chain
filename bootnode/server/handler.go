@@ -3,7 +3,7 @@ package server
 import (
 	"fmt"
 
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/incognitochain/incognito-chain/wire"
 )
 
 type Handler struct {

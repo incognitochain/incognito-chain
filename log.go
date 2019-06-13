@@ -6,7 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"os"
 	"path/filepath"
-	
+
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"

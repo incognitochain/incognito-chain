@@ -1,7 +1,5 @@
 package databasemp
 
-
-
 import (
 	"github.com/incognitochain/incognito-chain/common"
 )
