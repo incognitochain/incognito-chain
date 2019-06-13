@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"

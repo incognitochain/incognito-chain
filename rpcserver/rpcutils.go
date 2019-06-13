@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
-	"github.com/constant-money/constant-chain/transaction"
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/wire"
 )
 
 type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)

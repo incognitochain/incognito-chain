@@ -15,23 +15,23 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/constant-money/constant-chain/databasemp"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction"
 
-	"github.com/constant-money/constant-chain/addrmanager"
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/connmanager"
-	"github.com/constant-money/constant-chain/consensus/constantbft"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/mempool"
-	"github.com/constant-money/constant-chain/netsync"
-	"github.com/constant-money/constant-chain/peer"
-	"github.com/constant-money/constant-chain/rpcserver"
-	"github.com/constant-money/constant-chain/wallet"
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/incognitochain/incognito-chain/addrmanager"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/connmanager"
+	"github.com/incognitochain/incognito-chain/consensus/constantbft"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/netsync"
+	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
@@ -637,7 +637,7 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 		result = strconv.Itoa(year) + "-" + "0" + strconv.Itoa(month) + "-" + common.FirstDateOfMonth
 	}
 	Logger.log.Warn("\n*********************************************************************************\n" +
-		"* Detected a Force Updating Time for this source code from https://github.com/constant-money/constant-chain at " + result + " *" +
+		"* Detected a Force Updating Time for this source code from https://github.com/incognitochain/incognito-chain at " + result + " *" +
 		"\n*********************************************************************************\n")
 	go func(nextUpdated string) {
 		for {
@@ -648,11 +648,11 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 			if forced {
 				Logger.log.Error("\n*********************************************************************************\n" +
 					"We're exited because having a force update on this souce code." +
-					"\nPlease Update source code at https://github.com/constant-money/constant-chain" +
+					"\nPlease Update source code at https://github.com/incognitochain/incognito-chain" +
 					"\n*********************************************************************************\n")
 				os.Exit(common.ExitCodeForceUpdate)
 			}
-			Logger.log.Debug("Check time to force update source code from https://github.com/constant-money/constant-chain after " + common.NextForceUpdate)
+			Logger.log.Debug("Check time to force update source code from https://github.com/incognitochain/incognito-chain after " + common.NextForceUpdate)
 			time.Sleep(time.Second * 60) // each minute
 		}
 	}(result)

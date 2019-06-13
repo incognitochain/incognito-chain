@@ -1,9 +1,9 @@
 package jsonresult
 
 import (
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type CustomToken struct {

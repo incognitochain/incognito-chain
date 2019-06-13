@@ -1,6 +1,6 @@
 package btc
 
-import "github.com/constant-money/constant-chain/common"
+import "github.com/incognitochain/incognito-chain/common"
 
 type RandomLogger struct {
 	log common.Logger

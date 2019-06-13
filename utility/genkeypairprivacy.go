@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/common/base58"
 
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func main() {

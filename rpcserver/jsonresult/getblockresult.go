@@ -1,8 +1,8 @@
 package jsonresult
 
 import (
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/metadata"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type GetBlocksBeaconResult struct {
