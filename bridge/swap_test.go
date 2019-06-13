@@ -84,7 +84,24 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 	}
 
 	for i, log := range receipt.Logs {
-		fmt.Printf("logs[%d]: %x %s\n", i, log.Data, string(log.Data))
+		var data interface{}
+		data = log.Data
+
+		format := "%+v"
+		switch log.Topics[0].Hex() {
+		case "0x8b1126c8e4087477c3efd9e3785935b29c778491c70e249de774345f7ca9b7f9":
+			format = "%s"
+		case "0xb42152598f9b870207037767fd41b627a327c9434c796b2ee501d68acec68d1b":
+			format = "%x"
+		case "0x6c8f06ff564112a969115be5f33d4a0f87ba918c9c9bc3090fe631968e818be4":
+			format = "%t"
+			data = log.Data[len(log.Data)-1] > 0
+		}
+
+		fmt.Printf(fmt.Sprintf("logs[%%d]: %s\n", format), i, data)
+		// for _, topic := range log.Topics {
+		// 	fmt.Printf("topic: %x\n", topic)
+		// }
 	}
 }
 
@@ -138,7 +155,7 @@ func TestSwapBeacon(t *testing.T) {
 
 	beaconBlkData := [32]byte{}
 	beaconBlkHash := keccak256(beaconInstRoot[:], beaconBlkData[:])
-	fmt.Printf("beaconBlkHash: %x\n", beaconBlkHash)
+	fmt.Printf("beaconBlkHash: %x\n\n", beaconBlkHash)
 
 	beaconSignerPubkeys := [comm_size][32]byte{beaconOld[1], beaconOld[0]}
 	beaconSignerSig := [32]byte{}
@@ -187,14 +204,7 @@ func TestSwapBeacon(t *testing.T) {
 	if err != nil {
 		fmt.Println("err:", err)
 	}
-	// fmt.Printf("%x\n", tx.To())
-	// fmt.Printf("%x\n", tx.Hash())
-	// fmt.Printf("%x\n", tx)
-	// j, _ := tx.MarshalJSON()
-	// fmt.Printf("%s\n", string(j))
-
 	p.sim.Commit()
-
 	p.printReceipt(tx)
 }
 
