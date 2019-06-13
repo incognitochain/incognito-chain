@@ -46,6 +46,7 @@ type ShardPool interface {
 	SetShardState(uint64)
 	GetValidBlockChan() *chan *ShardBlock
 	GetAllBlockHeight() []uint64
+	Start(chan struct{})
 }
 
 type BeaconPool interface {
