@@ -1,8 +1,8 @@
 package lvdb
 
 import (
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -10,6 +10,7 @@ import (
 type db struct {
 	lvdb *leveldb.DB
 }
+
 var (
 	txKeyPrefix = []byte("tx-")
 	Splitter    = []byte("-[-]-")
@@ -63,4 +64,3 @@ func (db *db) Get(key []byte) ([]byte, error) {
 	}
 	return value, nil
 }
-

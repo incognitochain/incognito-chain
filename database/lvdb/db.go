@@ -1,8 +1,8 @@
 package lvdb
 
 import (
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
 )

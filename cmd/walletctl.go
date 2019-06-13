@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"log"
 	"os"
 	"path/filepath"

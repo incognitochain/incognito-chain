@@ -1,6 +1,6 @@
 package addrmanager
 
-import "github.com/constant-money/constant-chain/common"
+import "github.com/incognitochain/incognito-chain/common"
 
 type AddrManagerLogger struct {
 	log common.Logger
