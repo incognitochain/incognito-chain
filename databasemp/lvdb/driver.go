@@ -1,7 +1,7 @@
 package lvdb
 
 import (
-	"github.com/constant-money/constant-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/pkg/errors"
 )
 

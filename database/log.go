@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/constant-money/constant-chain/common"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type DbLogger struct {

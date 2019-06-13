@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/wire"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/wire"
 )
 
 type BFTProtocol struct {

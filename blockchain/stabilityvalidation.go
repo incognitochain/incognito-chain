@@ -1,7 +1,7 @@
 package blockchain
 
 import (
-	"github.com/constant-money/constant-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(

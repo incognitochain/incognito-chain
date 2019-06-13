@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 const (

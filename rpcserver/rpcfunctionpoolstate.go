@@ -4,9 +4,9 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/mempool"
-	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 /*

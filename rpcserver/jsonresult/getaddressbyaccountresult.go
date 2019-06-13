@@ -1,6 +1,6 @@
 package jsonresult
 
-import "github.com/constant-money/constant-chain/wallet"
+import "github.com/incognitochain/incognito-chain/wallet"
 
 type GetAddressesByAccount struct {
 	Addresses []wallet.KeySerializedData `json:"Addresses"`
