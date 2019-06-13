@@ -3,7 +3,7 @@ package privacy
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/constant-money/constant-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"

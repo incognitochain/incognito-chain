@@ -3,7 +3,7 @@ package database
 import (
 	"math/big"
 
-	"github.com/constant-money/constant-chain/common"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.

@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/constant-money/constant-chain/utility/generateKeys/generator"
+	"github.com/incognitochain/incognito-chain/utility/generateKeys/generator"
 	"io/ioutil"
 )
 

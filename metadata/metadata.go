@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
-	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {

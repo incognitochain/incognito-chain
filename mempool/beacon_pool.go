@@ -3,8 +3,8 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/common"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	lru "github.com/hashicorp/golang-lru"
 	"sort"
 	"sync"

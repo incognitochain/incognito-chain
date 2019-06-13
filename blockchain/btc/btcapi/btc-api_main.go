@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 )
 
 func main() {

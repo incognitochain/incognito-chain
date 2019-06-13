@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/privacy"
-	zkp "github.com/constant-money/constant-chain/privacy/zeroknowledge"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
