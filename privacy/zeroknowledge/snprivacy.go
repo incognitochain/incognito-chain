@@ -1,7 +1,7 @@
 package zkp
 
 import (
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"math/big"
 )
 

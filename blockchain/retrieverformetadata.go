@@ -3,10 +3,10 @@ package blockchain
 import (
 	"encoding/json"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 func (blockchain *BlockChain) GetDatabase() database.DatabaseInterface {

@@ -1,7 +1,7 @@
 package jsonresult
 
 import (
-	"github.com/constant-money/constant-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"math/big"
 )
 

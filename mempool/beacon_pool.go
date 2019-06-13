@@ -3,9 +3,9 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/common"
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"sort"
 	"sync"
 	"time"
@@ -246,7 +246,6 @@ func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
 		delete(self.conflictedPool, hash)
 	}
 }
-
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
 	return self.validPool

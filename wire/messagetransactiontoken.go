@@ -4,9 +4,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/metadata"
+	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/libp2p/go-libp2p-peer"
 )
 
