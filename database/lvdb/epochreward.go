@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/constant-money/constant-chain/common"
-	"github.com/pkg/errors"
 )
 
 func (db *db) AddShardRewardRequest(
@@ -87,16 +86,14 @@ func (db *db) RemoveCommitteeReward(committeeAddress []byte, amount uint64) erro
 	}
 	oldValue, isExist := db.Get(key)
 	if isExist != nil {
-		err := db.Put(key, common.Uint64ToBytes(amount))
-		if err != nil {
-			return err
-		}
+		return err
 	} else {
 		newValue := common.BytesToUint64(oldValue)
-		if amount > newValue {
-			return errors.New("Not enough reward to remove")
+		if amount < newValue {
+			newValue -= amount
+		} else {
+			newValue = 0
 		}
-		newValue -= amount
 		err := db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
 			return err
