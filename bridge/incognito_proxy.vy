@@ -9,6 +9,7 @@ MIN_SIGN: constant(uint256) = 2
 
 NotifyString: event({content: string[100]})
 NotifyBytes32: event({content: bytes32})
+NotifyBool: event({content: bool})
 
 beaconCommRoot: public(bytes32)
 bridgeCommRoot: public(bytes32)
@@ -66,7 +67,8 @@ def verifyInst(
 ) -> bool:
     # Check if inst is in merkle tree with root instRoot
     if not self.inMerkleTree(instHash, instRoot, instPath, instPathIsLeft):
-        raise "instruction is not in merkle tree"
+        log.NotifyString("instruction is not in merkle tree")
+        return False
 
     # TODO: Check if signerSig is valid
 
@@ -84,13 +86,15 @@ def verifyInst(
             left[j] = signerPathIsLeft[i * h + j]
 
         if not self.inMerkleTree(signerPubkeys[i], commRoot, path, left):
-            assert 1 == 0
+            log.NotifyString("pubkey not in merkle tree")
+            return False
 
         count += 1
 
     # Check if enough validators signed this block
     if count < MIN_SIGN:
-        raise "not enough signature"
+        log.NotifyString("not enough sig")
+        return False
 
     return True
 
@@ -124,44 +128,48 @@ def swapBeacon(
         log.NotifyString("instruction merkle root is not in beacon block")
         log.NotifyBytes32(instHash)
         log.NotifyBytes32(blk)
-        # raise "instruction merkle root is not in beacon block"
+        raise "instruction merkle root is not in beacon block"
 
-    # # Check that inst is in beacon block
-    # if not self.verifyInst(
-    #     self.beaconCommRoot,
-    #     instHash,
-    #     beaconInstPath,
-    #     beaconInstPathIsLeft,
-    #     beaconInstRoot,
-    #     beaconBlkHash,
-    #     beaconSignerPubkeys,
-    #     beaconSignerSig,
-    #     beaconSignerPaths,
-    #     beaconSignerPathIsLeft
-    # ):
-    #     raise "failed verify beacon instruction"
+    # Check that inst is in beacon block
+    if not self.verifyInst(
+        self.beaconCommRoot,
+        instHash,
+        beaconInstPath,
+        beaconInstPathIsLeft,
+        beaconInstRoot,
+        beaconBlkHash,
+        beaconSignerPubkeys,
+        beaconSignerSig,
+        beaconSignerPaths,
+        beaconSignerPathIsLeft
+    ):
+        log.NotifyString("failed verifying beacon instruction")
+        raise "failed verifying beacon instruction"
 
-    # # Check if bridgeInstRoot is in block with hash bridgeBlkHash
-    # blk = sha3(concat(bridgeInstRoot, bridgeBlkData))
-    # if not blk == bridgeBlkHash:
-    #     raise "instruction merkle root is not in bridge block"
+    # Check if bridgeInstRoot is in block with hash bridgeBlkHash
+    blk = sha3(concat(bridgeInstRoot, bridgeBlkData))
+    if not blk == bridgeBlkHash:
+        log.NotifyString("instruction merkle root is not in bridge block")
+        raise "instruction merkle root is not in bridge block"
 
-    # # Check that inst is in bridge block
-    # if not self.verifyInst(
-    #     self.bridgeCommRoot,
-    #     instHash,
-    #     bridgeInstPath,
-    #     bridgeInstPathIsLeft,
-    #     bridgeInstRoot,
-    #     bridgeBlkHash,
-    #     bridgeSignerPubkeys,
-    #     bridgeSignerSig,
-    #     bridgeSignerPaths,
-    #     bridgeSignerPathIsLeft
-    # ):
-    #     raise "failed verify bridge instruction"
+    # Check that inst is in bridge block
+    if not self.verifyInst(
+        self.bridgeCommRoot,
+        instHash,
+        bridgeInstPath,
+        bridgeInstPathIsLeft,
+        bridgeInstRoot,
+        bridgeBlkHash,
+        bridgeSignerPubkeys,
+        bridgeSignerSig,
+        bridgeSignerPaths,
+        bridgeSignerPathIsLeft
+    ):
+        log.NotifyString("failed verify bridge instruction")
+        raise "failed verify bridge instruction"
 
     # # Update beacon committee merkle root
-    # self.beaconCommRoot = newCommRoot
+    self.beaconCommRoot = newCommRoot
+    log.NotifyString("no exeception...")
     return True
 
