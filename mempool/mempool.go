@@ -829,7 +829,7 @@ func (tp *TxPool) RemoveTxList(txs []metadata.Transaction, isInBlock bool) {
 			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
 			go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
 		}
-		size := tp.CalPoolSize()
+		size := tp.calPoolSize()
 		go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
 	}
 	return
