@@ -31,11 +31,11 @@ const (
 	defaultLogDirname             = "logs"
 	defaultLogFilename            = "log.log"
 	defaultMaxPeers               = 125
-	defaultMaxPeersSameShard      = 30
-	defaultMaxPeersOtherShard     = 30
+	defaultMaxPeersSameShard      = 50
+	defaultMaxPeersOtherShard     = 50
 	defaultMaxPeersOther          = 125
 	defaultMaxPeersNoShard        = 125
-	defaultMaxPeersBeacon         = 30
+	defaultMaxPeersBeacon         = 50
 	defaultMaxRPCClients          = 20
 	sampleConfigFilename          = "sample-config.conf"
 	defaultDisableRpcTLS          = true

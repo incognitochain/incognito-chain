@@ -5,7 +5,7 @@ import "time"
 const (
 	ListenTimeout       = 5 * time.Second        //in s
 	PrepareTimeout      = 3 * time.Second        //in s
-	CommitTimeout       = 3 * time.Second        //in s
+	CommitTimeout       = 5 * time.Second        //in s
 	MaxNetworkDelayTime = 150 * time.Millisecond // in ms
 	MaxNormalRetryTime  = 2
 )
