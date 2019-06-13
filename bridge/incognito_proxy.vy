@@ -108,8 +108,8 @@ def swapBeacon(
     bridgeSignerPathIsLeft: bool[PUBKEY_LENGTH]
 ) -> bool:
     # Check if beaconInstRoot is in block with hash beaconBlkHash
-    instHash: bytes32 = sha3(inst)
-    blk: bytes32 = sha3(concat(beaconInstRoot, beaconBlkData))
+    instHash: bytes32 = keccak256(inst)
+    blk: bytes32 = keccak256(concat(beaconInstRoot, beaconBlkData))
     if not blk == beaconBlkHash:
         log.NotifyString("instruction merkle root is not in beacon block")
         log.NotifyBytes32(instHash)
@@ -133,7 +133,7 @@ def swapBeacon(
         raise "failed verifying beacon instruction"
 
     # Check if bridgeInstRoot is in block with hash bridgeBlkHash
-    blk = sha3(concat(bridgeInstRoot, bridgeBlkData))
+    blk = keccak256(concat(bridgeInstRoot, bridgeBlkData))
     if not blk == bridgeBlkHash:
         log.NotifyString("instruction merkle root is not in bridge block")
         raise "instruction merkle root is not in bridge block"
