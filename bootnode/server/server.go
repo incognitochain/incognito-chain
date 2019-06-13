@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/constant-money/constant-chain/cashec"
+	"github.com/incognitochain/incognito-chain/cashec"
 )
 
 const (

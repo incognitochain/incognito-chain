@@ -3,11 +3,11 @@ package wire
 import (
 	"encoding/json"
 
-	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	peer "github.com/libp2p/go-libp2p-peer"
 
-	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
+	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 const (

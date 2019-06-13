@@ -1,6 +1,6 @@
 package jsonresult
 
-import "github.com/constant-money/constant-chain/common"
+import "github.com/incognitochain/incognito-chain/common"
 
 type GetBridgeTokensAmounts struct {
 	BridgeTokensAmounts map[string]GetBridgeTokensAmount // key is currency type

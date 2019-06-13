@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type CrossOutputCoin struct {
