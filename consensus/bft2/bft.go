@@ -141,7 +141,7 @@ func (e *BFTEngine) Start() {
 			case <-e.CommitMsgCh:
 
 			case view := <-e.ViewMsgCh: //update view of other nodes
-				e.debug("receive view", view)
+				e.ValidatorsView[view.PeerID] = view
 
 			}
 		}

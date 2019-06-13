@@ -32,6 +32,9 @@ func (e *BFTEngine) createNewBlockFromCurrentView(v View) BlockInterface {
 	return "sd"
 }
 
+func (e *BFTEngine) getValidatorMaxHeight() uint64 {
+}
+
 func (e *BFTEngine) createCurrentView() View {
 	view := View{}
 	view.Round = e.getCurrentRound()
