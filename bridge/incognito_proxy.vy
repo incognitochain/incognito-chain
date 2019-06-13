@@ -21,12 +21,8 @@ def __init__(_beaconCommRoot: bytes32, _bridgeCommRoot: bytes32):
 
 @constant
 @public
-def get() -> uint256:
-    return COMM_SIZE
-
-@constant
-@public
 def parseSwapBeaconInst(inst: bytes[INST_LENGTH]) -> bytes32[COMM_SIZE]:
+    # TODO: implement
     comm: bytes32[COMM_SIZE]
     return comm
 
@@ -40,16 +36,6 @@ def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[COMM_PATH_LENGTH], 
         else:
             hash = keccak256(concat(hash, path[i]))
     return hash == root
-
-@constant
-@public
-def getHash(inst: bytes[INST_LENGTH]) -> bytes32:
-    return keccak256(inst)
-
-@constant
-@public
-def getHash256(inst: bytes[INST_LENGTH]) -> bytes32:
-    return sha256(inst)
 
 @constant
 @public

@@ -207,35 +207,3 @@ func TestSwapBeacon(t *testing.T) {
 	p.sim.Commit()
 	p.printReceipt(tx)
 }
-
-func TestHash(t *testing.T) {
-	p, err := setupWithoutCommittee()
-	if err != nil {
-		t.Fatalf("Fail to deloy contract: %v\n", err)
-	}
-
-	x, y := p.c.Get(nil)
-	fmt.Println(x, y)
-
-	inst := []byte{}
-	x2, y2 := p.c.ParseSwapBeaconInst(nil, nil)
-	fmt.Println(x2, y2)
-
-	x3, _ := p.c.GetHash(nil, inst)
-	fmt.Printf("%x\n", x3)
-
-	x4 := crypto.Keccak256(inst[:])
-	fmt.Printf("%x\n", x4)
-
-	leaf := [32]byte{1, 2, 3}
-	right := [32]byte{}
-	comb := append(leaf[:], right[:]...)
-	path := [1][32]byte{right}
-	left := [1]bool{false}
-	r := crypto.Keccak256(comb)
-	root := [32]byte{}
-	copy(root[:], r)
-	leaf = [32]byte{1, 2, 3}
-	x5, _ := p.c.InMerkleTree(nil, leaf, root, path, left)
-	fmt.Println(x5)
-}
