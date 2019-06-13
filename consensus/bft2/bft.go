@@ -1,11 +1,10 @@
 package bft2
 
 import (
+	"fmt"
 	"github.com/constant-money/constant-chain/blockchain"
 	"github.com/constant-money/constant-chain/cashec"
-	"github.com/constant-money/constant-chain/common"
 	"github.com/constant-money/constant-chain/wire"
-	libp2p "github.com/libp2p/go-libp2p-peer"
 	"time"
 )
 
@@ -14,39 +13,35 @@ import (
 */
 
 const (
-	PROPOSE    = "PROPOSE"
-	LISTEN     = "LISTEN"
-	PREPREPARE = "PREPREPARE"
-	PREPARE    = "PREPARE"
-	COMMIT     = "COMMIT"
-	NEWROUND   = "NEWROUND"
+	PROPOSE  = "PROPOSE"
+	LISTEN   = "LISTEN"
+	PREPARE  = "PREPARE"
+	COMMIT   = "COMMIT"
+	NEWROUND = "NEWROUND"
 )
 
 const (
-	PROPOSE_TIMEOUT     = 30 * time.Second
-	LISTEN_TIMEOUT      = 30 * time.Second
-	PREPARE_TIMEOUT     = 30 * time.Second
-	PRE_PREPARE_TIMEOUT = 30 * time.Second
-	COMMIT_TIMEOUT      = 30 * time.Second
+	TIMEOUT = 30 * time.Second
 )
 
-const (
-	BEACON_TIME_MIN = 10 * time.Second
-	SHARD_TIME_MIN  = 5 * time.Second
-)
-
-type serverInterface interface {
+type ChainInterface interface {
 	// list functions callback which are assigned from Server struct
-	GetPeerIDsFromPublicKey(string) []libp2p.ID
-	PushMessageToAll(wire.Message) error
-	PushMessageToPeer(wire.Message, libp2p.ID) error
-	PushMessageToShard(wire.Message, byte) error
-	PushMessageToBeacon(wire.Message) error
-	PushMessageToPbk(wire.Message, string) error
+	//GetPeerIDsFromPublicKey(string) []libp2p.ID
+	//PushMessageToAll(wire.Message) error
+	//PushMessageToPeer(wire.Message, libp2p.ID) error
+	//PushMessageToShard(wire.Message, byte) error
+	//PushMessageToBeacon(wire.Message) error
+	//PushMessageToPbk(wire.Message, string) error
 	//UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
+	PushMessageToValidator(wire.Message) error
+	GetLastBlockTimeStamp() int64
+	GetBlkMinTime() time.Duration
+	IsReady() bool
+	GetRole() Role
+	GetHeight() uint64
 }
 
-type Block interface {
+type BlockInterface interface {
 	//validate() bool
 }
 
@@ -62,20 +57,11 @@ type View struct {
 	Timestamp     int
 	Role          Role //role of node
 	Round         int
-	BeaconHeight  uint64
-	ShardHeight   map[byte]uint64
-	CommitteeSize struct {
-		Beacon int
-		Shard  map[byte]int
-	}
+	Height        uint64
+	CommitteeSize int
 }
 
-type NextState struct {
-	state     *BFTState
-	nextState string
-}
-
-type PrePrepareMsg struct {
+type ProposeMsg struct {
 	isOk bool
 }
 
@@ -88,52 +74,63 @@ type CommitMsg struct {
 }
 
 type BFTState struct {
-	State         string //state
-	View          View   //view when creating/listening block
-	Block         Block  //message
-	isOk          bool   //vote for this message
-	PrePrepareMsg []PrePrepareMsg
-	PrepareMsg    []PrePrepareMsg
-	Commit        []PrePrepareMsg
+	State      string         //state
+	View       View           //view when creating/listening block
+	Block      BlockInterface //message
+	isOk       bool           //vote for this message
+	PrepareMsg []PrepareMsg
+	Commit     []CommitMsg
 }
 
 type BFTEngine struct {
-	CurrentState    *BFTState
-	ValidatorsView  map[string]View
-	UserKeySet      *cashec.KeySet
-	Server          serverInterface
-	newStateCh      chan NextState
-	IsReady         bool
-	ProposedBlockCh chan Block
-	PrePrepareMsgCh chan PrePrepareMsg
-	PrepareMsgCh    chan PrepareMsg
-	CommitMsgCh     chan CommitMsg
-	ViewMsgCh       chan View
+	CurrentState   *BFTState
+	ValidatorsView map[string]View
+	UserKeySet     *cashec.KeySet
+	NextStateCh    chan string
+	Chain          ChainInterface
+	IsReady        bool
+	ProposeMsgCh   chan ProposeMsg
+	PrepareMsgCh   chan PrepareMsg
+	CommitMsgCh    chan CommitMsg
+	ViewMsgCh      chan View
 }
 
-func (e *BFTEngine) Start(
-	UserKeySet *cashec.KeySet,
-	Server serverInterface,
-) {
+func (e *BFTEngine) Start() {
 	//var stateCache = make(map[uint64]BFTState)
 	//var curentState = BFTState{}
 
 	broadcastViewTicker := time.Tick(5 * time.Second)
-	checkReadyTicker := time.Tick(1 * time.Second)
+	ticker := time.Tick(100 * time.Millisecond)
+
+	// goroutine to update view
 	go func() {
 		for _ = range broadcastViewTicker {
-			_ = e.createCurrentView()
-			//TODO: broadcast view
+			view := e.createCurrentView()
+			if err := e.Chain.PushMessageToValidator(&view); err != nil {
+				fmt.Println(err)
+			}
+		}
+	}()
+
+	// goroutine to update view
+	go func() {
+		for {
+			<-ticker
+			// check if chain is ready
+			e.IsReady = e.Chain.IsReady()
+			// check if round is timeout
+			if e.IsReady && e.getTimeSinceLastBlock() > TIMEOUT && e.getCurrentRound() != e.CurrentState.View.Round {
+				e.NextStateCh <- NEWROUND
+			}
 
 		}
 	}()
 
-	for { //data flow
+	for { //action react pattern
 		select {
-		case s := <-e.newStateCh:
-			e.nextState(s.state, s.nextState)
-		case <-e.ProposedBlockCh:
-		case <-e.PrePrepareMsgCh:
+		case s := <-e.NextStateCh:
+			e.nextState(s)
+		case <-e.ProposeMsgCh:
 		case <-e.PrepareMsgCh:
 		case <-e.CommitMsgCh:
 
@@ -143,76 +140,31 @@ func (e *BFTEngine) Start(
 			if nodeType == curView.Role.nodeType && shardID == curView.Role.shardID {
 				e.ValidatorsView[view.PubKey] = view
 			}
-		case <-checkReadyTicker:
-			curView := e.createCurrentView()
-			if curView.Role.nodeType == common.BEACON_ROLE {
-				//if beacon chain -> beacon must be max
-				maxHeight := uint64(0)
-				for _, v := range e.ValidatorsView {
-					nodeType, shardID := blockchain.GetBestStateBeacon().GetPubkeyNodeRole(v.PubKey)
-					if nodeType != curView.Role.nodeType && shardID != curView.Role.shardID {
-						continue
-					}
-					if v.BeaconHeight > maxHeight {
-						maxHeight = v.BeaconHeight
-					}
-				}
-				//check if get max
-				if curView.BeaconHeight == maxHeight && curView.Role.role != common.PENDING_ROLE {
-					e.IsReady = true
-				} else {
-					e.IsReady = false
-				}
-			}
-
-			if curView.Role.nodeType == common.SHARD_ROLE {
-				//if shard chain -> shard height must be max
-				maxHeight := uint64(0)
-				for _, v := range e.ValidatorsView {
-					nodeType, shardID := blockchain.GetBestStateBeacon().GetPubkeyNodeRole(v.PubKey)
-					if nodeType != curView.Role.nodeType && shardID != curView.Role.shardID {
-						continue
-					}
-					if v.ShardHeight[curView.Role.shardID] > maxHeight {
-						maxHeight = v.BeaconHeight
-					}
-				}
-				//check if get max
-				if curView.ShardHeight[curView.Role.shardID] == maxHeight && curView.Role.role != common.PENDING_ROLE {
-					e.IsReady = true
-				} else {
-					e.IsReady = false
-				}
-			}
-
 		}
 	}
 
 }
 
-func (e *BFTEngine) nextState(s *BFTState, nextState string) {
-	if s.State == nextState {
+func (e *BFTEngine) nextState(nextState string) {
+	if e.CurrentState.State == nextState {
 		return //already transition
 	}
 
 	switch nextState {
 	case PROPOSE:
-		s.State = PROPOSE
-		e.handleProposePhase(s)
+		e.CurrentState.State = PROPOSE
+		e.handleProposePhase()
 	case LISTEN:
-		s.State = LISTEN
-		e.handleListenPhase(s)
-	case PREPREPARE:
-		s.State = PREPREPARE
-		e.handlePrePreparePhase(s)
+		e.CurrentState.State = LISTEN
+		e.handleListenPhase()
 	case PREPARE:
-		s.State = PREPARE
-		e.handlePreparePhase(s)
+		e.CurrentState.State = PREPARE
+		e.handlePreparePhase()
 	case COMMIT:
-		s.State = COMMIT
-		e.handleCommitPhase(s)
+		e.CurrentState.State = COMMIT
+		e.handleCommitPhase()
 	case NEWROUND:
-		s.State = NEWROUND
-		e.handleNewRoundPhase(s)
+		e.CurrentState.State = NEWROUND
+		e.handleNewRoundPhase()
 	}
 }
