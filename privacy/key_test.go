@@ -69,9 +69,8 @@ func TestGenerateKey(t *testing.T) {
 	fmt.Printf("Spending key string after encode : %v\n", skStr)
 }
 
-func TestDecodePubKey(t *testing.T){
+func TestDecodePubKey(t *testing.T) {
 	// shard 0
 	res, _ := hex.DecodeString("023db7a5efdc3c948d9882458e74568edf42ac0f7eaa1527beb457075d57028bfe")
 	fmt.Printf("Res: %v\n", res)
 }
-

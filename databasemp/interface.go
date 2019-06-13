@@ -9,13 +9,13 @@ type DatabaseInterface interface {
 	Get(key []byte) ([]byte, error)
 	Delete(key []byte) error
 	HasValue(key []byte) (bool, error)
-	
+
 	AddTransaction(*common.Hash, string, []byte, []byte) error
 	RemoveTransaction(key *common.Hash) error
 	GetTransaction(key *common.Hash) ([]byte, error)
 	HasTransaction(key *common.Hash) (bool, error)
 	Reset() error
-	Load() ([][]byte,[][]byte, error)
-	
+	Load() ([][]byte, [][]byte, error)
+
 	Close() error
 }
