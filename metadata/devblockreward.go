@@ -6,8 +6,8 @@ import (
 	// "errors"
 	"strconv"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type DevRewardInfo struct {

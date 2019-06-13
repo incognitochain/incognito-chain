@@ -7,10 +7,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/database"
-	_ "github.com/constant-money/constant-chain/database/lvdb"
-	"github.com/constant-money/constant-chain/metadata"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/database"
+	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 func setup(t *testing.T) (database.DatabaseInterface, func()) {

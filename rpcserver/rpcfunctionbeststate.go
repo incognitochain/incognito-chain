@@ -2,10 +2,10 @@ package rpcserver
 
 import (
 	"errors"
-	"github.com/constant-money/constant-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 /*

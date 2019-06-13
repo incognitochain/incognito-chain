@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/constant-money/constant-chain/blockchain"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 // Policy houses the policy (configuration parameters) which is used to control the mempool.

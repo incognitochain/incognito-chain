@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/metadata"
-	"github.com/constant-money/constant-chain/privacy"
-	"github.com/constant-money/constant-chain/transaction"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 //=======================================BEGIN SHARD BLOCK UTIL
