@@ -113,4 +113,5 @@ const (
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
+	getRewardAmount              = "getrewardamount"
 )
