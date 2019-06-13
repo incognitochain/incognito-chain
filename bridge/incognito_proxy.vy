@@ -7,26 +7,16 @@ INST_LENGTH: constant(uint256) = 100
 
 MIN_SIGN: constant(uint256) = 2
 
-Transfer: event({_from: indexed(address), _to: indexed(address), _value: uint256})
-Approve: event({_owner: indexed(address), _spender: indexed(address), _value: uint256})
+NotifyString: event({content: string[100]})
+NotifyBytes32: event({content: bytes32})
 
 beaconCommRoot: public(bytes32)
 bridgeCommRoot: public(bytes32)
 
-name: public(string[10])
-symbol: public(string[10])
-decimals: public(uint256)
-totalSupply: public(uint256)
-balanceOf: public(map(address, uint256))
-allowance: public(map(address, map(address, uint256)))
-
 @public
-def __init__(_name: string[10], _symbol: string[10], _decimals: uint256, _totalSupply: uint256):
-    self.name = _name
-    self.symbol = _symbol
-    self.decimals = _decimals
-    self.totalSupply = _totalSupply
-    self.balanceOf[msg.sender] = _totalSupply
+def __init__(_beaconCommRoot: bytes32, _bridgeCommRoot: bytes32):
+    self.beaconCommRoot = _beaconCommRoot
+    self.bridgeCommRoot = _bridgeCommRoot
 
 @constant
 @public
@@ -129,70 +119,49 @@ def swapBeacon(
 ) -> bool:
     # Check if beaconInstRoot is in block with hash beaconBlkHash
     instHash: bytes32 = sha3(inst)
-    blk: bytes32 = sha3(concat(instHash, beaconBlkData))
+    blk: bytes32 = sha3(concat(beaconInstRoot, beaconBlkData))
     if not blk == beaconBlkHash:
-        raise "instruction merkle root is not in beacon block"
+        log.NotifyString("instruction merkle root is not in beacon block")
+        log.NotifyBytes32(instHash)
+        log.NotifyBytes32(blk)
+        # raise "instruction merkle root is not in beacon block"
 
-    # Check that inst is in beacon block
-    if not self.verifyInst(
-        self.beaconCommRoot,
-        instHash,
-        beaconInstPath,
-        beaconInstPathIsLeft,
-        beaconInstRoot,
-        beaconBlkHash,
-        beaconSignerPubkeys,
-        beaconSignerSig,
-        beaconSignerPaths,
-        beaconSignerPathIsLeft
-    ):
-        raise "failed verify beacon instruction"
+    # # Check that inst is in beacon block
+    # if not self.verifyInst(
+    #     self.beaconCommRoot,
+    #     instHash,
+    #     beaconInstPath,
+    #     beaconInstPathIsLeft,
+    #     beaconInstRoot,
+    #     beaconBlkHash,
+    #     beaconSignerPubkeys,
+    #     beaconSignerSig,
+    #     beaconSignerPaths,
+    #     beaconSignerPathIsLeft
+    # ):
+    #     raise "failed verify beacon instruction"
 
-    # Check if bridgeInstRoot is in block with hash bridgeBlkHash
-    blk = sha3(concat(instHash, bridgeBlkData))
-    if not blk == bridgeBlkHash:
-        raise "instruction merkle root is not in bridge block"
+    # # Check if bridgeInstRoot is in block with hash bridgeBlkHash
+    # blk = sha3(concat(bridgeInstRoot, bridgeBlkData))
+    # if not blk == bridgeBlkHash:
+    #     raise "instruction merkle root is not in bridge block"
 
-    # Check that inst is in bridge block
-    if not self.verifyInst(
-        self.bridgeCommRoot,
-        instHash,
-        bridgeInstPath,
-        bridgeInstPathIsLeft,
-        bridgeInstRoot,
-        bridgeBlkHash,
-        bridgeSignerPubkeys,
-        bridgeSignerSig,
-        bridgeSignerPaths,
-        bridgeSignerPathIsLeft
-    ):
-        raise "failed verify bridge instruction"
+    # # Check that inst is in bridge block
+    # if not self.verifyInst(
+    #     self.bridgeCommRoot,
+    #     instHash,
+    #     bridgeInstPath,
+    #     bridgeInstPathIsLeft,
+    #     bridgeInstRoot,
+    #     bridgeBlkHash,
+    #     bridgeSignerPubkeys,
+    #     bridgeSignerSig,
+    #     bridgeSignerPaths,
+    #     bridgeSignerPathIsLeft
+    # ):
+    #     raise "failed verify bridge instruction"
 
-    # Update beacon committee merkle root
-    self.beaconCommRoot = newCommRoot
-    return True
-
-@private
-def _transfer(_from: address, _to: address, _value: uint256) -> bool:
-    assert self.balanceOf[_from] >= _value
-    self.balanceOf[_from] -= _value
-    self.balanceOf[_to] += _value
-    log.Transfer(_from, _to, _value)
-    return True
-
-@public
-def transfer(_to: address, _value: uint256) -> bool:
-    return self._transfer(msg.sender, _to, _value)
-
-@public
-def transferFrom(_from: address, _to: address, _value: uint256) -> bool:
-    assert self.allowance[_from][_to] >= _value
-    self.allowance[_from][_to] -= _value
-    return self._transfer(_from, _to, _value)
-
-@public
-def approve(_spender: address, _value: uint256) -> bool:
-    self.allowance[msg.sender][_spender] += _value
-    log.Approve(msg.sender, _spender, _value)
+    # # Update beacon committee merkle root
+    # self.beaconCommRoot = newCommRoot
     return True
 
