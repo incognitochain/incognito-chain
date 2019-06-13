@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/constant-money/constant-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // This protocol proves in zero-knowledge that a list of committed values falls in [0, 2^64)

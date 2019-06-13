@@ -5,10 +5,10 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/constant-money/constant-chain/common"
-	"github.com/constant-money/constant-chain/common/base58"
-	"github.com/constant-money/constant-chain/database"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type StakingMetadata struct {

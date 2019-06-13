@@ -1,6 +1,6 @@
 package jsonresult
 
-import "github.com/constant-money/constant-chain/metadata"
+import "github.com/incognitochain/incognito-chain/metadata"
 
 type GetMempoolInfo struct {
 	Size          int                `json:"Size"`

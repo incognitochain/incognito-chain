@@ -2,19 +2,19 @@ package main
 
 import (
 	"fmt"
-	"github.com/constant-money/constant-chain/common"
+	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
 
-	"github.com/constant-money/constant-chain/database"
-	_ "github.com/constant-money/constant-chain/database/lvdb"
-	"github.com/constant-money/constant-chain/databasemp"
-	_ "github.com/constant-money/constant-chain/databasemp/lvdb"
-	"github.com/constant-money/constant-chain/limits"
-	"github.com/constant-money/constant-chain/wallet"
+	"github.com/incognitochain/incognito-chain/database"
+	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/databasemp"
+	_ "github.com/incognitochain/incognito-chain/databasemp/lvdb"
+	"github.com/incognitochain/incognito-chain/limits"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 var (
