@@ -269,7 +269,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// Process transaction db
-	Logger.log.Criticalf("SHARD %+v | Found %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
+	Logger.log.Criticalf("SHARD %+v | ⚒︎ %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
 	//temp := blockchain.BestState.Shard[block.Header.ShardID].MetricBlockHeight
 	if block.Header.Height != 1 {
 		go common.AnalyzeTimeSeriesTxsInOneBlockMetric(fmt.Sprintf("%d", block.Header.Height), float64(len(block.Body.Transactions)))
