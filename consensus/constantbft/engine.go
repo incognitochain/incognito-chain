@@ -41,6 +41,7 @@ type EngineConfig struct {
 	CrossShardPool           map[byte]blockchain.CrossShardPool
 	CRoleInCommitteesMempool chan int
 	CRoleInCommitteesNetSync chan int
+	CRoleInCommitteesShardPool [] chan int
 }
 
 //Init apply configuration to consensus engine
@@ -155,9 +156,7 @@ func (engine *Engine) execBeaconRole() {
 	)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
-		engine.config.CRoleInCommitteesMempool <- -1
-		engine.config.CRoleInCommitteesNetSync <- -1
-
+		engine.NotifyRole(-1)
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
@@ -168,9 +167,7 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
-		engine.config.CRoleInCommitteesMempool <- -1
-		engine.config.CRoleInCommitteesNetSync <- -1
-
+		engine.NotifyRole(-1)
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
@@ -181,9 +178,7 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
-		engine.config.CRoleInCommitteesMempool <- -1
-		engine.config.CRoleInCommitteesNetSync <- -1
-
+		engine.NotifyRole(-1)
 		err = errors.New("Not your turn yet")
 	}
 
@@ -238,8 +233,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 	roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.userPk, bftProtocol.RoundData.Round)
 	Logger.log.Infof("My shard role %+v, ShardID %+v \n", roundRole, shardID)
 	go func() {
-		engine.config.CRoleInCommitteesMempool <- int(shardID)
-		engine.config.CRoleInCommitteesNetSync <- int(shardID)
+		engine.NotifyRole(int(shardID))
 	}()
 	switch roundRole {
 	case common.PROPOSER_ROLE:
@@ -305,5 +299,13 @@ func (engine *Engine) execShardRole(shardID byte) {
 		engine.retries = 0
 	} else {
 		Logger.log.Error(err)
+	}
+}
+
+func (engine *Engine) NotifyRole(role int) {
+	engine.config.CRoleInCommitteesMempool <- role
+	engine.config.CRoleInCommitteesNetSync <- role
+	for _, ch := range engine.config.CRoleInCommitteesShardPool {
+		ch <- role
 	}
 }

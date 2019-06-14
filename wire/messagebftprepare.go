@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MaxBFTAgreePayload = 1000 // 1 Kb
+	MaxBFTPreparePayload = 2000 // 1 Kb
 )
 
 type MessageBFTAgree struct {

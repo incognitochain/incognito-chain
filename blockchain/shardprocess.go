@@ -203,9 +203,18 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 				blockchain.config.CRemovedTxs <- tx
 			}
 		}
-		blockchain.config.TxPool.RemoveTxList(block.Body.Transactions, true)
 		blockchain.config.TxPool.RemoveCandidateList(candidates)
 		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
+
+		//Remove tx out of pool
+		go blockchain.config.TxPool.RemoveTx(block.Body.Transactions, true)
+		for _, tx := range block.Body.Transactions {
+			go func(tx metadata.Transaction) {
+				if blockchain.config.IsBlockGenStarted {
+					blockchain.config.CRemovedTxs <- tx
+				}
+			}(tx)
+		}
 	}()
 
 	//========Store new  Shard block and new shard bestState
@@ -260,7 +269,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// Process transaction db
-	Logger.log.Criticalf("SHARD %+v | Found %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
+	Logger.log.Criticalf("SHARD %+v | ⚒︎ %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
 	//temp := blockchain.BestState.Shard[block.Header.ShardID].MetricBlockHeight
 	if block.Header.Height != 1 {
 		go common.AnalyzeTimeSeriesTxsInOneBlockMetric(fmt.Sprintf("%d", block.Header.Height), float64(len(block.Body.Transactions)))
@@ -327,15 +336,14 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(DBError, err)
 	}
 	parentBlock := ShardBlock{}
-	json.Unmarshal(parentBlockData, &parentBlock)
+	err = json.Unmarshal(parentBlockData, &parentBlock)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
 	// Verify block height with parent block
 	if parentBlock.Header.Height+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
-	// Verify epoch with parent block
-	// if block.Header.Height%EPOCH == 0 && parentBlock.Header.Epoch != block.Header.Epoch-1 {
-	// 	return NewBlockChainError(EpochError, errors.New("Block height and Epoch is not compatiable"))
-	// }
 	// Verify timestamp with parent block
 	if block.Header.Timestamp <= parentBlock.Header.Timestamp {
 		return NewBlockChainError(TimestampError, errors.New("timestamp of new block can't equal to parent block"))
