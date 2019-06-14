@@ -165,17 +165,18 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	rewardForBeacon := uint64(0)
 	for ID := 0; ID < numberOfActiveShards; ID++ {
 		if epoch <= epochEndDevReward {
-			rewardForBeacon := 18 * totalRewards[ID] / ((uint64(numberOfActiveShards) + 2) * 10)
+			rewardForBeacon = uint64(18*totalRewards[ID]) / ((uint64(numberOfActiveShards) + 2) * 10)
+			fmt.Printf("[ndh] shardID %+v - - %+v %+v %+v\n", totalRewards[ID], rewardForBeacon, 18*totalRewards[ID], ((uint64(numberOfActiveShards) + 2) * 10))
 			rewardForDev := totalRewards[ID] / 10
 			totalRewards[ID] -= (rewardForBeacon + rewardForDev)
 			totalRewardForDev += rewardForDev
 		} else {
-			rewardForBeacon := 2 * totalRewards[ID] / (uint64(numberOfActiveShards) + 2)
+			rewardForBeacon = 2 * totalRewards[ID] / (uint64(numberOfActiveShards) + 2)
 			totalRewards[ID] -= (rewardForBeacon)
 		}
 		totalRewardForBeacon += rewardForBeacon
 	}
-
+	fmt.Printf("[ndh] %+v\n", totalRewardForBeacon)
 	var resInst [][]string
 	var instRewardForBeacons [][]string
 	var instRewardForDev [][]string
