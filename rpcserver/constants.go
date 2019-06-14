@@ -75,6 +75,8 @@ const (
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile = "getandsendtxsfromfile"
+	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
+	unlockMempool         = "unlockmempool"
 	//==================================================
 
 	getShardBestState  = "getshardbeststate"
@@ -114,4 +116,7 @@ const (
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
+
+	revertbeaconchain = "revertbeaconchain"
+	revertshardchain  = "revertshardchain"
 )
