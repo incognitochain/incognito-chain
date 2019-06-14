@@ -31,17 +31,17 @@ type Engine struct {
 }
 
 type EngineConfig struct {
-	BlockChain               *blockchain.BlockChain
-	ChainParams              *blockchain.Params
-	BlockGen                 *blockchain.BlkTmplGenerator
-	UserKeySet               *cashec.KeySet
-	NodeMode                 string
-	Server                   serverInterface
-	ShardToBeaconPool        blockchain.ShardToBeaconPool
-	CrossShardPool           map[byte]blockchain.CrossShardPool
-	CRoleInCommitteesMempool chan int
-	CRoleInCommitteesNetSync chan int
-	CRoleInCommitteesShardPool [] chan int
+	BlockChain                 *blockchain.BlockChain
+	ChainParams                *blockchain.Params
+	BlockGen                   *blockchain.BlkTmplGenerator
+	UserKeySet                 *cashec.KeySet
+	NodeMode                   string
+	Server                     serverInterface
+	ShardToBeaconPool          blockchain.ShardToBeaconPool
+	CrossShardPool             map[byte]blockchain.CrossShardPool
+	CRoleInCommitteesMempool   chan int
+	CRoleInCommitteesNetSync   chan int
+	CRoleInCommitteesShardPool []chan int
 }
 
 //Init apply configuration to consensus engine
@@ -154,9 +154,9 @@ func (engine *Engine) execBeaconRole() {
 		err    error
 		resBlk interface{}
 	)
+	go engine.NotifyRole(-1)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
-		engine.NotifyRole(-1)
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
@@ -167,7 +167,6 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
-		engine.NotifyRole(-1)
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
@@ -178,7 +177,6 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
-		engine.NotifyRole(-1)
 		err = errors.New("Not your turn yet")
 	}
 
