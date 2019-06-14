@@ -1,7 +1,7 @@
 package bft2
 
 import (
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -17,6 +17,10 @@ func (e *BFTEngine) waitForNextRound() {
 	time.Sleep(timeSinceLastBlk)
 }
 
+func (e *BFTEngine) setState(state string) {
+	e.State = state
+}
+
 /*
 Return the round is calculated since the latest block time
 */
@@ -24,37 +28,45 @@ func (e *BFTEngine) getCurrentRound() int {
 	return int(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
 }
 
-func (e *BFTEngine) validateBlockWithCurrentView(b BlockInterface, v View) bool {
+func (e *BFTEngine) viewIsInTimeFrame() bool {
+	if e.Chain.GetHeight()+1 != e.NextHeight {
+		return false
+	}
+
+	if e.getTimeSinceLastBlock() > TIMEOUT && e.getCurrentRound() != e.Round {
+		return false
+	}
 	return true
 }
 
-func (e *BFTEngine) createNewBlockFromCurrentView(v View) BlockInterface {
-	return "sd"
-}
-
-func (e *BFTEngine) getValidatorMaxHeight() uint64 {
-}
-
-func (e *BFTEngine) createCurrentView() View {
-	view := View{}
-	view.Round = e.getCurrentRound()
-	view.Role = e.Chain.GetRole()
-	view.Height = e.Chain.GetHeight()
-	view.CommitteeSize = e.Chain.GetCommitteeSize()
-	view.PeerID = e.PeerID
-	//nodeType, shardID := blockchain.GetBestStateBeacon().GetPubkeyNodeRole(e.UserKeySet.GetPublicKeyB58())
-	//round := e.predictCurrentRound(nodeType, shardID)
-	//role := blockchain.GetBestStateBeacon().GetPubkeyChainRole(e.UserKeySet.GetPublicKeyB58(), round)
-	//view.Role = Role{nodeType, role, shardID}
-	//view.Round = round
-	//view.PubKey = e.UserKeySet.GetPublicKeyB58()
-	//view.ShardHeight[shardID] = blockchain.GetBestStateShard(shardID).ShardHeight
-	//view.BeaconHeight = blockchain.GetBestStateBeacon().BeaconHeight
-	//view.CommitteeSize.Beacon = len(blockchain.GetBestStateBeacon().BeaconCommittee)
-	//view.CommitteeSize.Shard[shardID] = len(blockchain.GetBestStateShard(shardID).ShardCommittee)
-
-	return view
-}
+//func (e *BFTEngine) validateBlockWithCurrentView(b BlockInterface) bool {
+//	return true
+//}
+//
+//func (e *BFTEngine) createNewBlockFromCurrentView() BlockInterface {
+//	return "sd"
+//}
+//
+//func (e *BFTEngine) createCurrentView() View {
+//	view := View{}
+//	view.Round = e.getCurrentRound()
+//	view.Role = e.Chain.GetRole()
+//	view.NextHeight = e.Chain.GetHeight() + 1
+//
+//	view.PeerID = e.PeerID
+//	//nodeType, shardID := blockchain.GetBestStateBeacon().GetPubkeyNodeRole(e.UserKeySet.GetPublicKeyB58())
+//	//round := e.predictCurrentRound(nodeType, shardID)
+//	//role := blockchain.GetBestStateBeacon().GetPubkeyChainRole(e.UserKeySet.GetPublicKeyB58(), round)
+//	//view.Role = Role{nodeType, role, shardID}
+//	//view.Round = round
+//	//view.PubKey = e.UserKeySet.GetPublicKeyB58()
+//	//view.ShardHeight[shardID] = blockchain.GetBestStateShard(shardID).ShardHeight
+//	//view.BeaconHeight = blockchain.GetBestStateBeacon().BeaconHeight
+//	//view.CommitteeSize.Beacon = len(blockchain.GetBestStateBeacon().BeaconCommittee)
+//	//view.CommitteeSize.Shard[shardID] = len(blockchain.GetBestStateShard(shardID).ShardCommittee)
+//
+//	return view
+//}
 
 //
 //func (e *BFTEngine) predictCurrentRound(nodeType string, shardID byte) int {
@@ -125,8 +137,9 @@ func (e *BFTEngine) createCurrentView() View {
 //}
 
 func (e *BFTEngine) debug(s ...interface{}) {
-	if e.PeerID == "1" {
-		fmt.Println(s...)
-	}
+	//if e.PeerID == "1" {
+	s = append([]interface{}{"Peer " + e.PeerID + ": "}, s...)
+	log.Println(s...)
+	//}
 
 }

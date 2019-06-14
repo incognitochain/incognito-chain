@@ -17,6 +17,10 @@ type Block struct {
 	Height uint64
 }
 
+func (s Block) Validate() bool {
+	return true
+}
+
 var Committees = []string{
 	"17yV5NTyFPm73sHa7tK3mdKbMJmVavdrvZzhCynAexcg81BYfQe",
 	"15gjFF5JCqTUFn2PSK4Bq7rQXBnU5qxRQQTfjjf3cZxGVd4ZQru",
@@ -32,17 +36,14 @@ var Committees = []string{
 
 type Chain struct {
 	Block      []Block
-	Role       Role
 	Committees []string
 	Pubkey     string
 	Env        TestFrameWork
 }
 
 func (s *Chain) PushMessageToValidator(m wire.Message) error {
-	for _, node := range s.Env.nodeList {
+	for _, _ = range s.Env.nodeList {
 		switch v := m.(type) {
-		case *View:
-			node.ViewMsgCh <- *(m.(*View))
 		default:
 			fmt.Printf("I don't know about type %T!\n", v)
 		}
@@ -59,15 +60,29 @@ func (s *Chain) GetBlkMinTime() time.Duration {
 }
 
 func (s *Chain) IsReady() bool {
+	var maxHeight = uint64(0)
+	for _, node := range s.Env.nodeList {
+		if node.Chain.GetHeight() > maxHeight {
+			maxHeight = node.Chain.GetHeight()
+		}
+	}
+	if s.GetHeight() == maxHeight {
+		return true
+	}
 	return false
-}
-
-func (s *Chain) GetRole() Role {
-	return s.Role
 }
 
 func (s *Chain) GetHeight() uint64 {
 	return s.Block[len(s.Block)-1].Height
+}
+
+func (s *Chain) GetNodePubKeyIndex() int {
+	for i, v := range s.Committees {
+		if v == s.Pubkey {
+			return i
+		}
+	}
+	return -1
 }
 
 func (s *Chain) GetCommitteeSize() int {
@@ -78,14 +93,17 @@ func (s *Chain) GetPubKey() string {
 	return s.Pubkey
 }
 
+func (s *Chain) CreateNewBlock() BlockInterface {
+	return Block{Height: s.GetHeight() + 1}
+}
+
 var NODE_NUM = 6
 var testFramework = TestFrameWork{nodeList: make([]*BFTEngine, NODE_NUM)}
 
 func TestBFTEngine_Start(t *testing.T) {
 	for i := 0; i < NODE_NUM; i++ {
 		newNode := new(BFTEngine)
-		newNode.Chain = &Chain{Block: []Block{{1}}, Role: Role{"shard", "validator", 0}, Committees: Committees[:NODE_NUM], Pubkey: Committees[i], Env: testFramework}
-		newNode.IsReady = false
+		newNode.Chain = &Chain{Block: []Block{{1}}, Committees: Committees[:NODE_NUM], Pubkey: Committees[i], Env: testFramework}
 		newNode.PeerID = strconv.Itoa(i)
 		testFramework.nodeList[i] = newNode
 		newNode.Start()
