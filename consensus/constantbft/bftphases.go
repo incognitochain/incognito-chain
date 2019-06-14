@@ -14,11 +14,12 @@ import (
 func (protocol *BFTProtocol) phasePropose() error {
 	//fmt.Println("[db] phasePropose")
 	go protocol.CreateBlockMsg()
-	timeout := time.AfterFunc(getTimeout("listen", len(protocol.RoundData.Committee)), func() {
+	phaseDuration := getTimeout(protocol.phase, len(protocol.RoundData.Committee))
+	timeout := time.AfterFunc(phaseDuration, func() {
 		fmt.Println("BFT: Propose phase timeout", time.Since(protocol.startTime).Seconds())
 		protocol.closeTimeoutCh()
 	})
-	timeout2 := time.AfterFunc(getTimeout("listen", len(protocol.RoundData.Committee))/2, func() {
+	timeout2 := time.AfterFunc(phaseDuration/2, func() {
 		fmt.Println("BFT: Request ready msg", time.Since(protocol.startTime).Seconds())
 		if protocol.RoundData.Layer == common.BEACON_ROLE {
 			msgReq, _ := MakeMsgBFTReq(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.UserKeySet)
@@ -67,7 +68,7 @@ phase:
 					return errors.New("Failed to propose block")
 				}
 				protocol.forwardMsg(msg)
-				protocol.phase = BFT_PREPARE
+				protocol.phase = BFT_AGREE
 				protocol.closeProposeCh()
 			} else {
 				protocol.closeProposeCh()
@@ -104,7 +105,8 @@ func (protocol *BFTProtocol) phaseListen() error {
 	}
 	fmt.Println("BFT: Listen phase", time.Since(protocol.startTime).Seconds())
 
-	timeout := time.AfterFunc(getTimeout("listen", len(protocol.RoundData.Committee))+additionalWaitTime, func() {
+	phaseDuration := getTimeout(protocol.phase, len(protocol.RoundData.Committee))
+	timeout := time.AfterFunc(phaseDuration+additionalWaitTime, func() {
 		fmt.Println("BFT: Listen phase timeout", time.Since(protocol.startTime).Seconds())
 		protocol.closeTimeoutCh()
 	})
@@ -153,7 +155,7 @@ phase:
 					protocol.multiSigScheme.dataToSig = pendingBlk.Header.Hash()
 				}
 				fmt.Println("BFT: Forward propose message", time.Since(protocol.startTime).Seconds())
-				protocol.phase = BFT_PREPARE
+				protocol.phase = BFT_AGREE
 				timeout.Stop()
 				break phase
 			} else {
@@ -189,15 +191,16 @@ phase:
 	return nil
 }
 
-func (protocol *BFTProtocol) phasePrepare() error {
-	fmt.Println("BFT: Prepare phase", time.Since(protocol.startTime).Seconds())
-	timeout := time.AfterFunc(getTimeout("prepare", len(protocol.RoundData.Committee))+(protocol.blockCreateTime*4/5), func() {
-		fmt.Println("BFT: Prepare phase timeout", time.Since(protocol.startTime).Seconds())
+func (protocol *BFTProtocol) phaseAgree() error {
+	fmt.Println("BFT: Agree phase", time.Since(protocol.startTime).Seconds())
+	phaseDuration := getTimeout(protocol.phase, len(protocol.RoundData.Committee))
+	timeout := time.AfterFunc(phaseDuration+(protocol.blockCreateTime*4/5), func() {
+		fmt.Println("BFT: Agree phase timeout", time.Since(protocol.startTime).Seconds())
 		protocol.closeTimeoutCh()
 	})
 
-	fmt.Println("BFT: Sending out prepare msg", time.Since(protocol.startTime).Seconds())
-	msg, err := MakeMsgBFTPrepare(protocol.multiSigScheme.personal.Ri, protocol.EngineCfg.UserKeySet, protocol.multiSigScheme.dataToSig)
+	fmt.Println("BFT: Sending out Agree msg", time.Since(protocol.startTime).Seconds())
+	msg, err := MakeMsgBFTAgree(protocol.multiSigScheme.personal.Ri, protocol.EngineCfg.UserKeySet, protocol.multiSigScheme.dataToSig)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -225,11 +228,11 @@ phase:
 			protocol.phase = BFT_COMMIT
 			break phase
 		case msg := <-protocol.cBFTMsg:
-			if msg.MessageType() == wire.CmdBFTPrepare {
-				fmt.Println("BFT: Prepare msg received", time.Since(protocol.startTime).Seconds())
-				if common.IndexOfStr(msg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Equal(protocol.multiSigScheme.dataToSig[:], msg.(*wire.MessageBFTPrepare).BlkHash[:]) {
-					if _, ok := collectedRiList[msg.(*wire.MessageBFTPrepare).Pubkey]; !ok {
-						collectedRiList[msg.(*wire.MessageBFTPrepare).Pubkey] = msg.(*wire.MessageBFTPrepare).Ri
+			if msg.MessageType() == wire.CmdBFTAgree {
+				fmt.Println("BFT: Agree msg received", time.Since(protocol.startTime).Seconds())
+				if common.IndexOfStr(msg.(*wire.MessageBFTAgree).Pubkey, protocol.RoundData.Committee) >= 0 && bytes.Equal(protocol.multiSigScheme.dataToSig[:], msg.(*wire.MessageBFTAgree).BlkHash[:]) {
+					if _, ok := collectedRiList[msg.(*wire.MessageBFTAgree).Pubkey]; !ok {
+						collectedRiList[msg.(*wire.MessageBFTAgree).Pubkey] = msg.(*wire.MessageBFTAgree).Ri
 						protocol.forwardMsg(msg)
 						if len(collectedRiList) == len(protocol.RoundData.Committee) {
 							fmt.Println("BFT: Collected enough Ri", time.Since(protocol.startTime).Seconds())
@@ -251,7 +254,8 @@ phase:
 
 func (protocol *BFTProtocol) phaseCommit() error {
 	fmt.Println("BFT: Commit phase", time.Since(protocol.startTime).Seconds())
-	cmTimeout := time.AfterFunc(getTimeout("commit", len(protocol.RoundData.Committee)), func() {
+	phaseDuration := getTimeout(protocol.phase, len(protocol.RoundData.Committee))
+	cmTimeout := time.AfterFunc(phaseDuration, func() {
 		fmt.Println("BFT: Commit phase timeout", time.Since(protocol.startTime).Seconds())
 		protocol.closeTimeoutCh()
 	})
