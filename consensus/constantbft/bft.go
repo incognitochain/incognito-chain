@@ -77,8 +77,8 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			if err := protocol.phaseListen(); err != nil {
 				return nil, err
 			}
-		case BFT_PREPARE:
-			if err := protocol.phasePrepare(); err != nil {
+		case BFT_AGREE:
+			if err := protocol.phaseAgree(); err != nil {
 				return nil, err
 			}
 		case BFT_COMMIT:
@@ -198,7 +198,7 @@ func (protocol *BFTProtocol) closeProposeCh() {
 }
 
 func (protocol *BFTProtocol) earlyMsgHandler() {
-	var prepareMsgs []wire.Message
+	var agreeMsgs []wire.Message
 	var commitMsgs []wire.Message
 	go func() {
 		for {
@@ -206,11 +206,11 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			case <-protocol.cQuit:
 				return
 			default:
-				if protocol.phase == BFT_PREPARE {
-					for _, msg := range prepareMsgs {
+				if protocol.phase == BFT_AGREE {
+					for _, msg := range agreeMsgs {
 						protocol.cBFTMsg <- msg
 					}
-					prepareMsgs = []wire.Message{}
+					agreeMsgs = []wire.Message{}
 				}
 				if protocol.phase == BFT_COMMIT {
 					for _, msg := range commitMsgs {
@@ -229,14 +229,14 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			return
 		case earlyMsg := <-protocol.earlyMsgCh:
 			switch earlyMsg.MessageType() {
-			case wire.CmdBFTPrepare:
+			case wire.CmdBFTAgree:
 				if protocol.phase == BFT_LISTEN {
-					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 {
-						prepareMsgs = append(prepareMsgs, earlyMsg)
+					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTAgree).Pubkey, protocol.RoundData.Committee) >= 0 {
+						agreeMsgs = append(agreeMsgs, earlyMsg)
 					}
 				}
 			case wire.CmdBFTCommit:
-				if protocol.phase == BFT_PREPARE {
+				if protocol.phase == BFT_AGREE {
 					newSig := bftCommittedSig{
 						ValidatorsIdxR: earlyMsg.(*wire.MessageBFTCommit).ValidatorsIdx,
 						Sig:            earlyMsg.(*wire.MessageBFTCommit).CommitSig,
@@ -255,11 +255,11 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 func getTimeout(phase string, committeeSize int) time.Duration {
 	assumedDelay := time.Duration(committeeSize) * MaxNetworkDelayTime
 	switch phase {
-	case "listen":
+	case BFT_LISTEN:
 		return assumedDelay + ListenTimeout
-	case "prepare":
-		return assumedDelay + PrepareTimeout
-	case "commit":
+	case BFT_AGREE:
+		return assumedDelay + AgreeTimeout
+	case BFT_COMMIT:
 		return assumedDelay + CommitTimeout
 	}
 	return 0
