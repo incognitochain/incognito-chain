@@ -13,24 +13,28 @@ import (
 // Measurement
 const (
 	TxPoolValidated                  = "TxPoolValidated"
+	TxPoolValidatedDetails          = "TxPoolValidatedDetails"
 	TxPoolValidatedWithType          = "TxPoolValidatedWithType"
 	TxPoolEntered                    = "TxPoolEntered"
 	TxPoolEnteredWithType            = "TxPoolEnteredWithType"
 	TxPoolAddedAfterValidation       = "TxPoolAddedAfterValidation"
 	TxPoolRemoveAfterInBlock         = "TxPoolRemoveAfterInBlock"
 	TxPoolRemoveAfterInBlockWithType = "TxPoolRemoveAfterInBlockWithType"
-	TxPoolRemoveAfterLifeTime        = "TxPoolRemoveAfterLifeTime"
-	TxAddedIntoPoolType              = "TxAddedIntoPoolType"
-	TxPoolPrivacyOrNot               = "TxAddedIntoPoolType"
-	PoolSize                         = "PoolSize"
-	TxValidateByItSelfInPoolType     = "TxValidateByItSelfInPoolType"
-	TxInOneBlock                     = "TxInOneBlock"
-	DuplicateTxs                     = "DuplicateTxs"
-	
+	TxPoolRemoveAfterLifeTime         = "TxPoolRemoveAfterLifeTime"
+	TxAddedIntoPoolType               = "TxAddedIntoPoolType"
+	TxPoolPrivacyOrNot                = "TxPoolPrivacyOrNot"
+	PoolSize                          = "PoolSize"
+	TxValidateByItSelfInPoolType      = "TxValidateByItSelfInPoolType"
+	TxInOneBlock                      = "TxInOneBlock"
+	DuplicateTxs                      = "DuplicateTxs"
 	CreateAndSaveTxViewPointFromBlock = "CreateAndSaveTxViewPointFromBlock"
-	
-	NumOfBlockInsertToChain         = "NumOfBlockInsertToChain"
-)
+	NumOfBlockInsertToChain           = "NumOfBlockInsertToChain"
+	TxPoolRemovedNumber               = "TxPoolRemovedNumber"
+	TxPoolRemovedTime                 = "TxPoolRemovedTime"
+	TxPoolRemovedTimeDetails          = "TxPoolRemovedTimeDetails"
+	TxPoolTxBeginEnter                = "TxPoolTxBeginEnter"
+	TxPoolTxEntered                   = "TxPoolTxEntered"
+ )
 
 // tag
 const (
@@ -41,12 +45,14 @@ const (
 	TxSizeWithTypeMetric = "txsizewithtype"
 	PoolSizeMetric       = "poolsize"
 	TxTypeMetic          = "txtype"
+	ValidateCondition          = "validatecond"
 	VTBITxTypeMetic      = "vtbitxtype"
 	TxPrivacyOrNotMetric = "txprivacyornot"
 	BlockHeight          = "blockheight"
 	TxHash               = "txhash"
 	ShardID              = "shardid"
 	Func = "func"
+
 )
 
 //Tag value
@@ -57,6 +63,17 @@ const (
 	TxNormalNoPrivacy                     = "normaltxnoprivacy"
 	FuncCreateAndSaveTxViewPointFromBlock = "func-CreateAndSaveTxViewPointFromBlock"
 	Beacon                                = "beacon"
+	Condition1                      = "condition1"
+	Condition2                      = "condition2"
+	Condition3                      = "condition3"
+	Condition4                      = "condition4"
+	Condition5                      = "condition5"
+	Condition6                      = "condition6"
+	Condition7                      = "condition7"
+	Condition8                      = "condition8"
+	Condition9                      = "condition9"
+	Condition10                      = "condition10"
+	Condition11                      = "condition11"
 )
 // test value
 var (
@@ -74,6 +91,15 @@ func AnalyzeTimeSeriesTxsInOneBlockMetric(blockHeight string, value float64) {
 func AnalyzeTimeSeriesTxTypeMetric(txType string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxAddedIntoPoolType, value)
 }
+func AnalyzeTimeSeriesTxRemovedMetric(txType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxPoolRemovedNumber, value)
+}
+func AnalyzeTimeSeriesTxBeginEnterMetric(txType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxPoolTxBeginEnter, value)
+}
+func AnalyzeTimeSeriesTxEnteredMetric(txType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxPoolTxEntered, value)
+}
 func AnalyzeTimeSeriesTxPrivacyOrNotMetric(txType string, value float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(TxPrivacyOrNotMetric, txType, TxPoolPrivacyOrNot, value)
 }
@@ -88,6 +114,15 @@ func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64) {
 }
 func AnalyzeTimeSeriesBlockPerSecondTimesMetric(shardID string, value float64, blockHeight uint64) {
 	sendTimeSeriesMetricDataInfluxDBV2(ShardID, shardID, NumOfBlockInsertToChain, value)
+}
+func AnalyzeTimeSeriesTxRemovedTimeMetric(txType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxPoolRemovedTime, value)
+}
+func AnalyzeTimeSeriesTxValidationTimeDetailsMetric(conditionType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(ValidateCondition, conditionType, TxPoolValidatedDetails, value)
+}
+func AnalyzeTimeSeriesTxRemovedTimeDetailsTimeMetric(conditionType string, value float64) {
+	sendTimeSeriesMetricDataInfluxDBV2(ValidateCondition, conditionType, TxPoolRemovedTimeDetails, value)
 }
 func AnalyzeFuncCreateAndSaveTxViewPointFromBlock(time float64) {
 	sendTimeSeriesMetricDataInfluxDBV2(Func, FuncCreateAndSaveTxViewPointFromBlock, CreateAndSaveTxViewPointFromBlock, time)

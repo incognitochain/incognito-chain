@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MaxBFTPreparePayload = 1000 // 1 Kb
+	MaxBFTPreparePayload = 2000 // 1 Kb
 )
 
 type MessageBFTPrepare struct {
