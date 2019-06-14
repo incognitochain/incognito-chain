@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	workers                 = 5
-	MsgLiveTime         = 60 * time.Second  // in second
+	workers             = 5
+	MsgLiveTime         = 40 * time.Second  // in second
 	MsgsCleanupInterval = 300 * time.Second //in second
 )
 

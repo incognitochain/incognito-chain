@@ -303,8 +303,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 }
 
 func (engine *Engine) NotifyRole(role int) {
-	engine.config.CRoleInCommitteesMempool <- -1
-	engine.config.CRoleInCommitteesNetSync <- -1
+	engine.config.CRoleInCommitteesMempool <- role
+	engine.config.CRoleInCommitteesNetSync <- role
 	for _, ch := range engine.config.CRoleInCommitteesShardPool {
 		ch <- role
 	}
