@@ -68,17 +68,17 @@ func MakeMsgBFTPropose(block json.RawMessage, layer string, shardID byte, userKe
 	return msg, nil
 }
 
-func MakeMsgBFTPrepare(Ri []byte, userKeySet *cashec.KeySet, blkHash common.Hash) (wire.Message, error) {
-	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPrepare)
+func MakeMsgBFTAgree(Ri []byte, userKeySet *cashec.KeySet, blkHash common.Hash) (wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdBFTAgree)
 	if err != nil {
 		Logger.log.Error(err)
 
 		return msg, err
 	}
-	msg.(*wire.MessageBFTPrepare).Ri = Ri
-	msg.(*wire.MessageBFTPrepare).Pubkey = userKeySet.GetPublicKeyB58()
-	msg.(*wire.MessageBFTPrepare).BlkHash = blkHash
-	err = msg.(*wire.MessageBFTPrepare).SignMsg(userKeySet)
+	msg.(*wire.MessageBFTAgree).Ri = Ri
+	msg.(*wire.MessageBFTAgree).Pubkey = userKeySet.GetPublicKeyB58()
+	msg.(*wire.MessageBFTAgree).BlkHash = blkHash
+	err = msg.(*wire.MessageBFTAgree).SignMsg(userKeySet)
 	if err != nil {
 		return msg, err
 	}
