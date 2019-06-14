@@ -10,7 +10,7 @@ const (
 	BlockVersion            = 1
 	defaultMaxBlkReqPerPeer = 600
 	defaultMaxBlkReqPerTime = 1200
-	
+
 	defaultBroadcastStateTime = 2 * time.Second  // in second
 	defaultStateUpdateTime    = 3 * time.Second  // in second
 	defaultMaxBlockSyncTime   = 1 * time.Second  // in second
@@ -24,7 +24,7 @@ const (
 	Mainnet            = 0x01
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
-	
+
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
@@ -59,8 +59,8 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
-	
-	TestNetShardCommitteeSize  = 16
+
+	TestNetShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize = 4
 	TestNetActiveShards        = 2
 	TestNetStakingAmountShard  = 175000
@@ -84,7 +84,6 @@ var PreSelectBeaconNodeTestnetSerializedPubkey = []string{
 	"18PnGK8M7zj892syajS9H7c7BX8CJfQjyswpLAsHnwQuDzkVSni",
 }
 
-
 // For shard
 // public key
 var PreSelectShardNodeTestnetSerializedPubkey = []string{
@@ -93,19 +92,19 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi", //shard 0
 	"16VVUEPJR3uwbkgyVXcwiifsJLcqqR95onn7sZ3jzfs1QofLv11", //shard 1
 	"183cdDa9XXppiTTxF4HBiFyRABWtB8v8EBy556WNfX2RnW87VRC", //shard 0
-	"17FYHpLygyHdtQcf6oUnJCLYGDMgswYwDWHBtWPA9Di6oM9yvqB", //shard 0
-	"15LMbkYQUTdoWP2FWodStn7eq9zkdX46WdyY92j6G24vv4nruiK", //shard 0
-	"17QSVjBq4LYf4H9fsdrtjHAAAGrjxivfxCRA66sM8veqBLoWMhm", //shard 0
-	"17bs8G9gygxFNasCKGQ6sZfS4pL7dUc5cqxmvErg7w2jGitYwC5", //shard 0
-	"176kYQgu6ngaAeecqypGpBgomByTbFCYp5wRGKcVQdC6xowD2eN", //shard 0
-	"16gGNuW3e7jf4125TWNKyhm8wkEb5sggbC3juJ15YcPuA6TFe5J", //shard 0
-	"15wAKpAHph28Mr3HcPsVyQmXDm4GvdE7E3aNG5q2g8rJH7fjRy2", //shard 0
-	"14xigQHFhQfvt6edebYrfovAwgVUG3BUh1Ax3gWvE6CW3VZUwjJ", //shard 0
-	"14xGoftt4xsYjSN63rhs2mWU4feqKCoe3f1FpztW8sW78BLSMZW", //shard 0
-	"15WxuiLV4XN4UjtgBCfxRPQKpMPh2wzi7BrUhrwbVKASJMnToxP", //shard 0
-	"17JLAMk5aXmgDRoRZ6XNk26nS5o54sVwu7DuB94nmwpmQR94dME", //shard 0
-	"17c1m1MWp9Kyu4dmghQCWc4eM2kwNSaHE2i9aaLkhVd5nrNeUuH", //shard 0
-	
+	//"17FYHpLygyHdtQcf6oUnJCLYGDMgswYwDWHBtWPA9Di6oM9yvqB", //shard 0
+	//"15LMbkYQUTdoWP2FWodStn7eq9zkdX46WdyY92j6G24vv4nruiK", //shard 0
+	//"17QSVjBq4LYf4H9fsdrtjHAAAGrjxivfxCRA66sM8veqBLoWMhm", //shard 0
+	//"17bs8G9gygxFNasCKGQ6sZfS4pL7dUc5cqxmvErg7w2jGitYwC5", //shard 0
+	//"176kYQgu6ngaAeecqypGpBgomByTbFCYp5wRGKcVQdC6xowD2eN", //shard 0
+	//"16gGNuW3e7jf4125TWNKyhm8wkEb5sggbC3juJ15YcPuA6TFe5J", //shard 0
+	//"15wAKpAHph28Mr3HcPsVyQmXDm4GvdE7E3aNG5q2g8rJH7fjRy2", //shard 0
+	//"14xigQHFhQfvt6edebYrfovAwgVUG3BUh1Ax3gWvE6CW3VZUwjJ", //shard 0
+	//"14xGoftt4xsYjSN63rhs2mWU4feqKCoe3f1FpztW8sW78BLSMZW", //shard 0
+	//"15WxuiLV4XN4UjtgBCfxRPQKpMPh2wzi7BrUhrwbVKASJMnToxP", //shard 0
+	//"17JLAMk5aXmgDRoRZ6XNk26nS5o54sVwu7DuB94nmwpmQR94dME", //shard 0
+	//"17c1m1MWp9Kyu4dmghQCWc4eM2kwNSaHE2i9aaLkhVd5nrNeUuH", //shard 0
+
 	// Committee of shard 1
 	"14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3", //shard 1
 	"16H5t5ezMF16S5j5ZEyHP3N4nBBcsppg5bRfU5Ft8N1VZYBQu38", //shard 1
