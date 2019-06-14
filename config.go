@@ -31,18 +31,18 @@ const (
 	defaultLogDirname             = "logs"
 	defaultLogFilename            = "log.log"
 	defaultMaxPeers               = 125
-	defaultMaxPeersSameShard      = 10
-	defaultMaxPeersOtherShard     = 10
+	defaultMaxPeersSameShard      = 50
+	defaultMaxPeersOtherShard     = 50
 	defaultMaxPeersOther          = 125
 	defaultMaxPeersNoShard        = 125
-	defaultMaxPeersBeacon         = 20
-	defaultMaxRPCClients          = 10
+	defaultMaxPeersBeacon         = 50
+	defaultMaxRPCClients          = 20
 	sampleConfigFilename          = "sample-config.conf"
 	defaultDisableRpcTLS          = true
 	defaultFastStartup            = true
 	defaultNodeMode               = common.NODEMODE_RELAY
 	defaultTxPoolTTL              = uint(86400) * 10 // in second
-	defaultTxPoolMaxTx            = uint64(20000)
+	defaultTxPoolMaxTx            = uint64(100000)
 	defaultLimitFee               = uint64(1)
 	// For wallet
 	defaultWalletName     = "wallet"

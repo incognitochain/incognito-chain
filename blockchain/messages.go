@@ -76,6 +76,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			if blockchain.config.UserKeySet != nil {
 				// Revert beststate
+				// @NOTICE: Choose block with highest round, because we assume that most of node state is at the highest round
 				if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
 					fmt.Println("FORK SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
 					if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
