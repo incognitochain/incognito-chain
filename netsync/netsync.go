@@ -17,9 +17,8 @@ import (
 )
 
 const (
-	txCache             = 10000
 	workers             = 5
-	MsgLiveTime         = 50 * time.Second  // in second
+	MsgLiveTime         = 40 * time.Second  // in second
 	MsgsCleanupInterval = 300 * time.Second //in second
 )
 

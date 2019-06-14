@@ -1,5 +1,9 @@
 package blockchain
 
+import (
+	"github.com/incognitochain/incognito-chain/blockchain/benchmark"
+)
+
 /*
 Params defines a network by its component. These component may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -41,7 +45,6 @@ type GenesisParams struct {
 	PreSelectShardNodeSerializedPubkey  []string
 	PreSelectShardNode                  []string
 }
-
 // FOR TESTNET
 var genesisParamsTestnetNew = GenesisParams{
 	InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
@@ -50,7 +53,8 @@ var genesisParamsTestnetNew = GenesisParams{
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
 	//@Notice: InitTxsForBenchmark is for testing and benchmark only
-	InitialConstant: TestnetInitConstant,
+	//InitialConstant: append(benchmark.InitTxsShard0, append(benchmark.InitTxsShard1, append(benchmark.InitTxsShard0_1, append(benchmark.InitTxsShard0_2, append(benchmark.InitTxsShard0_3, append(benchmark.InitTxsShard0_4, append(benchmark.InitTxsShard0_5, append(benchmark.InitTxsShard0_6, append(benchmark.InitTxsShard0_7, append(benchmark.InitTxsShard0_8, append(benchmark.InitTxsShard0_9, append(benchmark.InitTxsShard0_10, append(benchmark.InitTxsShard1_1, append(benchmark.InitTxsShard1_2, append(benchmark.InitTxsShard1_3, append(benchmark.InitTxsShard1_4, append(benchmark.InitTxsShard1_5, append(benchmark.InitTxsShard1_6, append(benchmark.InitTxsShard1_7, append(benchmark.InitTxsShard1_8, append(benchmark.InitTxsShard1_9, benchmark.InitTxsShard1_10...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...),
+	InitialConstant: benchmark.GetInitTransaction(),
 }
 
 var ChainTestParam = Params{

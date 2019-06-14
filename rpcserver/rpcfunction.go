@@ -70,6 +70,8 @@ var RpcHandler = map[string]commandHandler{
 
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFileV2: RpcServer.handleGetAndSendTxsFromFileV2,
+	unlockMempool:         RpcServer.handleUnlockMempool,
 	//=================================
 
 	//pool
@@ -122,6 +124,10 @@ var RpcHandler = map[string]commandHandler{
 	//reward
 	CreateRawWithDrawTransaction: RpcServer.handleCreateAndSendWithDrawTransaction,
 	getRewardAmount:              RpcServer.handleGetRewardAmount,
+
+	//revert
+	revertbeaconchain: RpcServer.handleRevertBeacon,
+	revertshardchain:  RpcServer.handleRevertShard,
 }
 
 // Commands that are available to a limited user
