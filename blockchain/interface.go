@@ -46,6 +46,7 @@ type ShardPool interface {
 	SetShardState(uint64)
 	GetValidBlockChan() *chan *ShardBlock
 	GetAllBlockHeight() []uint64
+	Start(chan struct{})
 }
 
 type BeaconPool interface {
@@ -72,8 +73,8 @@ type TxPool interface {
 	HaveTransaction(hash *common.Hash) bool
 
 	// RemoveTx remove tx from tx resource
-	RemoveTx(tx metadata.Transaction, isInBlock bool) error
-	RemoveTxList(tx []metadata.Transaction, isInBlock bool)
+	RemoveTx(txs []metadata.Transaction, isInBlock bool)
+
 	RemoveCandidateList([]string)
 
 	RemoveTokenIDList([]string)

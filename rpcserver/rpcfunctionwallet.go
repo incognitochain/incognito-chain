@@ -47,7 +47,7 @@ func (rpcServer RpcServer) handleListAccounts(params interface{}, closeChan <-ch
 		}
 		result.Accounts[accountName] = amount
 	}
-
+	
 	return result, nil
 }
 
@@ -184,10 +184,10 @@ func (rpcServer RpcServer) handleRemoveAccount(params interface{}, closeChan <-c
 func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	log.Println(params)
 	balance := uint64(0)
-
+	
 	// all component
 	arrayParams := common.InterfaceSlice(params)
-
+	
 	if len(arrayParams) != 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
 	}
@@ -200,7 +200,7 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	log.Println(senderKey)
-
+	
 	// get balance for accountName in wallet
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -215,14 +215,14 @@ func (rpcServer RpcServer) handleGetBalanceByPrivatekey(params interface{}, clos
 		balance += out.CoinDetails.Value
 	}
 	log.Println(balance)
-
+	
 	return balance, nil
 }
 
 // handleGetBalanceByPaymentAddress -  return balance of paymentaddress
 func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	balance := uint64(0)
-
+	
 	// all component
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -234,7 +234,7 @@ func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, 
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
+	
 	// get balance for accountName in wallet
 	lastByte := accountWithPaymentAddress.KeySet.PaymentAddress.Pk[len(accountWithPaymentAddress.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -254,7 +254,7 @@ func (rpcServer RpcServer) handleGetBalanceByPaymentAddress(params interface{}, 
 	for _, out := range outcoints {
 		balance += out.CoinDetails.Value
 	}
-
+	
 	return balance, nil
 }
 
@@ -263,14 +263,14 @@ handleGetBalance - RPC gets the balances in decimal
 */
 func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	balance := uint64(0)
-
+	
 	if rpcServer.config.Wallet == nil {
 		return balance, NewRPCError(ErrUnexpected, errors.New("wallet is not existed"))
 	}
 	if len(rpcServer.config.Wallet.MasterAccount.Child) == 0 {
 		return balance, NewRPCError(ErrUnexpected, errors.New("no account is existed"))
 	}
-
+	
 	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 3 {
@@ -281,7 +281,7 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 	if !ok {
 		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
 	}
-
+	
 	// Param #2: the minimum number of confirmations an output must have
 	minTemp, ok := arrayParams[1].(float64)
 	if !ok {
@@ -289,17 +289,17 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 	}
 	min := int(minTemp)
 	_ = min
-
+	
 	// Param #3: passphrase to access local wallet of node
 	passPhrase, ok := arrayParams[2].(string)
 	if !ok {
 		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
 	}
-
+	
 	if passPhrase != rpcServer.config.Wallet.PassPhrase {
 		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
 	}
-
+	
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	if accountName == "*" {
@@ -332,7 +332,7 @@ func (rpcServer RpcServer) handleGetBalance(params interface{}, closeChan <-chan
 			}
 		}
 	}
-
+	
 	return balance, nil
 }
 
@@ -342,14 +342,14 @@ particular account from transactions with the specified number of confirmations.
 */
 func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	balance := uint64(0)
-
+	
 	if rpcServer.config.Wallet == nil {
 		return balance, NewRPCError(ErrUnexpected, errors.New("wallet is not existed"))
 	}
 	if len(rpcServer.config.Wallet.MasterAccount.Child) == 0 {
 		return balance, NewRPCError(ErrUnexpected, errors.New("no account is existed"))
 	}
-
+	
 	// convert component to array
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 3 {
@@ -360,7 +360,7 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 	if !ok {
 		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
 	}
-
+	
 	// Param #2: the minimum number of confirmations an output must have
 	minTemp, ok := arrayParams[1].(float64)
 	if !ok {
@@ -368,17 +368,17 @@ func (rpcServer RpcServer) handleGetReceivedByAccount(params interface{}, closeC
 	}
 	min := int(minTemp)
 	_ = min
-
+	
 	// Param #3: passphrase to access local wallet of node
 	passPhrase, ok := arrayParams[2].(string)
 	if !ok {
 		return balance, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
 	}
-
+	
 	if passPhrase != rpcServer.config.Wallet.PassPhrase {
 		return balance, NewRPCError(ErrUnexpected, errors.New("password phrase is wrong for local wallet"))
 	}
-
+	
 	for _, account := range rpcServer.config.Wallet.MasterAccount.Child {
 		if account.Name == accountName {
 			// get balance for accountName in wallet
@@ -452,12 +452,12 @@ func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("paymentAddress is invalid"))
 	}
-
+	
 	key, err := wallet.Base58CheckDeserialize(paymentAddress)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
+	
 	return base58.Base58Check{}.Encode(key.KeySet.PaymentAddress.Pk[:], common.ZeroByte), nil
 }
 
@@ -473,7 +473,7 @@ func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params inter
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("numberOfBlock is invalid"))
 	}
 	numberOfBlock := uint64(numOfBlockTemp)
-
+	
 	// #param 2: viewing key
 	senderKeysetStr, ok := arrayParams[1].(string)
 	if !ok {
@@ -484,15 +484,15 @@ func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params inter
 		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
 	}
 	readOnlyKey := senderKeySet.ReadonlyKey
-
+	
 	// get chain from pubkey
 	shardID := common.GetShardIDFromLastByte(readOnlyKey.Pk[len(readOnlyKey.Pk)-1])
-
+	
 	txs, err := rpcServer.config.BlockChain.GetRecentTransactions(numberOfBlock, &readOnlyKey, shardID)
 	if err != nil {
 		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
 	}
-
+	
 	result := jsonresult.GetRecentTransactions{
 		Txs: make(map[string]jsonresult.TransactionDetail),
 	}
@@ -583,7 +583,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	// param #4: hasPrivacyCoin flag: 1 or -1
 	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
-
+	
 	// param #1: private key of sender
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
@@ -592,7 +592,7 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
-
+	
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
@@ -618,14 +618,14 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 	if len(outCoins) == 0 {
 		realFee = 0
 	}
-
+	
 	if uint64(amount) < realFee {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 	paymentInfo.Amount = uint64(amount) - realFee
-
+	
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(outCoins)
-
+	
 	/******* END GET output native coins(PRV), which is used to create tx *****/
 	// START create tx
 	// missing flag for privacy
@@ -642,11 +642,11 @@ func (rpcServer RpcServer) buildRawDefragmentAccountTransaction(params interface
 		meta,
 	)
 	// END create tx
-
+	
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-
+	
 	return &tx, nil
 }
 

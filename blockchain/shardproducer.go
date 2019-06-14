@@ -16,7 +16,9 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
+	var txsToAdd = make([]metadata.Transaction,0)
+	var totalTxsFee uint64
 	//============Build body=============
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
@@ -51,11 +53,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		return nil, err
 	}
 	//======Get Transaction For new Block================
-	txsToAdd, err1 := blockgen.getTransactionForNewBlock(&producerKeySet.PrivateKey, shardID, blockgen.chain.config.DataBase, beaconBlocks)
-	if err1 != nil {
-		Logger.log.Error(err1, reflect.TypeOf(err1), reflect.ValueOf(err1))
-		return nil, err1
-	}
+	// start, block creation
 	//======Get Cross output coin from other shard=======
 	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
 	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(&producerKeySet.PrivateKey, crossTxTokenData, shardID)
@@ -100,11 +98,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 			Transactions:      make([]metadata.Transaction, 0),
 		},
 	}
-	for _, tx := range txsToAdd {
-		if err := block.AddTransaction(tx); err != nil {
-			return nil, err
-		}
-	}
 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)
@@ -113,11 +106,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if err != nil {
 		return nil, err
 	}
-	//TODO calculate fee for another tx type
-	totalTxsFee := uint64(0)
-	for _, tx := range block.Body.Transactions {
-		totalTxsFee += tx.GetTxFee()
-	}
 	// rewardInfoInstructions, err := block.getBlockRewardInst(prevBlock.Header.Height + 1)
 	// if err != nil {
 	// 	Logger.log.Error(err)
@@ -125,7 +113,18 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	// }
 	// fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
 	//============End Build Body===========
-
+	blockCreationLeftOver := common.MinShardBlkCreation.Nanoseconds() - time.Since(start).Nanoseconds()
+	txsToAddFromBlock, err := blockgen.getTransactionForNewBlock(&producerKeySet.PrivateKey, shardID, blockgen.chain.config.DataBase, beaconBlocks, blockCreationLeftOver)
+	block.Body.Transactions = append(block.Body.Transactions, txsToAdd...)
+	block.Body.Transactions = append(block.Body.Transactions, txsToAddFromBlock...)
+	if err != nil {
+		Logger.log.Error(err, reflect.TypeOf(err), reflect.ValueOf(err))
+		return nil, err
+	}
+	//TODO calculate fee for another tx type
+	for _, tx := range block.Body.Transactions {
+		totalTxsFee += tx.GetTxFee()
+	}
 	//============Build Header=============
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
 	merkleRoot := &common.Hash{}
@@ -200,19 +199,22 @@ func (blockgen *BlkTmplGenerator) FinalizeShardBlock(blk *ShardBlock, producerKe
 /*
 	Get Transaction For new Block
 */
-func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock) ([]metadata.Transaction, error) {
-	txsToAdd, txToRemove, _ := blockgen.getPendingTransactionV2(shardID, beaconBlocks)
+func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock, blockCreation int64) ([]metadata.Transaction, error) {
+	txsToAdd, txToRemove, _ := blockgen.getPendingTransactionV2(shardID, beaconBlocks, blockCreation)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
-	go blockgen.txPool.RemoveTxList(txToRemove, false)
-
-	// Process stability tx, create response txs if needed
+	go blockgen.txPool.RemoveTx(txToRemove, false)
+	go func() {
+		for _, tx := range txToRemove {
+			blockgen.chain.config.CRemovedTxs <- tx
+		}
+	}()
+	
 	var respTxsShard, respTxsBeacon []metadata.Transaction
 	var errCh chan error
 	errCh = make(chan error)
-
-	go func() {
+	go func(){
 		var err error
 		respTxsShard, err = blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
 		errCh <- err
@@ -419,10 +421,12 @@ func (blockgen *BlkTmplGenerator) getPendingTransaction(
 func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	shardID byte,
 	beaconBlocks []*BeaconBlock,
+	blockCreationTime int64,
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	startTime := time.Now()
 	sourceTxns := blockgen.GetPendingTxsV2()
-	txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
+	txsProcessTimeInBlockCreation := int64(common.MinShardBlkInterval.Nanoseconds())
+	//txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
 	var elasped int64
 	Logger.log.Critical("Number of transaction get from pool: ", len(sourceTxns))
 	isEmpty := blockgen.chain.config.TempTxPool.EmptyPool()
@@ -440,6 +444,17 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	// // }
 
 	for _, tx := range sourceTxns {
+		if tx.IsPrivacy(){
+			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(500*time.Millisecond).Nanoseconds()
+		} else {
+			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(50*time.Millisecond).Nanoseconds()
+		}
+		elasped = time.Since(startTime).Nanoseconds()
+		// @txsProcessTimeInBlockCreation is a constant for this current version
+		if elasped >= txsProcessTimeInBlockCreation {
+			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
+			break
+		}
 		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if txShardID != shardID {
@@ -465,16 +480,11 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 		}
 		currentSize += tempSize
 		txsToAdd = append(txsToAdd, tempTx)
-		if len(txsToAdd) == MaxTxsInBlock {
-			break
-		}
+		//if len(txsToAdd) >= MaxTxsInBlock {
+		//	break
+		//}
 		// Time bound condition for block creation
-		elasped = time.Since(startTime).Nanoseconds()
-		// @txsProcessTimeInBlockCreation is a constant for this current version
-		if elasped >= txsProcessTimeInBlockCreation {
-			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
-			break
-		}
+
 	}
 	//if len(txsToAdd) != 0 {
 	//	TxsAverageProcessTime = elasped/int64(len(txsToAdd))
