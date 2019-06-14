@@ -2,12 +2,13 @@ package netsync
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/patrickmn/go-cache"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/patrickmn/go-cache"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/mempool"
@@ -136,7 +137,7 @@ out:
 						{
 							netSync.HandleMessageBFTMsg(msg)
 						}
-					case *wire.MessageBFTPrepare:
+					case *wire.MessageBFTAgree:
 						{
 							netSync.HandleMessageBFTMsg(msg)
 						}
