@@ -78,10 +78,10 @@ var PreSelectBeaconNodeTestnetSerializedPubkey = []string{
 	"16jWkWY5xRqZDkwDQaA32uvnakS27YyyWqeWtap6a6ELEc2Vbwi",
 	"15gXn3sEVp41Kdquy696ftT5bi3fRRbExFT7p5ZftEQusaJGi3y",
 	"16WQfZBp27g9AUYPXujLqNF7JtZhxdEUfVdox5wEuqM9dC1VYz6",
-	"1651Vc7vjFBj69mUZ6BB8KY7uziRWZ57Fi4thXAVqtySGzCqfpq",
-	"15EhQjnhchcsozbySChn6sv5ZonVYCC459TkJ6oiTEiprPPMf6n",
-	"16ui4k2kPpZrWZaeMq9MnRJocEtoGNJeBN7LWhVFwVpmfukhy8B",
-	"18PnGK8M7zj892syajS9H7c7BX8CJfQjyswpLAsHnwQuDzkVSni",
+	//"1651Vc7vjFBj69mUZ6BB8KY7uziRWZ57Fi4thXAVqtySGzCqfpq",
+	//"15EhQjnhchcsozbySChn6sv5ZonVYCC459TkJ6oiTEiprPPMf6n",
+	//"16ui4k2kPpZrWZaeMq9MnRJocEtoGNJeBN7LWhVFwVpmfukhy8B",
+	//"18PnGK8M7zj892syajS9H7c7BX8CJfQjyswpLAsHnwQuDzkVSni",
 }
 
 // For shard
@@ -110,18 +110,18 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"16H5t5ezMF16S5j5ZEyHP3N4nBBcsppg5bRfU5Ft8N1VZYBQu38", //shard 1
 	"156qsnqcYWPUb8PLbdowV4TtUhS8kuEboABfHgVeh4MguoPwqVj", //shard 1
 	"177cGseHedBzrvBTqP2boXBjXb84JgKJEs7fGbCmgJ47gcgNwoK", //shard 1
-	"15MdBPBqMmrZ7MtZxjzPBKc8oNC3kLisAvtiEs6vrNFPnByCSx7", //shard 1
-	"18E1jmMz3R2vidv3MC5MCtS1LpZTshnh5YSjnJqBrpZrnDxEpjj", //shard 1
-	"16a14WSkpGsF5o4B6pk3TbNMFbW4s6pXN9haPLjZfu8rPMSzHTa", //shard 1
-	"15FpmWXjGaLPVmBfAguBcJNzLdpbW32joGJdTTDqVCrUHRMwJmt", //shard 1
-	"16FJGLmgmX7HXQXLZpFxpAtSRyAsnjVW5wyQ5q631qAdjtY2LiG", //shard 1
-	"186dkkeebuaHEjo99BX1omYSKdJNwah2dLsCRadHFxSqyY2E7bP", //shard 1
-	"166S7YKvwYWYwaykFPGLnewqBwf5bydg7cR7Livog9TokvzXsqA", //shard 1
-	"17qg9rs5PysAQJfhwYAAgBWAVTxq91vVq3h8sNAzpWeWVSRdKmN", //shard 1
-	"15JPGWmC5ebFxg5zs6tXbWuAJBok3kd7pNfpnDZCesNLkbJbJsZ", //shard 1
-	"17RM5fdYn7yAhxe3yU4mSR18y3TGkTaoa4Ph3HaVwfY3sRCNMVZ", //shard 1
-	"168RLoj25TCmzq32LEARGWX2d8SAHvS4egiLYtwLkp41csGWHUG", //shard 1
-	"165bmHpowcdfmpLzc2RYPjDqBckmNwDo6fXXNKVTJhCG5huuXq5", //shard 1
+	//"15MdBPBqMmrZ7MtZxjzPBKc8oNC3kLisAvtiEs6vrNFPnByCSx7", //shard 1
+	//"18E1jmMz3R2vidv3MC5MCtS1LpZTshnh5YSjnJqBrpZrnDxEpjj", //shard 1
+	//"16a14WSkpGsF5o4B6pk3TbNMFbW4s6pXN9haPLjZfu8rPMSzHTa", //shard 1
+	//"15FpmWXjGaLPVmBfAguBcJNzLdpbW32joGJdTTDqVCrUHRMwJmt", //shard 1
+	//"16FJGLmgmX7HXQXLZpFxpAtSRyAsnjVW5wyQ5q631qAdjtY2LiG", //shard 1
+	//"186dkkeebuaHEjo99BX1omYSKdJNwah2dLsCRadHFxSqyY2E7bP", //shard 1
+	//"166S7YKvwYWYwaykFPGLnewqBwf5bydg7cR7Livog9TokvzXsqA", //shard 1
+	//"17qg9rs5PysAQJfhwYAAgBWAVTxq91vVq3h8sNAzpWeWVSRdKmN", //shard 1
+	//"15JPGWmC5ebFxg5zs6tXbWuAJBok3kd7pNfpnDZCesNLkbJbJsZ", //shard 1
+	//"17RM5fdYn7yAhxe3yU4mSR18y3TGkTaoa4Ph3HaVwfY3sRCNMVZ", //shard 1
+	//"168RLoj25TCmzq32LEARGWX2d8SAHvS4egiLYtwLkp41csGWHUG", //shard 1
+	//"165bmHpowcdfmpLzc2RYPjDqBckmNwDo6fXXNKVTJhCG5huuXq5", //shard 1
 }
 
 // END CONSTANT for network TESTNET

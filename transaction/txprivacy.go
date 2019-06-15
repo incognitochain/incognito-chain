@@ -454,7 +454,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			//Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
-	//@UNCOMMENT: metric time
+	//@UNCOMMENT: metrics time
 	//elapsed := time.Since(start)
 	//Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
