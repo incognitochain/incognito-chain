@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/netsync"
+	"github.com/gorilla/websocket"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,7 +18,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
+	
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/connmanager"
@@ -43,19 +44,19 @@ type UsageFlag uint32
 
 // rpcServer provides a concurrent safe RPC server to a chain server.
 type RpcServer struct {
-	started    int32
-	shutdown   int32
-	numClients int32
-
-	config     RpcServerConfig
-	httpServer *http.Server
-
+	started          int32
+	shutdown         int32
+	numClients       int32
+	numSocketClients int32
+	config           RpcServerConfig
+	httpServer       *http.Server
+	
 	statusLock  sync.RWMutex
 	statusLines map[int]string
-
+	
 	authSHA      []byte
 	limitAuthSHA []byte
-
+	
 	// channel
 	cRequestProcessShutdown chan struct{}
 }
@@ -76,27 +77,33 @@ type RpcServerConfig struct {
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 	}
-
+	
 	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool *mempool.ShardToBeaconPool
 	CrossShardPool    *mempool.CrossShardPool_v2
-
-	RPCMaxClients int
-	RPCQuirks     bool
-
+	
+	RPCMaxClients   int
+	RPCMaxWSClients int
+	RPCQuirks       bool
+	
 	// Authentication
 	RPCUser      string
 	RPCPass      string
 	RPCLimitUser string
 	RPCLimitPass string
 	DisableAuth  bool
-
+	
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	FeeEstimator map[byte]*mempool.FeeEstimator
-
+	
 	IsMiningNode    bool   // flag mining node. True: mining, False: not mining
 	MiningPubKeyB58 string // base58check encode of mining pubkey
+}
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
@@ -137,6 +144,18 @@ func (rpcServer RpcServer) limitConnections(w http.ResponseWriter, remoteAddr st
 	return false
 }
 
+func (rpcServer RpcServer) limitSocketConnections(w http.ResponseWriter, remoteAddr string) bool {
+	if int(atomic.LoadInt32(&rpcServer.numSocketClients)+1) > rpcServer.config.RPCMaxWSClients {
+		Logger.log.Infof("Max RPC Web Socket exceeded [%d] - "+
+			"disconnecting client %s", rpcServer.config.RPCMaxClients,
+			remoteAddr)
+		http.Error(w, "503 Too busy.  Try again later.",
+			http.StatusServiceUnavailable)
+		return true
+	}
+	return false
+}
+
 // Start is used by server.go to start the rpc listener.
 func (rpcServer *RpcServer) Start() error {
 	if atomic.AddInt32(&rpcServer.started, 1) != 1 {
@@ -145,14 +164,17 @@ func (rpcServer *RpcServer) Start() error {
 	rpcServeMux := http.NewServeMux()
 	rpcServer.httpServer = &http.Server{
 		Handler: rpcServeMux,
-
+		
 		// Timeout connections which don't complete the initial
 		// handshake within the allowed timeframe.
 		ReadTimeout: time.Second * rpcAuthTimeoutSeconds,
 	}
-
+	
 	rpcServeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		rpcServer.RpcHandleRequest(w, r)
+	})
+	rpcServeMux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		rpcServer.RpcHandleRequestWebsocket(w, r)
 	})
 	for _, listen := range rpcServer.config.Listenters {
 		go func(listen net.Listener) {
@@ -193,20 +215,20 @@ func (rpcServer RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Access-Control-Allow-Methods", "POST, PUT, GET, OPTIONS, DELETE")
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	r.Close = true
-
+	
 	// Limit the number of connections to max allowed.
 	if rpcServer.limitConnections(w, r.RemoteAddr) {
 		return
 	}
-
+	
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-
+	
 	// Keep track of the number of connected clients.
-	rpcServer.IncrementClients()
-	defer rpcServer.DecrementClients()
+	rpcServer.IncrementSocketClients()
+	defer rpcServer.DecrementSocketClients()
 	// Check authentication for rpc user
 	ok, isLimitUser, err := rpcServer.checkAuth(r, true)
 	if err != nil || !ok {
@@ -214,8 +236,29 @@ func (rpcServer RpcServer) RpcHandleRequest(w http.ResponseWriter, r *http.Reque
 		rpcServer.AuthFail(w)
 		return
 	}
-
+	
 	rpcServer.ProcessRpcRequest(w, r, isLimitUser)
+}
+
+// @NOTICE: no auth for this version yet
+func (rpcServer RpcServer) RpcHandleRequestWebsocket(w http.ResponseWriter, r *http.Request) {
+	// allow any origin to connect
+	// Limit the number of connections to max allowed.
+	if rpcServer.limitSocketConnections(w, r.RemoteAddr) {
+		return
+	}
+	// Keep track of the number of connected clients.
+	rpcServer.IncrementClients()
+	defer rpcServer.DecrementClients()
+	
+	upgrader.CheckOrigin = func(r *http.Request) bool {
+		return true
+	}
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	rpcServer.ProcessRpcRequestSocket(ws)
 }
 
 // checkAuth checks the HTTP Basic authentication supplied by a wallet
@@ -240,25 +283,25 @@ func (rpcServer RpcServer) checkAuth(r *http.Request, require bool) (bool, bool,
 				r.RemoteAddr)
 			return false, false, errors.New("auth failure")
 		}
-
+		
 		return false, false, nil
 	}
-
+	
 	authsha := common.HashB([]byte(authhdr[0]))
-
+	
 	// Check for limited auth first as in environments with limited users, those
 	// are probably expected to have a higher volume of calls
 	limitcmp := subtle.ConstantTimeCompare(authsha[:], rpcServer.limitAuthSHA[:])
 	if limitcmp == 1 {
 		return true, true, nil
 	}
-
+	
 	// Check for admin-level auth
 	cmp := subtle.ConstantTimeCompare(authsha[:], rpcServer.authSHA[:])
 	if cmp == 1 {
 		return true, false, nil
 	}
-
+	
 	// RpcRequest's auth doesn't match either user
 	Logger.log.Warnf("RPC authentication failure from %s", r.RemoteAddr)
 	return false, false, NewRPCError(ErrAuthFail, nil)
@@ -272,12 +315,19 @@ func (rpcServer *RpcServer) IncrementClients() {
 	atomic.AddInt32(&rpcServer.numClients, 1)
 }
 
+func (rpcServer *RpcServer) IncrementSocketClients() {
+	atomic.AddInt32(&rpcServer.numSocketClients, 1)
+}
+
 // DecrementClients subtracts one from the number of connected RPC clients.
 // Note this only applies to standard clients.
 //
 // This function is safe for concurrent access.
 func (rpcServer *RpcServer) DecrementClients() {
 	atomic.AddInt32(&rpcServer.numClients, -1)
+}
+func (rpcServer *RpcServer) DecrementSocketClients() {
+	atomic.AddInt32(&rpcServer.numSocketClients, -1)
 }
 
 // AuthFail sends a Message back to the client if the http auth is rejected.
@@ -289,6 +339,7 @@ func (rpcServer RpcServer) AuthFail(w http.ResponseWriter) {
 /*
 handles reading and responding to RPC messages.
 */
+
 func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isLimitedUser bool) {
 	if atomic.LoadInt32(&rpcServer.shutdown) != 0 {
 		return
@@ -303,7 +354,7 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 	}
 	// Logger.log.Info(string(body))
 	// log.Println(string(body))
-
+	
 	// Unfortunately, the http server doesn't provide the ability to
 	// change the read deadline for the new connection and having one breaks
 	// long polling.  However, not having a read deadline on the initial
@@ -329,7 +380,7 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 	defer conn.Close()
 	defer buf.Flush()
 	conn.SetReadDeadline(timeZeroVal)
-
+	
 	// Attempt to parse the raw body into a JSON-RPC request.
 	var responseID interface{}
 	var jsonErr error
@@ -338,7 +389,7 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 	if err := json.Unmarshal(body, &request); err != nil {
 		jsonErr = NewRPCError(ErrRPCParse, err)
 	}
-
+	
 	if jsonErr == nil {
 		// The JSON-RPC 1.0 spec defines that notifications must have their "id"
 		// set to null and states that notifications do not have a response.
@@ -361,11 +412,11 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 		if request.Id == nil && !(rpcServer.config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}
-
+		
 		// The parse was at least successful enough to have an Id so
 		// set it for the response.
 		responseID = request.Id
-
+		
 		// Setup a close notifier.  Since the connection is hijacked,
 		// the CloseNotifer on the ResponseWriter is not available.
 		closeChan := make(chan struct{}, 1)
@@ -375,10 +426,10 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 				close(closeChan)
 			}
 		}()
-
+		
 		// Check if the user is limited and set error if method unauthorized
 		if !isLimitedUser {
-			if function, ok := RpcLimited[request.Method]; ok {
+			if function, ok := RpcLimitedHandler[request.Method]; ok {
 				_ = function
 				jsonErr = NewRPCError(ErrRPCInvalidMethodPermission, errors.New(""))
 			}
@@ -389,7 +440,7 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 			command := RpcHandler[request.Method]
 			if command == nil {
 				if isLimitedUser {
-					command = RpcLimited[request.Method]
+					command = RpcLimitedHandler[request.Method]
 				} else {
 					result = nil
 					jsonErr = NewRPCError(ErrRPCMethodNotFound, nil)
@@ -416,7 +467,7 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 		Logger.log.Error(err)
 		return
 	}
-
+	
 	// Write the response.
 	err = rpcServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusOK, buf)
 	if err != nil {
@@ -427,11 +478,65 @@ func (rpcServer RpcServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Requ
 		Logger.log.Errorf("Failed to write marshalled reply: %s", err.Error())
 		Logger.log.Error(err)
 	}
-
+	
 	// Terminate with newline to maintain compatibility with coin Core.
 	if err := buf.WriteByte('\n'); err != nil {
 		Logger.log.Errorf("Failed to append terminating newline to reply: %s", err.Error())
 		Logger.log.Error(err)
+	}
+}
+
+func (rpcServer RpcServer) ProcessRpcRequestSocket(ws *websocket.Conn) {
+	if atomic.LoadInt32(&rpcServer.shutdown) != 0 {
+		return
+	}
+	for {
+		msgType, msg, err := ws.ReadMessage()
+		if err != nil {
+			return
+		}
+		var responseID interface{}
+		var jsonErr error
+		var cResult chan interface{}
+		var result interface{}
+		var request RpcRequest
+		if err := json.Unmarshal(msg, &request); err != nil {
+			jsonErr = NewRPCError(ErrRPCParse, err)
+		}
+		if jsonErr == nil {
+			if request.Id == nil && !(rpcServer.config.RPCQuirks && request.Jsonrpc == "") {
+				return
+			}
+			// The parse was at least successful enough to have an Id so
+			// set it for the response.
+			responseID = request.Id
+			// Setup a close notifier.  Since the connection is hijacked,
+			// the CloseNotifer on the ResponseWriter is not available.
+			closeChan := make(chan struct{}, 1)
+			if jsonErr == nil {
+				// Attempt to parse the JSON-RPC request into a known concrete
+				// command.
+				command := WsHandler[request.Method]
+				if command == nil {
+					result = nil
+					jsonErr = NewRPCError(ErrRPCMethodNotFound, nil)
+				} else {
+					cResult, jsonErr = command(rpcServer, request.Params, closeChan)
+					// Marshal the response.
+					for result = range cResult {
+						res, err := rpcServer.createMarshalledReply(responseID, result, jsonErr)
+						if err != nil {
+							Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
+							return
+						}
+						if err := ws.WriteMessage(msgType, res); err != nil {
+							Logger.log.Errorf("Failed to marshal reply: %+v", err)
+							return
+						}
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -447,7 +552,7 @@ func (rpcServer RpcServer) createMarshalledReply(id, result interface{}, replyEr
 			jsonErr = rpcServer.internalRPCError(replyErr.Error(), "")
 		}
 	}
-
+	
 	return MarshalResponse(id, result, jsonErr)
 }
 
@@ -481,7 +586,7 @@ func (rpcServer RpcServer) httpStatusLine(req *http.Request, code int) string {
 	if ok {
 		return line
 	}
-
+	
 	// Slow path:
 	proto := "HTTP/1.0"
 	if proto11 {
@@ -498,7 +603,7 @@ func (rpcServer RpcServer) httpStatusLine(req *http.Request, code int) string {
 		text = "status Code " + codeStr
 		line = proto + " " + codeStr + " " + text + "\r\n"
 	}
-
+	
 	return line
 }
 
@@ -510,7 +615,7 @@ func (rpcServer RpcServer) writeHTTPResponseHeaders(req *http.Request, headers h
 	if err != nil {
 		return err
 	}
-
+	
 	/*headers.Add("Content-Type", "application/json")
 	headers.Add("Access-Control-Allow-Origin", "*")
 	headers.Add("Access-Control-Allow-Headers", "*")
@@ -519,7 +624,7 @@ func (rpcServer RpcServer) writeHTTPResponseHeaders(req *http.Request, headers h
 	if err != nil {
 		return err
 	}
-
+	
 	_, err = io.WriteString(w, "\r\n")
 	return err
 }

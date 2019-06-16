@@ -380,6 +380,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Listenters:      rpcListeners,
 			RPCQuirks:       cfg.RPCQuirks,
 			RPCMaxClients:   cfg.RPCMaxClients,
+			RPCMaxWSClients: cfg.RPCMaxWSClients,
 			ChainParams:     chainParams,
 			BlockChain:      serverObj.blockChain,
 			TxMemPool:       serverObj.memPool,
