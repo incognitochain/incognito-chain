@@ -48,3 +48,8 @@ src/rpcserver
 bootnode
 go.mod
 go.sum
+
+priv.json
+bin/keylist.json
+bin/incognito
+incognito
