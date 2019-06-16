@@ -37,6 +37,7 @@ const (
 	defaultMaxPeersNoShard        = 125
 	defaultMaxPeersBeacon         = 50
 	defaultMaxRPCClients          = 20
+	defaultMaxRPCWSClients        = 20
 	sampleConfigFilename          = "sample-config.conf"
 	defaultDisableRpcTLS          = true
 	defaultFastStartup            = true
@@ -99,6 +100,7 @@ type config struct {
 	RPCCert        string   `long:"rpccert" description:"File containing the certificate file"`
 	RPCKey         string   `long:"rpckey" description:"File containing the certificate key"`
 	RPCMaxClients  int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
+	RPCMaxWSClients  int      `long:"rpcmaxwsclients" description:"Max number of RPC clients for standard connections"`
 	RPCQuirks      bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
 	DisableRPC     bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
 	DisableTLS     bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
@@ -283,6 +285,7 @@ func loadConfig() (*config, []string, error) {
 		MaxPeersNoShard:    defaultMaxPeersNoShard,
 		MaxPeersBeacon:     defaultMaxPeersBeacon,
 		RPCMaxClients:      defaultMaxRPCClients,
+		RPCMaxWSClients:    defaultMaxRPCWSClients,
 		DataDir:            defaultDataDir,
 		DatabaseDir:        defaultDatabaseDirname,
 		DatabaseMempoolDir: defaultDatabaseMempoolDirname,
