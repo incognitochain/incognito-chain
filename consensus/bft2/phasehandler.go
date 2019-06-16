@@ -1,5 +1,7 @@
 package bft2
 
+import "fmt"
+
 // create new block (sequence number)
 func (e *BFTEngine) handleProposePhase() {
 	if !e.viewIsInTimeFrame() || e.State == PROPOSE {
@@ -8,45 +10,32 @@ func (e *BFTEngine) handleProposePhase() {
 	e.setState(PROPOSE)
 
 	block := e.Chain.CreateNewBlock()
-	//TODO: broadcast block
 	e.Block = block
 	e.debug("start propose block", block)
-
-	//TODO: broadcast block
-
+	
+	go e.Chain.PushMessageToValidator(&ProposeMsg{e.Block, fmt.Sprint(e.NextHeight,"_",e.Round)})
 	e.nextState(PREPARE)
 
 }
 
 //listen for block
 func (e *BFTEngine) handleListenPhase() {
-	if !e.viewIsInTimeFrame() || e.State == LISTEN {
+	if !e.viewIsInTimeFrame() ||e.State == LISTEN {
 		return //not in right time frame or already in listen phase
 	}
 	e.setState(LISTEN)
-	e.debug("start listen block")
+	//e.debug("start listen block")
 }
 
 //send prepare message (signature of that message & sequence number) and wait for > 2/3 signature of nodes
 //block for the message and sequence number
 func (e *BFTEngine) handlePreparePhase() {
-	if !e.viewIsInTimeFrame() || e.State == PREPARE {
+	if !e.viewIsInTimeFrame() ||  e.State == PREPARE {
 		return //not in right time frame or already in prepare phase
 	}
 	e.setState(PREPARE)
-
-	e.debug("start prepare phase")
-
-	//initiate current view
-	//e.View = View{}
-	////validate node with current view
-	//isValid := false
-	//if e.Block != nil {
-	//	isValid = e.validateBlockWithCurrentView(e.Block, e.View)
-	//}
-
-	e.PrepareMsgCh <- PrepareMsg{true}
-	//TODO: create signature and broadcast
+	//e.debug("start prepare phase")
+	go e.Chain.PushMessageToValidator(&PrepareMsg{true, e.Chain.GetNodePubKey(), "signature", e.Block.Hash(),fmt.Sprint(e.NextHeight,"_",e.Round) })
 }
 
 //broadcast handleCommitPhase for a block
@@ -58,11 +47,17 @@ func (e *BFTEngine) handleCommitPhase() {
 	e.setState(COMMIT)
 
 	//There are replicas (non-faulty or otherwise) that didn't receive enough (i.e. 2f+1) PREPARE messages, either due to lossy network or being offline for a while. For them, they can't reach PREPARED stage. But! But when they heard from 2f+1 replicas broadcasting COMMIT message, they could be certain to handleCommitPhase on (m,v,n,i)
-	//TODO: broadcast
+	isValid := true
+	if e.getMajorityVote(e.PrepareMsgs[e.Block.Hash()]) == -1{
+		isValid = false
+	}
+	
+	if isValid {
+		go e.Chain.PushMessageToValidator(&CommitMsg{true, e.Chain.GetNodePubKey(), "signature", e.Block.Hash() ,fmt.Sprint(e.NextHeight,"_",e.Round)})
+	} else {
+		go e.Chain.PushMessageToValidator(&CommitMsg{false, e.Chain.GetNodePubKey(), "signature", e.Block.Hash(),fmt.Sprint(e.NextHeight,"_",e.Round) })
+	}
 
-	//TODO: if certain that block is handleCommitPhase , proceed to next state
-
-	//TODO: if block is commit, then insert block to chain and broadcast block
 }
 
 func (e *BFTEngine) handleNewRoundPhase() {
@@ -75,6 +70,7 @@ func (e *BFTEngine) handleNewRoundPhase() {
 	if e.viewIsInTimeFrame() && e.State != NEWROUND {
 		return
 	}
+	
 	e.setState(NEWROUND)
 
 	//wait for min blk time
@@ -85,7 +81,9 @@ func (e *BFTEngine) handleNewRoundPhase() {
 	//create new round
 	e.Round = e.getCurrentRound()
 	e.NextHeight = e.Chain.GetHeight() + 1
-	if e.Chain.GetNodePubKeyIndex() == (e.Round % e.Chain.GetCommitteeSize()) {
+	e.Block = nil
+	
+	if e.Chain.GetNodePubKeyIndex() ==  (e.Chain.GetLastProposerIndex() +1 + int(e.Round)) % e.Chain.GetCommitteeSize()  {
 		e.nextState(PROPOSE)
 	} else {
 		e.nextState(LISTEN)

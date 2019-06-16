@@ -6,15 +6,16 @@ import (
 )
 
 func (e *BFTEngine) getTimeSinceLastBlock() time.Duration {
-	return time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0))
+	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
 }
 
 func (e *BFTEngine) waitForNextRound() {
 	timeSinceLastBlk := e.getTimeSinceLastBlock()
 	if timeSinceLastBlk > e.Chain.GetBlkMinTime() {
+		//fmt.Println(e.PeerID, e.Chain.GetHeight(), timeSinceLastBlk, e.Chain.GetBlkMinTime())
 		return
 	}
-	time.Sleep(timeSinceLastBlk)
+	time.Sleep(e.Chain.GetBlkMinTime() - timeSinceLastBlk)
 }
 
 func (e *BFTEngine) setState(state string) {
@@ -24,8 +25,8 @@ func (e *BFTEngine) setState(state string) {
 /*
 Return the round is calculated since the latest block time
 */
-func (e *BFTEngine) getCurrentRound() int {
-	return int(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
+func (e *BFTEngine) getCurrentRound() uint64 {
+	return uint64(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
 }
 
 func (e *BFTEngine) viewIsInTimeFrame() bool {
@@ -39,6 +40,26 @@ func (e *BFTEngine) viewIsInTimeFrame() bool {
 	return true
 }
 
+func (e *BFTEngine) getMajorityVote(s map[string]bool) int{
+	size := e.Chain.GetCommitteeSize()
+	approve := 0
+	reject := 0
+	for _,v := range s {
+		if v {
+			approve++
+		} else {
+			reject++
+		}
+	}
+	if approve > 2*size/3 {
+		//e.debug("Approve", approve)
+		return 1
+	}
+	if reject > 2*size/3 {
+		return -1
+	}
+	return 0
+}
 //func (e *BFTEngine) validateBlockWithCurrentView(b BlockInterface) bool {
 //	return true
 //}
