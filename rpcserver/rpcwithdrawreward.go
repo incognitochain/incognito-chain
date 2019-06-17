@@ -34,8 +34,8 @@ func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params inte
 	return httpServer.createAndSendTxWithMetadata(
 		params,
 		closeChan,
-		HttpServer.handleCreateRawWithDrawTransaction,
-		HttpServer.handleSendRawTransaction,
+		(*HttpServer).handleCreateRawWithDrawTransaction,
+		(*HttpServer).handleSendRawTransaction,
 	)
 }
 
