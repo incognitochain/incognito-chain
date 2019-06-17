@@ -15,15 +15,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-
 /*
 handleGetAllPeers - return all peers which this node connected
 */
-func (rpcServer RpcServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetAllPeers params: %+v", params)
 	result := jsonresult.GetAllPeersResult{}
 	peersMap := []string{}
-	peers := rpcServer.config.AddrMgr.AddressCache()
+	peers := httpServer.config.AddrMgr.AddressCache()
 	for _, peer := range peers {
 		for _, peerConn := range peer.PeerConns {
 			peersMap = append(peersMap, peerConn.RemoteRawAddress)
@@ -34,16 +33,16 @@ func (rpcServer RpcServer) handleGetAllPeers(params interface{}, closeChan <-cha
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetNetworkInfoResult{}
 
 	result.Commit = os.Getenv("commit")
 	result.Version = RpcServerVersion
 	result.SubVersion = ""
-	result.ProtocolVersion = rpcServer.config.ProtocolVersion
-	result.NetworkActive = rpcServer.config.ConnMgr.ListeningPeer != nil
+	result.ProtocolVersion = httpServer.config.ProtocolVersion
+	result.NetworkActive = httpServer.config.ConnMgr.ListeningPeer != nil
 	result.LocalAddresses = []string{}
-	listener := rpcServer.config.ConnMgr.ListeningPeer
+	listener := httpServer.config.ConnMgr.ListeningPeer
 	result.Connections = len(listener.PeerConns)
 	result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
 
@@ -77,8 +76,8 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 		}
 	}
 	result.Networks = networks
-	if rpcServer.config.Wallet != nil && rpcServer.config.Wallet.GetConfig() != nil {
-		result.IncrementalFee = rpcServer.config.Wallet.GetConfig().IncrementalFee
+	if httpServer.config.Wallet != nil && httpServer.config.Wallet.GetConfig() != nil {
+		result.IncrementalFee = httpServer.config.Wallet.GetConfig().IncrementalFee
 	}
 	result.Warnings = ""
 
@@ -92,7 +91,7 @@ func (rpcServer RpcServer) handleGetNetWorkInfo(params interface{}, closeChan <-
 //Parameter #2—the maximum number of confirmations an output may have
 //Parameter #3—the list priv-key which be used to view utxo
 //
-func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleListUnspentOutputCoins params: %+v", params)
 	result := jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
@@ -133,7 +132,7 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 		}
 		tokenID := &common.Hash{}
 		tokenID.SetBytes(common.PRVCoinID[:])
-		outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
+		outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -158,7 +157,7 @@ func (rpcServer RpcServer) handleListUnspentOutputCoins(params interface{}, clos
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleCheckHashValue params: %+v", params)
 	var (
 		isTransaction bool
@@ -178,7 +177,7 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 	hash, _ := common.Hash{}.NewHashFromStr(hashParams)
 
 	// Check block
-	_, _, err := rpcServer.config.BlockChain.GetShardBlockByHash(*hash)
+	_, _, err := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
 	if err != nil {
 		isBlock = false
 	} else {
@@ -190,7 +189,7 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 		Logger.log.Infof("handleCheckHashValue result: %+v", result)
 		return result, nil
 	}
-	_, _, _, _, err1 := rpcServer.config.BlockChain.GetTransactionByHash(*hash)
+	_, _, _, _, err1 := httpServer.config.BlockChain.GetTransactionByHash(*hash)
 	if err1 != nil {
 		isTransaction = false
 	} else {
@@ -213,13 +212,13 @@ func (rpcServer RpcServer) handleCheckHashValue(params interface{}, closeChan <-
 /*
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
-func (rpcServer RpcServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetConnectionCount params: %+v", params)
-	if rpcServer.config.ConnMgr == nil || rpcServer.config.ConnMgr.ListeningPeer == nil {
+	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.ListeningPeer == nil {
 		return 0, nil
 	}
 	result := 0
-	listeningPeer := rpcServer.config.ConnMgr.ListeningPeer
+	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
 	result += len(listeningPeer.PeerConns)
 	Logger.log.Infof("handleGetConnectionCount result: %+v", result)
 	return result, nil
@@ -228,9 +227,9 @@ func (rpcServer RpcServer) handleGetConnectionCount(params interface{}, closeCha
 /*
 handleGetMiningInfo - RPC returns various mining-related info
 */
-func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetMiningInfo params: %+v", params)
-	if !rpcServer.config.IsMiningNode || rpcServer.config.MiningPubKeyB58 == "" {
+	if !httpServer.config.IsMiningNode || httpServer.config.MiningPubKeyB58 == "" {
 		return jsonresult.GetMiningInfoResult{
 			IsCommittee: false,
 		}, nil
@@ -238,16 +237,16 @@ func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-c
 
 	result := jsonresult.GetMiningInfoResult{}
 	result.IsCommittee = true
-	result.PoolSize = rpcServer.config.TxMemPool.Count()
-	result.Chain = rpcServer.config.ChainParams.Name
+	result.PoolSize = httpServer.config.TxMemPool.Count()
+	result.Chain = httpServer.config.ChainParams.Name
 
-	result.BeaconHeight = rpcServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	result.BeaconHeight = httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
 
-	role, shardID := rpcServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(rpcServer.config.MiningPubKeyB58, 0)
+	role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
 	result.Role = role
 	if role == common.SHARD_ROLE {
-		result.ShardHeight = rpcServer.config.BlockChain.BestState.Shard[shardID].ShardHeight
-		result.CurrentShardBlockTx = len(rpcServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
+		result.ShardHeight = httpServer.config.BlockChain.BestState.Shard[shardID].ShardHeight
+		result.CurrentShardBlockTx = len(httpServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
 		result.ShardID = int(shardID)
 	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
 		result.ShardID = -1
@@ -260,18 +259,18 @@ func (rpcServer RpcServer) handleGetMiningInfo(params interface{}, closeChan <-c
 handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
-func (rpcServer RpcServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetRawMempool params: %+v", params)
 	result := jsonresult.GetRawMempoolResult{
-		TxHashes: rpcServer.config.TxMemPool.ListTxs(),
+		TxHashes: httpServer.config.TxMemPool.ListTxs(),
 	}
 	Logger.log.Infof("handleGetRawMempool result: %+v", result)
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetNumberOfTxsInMempool params: %+v", params)
-	result := len(rpcServer.config.TxMemPool.ListTxs())
+	result := len(httpServer.config.TxMemPool.ListTxs())
 	Logger.log.Infof("handleGetNumberOfTxsInMempool result: %+v", result)
 	return result, nil
 }
@@ -279,7 +278,7 @@ func (rpcServer RpcServer) handleGetNumberOfTxsInMempool(params interface{}, clo
 /*
 handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
-func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleMempoolEntry params: %+v", params)
 	// Param #1: hash string of tx(tx id)
 	if params == nil {
@@ -292,7 +291,7 @@ func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-ch
 	}
 
 	result := jsonresult.GetMempoolEntryResult{}
-	result.Tx, err = rpcServer.config.TxMemPool.GetTx(txID)
+	result.Tx, err = httpServer.config.TxMemPool.GetTx(txID)
 	if err != nil {
 		Logger.log.Infof("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -304,7 +303,7 @@ func (rpcServer RpcServer) handleMempoolEntry(params interface{}, closeChan <-ch
 /*
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
-func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleEstimateFee params: %+v", params)
 	/******* START Fetch all component to ******/
 	// all component
@@ -330,7 +329,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 	}
 	hasPrivacy := int(hashPrivacyTemp) > 0
 
-	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
+	senderKeySet, err := httpServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
 		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
@@ -340,12 +339,12 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
-	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
+	outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
 	// remove out coin in mem pool
-	outCoins, err = rpcServer.filterMemPoolOutCoinsToSpent(outCoins)
+	outCoins, err = httpServer.filterMemPoolOutCoinsToSpent(outCoins)
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
 	}
@@ -380,13 +379,13 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 			privacy := tokenParamsRaw["Privacy"].(bool)
 			if !privacy {
 				// Check normal custom token param
-				customTokenParams, _, err = rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
+				customTokenParams, _, err = httpServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
 				if err.(*RPCError) != nil {
 					return nil, err.(*RPCError)
 				}
 			} else {
 				// Check privacy custom token param
-				customPrivacyTokenParam, _, _, err = rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+				customPrivacyTokenParam, _, _, err = httpServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
 				if err.(*RPCError) != nil {
 					return nil, err.(*RPCError)
 				}
@@ -394,7 +393,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 		}
 
 		// check real fee(nano constant) per tx
-		_, estimateFeeCoinPerKb, estimateTxSizeInKb = rpcServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
+		_, estimateFeeCoinPerKb, estimateTxSizeInKb = httpServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
 	}
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
@@ -405,7 +404,7 @@ func (rpcServer RpcServer) handleEstimateFee(params interface{}, closeChan <-cha
 }
 
 // handleEstimateFeeWithEstimator -- get fee from estomator
-func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleEstimateFeeWithEstimator params: %+v", params)
 	// all params
 	arrayParams := common.InterfaceSlice(params)
@@ -421,7 +420,7 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 
 	// param #2: payment address
 	senderKeyParam := arrayParams[1]
-	senderKeySet, err := rpcServer.GetKeySetFromKeyParams(senderKeyParam.(string))
+	senderKeySet, err := httpServer.GetKeySetFromKeyParams(senderKeyParam.(string))
 	if err != nil {
 		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
 	}
@@ -429,7 +428,7 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
 	// param #2: numblocl
-	estimateFeeCoinPerKb := rpcServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8)
+	estimateFeeCoinPerKb := httpServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8)
 
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
@@ -439,21 +438,21 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 }
 
 // handleGetActiveShards - return active shard num
-func (rpcServer RpcServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetActiveShards params: %+v", params)
-	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
+	activeShards := httpServer.config.BlockChain.BestState.Beacon.ActiveShards
 	Logger.log.Infof("handleGetActiveShards result: %+v", activeShards)
 	return activeShards, nil
 }
 
-func (rpcServer RpcServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetMaxShardsNumber params: %+v", params)
 	result := common.MAX_SHARD_NUMBER
 	Logger.log.Infof("handleGetMaxShardsNumber result: %+v", result)
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetStakingAmount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) <= 0 {
@@ -461,7 +460,7 @@ func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan 
 	}
 	stackingType := int(arrayParams[0].(float64))
 	amount := uint64(0)
-	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", rpcServer.config.ChainParams.StakingAmountShard)
+	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", httpServer.config.ChainParams.StakingAmountShard)
 	if stackingType == 1 {
 		amount = stakingData.GetBeaconStakeAmount()
 	}
@@ -472,7 +471,7 @@ func (rpcServer RpcServer) handleGetStakingAmount(params interface{}, closeChan 
 	return amount, nil
 }
 
-func (rpcServer RpcServer) handleHashToIdenticon(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	result := make([]string, 0)
 	for _, hash := range arrayParams {

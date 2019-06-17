@@ -1,140 +1,140 @@
 package rpcserver
 
+type httpHandler func(*HttpServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
+type wsHandler func(*HttpServer, interface{}, <-chan struct{}) (chan interface{}, *RPCError)
 
-type httpHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
-type wsHandler func(RpcServer, interface{}, <-chan struct{}) (chan interface{}, *RPCError)
 // Commands valid for normal user
 var HttpHandler = map[string]httpHandler{
-	
-	startProfiling: RpcServer.handleStartProfiling,
-	stopProfiling:  RpcServer.handleStopProfiling,
+
+	startProfiling: (*HttpServer).handleStartProfiling,
+	stopProfiling:  (*HttpServer).handleStopProfiling,
 	// node
-	getNetworkInfo:           RpcServer.handleGetNetWorkInfo,
-	getConnectionCount:       RpcServer.handleGetConnectionCount,
-	getAllPeers:              RpcServer.handleGetAllPeers,
-	estimateFee:              RpcServer.handleEstimateFee,
-	estimateFeeWithEstimator: RpcServer.handleEstimateFeeWithEstimator,
-	getActiveShards:          RpcServer.handleGetActiveShards,
-	getMaxShardsNumber:       RpcServer.handleGetMaxShardsNumber,
-	
+	getNetworkInfo:           (*HttpServer).handleGetNetWorkInfo,
+	getConnectionCount:       (*HttpServer).handleGetConnectionCount,
+	getAllPeers:              (*HttpServer).handleGetAllPeers,
+	estimateFee:              (*HttpServer).handleEstimateFee,
+	estimateFeeWithEstimator: (*HttpServer).handleEstimateFeeWithEstimator,
+	getActiveShards:          (*HttpServer).handleGetActiveShards,
+	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
+
 	//pool
-	getMiningInfo:               RpcServer.handleGetMiningInfo,
-	getRawMempool:               RpcServer.handleGetRawMempool,
-	getNumberOfTxsInMempool:     RpcServer.handleGetNumberOfTxsInMempool,
-	getMempoolEntry:             RpcServer.handleMempoolEntry,
-	getShardToBeaconPoolStateV2: RpcServer.handleGetShardToBeaconPoolStateV2,
-	getCrossShardPoolStateV2:    RpcServer.handleGetCrossShardPoolStateV2,
-	getShardPoolStateV2:         RpcServer.handleGetShardPoolStateV2,
-	getBeaconPoolStateV2:        RpcServer.handleGetBeaconPoolStateV2,
-	getShardToBeaconPoolState:   RpcServer.handleGetShardToBeaconPoolState,
-	getCrossShardPoolState:      RpcServer.handleGetCrossShardPoolState,
-	getNextCrossShard:           RpcServer.handleGetNextCrossShard,
+	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
+	getRawMempool:               (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool:     (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:             (*HttpServer).handleMempoolEntry,
+	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
+	getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
+	getShardPoolStateV2:         (*HttpServer).handleGetShardPoolStateV2,
+	getBeaconPoolStateV2:        (*HttpServer).handleGetBeaconPoolStateV2,
+	getShardToBeaconPoolState:   (*HttpServer).handleGetShardToBeaconPoolState,
+	getCrossShardPoolState:      (*HttpServer).handleGetCrossShardPoolState,
+	getNextCrossShard:           (*HttpServer).handleGetNextCrossShard,
 	// block
-	getBestBlock:        RpcServer.handleGetBestBlock,
-	getBestBlockHash:    RpcServer.handleGetBestBlockHash,
-	retrieveBlock:       RpcServer.handleRetrieveBlock,
-	retrieveBeaconBlock: RpcServer.handleRetrieveBeaconBlock,
-	getBlocks:           RpcServer.handleGetBlocks,
-	getBlockChainInfo:   RpcServer.handleGetBlockChainInfo,
-	getBlockCount:       RpcServer.handleGetBlockCount,
-	getBlockHash:        RpcServer.handleGetBlockHash,
-	checkHashValue:      RpcServer.handleCheckHashValue, // get data in blockchain from hash value
-	getBlockHeader:      RpcServer.handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
-	getCrossShardBlock:  RpcServer.handleGetCrossShardBlock,
-	
+	getBestBlock:        (*HttpServer).handleGetBestBlock,
+	getBestBlockHash:    (*HttpServer).handleGetBestBlockHash,
+	retrieveBlock:       (*HttpServer).handleRetrieveBlock,
+	retrieveBeaconBlock: (*HttpServer).handleRetrieveBeaconBlock,
+	getBlocks:           (*HttpServer).handleGetBlocks,
+	getBlockChainInfo:   (*HttpServer).handleGetBlockChainInfo,
+	getBlockCount:       (*HttpServer).handleGetBlockCount,
+	getBlockHash:        (*HttpServer).handleGetBlockHash,
+	checkHashValue:      (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
+	getBlockHeader:      (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
+	getCrossShardBlock:  (*HttpServer).handleGetCrossShardBlock,
+
 	// transaction
-	listOutputCoins:                 RpcServer.handleListOutputCoins,
-	createRawTransaction:            RpcServer.handleCreateRawTransaction,
-	sendRawTransaction:              RpcServer.handleSendRawTransaction,
-	createAndSendTransaction:        RpcServer.handleCreateAndSendTx,
-	getMempoolInfo:                  RpcServer.handleGetMempoolInfo,
-	getTransactionByHash:            RpcServer.handleGetTransactionByHash,
-	createAndSendStakingTransaction: RpcServer.handleCreateAndSendStakingTx,
-	randomCommitments:               RpcServer.handleRandomCommitments,
-	hasSerialNumbers:                RpcServer.handleHasSerialNumbers,
-	hasSnDerivators:                 RpcServer.handleHasSnDerivators,
-	
+	listOutputCoins:                 (*HttpServer).handleListOutputCoins,
+	createRawTransaction:            (*HttpServer).handleCreateRawTransaction,
+	sendRawTransaction:              (*HttpServer).handleSendRawTransaction,
+	createAndSendTransaction:        (*HttpServer).handleCreateAndSendTx,
+	getMempoolInfo:                  (*HttpServer).handleGetMempoolInfo,
+	getTransactionByHash:            (*HttpServer).handleGetTransactionByHash,
+	createAndSendStakingTransaction: (*HttpServer).handleCreateAndSendStakingTx,
+	randomCommitments:               (*HttpServer).handleRandomCommitments,
+	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
+	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
+
 	//======Testing and Benchmark======
-	getAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
-	getAndSendTxsFromFileV2: RpcServer.handleGetAndSendTxsFromFileV2,
-	unlockMempool:         RpcServer.handleUnlockMempool,
+	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
+	unlockMempool:           (*HttpServer).handleUnlockMempool,
 	//=================================
-	
+
 	//pool
-	
+
 	// Beststate
-	getCandidateList:              RpcServer.handleGetCandidateList,
-	getCommitteeList:              RpcServer.handleGetCommitteeList,
-	getBlockProducerList:          RpcServer.handleGetBlockProducerList,
-	getShardBestState:             RpcServer.handleGetShardBestState,
-	getBeaconBestState:            RpcServer.handleGetBeaconBestState,
-	getBeaconPoolState:            RpcServer.handleGetBeaconPoolState,
-	getShardPoolState:             RpcServer.handleGetShardPoolState,
-	getShardPoolLatestValidHeight: RpcServer.handleGetShardPoolLatestValidHeight,
-	canPubkeyStake:                RpcServer.handleCanPubkeyStake,
-	getTotalTransaction:           RpcServer.handleGetTotalTransaction,
-	
+	getCandidateList:              (*HttpServer).handleGetCandidateList,
+	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
+	getBlockProducerList:          (*HttpServer).handleGetBlockProducerList,
+	getShardBestState:             (*HttpServer).handleGetShardBestState,
+	getBeaconBestState:            (*HttpServer).handleGetBeaconBestState,
+	getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
+	getShardPoolState:             (*HttpServer).handleGetShardPoolState,
+	getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
+	canPubkeyStake:                (*HttpServer).handleCanPubkeyStake,
+	getTotalTransaction:           (*HttpServer).handleGetTotalTransaction,
+
 	// custom token
-	createRawCustomTokenTransaction:     RpcServer.handleCreateRawCustomTokenTransaction,
-	sendRawCustomTokenTransaction:       RpcServer.handleSendRawCustomTokenTransaction,
-	createAndSendCustomTokenTransaction: RpcServer.handleCreateAndSendCustomTokenTransaction,
-	listUnspentCustomToken:              RpcServer.handleListUnspentCustomToken,
-	listCustomToken:                     RpcServer.handleListCustomToken,
-	customTokenTxs:                      RpcServer.handleCustomTokenDetail,
-	listCustomTokenHolders:              RpcServer.handleGetListCustomTokenHolders,
-	getListCustomTokenBalance:           RpcServer.handleGetListCustomTokenBalance,
-	
+	createRawCustomTokenTransaction:     (*HttpServer).handleCreateRawCustomTokenTransaction,
+	sendRawCustomTokenTransaction:       (*HttpServer).handleSendRawCustomTokenTransaction,
+	createAndSendCustomTokenTransaction: (*HttpServer).handleCreateAndSendCustomTokenTransaction,
+	listUnspentCustomToken:              (*HttpServer).handleListUnspentCustomToken,
+	listCustomToken:                     (*HttpServer).handleListCustomToken,
+	customTokenTxs:                      (*HttpServer).handleCustomTokenDetail,
+	listCustomTokenHolders:              (*HttpServer).handleGetListCustomTokenHolders,
+	getListCustomTokenBalance:           (*HttpServer).handleGetListCustomTokenBalance,
+
 	// custom token which support privacy
-	createRawPrivacyCustomTokenTransaction:     RpcServer.handleCreateRawPrivacyCustomTokenTransaction,
-	sendRawPrivacyCustomTokenTransaction:       RpcServer.handleSendRawPrivacyCustomTokenTransaction,
-	createAndSendPrivacyCustomTokenTransaction: RpcServer.handleCreateAndSendPrivacyCustomTokenTransaction,
-	listPrivacyCustomToken:                     RpcServer.handleListPrivacyCustomToken,
-	privacyCustomTokenTxs:                      RpcServer.handlePrivacyCustomTokenDetail,
-	getListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
-	
+	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
+	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
+	createAndSendPrivacyCustomTokenTransaction: (*HttpServer).handleCreateAndSendPrivacyCustomTokenTransaction,
+	listPrivacyCustomToken:                     (*HttpServer).handleListPrivacyCustomToken,
+	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
+	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
+
 	// Bridge
-	createIssuingRequest:            RpcServer.handleCreateIssuingRequest,
-	sendIssuingRequest:              RpcServer.handleSendIssuingRequest,
-	createAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
-	createAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
-	getBridgeTokensAmounts:          RpcServer.handleGetBridgeTokensAmounts,
-	
+	createIssuingRequest:            (*HttpServer).handleCreateIssuingRequest,
+	sendIssuingRequest:              (*HttpServer).handleSendIssuingRequest,
+	createAndSendIssuingRequest:     (*HttpServer).handleCreateAndSendIssuingRequest,
+	createAndSendContractingRequest: (*HttpServer).handleCreateAndSendContractingRequest,
+	getBridgeTokensAmounts:          (*HttpServer).handleGetBridgeTokensAmounts,
+
 	// wallet
-	getPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
-	defragmentAccount:              RpcServer.handleDefragmentAccount,
-	
-	getStackingAmount: RpcServer.handleGetStakingAmount,
-	
-	hashToIdenticon: RpcServer.handleHashToIdenticon,
-	
+	getPublicKeyFromPaymentAddress: (*HttpServer).handleGetPublicKeyFromPaymentAddress,
+	defragmentAccount:              (*HttpServer).handleDefragmentAccount,
+
+	getStackingAmount: (*HttpServer).handleGetStakingAmount,
+
+	hashToIdenticon: (*HttpServer).handleHashToIdenticon,
+
 	//reward
-	CreateRawWithDrawTransaction: RpcServer.handleCreateAndSendWithDrawTransaction,
-	getRewardAmount:              RpcServer.handleGetRewardAmount,
-	
+	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
+	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
+
 	//revert
-	revertbeaconchain: RpcServer.handleRevertBeacon,
-	revertshardchain:  RpcServer.handleRevertShard,
+	revertbeaconchain: (*HttpServer).handleRevertBeacon,
+	revertshardchain:  (*HttpServer).handleRevertShard,
 }
 
 // Commands that are available to a limited user
 var LimitedHttpHandler = map[string]httpHandler{
 	// local WALLET
-	listAccounts:                       RpcServer.handleListAccounts,
-	getAccount:                         RpcServer.handleGetAccount,
-	getAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
-	getAccountAddress:                  RpcServer.handleGetAccountAddress,
-	dumpPrivkey:                        RpcServer.handleDumpPrivkey,
-	importAccount:                      RpcServer.handleImportAccount,
-	removeAccount:                      RpcServer.handleRemoveAccount,
-	listUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
-	getBalance:                         RpcServer.handleGetBalance,
-	getBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
-	getBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
-	getReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
-	setTxFee:                           RpcServer.handleSetTxFee,
-	getRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
+	listAccounts:                       (*HttpServer).handleListAccounts,
+	getAccount:                         (*HttpServer).handleGetAccount,
+	getAddressesByAccount:              (*HttpServer).handleGetAddressesByAccount,
+	getAccountAddress:                  (*HttpServer).handleGetAccountAddress,
+	dumpPrivkey:                        (*HttpServer).handleDumpPrivkey,
+	importAccount:                      (*HttpServer).handleImportAccount,
+	removeAccount:                      (*HttpServer).handleRemoveAccount,
+	listUnspentOutputCoins:             (*HttpServer).handleListUnspentOutputCoins,
+	getBalance:                         (*HttpServer).handleGetBalance,
+	getBalanceByPrivatekey:             (*HttpServer).handleGetBalanceByPrivatekey,
+	getBalanceByPaymentAddress:         (*HttpServer).handleGetBalanceByPaymentAddress,
+	getReceivedByAccount:               (*HttpServer).handleGetReceivedByAccount,
+	setTxFee:                           (*HttpServer).handleSetTxFee,
+	getRecentTransactionsByBlockNumber: (*HttpServer).handleGetRecentTransactionsByBlockNumber,
 }
 
 var WsHandler = map[string]wsHandler{
-	subcribeNewBlock:                           RpcServer.handleSubcribeNewBlock,
+	subcribeNewBlock: (*HttpServer).handleSubcribeNewBlock,
 }

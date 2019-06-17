@@ -45,7 +45,7 @@ type Server struct {
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
 	dataBase          database.DatabaseInterface
-	rpcServer         *rpcserver.RpcServer
+	rpcServer         *rpcserver.HttpServer
 	memPool           *mempool.TxPool
 	tempMemPool       *mempool.TxPool
 	beaconPool        *mempool.BeaconPool
@@ -402,7 +402,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			MiningPubKeyB58: miningPubkeyB58,
 			NetSync:         serverObj.netSync,
 		}
-		serverObj.rpcServer = &rpcserver.RpcServer{}
+		serverObj.rpcServer = &rpcserver.HttpServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
 
 		// Signal process shutdown when the RPC server requests it.
