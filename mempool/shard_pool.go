@@ -69,14 +69,17 @@ func InitShardPool(pool map[byte]blockchain.ShardPool, cRoleInCommitteesShardPoo
 		shardPoolMap[byte(i)].RoleInCommittees = -1
 	}
 }
-func (shardPool *ShardPool) Start(cQuit chan struct{}) {
+func (self *ShardPool) Start(cQuit chan struct{}) {
 	for {
 		select {
-		case role := <-shardPool.CRoleInCommittees:
-			shardPool.mtx.Lock()
-			shardPool.RoleInCommittees = role
-			shardPool.mtx.Unlock()
+		case role := <-self.CRoleInCommittees:
+			self.mtx.Lock()
+			self.RoleInCommittees = role
+			self.mtx.Unlock()
 		case <-cQuit:
+			self.mtx.Lock()
+			self.RoleInCommittees = -1
+			self.mtx.Unlock()
 			return
 		}
 	}
