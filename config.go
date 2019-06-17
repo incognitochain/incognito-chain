@@ -37,6 +37,7 @@ const (
 	defaultMaxPeersNoShard        = 125
 	defaultMaxPeersBeacon         = 50
 	defaultMaxRPCClients          = 20
+	defaultMetricUrl              = ""
 	sampleConfigFilename          = "sample-config.conf"
 	defaultDisableRpcTLS          = true
 	defaultFastStartup            = true
@@ -128,6 +129,7 @@ type config struct {
 
 	LoadMempool    bool `long:"loadmempool" description:"Load transactions from Mempool database"`
 	PersistMempool bool `long:"persistmempool" description:"Persistence transaction in memepool database"`
+	MetricUrl     string `long:"metricurl" description:"Metric URL"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -304,6 +306,7 @@ func loadConfig() (*config, []string, error) {
 		TxPoolMaxTx:          defaultTxPoolMaxTx,
 		PersistMempool:       defaultPersistMempool,
 		LimitFee:             defaultLimitFee,
+		MetricUrl:            defaultMetricUrl,
 	}
 
 	// Service options which are only added on Windows.
