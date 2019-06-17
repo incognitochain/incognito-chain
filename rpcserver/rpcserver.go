@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
-	
+
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/connmanager"
@@ -32,17 +32,16 @@ type UsageFlag uint32
 
 // rpcServer provides a concurrent safe RPC server to a chain server.
 type RpcServer struct {
-	HttpServer      *HttpServer
-	WsServer        *WsServer
-	
-	
+	HttpServer *HttpServer
+	WsServer   *WsServer
+
 	started          int32
 	shutdown         int32
 	numClients       int32
 	numSocketClients int32
 	config           RpcServerConfig
 	RpcServer        *http.Server
-	
+
 	statusLock  sync.RWMutex
 	statusLines map[int]string
 
@@ -55,7 +54,7 @@ type RpcServer struct {
 
 type RpcServerConfig struct {
 	HttpListenters  []net.Listener
-	WsListenters  []net.Listener
+	WsListenters    []net.Listener
 	ProtocolVersion string
 	ChainParams     *blockchain.Params
 	BlockChain      *blockchain.BlockChain
@@ -121,6 +120,7 @@ func (rpcServer *RpcServer) Stop() {
 		rpcServer.HttpServer.Stop()
 	}
 }
+
 // RequestedProcessShutdown returns a channel that is sent to when an authorized
 // RPC client requests the process to shutdown.  If the request can not be read
 // immediately, it is dropped.
