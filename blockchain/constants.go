@@ -12,7 +12,7 @@ const (
 	BlockVersion            = 1
 	defaultMaxBlkReqPerPeer = 600
 	defaultMaxBlkReqPerTime = 1200
-	
+
 	defaultBroadcastStateTime = 2 * time.Second  // in second
 	defaultStateUpdateTime    = 3 * time.Second  // in second
 	defaultMaxBlockSyncTime   = 1 * time.Second  // in second
@@ -26,12 +26,12 @@ const (
 	Mainnet            = 0x01
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
-	
+
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
 	MainNetStakingAmountShard  = 175000
-	
+
 	//board and proposal parameters
 	MainnetBasicReward                = 50      //50 mili PRV
 	MainnetRewardHalflife             = 6307200 //1 year, reduce 10% per year
@@ -61,12 +61,12 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
-	
+
 	TestNetShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize = 4
 	TestNetActiveShards        = 2
 	TestNetStakingAmountShard  = 175000
-	
+
 	//board and proposal parameters
 	TestnetBasicReward                = 50      //50 mili PRV
 	TestnetRewardHalflife             = 6307200 //1 year, reduce 10% per year
@@ -83,29 +83,29 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	type AccountKey struct {
 		PrivateKey string
 		PaymentAdd string
 		PubKey     string
 	}
-	
+
 	type KeyList struct {
 		Shard  map[int][]AccountKey
 		Beacon []AccountKey
 	}
-	
+
 	keylist := KeyList{}
-	
+
 	err = json.Unmarshal(keyData, &keylist)
 	if err != nil {
 		panic(err)
 	}
-	
+
 	for i := 0; i < TestNetBeaconCommitteeSize; i++ {
 		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKey)
 	}
-	
+
 	for i := 0; i < TestNetActiveShards; i++ {
 		for j := 0; j < TestNetShardCommitteeSize; j++ {
 			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKey)

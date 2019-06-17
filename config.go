@@ -120,6 +120,7 @@ type config struct {
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 	WalletAutoInit   bool   `long:"walletautoinit" description:"Init wallet automatically if not exist"`
+	WalletShardID    int    `long:"walletshardid" description:"ShardID which wallet use to create account"`
 
 	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 
@@ -127,9 +128,9 @@ type config struct {
 	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
 	LimitFee    uint64 `long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.01 PRV"`
 
-	LoadMempool    bool `long:"loadmempool" description:"Load transactions from Mempool database"`
-	PersistMempool bool `long:"persistmempool" description:"Persistence transaction in memepool database"`
-	MetricUrl     string `long:"metricurl" description:"Metric URL"`
+	LoadMempool    bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
+	PersistMempool bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
+	MetricUrl      string `long:"metricurl" description:"Metric URL"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -274,24 +275,24 @@ func removeDuplicateAddresses(addrs []string) []string {
 */
 func loadConfig() (*config, []string, error) {
 	cfg := config{
-		ConfigFile:         defaultConfigFile,
-		LogLevel:           defaultLogLevel,
-		MaxOutPeers:        defaultMaxPeers,
-		MaxInPeers:         defaultMaxPeers,
-		MaxPeers:           defaultMaxPeers,
-		MaxPeersSameShard:  defaultMaxPeersSameShard,
-		MaxPeersOtherShard: defaultMaxPeersOtherShard,
-		MaxPeersOther:      defaultMaxPeersOther,
-		MaxPeersNoShard:    defaultMaxPeersNoShard,
-		MaxPeersBeacon:     defaultMaxPeersBeacon,
-		RPCMaxClients:      defaultMaxRPCClients,
-		DataDir:            defaultDataDir,
-		DatabaseDir:        defaultDatabaseDirname,
-		DatabaseMempoolDir: defaultDatabaseMempoolDirname,
-		LogDir:             defaultLogDir,
-		RPCKey:             defaultRPCKeyFile,
-		RPCCert:            defaultRPCCertFile,
-		// Generate:             defaultGenerate,
+		ConfigFile:           defaultConfigFile,
+		LogLevel:             defaultLogLevel,
+		MaxOutPeers:          defaultMaxPeers,
+		MaxInPeers:           defaultMaxPeers,
+		MaxPeers:             defaultMaxPeers,
+		MaxPeersSameShard:    defaultMaxPeersSameShard,
+		MaxPeersOtherShard:   defaultMaxPeersOtherShard,
+		MaxPeersOther:        defaultMaxPeersOther,
+		MaxPeersNoShard:      defaultMaxPeersNoShard,
+		MaxPeersBeacon:       defaultMaxPeersBeacon,
+		RPCMaxClients:        defaultMaxRPCClients,
+		DataDir:              defaultDataDir,
+		DatabaseDir:          defaultDatabaseDirname,
+		DatabaseMempoolDir:   defaultDatabaseMempoolDirname,
+		LogDir:               defaultLogDir,
+		RPCKey:               defaultRPCKeyFile,
+		RPCCert:              defaultRPCCertFile,
+		WalletShardID:        -1,
 		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTLS,
 		DisableRPC:           false,
