@@ -22,25 +22,29 @@ const (
 	DuplicateBlockError
 	OldBlockError
 	MaxPoolSizeError
+	UnexpectedTransactionError
+	TransactionNotFoundError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	Message string
 }{
-	RejectDuplicateTx:      {-1000, "Reject duplicate tx"},
-	RejectInvalidTx:        {-1001, "Reject invalid tx"},
-	RejectSansityTx:        {-1002, "Reject not sansity tx"},
-	RejectSalaryTx:         {-1003, "Reject salary tx"},
-	RejectInvalidFee:       {-1004, "Reject invalid fee"},
-	RejectVersion:          {-1005, "Reject invalid version"},
-	CanNotCheckDoubleSpend: {-1006, "Can not check double spend"},
-	DatabaseError:          {-1007, "Database Error"},
-	ShardToBeaconBoolError: {-1007, "ShardToBeaconBool Error"},
-	RejectDuplicateStakeTx: {-1008, "Reject Duplicate Stake Error"},
-	DuplicateBlockError:    {-1009, "Duplicate Block Error"},
-	OldBlockError:          {-1010, "Old Block Error"},
-	MaxPoolSizeError:       {-1011, "Max Pool Size Error"},
+	RejectDuplicateTx:          {-1000, "Reject duplicate tx"},
+	RejectInvalidTx:            {-1001, "Reject invalid tx"},
+	RejectSansityTx:            {-1002, "Reject not sansity tx"},
+	RejectSalaryTx:             {-1003, "Reject salary tx"},
+	RejectInvalidFee:           {-1004, "Reject invalid fee"},
+	RejectVersion:              {-1005, "Reject invalid version"},
+	CanNotCheckDoubleSpend:     {-1006, "Can not check double spend"},
+	DatabaseError:              {-1007, "Database Error"},
+	ShardToBeaconBoolError:     {-1007, "ShardToBeaconBool Error"},
+	RejectDuplicateStakeTx:     {-1008, "Reject Duplicate Stake Error"},
+	DuplicateBlockError:        {-1009, "Duplicate Block Error"},
+	OldBlockError:              {-1010, "Old Block Error"},
+	MaxPoolSizeError:           {-1011, "Max Pool Size Error"},
+	UnexpectedTransactionError: {-1012, "Unexpected Transaction Error"},
+	TransactionNotFoundError:   {-1013, "Transaction Not Found Error"},
 }
 
 type MempoolTxError struct {
