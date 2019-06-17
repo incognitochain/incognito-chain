@@ -116,11 +116,11 @@ const (
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
 
-	revertbeaconchain = "revertbeaconchain"
-	revertshardchain  = "revertshardchain"
+	revertbeaconchain                  = "revertbeaconchain"
+	revertshardchain                   = "revertshardchain"
 	getRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
 )
 
 const (
-	subcribeNewBlock = "subcribenewblock"
+	subcribeNewBlock = "subcribe_newblock"
 )
