@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/pkg/errors"
 	"io/ioutil"
 )
@@ -30,6 +31,7 @@ type WalletConfig struct {
 	DataFile       string
 	DataPath       string
 	IncrementalFee uint64
+	ShardID        *byte //default is nil -> create account for any shard
 }
 
 func (wallet Wallet) GetConfig() *WalletConfig {
@@ -77,6 +79,40 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 
 func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *AccountWallet {
 	if shardID != nil {
+		// only create account for specific Shard
+		newIndex := uint64(0)
+		// loop to get newest index of childs
+		for j := len(wallet.MasterAccount.Child) - 1; j >= 0; j-- {
+			temp := wallet.MasterAccount.Child[j]
+			if !temp.IsImported {
+				childNumber := temp.Key.ChildNumber
+				newIndex = common.BytesToUint64(childNumber) + uint64(1)
+				break
+			}
+		}
+
+		// loop to get create a new child which can be equal shardID param
+		var childKey *KeyWallet
+		for true {
+			childKey, _ := wallet.MasterAccount.Key.NewChildKey(uint32(newIndex))
+			lastByte := childKey.KeySet.PaymentAddress.Pk[len(childKey.KeySet.PaymentAddress.Pk)-1]
+			if common.GetShardIDFromLastByte(lastByte) == *shardID {
+				break
+			}
+			newIndex += 1
+		}
+		// use chosen childKey tp create an child account for wallet
+		if accountName == "" {
+			accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
+		}
+		account := AccountWallet{
+			Key:   *childKey,
+			Child: make([]AccountWallet, 0),
+			Name:  accountName,
+		}
+		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
+		wallet.Save(wallet.PassPhrase)
+		return &account
 
 	} else {
 		newIndex := uint32(len(wallet.MasterAccount.Child))

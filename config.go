@@ -119,6 +119,7 @@ type config struct {
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 	WalletAutoInit   bool   `long:"walletautoinit" description:"Init wallet automatically if not exist"`
+	WalletShardID    int    `long:"walletshardid" description:"ShardID which wallet use to create account"`
 
 	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 
@@ -272,24 +273,24 @@ func removeDuplicateAddresses(addrs []string) []string {
 */
 func loadConfig() (*config, []string, error) {
 	cfg := config{
-		ConfigFile:         defaultConfigFile,
-		LogLevel:           defaultLogLevel,
-		MaxOutPeers:        defaultMaxPeers,
-		MaxInPeers:         defaultMaxPeers,
-		MaxPeers:           defaultMaxPeers,
-		MaxPeersSameShard:  defaultMaxPeersSameShard,
-		MaxPeersOtherShard: defaultMaxPeersOtherShard,
-		MaxPeersOther:      defaultMaxPeersOther,
-		MaxPeersNoShard:    defaultMaxPeersNoShard,
-		MaxPeersBeacon:     defaultMaxPeersBeacon,
-		RPCMaxClients:      defaultMaxRPCClients,
-		DataDir:            defaultDataDir,
-		DatabaseDir:        defaultDatabaseDirname,
-		DatabaseMempoolDir: defaultDatabaseMempoolDirname,
-		LogDir:             defaultLogDir,
-		RPCKey:             defaultRPCKeyFile,
-		RPCCert:            defaultRPCCertFile,
-		// Generate:             defaultGenerate,
+		ConfigFile:           defaultConfigFile,
+		LogLevel:             defaultLogLevel,
+		MaxOutPeers:          defaultMaxPeers,
+		MaxInPeers:           defaultMaxPeers,
+		MaxPeers:             defaultMaxPeers,
+		MaxPeersSameShard:    defaultMaxPeersSameShard,
+		MaxPeersOtherShard:   defaultMaxPeersOtherShard,
+		MaxPeersOther:        defaultMaxPeersOther,
+		MaxPeersNoShard:      defaultMaxPeersNoShard,
+		MaxPeersBeacon:       defaultMaxPeersBeacon,
+		RPCMaxClients:        defaultMaxRPCClients,
+		DataDir:              defaultDataDir,
+		DatabaseDir:          defaultDatabaseDirname,
+		DatabaseMempoolDir:   defaultDatabaseMempoolDirname,
+		LogDir:               defaultLogDir,
+		RPCKey:               defaultRPCKeyFile,
+		RPCCert:              defaultRPCCertFile,
+		WalletShardID:        -1,
 		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTLS,
 		DisableRPC:           false,
