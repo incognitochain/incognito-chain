@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"encoding/json"
 	"github.com/gorilla/websocket"
 	"net"
 	"net/http"
@@ -11,14 +10,14 @@ import (
 )
 
 type WsServer struct {
-	started          int32
-	shutdown         int32
-	numWsClients     int32
-	config           RpcServerConfig
-	server           *http.Server
-	statusLock       sync.RWMutex
-	authSHA          []byte
-	limitAuthSHA     []byte
+	started      int32
+	shutdown     int32
+	numWsClients int32
+	config       RpcServerConfig
+	server       *http.Server
+	statusLock   sync.RWMutex
+	authSHA      []byte
+	limitAuthSHA []byte
 	// channel
 	cRequestProcessShutdown chan struct{}
 }
@@ -27,9 +26,11 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
+
 func (wsServer *WsServer) Init(config *RpcServerConfig) {
 	wsServer.config = *config
 }
+
 // Start is used by rpcserver.go to start the rpc listener.
 func (wsServer *WsServer) Start() error {
 	if atomic.AddInt32(&wsServer.started, 1) != 1 {
@@ -104,22 +105,19 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 		if err != nil {
 			return
 		}
-		var responseID interface{}
 		var jsonErr error
 		var cResult chan interface{}
 		var cError chan *RPCError
 		var result interface{}
-		var request RpcRequest
-		if err := json.Unmarshal(msg, &request); err != nil {
-			jsonErr = NewRPCError(ErrRPCParse, err)
-		}
+		var subcriptionRequest *SubcriptionRequest
+		subcriptionRequest, jsonErr = parseSubcriptionRequest(msg)
 		if jsonErr == nil {
+			request := subcriptionRequest.JsonRequest
 			if request.Id == nil && !(wsServer.config.RPCQuirks && request.Jsonrpc == "") {
 				return
 			}
 			// The parse was at least successful enough to have an Id so
 			// set it for the response.
-			responseID = request.Id
 			// Setup a close notifier.  Since the connection is hijacked,
 			// the CloseNotifer on the ResponseWriter is not available.
 			closeChan := make(chan struct{}, 1)
@@ -136,7 +134,7 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 					go command(wsServer, request.Params, cResult, cError, closeChan)
 					// Marshal the response.
 					for result = range cResult {
-						res, err := createMarshalledReply(responseID, result, jsonErr)
+						res, err := createMarshalledResponse(&request, result, jsonErr)
 						if err != nil {
 							Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
 							return

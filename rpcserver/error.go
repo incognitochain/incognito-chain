@@ -62,7 +62,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrSendTxData:   {-2002, "Can not send tx"},
 }
 
-// RPCError represents an error that is used as a part of a JSON-RPC RPCResponse
+// RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
 // object.
 type RPCError struct {
 	Code       int    `json:"Code,omitempty"`
@@ -85,11 +85,24 @@ func (e RPCError) GetErr() error {
 }
 
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
-// for use in a JSON-RPC RPCResponse object.
+// for use in a JSON-RPC JsonResponse object.
 func NewRPCError(key int, err error) *RPCError {
 	return &RPCError{
 		Code:    ErrCodeMessage[key].code,
 		Message: ErrCodeMessage[key].message,
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 	}
+}
+// internalRPCError is a convenience function to convert an internal error to
+// an RPC error with the appropriate Code set.  It also logs the error to the
+// RPC server subsystem since internal errors really should not occur.  The
+// context parameter is only used in the log Message and may be empty if it's
+// not needed.
+func internalRPCError(errStr, context string) *RPCError {
+	logStr := errStr
+	if context != "" {
+		logStr = context + ": " + errStr
+	}
+	Logger.log.Info(logStr)
+	return NewRPCError(ErrRPCInternal, errors.New(errStr))
 }
