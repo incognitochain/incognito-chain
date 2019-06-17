@@ -3,7 +3,6 @@ package rpcserver
 import (
 	"crypto/subtle"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -167,42 +166,15 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	defer buf.Flush()
 	conn.SetReadDeadline(timeZeroVal)
 
-	// Attempt to parse the raw body into a JSON-RPC request.
-	var responseID interface{}
 	var jsonErr error
 	var result interface{}
-	var request RpcRequest
-	if err := json.Unmarshal(body, &request); err != nil {
-		jsonErr = NewRPCError(ErrRPCParse, err)
-	}
+	var request *JsonRequest
+	request, jsonErr = parseJsonRequest(body)
 
 	if jsonErr == nil {
-		// The JSON-RPC 1.0 spec defines that notifications must have their "id"
-		// set to null and states that notifications do not have a response.
-		//
-		// A JSON-RPC 2.0 notification is a request with "json-rpc":"2.0", and
-		// without an "id" member. The specification states that notifications
-		// must not be responded to. JSON-RPC 2.0 permits the null value as a
-		// valid request id, therefore such requests are not notifications.
-		//
-		// coin Core serves requests with "id":null or even an absent "id",
-		// and responds to such requests with "id":null in the response.
-		//
-		// Rpc does not respond to any request without and "id" or "id":null,
-		// regardless the indicated JSON-RPC protocol version unless RPC quirks
-		// are enabled. With RPC quirks enabled, such requests will be responded
-		// to if the reqeust does not indicate JSON-RPC version.
-		//
-		// RPC quirks can be enabled by the user to avoid compatibility issues
-		// with software relying on Core's behavior.
 		if request.Id == nil && !(httpServer.config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}
-
-		// The parse was at least successful enough to have an Id so
-		// set it for the response.
-		responseID = request.Id
-
 		// Setup a close notifier.  Since the connection is hijacked,
 		// the CloseNotifer on the ResponseWriter is not available.
 		closeChan := make(chan struct{}, 1)
@@ -247,7 +219,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		}
 	}
 	// Marshal the response.
-	msg, err := createMarshalledReply(responseID, result, jsonErr)
+	msg, err := createMarshalledResponse(request, result, jsonErr)
 	if err != nil {
 		Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
 		Logger.log.Error(err)
@@ -313,7 +285,7 @@ func (httpServer *HttpServer) checkAuth(r *http.Request, require bool) (bool, bo
 		return true, false, nil
 	}
 
-	// RpcRequest's auth doesn't match either user
+	// JsonRequest's auth doesn't match either user
 	Logger.log.Warnf("RPC authentication failure from %s", r.RemoteAddr)
 	return false, false, NewRPCError(ErrAuthFail, nil)
 }
