@@ -83,6 +83,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
 	beaconBlock.Header.Round = round
+	fmt.Printf("[db] producing block: %d\n", beaconBlock.Header.Height)
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
 	rewardByEpochInstruction := [][]string{}
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
@@ -156,6 +157,18 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 		return nil, err
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
+
+	// Instruction merkle root
+	insts := [][]byte{}
+	for _, strs := range tempInstruction {
+		fullInst := []byte{}
+		for _, part := range strs {
+			fullInst = append(fullInst, []byte(part)...)
+		}
+		insts = append(insts, fullInst)
+	}
+	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(insts))
+
 	//===============End Create Header
 	for _, inst := range beaconBlock.Body.Instructions {
 		fmt.Printf("[ndh] - - Beacon block instruction %+v \n", inst)
