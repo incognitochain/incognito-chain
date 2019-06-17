@@ -13,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -280,7 +281,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
+		_, currentValidators, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
@@ -288,6 +289,10 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 			swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 			instructions = append(instructions, swapBeaconInstructions)
 		}
+
+		// Generate instruction storing merkle root of validators pubkey and send to bridge
+		beaconRootInst := buildBeaconPubkeyRootInstruction(currentValidators)
+		instructions = append(instructions, beaconRootInst)
 	}
 	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
@@ -324,6 +329,25 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 		}
 	}
 	return instructions
+}
+
+func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
+	pks := [][]byte{}
+	for _, val := range currentValidators {
+		pk, _, _ := base58.Base58Check{}.Decode(val)
+		// TODO(@0xbunyip): handle error
+		pks = append(pks, pk)
+	}
+	beaconCommRoot := GetKeccak256MerkleRoot(pks)
+	fmt.Printf("[db] added beaconCommRoot: %x\n", beaconCommRoot)
+
+	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
+	instContent := base58.Base58Check{}.Encode(beaconCommRoot, 0x00)
+	return []string{
+		strconv.Itoa(metadata.BeaconPubkeyRootMeta),
+		strconv.Itoa(int(shardID)),
+		instContent,
+	}
 }
 
 func (bestStateBeacon *BestStateBeacon) GetValidStakers(tempStaker []string) []string {

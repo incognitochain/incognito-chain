@@ -22,6 +22,9 @@ const (
 	//statking
 	ShardStakingMeta  = 63
 	BeaconStakingMeta = 64
+
+	// Incognito -> Ethereum bridge
+	BeaconPubkeyRootMeta = 70
 )
 
 var minerCreatedMetaTypes = []int{
