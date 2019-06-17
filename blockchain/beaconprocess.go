@@ -544,6 +544,20 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 		return NewBlockChainError(HashError, errors.New("error verify shard validator root"))
 	}
 
+	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
+	insts := [][]byte{}
+	for _, strs := range block.Body.Instructions {
+		fullInst := []byte{}
+		for _, part := range strs {
+			fullInst = append(fullInst, []byte(part)...)
+		}
+		insts = append(insts, fullInst)
+	}
+	root := GetKeccak256MerkleRoot(insts)
+	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
+		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
+	}
+
 	// COMMENT FOR TESTING
 	// instructions := block.Body.Instructions
 	// for _, l := range instructions {
