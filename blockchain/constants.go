@@ -110,18 +110,18 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	"16H5t5ezMF16S5j5ZEyHP3N4nBBcsppg5bRfU5Ft8N1VZYBQu38", //shard 1
 	"156qsnqcYWPUb8PLbdowV4TtUhS8kuEboABfHgVeh4MguoPwqVj", //shard 1
 	"177cGseHedBzrvBTqP2boXBjXb84JgKJEs7fGbCmgJ47gcgNwoK", //shard 1
-	//"15MdBPBqMmrZ7MtZxjzPBKc8oNC3kLisAvtiEs6vrNFPnByCSx7", //shard 1
-	//"18E1jmMz3R2vidv3MC5MCtS1LpZTshnh5YSjnJqBrpZrnDxEpjj", //shard 1
-	//"16a14WSkpGsF5o4B6pk3TbNMFbW4s6pXN9haPLjZfu8rPMSzHTa", //shard 1
-	//"15FpmWXjGaLPVmBfAguBcJNzLdpbW32joGJdTTDqVCrUHRMwJmt", //shard 1
-	//"16FJGLmgmX7HXQXLZpFxpAtSRyAsnjVW5wyQ5q631qAdjtY2LiG", //shard 1
-	//"186dkkeebuaHEjo99BX1omYSKdJNwah2dLsCRadHFxSqyY2E7bP", //shard 1
-	//"166S7YKvwYWYwaykFPGLnewqBwf5bydg7cR7Livog9TokvzXsqA", //shard 1
-	//"17qg9rs5PysAQJfhwYAAgBWAVTxq91vVq3h8sNAzpWeWVSRdKmN", //shard 1
-	//"15JPGWmC5ebFxg5zs6tXbWuAJBok3kd7pNfpnDZCesNLkbJbJsZ", //shard 1
-	//"17RM5fdYn7yAhxe3yU4mSR18y3TGkTaoa4Ph3HaVwfY3sRCNMVZ", //shard 1
-	//"168RLoj25TCmzq32LEARGWX2d8SAHvS4egiLYtwLkp41csGWHUG", //shard 1
-	//"165bmHpowcdfmpLzc2RYPjDqBckmNwDo6fXXNKVTJhCG5huuXq5", //shard 1
+	"15MdBPBqMmrZ7MtZxjzPBKc8oNC3kLisAvtiEs6vrNFPnByCSx7", //shard 1
+	"18E1jmMz3R2vidv3MC5MCtS1LpZTshnh5YSjnJqBrpZrnDxEpjj", //shard 1
+	"16a14WSkpGsF5o4B6pk3TbNMFbW4s6pXN9haPLjZfu8rPMSzHTa", //shard 1
+	"15FpmWXjGaLPVmBfAguBcJNzLdpbW32joGJdTTDqVCrUHRMwJmt", //shard 1
+	"16FJGLmgmX7HXQXLZpFxpAtSRyAsnjVW5wyQ5q631qAdjtY2LiG", //shard 1
+	"186dkkeebuaHEjo99BX1omYSKdJNwah2dLsCRadHFxSqyY2E7bP", //shard 1
+	"166S7YKvwYWYwaykFPGLnewqBwf5bydg7cR7Livog9TokvzXsqA", //shard 1
+	"17qg9rs5PysAQJfhwYAAgBWAVTxq91vVq3h8sNAzpWeWVSRdKmN", //shard 1
+	"15JPGWmC5ebFxg5zs6tXbWuAJBok3kd7pNfpnDZCesNLkbJbJsZ", //shard 1
+	"17RM5fdYn7yAhxe3yU4mSR18y3TGkTaoa4Ph3HaVwfY3sRCNMVZ", //shard 1
+	"168RLoj25TCmzq32LEARGWX2d8SAHvS4egiLYtwLkp41csGWHUG", //shard 1
+	"165bmHpowcdfmpLzc2RYPjDqBckmNwDo6fXXNKVTJhCG5huuXq5", //shard 1
 }
 
 // END CONSTANT for network TESTNET
