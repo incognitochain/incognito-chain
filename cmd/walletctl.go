@@ -79,14 +79,14 @@ func getAccount(accountName string) (interface{}, error) {
 	return nil, errors.New("Not found")
 }
 
-func createAccount(accountName string) (interface{}, error) {
+func createAccount(accountName string, shardID *byte) (interface{}, error) {
 	account, _ := getAccount(accountName)
 	if account != nil {
 		return nil, errors.New("Existed account")
 	}
 
 	if walletObj != nil {
-		account1 := walletObj.CreateNewAccount(accountName, 0)
+		account1 := walletObj.CreateNewAccount(accountName, shardID)
 		err := walletObj.Save(cfg.WalletPassphrase)
 		if err != nil {
 			return nil, err
