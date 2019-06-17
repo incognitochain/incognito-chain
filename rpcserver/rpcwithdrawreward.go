@@ -51,7 +51,7 @@ func (rpcServer RpcServer) handleGetRewardAmount(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	rewardAmount, err := (*rpcServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk)
+	rewardAmount, err := (*rpcServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk, common.PRVCoinID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
