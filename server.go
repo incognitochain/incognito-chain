@@ -134,6 +134,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
 	cRoleInCommitteesMempool := make(chan int)
+	cRoleInCommitteesBeaconPool := make(chan bool)
 	cRoleInCommitteesShardPool := make([]chan int,256)
 	for i:=0; i < 256; i++ {
 		cRoleInCommitteesShardPool[i] = make(chan int)
@@ -195,7 +196,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	//init beacon pol
-	mempool.InitBeaconPool()
+	mempool.InitBeaconPool(cRoleInCommitteesBeaconPool)
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, cRoleInCommitteesShardPool)
 	//init cross shard pool
@@ -304,6 +305,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		CRoleInCommitteesMempool: cRoleInCommitteesMempool,
 		CRoleInCommitteesNetSync: cRoleInCommitteesNetSync,
 		CRoleInCommitteesShardPool:cRoleInCommitteesShardPool,
+		CRoleInCommitteesBeaconPool: cRoleInCommitteesBeaconPool,
 	})
 	if err != nil {
 		return err
