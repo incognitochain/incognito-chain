@@ -225,7 +225,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, blockHash)
 	shardIDForMetric := strconv.Itoa(int(block.Header.ShardID))
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.ShardIDTag,
@@ -275,7 +275,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	// Process transaction db
 	Logger.log.Criticalf("SHARD %+v | ⚒︎ %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
 	if block.Header.Height != 1 {
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxInOneBlock,
 			metrics.MeasurementValue: float64(len(block.Body.Transactions)),
 			metrics.Tag:              metrics.BlockHeightTag,

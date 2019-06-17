@@ -1,5 +1,9 @@
 package blockchain
 
+import (
+	"github.com/incognitochain/incognito-chain/blockchain/benchmark"
+)
+
 /*
 Params defines a network by its component. These component may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -50,7 +54,7 @@ var genesisParamsTestnetNew = GenesisParams{
 	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
 	//@Notice: InitTxsForBenchmark is for testing and benchmark only
-	InitialConstant: TestnetInitConstant,
+	InitialConstant: benchmark.GetInitTransaction(),
 }
 
 var ChainTestParam = Params{

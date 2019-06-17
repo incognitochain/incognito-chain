@@ -243,7 +243,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolDuplicateTxs,
 			metrics.MeasurementValue: float64(1),
 		})
@@ -251,7 +251,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition1,
@@ -265,7 +265,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition2,
@@ -280,7 +280,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition3,
@@ -293,7 +293,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition4,
@@ -309,7 +309,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition5,
@@ -321,7 +321,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	if !ok {
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition6,
@@ -333,7 +333,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	if err != nil {
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition7,
@@ -346,7 +346,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition8,
@@ -356,7 +356,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	now = time.Now()
 	validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.VTBITxTypeMetic,
@@ -378,7 +378,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	if err != nil {
 		return err
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition9,
@@ -400,7 +400,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			}
 		}
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition10,
@@ -422,7 +422,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			}
 		}
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition11,
@@ -454,12 +454,12 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	}
 	elapsed := float64(time.Since(startValidate).Seconds())
 
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidated,
 		metrics.MeasurementValue: elapsed,
 		metrics.Tag:              metrics.TxSizeTag,
 		metrics.TagValue:         txSize})
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidatedWithType,
 		metrics.MeasurementValue: elapsed,
 		metrics.Tag:              metrics.TxSizeTag,
@@ -472,7 +472,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	tp.addTx(txD, isStore)
 	if isNewTransaction {
 		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolAddedAfterValidation,
 			metrics.MeasurementValue: float64(time.Since(startAdd).Seconds()),
 			metrics.Tag:              metrics.TxSizeTag,
@@ -547,7 +547,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
 	txTypePrivacyOrNot := metrics.TxPrivacy
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolTxBeginEnter,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.TxTypeTag,
@@ -562,21 +562,21 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
 	elapsed := float64(time.Since(startAdd).Seconds())
 	//==========
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolEntered,
 		metrics.MeasurementValue: elapsed,
 		metrics.Tag:              metrics.TxSizeTag,
 		metrics.TagValue:         txSize})
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolEnteredWithType,
 		metrics.MeasurementValue: elapsed,
 		metrics.Tag:              metrics.TxSizeTag,
 		metrics.TagValue:         txSize})
 	size := len(tp.pool)
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.PoolSize,
 		metrics.MeasurementValue: float64(size)})
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxAddedIntoPoolType,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.TxTypeTag,
@@ -585,7 +585,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if !tx.IsPrivacy() {
 		txTypePrivacyOrNot = metrics.TxNoPrivacy
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolPrivacyOrNot,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.TxPrivacyOrNotTag,
@@ -656,7 +656,7 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		if tp.config.PersistMempool {
 			tp.RemoveTransactionFromDatabaseMP(tx.Hash())
 		}
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 			metrics.Tag:              metrics.ValidateConditionTag,
@@ -666,7 +666,7 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		// remove serialNumbersHashH
 		now = time.Now()
 		delete(tp.poolSerialNumbersHashH, *(tx.Hash()))
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 			metrics.Tag:              metrics.ValidateConditionTag,
@@ -676,35 +676,35 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		if isInBlock {
 			elapsed := float64(time.Since(startTime).Seconds())
 			txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
-			go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxPoolRemoveAfterInBlock,
 				metrics.MeasurementValue: elapsed,
 				metrics.Tag:              metrics.TxSizeTag,
 				metrics.TagValue:         txSize,
 			})
-			go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxPoolRemoveAfterInBlockWithType,
 				metrics.MeasurementValue: elapsed,
 				metrics.Tag:              metrics.TxSizeWithTypeTag,
 				metrics.TagValue:         txType + txSize,
 			})
 		}
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedNumber,
 			metrics.MeasurementValue: float64(1),
 		})
 		size := len(tp.pool)
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.PoolSize,
 			metrics.MeasurementValue: fmt.Sprintf("%d", size),
 		})
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 			metrics.Tag:              metrics.ValidateConditionTag,
 			metrics.TagValue:         metrics.Condition3,
 		})
-		go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTime,
 			metrics.MeasurementValue: float64(time.Since(start).Seconds()),
 			metrics.Tag:              metrics.TxTypeTag,
@@ -941,14 +941,14 @@ func (tp *TxPool) monitorPool() {
 			delete(tp.CandidatePool, txHash)
 			delete(tp.TokenIDPool, txHash)
 			txSize := txDesc.Desc.Tx.GetTxActualSize()
-			go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
 				metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
 				metrics.Tag:              metrics.TxSizeTag,
 				metrics.TagValue:         txSize,
 			})
 			size := len(tp.pool)
-			go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.PoolSize,
 				metrics.MeasurementValue: float64(size)})
 		}
