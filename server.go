@@ -566,6 +566,10 @@ func (serverObj Server) Start() {
 		} else {
 			serverObj.memPool.IsBlockGenStarted = true
 			serverObj.blockChain.SetIsBlockGenStarted(true)
+			for _, shardPool := range serverObj.shardPool {
+				go shardPool.Start(serverObj.cQuit)
+			}
+			go serverObj.beaconPool.Start(serverObj.cQuit)
 		}
 	}
 
@@ -573,9 +577,6 @@ func (serverObj Server) Start() {
 		serverObj.memPool.LoadOrResetDatabaseMP()
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
-		for _, shardPool := range serverObj.shardPool {
-			go shardPool.Start(serverObj.cQuit)
-		}
 	}
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
