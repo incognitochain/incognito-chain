@@ -1,7 +1,7 @@
 package rpcserver
 
-type httpHandler func(*HttpServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
-type wsHandler func(*HttpServer, interface{}, <-chan struct{}) (chan interface{}, *RPCError)
+type httpHandler func((*HttpServer), interface{}, <-chan struct{}) (interface{}, *RPCError)
+type wsHandler func((*HttpServer), interface{}, <-chan struct{}) (chan interface{}, *RPCError)
 
 // Commands valid for normal user
 var HttpHandler = map[string]httpHandler{
@@ -132,7 +132,6 @@ var LimitedHttpHandler = map[string]httpHandler{
 	getBalanceByPaymentAddress:         (*HttpServer).handleGetBalanceByPaymentAddress,
 	getReceivedByAccount:               (*HttpServer).handleGetReceivedByAccount,
 	setTxFee:                           (*HttpServer).handleSetTxFee,
-	getRecentTransactionsByBlockNumber: (*HttpServer).handleGetRecentTransactionsByBlockNumber,
 }
 
 var WsHandler = map[string]wsHandler{
