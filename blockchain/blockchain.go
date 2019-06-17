@@ -33,29 +33,7 @@ type BlockChain struct {
 	config    Config
 	chainLock sync.Mutex
 	//channel
-	cQuitSync chan struct{}
-	// syncStatus struct {
-	// 	Beacon bool
-	// 	Shards map[byte]struct{}
-	// 	sync.Mutex
-
-	// 	CurrentlySyncShardBlkByHash           map[byte]*cache.Cache
-	// 	CurrentlySyncShardBlkByHeight         map[byte]*cache.Cache
-	// 	CurrentlySyncBeaconBlkByHash          *cache.Cache
-	// 	CurrentlySyncBeaconBlkByHeight        *cache.Cache
-	// 	CurrentlySyncShardToBeaconBlkByHash   map[byte]*cache.Cache
-	// 	CurrentlySyncShardToBeaconBlkByHeight map[byte]*cache.Cache
-	// 	CurrentlySyncCrossShardBlkByHash      map[byte]*cache.Cache
-	// 	CurrentlySyncCrossShardBlkByHeight    map[byte]*cache.Cache
-
-	// 	PeersState     map[libp2p.ID]*peerState
-	// 	PeersStateLock sync.Mutex
-	// 	IsReady        struct {
-	// 		sync.Mutex
-	// 		Beacon bool
-	// 		Shards map[byte]bool
-	// 	}
-	// }
+	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
 }
