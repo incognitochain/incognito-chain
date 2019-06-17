@@ -118,6 +118,7 @@ const (
 
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"
+	getRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
 )
 
 const (

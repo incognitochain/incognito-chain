@@ -50,10 +50,10 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*RP
 func IsValidIDType(id interface{}) bool {
 	switch id.(type) {
 	case int, int8, int16, int32, int64,
-	uint, uint8, uint16, uint32, uint64,
-	float32, float64,
-	string,
-	nil:
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64,
+		string,
+		nil:
 		return true
 	default:
 		return false
@@ -77,7 +77,6 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]by
 	}
 	return resultResp, nil
 }
-
 
 // createMarshalledReply returns a new marshalled JSON-RPC response given the
 // passed parameters.  It will automatically convert errors that are not of
