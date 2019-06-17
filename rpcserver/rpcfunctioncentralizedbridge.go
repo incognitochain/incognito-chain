@@ -52,8 +52,8 @@ func (httpServer *HttpServer) handleCreateAndSendIssuingRequest(params interface
 	return httpServer.createAndSendTxWithMetadata(
 		params,
 		closeChan,
-		HttpServer.handleCreateIssuingRequest,
-		HttpServer.handleSendIssuingRequest,
+		(*HttpServer).handleCreateIssuingRequest,
+		(*HttpServer).handleSendIssuingRequest,
 	)
 }
 
