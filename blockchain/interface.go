@@ -58,6 +58,7 @@ type BeaconPool interface {
 	GetLatestValidBlockHeight() uint64
 	SetBeaconState(uint64)
 	GetAllBlockHeight() []uint64
+	Start(chan struct{})
 }
 type TxPool interface {
 	// LastUpdated returns the last time a transaction was added to or
