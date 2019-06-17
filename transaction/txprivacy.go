@@ -112,14 +112,6 @@ func (tx *Tx) Init(
 
 	// init info of tx
 	tx.Info = []byte{}
-	if !hasPrivacy {
-		// store payment address of sender for refund on small tx
-		info := make(map[string]interface{})
-		senderInfo := make(map[string][]byte)
-		info["Sender"] = senderInfo
-		senderInfo["PaymentAddress"] = senderFullKey.PaymentAddress.Bytes()
-		tx.Info, _ = json.Marshal(info)
-	}
 
 	// set metadata
 	tx.Metadata = metaData

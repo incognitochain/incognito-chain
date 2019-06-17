@@ -1095,49 +1095,6 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, blockchain.config.DataBase)
 }
 
-// GetRecentTransactions - find all recent history txs which are created by user
-// by number of block, maximum is 100 newest blocks
-func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, shardID byte) (map[string]metadata.Transaction, error) {
-	if numBlock > 100 { // maximum is 100
-		numBlock = 100
-	}
-	// var err error
-	result := make(map[string]metadata.Transaction)
-	// bestBlock := blockchain.BestState[shardID].BestBlock
-	// for {
-	// 	for _, tx := range bestBlock.Transactions {
-	// 		info := tx.GetInfo()
-	// 		if info == nil {
-	// 			continue
-	// 		}
-	// 		// info of tx with contain encrypted pubkey of creator in 1st 64bytes
-	// 		lenInfo := 66
-	// 		if len(info) < lenInfo {
-	// 			continue
-	// 		}
-	// 		// decrypt to get pubkey data from info
-	// 		pubkeyData, err1 := privacy.ElGamalDecrypt(key.Rk[:], info[0:lenInfo])
-	// 		if err1 != nil {
-	// 			continue
-	// 		}
-	// 		// compare to check pubkey
-	// 		if !bytes.Equal(pubkeyData.Compress(), key.Pk[:]) {
-	// 			continue
-	// 		}
-	// 		result[tx.Hash().String()] = tx
-	// 	}
-	// 	numBlock--
-	// 	if numBlock == 0 {
-	// 		break
-	// 	}
-	// 	bestBlock, err = blockchain.GetBlockByBlockHash(&bestBlock.Header.PrevBlockHash)
-	// 	if err != nil {
-	// 		break
-	// 	}
-	// }
-	return result, nil
-}
-
 // func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
 // 	// fmt.Println("SetReadyState", shard, shardID, ready)
 // 	blockchain.syncStatus.IsReady.Lock()
