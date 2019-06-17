@@ -52,9 +52,6 @@ func (grafana *Grafana) SendTimeSeriesMetricData(params map[string]interface{}) 
 	defer cancel()
 	req = req.WithContext(ctx)
 	client := &http.Client{}
-	_, err = client.Do(req)
-	if err != nil {
-		Logger.log.Debug("Push to Grafana error:", err)
-		return
-	}
+	client.Do(req)
+	return
 }
