@@ -18,9 +18,9 @@ type BFTProtocol struct {
 
 	phase string
 
-	pendingBlock interface{}
-
-	RoundData struct {
+	pendingBlock    interface{}
+	blockCreateTime time.Duration
+	RoundData       struct {
 		MinBeaconHeight uint64
 		BestStateHash   common.Hash
 		IsProposer      bool
@@ -77,8 +77,8 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 			if err := protocol.phaseListen(); err != nil {
 				return nil, err
 			}
-		case BFT_PREPARE:
-			if err := protocol.phasePrepare(); err != nil {
+		case BFT_AGREE:
+			if err := protocol.phaseAgree(); err != nil {
 				return nil, err
 			}
 		case BFT_COMMIT:
@@ -92,12 +92,14 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 
 func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
+	var elasped time.Duration
 	var msg wire.Message
 	//fmt.Println("[db] CreateBlockMsg")
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestShardToBeaconPoolState())
 		go common.AnalyzeTimeSeriesBeaconBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
+		elasped = time.Since(start)
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
@@ -127,8 +129,10 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 		}
 	} else {
 
-		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestCrossShardPoolState(), protocol.RoundData.MinBeaconHeight)
+		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestCrossShardPoolState(), protocol.RoundData.MinBeaconHeight, start)
 		go common.AnalyzeTimeSeriesShardBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
+
+		elasped = time.Since(start)
 		if err != nil {
 			Logger.log.Error(err)
 			protocol.closeProposeCh()
@@ -157,12 +161,12 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 			}
 		}
 	}
-	elasped := time.Since(start)
 	Logger.log.Critical("BFT: Block create time is", elasped)
 	select {
 	case <-protocol.proposeCh:
 		Logger.log.Critical("☠︎ Oops block create time longer than timeout")
 	default:
+		protocol.blockCreateTime = elasped
 		protocol.proposeCh <- msg
 	}
 }
@@ -194,7 +198,7 @@ func (protocol *BFTProtocol) closeProposeCh() {
 }
 
 func (protocol *BFTProtocol) earlyMsgHandler() {
-	var prepareMsgs []wire.Message
+	var agreeMsgs []wire.Message
 	var commitMsgs []wire.Message
 	go func() {
 		for {
@@ -202,11 +206,11 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			case <-protocol.cQuit:
 				return
 			default:
-				if protocol.phase == BFT_PREPARE {
-					for _, msg := range prepareMsgs {
+				if protocol.phase == BFT_AGREE {
+					for _, msg := range agreeMsgs {
 						protocol.cBFTMsg <- msg
 					}
-					prepareMsgs = []wire.Message{}
+					agreeMsgs = []wire.Message{}
 				}
 				if protocol.phase == BFT_COMMIT {
 					for _, msg := range commitMsgs {
@@ -225,14 +229,14 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			return
 		case earlyMsg := <-protocol.earlyMsgCh:
 			switch earlyMsg.MessageType() {
-			case wire.CmdBFTPrepare:
+			case wire.CmdBFTAgree:
 				if protocol.phase == BFT_LISTEN {
-					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTPrepare).Pubkey, protocol.RoundData.Committee) >= 0 {
-						prepareMsgs = append(prepareMsgs, earlyMsg)
+					if common.IndexOfStr(earlyMsg.(*wire.MessageBFTAgree).Pubkey, protocol.RoundData.Committee) >= 0 {
+						agreeMsgs = append(agreeMsgs, earlyMsg)
 					}
 				}
 			case wire.CmdBFTCommit:
-				if protocol.phase == BFT_PREPARE {
+				if protocol.phase == BFT_AGREE {
 					newSig := bftCommittedSig{
 						ValidatorsIdxR: earlyMsg.(*wire.MessageBFTCommit).ValidatorsIdx,
 						Sig:            earlyMsg.(*wire.MessageBFTCommit).CommitSig,
@@ -246,4 +250,17 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 			}
 		}
 	}
+}
+
+func getTimeout(phase string, committeeSize int) time.Duration {
+	assumedDelay := time.Duration(committeeSize) * MaxNetworkDelayTime
+	switch phase {
+	case BFT_LISTEN:
+		return assumedDelay + ListenTimeout
+	case BFT_AGREE:
+		return assumedDelay + AgreeTimeout
+	case BFT_COMMIT:
+		return assumedDelay + CommitTimeout
+	}
+	return 0
 }

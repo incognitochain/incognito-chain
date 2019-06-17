@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	ForDev                       = float32(1)
-	DurationHalfLifeRewardForDev = uint64(63072000) // 10 years
+	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 )
 
 // func getMiningReward(isForBeacon bool, blkHeight uint64) uint64 {
@@ -139,57 +138,65 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	n := blkHeight / blockchain.config.ChainParams.RewardHalflife
 	reward := uint64(blockchain.config.ChainParams.BasicReward)
 	for ; n > 0; n-- {
-		reward /= 2
+		reward *= 9
+		reward /= 10
 	}
 	return reward
 }
 
 func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]string, error) {
-	// numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
-	// totalRewards := make([]uint64, numberOfActiveShards)
-	// totalRewardForBeacon := uint64(0)
-	// totalRewardForDev := uint64(0)
-	// totalShareReward := uint64(0)
-	// var err error
-	// forDev := ForDev
-	// for i := uint64(0); i < epoch/DurationHalfLifeRewardForDev; i++ {
-	// 	forDev /= 2
-	// }
-	// constForCalReward := (1.0 + forDev) / (float32(numberOfActiveShards) + (1.0 + forDev))
-
-	// for ID := 0; ID < numberOfActiveShards; ID++ {
-	// 	totalRewards[ID], err = blockchain.GetDatabase().GetRewardOfShardByEpoch(epoch, byte(ID))
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	if totalRewards[ID] == 0 {
-	// 		continue
-	// 	}
-	// 	shareReward := uint64(float32(totalRewards[ID]) * constForCalReward)
-	// 	totalShareReward += shareReward
-	// 	totalRewards[ID] -= shareReward
-	// }
-	// totalRewardForDev = uint64(float32(totalShareReward) * forDev / 10)
-	// totalRewardForBeacon = totalShareReward - totalRewardForDev
-	// var resInst [][]string
-	// var instRewardForBeacons [][]string
-	// var instRewardForDev [][]string
-	// var instRewardForShards [][]string
-	// instRewardForBeacons, err = blockchain.BuildInstRewardForBeacons(epoch, totalRewardForBeacon)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// instRewardForDev, err = blockchain.BuildInstRewardForDev(epoch, totalRewardForDev)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// instRewardForShards, err = blockchain.BuildInstRewardForShards(epoch, totalRewards)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// resInst = common.AppendSliceString(instRewardForBeacons, instRewardForDev, instRewardForShards)
-	// return resInst, nil
-	return nil, nil
+	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
+	totalRewards := make([]uint64, numberOfActiveShards)
+	totalRewardForBeacon := uint64(0)
+	totalRewardForDev := uint64(0)
+	var err error
+	epochEndDevReward := DurationHalfLifeRewardForDev / common.EPOCH
+	for ID := 0; ID < numberOfActiveShards; ID++ {
+		totalRewards[ID], err = blockchain.GetDatabase().GetRewardOfShardByEpoch(epoch, byte(ID))
+		if err != nil {
+			return nil, err
+		}
+		if totalRewards[ID] == 0 {
+			continue
+		}
+	}
+	rewardForBeacon := uint64(0)
+	for ID := 0; ID < numberOfActiveShards; ID++ {
+		if epoch <= epochEndDevReward {
+			rewardForBeacon = uint64(18*totalRewards[ID]) / ((uint64(numberOfActiveShards) + 2) * 10)
+			fmt.Printf("[ndh] shardID %+v - - %+v %+v %+v\n", totalRewards[ID], rewardForBeacon, 18*totalRewards[ID], ((uint64(numberOfActiveShards) + 2) * 10))
+			rewardForDev := totalRewards[ID] / 10
+			totalRewards[ID] -= (rewardForBeacon + rewardForDev)
+			totalRewardForDev += rewardForDev
+		} else {
+			rewardForBeacon = 2 * totalRewards[ID] / (uint64(numberOfActiveShards) + 2)
+			totalRewards[ID] -= (rewardForBeacon)
+		}
+		totalRewardForBeacon += rewardForBeacon
+	}
+	fmt.Printf("[ndh] %+v\n", totalRewardForBeacon)
+	var resInst [][]string
+	var instRewardForBeacons [][]string
+	var instRewardForDev [][]string
+	var instRewardForShards [][]string
+	if totalRewardForBeacon > 0 {
+		instRewardForBeacons, err = blockchain.BuildInstRewardForBeacons(epoch, totalRewardForBeacon)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if totalRewardForDev > 0 {
+		instRewardForDev, err = blockchain.BuildInstRewardForDev(epoch, totalRewardForDev)
+		if err != nil {
+			return nil, err
+		}
+	}
+	instRewardForShards, err = blockchain.BuildInstRewardForShards(epoch, totalRewards)
+	if err != nil {
+		return nil, err
+	}
+	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForDev, instRewardForShards)
+	return resInst, nil
 }
 
 func (blockchain *BlockChain) shareRewardForShardCommittee(epoch, totalReward uint64, listCommitee []string) error {

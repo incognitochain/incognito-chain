@@ -75,12 +75,21 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			if blockchain.config.UserKeySet != nil {
-				// if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
-				// 	if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
-				// 		return
-				// 	}
-				// 	blockchain.RevertShardState(newBlk.Header.ShardID)
-				// }
+				// Revert beststate
+				// @NOTICE: Choose block with highest round, because we assume that most of node state is at the highest round
+				if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
+					fmt.Println("FORK SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
+					if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					if err := blockchain.RevertShardState(newBlk.Header.ShardID); err != nil {
+						Logger.log.Error(err)
+						return
+					}
+					fmt.Println("REVERTED SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
+				}
+
 				userRole := currentShardBestState.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 				fmt.Println("Shard block received 1", userRole)
 
@@ -118,7 +127,6 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	if blockchain.Synker.Status.Beacon {
 		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
-			// currentBeaconBestState := blockchain.BestState.Beacon
 			blkHash := newBlk.Header.Hash()
 			err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
 			if err != nil {
@@ -127,11 +135,20 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				return
 			} else {
 				if blockchain.config.UserKeySet != nil {
+					// Revert beststate
+
+					// currentBeaconBestState := blockchain.BestState.Beacon
 					// if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
+					// 	fmt.Println("FORK BEACON", newBlk.Header.Height)
 					// 	if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
+					// 		Logger.log.Error(err)
 					// 		return
 					// 	}
-					// 	blockchain.RevertBeaconState()
+					// 	if err := blockchain.RevertBeaconState(); err != nil {
+					// 		Logger.log.Error(err)
+					// 		return
+					// 	}
+					// 	fmt.Println("REVERTED BEACON", newBlk.Header.Height)
 					// }
 
 					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
