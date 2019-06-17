@@ -33,6 +33,7 @@ type params struct {
 	WalletName        string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase  string `long:"walletpassphrase" description:"Wallet passphrase"`
 	WalletAccountName string `long:"walletaccountname" description:"Wallet account name"`
+	ShardID           int8   `long:"shardid" description:"ShardID to create account for wallet"`
 
 	// pToken
 	PNetwork string `long:"pNetwork" description:"Bridge network"`
