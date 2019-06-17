@@ -72,13 +72,18 @@ func mainMaster(serverChan chan<- *Server) error {
 	var walletObj *wallet.Wallet
 	if cfg.Wallet {
 		walletObj = &wallet.Wallet{}
-		walletObj.SetConfig(&wallet.WalletConfig{
+		walletConf := wallet.WalletConfig{
 			DataDir:        cfg.DataDir,
 			DataFile:       cfg.WalletName,
 			DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
 			IncrementalFee: 0, // 0 mili constant
-		},
-		)
+		}
+		if cfg.WalletShardID >= 0 {
+			// check shardID of wallet
+			temp := byte(cfg.WalletShardID)
+			walletConf.ShardID = &temp
+		}
+		walletObj.SetConfig(&walletConf)
 		err = walletObj.LoadWallet(cfg.WalletPassphrase)
 		if err != nil {
 			if cfg.WalletAutoInit {
