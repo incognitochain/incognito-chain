@@ -120,3 +120,7 @@ const (
 	revertbeaconchain = "revertbeaconchain"
 	revertshardchain  = "revertshardchain"
 )
+
+const (
+	subcribeNewBlock = "subcribenewblock"
+)

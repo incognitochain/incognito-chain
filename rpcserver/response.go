@@ -6,11 +6,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Response is the general form of a JSON-RPC response.  The type of the Result
+// RPCResponse is the general form of a JSON-RPC response.  The type of the Result
 // field varies from one command to the next, so it is implemented as an
 // interface.  The Id field has to be a pointer for Go to put a null in it when
 // empty.
-type Response struct {
+type RPCResponse struct {
 	Result json.RawMessage `json:"Result"`
 	Error  *RPCError       `json:"Error"`
 	Id     *interface{}    `json:"Id"`
@@ -22,14 +22,14 @@ type Response struct {
 //
 // Typically callers will instead want to create the fully marshalled JSON-RPC
 // response to send over the wire with the MarshalResponse function.
-func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Response, error) {
+func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*RPCResponse, error) {
 	if !IsValidIDType(id) {
 		str := fmt.Sprintf("The id of type '%T' is invalid", id)
 		return nil, NewRPCError(ErrInvalidType, errors.New(str))
 	}
 
 	pid := &id
-	resp := &Response{
+	resp := &RPCResponse{
 		Result: marshalledResult,
 		Error:  rpcErr,
 		Id:     pid,
@@ -76,4 +76,34 @@ func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]by
 		return nil, err
 	}
 	return resultResp, nil
+}
+
+
+// createMarshalledReply returns a new marshalled JSON-RPC response given the
+// passed parameters.  It will automatically convert errors that are not of
+// the type *btcjson.RPCError to the appropriate type as needed.
+func createMarshalledReply(id, result interface{}, replyErr error) ([]byte, error) {
+	var jsonErr *RPCError
+	if replyErr != nil {
+		if jErr, ok := replyErr.(*RPCError); ok {
+			jsonErr = jErr
+		} else {
+			jsonErr = internalRPCError(replyErr.Error(), "")
+		}
+	}
+	return MarshalResponse(id, result, jsonErr)
+}
+
+// internalRPCError is a convenience function to convert an internal error to
+// an RPC error with the appropriate Code set.  It also logs the error to the
+// RPC server subsystem since internal errors really should not occur.  The
+// context parameter is only used in the log Message and may be empty if it's
+// not needed.
+func internalRPCError(errStr, context string) *RPCError {
+	logStr := errStr
+	if context != "" {
+		logStr = context + ": " + errStr
+	}
+	Logger.log.Info(logStr)
+	return NewRPCError(ErrRPCInternal, errors.New(errStr))
 }

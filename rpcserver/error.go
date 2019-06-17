@@ -62,7 +62,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrSendTxData:   {-2002, "Can not send tx"},
 }
 
-// RPCError represents an error that is used as a part of a JSON-RPC Response
+// RPCError represents an error that is used as a part of a JSON-RPC RPCResponse
 // object.
 type RPCError struct {
 	Code       int    `json:"Code,omitempty"`
@@ -85,7 +85,7 @@ func (e RPCError) GetErr() error {
 }
 
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
-// for use in a JSON-RPC Response object.
+// for use in a JSON-RPC RPCResponse object.
 func NewRPCError(key int, err error) *RPCError {
 	return &RPCError{
 		Code:    ErrCodeMessage[key].code,
