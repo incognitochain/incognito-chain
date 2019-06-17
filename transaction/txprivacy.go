@@ -112,14 +112,6 @@ func (tx *Tx) Init(
 
 	// init info of tx
 	tx.Info = []byte{}
-	if !hasPrivacy {
-		// store payment address of sender for refund on small tx
-		info := make(map[string]interface{})
-		senderInfo := make(map[string][]byte)
-		info["Sender"] = senderInfo
-		senderInfo["PaymentAddress"] = senderFullKey.PaymentAddress.Bytes()
-		tx.Info, _ = json.Marshal(info)
-	}
 
 	// set metadata
 	tx.Metadata = metaData
@@ -454,7 +446,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			//Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
-	//@UNCOMMENT: metric time
+	//@UNCOMMENT: metrics time
 	//elapsed := time.Since(start)
 	//Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 

@@ -32,7 +32,7 @@ type ShardPool struct {
 	config            ShardPoolConfig
 	cache             *lru.Cache
 	cValidBlock       chan *blockchain.ShardBlock
-	RoleInCommittees  int                    //Current Role of Node
+	RoleInCommittees  int //Current Role of Node
 	CRoleInCommittees <-chan int
 }
 
@@ -71,16 +71,17 @@ func InitShardPool(pool map[byte]blockchain.ShardPool, cRoleInCommitteesShardPoo
 }
 func (shardPool *ShardPool) Start(cQuit chan struct{}) {
 	for {
-		select{
-			case role := <- shardPool.CRoleInCommittees:
-				shardPool.mtx.Lock()
-				shardPool.RoleInCommittees = role
-				shardPool.mtx.Unlock()
-			case <-cQuit:
-				return
+		select {
+		case role := <-shardPool.CRoleInCommittees:
+			shardPool.mtx.Lock()
+			shardPool.RoleInCommittees = role
+			shardPool.mtx.Unlock()
+		case <-cQuit:
+			return
 		}
 	}
 }
+
 // get singleton instance of ShardToBeacon pool
 func GetShardPool(shardID byte) *ShardPool {
 	if shardPoolMap[shardID] == nil {
@@ -315,6 +316,7 @@ func (self *ShardPool) CleanOldBlock(latestBlockHeight uint64) {
 		delete(self.conflictedPool, hash)
 	}
 }
+
 // @NOTICE: this function only serve insert block from pool
 func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
 	self.mtx.RLock()

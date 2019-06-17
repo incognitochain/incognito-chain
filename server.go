@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"log"
 	"net"
 	"os"
@@ -410,7 +411,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			shutdownRequestChannel <- struct{}{}
 		}()
 	}
-
+	
+	//Init Metric Tool
+	if cfg.MetricUrl != "" {
+		grafana := metrics.NewGrafana(cfg.MetricUrl)
+		metrics.InitMetricTool(&grafana)
+	}
 	return nil
 }
 
