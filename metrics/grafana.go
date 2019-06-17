@@ -5,15 +5,21 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 )
 
+type Grafana struct {
+	url string
+}
+func NewGrafana(url string) Grafana {
+	return Grafana{
+		url: url,
+	}
+}
 //Influxdb write query
 //<measurement>[,<tag-key>=<tag-value>...] <field-key>=<field-value>[,<field2-key>=<field2-value>...] [unix-nano-timestamp]
-func SendTimeSeriesMetricDataGrafana(params map[string]interface{}) {
-	databaseUrl := os.Getenv("GRAFANAURL")
-	if databaseUrl == "" {
+func (grafana *Grafana) SendTimeSeriesMetricData(params map[string]interface{}) {
+	if grafana.url == "" {
 		return
 	}
 	var (
@@ -37,7 +43,7 @@ func SendTimeSeriesMetricDataGrafana(params map[string]interface{}) {
 	default:
 		return
 	}
-	req, err := http.NewRequest(http.MethodPost, databaseUrl, bytes.NewBuffer([]byte(dataBinary)))
+	req, err := http.NewRequest(http.MethodPost, grafana.url, bytes.NewBuffer([]byte(dataBinary)))
 	if err != nil {
 		Logger.log.Debug("Create Request failed with err: ", err)
 		return

@@ -227,7 +227,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	go metrics.SendTimeSeriesMetricDataGrafana(map[string]interface{}{
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.ShardIDTag,
