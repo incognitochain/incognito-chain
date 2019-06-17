@@ -1,7 +1,7 @@
 package rpcserver
 
-type httpHandler func((*HttpServer), interface{}, <-chan struct{}) (interface{}, *RPCError)
-type wsHandler func((*HttpServer), interface{}, <-chan struct{}) (chan interface{}, *RPCError)
+type httpHandler func(*HttpServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
+type wsHandler func(*WsServer, interface{}, chan interface{}, chan *RPCError, <-chan struct{})
 
 // Commands valid for normal user
 var HttpHandler = map[string]httpHandler{
@@ -16,7 +16,6 @@ var HttpHandler = map[string]httpHandler{
 	estimateFeeWithEstimator: (*HttpServer).handleEstimateFeeWithEstimator,
 	getActiveShards:          (*HttpServer).handleGetActiveShards,
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
-
 	//pool
 	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
 	getRawMempool:               (*HttpServer).handleGetRawMempool,
@@ -41,7 +40,6 @@ var HttpHandler = map[string]httpHandler{
 	checkHashValue:      (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
 	getBlockHeader:      (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 	getCrossShardBlock:  (*HttpServer).handleGetCrossShardBlock,
-
 	// transaction
 	listOutputCoins:                 (*HttpServer).handleListOutputCoins,
 	createRawTransaction:            (*HttpServer).handleCreateRawTransaction,
@@ -53,15 +51,11 @@ var HttpHandler = map[string]httpHandler{
 	randomCommitments:               (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
 	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
-
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
 	//=================================
-
-	//pool
-
 	// Beststate
 	getCandidateList:              (*HttpServer).handleGetCandidateList,
 	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
@@ -73,7 +67,6 @@ var HttpHandler = map[string]httpHandler{
 	getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
 	canPubkeyStake:                (*HttpServer).handleCanPubkeyStake,
 	getTotalTransaction:           (*HttpServer).handleGetTotalTransaction,
-
 	// custom token
 	createRawCustomTokenTransaction:     (*HttpServer).handleCreateRawCustomTokenTransaction,
 	sendRawCustomTokenTransaction:       (*HttpServer).handleSendRawCustomTokenTransaction,
@@ -83,7 +76,6 @@ var HttpHandler = map[string]httpHandler{
 	customTokenTxs:                      (*HttpServer).handleCustomTokenDetail,
 	listCustomTokenHolders:              (*HttpServer).handleGetListCustomTokenHolders,
 	getListCustomTokenBalance:           (*HttpServer).handleGetListCustomTokenBalance,
-
 	// custom token which support privacy
 	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
@@ -91,26 +83,20 @@ var HttpHandler = map[string]httpHandler{
 	listPrivacyCustomToken:                     (*HttpServer).handleListPrivacyCustomToken,
 	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
-
 	// Bridge
 	createIssuingRequest:            (*HttpServer).handleCreateIssuingRequest,
 	sendIssuingRequest:              (*HttpServer).handleSendIssuingRequest,
 	createAndSendIssuingRequest:     (*HttpServer).handleCreateAndSendIssuingRequest,
 	createAndSendContractingRequest: (*HttpServer).handleCreateAndSendContractingRequest,
 	getBridgeTokensAmounts:          (*HttpServer).handleGetBridgeTokensAmounts,
-
 	// wallet
 	getPublicKeyFromPaymentAddress: (*HttpServer).handleGetPublicKeyFromPaymentAddress,
 	defragmentAccount:              (*HttpServer).handleDefragmentAccount,
-
-	getStackingAmount: (*HttpServer).handleGetStakingAmount,
-
-	hashToIdenticon: (*HttpServer).handleHashToIdenticon,
-
+	getStackingAmount:              (*HttpServer).handleGetStakingAmount,
+	hashToIdenticon:                (*HttpServer).handleHashToIdenticon,
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
 	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
-
 	//revert
 	revertbeaconchain: (*HttpServer).handleRevertBeacon,
 	revertshardchain:  (*HttpServer).handleRevertShard,
@@ -119,21 +105,21 @@ var HttpHandler = map[string]httpHandler{
 // Commands that are available to a limited user
 var LimitedHttpHandler = map[string]httpHandler{
 	// local WALLET
-	listAccounts:                       (*HttpServer).handleListAccounts,
-	getAccount:                         (*HttpServer).handleGetAccount,
-	getAddressesByAccount:              (*HttpServer).handleGetAddressesByAccount,
-	getAccountAddress:                  (*HttpServer).handleGetAccountAddress,
-	dumpPrivkey:                        (*HttpServer).handleDumpPrivkey,
-	importAccount:                      (*HttpServer).handleImportAccount,
-	removeAccount:                      (*HttpServer).handleRemoveAccount,
-	listUnspentOutputCoins:             (*HttpServer).handleListUnspentOutputCoins,
-	getBalance:                         (*HttpServer).handleGetBalance,
-	getBalanceByPrivatekey:             (*HttpServer).handleGetBalanceByPrivatekey,
-	getBalanceByPaymentAddress:         (*HttpServer).handleGetBalanceByPaymentAddress,
-	getReceivedByAccount:               (*HttpServer).handleGetReceivedByAccount,
-	setTxFee:                           (*HttpServer).handleSetTxFee,
+	listAccounts:               (*HttpServer).handleListAccounts,
+	getAccount:                 (*HttpServer).handleGetAccount,
+	getAddressesByAccount:      (*HttpServer).handleGetAddressesByAccount,
+	getAccountAddress:          (*HttpServer).handleGetAccountAddress,
+	dumpPrivkey:                (*HttpServer).handleDumpPrivkey,
+	importAccount:              (*HttpServer).handleImportAccount,
+	removeAccount:              (*HttpServer).handleRemoveAccount,
+	listUnspentOutputCoins:     (*HttpServer).handleListUnspentOutputCoins,
+	getBalance:                 (*HttpServer).handleGetBalance,
+	getBalanceByPrivatekey:     (*HttpServer).handleGetBalanceByPrivatekey,
+	getBalanceByPaymentAddress: (*HttpServer).handleGetBalanceByPaymentAddress,
+	getReceivedByAccount:       (*HttpServer).handleGetReceivedByAccount,
+	setTxFee:                   (*HttpServer).handleSetTxFee,
 }
 
 var WsHandler = map[string]wsHandler{
-	subcribeNewBlock: (*HttpServer).handleSubcribeNewBlock,
+	subcribeNewBlock: (*WsServer).handleSubcribeNewBlock,
 }

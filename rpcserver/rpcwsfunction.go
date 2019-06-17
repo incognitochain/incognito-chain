@@ -1,5 +1,13 @@
 package rpcserver
 
-func (httpServer *HttpServer) handleSubcribeNewBlock(params interface{}, closeChan <-chan struct{}) (chan interface{}, *RPCError) {
-	return nil, nil
+import (
+	"time"
+)
+
+func (wsServer *WsServer) handleSubcribeNewBlock(params interface{}, result chan interface{}, error chan *RPCError, closeChan <-chan struct{}) {
+	for i := 0; i < 10; i++ {
+		result<-i
+		<-time.Tick(1*time.Second)
+	}
+	close(result)
 }

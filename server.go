@@ -45,7 +45,7 @@ type Server struct {
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
 	dataBase          database.DatabaseInterface
-	rpcServer         *rpcserver.HttpServer
+	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
 	tempMemPool       *mempool.TxPool
 	beaconPool        *mempool.BeaconPool
@@ -115,7 +115,53 @@ func (serverObj *Server) setupRPCListeners() ([]net.Listener, error) {
 		}
 		listeners = append(listeners, listener)
 	}
+	return listeners, nil
+}
+func (serverObj *Server) setupRPCWsListeners() ([]net.Listener, error) {
+	// Setup TLS if not disabled.
+	listenFunc := net.Listen
+	if !cfg.DisableTLS {
+		Logger.log.Debug("Disable TLS for RPC is false")
+		// Generate the TLS cert and key file if both don't already
+		// exist.
+		if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
+			err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
+			if err != nil {
+				return nil, err
+			}
+		}
+		keyPair, err := tls.LoadX509KeyPair(cfg.RPCCert, cfg.RPCKey)
+		if err != nil {
+			return nil, err
+		}
 
+		tlsConfig := tls.Config{
+			Certificates: []tls.Certificate{keyPair},
+			MinVersion:   tls.VersionTLS12,
+		}
+
+		// Change the standard net.Listen function to the tls one.
+		listenFunc = func(net string, laddr string) (net.Listener, error) {
+			return tls.Listen(net, laddr, &tlsConfig)
+		}
+	} else {
+		Logger.log.Debug("Disable TLS for RPC is true")
+	}
+
+	netAddrs, err := common.ParseListeners(cfg.RPCWSListeners, "tcp")
+	if err != nil {
+		return nil, err
+	}
+
+	listeners := make([]net.Listener, 0, len(netAddrs))
+	for _, addr := range netAddrs {
+		listener, err := listenFunc(addr.Network(), addr.String())
+		if err != nil {
+			log.Printf("Can't listen on %s: %v", addr, err)
+			continue
+		}
+		listeners = append(listeners, listener)
+	}
 	return listeners, nil
 }
 
@@ -365,11 +411,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		// Setup listeners for the configured RPC listen addresses and
 		// TLS settings.
 		fmt.Println("settingup RPCListeners")
-		rpcListeners, err := serverObj.setupRPCListeners()
+		httpListeners, err := serverObj.setupRPCListeners()
+		wsListeners, err := serverObj.setupRPCWsListeners()
 		if err != nil {
 			return err
 		}
-		if len(rpcListeners) == 0 {
+		if len(httpListeners) == 0 && len(wsListeners) == 0{
 			return errors.New("RPCS: No valid listen address")
 		}
 
@@ -378,7 +425,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			miningPubkeyB58 = serverObj.userKeySet.GetPublicKeyB58()
 		}
 		rpcConfig := rpcserver.RpcServerConfig{
-			Listenters:      rpcListeners,
+			HttpListenters:  httpListeners,
+			WsListenters:    wsListeners,
 			RPCQuirks:       cfg.RPCQuirks,
 			RPCMaxClients:   cfg.RPCMaxClients,
 			RPCMaxWSClients: cfg.RPCMaxWSClients,
@@ -402,7 +450,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			MiningPubKeyB58: miningPubkeyB58,
 			NetSync:         serverObj.netSync,
 		}
-		serverObj.rpcServer = &rpcserver.HttpServer{}
+		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
 
 		// Signal process shutdown when the RPC server requests it.
