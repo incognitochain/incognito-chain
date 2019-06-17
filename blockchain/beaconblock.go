@@ -162,6 +162,7 @@ func (beaconBlock *BeaconHeader) Hash() common.Hash {
 	// Block header of beacon uses Keccak256 as a hash func to check on Ethereum when relaying blocks
 	blkMetaHash := beaconBlock.MetaHash()
 	blkInstHash := common.Hash{}
+	// TODO(@0xbunyip): define instruction merkle root in BeaconHeader
 	// blkInstHash := beaconBlock.InstructionMerkleRoot
 	combined := append(blkMetaHash[:], blkInstHash[:]...)
 	return common.Keccak256(combined)

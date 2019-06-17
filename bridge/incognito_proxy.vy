@@ -107,6 +107,8 @@ def swapBeacon(
     bridgeSignerPaths: bytes32[PUBKEY_LENGTH],
     bridgeSignerPathIsLeft: bool[PUBKEY_LENGTH]
 ) -> bool:
+    # TODO: remove newCommRoot, parse from inst instead
+
     # Check if beaconInstRoot is in block with hash beaconBlkHash
     instHash: bytes32 = keccak256(inst)
     blk: bytes32 = keccak256(concat(beaconInstRoot, beaconBlkData))
