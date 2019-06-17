@@ -1,10 +1,10 @@
 package rpcserver
 
 
-type rpcHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
-type wsHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
+type httpHandler func(RpcServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
+type wsHandler func(RpcServer, interface{}, <-chan struct{}) (chan interface{}, *RPCError)
 // Commands valid for normal user
-var RpcHandler = map[string]rpcHandler{
+var HttpHandler = map[string]httpHandler{
 	
 	startProfiling: RpcServer.handleStartProfiling,
 	stopProfiling:  RpcServer.handleStopProfiling,
@@ -117,7 +117,7 @@ var RpcHandler = map[string]rpcHandler{
 }
 
 // Commands that are available to a limited user
-var RpcLimitedHandler = map[string]rpcHandler{
+var LimitedHttpHandler = map[string]httpHandler{
 	// local WALLET
 	listAccounts:                       RpcServer.handleListAccounts,
 	getAccount:                         RpcServer.handleGetAccount,
@@ -135,6 +135,6 @@ var RpcLimitedHandler = map[string]rpcHandler{
 	getRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
 }
 
-var WsHandler = map[string]wsHandler {
-	getLatestBlock:                           RpcServer.handlerGetLatestBlock,
+var WsHandler = map[string]wsHandler{
+	subcribeNewBlock:                           RpcServer.handleSubcribeNewBlock,
 }

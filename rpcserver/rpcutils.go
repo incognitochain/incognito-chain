@@ -159,7 +159,7 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 	return result, nil
 }
 
-func (rpcServer RpcServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler commandHandler) (interface{}, *RPCError) {
+func (rpcServer RpcServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler httpHandler) (interface{}, *RPCError) {
 	data, err := createHandler(rpcServer, params, closeChan)
 	fmt.Printf("err create handler: %v\n", err)
 	if err != nil {
