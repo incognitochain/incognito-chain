@@ -19,10 +19,10 @@
 
 vendor
 
-constant
-
+incognitoctl
 constantctl
 
+incognito-bootnode
 constant-bootnode
 
 /dev-env/nodes-data/node*/data
@@ -39,6 +39,8 @@ datadirs/data**
 data/**
 constant-*
 constant_*
+incognito-*
+incognito_*
 
 pkg
 src/.com
@@ -48,3 +50,8 @@ src/rpcserver
 bootnode
 go.mod
 go.sum
+
+priv.json
+bin/keylist.json
+bin/incognito
+incognito

@@ -98,8 +98,14 @@ func (rpcServer RpcServer) handleGetAccountAddress(params interface{}, closeChan
 		return nil, nil
 	}
 	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
-	randShard := rand.Int31n(int32(activeShards))
-	result := rpcServer.config.Wallet.GetAccountAddress(paramTemp, byte(randShard))
+	shardID := rpcServer.config.Wallet.GetConfig().ShardID
+	shardIDInt := int(*shardID)
+	if shardID != nil && (shardIDInt >= activeShards) {
+		randShard := rand.Int31n(int32(activeShards))
+		temp := byte(randShard)
+		shardID = &temp
+	}
+	result := rpcServer.config.Wallet.GetAccountAddress(paramTemp, shardID)
 	return result, nil
 }
 

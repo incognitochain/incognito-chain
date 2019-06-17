@@ -1218,12 +1218,14 @@ func (blockchain *BlockChain) BuildInstRewardForDev(epoch, totalReward uint64) (
 func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalRewards []uint64) ([][]string, error) {
 	resInst := [][]string{}
 	for i, reward := range totalRewards {
-		shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
-		if err != nil {
-			Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
-			return nil, err
+		if totalRewards[i] > 0 {
+			shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
+			if err != nil {
+				Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
+				return nil, err
+			}
+			resInst = append(resInst, shardRewardInst...)
 		}
-		resInst = append(resInst, shardRewardInst...)
 	}
 	return resInst, nil
 }
