@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	MaxBFTPreparePayload = 1000 // 1 Kb
+	MaxBFTAgreePayload = 2000 // 1 Kb
 )
 
-type MessageBFTPrepare struct {
+type MessageBFTAgree struct {
 	BlkHash    common.Hash
 	Ri         []byte
 	Pubkey     string
@@ -21,7 +21,7 @@ type MessageBFTPrepare struct {
 	Timestamp  int64
 }
 
-func (msg *MessageBFTPrepare) Hash() string {
+func (msg *MessageBFTAgree) Hash() string {
 	rawBytes, err := msg.JsonSerialize()
 	if err != nil {
 		return ""
@@ -29,29 +29,29 @@ func (msg *MessageBFTPrepare) Hash() string {
 	return common.HashH(rawBytes).String()
 }
 
-func (msg *MessageBFTPrepare) MessageType() string {
-	return CmdBFTPrepare
+func (msg *MessageBFTAgree) MessageType() string {
+	return CmdBFTAgree
 }
 
-func (msg *MessageBFTPrepare) MaxPayloadLength(pver int) int {
-	return MaxBFTPreparePayload
+func (msg *MessageBFTAgree) MaxPayloadLength(pver int) int {
+	return MaxBFTAgreePayload
 }
 
-func (msg *MessageBFTPrepare) JsonSerialize() ([]byte, error) {
+func (msg *MessageBFTAgree) JsonSerialize() ([]byte, error) {
 	jsonBytes, err := json.Marshal(msg)
 	return jsonBytes, err
 }
 
-func (msg *MessageBFTPrepare) JsonDeserialize(jsonStr string) error {
+func (msg *MessageBFTAgree) JsonDeserialize(jsonStr string) error {
 	err := json.Unmarshal([]byte(jsonStr), msg)
 	return err
 }
 
-func (msg *MessageBFTPrepare) SetSenderID(senderID peer.ID) error {
+func (msg *MessageBFTAgree) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageBFTPrepare) SignMsg(keySet *cashec.KeySet) error {
+func (msg *MessageBFTAgree) SignMsg(keySet *cashec.KeySet) error {
 	dataBytes := []byte{}
 	dataBytes = append(dataBytes, msg.BlkHash.GetBytes()...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
@@ -62,7 +62,7 @@ func (msg *MessageBFTPrepare) SignMsg(keySet *cashec.KeySet) error {
 	return err
 }
 
-func (msg *MessageBFTPrepare) VerifyMsgSanity() error {
+func (msg *MessageBFTAgree) VerifyMsgSanity() error {
 	dataBytes := []byte{}
 	dataBytes = append(dataBytes, msg.BlkHash.GetBytes()...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)

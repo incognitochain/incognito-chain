@@ -5,11 +5,11 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
-type ChainInfo struct {
-	CurrentCommittee        []string
-	CandidateListMerkleHash string
-	ChainsHeight            []int
-}
+// type ChainInfo struct {
+// 	CurrentCommittee        []string
+// 	CandidateListMerkleHash string
+// 	ChainsHeight            []int
+// }
 
 type serverInterface interface {
 	// list functions callback which are assigned from Server struct
