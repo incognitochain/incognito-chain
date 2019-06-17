@@ -16,9 +16,9 @@ type TestFrameWork struct {
 
 type Block struct {
 	Timestamp uint64
-	Height uint64
-	From string
-	Round uint64
+	Height    uint64
+	From      string
+	Round     uint64
 }
 
 func (s Block) GetHeight() uint64 {
@@ -34,7 +34,7 @@ func (s Block) GetProducer() string {
 }
 
 func (s Block) Hash() string {
-	return fmt.Sprint(s.From,"_",s.Height,"_",s.Timestamp)
+	return fmt.Sprint(s.From, "_", s.Height, "_", s.Timestamp)
 }
 
 var Committees = []string{
@@ -61,35 +61,35 @@ func (s *Chain) PushMessageToValidator(m wire.Message) error {
 	for _, node := range s.Env.nodeList {
 		switch v := m.(type) {
 		case *ProposeMsg:
-			if node.Chain.GetNodePubKey() == s.GetNodePubKey(){
+			if node.Chain.GetNodePubKey() == s.GetNodePubKey() {
 				continue
 			}
-			go func(node *BFTEngine){
-				rand := common.RandInt() % 30000
-				time.Sleep(time.Duration(rand)*time.Millisecond)
+			go func(node *BFTEngine) {
+				rand := common.RandInt() % 10000
+				time.Sleep(time.Duration(rand) * time.Millisecond)
 				node.ProposeMsgCh <- *m.(*ProposeMsg)
 			}(node)
-			
+
 		case *PrepareMsg:
-			if node.Chain.GetNodePubKey() == s.GetNodePubKey(){
+			if node.Chain.GetNodePubKey() == s.GetNodePubKey() {
 				continue
 			}
-			go func(node *BFTEngine){
+			go func(node *BFTEngine) {
 				rand := common.RandInt() % 6000
-				time.Sleep(time.Duration(rand)*time.Millisecond)
+				time.Sleep(time.Duration(rand) * time.Millisecond)
 				node.PrepareMsgCh <- *m.(*PrepareMsg)
 			}(node)
-			
+
 		case *CommitMsg:
-			if node.Chain.GetNodePubKey() == s.GetNodePubKey(){
+			if node.Chain.GetNodePubKey() == s.GetNodePubKey() {
 				continue
 			}
-			go func(node *BFTEngine){
+			go func(node *BFTEngine) {
 				rand := common.RandInt() % 6000
-				time.Sleep(time.Duration(rand)*time.Millisecond)
+				time.Sleep(time.Duration(rand) * time.Millisecond)
 				node.CommitMsgCh <- *m.(*CommitMsg)
 			}(node)
-			
+
 		default:
 			fmt.Printf("I don't know about type %T!\n", v)
 		}
@@ -122,7 +122,7 @@ func (s *Chain) GetHeight() uint64 {
 	return s.Block[len(s.Block)-1].Height
 }
 
-func (s *Chain) GetLastBlock() Block{
+func (s *Chain) GetLastBlock() Block {
 	return s.Block[len(s.Block)-1]
 }
 
@@ -147,7 +147,7 @@ func (s *Chain) CreateNewBlock() BlockInterface {
 	return Block{Timestamp: uint64(time.Now().Unix()), Height: s.GetHeight() + 1, From: s.Pubkey}
 }
 
-func (s *Chain) ValidateBlock(blk interface{}) bool{
+func (s *Chain) ValidateBlock(blk interface{}) bool {
 	blkData := blk.(Block)
 	if s.GetHeight()+1 == blkData.GetHeight() {
 		return true
@@ -156,11 +156,11 @@ func (s *Chain) ValidateBlock(blk interface{}) bool{
 	}
 }
 
-func (s *Chain) ValidateSignature(blk interface{}, sig string) bool{
+func (s *Chain) ValidateSignature(blk interface{}, sig string) bool {
 	return true
 }
 
-func (s *Chain) GetLastProposerIndex() int{
+func (s *Chain) GetLastProposerIndex() int {
 	return int(common.IndexOfStr(s.GetLastBlock().From, s.Committees))
 }
 
@@ -170,29 +170,20 @@ func (s *Chain) InsertBlk(blk interface{}, willCommit bool) {
 		return
 	}
 	s.Block = append(s.Block, blkData)
-	//fmt.Println(s.Block)
 }
 
-var NODE_NUM = 100
+var NODE_NUM = 6
 var testFramework = TestFrameWork{nodeList: make([]*BFTEngine, NODE_NUM)}
 
 func TestBFTEngine_Start(t *testing.T) {
 	for i := 0; i < NODE_NUM; i++ {
 		newNode := new(BFTEngine)
-		newNode.Chain = &Chain{Block: []Block{{1560675379, 1,"Genesis",0}}, Committees: Committees[:NODE_NUM], Pubkey: Committees[i], Env: testFramework}
+		newNode.Chain = &Chain{Block: []Block{{1560675379, 1, "Genesis", 0}}, Committees: Committees[:NODE_NUM], Pubkey: Committees[i], Env: testFramework}
 		newNode.PeerID = strconv.Itoa(i)
 		testFramework.nodeList[i] = newNode
 		newNode.Start()
 	}
-	
-	//go func(){
-	//	ticker := time.Tick(time.Second*5)
-	//	for _ = range ticker {
-	//		for _,v := range testFramework.nodeList {
-	//			v.debug(v.State,v.NextHeight, v.Round)
-	//		}
-	//	}
-	//}()
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait()
