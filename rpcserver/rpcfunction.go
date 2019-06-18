@@ -113,6 +113,9 @@ var RpcHandler = map[string]commandHandler{
 	createAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
 	getBridgeTokensAmounts:          RpcServer.handleGetBridgeTokensAmounts,
 
+	// Incognito -> Ethereum bridge
+	getBeaconSwapProof: RpcServer.handleGetBeaconSwapProof,
+
 	// wallet
 	getPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
 	defragmentAccount:              RpcServer.handleDefragmentAccount,

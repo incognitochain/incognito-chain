@@ -57,6 +57,23 @@ func GetKeccak256MerkleRoot(data [][]byte) []byte {
 	return merkles[len(merkles)-1]
 }
 
+func GetKeccak256MerkleProof(data [][]byte, id int) ([][]byte, []bool) {
+	merkles := BuildKeccak256MerkleTree(data)
+	path := [][]byte{}
+	left := []bool{}
+	height := uint(math.Log2(float64(len(merkles))))
+	start := 0
+	for i := uint(0); i < height; i++ {
+		sibling := id ^ 1
+		path = append(path, merkles[sibling])
+		left = append(left, sibling < id)
+
+		id = (id-start)/2 + start + (1 << (height - i)) // Go to parent node
+		start += 1 << (height - i)
+	}
+	return path, left
+}
+
 // keccak256MerkleBranches concatenates the 2 branches of a Merkle tree and hash it to create the parent node using Keccak256 hash function
 func keccak256MerkleBranches(left []byte, right []byte) []byte {
 	// Concatenate the left and right nodes.
