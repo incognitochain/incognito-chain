@@ -3,13 +3,13 @@
 ###### MULTI_MEMBERS
 # Shard 0
 if [ "$1" == "shard0-0" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy" --nodemode "auto" --datadir "data/shard0-0" --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --norpcauth --rpclisten "127.0.0.1:9334" --rpcwslisten "127.0.0.1:19334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --relayshards "0" --txpoolmaxtx 100000 --metricurl="http://128.199.96.206:8086/write?db=mydb"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rqEd6a7v4PfWu9CwXFAmRyazCNRNEQi8G8eGBYtrg2Cix6GNYhhs3tz1JRPxJ4FsHq3mH7fJBq3bC8c3DJM3noWAQE8eY4sMeHxXYDe" --nodemode "auto" --datadir "data/shard0-0" --listen "127.0.0.1:9433" --externaladdress "127.0.0.1:9433" --norpcauth --rpclisten "127.0.0.1:9334" --rpcwslisten "127.0.0.1:19334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --relayshards "0" --txpoolmaxtx 100000 --metricurl="http://128.199.96.206:8086/write?db=mydb"
 fi
 if [ "$1" == "shard0-1" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rrEEcDQBMnUM5J17qniHZZmckmr8LGCv9nBjP9x5wmGFGUryKTNvEAf1jh2wwW69rxwtANq4m8JmzowfKVPayUHPmAKdwQw5718GKuH" --nodemode "auto" --datadir "data/shard0-1" --listen "127.0.0.1:9434" --externaladdress "127.0.0.1:9434" --norpcauth --rpclisten "127.0.0.1:9335" --relayshards "0"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtidnuL3BBzhfVptK6mPmAr2AttXgmcdE8xZwYyQd3t7t5a16dDPPnSSx4KzzWAvM7AgXo8UQBCo5o4Wn1K6Cs27hHCjQpSY8UjV5Gy" --nodemode "auto" --datadir "data/shard0-1" --listen "127.0.0.1:9434" --externaladdress "127.0.0.1:9434" --norpcauth --rpclisten "127.0.0.1:9335" --relayshards "0"
 fi
 if [ "$1" == "shard0-2" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rnXgYcLCjeHBpnesutJEBfG5xVzhMf8gLVZuL4fya4ov9Ko8pr6Mrj5eEZe5bie4ZVnH7MQNpLjuAxiuSDmPp5WgkuRRGW8NLcJZoF2" --nodemode "auto" --datadir "data/shard0-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpcauth --rpclisten "127.0.0.1:9336" --relayshards "0"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtxdpGEx5H7MHi5EXGKZhKAxgbEkRv1d8TH1cbqKzc5j4mXEKC2NUCeCSQRA3zDeUQxKUW54sAGzpqFi86JQGaPAh4Ao4Gqo7q51yGw" --nodemode "auto" --datadir "data/shard0-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpcauth --rpclisten "127.0.0.1:9336" --relayshards "0"
 fi
 # Shard 1
 if [ "$1" == "shard1-0" ]; then
