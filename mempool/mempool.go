@@ -178,18 +178,23 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
 	if tp.config.FeeEstimator != nil {
 		var shardID byte
+		flag := false
 		switch tx.GetType() {
 		case common.TxNormalType:
 			{
 				shardID = common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+				flag = true
 			}
 		case common.TxCustomTokenPrivacyType:
 			{
 				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxCustomTokenPrivacy).PubKeyLastByteSender)
+				flag = true
 			}
 		}
-		if temp, ok := tp.config.FeeEstimator[shardID]; ok {
-			temp.ObserveTransaction(txD)
+		if flag {
+			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
+				temp.ObserveTransaction(txD)
+			}
 		}
 	}
 
