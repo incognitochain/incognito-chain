@@ -193,7 +193,9 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 
 		feeRateForToken := make(map[common.Hash]CoinPerKilobyte)
 		if t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType {
-			feeRateForToken[*t.Desc.Tx.GetTokenID()] = NewCoinPerKilobyte(uint64(t.Desc.FeeToken), size)
+			tokenID := t.Desc.Tx.(*transaction.TxCustomTokenPrivacy).GetTokenID()
+			tokenFee := t.Desc.FeeToken
+			feeRateForToken[*tokenID] = NewCoinPerKilobyte(tokenFee, size)
 		}
 
 		ef.observed[hash] = &observedTransaction{
