@@ -1,7 +1,7 @@
 package rpcserver
 
 type httpHandler func(*HttpServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
-type wsHandler func(*WsServer, interface{}, string, chan interface{}, chan *RPCError)
+type wsHandler func(*WsServer, interface{}, string, chan RpcSubResult, <-chan struct{})
 
 // Commands valid for normal user
 var HttpHandler = map[string]httpHandler{
@@ -121,5 +121,6 @@ var LimitedHttpHandler = map[string]httpHandler{
 }
 
 var WsHandler = map[string]wsHandler{
+	testSubcrice:     (*WsServer).handleTestSubcribe,
 	subcribeNewBlock: (*WsServer).handleSubcribeNewBlock,
 }
