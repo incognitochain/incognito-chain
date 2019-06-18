@@ -155,9 +155,9 @@ func (engine *Engine) execBeaconRole() {
 		err    error
 		resBlk interface{}
 	)
+	go engine.NotifyRole(-1, true)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
-		go engine.NotifyRole(-1, true)
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
@@ -168,7 +168,6 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
-		go engine.NotifyRole(-1, true)
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
@@ -179,7 +178,6 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
-		go engine.NotifyRole(-1, false)
 		err = errors.New("Not your turn yet")
 	}
 
