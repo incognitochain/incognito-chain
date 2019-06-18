@@ -41,6 +41,7 @@ func (rpcServer RpcServer) handleCreateAndSendWithDrawTransaction(params interfa
 
 // Get the reward amount of a private key
 func (rpcServer RpcServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
