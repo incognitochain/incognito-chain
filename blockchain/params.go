@@ -8,10 +8,10 @@ from those intended for use on another network
 type Params struct {
 	// Name defines a human-readable identifier for the network.
 	Name string
-	
+
 	// Net defines the magic bytes used to identify the network.
 	Net uint32
-	
+
 	// DefaultPort defines the default peer-to-peer port for the network.
 	DefaultPort         string
 	ShardCommitteeSize  int
@@ -20,7 +20,7 @@ type Params struct {
 	ActiveShards        int
 	// GenesisBlock defines the first block of the chain.
 	GenesisBeaconBlock *BeaconBlock
-	
+
 	// GenesisBlock defines the first block of the chain.
 	GenesisShardBlock *ShardBlock
 	BasicReward       uint64
@@ -29,13 +29,13 @@ type Params struct {
 
 type GenesisParams struct {
 	InitialPaymentAddress string
-	
+
 	InitialConstant []string
-	
+
 	FeePerTxKb uint64
-	
+
 	RandomNumber uint64
-	
+
 	PreSelectBeaconNodeSerializedPubkey []string
 	PreSelectBeaconNode                 []string
 	PreSelectShardNodeSerializedPubkey  []string
@@ -45,19 +45,18 @@ type GenesisParams struct {
 var ChainTestParam = Params{}
 var ChainMainParam = Params{}
 
-
 // FOR TESTNET
-func init(){
+func init() {
 	var genesisParamsTestnetNew = GenesisParams{
 		InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
 		RandomNumber:                        0,
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
-		
+
 		//@Notice: InitTxsForBenchmark is for testing and benchmark only
 		InitialConstant: TestnetInitConstant,
 	}
-	
+
 	ChainTestParam = Params{
 		Name:                TestnetName,
 		Net:                 Testnet,
@@ -72,19 +71,19 @@ func init(){
 		BasicReward:        TestnetBasicReward,
 		RewardHalflife:     TestnetRewardHalflife,
 	}
-	
+
 	// END TESTNET
-	
+
 	// FOR MAINNET
 	var genesisParamsMainnetNew = GenesisParams{
 		InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
 		RandomNumber:                        0,
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
-		
+
 		InitialConstant: MainnetInitConstant,
 	}
-	
+
 	ChainMainParam = Params{
 		Name:                MainetName,
 		Net:                 Mainnet,
@@ -100,4 +99,3 @@ func init(){
 		RewardHalflife:     MainnetRewardHalflife,
 	}
 }
-
