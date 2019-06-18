@@ -41,8 +41,6 @@ const (
 	// number of blocks which must be observed by the fee estimator before
 	// it will provide fee estimations.
 	DefaultEstimateFeeMinRegisteredBlocks = 3
-
-	bytePerKb = 1000
 )
 
 var (
@@ -558,7 +556,7 @@ func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet 
 		for _, o := range b {
 			set.feeRate[i] = o.feeRate
 
-			if tokenID != nil{
+			if tokenID != nil {
 				for key, value := range o.feeRateForToken {
 					if key.IsEqual(tokenID) {
 						set.feeRateForToken[key] = append(set.feeRateForToken[key], value)
@@ -572,7 +570,8 @@ func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet 
 
 	if tokenID == nil {
 		sort.Sort(set)
-	} else {}
+	} else {
+	}
 
 	return set
 }
@@ -585,7 +584,7 @@ func (ef *FeeEstimator) estimates(tokenID *common.Hash) []CoinPerKilobyte {
 	estimates := make([]CoinPerKilobyte, estimateFeeDepth)
 	for i := 0; i < estimateFeeDepth; i++ {
 		if tokenID != nil {
-			estimates[i] = set.estimateFeeForToken(i + 1, tokenID)
+			estimates[i] = set.estimateFeeForToken(i+1, tokenID)
 		} else {
 			estimates[i] = set.estimateFee(i + 1)
 		}
