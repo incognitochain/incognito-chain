@@ -14,7 +14,6 @@ func (db *db) AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uin
 	}
 	oldValue, err := db.Get(key)
 	if err != nil {
-		fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 0- - - %+v\n", err)
 		err1 := db.Put(key, common.Uint64ToBytes(rewardAmount))
 		fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 1- - - %+v\n", err1)
 		if err1 != nil {
@@ -30,7 +29,7 @@ func (db *db) AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uin
 }
 
 func (db *db) GetRewardOfShardByEpoch(epoch uint64, shardID byte, tokenID common.Hash) (uint64, error) {
-	fmt.Printf("[ndh]-[DATABASE] GetRewardOfShardByEpoch- - - %+v %+v\n", epoch, shardID)
+	fmt.Printf("[ndh]-[DATABASE] GetRewardOfShardByEpoch- - - %+v %+v %+v\n", epoch, shardID, tokenID)
 	key, _ := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	rewardAmount, err := db.Get(key)
 	if err != nil {

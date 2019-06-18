@@ -61,7 +61,7 @@ const (
 
 // CONSENSUS
 const (
-	EPOCH       = 10
+	EPOCH       = 5
 	RANDOM_TIME = 5
 	OFFSET      = 1
 

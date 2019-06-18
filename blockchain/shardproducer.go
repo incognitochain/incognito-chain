@@ -18,7 +18,7 @@ import (
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
 	var txsToAdd = make([]metadata.Transaction, 0)
-	var totalTxsFee map[common.Hash]uint64
+	totalTxsFee := map[common.Hash]uint64{}
 	//============Build body=============
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
