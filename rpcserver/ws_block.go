@@ -21,6 +21,7 @@ func (wsServer *WsServer) handleSubcribeNewBlock(params interface{}, subcription
 	id := wsServer.config.BlockChain.SubcribeNewShardBlock(cShardBlock)
 	defer func() {
 		wsServer.config.BlockChain.UnsubcribeNewShardBlock(id)
+		close(cResult)
 	}()
 	for {
 		select {
