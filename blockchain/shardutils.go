@@ -133,10 +133,22 @@ func CreateShardInstructionsFromTransactionAndIns(
 	stakeBeaconPubKey := []string{}
 	stakeShardTxID := []string{}
 	stakeBeaconTxID := []string{}
-	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks, beaconHeight)
+	instructions, err = buildStabilityActions(transactions, bc, shardID)
 	if err != nil {
 		return nil, err
 	}
+
+	// Pick instruction with merkle root of beacon (or bridge) committee's pubkeys and save to bridge block
+	if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
+		// Instruction created here won't be sent to validators in block.Body.Instructions
+		// Instead, validators will call CreateShardInstructionsFromTransactionAndIns
+		// again and check if inst is correct
+		commPubkeyInst := pickPubkeyRootInstruction(beaconBlocks)
+		if len(commPubkeyInst) > 0 {
+			instructions = append(instructions, commPubkeyInst...)
+		}
+	}
+
 	for _, tx := range transactions {
 
 		switch tx.GetMetadataType() {
