@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
-	
+
+	"github.com/incognitochain/incognito-chain/metrics"
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -545,15 +546,8 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	}
 
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
-	insts := [][]byte{}
-	for _, strs := range block.Body.Instructions {
-		fullInst := []byte{}
-		for _, part := range strs {
-			fullInst = append(fullInst, []byte(part)...)
-		}
-		insts = append(insts, fullInst)
-	}
-	root := GetKeccak256MerkleRoot(insts)
+	flattenInsts := flattenAndConvertStringInst(block.Body.Instructions)
+	root := GetKeccak256MerkleRoot(flattenInsts)
 	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
 	}
