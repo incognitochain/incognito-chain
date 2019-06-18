@@ -159,6 +159,13 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
+
+	// Instruction merkle root
+	flattenTempInsts := flattenAndConvertStringInst(txInstructions)
+	flattenInsts := flattenAndConvertStringInst(instructions)
+	insts := append(flattenTempInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
+	instMerkleRoot := GetKeccak256MerkleRoot(insts)
+
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
 	block.Header = ShardHeader{
 		ProducerAddress:      producerKeySet.PaymentAddress,
@@ -179,6 +186,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		Epoch:                epoch,
 		Round:                round,
 	}
+	copy(block.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	return block, nil
 }
 
