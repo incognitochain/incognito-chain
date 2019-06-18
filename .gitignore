@@ -31,6 +31,7 @@ constant-bootnode
 *.o
 
 privacy/server/proving\.key
+privacy/wasm/*.wasm
 
 privacy/server/verifying\.key
 .DS_Store
