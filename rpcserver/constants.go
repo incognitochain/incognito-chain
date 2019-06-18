@@ -112,6 +112,9 @@ const (
 	createAndSendContractingRequest = "createandsendcontractingrequest"
 	getBridgeTokensAmounts          = "getbridgetokensamounts"
 
+	// Incognito -> Ethereum bridge
+	getBeaconSwapProof = "getbeaconswapproof"
+
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
