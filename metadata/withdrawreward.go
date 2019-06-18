@@ -21,6 +21,7 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		Type: WithDrawRewardRequestMeta,
 	}
 	requesterPaymentStr := data["PaymentAddress"].(string)
+	requestTokenIDs := data["TokenIDs"].([]common.Hash)
 	for key, value := range data {
 		fmt.Printf("[ndh]- - - - Key %+v; value %+v\n", key, value)
 	}
@@ -31,6 +32,7 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	return &WithDrawRewardRequest{
 		MetadataBase:   metadataBase,
 		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
+		TokenIDs:       requestTokenIDs,
 	}, nil
 }
 
