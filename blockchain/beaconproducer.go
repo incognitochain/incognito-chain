@@ -159,7 +159,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 
 	// Instruction merkle root
-	flattenInsts := flattenAndConvertStringInst(tempInstruction)
+	flattenInsts := common.FlattenAndConvertStringInst(tempInstruction)
 	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
 
 	//===============End Create Header

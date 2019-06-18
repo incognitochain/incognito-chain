@@ -402,3 +402,16 @@ func AppendSliceString(arrayStrings ...[][]string) [][]string {
 	}
 	return res
 }
+
+// FlattenAndConvertStringInst receives a slice of insts; converts and concats each inst ([]string) and converts to []byte to build merkle tree later
+func FlattenAndConvertStringInst(insts [][]string) [][]byte {
+	flattenInsts := [][]byte{}
+	for _, inst := range insts {
+		flatten := []byte{}
+		for _, part := range inst {
+			flatten = append(flatten, []byte(part)...)
+		}
+		flattenInsts = append(flattenInsts, flatten)
+	}
+	return flattenInsts
+}
