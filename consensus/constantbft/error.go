@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	ErrUnexpected            = iota
+	ErrUnexpected = iota
 	ErrBlockSizeExceed
 	ErrNotInCommittee
 	ErrSigWrongOrNotExits

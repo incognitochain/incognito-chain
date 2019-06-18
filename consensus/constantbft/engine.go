@@ -31,18 +31,18 @@ type Engine struct {
 }
 
 type EngineConfig struct {
-	BlockChain                 *blockchain.BlockChain
-	ChainParams                *blockchain.Params
-	BlockGen                   *blockchain.BlkTmplGenerator
-	UserKeySet                 *cashec.KeySet
-	NodeMode                   string
-	Server                     serverInterface
-	ShardToBeaconPool          blockchain.ShardToBeaconPool
-	CrossShardPool             map[byte]blockchain.CrossShardPool
-	CRoleInCommitteesMempool   chan int
-	CRoleInCommitteesNetSync   chan int
+	BlockChain                  *blockchain.BlockChain
+	ChainParams                 *blockchain.Params
+	BlockGen                    *blockchain.BlkTmplGenerator
+	UserKeySet                  *cashec.KeySet
+	NodeMode                    string
+	Server                      serverInterface
+	ShardToBeaconPool           blockchain.ShardToBeaconPool
+	CrossShardPool              map[byte]blockchain.CrossShardPool
+	CRoleInCommitteesMempool    chan int
+	CRoleInCommitteesNetSync    chan int
 	CRoleInCommitteesBeaconPool chan bool
-	CRoleInCommitteesShardPool []chan int
+	CRoleInCommitteesShardPool  []chan int
 }
 
 //Init apply configuration to consensus engine
@@ -155,9 +155,9 @@ func (engine *Engine) execBeaconRole() {
 		err    error
 		resBlk interface{}
 	)
+	go engine.NotifyRole(-1, true)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
-		go engine.NotifyRole(-1, true)
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
@@ -168,7 +168,6 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
-		go engine.NotifyRole(-1, true)
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
@@ -179,7 +178,6 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
-		go engine.NotifyRole(-1, false)
 		err = errors.New("Not your turn yet")
 	}
 
@@ -302,10 +300,18 @@ func (engine *Engine) execShardRole(shardID byte) {
 }
 
 func (engine *Engine) NotifyRole(shardRole int, beaconRole bool) {
-	engine.config.CRoleInCommitteesMempool <- shardRole
-	engine.config.CRoleInCommitteesNetSync <- shardRole
-	for _, ch := range engine.config.CRoleInCommitteesShardPool {
-		ch <- shardRole
-	}
-	engine.config.CRoleInCommitteesBeaconPool <- beaconRole
+	go func() {
+		if shardRole > -1 {
+			engine.config.CRoleInCommitteesMempool <- shardRole
+			engine.config.CRoleInCommitteesNetSync <- shardRole
+			for _, ch := range engine.config.CRoleInCommitteesShardPool {
+				ch <- shardRole
+			}
+		}
+	}()
+	go func() {
+		if beaconRole == true {
+			engine.config.CRoleInCommitteesBeaconPool <- beaconRole
+		}
+	}()
 }
