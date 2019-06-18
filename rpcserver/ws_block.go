@@ -41,6 +41,7 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 			}
 		case <-closeChan:
 			{
+				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Result: "Unsubcribe New Shard Block"}}
 				return
 			}
 		}
@@ -76,6 +77,7 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 			}
 		case <-closeChan:
 			{
+				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Result: "Unsubcribe New Beacon Block"}}
 				return
 			}
 		}
