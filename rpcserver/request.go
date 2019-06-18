@@ -45,10 +45,13 @@ func parseJsonRequest(rawMessage []byte) (*JsonRequest, error) {
 		return &request, nil
 	}
 }
-
+//type for subcribe and unsubcribe
+// 0: subcribe
+// 1: unsubcribe
 type SubcriptionRequest struct {
 	JsonRequest JsonRequest `json:"Request"`
 	Subcription string      `json:"Subcription"`
+	Type        int `json:"Type"`
 }
 
 func parseSubcriptionRequest(rawMessage []byte) (*SubcriptionRequest, error) {
