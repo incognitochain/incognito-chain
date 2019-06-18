@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
-	
+
+	"github.com/incognitochain/incognito-chain/metrics"
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -418,6 +419,16 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
 	}
+
+	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
+	flattenTxInsts := flattenAndConvertStringInst(txInstructions)
+	flattenInsts := flattenAndConvertStringInst(block.Body.Instructions)
+	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be the same as when creating new shard block
+	root := GetKeccak256MerkleRoot(insts)
+	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
+		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
+	}
+
 	//Get beacon hash by height in db
 	//If hash not found then fail to verify
 	beaconHash, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(block.Header.BeaconHeight)

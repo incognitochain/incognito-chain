@@ -316,6 +316,14 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			}
 		}
 	}
+
+	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
+	flattenInsts := flattenAndConvertStringInst(block.Body.Instructions)
+	root := GetKeccak256MerkleRoot(flattenInsts)
+	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
+		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
+	}
+
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
 		rewardByEpochInstruction := [][]string{}
@@ -543,13 +551,6 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	isOk = VerifyHashFromMapByteString(bestStateBeacon.ShardPendingValidator, bestStateBeacon.ShardCommittee, block.Header.ShardValidatorsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify shard validator root"))
-	}
-
-	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
-	flattenInsts := flattenAndConvertStringInst(block.Body.Instructions)
-	root := GetKeccak256MerkleRoot(flattenInsts)
-	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
-		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
 	}
 
 	// COMMENT FOR TESTING
