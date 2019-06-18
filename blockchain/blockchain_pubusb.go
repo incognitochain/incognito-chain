@@ -43,3 +43,12 @@ func (blockchain *BlockChain) NotifyNewShardBlockEvent(shardBlock *ShardBlock) {
 		}(ch)
 	}
 }
+func (blockchain *BlockChain) NotifyNewBeaconBlockEvent(beaconBlock *BeaconBlock) {
+	blockchain.PubSub.mtx.Lock()
+	defer blockchain.PubSub.mtx.Unlock()
+	for _, ch := range blockchain.PubSub.NewBeaconBlockEvent {
+		go func(ch chan *BeaconBlock) {
+			ch <- beaconBlock
+		}(ch)
+	}
+}
