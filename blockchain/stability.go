@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -13,10 +14,6 @@ func buildStabilityActions(
 	txs []metadata.Transaction,
 	bc *BlockChain,
 	shardID byte,
-	producerAddress *privacy.PaymentAddress,
-	shardBlockHeight uint64,
-	beaconBlocks []*BeaconBlock,
-	beaconHeight uint64,
 ) ([][]string, error) {
 	actions := [][]string{}
 	for _, tx := range txs {
@@ -30,6 +27,27 @@ func buildStabilityActions(
 		}
 	}
 	return actions, nil
+}
+
+// pickPubkeyRootInstruction finds all instructions of type BeaconPubkeyRootMeta returns them to save in bridge block
+// These instructions contain merkle root of beacon/bridge committee's pubkey
+func pickPubkeyRootInstruction(
+	beaconBlocks []*BeaconBlock,
+) [][]string {
+	beaconType := strconv.Itoa(metadata.BeaconPubkeyRootMeta)
+	bridgeType := strconv.Itoa(metadata.BridgePubkeyRootMeta)
+	commPubkeyInst := [][]string{}
+	for _, block := range beaconBlocks {
+		for _, inst := range block.Body.Instructions {
+			instType := inst[0]
+			if instType != beaconType && instType != bridgeType {
+				continue
+			}
+			fmt.Printf("[db] found root inst: %v\n", inst)
+			commPubkeyInst = append(commPubkeyInst, inst)
+		}
+	}
+	return commPubkeyInst
 }
 
 // build instructions at beacon chain before syncing to shards
