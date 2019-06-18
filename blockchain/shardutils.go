@@ -723,3 +723,16 @@ func (blockchain *BlockChain) DeleteIncomingCrossShard(block *ShardBlock) error 
 }
 
 //=======================================END CROSS SHARD UTIL
+
+// flattenAndConvertStringInst receives a slice of insts; converts and concats each inst ([]string) and converts to []byte to build merkle tree later
+func flattenAndConvertStringInst(insts [][]string) [][]byte {
+	flattenInsts := [][]byte{}
+	for _, inst := range insts {
+		flatten := []byte{}
+		for _, part := range inst {
+			flatten = append(flatten, []byte(part)...)
+		}
+		flattenInsts = append(flattenInsts, flatten)
+	}
+	return flattenInsts
+}
