@@ -27,6 +27,8 @@ const (
 	ErrTxTypeInvalid
 	ErrRejectInvalidFee
 	ErrTxNotExistedInMemAndBLock
+	ErrUnsubcribe
+	ErrSubcribe
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -60,6 +62,10 @@ var ErrCodeMessage = map[int]struct {
 	// processing -2xxx
 	ErrCreateTxData: {-2001, "Can not create tx"},
 	ErrSendTxData:   {-2002, "Can not send tx"},
+	// socket/subcribe -3xxx
+	ErrSubcribe:   {-3001, "Failed to subcribe"},
+	ErrUnsubcribe:   {-2002, "Failed to unsubcribe"},
+	
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
