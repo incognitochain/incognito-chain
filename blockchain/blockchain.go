@@ -1189,14 +1189,17 @@ func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privac
 // 	return resIns, nil
 // }
 
-func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch, totalReward uint64) ([][]string, error) {
+//TODO implement more logic for fair
+func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
-	baseReward := totalReward / uint64(blockchain.BestState.Beacon.BeaconCommitteeSize)
+	var baseRewards map[common.Hash]uint64
+	for key, value := range totalReward {
+		baseRewards[key] = value / uint64(blockchain.BestState.Beacon.BeaconCommitteeSize)
+	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
-
-		singleInst, err := metadata.BuildInstForBeaconReward(baseReward, publickeyStr)
+		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)
 		if err != nil {
-			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseReward)
+			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
 			return nil, err
 		}
 		resInst = append(resInst, singleInst)
@@ -1204,7 +1207,33 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch, totalReward uint6
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) BuildInstRewardForDev(epoch, totalReward uint64) ([][]string, error) {
+func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
+	mapCustomToken, err := blockchain.ListCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	mapPrivacyCustomToken, mapCrossShardCustomToken, err := blockchain.ListPrivacyCustomToken()
+	if err != nil {
+		return nil, err
+	}
+	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken))
+	index := 0
+	for key := range mapCustomToken {
+		allCoinID[index] = key
+		index++
+	}
+	for key := range mapPrivacyCustomToken {
+		allCoinID[index] = key
+		index++
+	}
+	for key := range mapCrossShardCustomToken {
+		allCoinID[index] = key
+		index++
+	}
+	return allCoinID, nil
+}
+
+func (blockchain *BlockChain) BuildInstRewardForDev(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	devRewardInst, err := metadata.BuildInstForDevReward(totalReward)
 	if err != nil {
@@ -1215,17 +1244,17 @@ func (blockchain *BlockChain) BuildInstRewardForDev(epoch, totalReward uint64) (
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalRewards []uint64) ([][]string, error) {
+func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalRewards []map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	for i, reward := range totalRewards {
-		if totalRewards[i] > 0 {
-			shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
-			if err != nil {
-				Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
-				return nil, err
-			}
-			resInst = append(resInst, shardRewardInst...)
+		// if totalRewards[i] > 0 {
+		shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
+		if err != nil {
+			Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
+			return nil, err
 		}
+		resInst = append(resInst, shardRewardInst...)
+		// }
 	}
 	return resInst, nil
 }
@@ -1247,7 +1276,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 			Logger.log.Errorf("buildWithDrawTransactionResponse for tx %+v, error: %+v\n", value, err)
 			return err
 		}
-		txsRes = append(txsRes, txRes)
+		txsRes = append(txsRes, txRes...)
 	}
 	blkBody.Transactions = append(blkBody.Transactions, txsRes...)
 
