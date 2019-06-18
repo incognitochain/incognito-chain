@@ -1127,7 +1127,7 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 //TODO implement more logic for fair
 func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
-	var baseRewards map[common.Hash]uint64
+	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
 		baseRewards[key] = value / uint64(blockchain.BestState.Beacon.BeaconCommitteeSize)
 	}
@@ -1151,8 +1151,9 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken))
-	index := 0
+	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+1)
+	allCoinID[0] = common.PRVCoinID
+	index := 1
 	for key := range mapCustomToken {
 		allCoinID[index] = key
 		index++
@@ -1164,6 +1165,10 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	for key := range mapCrossShardCustomToken {
 		allCoinID[index] = key
 		index++
+	}
+	fmt.Printf("[ndh] - aaaaaaaaaaaaaaaaaaa CoinID:\n")
+	for _, key := range allCoinID {
+		fmt.Printf("[ndh]  - - - - CoinID: %+v\n", key)
 	}
 	return allCoinID, nil
 }
@@ -1182,14 +1187,14 @@ func (blockchain *BlockChain) BuildInstRewardForDev(epoch uint64, totalReward ma
 func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalRewards []map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	for i, reward := range totalRewards {
-		// if totalRewards[i] > 0 {
-		shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
-		if err != nil {
-			Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
-			return nil, err
+		if len(reward) > 0 {
+			shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
+			if err != nil {
+				Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
+				return nil, err
+			}
+			resInst = append(resInst, shardRewardInst...)
 		}
-		resInst = append(resInst, shardRewardInst...)
-		// }
 	}
 	return resInst, nil
 }
