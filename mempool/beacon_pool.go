@@ -31,6 +31,8 @@ type BeaconPool struct {
 	mtx               sync.RWMutex
 	config            BeaconPoolConfig
 	cache             *lru.Cache
+	RoleInCommittees  bool //Current Role of Node
+	CRoleInCommittees <-chan bool
 }
 
 var beaconPool *BeaconPool = nil
@@ -47,9 +49,11 @@ func init() {
 	}()
 }
 
-func InitBeaconPool() {
+func InitBeaconPool(cRoleInCommitteesBeaconPool chan bool) {
 	//do nothing
-	GetBeaconPool().SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
+	beaconPool := GetBeaconPool()
+	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
+	beaconPool.CRoleInCommittees = cRoleInCommitteesBeaconPool
 }
 
 // get singleton instance of ShardToBeacon pool
@@ -69,7 +73,21 @@ func GetBeaconPool() *BeaconPool {
 	}
 	return beaconPool
 }
-
+func (self *BeaconPool) Start(cQuit chan struct{}){
+	for {
+		select {
+		case role := <-self.CRoleInCommittees:
+			self.mtx.Lock()
+			self.RoleInCommittees = role
+			self.mtx.Unlock()
+		case <-cQuit:
+			self.mtx.Lock()
+			self.RoleInCommittees = false
+			self.mtx.Unlock()
+			return
+		}
+	}
+}
 func (self *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
 	if self.latestValidHeight < lastestBeaconHeight {
 		self.latestValidHeight = lastestBeaconHeight
@@ -248,6 +266,15 @@ func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
 }
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
+	self.mtx.RLock()
+	defer self.mtx.RUnlock()
+	if self.RoleInCommittees {
+		if len(self.validPool) == 0 {
+			if block, ok := self.pendingPool[self.latestValidHeight+1]; ok {
+				return []*blockchain.BeaconBlock{block}
+			}
+		}
+	}
 	return self.validPool
 }
 
