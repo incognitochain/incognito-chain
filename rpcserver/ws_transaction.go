@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 func (wsServer *WsServer) handleSubcribePendingTransaction(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -40,6 +41,7 @@ func (wsServer *WsServer) handleSubcribePendingTransaction(params interface{}, s
 			}
 		case <-closeChan:
 			{
+				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Result: "Unsubcribe Pending Transaction " + txHashTemp}}
 				return
 			}
 		}

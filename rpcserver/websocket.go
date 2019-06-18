@@ -153,7 +153,10 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 				go wsServer.Subcribe(subManager, subRequest, msgType)
 			}
 			if subRequest.Type == 1 {
-				//TODO: unsubcribe
+				go Unsubcribe(subManager, subRequest, msgType)
+				if err != nil {
+				
+				}
 			}
 		} else {
 			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
@@ -220,6 +223,30 @@ func (wsServer *WsServer) Subcribe(subManager *SubcriptionManager, subRequest *S
 			subManager.wsMtx.Unlock()
 		}
 		return
+	}
+}
+func Unsubcribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
+	subManager.subMtx.Lock()
+	defer subManager.subMtx.Unlock()
+	hash, err := common.HashArrayInterface(subRequest.JsonRequest.Params)
+	if err != nil {
+		jsonErr := NewRPCError(ErrUnsubcribe, err)
+		res, err := createMarshalledSubResponse(subRequest, nil, jsonErr)
+		if err != nil {
+			Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
+		}
+		subManager.wsMtx.Lock()
+		if err := subManager.ws.WriteMessage(msgType, res); err != nil {
+			Logger.log.Errorf("Failed to write reply message: %+v", err)
+			subManager.wsMtx.Unlock()
+		}
+		subManager.wsMtx.Unlock()
+	}
+	if paramsList, ok := subManager.subRequestList[subRequest.JsonRequest.Method]; ok {
+		if closeCh, ok := paramsList[hash]; ok {
+			closeCh <- struct{}{}
+			delete(paramsList, hash)
+		}
 	}
 }
 func RemoveSubcription(subManager *SubcriptionManager, subRequest *SubcriptionRequest) error {
