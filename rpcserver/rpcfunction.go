@@ -560,8 +560,16 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
-	// param #2: numblocl
-	estimateFeeCoinPerKb := rpcServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8)
+	// param #2: numbloc
+	// param #3: tokenId
+	tokenId := &common.Hash{}
+	if arrayParams[2] != nil {
+		tokenId, err = common.NewHashFromStr(arrayParams[2].(string))
+	}
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	estimateFeeCoinPerKb := rpcServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, 8, tokenId)
 
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,

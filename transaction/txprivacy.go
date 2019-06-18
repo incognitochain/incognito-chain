@@ -493,6 +493,10 @@ func (tx *Tx) GetTxFee() uint64 {
 	return tx.Fee
 }
 
+func (tx *Tx) GetTxFeeToken() uint64 {
+	return uint64(0)
+}
+
 // GetTxActualSize computes the actual size of a given transaction in kilobyte
 func (tx *Tx) GetTxActualSize() uint64 {
 	if tx.cachedActualSize != nil {
