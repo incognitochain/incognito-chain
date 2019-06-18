@@ -11,10 +11,10 @@ import (
 )
 
 type DevRewardInfo struct {
-	DevReward uint64
+	DevReward map[common.Hash]uint64
 }
 
-func BuildInstForDevReward(reward uint64) ([]string, error) {
+func BuildInstForDevReward(reward map[common.Hash]uint64) ([]string, error) {
 
 	devRewardInfo := DevRewardInfo{
 		DevReward: reward,
