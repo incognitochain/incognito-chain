@@ -31,18 +31,18 @@ type Engine struct {
 }
 
 type EngineConfig struct {
-	BlockChain                 *blockchain.BlockChain
-	ChainParams                *blockchain.Params
-	BlockGen                   *blockchain.BlkTmplGenerator
-	UserKeySet                 *cashec.KeySet
-	NodeMode                   string
-	Server                     serverInterface
-	ShardToBeaconPool          blockchain.ShardToBeaconPool
-	CrossShardPool             map[byte]blockchain.CrossShardPool
-	CRoleInCommitteesMempool   chan int
-	CRoleInCommitteesNetSync   chan int
+	BlockChain                  *blockchain.BlockChain
+	ChainParams                 *blockchain.Params
+	BlockGen                    *blockchain.BlkTmplGenerator
+	UserKeySet                  *cashec.KeySet
+	NodeMode                    string
+	Server                      serverInterface
+	ShardToBeaconPool           blockchain.ShardToBeaconPool
+	CrossShardPool              map[byte]blockchain.CrossShardPool
+	CRoleInCommitteesMempool    chan int
+	CRoleInCommitteesNetSync    chan int
 	CRoleInCommitteesBeaconPool chan bool
-	CRoleInCommitteesShardPool []chan int
+	CRoleInCommitteesShardPool  []chan int
 }
 
 //Init apply configuration to consensus engine
@@ -300,10 +300,18 @@ func (engine *Engine) execShardRole(shardID byte) {
 }
 
 func (engine *Engine) NotifyRole(shardRole int, beaconRole bool) {
-	engine.config.CRoleInCommitteesMempool <- shardRole
-	engine.config.CRoleInCommitteesNetSync <- shardRole
-	for _, ch := range engine.config.CRoleInCommitteesShardPool {
-		ch <- shardRole
-	}
-	engine.config.CRoleInCommitteesBeaconPool <- beaconRole
+	go func() {
+		if shardRole > -1 {
+			engine.config.CRoleInCommitteesMempool <- shardRole
+			engine.config.CRoleInCommitteesNetSync <- shardRole
+			for _, ch := range engine.config.CRoleInCommitteesShardPool {
+				ch <- shardRole
+			}
+		}
+	}()
+	go func() {
+		if beaconRole == true {
+			engine.config.CRoleInCommitteesBeaconPool <- beaconRole
+		}
+	}()
 }

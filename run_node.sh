@@ -23,13 +23,13 @@ go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rq772Lr6t
 fi
 # Beacon
 if [ "$1" == "beacon-0" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8ruLZgaV3ze37GRikKn8QVnrJDJ5C9Dhtou66vyeBfBDSJ6ZGRSg3k4qTwTjm14kgvwuFX3aAqeU64cGiixDh1ip4nvnmW7xHbSuXpwB" --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9423" --externaladdress "127.0.0.1:9423" --norpcauth --rpclisten "127.0.0.1:9340" 
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sDsj4tnDQ7mv5E26hfrHpsjyueJybmyJyKfn2uB7NbVY8pAzQEiLrKURuqihV8EvwrJoMLoz2apTyJWPYTQeEPMtDgnAKXjCKGPmvkb" --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9423" --externaladdress "127.0.0.1:9423" --norpcauth --rpclisten "127.0.0.1:9340"
 fi
 if [ "$1" == "beacon-1" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rwFSJ8rQ2nuQRH28tgsy5GufZhfQUDQsURdjdDG2jtUyE8ScDGjQNivmFkEJi7HeYX259xYv3tfBir9GPskF9tjEHxp4HcVK2w3rmxJ" --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9424" --externaladdress "127.0.0.1:9424" --norpcauth --rpclisten "127.0.0.1:9341"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sFHLcDnYJyndjBYs7UFRQGnzq9MtDcr6xsgQ8wfZZ7kXRFexnGxSA7u1SB7iJXoWXRB2ono5BHzKb1eqzTATEWTA32G82GcGc2krrSm" --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9424" --externaladdress "127.0.0.1:9424" --norpcauth --rpclisten "127.0.0.1:9341"
 fi
 if [ "$1" == "beacon-2" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rnyr3YjfpLN9unAvAM2TGZhurt7gfcrjCkUv11DWf6gN79raFqrazCHArWsWyosZvGdw5s5cuzzYXgpxDj9sEieyKqKCZ97inpaAXUR" --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9425" --externaladdress "127.0.0.1:9425" --norpcauth --rpclisten "127.0.0.1:9342"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sL2pTLHdZuTuZSFAeDq6rzBruAqvyMYwKyav9TKUc1zKTz3ScSbT44MG4GgiN9KxC1234j63fFgBE88pHfE1Wbrz6qbm6vGohhNua2h" --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9425" --externaladdress "127.0.0.1:9425" --norpcauth --rpclisten "127.0.0.1:9342"
 fi
 # FullNode
 if [ "$1" == "full_node" ]; then
