@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"log"
 	"net"
 	"os"
@@ -133,6 +134,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
 	cRoleInCommitteesMempool := make(chan int)
+	cRoleInCommitteesBeaconPool := make(chan bool)
 	cRoleInCommitteesShardPool := make([]chan int,256)
 	for i:=0; i < 256; i++ {
 		cRoleInCommitteesShardPool[i] = make(chan int)
@@ -194,7 +196,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	//init beacon pol
-	mempool.InitBeaconPool()
+	mempool.InitBeaconPool(cRoleInCommitteesBeaconPool)
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, cRoleInCommitteesShardPool)
 	//init cross shard pool
@@ -303,6 +305,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		CRoleInCommitteesMempool: cRoleInCommitteesMempool,
 		CRoleInCommitteesNetSync: cRoleInCommitteesNetSync,
 		CRoleInCommitteesShardPool:cRoleInCommitteesShardPool,
+		CRoleInCommitteesBeaconPool: cRoleInCommitteesBeaconPool,
 	})
 	if err != nil {
 		return err
@@ -409,7 +412,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			shutdownRequestChannel <- struct{}{}
 		}()
 	}
-
+	
+	//Init Metric Tool
+	if cfg.MetricUrl != "" {
+		grafana := metrics.NewGrafana(cfg.MetricUrl)
+		metrics.InitMetricTool(&grafana)
+	}
 	return nil
 }
 
@@ -558,6 +566,10 @@ func (serverObj Server) Start() {
 		} else {
 			serverObj.memPool.IsBlockGenStarted = true
 			serverObj.blockChain.SetIsBlockGenStarted(true)
+			for _, shardPool := range serverObj.shardPool {
+				go shardPool.Start(serverObj.cQuit)
+			}
+			go serverObj.beaconPool.Start(serverObj.cQuit)
 		}
 	}
 
@@ -565,9 +577,6 @@ func (serverObj Server) Start() {
 		serverObj.memPool.LoadOrResetDatabaseMP()
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
-		for _, shardPool := range serverObj.shardPool {
-			go shardPool.Start(serverObj.cQuit)
-		}
 	}
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
