@@ -92,3 +92,17 @@ func TestHashEC(t *testing.T){
 	res = PedCom.G[0].Hash(10000000000)
 	fmt.Printf("Res: %v\n", res.Compress())
 }
+
+func TestMap(t *testing.T){
+	m := map[int][]int{
+		0: {0,2,4,6,8},
+		1: {1,3,5,7},
+	}
+
+	m[2] = append(m[2], 10)
+
+	fmt.Printf("m[false]: %v\n", m[0])
+	fmt.Printf("m[true]: %v\n", m[1])
+	fmt.Printf("m[2]: %v\n", m[2])
+
+}
