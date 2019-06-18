@@ -101,6 +101,7 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 	if atomic.LoadInt32(&wsServer.shutdown) != 0 {
 		return
 	}
+	var wsMtx sync.Mutex
 	for {
 		msgType, msg, err := ws.ReadMessage()
 		if err != nil {
@@ -141,10 +142,13 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 							Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
 							return
 						}
+						wsMtx.Lock()
 						if err := ws.WriteMessage(msgType, res); err != nil {
 							Logger.log.Errorf("Failed to write reply message: %+v", err)
+							wsMtx.Unlock()
 							return
 						}
+						wsMtx.Unlock()
 					}
 					return
 				}
