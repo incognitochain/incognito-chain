@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-
+	
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -83,7 +82,7 @@ type Config struct {
 }
 
 type PubSub struct {
-	mtx sync.Mutex
+	mtx sync.RWMutex
 	NewShardBlockEvent map[int]chan *ShardBlock
 	NewBeaconBlockEvent map[int]chan *BeaconBlock
 }
@@ -120,36 +119,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.PubSub.NewShardBlockEvent = make(map[int]chan *ShardBlock)
 	return nil
 }
-func (blockchain *BlockChain) SubcribeNewShardBlock(ch chan *ShardBlock) int {
-	blockchain.PubSub.mtx.Lock()
-	defer blockchain.PubSub.mtx.Unlock()
-	id := rand.Int()
-	blockchain.PubSub.NewShardBlockEvent[id] = ch
-	return id
-}
-func (blockchain *BlockChain) SubcribeNewBeaconBlock(ch chan *BeaconBlock) int {
-	blockchain.PubSub.mtx.Lock()
-	defer blockchain.PubSub.mtx.Unlock()
-	id := rand.Int()
-	blockchain.PubSub.NewBeaconBlockEvent[id] = ch
-	return id
-}
-func (blockchain *BlockChain) UnsubcribeNewShardBlock(id int) {
-	blockchain.PubSub.mtx.Lock()
-	defer blockchain.PubSub.mtx.Unlock()
-	if ch, ok := blockchain.PubSub.NewShardBlockEvent[id]; ok {
-		close(ch)
-		delete(blockchain.PubSub.NewShardBlockEvent, id)
-	}
-}
-func (blockchain *BlockChain) UnsubcribeNewBeaconBlock(id int) {
-	blockchain.PubSub.mtx.Lock()
-	defer blockchain.PubSub.mtx.Unlock()
-	if ch, ok := blockchain.PubSub.NewBeaconBlockEvent[id]; ok {
-		close(ch)
-		delete(blockchain.PubSub.NewBeaconBlockEvent, id)
-	}
-}
+
 func (blockchain *BlockChain) SetIsBlockGenStarted(value bool) {
 	blockchain.config.IsBlockGenStarted = value
 }
