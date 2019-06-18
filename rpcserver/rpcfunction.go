@@ -563,12 +563,12 @@ func (rpcServer RpcServer) handleEstimateFeeWithEstimator(params interface{}, cl
 	// param #2: numbloc
 	numblock := uint64(8)
 	if len(arrayParams) >= 3 {
-		numblock = arrayParams[2].(uint64)
+		numblock = uint64(arrayParams[2].(float64))
 	}
 
 	// param #3: tokenId
-	tokenId := &common.Hash{}
-	if len(arrayParams) >= 4 {
+	var tokenId *common.Hash
+	if len(arrayParams) >= 4 && arrayParams[3] != nil {
 		tokenId, err = common.NewHashFromStr(arrayParams[3].(string))
 	}
 	if err != nil {
