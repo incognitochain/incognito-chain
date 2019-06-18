@@ -1,7 +1,7 @@
 package rpcserver
 
 type httpHandler func(*HttpServer, interface{}, <-chan struct{}) (interface{}, *RPCError)
-type wsHandler func(*WsServer, interface{}, chan interface{}, chan *RPCError, <-chan struct{})
+type wsHandler func(*WsServer, interface{}, string, chan interface{}, chan *RPCError)
 
 // Commands valid for normal user
 var HttpHandler = map[string]httpHandler{
