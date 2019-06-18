@@ -43,7 +43,7 @@ func pickPubkeyRootInstruction(
 			if instType != beaconType && instType != bridgeType {
 				continue
 			}
-			fmt.Printf("[db] found root inst: %v\n", inst)
+			fmt.Printf("[db] found root inst: %v, beacon block %d\n", inst, block.Header.Height)
 			commPubkeyInst = append(commPubkeyInst, inst)
 		}
 	}
