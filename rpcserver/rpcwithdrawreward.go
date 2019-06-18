@@ -52,9 +52,20 @@ func (rpcServer RpcServer) handleGetRewardAmount(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	rewardAmount, err := (*rpcServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk, common.PRVCoinID)
+
+	allCoinIDs, err := rpcServer.config.BlockChain.GetAllCoinID()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return rewardAmount, nil
+
+	rewardAmounts := make(map[common.Hash]uint64)
+	for _, coinID := range allCoinIDs {
+		amount, err := (*rpcServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk, coinID)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		rewardAmounts[coinID] = amount
+	}
+
+	return rewardAmounts, nil
 }
