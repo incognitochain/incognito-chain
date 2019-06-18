@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
-func (wsServer *WsServer) handleSubcribeNewBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
 	Logger.log.Info("Handle Subcribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -46,3 +46,39 @@ func (wsServer *WsServer) handleSubcribeNewBlock(params interface{}, subcription
 		}
 	}
 }
+
+func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+	Logger.log.Info("Handle Subcribe New Block", params, subcription)
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 0 {
+		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain 1 params"))
+		cResult <- RpcSubResult{Error: err}
+		return
+	}
+	var cBeaconBlock = make(chan *blockchain.BeaconBlock, 10)
+	id := wsServer.config.BlockChain.SubcribeNewBeaconBlock(cBeaconBlock)
+	defer func() {
+		wsServer.config.BlockChain.UnsubcribeNewBeaconBlock(id)
+		close(cResult)
+	}()
+	for {
+		select {
+		case beaconBlock := <-cBeaconBlock:
+			{
+				blockBeaconResult := jsonresult.GetBlocksBeaconResult{}
+				blockBytes, err := json.Marshal(beaconBlock)
+				if err != nil {
+					cResult <- RpcSubResult{Error: NewRPCError(ErrUnexpected, err)}
+					return
+				}
+				blockBeaconResult.Init(beaconBlock, uint64(len(blockBytes)))
+				cResult <- RpcSubResult{Result: blockBeaconResult, Error: nil}
+			}
+		case <-closeChan:
+			{
+				return
+			}
+		}
+	}
+}
+

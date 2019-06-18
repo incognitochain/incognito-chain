@@ -123,5 +123,7 @@ const (
 
 const (
 	testSubcrice     = "testsubcribe"
-	subcribeNewBlock = "subcribenewblock"
+	subcribeNewShardBlock = "subcribenewshardblock"
+	subcribeNewBeaconBlock = "subcribenewbeaconblock"
+	subcribePendingTransaction = "subcribependingtransaction"
 )
