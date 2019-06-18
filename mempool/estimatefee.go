@@ -24,7 +24,7 @@ import (
 const (
 	// estimateFeeDepth is the maximum number of blocks before a transaction
 	// is confirmed that we want to track.
-	estimateFeeDepth = 25
+	estimateFeeDepth = 200
 
 	// estimateFeeBinSize is the number of txs stored in each bin.
 	estimateFeeBinSize = 100
@@ -227,12 +227,16 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	ef.numBlocksRegistered++
 
 	// Randomly order txs in block.
-	transactions := make(map[*transaction.Tx]struct{})
+	transactions := make(map[*common.Hash]bool)
 	for _, t := range block.Body.Transactions {
 		switch t.GetType() {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
-				transactions[t.(*transaction.Tx)] = struct{}{}
+				transactions[t.(*transaction.Tx).Hash()] = true
+			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				transactions[t.(*transaction.TxCustomTokenPrivacy).Hash()] = true
 			}
 		}
 	}
@@ -249,10 +253,9 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 
 	// Go through the txs in the block.
 	for t := range transactions {
-		hash := *t.Hash()
 
 		// Have we observed this tx in the mempool?
-		o, ok := ef.observed[hash]
+		o, ok := ef.observed[*t]
 		if !ok {
 			continue
 		}
@@ -263,7 +266,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 		// This shouldn't happen if the fee estimator works correctly,
 		// but return an error if it does.
 		if o.mined != UnminedHeight {
-			Logger.log.Error("Estimate fee: transaction ", hash.String(), " has already been mined")
+			Logger.log.Error("Estimate fee: transaction ", t.String(), " has already been mined")
 			return errors.New("Transaction has already been mined")
 		}
 
