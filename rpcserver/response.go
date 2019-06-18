@@ -29,7 +29,8 @@ type SubcriptionResult struct {
 //
 // Typically callers will instead want to create the fully marshalled JSON-RPC
 // response to send over the wire with the MarshalResponse function.
-func newResponse(request *JsonRequest, id interface{}, marshalledResult []byte, rpcErr *RPCError) (*JsonResponse, error) {
+func newResponse(request *JsonRequest, marshalledResult []byte, rpcErr *RPCError) (*JsonResponse, error) {
+	id := request.Id
 	if !IsValidIDType(id) {
 		str := fmt.Sprintf("The id of type '%T' is invalid", id)
 		return nil, NewRPCError(ErrInvalidType, errors.New(str))
@@ -87,7 +88,46 @@ func createMarshalledResponse(request *JsonRequest, result interface{}, replyErr
 	if err != nil {
 		return nil, err
 	}
-	response, err := newResponse(request, request.Id, marshalledResult, jsonErr)
+	response, err := newResponse(request, marshalledResult, jsonErr)
+	if err != nil {
+		return nil, err
+	}
+	resultResp, err := json.MarshalIndent(&response, "", "\t")
+	if err != nil {
+		return nil, err
+	}
+	return resultResp, nil
+}
+
+// createMarshalledResponse returns a new marshalled JSON-RPC response given the
+// passed parameters.  It will automatically convert errors that are not of
+// the type *btcjson.RPCError to the appropriate type as needed.
+func createMarshalledSubResponse(subRequest *SubcriptionRequest, result interface{}, replyErr error) ([]byte, error) {
+	var jsonErr *RPCError
+	if replyErr != nil {
+		if jErr, ok := replyErr.(*RPCError); ok {
+			jsonErr = jErr
+		} else {
+			jsonErr = internalRPCError(replyErr.Error(), "")
+		}
+	}
+	// MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
+	// response byte slice that is suitable for transmission to a JSON-RPC client.
+	marshalledResult, err := json.Marshal(result)
+	if err != nil {
+		return nil, err
+	}
+	subResult := SubcriptionResult{
+		Result:       marshalledResult,
+		Subscription: subRequest.Subcription,
+	}
+	// MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
+	// response byte slice that is suitable for transmission to a JSON-RPC client.
+	marshalledSubResult, err := json.Marshal(subResult)
+	if err != nil {
+		return nil, err
+	}
+	response, err := newResponse(&subRequest.JsonRequest, marshalledSubResult, jsonErr)
 	if err != nil {
 		return nil, err
 	}
