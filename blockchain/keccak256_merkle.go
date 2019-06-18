@@ -1,6 +1,10 @@
 package blockchain
 
-import "github.com/incognitochain/incognito-chain/common"
+import (
+	"math"
+
+	"github.com/incognitochain/incognito-chain/common"
+)
 
 // BuildKeccak256MerkleTree creates a merkle tree using Keccak256 hash func.
 // This merkle tree is used for storing all beacon (and bridge) data to relay them to Ethereum.

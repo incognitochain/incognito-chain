@@ -161,8 +161,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	}
 
 	// Instruction merkle root
-	flattenTxInsts := flattenAndConvertStringInst(txInstructions)
-	flattenInsts := flattenAndConvertStringInst(instructions)
+	flattenTxInsts := common.FlattenAndConvertStringInst(txInstructions)
+	flattenInsts := common.FlattenAndConvertStringInst(instructions)
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
 
