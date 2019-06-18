@@ -122,5 +122,6 @@ const (
 )
 
 const (
-	subcribeNewBlock = "subcribe_newblock"
+	testSubcrice     = "testsubcribe"
+	subcribeNewBlock = "subcribenewblock"
 )

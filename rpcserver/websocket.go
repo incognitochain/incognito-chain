@@ -22,6 +22,10 @@ type WsServer struct {
 	// channel
 	cRequestProcessShutdown chan struct{}
 }
+type RpcSubResult struct {
+	Result interface{}
+	Error  *RPCError
+}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -101,6 +105,7 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 	if atomic.LoadInt32(&wsServer.shutdown) != 0 {
 		return
 	}
+	defer ws.Close()
 	var wsMtx sync.Mutex
 	for {
 		msgType, msg, err := ws.ReadMessage()
@@ -109,16 +114,16 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 				Logger.log.Infof("Websocket Connection Closed from client %+v \n", ws.RemoteAddr())
 				return
 			} else {
-				Logger.log.Info("Websocket Connection from client %+v counter error %+v \n", ws.RemoteAddr(),err)
+				Logger.log.Info("Websocket Connection from client %+v counter error %+v \n", ws.RemoteAddr(), err)
 				continue
 			}
 		}
 		subcriptionRequest, jsonErr := parseSubcriptionRequest(msg)
 		if jsonErr == nil {
 			go func(subcriptionRequest *SubcriptionRequest) {
-				var cResult chan interface{}
-				var cError chan *RPCError
-				var result interface{}
+				var cResult chan RpcSubResult
+				var closeChan = make(chan struct{})
+				defer close(closeChan)
 				var jsonErr error
 				request := subcriptionRequest.JsonRequest
 				if request.Id == nil && !(wsServer.config.RPCQuirks && request.Jsonrpc == "") {
@@ -127,17 +132,31 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 				// Attempt to parse the JSON-RPC request into a known concrete command.
 				command := WsHandler[request.Method]
 				if command == nil {
-					result = nil
-					jsonErr = NewRPCError(ErrRPCMethodNotFound, errors.New("Method" + request.Method + "Not found"))
-					Logger.log.Errorf("RPC from client %+v error %+v", ws.RemoteAddr(),jsonErr)
+					jsonErr = NewRPCError(ErrRPCMethodNotFound, errors.New("Method"+request.Method+"Not found"))
+					Logger.log.Errorf("RPC from client %+v error %+v", ws.RemoteAddr(), jsonErr)
+					//Notify user, method not found
+					res, err := createMarshalledSubResponse(subcriptionRequest, nil, jsonErr)
+					if err != nil {
+						Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
+						return
+					}
+					wsMtx.Lock()
+					if err := ws.WriteMessage(msgType, res); err != nil {
+						Logger.log.Errorf("Failed to write reply message: %+v", err)
+						wsMtx.Unlock()
+						return
+					}
+					wsMtx.Unlock()
 					return
 				} else {
-					cResult = make(chan interface{})
-					cError = make(chan *RPCError)
-					go command(wsServer, request.Params, subcriptionRequest.Subcription, cResult, cError)
-					// Marshal the response.
-					for result = range cResult {
-						res, err := createMarshalledResponse(&request, result, jsonErr)
+					cResult = make(chan RpcSubResult)
+					// Run RPC websocket method
+					go command(wsServer, request.Params, subcriptionRequest.Subcription, cResult, closeChan)
+					// when rpc method has result, it will deliver it to this channel
+					for subResult := range cResult {
+						result := subResult.Result
+						jsonErr := subResult.Error
+						res, err := createMarshalledSubResponse(subcriptionRequest, result, jsonErr)
 						if err != nil {
 							Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
 							return

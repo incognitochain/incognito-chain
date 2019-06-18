@@ -3,14 +3,16 @@ package rpcserver
 import (
 	"time"
 )
+
 type Result struct {
-	Result interface{}
+	Result      interface{}
 	Subcription string
 }
-func (wsServer *WsServer) handleSubcribeNewBlock(params interface{}, subcription string, result chan interface{}, error chan *RPCError) {
+
+func (wsServer *WsServer) handleTestSubcribe(params interface{}, subcription string, result chan RpcSubResult, closeChan <-chan struct{}) {
 	Logger.log.Info("Handle Subcribe New Block", params, subcription)
 	for i := 0; i < 10; i++ {
-		result <- Result{Result:i, Subcription:subcription}
+		result <- RpcSubResult{Result: i, Error: nil}
 		<-time.Tick(1 * time.Second)
 	}
 	close(result)
