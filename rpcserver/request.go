@@ -47,9 +47,10 @@ func parseJsonRequest(rawMessage []byte) (*JsonRequest, error) {
 }
 
 type SubcriptionRequest struct {
-	JsonRequest   JsonRequest `json:"Request"`
-	SubcriptionId string      `json:"SubcriptionId"`
+	JsonRequest JsonRequest `json:"Request"`
+	Subcription string      `json:"Subcription"`
 }
+
 func parseSubcriptionRequest(rawMessage []byte) (*SubcriptionRequest, error) {
 	var request SubcriptionRequest
 	err := json.Unmarshal(rawMessage, &request)

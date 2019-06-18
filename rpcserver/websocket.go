@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"errors"
 	"github.com/gorilla/websocket"
 	"net"
 	"net/http"
@@ -103,35 +104,36 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 	for {
 		msgType, msg, err := ws.ReadMessage()
 		if err != nil {
-			return
-		}
-		var jsonErr error
-		var cResult chan interface{}
-		var cError chan *RPCError
-		var result interface{}
-		var subcriptionRequest *SubcriptionRequest
-		subcriptionRequest, jsonErr = parseSubcriptionRequest(msg)
-		if jsonErr == nil {
-			request := subcriptionRequest.JsonRequest
-			if request.Id == nil && !(wsServer.config.RPCQuirks && request.Jsonrpc == "") {
+			if _, ok := err.(*websocket.CloseError); ok {
+				Logger.log.Infof("Websocket Connection Closed from client %+v \n", ws.RemoteAddr())
 				return
+			} else {
+				Logger.log.Info("Websocket Connection from client %+v counter error %+v \n", ws.RemoteAddr(),err)
+				continue
 			}
-			// The parse was at least successful enough to have an Id so
-			// set it for the response.
-			// Setup a close notifier.  Since the connection is hijacked,
-			// the CloseNotifer on the ResponseWriter is not available.
-			closeChan := make(chan struct{}, 1)
-			if jsonErr == nil {
-				// Attempt to parse the JSON-RPC request into a known concrete
-				// command.
+		}
+		subcriptionRequest, jsonErr := parseSubcriptionRequest(msg)
+		if jsonErr == nil {
+			go func(subcriptionRequest *SubcriptionRequest) {
+				var cResult chan interface{}
+				var cError chan *RPCError
+				var result interface{}
+				var jsonErr error
+				request := subcriptionRequest.JsonRequest
+				if request.Id == nil && !(wsServer.config.RPCQuirks && request.Jsonrpc == "") {
+					return
+				}
+				// Attempt to parse the JSON-RPC request into a known concrete command.
 				command := WsHandler[request.Method]
 				if command == nil {
 					result = nil
-					jsonErr = NewRPCError(ErrRPCMethodNotFound, nil)
+					jsonErr = NewRPCError(ErrRPCMethodNotFound, errors.New("Method" + request.Method + "Not found"))
+					Logger.log.Errorf("RPC from client %+v error %+v", ws.RemoteAddr(),jsonErr)
+					return
 				} else {
 					cResult = make(chan interface{})
 					cError = make(chan *RPCError)
-					go command(wsServer, request.Params, cResult, cError, closeChan)
+					go command(wsServer, request.Params, subcriptionRequest.Subcription, cResult, cError)
 					// Marshal the response.
 					for result = range cResult {
 						res, err := createMarshalledResponse(&request, result, jsonErr)
@@ -140,12 +142,15 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 							return
 						}
 						if err := ws.WriteMessage(msgType, res); err != nil {
-							Logger.log.Errorf("Failed to marshal reply: %+v", err)
+							Logger.log.Errorf("Failed to write reply message: %+v", err)
 							return
 						}
 					}
+					return
 				}
-			}
+			}(subcriptionRequest)
+		} else {
+			Logger.log.Errorf("RPC function process with err \n %+v", jsonErr)
 		}
 	}
 }
