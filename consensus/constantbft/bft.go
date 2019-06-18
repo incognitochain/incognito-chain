@@ -13,8 +13,8 @@ type BFTProtocol struct {
 	cBFTMsg   chan wire.Message
 	EngineCfg *EngineConfig
 
-	cQuit    chan struct{}
-	cTimeout chan struct{}
+	cQuit    chan interface{}
+	cTimeout chan interface{}
 
 	phase string
 
@@ -39,7 +39,7 @@ type BFTProtocol struct {
 }
 
 func (protocol *BFTProtocol) Start() (interface{}, error) {
-	protocol.cQuit = make(chan struct{})
+	protocol.cQuit = make(chan interface{})
 	protocol.proposeCh = make(chan wire.Message)
 	protocol.earlyMsgCh = make(chan wire.Message)
 	protocol.phase = BFT_LISTEN
@@ -67,7 +67,7 @@ func (protocol *BFTProtocol) Start() (interface{}, error) {
 	for {
 		protocol.startTime = time.Now()
 		fmt.Println("BFT: New Phase", time.Since(protocol.startTime).Seconds())
-		protocol.cTimeout = make(chan struct{})
+		protocol.cTimeout = make(chan interface{})
 		switch protocol.phase {
 		case BFT_PROPOSE:
 			if err := protocol.phasePropose(); err != nil {
@@ -181,7 +181,10 @@ func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
 
 func (protocol *BFTProtocol) closeTimeoutCh() {
 	select {
-	case <-protocol.cTimeout:
+	case d := <-protocol.cTimeout:
+		if d != nil {
+			close(protocol.cTimeout)
+		}
 		return
 	default:
 		close(protocol.cTimeout)
@@ -190,7 +193,10 @@ func (protocol *BFTProtocol) closeTimeoutCh() {
 
 func (protocol *BFTProtocol) closeProposeCh() {
 	select {
-	case <-protocol.proposeCh:
+	case d := <-protocol.proposeCh:
+		if d != nil {
+			close(protocol.proposeCh)
+		}
 		return
 	default:
 		close(protocol.proposeCh)
@@ -255,6 +261,8 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 func getTimeout(phase string, committeeSize int) time.Duration {
 	assumedDelay := time.Duration(committeeSize) * MaxNetworkDelayTime
 	switch phase {
+	case BFT_PROPOSE:
+		return assumedDelay + ListenTimeout
 	case BFT_LISTEN:
 		return assumedDelay + ListenTimeout
 	case BFT_AGREE:
