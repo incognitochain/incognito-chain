@@ -4,5 +4,5 @@ type ClosedConnectionResult struct {
 	Result string
 }
 type UnsubcribeResult struct {
-	Result string
+	Message string `json:"Message"`
 }

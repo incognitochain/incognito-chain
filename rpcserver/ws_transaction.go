@@ -41,7 +41,7 @@ func (wsServer *WsServer) handleSubcribePendingTransaction(params interface{}, s
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Result: "Unsubcribe Pending Transaction " + txHashTemp}}
+				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe Pending Transaction " + txHashTemp}}
 				return
 			}
 		}

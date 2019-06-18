@@ -228,9 +228,29 @@ func (wsServer *WsServer) Subcribe(subManager *SubcriptionManager, subRequest *S
 func Unsubcribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
 	subManager.subMtx.Lock()
 	defer subManager.subMtx.Unlock()
+	var done = true
+	var jsonErr error
 	hash, err := common.HashArrayInterface(subRequest.JsonRequest.Params)
 	if err != nil {
-		jsonErr := NewRPCError(ErrUnsubcribe, err)
+		done = false
+	}
+	if paramsList, ok := subManager.subRequestList[subRequest.JsonRequest.Method]; ok {
+		if closeCh, ok := paramsList[hash]; ok {
+			closeCh <- struct{}{}
+			delete(paramsList, hash)
+			return
+		} else {
+			done = false
+		}
+	} else {
+		done = false
+	}
+	if !done {
+		if err != nil {
+			jsonErr = NewRPCError(ErrUnsubcribe, err)
+		} else {
+			jsonErr = NewRPCError(ErrUnsubcribe, errors.New("No Subcription Found"))
+		}
 		res, err := createMarshalledSubResponse(subRequest, nil, jsonErr)
 		if err != nil {
 			Logger.log.Errorf("Failed to marshal reply: %s", err.Error())
@@ -241,12 +261,6 @@ func Unsubcribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, 
 			subManager.wsMtx.Unlock()
 		}
 		subManager.wsMtx.Unlock()
-	}
-	if paramsList, ok := subManager.subRequestList[subRequest.JsonRequest.Method]; ok {
-		if closeCh, ok := paramsList[hash]; ok {
-			closeCh <- struct{}{}
-			delete(paramsList, hash)
-		}
 	}
 }
 func RemoveSubcription(subManager *SubcriptionManager, subRequest *SubcriptionRequest) error {
