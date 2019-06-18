@@ -75,6 +75,16 @@ func (engine *Engine) Start() error {
 				return
 			default:
 				if !engine.config.BlockChain.Synker.IsLatest(false, 0) {
+					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, 0)
+					if userRole == common.SHARD_ROLE {
+						go engine.NotifyShardRole(int(shardID))
+						go engine.NotifyBeaconRole(false)
+					} else {
+						if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+							go engine.NotifyBeaconRole(true)
+							go engine.NotifyShardRole(-1)
+						}
+					}
 					time.Sleep(time.Millisecond * 100)
 				} else {
 					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, engine.currentBFTRound)
