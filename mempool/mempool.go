@@ -141,9 +141,9 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
 	txDesc := &TxDesc{
 		Desc: metadata.TxDesc{
-			Tx:     tx,
-			Height: height,
-			Fee:    fee,
+			Tx:       tx,
+			Height:   height,
+			Fee:      fee,
 			FeeToken: feeToken,
 		},
 		StartTime:       time.Now(),
@@ -176,12 +176,20 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
-	if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxCustomTokenPrivacyType {
-		if tp.config.FeeEstimator != nil {
-			shardID := common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
-			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
-				temp.ObserveTransaction(txD)
+	if tp.config.FeeEstimator != nil {
+		var shardID byte
+		switch tx.GetType() {
+		case common.TxNormalType:
+			{
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
 			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxCustomTokenPrivacy).PubKeyLastByteSender)
+			}
+		}
+		if temp, ok := tp.config.FeeEstimator[shardID]; ok {
+			temp.ObserveTransaction(txD)
 		}
 	}
 
