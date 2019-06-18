@@ -24,7 +24,7 @@ import (
 const (
 	// estimateFeeDepth is the maximum number of blocks before a transaction
 	// is confirmed that we want to track.
-	estimateFeeDepth = 25
+	estimateFeeDepth = 200
 
 	// estimateFeeBinSize is the number of txs stored in each bin.
 	estimateFeeBinSize = 100
@@ -41,8 +41,6 @@ const (
 	// number of blocks which must be observed by the fee estimator before
 	// it will provide fee estimations.
 	DefaultEstimateFeeMinRegisteredBlocks = 3
-
-	bytePerKb = 1000
 )
 
 var (
@@ -227,12 +225,16 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	ef.numBlocksRegistered++
 
 	// Randomly order txs in block.
-	transactions := make(map[*transaction.Tx]struct{})
+	transactions := make(map[*common.Hash]bool)
 	for _, t := range block.Body.Transactions {
 		switch t.GetType() {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
-				transactions[t.(*transaction.Tx)] = struct{}{}
+				transactions[t.(*transaction.Tx).Hash()] = true
+			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				transactions[t.(*transaction.TxCustomTokenPrivacy).Hash()] = true
 			}
 		}
 	}
@@ -249,10 +251,9 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 
 	// Go through the txs in the block.
 	for t := range transactions {
-		hash := *t.Hash()
 
 		// Have we observed this tx in the mempool?
-		o, ok := ef.observed[hash]
+		o, ok := ef.observed[*t]
 		if !ok {
 			continue
 		}
@@ -263,7 +264,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 		// This shouldn't happen if the fee estimator works correctly,
 		// but return an error if it does.
 		if o.mined != UnminedHeight {
-			Logger.log.Error("Estimate fee: transaction ", hash.String(), " has already been mined")
+			Logger.log.Error("Estimate fee: transaction ", t.String(), " has already been mined")
 			return errors.New("Transaction has already been mined")
 		}
 
@@ -555,7 +556,7 @@ func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet 
 		for _, o := range b {
 			set.feeRate[i] = o.feeRate
 
-			if tokenID != nil{
+			if tokenID != nil {
 				for key, value := range o.feeRateForToken {
 					if key.IsEqual(tokenID) {
 						set.feeRateForToken[key] = append(set.feeRateForToken[key], value)
@@ -569,7 +570,8 @@ func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet 
 
 	if tokenID == nil {
 		sort.Sort(set)
-	} else {}
+	} else {
+	}
 
 	return set
 }
@@ -582,7 +584,7 @@ func (ef *FeeEstimator) estimates(tokenID *common.Hash) []CoinPerKilobyte {
 	estimates := make([]CoinPerKilobyte, estimateFeeDepth)
 	for i := 0; i < estimateFeeDepth; i++ {
 		if tokenID != nil {
-			estimates[i] = set.estimateFeeForToken(i + 1, tokenID)
+			estimates[i] = set.estimateFeeForToken(i+1, tokenID)
 		} else {
 			estimates[i] = set.estimateFee(i + 1)
 		}
