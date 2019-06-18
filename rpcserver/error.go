@@ -93,6 +93,7 @@ func NewRPCError(key int, err error) *RPCError {
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 	}
 }
+
 // internalRPCError is a convenience function to convert an internal error to
 // an RPC error with the appropriate Code set.  It also logs the error to the
 // RPC server subsystem since internal errors really should not occur.  The

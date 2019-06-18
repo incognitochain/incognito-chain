@@ -19,8 +19,8 @@ type JsonResponse struct {
 	Jsonrpc string          `json:"Jsonrpc"`
 }
 type SubcriptionResult struct {
-	SubscriptionID string          `json:"SubscriptionID"`
-	Result         json.RawMessage `json:"Result"`
+	Subscription string          `json:"Subscription"`
+	Result       json.RawMessage `json:"Result"`
 }
 
 // NewResponse returns a new JSON-RPC response object given the provided id,
