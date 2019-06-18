@@ -157,7 +157,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	}
 	epochEndDevReward := DurationHalfLifeRewardForDev / common.EPOCH
 	forDev := epochEndDevReward >= epoch
-	totalRewards := []map[common.Hash]uint64{}
+	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForDev := map[common.Hash]uint64{}
 
@@ -370,12 +370,20 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:
+			fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
 				fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
-			acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] += blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = val + blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			} else {
+				if acceptedBlkRewardInfo.TxsFee == nil {
+					acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
+				}
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key)
 				if err != nil {
