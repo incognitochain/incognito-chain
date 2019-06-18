@@ -41,6 +41,7 @@ type EngineConfig struct {
 	CrossShardPool             map[byte]blockchain.CrossShardPool
 	CRoleInCommitteesMempool   chan int
 	CRoleInCommitteesNetSync   chan int
+	CRoleInCommitteesBeaconPool chan bool
 	CRoleInCommitteesShardPool []chan int
 }
 
@@ -154,9 +155,9 @@ func (engine *Engine) execBeaconRole() {
 		err    error
 		resBlk interface{}
 	)
-	go engine.NotifyRole(-1)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
+		go engine.NotifyRole(-1, true)
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
@@ -167,6 +168,7 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	case common.VALIDATOR_ROLE:
+		go engine.NotifyRole(-1, true)
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
 		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
@@ -177,6 +179,7 @@ func (engine *Engine) execBeaconRole() {
 			// engine.prevRoundUserLayer = engine.userLayer
 		}
 	default:
+		go engine.NotifyRole(-1, false)
 		err = errors.New("Not your turn yet")
 	}
 
@@ -230,9 +233,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 	)
 	roundRole := engine.config.BlockChain.BestState.Shard[shardID].GetPubkeyRole(engine.userPk, bftProtocol.RoundData.Round)
 	Logger.log.Infof("My shard role %+v, ShardID %+v \n", roundRole, shardID)
-	go func() {
-		engine.NotifyRole(int(shardID))
-	}()
+	go engine.NotifyRole(int(shardID), false)
 	switch roundRole {
 	case common.PROPOSER_ROLE:
 		bftProtocol.RoundData.IsProposer = true
@@ -300,10 +301,11 @@ func (engine *Engine) execShardRole(shardID byte) {
 	}
 }
 
-func (engine *Engine) NotifyRole(role int) {
-	engine.config.CRoleInCommitteesMempool <- role
-	engine.config.CRoleInCommitteesNetSync <- role
+func (engine *Engine) NotifyRole(shardRole int, beaconRole bool) {
+	engine.config.CRoleInCommitteesMempool <- shardRole
+	engine.config.CRoleInCommitteesNetSync <- shardRole
 	for _, ch := range engine.config.CRoleInCommitteesShardPool {
-		ch <- role
+		ch <- shardRole
 	}
+	engine.config.CRoleInCommitteesBeaconPool <- beaconRole
 }

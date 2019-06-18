@@ -74,29 +74,28 @@ const (
 	createAndSendStakingTransaction = "createandsendstakingtransaction"
 
 	//===========For Testing and Benchmark==============
-	getAndSendTxsFromFile = "getandsendtxsfromfile"
+	getAndSendTxsFromFile   = "getandsendtxsfromfile"
 	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
-	unlockMempool         = "unlockmempool"
+	unlockMempool           = "unlockmempool"
 	//==================================================
 
 	getShardBestState  = "getshardbeststate"
 	getBeaconBestState = "getbeaconbeststate"
 
 	// Wallet rpc cmd
-	listAccounts                       = "listaccounts"
-	getAccount                         = "getaccount"
-	getAddressesByAccount              = "getaddressesbyaccount"
-	getAccountAddress                  = "getaccountaddress"
-	dumpPrivkey                        = "dumpprivkey"
-	importAccount                      = "importaccount"
-	removeAccount                      = "removeaccount"
-	listUnspentOutputCoins             = "listunspentoutputcoins"
-	getBalance                         = "getbalance"
-	getBalanceByPrivatekey             = "getbalancebyprivatekey"
-	getBalanceByPaymentAddress         = "getbalancebypaymentaddress"
-	getReceivedByAccount               = "getreceivedbyaccount"
-	setTxFee                           = "settxfee"
-	getRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
+	listAccounts               = "listaccounts"
+	getAccount                 = "getaccount"
+	getAddressesByAccount      = "getaddressesbyaccount"
+	getAccountAddress          = "getaccountaddress"
+	dumpPrivkey                = "dumpprivkey"
+	importAccount              = "importaccount"
+	removeAccount              = "removeaccount"
+	listUnspentOutputCoins     = "listunspentoutputcoins"
+	getBalance                 = "getbalance"
+	getBalanceByPrivatekey     = "getbalancebyprivatekey"
+	getBalanceByPaymentAddress = "getbalancebypaymentaddress"
+	getReceivedByAccount       = "getreceivedbyaccount"
+	setTxFee                   = "settxfee"
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
