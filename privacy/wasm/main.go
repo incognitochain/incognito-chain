@@ -29,7 +29,7 @@ func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
 	bytes := []byte(args[0].String())
 	println("Bytes: %v\n", bytes)
 
-	wit := zkp.AggregatedRangeWitness{}
+	wit := new(zkp.AggregatedRangeWitness)
 
 	println("Wit: ", wit)
 
@@ -58,7 +58,7 @@ func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
 
 func main() {
 	c := make(chan struct{}, 0)
-	println("Hello WASM")
+	//println("Hello WASM")
 	RegisterCallback("add", add)
 	RegisterCallback("sayHello", sayHello)
 	RegisterCallback("aggregatedRangeProve", aggregatedRangeProve)
