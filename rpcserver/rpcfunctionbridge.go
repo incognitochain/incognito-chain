@@ -30,25 +30,33 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	beaconInst, beaconInstId := findCommSwapInst(shardInsts)
-	if beaconInstId < 0 {
+	bridgeInst, bridgeInstId := findCommSwapInst(shardInsts)
+	if bridgeInstId < 0 {
 		return nil, nil
 	}
-	beaconProof := buildKeccak256MerkleProof(shardInsts, beaconInstId)
 
-	flattenBeaconInst := []byte{}
-	for _, part := range beaconInst {
-		flattenBeaconInst = append(flattenBeaconInst, []byte(part)...)
+	// Build instruction merkle proof for bridge block
+	bridgeProof := buildKeccak256MerkleProof(shardInsts, bridgeInstId)
+
+	flattenbridgeInst := []byte{}
+	for _, part := range bridgeInst {
+		flattenbridgeInst = append(flattenbridgeInst, []byte(part)...)
 	}
-
-	// Build instruction merkle proof for beacon block
-	beaconInstRoot := hex.EncodeToString(shardBlock.Header.InstructionMerkleRoot[:])
+	bridgeInstRoot := hex.EncodeToString(shardBlock.Header.InstructionMerkleRoot[:])
+	bridgeMetaHash := shardBlock.Header.MetaHash()
+	bridgeBlkHash := shardBlock.Header.Hash()
 
 	return jsonresult.GetBeaconSwapProof{
-		Instruction:          hex.EncodeToString(flattenBeaconInst),
-		BeaconInstPath:       beaconProof.getPath(),
-		BeaconInstPathIsLeft: beaconProof.left,
-		BeaconInstRoot:       beaconInstRoot,
+		Instruction:            hex.EncodeToString(flattenbridgeInst),
+		BridgeInstPath:         bridgeProof.getPath(),
+		BridgeInstPathIsLeft:   bridgeProof.left,
+		BridgeInstRoot:         bridgeInstRoot,
+		BridgeBlkData:          hex.EncodeToString(bridgeMetaHash[:]),
+		BridgeBlkHash:          hex.EncodeToString(bridgeBlkHash[:]),
+		BridgeSignerPubkeys:    nil,
+		BridgeSignerSig:        shardBlock.Header.AggregatedSig,
+		BridgeSignerPaths:      nil,
+		BridgeSignerPathIsLeft: nil,
 	}, nil
 
 	// Get the corresponding beacon block with the swap instruction
