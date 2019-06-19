@@ -57,8 +57,7 @@ func GetKeccak256MerkleRoot(data [][]byte) []byte {
 	return merkles[len(merkles)-1]
 }
 
-func GetKeccak256MerkleProof(data [][]byte, id int) ([][]byte, []bool) {
-	merkles := BuildKeccak256MerkleTree(data)
+func GetKeccak256MerkleProofFromTree(merkles [][]byte, id int) ([][]byte, []bool) {
 	path := [][]byte{}
 	left := []bool{}
 	height := uint(math.Log2(float64(len(merkles))))
