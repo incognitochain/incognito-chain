@@ -23,11 +23,12 @@ type CountResult struct {
 	Success int
 	Fail    int
 }
-func (rpcServer RpcServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	rpcServer.config.TxMemPool.SendTransactionToBlockGen()
+
+func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	httpServer.config.TxMemPool.SendTransactionToBlockGen()
 	return nil, nil
 }
-func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	Logger.log.Critical(arrayParams)
 	shardIDParam := int(arrayParams[0].(float64))
@@ -39,13 +40,13 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	filename := ""
 	success := 0
 	fail := 0
-	switch(txType) {
+	switch txType {
 	case "privacy3000_1":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-3000.1.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-privacy-3000.1.json"
 	case "privacy3000_2":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-3000.2.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-privacy-3000.2.json"
 	case "privacy3000_3":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-privacy-3000.3.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-privacy-3000.3.json"
 	case "noprivacy9000":
 		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-9000.json"
 	case "noprivacy10000_2":
@@ -95,7 +96,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					continue
 				}
 				if !isSent {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 					if err != nil {
 						fail++
 						continue
@@ -104,8 +105,8 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 						continue
 					}
 				} else {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-					//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
 						continue
@@ -116,7 +117,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 						continue
 					}
 					txMsg.(*wire.MessageTxToken).Transaction = &tx
-					err = rpcServer.config.Server.PushMessageToAll(txMsg)
+					err = httpServer.config.Server.PushMessageToAll(txMsg)
 					if err != nil {
 						fail++
 						continue
@@ -136,7 +137,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					continue
 				}
 				if !isSent {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 					if err != nil {
 						fail++
 						continue
@@ -145,8 +146,8 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 						continue
 					}
 				} else {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-					//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
 						continue
@@ -157,7 +158,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 						continue
 					}
 					txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
-					err = rpcServer.config.Server.PushMessageToAll(txMsg)
+					err = httpServer.config.Server.PushMessageToAll(txMsg)
 					if err != nil {
 						fail++
 						continue
@@ -176,7 +177,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 				continue
 			}
 			if !isSent {
-				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 				if err != nil {
 					fail++
 					continue
@@ -185,8 +186,8 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					continue
 				}
 			} else {
-				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-				//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++
 					continue
@@ -197,7 +198,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 					continue
 				}
 				txMsg.(*wire.MessageTx).Transaction = &tx
-				err = rpcServer.config.Server.PushMessageToAll(txMsg)
+				err = httpServer.config.Server.PushMessageToAll(txMsg)
 				if err != nil {
 					fail++
 					continue
@@ -212,7 +213,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFile(params interface{}, close
 	return CountResult{Success: success, Fail: fail}, nil
 }
 
-func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	Logger.log.Critical(arrayParams)
 	shardIDParam := int(arrayParams[0].(float64))
@@ -227,20 +228,20 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 	success := 0
 	fail := 0
 	count := 0
-	switch(txType) {
+	switch txType {
 	case "noprivacy":
-		filename = "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-9000.json"
+		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-9000.json"
 		filenames = append(filenames, filename)
-		for i := 2 ;i <= 3; i++ {
-			filename := "txs-shard" + fmt.Sprintf("%d",shardIDParam) + "-noprivacy-10000."+fmt.Sprintf("%d",i)+".json"
+		for i := 2; i <= 3; i++ {
+			filename := "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-noprivacy-10000." + fmt.Sprintf("%d", i) + ".json"
 			filenames = append(filenames, filename)
 		}
 	default:
-		return CountResult{}, NewRPCError(ErrUnexpected,errors.New("Can't find file"))
+		return CountResult{}, NewRPCError(ErrUnexpected, errors.New("Can't find file"))
 	}
 	for _, filename := range filenames {
 		Logger.log.Critical("Getting Transactions from file: ", datadir+filename)
-		file, err := ioutil.ReadFile(datadir+filename)
+		file, err := ioutil.ReadFile(datadir + filename)
 		if err != nil {
 			Logger.log.Error("Fail to get Transactions from file: ", err)
 			continue
@@ -250,7 +251,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 		Logger.log.Criticalf("Get %+v Transactions from file %+v \n", len(data.Txs), filename)
 		Txs = append(Txs, data.Txs...)
 	}
-	intervalDuration := time.Duration(interval)*time.Millisecond
+	intervalDuration := time.Duration(interval) * time.Millisecond
 	for index, txBase58Data := range Txs {
 		<-time.Tick(intervalDuration)
 		Logger.log.Critical("Number of Transaction: ", index)
@@ -260,7 +261,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 			fail++
 			continue
 		}
-		switch(txType) {
+		switch txType {
 		case "cstoken":
 			{
 				var tx transaction.TxCustomToken
@@ -270,7 +271,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 					continue
 				}
 				if !isSent {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 					if err != nil {
 						fail++
 						continue
@@ -279,8 +280,8 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 						continue
 					}
 				} else {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-					//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
 						continue
@@ -291,7 +292,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 						continue
 					}
 					txMsg.(*wire.MessageTxToken).Transaction = &tx
-					err = rpcServer.config.Server.PushMessageToAll(txMsg)
+					err = httpServer.config.Server.PushMessageToAll(txMsg)
 					if err != nil {
 						fail++
 						continue
@@ -311,7 +312,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 					continue
 				}
 				if !isSent {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 					if err != nil {
 						fail++
 						continue
@@ -320,8 +321,8 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 						continue
 					}
 				} else {
-					_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-					//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+					_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+					//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 					if err != nil {
 						fail++
 						continue
@@ -332,7 +333,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 						continue
 					}
 					txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
-					err = rpcServer.config.Server.PushMessageToAll(txMsg)
+					err = httpServer.config.Server.PushMessageToAll(txMsg)
 					if err != nil {
 						fail++
 						continue
@@ -351,7 +352,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 				continue
 			}
 			if !isSent {
-				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 				if err != nil {
 					fail++
 					continue
@@ -360,8 +361,8 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 					continue
 				}
 			} else {
-				_, _, err = rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
-				//rpcServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
+				_, _, err = httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+				//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 				if err != nil {
 					fail++
 					continue
@@ -372,7 +373,7 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 					continue
 				}
 				txMsg.(*wire.MessageTx).Transaction = &tx
-				err = rpcServer.config.Server.PushMessageToAll(txMsg)
+				err = httpServer.config.Server.PushMessageToAll(txMsg)
 				if err != nil {
 					fail++
 					continue
@@ -384,6 +385,5 @@ func (rpcServer RpcServer) handleGetAndSendTxsFromFileV2(params interface{}, clo
 			success++
 		}
 	}
-	return CountResult{Success: success, Fail:fail}, nil
+	return CountResult{Success: success, Fail: fail}, nil
 }
-

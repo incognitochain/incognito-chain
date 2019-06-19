@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (rpcServer RpcServer) handleCreateRawWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	//VoteProposal - Step 2: Create Raw vote proposal transaction
 	// params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
@@ -22,25 +22,25 @@ func (rpcServer RpcServer) handleCreateRawWithDrawTransaction(params interface{}
 	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
 	arrayParams[4] = interface{}(param)
-	return rpcServer.createRawTxWithMetadata(
+	return httpServer.createRawTxWithMetadata(
 		arrayParams,
 		closeChan,
 		metadata.NewWithDrawRewardRequestFromRPC,
 	)
 }
 
-func (rpcServer RpcServer) handleCreateAndSendWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	//VoteProposal - Step 1: Client call rpc function to create vote proposal transaction
-	return rpcServer.createAndSendTxWithMetadata(
+	return httpServer.createAndSendTxWithMetadata(
 		params,
 		closeChan,
-		RpcServer.handleCreateRawWithDrawTransaction,
-		RpcServer.handleSendRawTransaction,
+		(*HttpServer).handleCreateRawWithDrawTransaction,
+		(*HttpServer).handleSendRawTransaction,
 	)
 }
 
 // Get the reward amount of a private key
-func (rpcServer RpcServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
@@ -51,7 +51,7 @@ func (rpcServer RpcServer) handleGetRewardAmount(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	rewardAmount, err := (*rpcServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk)
+	rewardAmount, err := (*httpServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
