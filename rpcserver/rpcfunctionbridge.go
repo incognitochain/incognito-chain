@@ -23,20 +23,20 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	db := *rpcServer.config.Database
 
 	// Get proof of instruction on bridge
-	beaconInstProof, beaconBlocks, err := getBeaconSwapProofOnBridge(height-1, bc, db)
+	bridgeInstProof, beaconBlocks, err := getBeaconSwapProofOnBridge(height-1, bc, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	// Get proof of instruction on beacon
-	bridgeInstProof, err := getBeaconSwapProofOnBeacon(beaconInstProof.inst, beaconBlocks, db)
+	beaconInstProof, err := getBeaconSwapProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	// Save instruction as a single slice of byte
 	flattenBridgeInst := []byte{}
-	for _, part := range beaconInstProof.inst {
+	for _, part := range bridgeInstProof.inst {
 		flattenBridgeInst = append(flattenBridgeInst, []byte(part)...)
 	}
 
@@ -292,12 +292,34 @@ func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 // buildInstProof receives a list of instructions (as string) and returns a merkle proof for one instruction in the list
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
 	flattenInsts := common.FlattenAndConvertStringInst(insts)
+	fmt.Printf("[db] insts: %v\n", insts)
+	fmt.Printf("[db] flattenInsts: %x\n", flattenInsts)
 	return buildProof(flattenInsts, id)
 }
 
 // getBeaconSignerPubkeys finds the pubkeys of all signers of a beacon block
-func getBeaconSignerPubkeys(shardBlock *blockchain.BeaconBlock, db database.DatabaseInterface) ([][]byte, []int, error) {
-	return nil, nil, nil
+func getBeaconSignerPubkeys(beaconBlock *blockchain.BeaconBlock, db database.DatabaseInterface) ([][]byte, []int, error) {
+	commsRaw, err := db.FetchBeaconCommitteeByEpoch(beaconBlock.Header.Epoch)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	comm := []string{}
+	err = json.Unmarshal(commsRaw, &comm)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	signerIdxs := beaconBlock.ValidatorsIdx[1] // List of signers
+	pubkeys := make([][]byte, len(signerIdxs))
+	for i, signerID := range signerIdxs {
+		pubkey, _, err := base58.Base58Check{}.Decode(comm[signerID])
+		if err != nil {
+			return nil, nil, err
+		}
+		pubkeys[i] = pubkey
+	}
+	return pubkeys, signerIdxs, nil
 }
 
 // getBridgeSignerPubkeys finds the pubkeys of all signers of a shard block
