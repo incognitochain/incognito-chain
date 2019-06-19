@@ -155,6 +155,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
 		return err
 	}
+	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
+		return err
+	}
 	// }
 	// shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
 	// if err != nil {
