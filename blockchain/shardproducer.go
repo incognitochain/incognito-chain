@@ -102,10 +102,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)
 	}
-	err = blockgen.chain.BuildResponseTransactionFromTxsWithMetadata(&block.Body, &producerKeySet.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
+
 	// rewardInfoInstructions, err := block.getBlockRewardInst(prevBlock.Header.Height + 1)
 	// if err != nil {
 	// 	Logger.log.Error(err)
@@ -119,6 +116,11 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	block.Body.Transactions = append(block.Body.Transactions, txsToAddFromBlock...)
 	if err != nil {
 		Logger.log.Error(err, reflect.TypeOf(err), reflect.ValueOf(err))
+		return nil, err
+	}
+	err = blockgen.chain.BuildResponseTransactionFromTxsWithMetadata(&block.Body, &producerKeySet.PrivateKey)
+	if err != nil {
+		fmt.Printf("[ndh] BuildResponseTransactionFromTxsWithMetadata err %+v \n", err)
 		return nil, err
 	}
 	//TODO calculate fee for another tx type
