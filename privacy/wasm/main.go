@@ -3,10 +3,15 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"math/big"
+	"time"
+
+	//"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	//"math/big"
 	"strconv"
 	"syscall/js"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
-	"time"
 )
 
 func add(this js.Value, i []js.Value) (interface{}, error) {
@@ -25,17 +30,38 @@ func sayHello(this js.Value, i []js.Value) (interface{}, error) {
 	return i[0].String(), nil
 }
 
+func randomScalar (this js.Value, i []js.Value) (interface{}, error) {
+	res :=  privacy.RandBytes(1)
+	return res, nil
+}
+
 func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
+	println("args:", args[0].String())
 	bytes := []byte(args[0].String())
-	println("Bytes: %v\n", bytes)
+	println("Bytes:", bytes)
+	temp := make(map[string] []string)
+
+	err := json.Unmarshal(bytes, &temp)
+	if err != nil {
+		println(err)
+		return nil, nil
+	}
+	println("asfasf", temp["values"][0])
+
+	if len(temp["values"]) != len(temp["rands"]) {
+		println("Wrong args")
+	}
+
+	values := make([]*big.Int, len(temp["values"]))
+	rands := make([]*big.Int, len(temp["values"]))
+
+	for i:=0; i < len(temp["values"]); i++{
+		values[i], _ = new(big.Int).SetString(temp["values"][i], 10)
+		rands[i], _ = new(big.Int).SetString(temp["rands"][i], 10)
+	}
 
 	wit := new(zkp.AggregatedRangeWitness)
-
-	println("Wit: ", wit)
-
-	json.Unmarshal(bytes, &wit)
-
-	println("wit after unmarshal : %v\n", wit)
+	wit.Set(values, rands)
 
 	start := time.Now()
 	proof, err := wit.Prove()
@@ -45,22 +71,26 @@ func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
 	end := time.Since(start)
 	println("Aggregated range proving time: %v\n", end)
 
-	//tln("Proof json marshal: %v\n", proofMarshal)proofMarshal, _ :=  json.Marshal(proof)
-	//	//
-	//	//prin
+	proofBytes := proof.Bytes()
+	println("Proof bytes: ", proofBytes)
 
-	proofBase64 := base64.StdEncoding.EncodeToString(proof.Bytes())
+	res := proof.Verify()
+	println("Res Verify: ", res)
 
+
+	proofBase64 := base64.StdEncoding.EncodeToString(proofBytes)
 	println("proofBase64: %v\n", proofBase64)
 
 	return proofBase64, nil
+	//return nil, nil
 }
 
 func main() {
 	c := make(chan struct{}, 0)
-	//println("Hello WASM")
+	println("Hello WASM")
 	RegisterCallback("add", add)
 	RegisterCallback("sayHello", sayHello)
+	RegisterCallback("randomScalar", randomScalar)
 	RegisterCallback("aggregatedRangeProve", aggregatedRangeProve)
 	<-c
 }
