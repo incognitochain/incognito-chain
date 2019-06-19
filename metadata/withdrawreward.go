@@ -13,7 +13,7 @@ import (
 type WithDrawRewardRequest struct {
 	privacy.PaymentAddress
 	MetadataBase
-	TokenIDs []common.Hash
+	TokenID common.Hash
 }
 
 func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, error) {
@@ -21,7 +21,12 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		Type: WithDrawRewardRequestMeta,
 	}
 	requesterPaymentStr := data["PaymentAddress"].(string)
-	requestTokenIDs := data["TokenIDs"].([]common.Hash)
+	requestTokenID := data["TokenID"].(string)
+	tokenID, err := common.Hash{}.NewHashFromStr(requestTokenID)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("[ndh] - - request %+v PRV %+v\n", *tokenID, common.PRVCoinID)
 	for key, value := range data {
 		fmt.Printf("[ndh]- - - - Key %+v; value %+v\n", key, value)
 	}
@@ -32,7 +37,7 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	return &WithDrawRewardRequest{
 		MetadataBase:   metadataBase,
 		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
-		TokenIDs:       requestTokenIDs,
+		TokenID:        *tokenID,
 	}, nil
 }
 
@@ -66,15 +71,15 @@ func (withDrawRewardRequest *WithDrawRewardRequest) ValidateTxWithBlockChain(txr
 		return false, errors.New("This transaction is not private")
 	}
 	isPositive := false
-	for _, tokenID := range withDrawRewardRequest.TokenIDs {
-		value, err := db.GetCommitteeReward(withDrawRewardRequest.PaymentAddress.Pk, tokenID)
-		if err != nil {
-			return false, err
-		}
-		if value > 0 {
-			isPositive = true
-		}
+	// for _, tokenID := range withDrawRewardRequest.TokenIDs {
+	value, err := db.GetCommitteeReward(withDrawRewardRequest.PaymentAddress.Pk, withDrawRewardRequest.TokenID)
+	if err != nil {
+		return false, err
 	}
+	if value > 0 {
+		isPositive = true
+	}
+	// }
 	if !isPositive {
 		return false, errors.New("Not enough reward")
 	}

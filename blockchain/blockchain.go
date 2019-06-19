@@ -1200,7 +1200,6 @@ func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalReward
 }
 
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBody *ShardBody, blkProducerPrivateKey *privacy.PrivateKey) error {
-
 	txRequestTable := map[string]metadata.Transaction{}
 	txsRes := []metadata.Transaction{}
 	for _, tx := range blkBody.Transactions {
@@ -1210,13 +1209,16 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 			txRequestTable[requester] = tx
 		}
 	}
+	fmt.Printf("[ndh] - - lenght tx request = %+v\n", len(txRequestTable))
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
-			Logger.log.Errorf("buildWithDrawTransactionResponse for tx %+v, error: %+v\n", value, err)
+			fmt.Printf("[ndh] - buildWithDrawTransactionResponse for tx %+v, error: %+v\n", value, err)
 			return err
+		} else {
+			fmt.Printf("[ndh] - buildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
-		txsRes = append(txsRes, txRes...)
+		txsRes = append(txsRes, txRes)
 	}
 	blkBody.Transactions = append(blkBody.Transactions, txsRes...)
 
@@ -1232,32 +1234,88 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			txRequestTable[requester] = tx
 		}
 	}
+	for key := range txRequestTable {
+		fmt.Printf("[ndh] - requester: %+v\n", key)
+	}
+	numberOfTxRequest := len(txRequestTable)
 	db := blockchain.config.DataBase
 	numberOfTxResponse := 0
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
+			fmt.Printf("[ndh] - response %+v\n", tx)
 			requesters, amounts := tx.GetReceivers()
-			// TODO: Check for every TokenIDs
-			amount, err := db.GetCommitteeReward(requesters[0], common.PRVCoinID)
+			requester := base58.Base58Check{}.Encode(requesters[0], VERSION)
+			if txRequestTable[requester] == nil {
+				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
+				return errors.New("This response dont match with any request")
+			}
+			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
+			amount, err := db.GetCommitteeReward(requesters[0], requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
+				fmt.Printf("[ndh] - - [error] Not enough reward %+v %+v\n", amount, err)
 				return errors.New("Not enough reward")
 			}
 			if amount != amounts[0] {
+				fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amounts[0])
 				return errors.New("Wrong amount")
 			}
-			requester := base58.Base58Check{}.Encode(requesters[0], VERSION)
-			if txRequestTable[requester] == nil {
-				return errors.New("This response dont match with any request")
-			}
+
 			if txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()) != 0 {
+				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amounts[0])
 				return errors.New("This response dont match with any request")
 			}
 			txRequestTable[requester] = nil
+
 			numberOfTxResponse++
 		}
 	}
-	if len(txRequestTable) != numberOfTxResponse {
+	if numberOfTxRequest != numberOfTxResponse {
+		fmt.Printf("[ndh] - - [error] Not match request and response %+v %+v\n", numberOfTxRequest, numberOfTxResponse)
 		return errors.New("Not match request and response")
 	}
 	return nil
+}
+
+func (blockchain *BlockChain) InitTxSalaryByCoinID(
+	payToAddress *privacy.PaymentAddress,
+	amount uint64,
+	payByPrivateKey *privacy.PrivateKey,
+	db database.DatabaseInterface,
+	meta metadata.Metadata,
+	coinID common.Hash,
+	shardID byte,
+) (metadata.Transaction, error) {
+	txType := 0
+	if coinID.Cmp(&common.PRVCoinID) == 0 {
+		txType = transaction.NormalCoinType
+	} else {
+		mapCustomToken, err := blockchain.ListCustomToken()
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := mapCustomToken[coinID]; ok {
+			txType = transaction.CustomTokenType
+		} else {
+			mapPrivacyCustomToken, _, err := blockchain.ListPrivacyCustomToken()
+			if err != nil {
+				return nil, err
+			}
+			if _, ok := mapPrivacyCustomToken[coinID]; ok {
+				txType = transaction.CustomTokenPrivacyType
+			} else {
+				return nil, errors.New("Invalid coin ID")
+			}
+		}
+	}
+	return transaction.BuildCoinbaseTxByCoinID(
+		payToAddress,
+		amount,
+		payByPrivateKey,
+		db,
+		meta,
+		coinID,
+		txType,
+		common.PRVCoinID.String(),
+		shardID,
+	)
 }
