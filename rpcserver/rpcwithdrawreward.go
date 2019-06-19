@@ -21,6 +21,7 @@ func (rpcServer RpcServer) handleCreateRawWithDrawTransaction(params interface{}
 	}
 	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
+	param["TokenID"] = arrayParams[4].(map[string]interface{})["TokenID"]
 	arrayParams[4] = interface{}(param)
 	return rpcServer.createRawTxWithMetadata(
 		arrayParams,
@@ -41,6 +42,7 @@ func (rpcServer RpcServer) handleCreateAndSendWithDrawTransaction(params interfa
 
 // Get the reward amount of a private key
 func (rpcServer RpcServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
@@ -51,9 +53,20 @@ func (rpcServer RpcServer) handleGetRewardAmount(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	rewardAmount, err := (*rpcServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk)
+
+	allCoinIDs, err := rpcServer.config.BlockChain.GetAllCoinID()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return rewardAmount, nil
+
+	rewardAmounts := make(map[common.Hash]uint64)
+	for _, coinID := range allCoinIDs {
+		amount, err := (*rpcServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk, coinID)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		rewardAmounts[coinID] = amount
+	}
+
+	return rewardAmounts, nil
 }
