@@ -10,3 +10,9 @@ const (
 	CustomTokenTransfer
 	CustomTokenCrossShard
 )
+
+const (
+	NormalCoinType = iota
+	CustomTokenType
+	CustomTokenPrivacyType
+)

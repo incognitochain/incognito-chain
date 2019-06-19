@@ -17,8 +17,8 @@ import (
 )
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
-	var txsToAdd = make([]metadata.Transaction,0)
-	var totalTxsFee uint64
+	var txsToAdd = make([]metadata.Transaction, 0)
+	totalTxsFee := map[common.Hash]uint64{}
 	//============Build body=============
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
@@ -102,10 +102,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	if len(instructions) != 0 {
 		Logger.log.Critical("Shard Producer: Instruction", instructions)
 	}
-	err = blockgen.chain.BuildResponseTransactionFromTxsWithMetadata(&block.Body, &producerKeySet.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
+
 	// rewardInfoInstructions, err := block.getBlockRewardInst(prevBlock.Header.Height + 1)
 	// if err != nil {
 	// 	Logger.log.Error(err)
@@ -121,9 +118,14 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		Logger.log.Error(err, reflect.TypeOf(err), reflect.ValueOf(err))
 		return nil, err
 	}
+	err = blockgen.chain.BuildResponseTransactionFromTxsWithMetadata(&block.Body, &producerKeySet.PrivateKey)
+	if err != nil {
+		fmt.Printf("[ndh] BuildResponseTransactionFromTxsWithMetadata err %+v \n", err)
+		return nil, err
+	}
 	//TODO calculate fee for another tx type
 	for _, tx := range block.Body.Transactions {
-		totalTxsFee += tx.GetTxFee()
+		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 	}
 	//============Build Header=============
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
@@ -210,11 +212,11 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 			blockgen.chain.config.CRemovedTxs <- tx
 		}
 	}()
-	
+
 	var respTxsShard, respTxsBeacon []metadata.Transaction
 	var errCh chan error
 	errCh = make(chan error)
-	go func(){
+	go func() {
 		var err error
 		respTxsShard, err = blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
 		errCh <- err
@@ -369,7 +371,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	}
 	currentSize := uint64(0)
 	for _, tx := range sourceTxns {
-		if tx.IsPrivacy(){
+		if tx.IsPrivacy() {
 			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(500*time.Millisecond).Nanoseconds()
 		} else {
 			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(50*time.Millisecond).Nanoseconds()
