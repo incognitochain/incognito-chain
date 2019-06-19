@@ -211,18 +211,6 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	}
 
 	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForDev, instRewardForShards)
-	// for _, coinID := range allCoinID {
-	// 	totalRewards[coinID] = make([]uint64, numberOfActiveShards)
-	// 	for ID := 0; ID < numberOfActiveShards; ID++ {
-
-	// 	}
-
-	// if totalRewardForBeacon > 0 {
-
-	// }
-	// if totalRewardForDev > 0 {
-
-	// }
 
 	return resInst, nil
 }
@@ -406,7 +394,13 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 	return nil
 }
 
-func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey) ([]metadata.Transaction, error) {
+func (blockchain *BlockChain) buildWithDrawTransactionResponse(
+	txRequest *metadata.Transaction,
+	blkProducerPrivateKey *privacy.PrivateKey,
+) (
+	metadata.Transaction,
+	error,
+) {
 	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
 		return nil, errors.New("Can not understand this request!")
 	}
@@ -418,22 +412,23 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(txRequest *metada
 	// if len(receiverBytes) == 0 {
 	// 	return nil, errors.New("Can not get payment address of request's sender")
 	// }
-	var txsRes []metadata.Transaction
-	for _, coinID := range requestDetail.TokenIDs {
-		amount, err := blockchain.config.DataBase.GetCommitteeReward(requestDetail.PaymentAddress.Pk, coinID)
-		if (amount == 0) || (err != nil) {
-			return nil, errors.New("Not enough reward")
-		}
-		responseMeta, err := metadata.NewWithDrawRewardResponse((*txRequest).Hash())
-		if err != nil {
-			return nil, err
-		}
-		txRes := new(transaction.Tx)
-		txRes.InitTxSalary(amount, &requestDetail.PaymentAddress, blkProducerPrivateKey, blockchain.config.DataBase, responseMeta)
-		txsRes = append(txsRes, txRes)
+	// for _, coinID := range requestDetail.TokenIDs {
+	amount, err := blockchain.config.DataBase.GetCommitteeReward(requestDetail.PaymentAddress.Pk, requestDetail.TokenID)
+	if (amount == 0) || (err != nil) {
+		return nil, errors.New("Not enough reward")
 	}
-
-	return txsRes, nil
+	responseMeta, err := metadata.NewWithDrawRewardResponse((*txRequest).Hash())
+	if err != nil {
+		return nil, err
+	}
+	return blockchain.InitTxSalaryByCoinID(
+		&requestDetail.PaymentAddress,
+		amount,
+		blkProducerPrivateKey,
+		blockchain.GetDatabase(),
+		responseMeta,
+		requestDetail.TokenID,
+		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[32]))
 }
 
 // mapPlusMap(src, dst): dst = dst + src
