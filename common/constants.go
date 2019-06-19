@@ -61,7 +61,7 @@ const (
 
 // CONSENSUS
 const (
-	EPOCH       = 50
+	EPOCH       = 5
 	RANDOM_TIME = 5
 	OFFSET      = 1
 
@@ -76,5 +76,5 @@ const (
 	VALIDATOR_ROLE = "validator"
 	PENDING_ROLE   = "pending"
 
-	MAX_SHARD_NUMBER = 2
+	MAX_SHARD_NUMBER = 8
 )

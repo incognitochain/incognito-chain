@@ -3,17 +3,20 @@ package metadata
 import (
 	"encoding/json"
 	"strconv"
+
 	// "errors"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type ShardBlockRewardInfo struct {
-	ShardReward uint64
+	ShardReward map[common.Hash]uint64
 	Epoch       uint64
 }
 
 type AcceptedBlockRewardInfo struct {
 	ShardID          byte
-	TxsFee           uint64
+	TxsFee           map[common.Hash]uint64
 	ShardBlockHeight uint64
 }
 
@@ -34,7 +37,7 @@ type AcceptedBlockRewardInfo struct {
 // 	}
 // }
 
-func BuildInstForShardReward(reward, epoch uint64, shardID byte) ([][]string, error) {
+func BuildInstForShardReward(reward map[common.Hash]uint64, epoch uint64, shardID byte) ([][]string, error) {
 	resIns := [][]string{}
 	shardBlockRewardInfo := ShardBlockRewardInfo{
 		Epoch:       epoch,
@@ -128,7 +131,7 @@ func NewShardBlockRewardInfoFromString(inst string) (*ShardBlockRewardInfo, erro
 
 func NewAcceptedBlockRewardInfo(
 	shardID byte,
-	txsFee uint64,
+	txsFee map[common.Hash]uint64,
 	shardBlockHeight uint64,
 ) *AcceptedBlockRewardInfo {
 	return &AcceptedBlockRewardInfo{
