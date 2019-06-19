@@ -6,14 +6,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Response is the general form of a JSON-RPC response.  The type of the Result
+// JsonResponse is the general form of a JSON-RPC response.  The type of the Result
 // field varies from one command to the next, so it is implemented as an
 // interface.  The Id field has to be a pointer for Go to put a null in it when
 // empty.
-type Response struct {
-	Result json.RawMessage `json:"Result"`
-	Error  *RPCError       `json:"Error"`
-	Id     *interface{}    `json:"Id"`
+type JsonResponse struct {
+	Id      *interface{}    `json:"Id"`
+	Result  json.RawMessage `json:"Result"`
+	Error   *RPCError       `json:"Error"`
+	Params  interface{}     `json:"Params"`
+	Method  string          `json:"Method"`
+	Jsonrpc string          `json:"Jsonrpc"`
+}
+type SubcriptionResult struct {
+	Subscription string          `json:"Subscription"`
+	Result       json.RawMessage `json:"Result"`
 }
 
 // NewResponse returns a new JSON-RPC response object given the provided id,
@@ -22,17 +29,20 @@ type Response struct {
 //
 // Typically callers will instead want to create the fully marshalled JSON-RPC
 // response to send over the wire with the MarshalResponse function.
-func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Response, error) {
+func newResponse(request *JsonRequest, marshalledResult []byte, rpcErr *RPCError) (*JsonResponse, error) {
+	id := request.Id
 	if !IsValidIDType(id) {
 		str := fmt.Sprintf("The id of type '%T' is invalid", id)
 		return nil, NewRPCError(ErrInvalidType, errors.New(str))
 	}
-
 	pid := &id
-	resp := &Response{
-		Result: marshalledResult,
-		Error:  rpcErr,
-		Id:     pid,
+	resp := &JsonResponse{
+		Id:      pid,
+		Result:  marshalledResult,
+		Error:   rpcErr,
+		Params:  request.Params,
+		Method:  request.Method,
+		Jsonrpc: request.Jsonrpc,
 	}
 	if resp.Error != nil {
 		resp.Error.StackTrace = rpcErr.Error()
@@ -50,24 +60,74 @@ func NewResponse(id interface{}, marshalledResult []byte, rpcErr *RPCError) (*Re
 func IsValidIDType(id interface{}) bool {
 	switch id.(type) {
 	case int, int8, int16, int32, int64,
-	uint, uint8, uint16, uint32, uint64,
-	float32, float64,
-	string,
-	nil:
+		uint, uint8, uint16, uint32, uint64,
+		float32, float64,
+		string,
+		nil:
 		return true
 	default:
 		return false
 	}
 }
 
-// MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
-// response byte slice that is suitable for transmission to a JSON-RPC client.
-func MarshalResponse(id interface{}, result interface{}, rpcErr *RPCError) ([]byte, error) {
+// createMarshalledResponse returns a new marshalled JSON-RPC response given the
+// passed parameters.  It will automatically convert errors that are not of
+// the type *btcjson.RPCError to the appropriate type as needed.
+func createMarshalledResponse(request *JsonRequest, result interface{}, replyErr error) ([]byte, error) {
+	var jsonErr *RPCError
+	if replyErr != nil {
+		if jErr, ok := replyErr.(*RPCError); ok {
+			jsonErr = jErr
+		} else {
+			jsonErr = internalRPCError(replyErr.Error(), "")
+		}
+	}
+	// MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
+	// response byte slice that is suitable for transmission to a JSON-RPC client.
 	marshalledResult, err := json.Marshal(result)
 	if err != nil {
 		return nil, err
 	}
-	response, err := NewResponse(id, marshalledResult, rpcErr)
+	response, err := newResponse(request, marshalledResult, jsonErr)
+	if err != nil {
+		return nil, err
+	}
+	resultResp, err := json.MarshalIndent(&response, "", "\t")
+	if err != nil {
+		return nil, err
+	}
+	return resultResp, nil
+}
+
+// createMarshalledResponse returns a new marshalled JSON-RPC response given the
+// passed parameters.  It will automatically convert errors that are not of
+// the type *btcjson.RPCError to the appropriate type as needed.
+func createMarshalledSubResponse(subRequest *SubcriptionRequest, result interface{}, replyErr error) ([]byte, error) {
+	var jsonErr *RPCError
+	if replyErr != nil {
+		if jErr, ok := replyErr.(*RPCError); ok {
+			jsonErr = jErr
+		} else {
+			jsonErr = internalRPCError(replyErr.Error(), "")
+		}
+	}
+	// MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
+	// response byte slice that is suitable for transmission to a JSON-RPC client.
+	marshalledResult, err := json.Marshal(result)
+	if err != nil {
+		return nil, err
+	}
+	subResult := SubcriptionResult{
+		Result:       marshalledResult,
+		Subscription: subRequest.Subcription,
+	}
+	// MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
+	// response byte slice that is suitable for transmission to a JSON-RPC client.
+	marshalledSubResult, err := json.Marshal(subResult)
+	if err != nil {
+		return nil, err
+	}
+	response, err := newResponse(&subRequest.JsonRequest, marshalledSubResult, jsonErr)
 	if err != nil {
 		return nil, err
 	}
