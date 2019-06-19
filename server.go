@@ -180,8 +180,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
 	cRoleInCommitteesMempool := make(chan int)
-	cRoleInCommitteesShardPool := make([]chan int,256)
-	for i:=0; i < 256; i++ {
+	cRoleInCommitteesBeaconPool := make(chan bool)
+	cRoleInCommitteesShardPool := make([]chan int, 256)
+	for i := 0; i < 256; i++ {
 		cRoleInCommitteesShardPool[i] = make(chan int)
 	}
 	cRoleInCommitteesNetSync := make(chan int)
@@ -241,7 +242,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	//init beacon pol
-	mempool.InitBeaconPool()
+	mempool.InitBeaconPool(cRoleInCommitteesBeaconPool)
 	//init shard pool
 	mempool.InitShardPool(serverObj.shardPool, cRoleInCommitteesShardPool)
 	//init cross shard pool
@@ -339,17 +340,18 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init consensus engine
 	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
-		CrossShardPool:           serverObj.crossShardPool,
-		ShardToBeaconPool:        serverObj.shardToBeaconPool,
-		ChainParams:              serverObj.chainParams,
-		BlockChain:               serverObj.blockChain,
-		Server:                   serverObj,
-		BlockGen:                 serverObj.blockgen,
-		NodeMode:                 cfg.NodeMode,
-		UserKeySet:               serverObj.userKeySet,
-		CRoleInCommitteesMempool: cRoleInCommitteesMempool,
-		CRoleInCommitteesNetSync: cRoleInCommitteesNetSync,
-		CRoleInCommitteesShardPool:cRoleInCommitteesShardPool,
+		CrossShardPool:              serverObj.crossShardPool,
+		ShardToBeaconPool:           serverObj.shardToBeaconPool,
+		ChainParams:                 serverObj.chainParams,
+		BlockChain:                  serverObj.blockChain,
+		Server:                      serverObj,
+		BlockGen:                    serverObj.blockgen,
+		NodeMode:                    cfg.NodeMode,
+		UserKeySet:                  serverObj.userKeySet,
+		CRoleInCommitteesMempool:    cRoleInCommitteesMempool,
+		CRoleInCommitteesNetSync:    cRoleInCommitteesNetSync,
+		CRoleInCommitteesShardPool:  cRoleInCommitteesShardPool,
+		CRoleInCommitteesBeaconPool: cRoleInCommitteesBeaconPool,
 	})
 	if err != nil {
 		return err
@@ -416,7 +418,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		if err != nil {
 			return err
 		}
-		if len(httpListeners) == 0 && len(wsListeners) == 0{
+		if len(httpListeners) == 0 && len(wsListeners) == 0 {
 			return errors.New("RPCS: No valid listen address")
 		}
 
@@ -459,7 +461,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			shutdownRequestChannel <- struct{}{}
 		}()
 	}
-	
+
 	//Init Metric Tool
 	if cfg.MetricUrl != "" {
 		grafana := metrics.NewGrafana(cfg.MetricUrl)
@@ -613,6 +615,10 @@ func (serverObj Server) Start() {
 		} else {
 			serverObj.memPool.IsBlockGenStarted = true
 			serverObj.blockChain.SetIsBlockGenStarted(true)
+			for _, shardPool := range serverObj.shardPool {
+				go shardPool.Start(serverObj.cQuit)
+			}
+			go serverObj.beaconPool.Start(serverObj.cQuit)
 		}
 	}
 
@@ -620,9 +626,6 @@ func (serverObj Server) Start() {
 		serverObj.memPool.LoadOrResetDatabaseMP()
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
-		for _, shardPool := range serverObj.shardPool {
-			go shardPool.Start(serverObj.cQuit)
-		}
 	}
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
