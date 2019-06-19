@@ -23,12 +23,23 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	bc := rpcServer.config.BlockChain
 	db := *rpcServer.config.Database
 
+	// Get proof of instruction on bridge
 	// Get bridge block and check if it contains beacon swap instruction
 	bridgeBlock, err := bc.GetShardBlockByHeight(height-1, bridgeID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	bridgeInsts, err := extractInstsFromShardBlock(bridgeBlock, bc, db)
+	beaconBlocks, err := getIncludedBeaconBlocks(
+		bc,
+		db,
+		bridgeBlock.Header.Height,
+		bridgeBlock.Header.BeaconHeight,
+		bridgeBlock.Header.ShardID,
+	)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	bridgeInsts, err := extractInstsFromShardBlock(bridgeBlock, beaconBlocks, bc)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -69,8 +80,31 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	bridgeMetaHash := bridgeBlock.Header.MetaHash()
 	bridgeBlkHash := bridgeBlock.Header.Hash()
 
+	// Get proof of instruction on beacon
+	// Get beacon block and check if it contains beacon swap instruction
+	beaconBlock := findBeaconBlockWithInst(beaconBlocks, bridgeInst)
+	if beaconBlock == nil {
+		return nil, NewRPCError(ErrUnexpected, fmt.Errorf("cannot find corresponding beacon block that includes swap instruction"))
+	}
+	beaconInsts := beaconBlock.Body.Instructions
+	_, beaconInstId := findCommSwapInst(beaconInsts)
+	if beaconInstId < 0 {
+		return nil, NewRPCError(ErrUnexpected, fmt.Errorf("cannot find swap instruction in beacon block"))
+	}
+
 	return jsonresult.GetBeaconSwapProof{
-		Instruction:            hex.EncodeToString(flattenbridgeInst),
+		Instruction: hex.EncodeToString(flattenbridgeInst),
+
+		// BeaconInstPath:         beaconProof.getPath(),
+		// BeaconInstPathIsLeft:   beaconProof.left,
+		// BeaconInstRoot:         beaconInstRoot,
+		// BeaconBlkData:          hex.EncodeToString(beaconMetaHash[:]),
+		// BeaconBlkHash:          hex.EncodeToString(beaconBlkHash[:]),
+		// BeaconSignerPubkeys:    beaconSignerPubkeys,
+		// BeaconSignerSig:        beaconBlock.AggregatedSig,
+		// BeaconSignerPaths:      beaconSignerPaths,
+		// BeaconSignerPathIsLeft: beaconSignerPathIsLeft,
+
 		BridgeInstPath:         bridgeProof.getPath(),
 		BridgeInstPathIsLeft:   bridgeProof.left,
 		BridgeInstRoot:         bridgeInstRoot,
@@ -87,23 +121,33 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	// Build instruction merkle proof for bridge block
 }
 
-func extractInstsFromShardBlock(
-	shardBlock *blockchain.ShardBlock,
+func getIncludedBeaconBlocks(
 	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
-) ([][]string, error) {
-	prevShardBlock, err := bc.GetShardBlockByHeight(shardBlock.Header.Height-1, shardBlock.Header.ShardID)
+	shardHeight uint64,
+	beaconHeight uint64,
+	shardID byte,
+) ([]*blockchain.BeaconBlock, error) {
+	prevShardBlock, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
 	if err != nil {
 		return nil, err
 	}
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(
 		db,
 		prevShardBlock.Header.BeaconHeight+1,
-		shardBlock.Header.BeaconHeight,
+		beaconHeight,
 	)
 	if err != nil {
 		return nil, err
 	}
+	return beaconBlocks, nil
+}
+
+func extractInstsFromShardBlock(
+	shardBlock *blockchain.ShardBlock,
+	beaconBlocks []*blockchain.BeaconBlock,
+	bc *blockchain.BlockChain,
+) ([][]string, error) {
 	instructions, err := blockchain.CreateShardInstructionsFromTransactionAndIns(
 		shardBlock.Body.Transactions,
 		bc,
@@ -196,4 +240,22 @@ func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
 		proofs[i] = buildProofFromTree(merkles, pid)
 	}
 	return proofs
+}
+
+func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) *blockchain.BeaconBlock {
+	for _, b := range beaconBlocks {
+		for _, blkInst := range b.Body.Instructions {
+			diff := false
+			for i, part := range blkInst {
+				if part != inst[i] {
+					diff = true
+					break
+				}
+			}
+			if !diff {
+				return b
+			}
+		}
+	}
+	return nil
 }
