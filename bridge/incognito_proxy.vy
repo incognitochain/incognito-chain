@@ -33,6 +33,8 @@ def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[COMM_PATH_LENGTH], 
     for i in range(COMM_PATH_LENGTH):
         if left[i]:
             hash = keccak256(concat(path[i], hash))
+        elif convert(path[i], uint256) == 0:
+            hash = keccak256(concat(hash, hash))
         else:
             hash = keccak256(concat(hash, path[i]))
     return hash == root
