@@ -234,6 +234,7 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 		case <-protocol.cQuit:
 			return
 		case earlyMsg := <-protocol.earlyMsgCh:
+			fmt.Println("Early msg received")
 			switch earlyMsg.MessageType() {
 			case wire.CmdBFTAgree:
 				if protocol.phase == BFT_LISTEN {
@@ -261,6 +262,8 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 func getTimeout(phase string, committeeSize int) time.Duration {
 	assumedDelay := time.Duration(committeeSize) * MaxNetworkDelayTime
 	switch phase {
+	case BFT_PROPOSE:
+		return assumedDelay + ListenTimeout
 	case BFT_LISTEN:
 		return assumedDelay + ListenTimeout
 	case BFT_AGREE:
