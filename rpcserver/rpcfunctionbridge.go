@@ -2,11 +2,13 @@ package rpcserver
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -42,6 +44,18 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	for _, part := range bridgeInst {
 		flattenbridgeInst = append(flattenbridgeInst, []byte(part)...)
 	}
+
+	// Get committee pubkey and signature
+	pubkeys, err := getBridgeInstSignerPubkeys(shardBlock, db)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	bridgeSignerPubkeys := make([]string, len(pubkeys))
+	for i, pk := range pubkeys {
+		bridgeSignerPubkeys[i] = hex.EncodeToString(pk)
+	}
+
+	// Get meta hash and block hash
 	bridgeInstRoot := hex.EncodeToString(shardBlock.Header.InstructionMerkleRoot[:])
 	bridgeMetaHash := shardBlock.Header.MetaHash()
 	bridgeBlkHash := shardBlock.Header.Hash()
@@ -53,8 +67,8 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 		BridgeInstRoot:         bridgeInstRoot,
 		BridgeBlkData:          hex.EncodeToString(bridgeMetaHash[:]),
 		BridgeBlkHash:          hex.EncodeToString(bridgeBlkHash[:]),
-		BridgeSignerPubkeys:    nil,
-		BridgeSignerSig:        shardBlock.Header.AggregatedSig,
+		BridgeSignerPubkeys:    bridgeSignerPubkeys,
+		BridgeSignerSig:        shardBlock.AggregatedSig,
 		BridgeSignerPaths:      nil,
 		BridgeSignerPathIsLeft: nil,
 	}, nil
@@ -62,8 +76,6 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	// Get the corresponding beacon block with the swap instruction
 
 	// Build instruction merkle proof for bridge block
-
-	// Get committee signature and meta hash
 }
 
 func extractInstsFromShardBlock(
@@ -127,4 +139,33 @@ func buildKeccak256MerkleProof(insts [][]string, id int) *keccak256MerkleProof {
 	fmt.Println("[db] flattenInsts", flattenInsts)
 	path, left := blockchain.GetKeccak256MerkleProof(flattenInsts, id)
 	return &keccak256MerkleProof{path: path, left: left}
+}
+
+func getBridgeInstSignerPubkeys(shardBlock *blockchain.ShardBlock, db database.DatabaseInterface) ([][]byte, error) {
+	commsRaw, err := db.FetchCommitteeByEpoch(shardBlock.Header.Epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	comms := make(map[byte][]string)
+	err = json.Unmarshal(commsRaw, &comms)
+	if err != nil {
+		return nil, err
+	}
+
+	comm, ok := comms[shardBlock.Header.ShardID]
+	if !ok {
+		return nil, fmt.Errorf("no committee member found for shard block %d", shardBlock.Header.ShardID)
+	}
+
+	signerIdxs := shardBlock.ValidatorsIdx[1] // List of signers
+	pubkeys := make([][]byte, len(signerIdxs))
+	for i, signerID := range signerIdxs {
+		pubkey, _, err := base58.Base58Check{}.Decode(comm[signerID])
+		if err != nil {
+			return nil, err
+		}
+		pubkeys[i] = pubkey
+	}
+	return pubkeys, nil
 }
