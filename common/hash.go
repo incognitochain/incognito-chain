@@ -216,3 +216,16 @@ func ConvertArrayStringToArrayHash(strs []string) ([]*Hash, error) {
 	}
 	return hashes, nil
 }
+
+func HashArrayInterface(target interface{}) (Hash, error) {
+	arr := InterfaceSlice(target)
+	temp := []byte{0}
+	for value := range arr {
+		valueBytes, err := json.Marshal(&value)
+		if err != nil {
+			return Hash{}, err
+		}
+		temp = append(temp, valueBytes...)
+	}
+	return HashH(temp), nil
+}

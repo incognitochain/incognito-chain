@@ -315,9 +315,9 @@ func (engine *Engine) NotifyBeaconRole(beaconRole bool) {
 	engine.config.CRoleInCommitteesBeaconPool <- beaconRole
 }
 func (engine *Engine) NotifyShardRole(shardRole int) {
-			engine.config.CRoleInCommitteesMempool <- shardRole
-			engine.config.CRoleInCommitteesNetSync <- shardRole
-			for _, ch := range engine.config.CRoleInCommitteesShardPool {
-				ch <- shardRole
-			}
+	engine.config.CRoleInCommitteesMempool <- shardRole
+	engine.config.CRoleInCommitteesNetSync <- shardRole
+	for _, ch := range engine.config.CRoleInCommitteesShardPool {
+		ch <- shardRole
+	}
 }
