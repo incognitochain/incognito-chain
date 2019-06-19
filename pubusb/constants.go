@@ -1,5 +1,6 @@
 package pubusb
 
+const ChanWorkLoad = 100
 // TOPIC
 const (
 	NewshardblockTopic = "newshardblock"
