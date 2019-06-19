@@ -234,6 +234,7 @@ func (protocol *BFTProtocol) earlyMsgHandler() {
 		case <-protocol.cQuit:
 			return
 		case earlyMsg := <-protocol.earlyMsgCh:
+			fmt.Println("Early msg received")
 			switch earlyMsg.MessageType() {
 			case wire.CmdBFTAgree:
 				if protocol.phase == BFT_LISTEN {

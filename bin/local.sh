@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ -f ./constant ]; then
-    rm -rf ./constant
+    rm -rf ./incognito
 fi
 if [ -f ./bootnode ]; then
     rm -rf ./bootnode
