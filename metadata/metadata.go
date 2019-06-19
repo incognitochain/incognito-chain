@@ -101,6 +101,10 @@ type TxDesc struct {
 	// Fee is the total fee the transaction associated with the entry pays.
 	Fee uint64
 
+	// FeeToken is the total token fee the transaction associated with the entry pays.
+	// FeeToken is zero if tx is PRV transaction
+	FeeToken uint64
+
 	// FeePerKB is the fee the transaction pays in coin per 1000 bytes.
 	FeePerKB int32
 }
@@ -152,6 +156,7 @@ type Transaction interface {
 	GetTxActualSize() uint64
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
+	GetTxFeeToken() uint64
 	ListSerialNumbersHashH() []common.Hash
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(minFeePerKbTx uint64) bool

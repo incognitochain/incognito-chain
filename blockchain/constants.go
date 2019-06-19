@@ -64,7 +64,7 @@ const (
 
 	TestNetShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize = 4
-	TestNetActiveShards        = 2
+	TestNetActiveShards        = 8
 	TestNetStakingAmountShard  = 175000
 
 	//board and proposal parameters

@@ -461,11 +461,11 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 }
 
 // estimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
-func (rpcServer HttpServer) estimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64) uint64 {
+func (rpcServer HttpServer) estimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash) uint64 {
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
 		if _, ok := rpcServer.config.FeeEstimator[shardID]; ok {
-			temp, _ := rpcServer.config.FeeEstimator[shardID].EstimateFee(numBlock)
+			temp, _ := rpcServer.config.FeeEstimator[shardID].EstimateFee(numBlock, tokenId)
 			estimateFeeCoinPerKb = uint64(temp)
 		}
 		if estimateFeeCoinPerKb == 0 {
@@ -494,7 +494,12 @@ func (rpcServer HttpServer) estimateFee(defaultFee int64, candidateOutputCoins [
 	estimateFeeCoinPerKb := uint64(0)
 	estimateTxSizeInKb := uint64(0)
 
-	estimateFeeCoinPerKb = rpcServer.estimateFeeWithEstimator(defaultFee, shardID, numBlock)
+	tokenId := &common.Hash{}
+	if privacyCustomTokenParams != nil {
+		tokenId, _ = common.NewHashFromStr(privacyCustomTokenParams.PropertyID)
+	}
+
+	estimateFeeCoinPerKb = rpcServer.estimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId)
 
 	if rpcServer.config.Wallet != nil {
 		estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.GetConfig().IncrementalFee)
