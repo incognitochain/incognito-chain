@@ -63,6 +63,6 @@ func main() {
 	fmt.Println("Hello WASM")
 	RegisterCallback("add", add)
 	RegisterCallback("sayHello", sayHello)
-	//RegisterCallback("aggregatedRangeProve", aggregatedRangeProve)
+	RegisterCallback("aggregatedRangeProve", aggregatedRangeProve)
 	<-c
 }
