@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -19,6 +20,86 @@ func BuildCoinbaseTx(
 		return nil, err
 	}
 	return tx, nil
+}
+
+func BuildCoinbaseTxByCoinID(
+	payToAddress *privacy.PaymentAddress,
+	amount uint64,
+	payByPrivateKey *privacy.PrivateKey,
+	db database.DatabaseInterface,
+	meta metadata.Metadata,
+	coinID common.Hash,
+	txType int,
+	coinName string,
+	shardID byte,
+) (metadata.Transaction, error) {
+	switch txType {
+	case NormalCoinType:
+		tx := &Tx{}
+		err := tx.InitTxSalary(amount, payToAddress, payByPrivateKey, db, meta)
+		return tx, err
+	case CustomTokenType:
+		tx := &TxCustomToken{}
+		receiver := &TxTokenVout{
+			PaymentAddress: *payToAddress,
+			Value:          amount,
+		}
+		tokenParams := &CustomTokenParamTx{
+			PropertyID:     coinID.String(),
+			PropertyName:   coinName,
+			PropertySymbol: coinName,
+			Amount:         amount,
+			TokenTxType:    CustomTokenInit,
+			Receiver:       []TxTokenVout{*receiver},
+			Mintable:       true,
+		}
+		err := tx.Init(
+			payByPrivateKey,
+			nil,
+			nil,
+			0,
+			tokenParams,
+			//listCustomTokens,
+			db,
+			meta,
+			false,
+			shardID,
+		)
+		return tx, err
+	case CustomTokenPrivacyType:
+		var propertyID [common.HashSize]byte
+		copy(propertyID[:], coinID[:])
+		receiver := &privacy.PaymentInfo{
+			Amount:         amount,
+			PaymentAddress: *payToAddress,
+		}
+		propID := common.Hash(propertyID)
+		tokenParams := &CustomTokenPrivacyParamTx{
+			PropertyID:     propID.String(),
+			PropertyName:   coinName,
+			PropertySymbol: coinName,
+			Amount:         amount,
+			TokenTxType:    CustomTokenInit,
+			Receiver:       []*privacy.PaymentInfo{receiver},
+			TokenInput:     []*privacy.InputCoin{},
+			Mintable:       true,
+		}
+		tx := &TxCustomTokenPrivacy{}
+		err := tx.Init(
+			payByPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			db,
+			meta,
+			false,
+			false,
+			shardID,
+		)
+		return tx, err
+	}
+	return nil, nil
 }
 
 func BuildCoinbaseTxs(
