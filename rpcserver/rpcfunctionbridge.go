@@ -24,21 +24,21 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	db := *rpcServer.config.Database
 
 	// Get bridge block and check if it contains beacon swap instruction
-	shardBlock, err := bc.GetShardBlockByHeight(height-1, bridgeID)
+	bridgeBlock, err := bc.GetShardBlockByHeight(height-1, bridgeID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	shardInsts, err := extractInstsFromShardBlock(shardBlock, bc, db)
+	bridgeInsts, err := extractInstsFromShardBlock(bridgeBlock, bc, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	bridgeInst, bridgeInstId := findCommSwapInst(shardInsts)
+	bridgeInst, bridgeInstId := findCommSwapInst(bridgeInsts)
 	if bridgeInstId < 0 {
 		return nil, nil
 	}
 
 	// Build merkle proof for instruction in bridge block
-	bridgeProof := buildInstProof(shardInsts, bridgeInstId)
+	bridgeProof := buildInstProof(bridgeInsts, bridgeInstId)
 
 	flattenbridgeInst := []byte{}
 	for _, part := range bridgeInst {
@@ -46,7 +46,7 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	}
 
 	// Get committee pubkey and signature
-	pubkeys, signerIdxs, err := getBridgeSignerPubkeys(shardBlock, db)
+	pubkeys, signerIdxs, err := getBridgeSignerPubkeys(bridgeBlock, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -65,9 +65,9 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	}
 
 	// Get meta hash and block hash
-	bridgeInstRoot := hex.EncodeToString(shardBlock.Header.InstructionMerkleRoot[:])
-	bridgeMetaHash := shardBlock.Header.MetaHash()
-	bridgeBlkHash := shardBlock.Header.Hash()
+	bridgeInstRoot := hex.EncodeToString(bridgeBlock.Header.InstructionMerkleRoot[:])
+	bridgeMetaHash := bridgeBlock.Header.MetaHash()
+	bridgeBlkHash := bridgeBlock.Header.Hash()
 
 	return jsonresult.GetBeaconSwapProof{
 		Instruction:            hex.EncodeToString(flattenbridgeInst),
@@ -77,7 +77,7 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 		BridgeBlkData:          hex.EncodeToString(bridgeMetaHash[:]),
 		BridgeBlkHash:          hex.EncodeToString(bridgeBlkHash[:]),
 		BridgeSignerPubkeys:    bridgeSignerPubkeys,
-		BridgeSignerSig:        shardBlock.AggregatedSig,
+		BridgeSignerSig:        bridgeBlock.AggregatedSig,
 		BridgeSignerPaths:      bridgeSignerPaths,
 		BridgeSignerPathIsLeft: bridgeSignerPathIsLeft,
 	}, nil
