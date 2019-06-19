@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fatih/color"
+	"github.com/0xsirrush/color"
 )
 
 // Logger is an interface which describes a level-based logger.  A default
