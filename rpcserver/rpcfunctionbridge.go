@@ -19,15 +19,76 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	Logger.log.Infof("handleGetBeaconSwapProof params: %+v", params)
 	listParams := params.([]interface{})
 	height := uint64(listParams[0].(float64))
-	bridgeID := byte(1) // TODO(@0xbunyip): replace with bridge shardID
 	bc := rpcServer.config.BlockChain
 	db := *rpcServer.config.Database
 
 	// Get proof of instruction on bridge
-	// Get bridge block and check if it contains beacon swap instruction
-	bridgeBlock, err := bc.GetShardBlockByHeight(height-1, bridgeID)
+	beaconInstProof, beaconBlocks, err := getBeaconSwapProofOnBridge(height-1, bc, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	// Get proof of instruction on beacon
+	bridgeInstProof, err := getBeaconSwapProofOnBeacon(beaconInstProof.inst, beaconBlocks, db)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	// Save instruction as a single slice of byte
+	flattenBridgeInst := []byte{}
+	for _, part := range beaconInstProof.inst {
+		flattenBridgeInst = append(flattenBridgeInst, []byte(part)...)
+	}
+
+	return jsonresult.GetBeaconSwapProof{
+		Instruction: hex.EncodeToString(flattenBridgeInst),
+
+		BeaconInstPath:         beaconInstProof.instPath,
+		BeaconInstPathIsLeft:   beaconInstProof.instPathIsLeft,
+		BeaconInstRoot:         beaconInstProof.instRoot,
+		BeaconBlkData:          beaconInstProof.blkData,
+		BeaconBlkHash:          beaconInstProof.blkHash,
+		BeaconSignerPubkeys:    beaconInstProof.signerPubkeys,
+		BeaconSignerSig:        beaconInstProof.signerSig,
+		BeaconSignerPaths:      beaconInstProof.signerPaths,
+		BeaconSignerPathIsLeft: beaconInstProof.signerPathIsLeft,
+
+		BridgeInstPath:         bridgeInstProof.instPath,
+		BridgeInstPathIsLeft:   bridgeInstProof.instPathIsLeft,
+		BridgeInstRoot:         bridgeInstProof.instRoot,
+		BridgeBlkData:          bridgeInstProof.blkData,
+		BridgeBlkHash:          bridgeInstProof.blkHash,
+		BridgeSignerPubkeys:    bridgeInstProof.signerPubkeys,
+		BridgeSignerSig:        bridgeInstProof.signerSig,
+		BridgeSignerPaths:      bridgeInstProof.signerPaths,
+		BridgeSignerPathIsLeft: bridgeInstProof.signerPathIsLeft,
+	}, nil
+}
+
+type instructionProof struct {
+	inst []string
+
+	instPath         []string
+	instPathIsLeft   []bool
+	instRoot         string
+	blkData          string
+	blkHash          string
+	signerPubkeys    []string
+	signerSig        string
+	signerPaths      [][]string
+	signerPathIsLeft [][]bool
+}
+
+func getBeaconSwapProofOnBridge(
+	height uint64,
+	bc *blockchain.BlockChain,
+	db database.DatabaseInterface,
+) (*instructionProof, []*blockchain.BeaconBlock, error) {
+	// Get bridge block and check if it contains beacon swap instruction
+	bridgeID := byte(1) // TODO(@0xbunyip): replace with bridge shardID
+	bridgeBlock, err := bc.GetShardBlockByHeight(height, bridgeID)
+	if err != nil {
+		return nil, nil, err
 	}
 	beaconBlocks, err := getIncludedBeaconBlocks(
 		bc,
@@ -37,29 +98,24 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 		bridgeBlock.Header.ShardID,
 	)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, nil, err
 	}
 	bridgeInsts, err := extractInstsFromShardBlock(bridgeBlock, beaconBlocks, bc)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, nil, err
 	}
 	bridgeInst, bridgeInstId := findCommSwapInst(bridgeInsts)
 	if bridgeInstId < 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	// Build merkle proof for instruction in bridge block
 	bridgeProof := buildInstProof(bridgeInsts, bridgeInstId)
 
-	flattenbridgeInst := []byte{}
-	for _, part := range bridgeInst {
-		flattenbridgeInst = append(flattenbridgeInst, []byte(part)...)
-	}
-
 	// Get committee pubkey and signature
 	pubkeys, signerIdxs, err := getBridgeSignerPubkeys(bridgeBlock, db)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, nil, err
 	}
 	bridgeSignerPubkeys := make([]string, len(pubkeys))
 	for i, pk := range pubkeys {
@@ -80,45 +136,75 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	bridgeMetaHash := bridgeBlock.Header.MetaHash()
 	bridgeBlkHash := bridgeBlock.Header.Hash()
 
-	// Get proof of instruction on beacon
+	return &instructionProof{
+		inst:             bridgeInst,
+		instPath:         bridgeProof.getPath(),
+		instPathIsLeft:   bridgeProof.left,
+		instRoot:         bridgeInstRoot,
+		blkData:          hex.EncodeToString(bridgeMetaHash[:]),
+		blkHash:          hex.EncodeToString(bridgeBlkHash[:]),
+		signerPubkeys:    bridgeSignerPubkeys,
+		signerSig:        bridgeBlock.AggregatedSig,
+		signerPaths:      bridgeSignerPaths,
+		signerPathIsLeft: bridgeSignerPathIsLeft,
+	}, beaconBlocks, nil
+}
+
+func getBeaconSwapProofOnBeacon(
+	inst []string,
+	beaconBlocks []*blockchain.BeaconBlock,
+	db database.DatabaseInterface,
+) (*instructionProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
-	beaconBlock := findBeaconBlockWithInst(beaconBlocks, bridgeInst)
+	beaconBlock := findBeaconBlockWithInst(beaconBlocks, inst)
 	if beaconBlock == nil {
-		return nil, NewRPCError(ErrUnexpected, fmt.Errorf("cannot find corresponding beacon block that includes swap instruction"))
+		return nil, fmt.Errorf("cannot find corresponding beacon block that includes swap instruction")
 	}
+
 	beaconInsts := beaconBlock.Body.Instructions
 	_, beaconInstId := findCommSwapInst(beaconInsts)
 	if beaconInstId < 0 {
-		return nil, NewRPCError(ErrUnexpected, fmt.Errorf("cannot find swap instruction in beacon block"))
+		return nil, fmt.Errorf("cannot find swap instruction in beacon block")
 	}
 
-	return jsonresult.GetBeaconSwapProof{
-		Instruction: hex.EncodeToString(flattenbridgeInst),
+	// Build merkle proof for instruction in beacon block
+	beaconProof := buildInstProof(beaconInsts, beaconInstId)
 
-		// BeaconInstPath:         beaconProof.getPath(),
-		// BeaconInstPathIsLeft:   beaconProof.left,
-		// BeaconInstRoot:         beaconInstRoot,
-		// BeaconBlkData:          hex.EncodeToString(beaconMetaHash[:]),
-		// BeaconBlkHash:          hex.EncodeToString(beaconBlkHash[:]),
-		// BeaconSignerPubkeys:    beaconSignerPubkeys,
-		// BeaconSignerSig:        beaconBlock.AggregatedSig,
-		// BeaconSignerPaths:      beaconSignerPaths,
-		// BeaconSignerPathIsLeft: beaconSignerPathIsLeft,
+	// Get committee pubkey and signature
+	pubkeys, signerIdxs, err := getBeaconSignerPubkeys(beaconBlock, db)
+	if err != nil {
+		return nil, err
+	}
+	beaconSignerPubkeys := make([]string, len(pubkeys))
+	for i, pk := range pubkeys {
+		beaconSignerPubkeys[i] = hex.EncodeToString(pk)
+	}
 
-		BridgeInstPath:         bridgeProof.getPath(),
-		BridgeInstPathIsLeft:   bridgeProof.left,
-		BridgeInstRoot:         bridgeInstRoot,
-		BridgeBlkData:          hex.EncodeToString(bridgeMetaHash[:]),
-		BridgeBlkHash:          hex.EncodeToString(bridgeBlkHash[:]),
-		BridgeSignerPubkeys:    bridgeSignerPubkeys,
-		BridgeSignerSig:        bridgeBlock.AggregatedSig,
-		BridgeSignerPaths:      bridgeSignerPaths,
-		BridgeSignerPathIsLeft: bridgeSignerPathIsLeft,
+	// Build merkle proof for signer pubkeys
+	signerProof := buildSignersProof(pubkeys, signerIdxs)
+	beaconSignerPaths := make([][]string, len(pubkeys))
+	beaconSignerPathIsLeft := make([][]bool, len(pubkeys))
+	for i, p := range signerProof {
+		beaconSignerPaths[i] = p.getPath()
+		beaconSignerPathIsLeft[i] = p.left
+	}
+
+	// Get meta hash and block hash
+	beaconInstRoot := hex.EncodeToString(beaconBlock.Header.InstructionMerkleRoot[:])
+	beaconMetaHash := beaconBlock.Header.MetaHash()
+	beaconBlkHash := beaconBlock.Header.Hash()
+
+	return &instructionProof{
+		instPath:         beaconProof.getPath(),
+		instPathIsLeft:   beaconProof.left,
+		instRoot:         beaconInstRoot,
+		blkData:          hex.EncodeToString(beaconMetaHash[:]),
+		blkHash:          hex.EncodeToString(beaconBlkHash[:]),
+		signerPubkeys:    beaconSignerPubkeys,
+		signerSig:        beaconBlock.AggregatedSig,
+		signerPaths:      beaconSignerPaths,
+		signerPathIsLeft: beaconSignerPathIsLeft,
 	}, nil
-
-	// Get the corresponding beacon block with the swap instruction
-
-	// Build instruction merkle proof for bridge block
 }
 
 // getIncludedBeaconBlocks retrieves all beacon blocks included in a shard block
@@ -207,6 +293,11 @@ func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
 	flattenInsts := common.FlattenAndConvertStringInst(insts)
 	return buildProof(flattenInsts, id)
+}
+
+// getBeaconSignerPubkeys finds the pubkeys of all signers of a beacon block
+func getBeaconSignerPubkeys(shardBlock *blockchain.BeaconBlock, db database.DatabaseInterface) ([][]byte, []int, error) {
+	return nil, nil, nil
 }
 
 // getBridgeSignerPubkeys finds the pubkeys of all signers of a shard block
