@@ -121,6 +121,7 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	// Build instruction merkle proof for bridge block
 }
 
+// getIncludedBeaconBlocks retrieves all beacon blocks included in a shard block
 func getIncludedBeaconBlocks(
 	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
@@ -143,6 +144,7 @@ func getIncludedBeaconBlocks(
 	return beaconBlocks, nil
 }
 
+// extractInstsFromShardBlock returns all instructions in a shard block as a slice of []string
 func extractInstsFromShardBlock(
 	shardBlock *blockchain.ShardBlock,
 	beaconBlocks []*blockchain.BeaconBlock,
@@ -164,6 +166,7 @@ func extractInstsFromShardBlock(
 	return shardInsts, nil
 }
 
+// findCommSwapInst finds a beacon swap instruction in a list, returns it with its index
 func findCommSwapInst(insts [][]string) ([]string, int) {
 	for i, inst := range insts {
 		if strconv.Itoa(metadata.BeaconPubkeyRootMeta) == inst[0] {
@@ -179,6 +182,7 @@ type keccak256MerkleProof struct {
 	left []bool
 }
 
+// getPath encodes the path of merkle proof as string and returns
 func (p *keccak256MerkleProof) getPath() []string {
 	path := make([]string, len(p.path))
 	for i, h := range p.path {
@@ -187,21 +191,25 @@ func (p *keccak256MerkleProof) getPath() []string {
 	return path
 }
 
+// buildProof builds a merkle proof for one element in a merkle tree
 func buildProofFromTree(merkles [][]byte, id int) *keccak256MerkleProof {
 	path, left := blockchain.GetKeccak256MerkleProofFromTree(merkles, id)
 	return &keccak256MerkleProof{path: path, left: left}
 }
 
+// buildProof receives a list of data (as bytes) and returns a merkle proof for one element in the list
 func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 	merkles := blockchain.BuildKeccak256MerkleTree(data)
 	return buildProofFromTree(merkles, id)
 }
 
+// buildInstProof receives a list of instructions (as string) and returns a merkle proof for one instruction in the list
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
 	flattenInsts := common.FlattenAndConvertStringInst(insts)
 	return buildProof(flattenInsts, id)
 }
 
+// getBridgeSignerPubkeys finds the pubkeys of all signers of a shard block
 func getBridgeSignerPubkeys(shardBlock *blockchain.ShardBlock, db database.DatabaseInterface) ([][]byte, []int, error) {
 	commsRaw, err := db.FetchCommitteeByEpoch(shardBlock.Header.Epoch)
 	if err != nil {
@@ -231,6 +239,7 @@ func getBridgeSignerPubkeys(shardBlock *blockchain.ShardBlock, db database.Datab
 	return pubkeys, signerIdxs, nil
 }
 
+// buildSignersProof builds the merkle proofs for some elements in a list of pubkeys
 func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
 	merkles := blockchain.BuildKeccak256MerkleTree(pubkeys)
 	fmt.Printf("[db] pubkeys: %x\n", pubkeys)
@@ -242,6 +251,7 @@ func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
 	return proofs
 }
 
+// findBeaconBlockWithInst finds a beacon block with a specific instruction; nil if not found
 func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) *blockchain.BeaconBlock {
 	for _, b := range beaconBlocks {
 		for _, blkInst := range b.Body.Instructions {
