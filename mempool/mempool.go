@@ -138,12 +138,13 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	return false
 }
 
-func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *TxDesc {
+func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
 	txDesc := &TxDesc{
 		Desc: metadata.TxDesc{
-			Tx:     tx,
-			Height: height,
-			Fee:    fee,
+			Tx:       tx,
+			Height:   height,
+			Fee:      fee,
+			FeeToken: feeToken,
 		},
 		StartTime:       time.Now(),
 		IsFowardMessage: false,
@@ -173,16 +174,30 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	//==================================================
 	tp.poolSerialNumbersHashH[*txHash] = txD.Desc.Tx.ListSerialNumbersHashH()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-	// Record this tx for fee estimation if enabled. only apply for normal tx
-	if tx.GetType() == common.TxNormalType {
-		if tp.config.FeeEstimator != nil {
-			shardID := common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+
+	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
+	if tp.config.FeeEstimator != nil {
+		var shardID byte
+		flag := false
+		switch tx.GetType() {
+		case common.TxNormalType:
+			{
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+				flag = true
+			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxCustomTokenPrivacy).PubKeyLastByteSender)
+				flag = true
+			}
+		}
+		if flag {
 			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
 				temp.ObserveTransaction(txD)
 			}
-
 		}
 	}
+
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		metadataType := tx.GetMetadata().GetType()
@@ -467,7 +482,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	txFee := tx.GetTxFee()
-	txD := createTxDescMempool(tx, bestHeight, txFee)
+	txFeeToken := tx.GetTxFeeToken()
+	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
 	startAdd := time.Now()
 	tp.addTx(txD, isStore)
 	if isNewTransaction {
