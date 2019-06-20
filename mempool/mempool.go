@@ -712,7 +712,7 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		size := len(tp.pool)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.PoolSize,
-			metrics.MeasurementValue: fmt.Sprintf("%d", size),
+			metrics.MeasurementValue: float64(size),
 		})
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
