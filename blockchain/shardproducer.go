@@ -126,6 +126,11 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	//TODO calculate fee for another tx type
 	for _, tx := range block.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
+		txType := tx.GetType()
+		if txType == common.TxCustomTokenPrivacyType {
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.TxTokenPrivacyData.TxNormal.Fee
+		}
 	}
 	//============Build Header=============
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
