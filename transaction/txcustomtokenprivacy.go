@@ -451,3 +451,11 @@ func (tx *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 func (tx *TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return tx.TxTokenPrivacyData.TxNormal.SigPubKey
 }
+
+func (tx *TxCustomTokenPrivacy) GetTxFeeToken() uint64 {
+	return tx.TxTokenPrivacyData.TxNormal.Fee
+}
+
+func (tx *TxCustomTokenPrivacy) GetTokenID() *common.Hash {
+	return &tx.TxTokenPrivacyData.PropertyID
+}
