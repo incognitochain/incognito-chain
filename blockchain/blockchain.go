@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	pubsub "github.com/incognitochain/incognito-chain/pubsub"
 	"math/big"
 	"sort"
 	"strconv"
@@ -59,6 +60,7 @@ type Config struct {
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
+	PubsubManager     *pubsub.PubsubManager
 	Server            interface {
 		BoardcastNodeState() error
 

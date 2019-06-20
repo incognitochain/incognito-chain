@@ -1,12 +1,12 @@
-package pubusb
+package pubsub
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"sync"
 )
-type Event chan interface{}
+type Event chan *Message
 type PubsubManager struct {
-	// only allow registered topic
+	// only allow registered Topic
 	TopicList []string
 	//List of sender
 	//PublisherList map[string]Publisher
@@ -18,14 +18,14 @@ type PubsubManager struct {
 	cond *sync.Cond
 }
 type Message struct {
-	topic   string
-	value   interface{}
+	Topic          string
+	Value          interface{}
 	unSendSubcribe []chan interface{}
 }
 func NewMessage(topic string, value interface{}) *Message {
 	return &Message{
-		topic: topic,
-		value: value,
+		Topic: topic,
+		Value: value,
 	}
 }
 func NewPubsubManager() *PubsubManager{
@@ -39,38 +39,41 @@ func NewPubsubManager() *PubsubManager{
 }
 func (pubsubManager *PubsubManager) Start() {
 	for {
-		pubsubManager.cond.L.Lock()
-		for topic, messages := range pubsubManager.MessagePool {
-			for _, message := range messages {
-				if subList, ok := pubsubManager.SubcriberList[topic]; ok {
-					for _, event := range subList {
-						event.NotifyMessage(message)
+				pubsubManager.cond.L.Lock()
+				for topic, messages := range pubsubManager.MessagePool {
+					for _, message := range messages {
+						if subList, ok := pubsubManager.SubcriberList[topic]; ok {
+							for _, event := range subList {
+								event.NotifyMessage(message)
+							}
+						}
 					}
 				}
-			}
-		}
-		pubsubManager.cond.L.Unlock()
-		pubsubManager.cond.Wait()
+				pubsubManager.cond.Wait()
+			pubsubManager.cond.L.Unlock()
 	}
 }
-//func (pubsubManager *PubsubManager) RegisterNewPublisher(topic string) chan interface{} {
+//func (pubsubManager *PubsubManager) RegisterNewPublisher(Topic string) chan interface{} {
 //	pubsubManager.cond.L.Lock()
 //	defer pubsubManager.cond.L.Unlock()
 //	cPublish := make(chan interface{}, ChanWorkLoad)
-//	pubsubManager.PublisherList[topic] = cPublish
+//	pubsubManager.PublisherList[Topic] = cPublish
 //	return cPublish
 //}
-func (pubsubManager *PubsubManager) RegisterNewSubcriber(topic string) chan interface{} {
+func (pubsubManager *PubsubManager) RegisterNewSubcriber(topic string) chan *Message {
 	pubsubManager.cond.L.Lock()
 	defer pubsubManager.cond.L.Unlock()
-	cSubcribe := make(chan interface{}, ChanWorkLoad)
+	cSubcribe := make(chan *Message, ChanWorkLoad)
+	if _, ok := pubsubManager.SubcriberList[topic]; !ok {
+		pubsubManager.SubcriberList[topic] = []Event{}
+	}
 	pubsubManager.SubcriberList[topic] = append(pubsubManager.SubcriberList[topic],cSubcribe)
 	return cSubcribe
 }
 func (pubsubManager *PubsubManager) PublishMessage(message *Message) {
 	pubsubManager.cond.L.Lock()
 	defer pubsubManager.cond.L.Unlock()
-	pubsubManager.MessagePool[message.topic] = append(pubsubManager.MessagePool[message.topic], message)
+	pubsubManager.MessagePool[message.Topic] = append(pubsubManager.MessagePool[message.Topic], message)
 	pubsubManager.cond.Signal()
 }
 func (event Event) NotifyMessage(message *Message) {
@@ -89,3 +92,4 @@ func (pubsubManager *PubsubManager) AddTopic(topic string) {
 		pubsubManager.TopicList = append(pubsubManager.TopicList, topic)
 	}
 }
+//TODO: unscibe, delete subcribeList if no one list
