@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -17,15 +18,18 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
-	var cShardBlock = make(chan *blockchain.ShardBlock, 10)
-	id := wsServer.config.BlockChain.SubcribeNewShardBlock(cShardBlock)
-	defer func() {
-		wsServer.config.BlockChain.UnsubcribeNewShardBlock(id)
-		close(cResult)
-	}()
+	//var cShardBlock = make(chan *blockchain.ShardBlock, 10)
+	//id := wsServer.config.BlockChain.SubcribeNewShardBlock(cShardBlock)
+	cShardBlock := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
+	//defer func()
+		//wsServer.config.BlockChain.UnsubcribeNewShardBlock(id)
+		//close(cResult)
+	//}()
+	defer close(cResult)
 	for {
 		select {
-		case shardBlock := <-cShardBlock:
+		case msg := <-cShardBlock:
+			shardBlock, _ := msg.Value.(*blockchain.ShardBlock)
 			{
 				if shardBlock.Header.ShardID != shardID {
 					continue

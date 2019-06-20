@@ -1,4 +1,4 @@
-package pubusb
+package pubsub
 
 import (
 	"fmt"
