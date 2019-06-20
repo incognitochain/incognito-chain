@@ -118,7 +118,7 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 func getBeaconSwapProof() string {
 	url := "http://127.0.0.1:9338"
 
-	block := 15
+	block := 16
 	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbeaconswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
 
 	req, _ := http.NewRequest("POST", url, payload)
@@ -162,26 +162,27 @@ func TestSwapBeacon(t *testing.T) {
 	}
 
 	// Genesis committee
-	beaconOld := [][32]byte{}
 	beaconOldFlat := [][]byte{}
-	for _, val := range r.Result.BeaconSignerPubkeys {
+	for i, val := range r.Result.BeaconSignerPubkeys {
 		pk, _ := hex.DecodeString(val)
-		beaconOld = append(beaconOld, toByte32(pk))
+		fmt.Printf("pk[%d]: %x %d\n", i, pk, len(pk))
+		fmt.Printf("hash(pk[%d]): %x\n", i, keccak256(pk))
 		beaconOldFlat = append(beaconOldFlat, pk)
 	}
 	beaconOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(beaconOldFlat))
+	tmpMerkles := blockchain.BuildKeccak256MerkleTree(beaconOldFlat)
+	for i, m := range tmpMerkles {
+		fmt.Printf("merkles[%d]: %x\n", i, m)
+	}
 	fmt.Printf("beaconOldRoot: %x\n", beaconOldRoot[:])
 
-	bridgeOld := [][32]byte{}
 	bridgeOldFlat := [][]byte{}
 	for _, val := range r.Result.BridgeSignerPubkeys {
 		pk, _ := hex.DecodeString(val)
-		bridgeOld = append(bridgeOld, toByte32(pk))
 		bridgeOldFlat = append(bridgeOldFlat, pk)
 	}
 	bridgeOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(bridgeOldFlat))
 	fmt.Printf("bridgeOldRoot: %x\n", bridgeOldRoot[:])
-	// fmt.Printf("bridgeOld[0]: %x\n", bridgeOld[0])
 
 	p, err := setup(beaconOldRoot, bridgeOldRoot)
 	if err != nil {
@@ -221,10 +222,11 @@ func TestSwapBeacon(t *testing.T) {
 	fmt.Printf("expected beaconBlkHash: %x\n", keccak256(beaconBlkData[:], beaconInstRoot[:]))
 	fmt.Printf("beaconBlkHash: %x\n\n", beaconBlkHash)
 
-	beaconSignerPubkeys := [comm_size][32]byte{}
-	for i, signer := range r.Result.BeaconSignerPubkeys {
-		beaconSignerPubkeys[i] = decode32(signer)
+	beaconSignerPubkeys := []byte{}
+	for _, signer := range r.Result.BeaconSignerPubkeys {
+		beaconSignerPubkeys = append(beaconSignerPubkeys, decode(signer)...)
 	}
+	beaconSignerCount := big.NewInt(int64(len(r.Result.BeaconSignerPubkeys)))
 
 	beaconSignerSig := toByte32(decode(r.Result.BeaconSignerSig))
 	beaconSignerPaths := [pubkey_length][32]byte{}
@@ -236,6 +238,7 @@ func TestSwapBeacon(t *testing.T) {
 			beaconSignerPathIsLeft[k] = r.Result.BeaconSignerPathIsLeft[i][j]
 		}
 	}
+	beaconSignerPathLen := big.NewInt(int64(len(r.Result.BeaconSignerPaths[0])))
 
 	// For bridge
 	bridgeInstRoot := decode32(r.Result.BridgeInstRoot)
@@ -245,16 +248,18 @@ func TestSwapBeacon(t *testing.T) {
 		bridgeInstPath[i] = decode32(path)
 		bridgePathIsLeft[i] = r.Result.BridgeInstPathIsLeft[i]
 	}
+	bridgeInstPathLen := big.NewInt(int64(len(r.Result.BridgeInstPath)))
 	// fmt.Printf("bridgeInstRoot: %x\n", bridgeInstRoot)
 
 	bridgeBlkData := toByte32(decode(r.Result.BridgeBlkData))
 	bridgeBlkHash := toByte32(decode(r.Result.BridgeBlkHash))
 	// fmt.Printf("bridgeBlkHash: %x\n", bridgeBlkHash)
 
-	bridgeSignerPubkeys := [comm_size][32]byte{}
-	for i, signer := range r.Result.BridgeSignerPubkeys {
-		bridgeSignerPubkeys[i] = decode32(signer)
+	bridgeSignerPubkeys := []byte{}
+	for _, signer := range r.Result.BridgeSignerPubkeys {
+		bridgeSignerPubkeys = append(bridgeSignerPubkeys, decode(signer)...)
 	}
+	bridgeSignerCount := big.NewInt(int64(len(r.Result.BridgeSignerPubkeys)))
 
 	bridgeSignerSig := toByte32(decode(r.Result.BridgeSignerSig))
 	bridgeSignerPaths := [pubkey_length][32]byte{}
@@ -266,12 +271,14 @@ func TestSwapBeacon(t *testing.T) {
 			bridgeSignerPathIsLeft[k] = r.Result.BridgeSignerPathIsLeft[i][j]
 		}
 	}
+	bridgeSignerPathLen := big.NewInt(int64(len(r.Result.BridgeSignerPaths[0])))
 
 	auth.GasLimit = 6000000
 	tx, err := p.c.SwapBeacon(
 		auth,
 		beaconNewRoot,
 		inst[:],
+
 		beaconInstPath,
 		beaconPathIsLeft,
 		beaconInstPathLen,
@@ -279,18 +286,24 @@ func TestSwapBeacon(t *testing.T) {
 		beaconBlkData,
 		beaconBlkHash,
 		beaconSignerPubkeys,
+		beaconSignerCount,
 		beaconSignerSig,
 		beaconSignerPaths,
 		beaconSignerPathIsLeft,
+		beaconSignerPathLen,
+
 		bridgeInstPath,
 		bridgePathIsLeft,
+		bridgeInstPathLen,
 		bridgeInstRoot,
 		bridgeBlkData,
 		bridgeBlkHash,
 		bridgeSignerPubkeys,
+		bridgeSignerCount,
 		bridgeSignerSig,
 		bridgeSignerPaths,
 		bridgeSignerPathIsLeft,
+		bridgeSignerPathLen,
 	)
 	if err != nil {
 		fmt.Println("err:", err)
