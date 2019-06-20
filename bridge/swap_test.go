@@ -3,8 +3,13 @@ package bridge
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +19,8 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 var genesisKey *ecdsa.PrivateKey
@@ -96,6 +103,9 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 		case "0x6c8f06ff564112a969115be5f33d4a0f87ba918c9c9bc3090fe631968e818be4":
 			format = "%t"
 			data = log.Data[len(log.Data)-1] > 0
+		case "0x8e2fc7b10a4f77a18c553db9a8f8c24d9e379da2557cb61ad4cc513a2f992cbd":
+			format = "%s"
+			data = big.NewInt(int64(0)).SetBytes(log.Data)
 		}
 
 		fmt.Printf(fmt.Sprintf("logs[%%d]: %s\n", format), i, data)
@@ -105,16 +115,72 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 	}
 }
 
-func TestSwapBeacon(t *testing.T) {
-	// Genesis committee
-	beaconOld := [][32]byte{[32]byte{1, 2, 3}, [32]byte{4, 5, 6}}
-	beaconOldRoot := keccak256(beaconOld[0][:], beaconOld[1][:])
-	fmt.Printf("beaconOldRoot: %x\n", beaconOldRoot)
-	fmt.Printf("beaconOld[0]: %x\n", beaconOld[0])
+func getBeaconSwapProof() string {
+	url := "http://127.0.0.1:9338"
 
-	bridgeOld := [][32]byte{[32]byte{101, 102, 103}, [32]byte{104, 105, 106}}
-	bridgeOldRoot := keccak256(bridgeOld[0][:], bridgeOld[1][:])
-	fmt.Printf("bridgeOldRoot: %x\n", bridgeOldRoot)
+	block := 15
+	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbeaconswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
+
+	req, _ := http.NewRequest("POST", url, payload)
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Cache-Control", "no-cache")
+	req.Header.Add("Host", "127.0.0.1:9338")
+	req.Header.Add("accept-encoding", "gzip, deflate")
+	req.Header.Add("Connection", "keep-alive")
+	req.Header.Add("cache-control", "no-cache")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("err:", err)
+		return ""
+	}
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	//fmt.Println(string(body))
+	return string(body)
+}
+
+func TestSwapBeacon(t *testing.T) {
+	body := getBeaconSwapProof()
+	if len(body) < 1 {
+		return
+	}
+
+	type getBeaconSwapProofResult struct {
+		Result jsonresult.GetBeaconSwapProof
+		Error  string
+		Id     int
+	}
+	r := getBeaconSwapProofResult{}
+	err := json.Unmarshal([]byte(body), &r)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Genesis committee
+	beaconOld := [][32]byte{}
+	beaconOldFlat := [][]byte{}
+	for _, val := range r.Result.BeaconSignerPubkeys {
+		pk, _ := hex.DecodeString(val)
+		beaconOld = append(beaconOld, toByte32(pk))
+		beaconOldFlat = append(beaconOldFlat, pk)
+	}
+	beaconOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(beaconOldFlat))
+	fmt.Printf("beaconOldRoot: %x\n", beaconOldRoot[:])
+
+	bridgeOld := [][32]byte{}
+	bridgeOldFlat := [][]byte{}
+	for _, val := range r.Result.BridgeSignerPubkeys {
+		pk, _ := hex.DecodeString(val)
+		bridgeOld = append(bridgeOld, toByte32(pk))
+		bridgeOldFlat = append(bridgeOldFlat, pk)
+	}
+	bridgeOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(bridgeOldFlat))
+	fmt.Printf("bridgeOldRoot: %x\n", bridgeOldRoot[:])
 	// fmt.Printf("bridgeOld[0]: %x\n", bridgeOld[0])
 
 	p, err := setup(beaconOldRoot, bridgeOldRoot)
@@ -123,11 +189,10 @@ func TestSwapBeacon(t *testing.T) {
 	}
 
 	// Test calling swapBeacon
-	const comm_path_length = 1
-	const comm_size = 1 << comm_path_length
-	const pubkey_length = comm_size * comm_path_length
-	const inst_path_length = 1
-	const inst_size = 1 << inst_path_length
+	const max_path = 3
+	const comm_size = 1 << max_path
+	const pubkey_length = comm_size * max_path
+	const inst_size = 1 << max_path
 	const inst_length = 100
 	const beacon_length = 512
 	const bridge_length = 256
@@ -138,44 +203,69 @@ func TestSwapBeacon(t *testing.T) {
 	fmt.Printf("beaconNewRoot: %x\n", beaconNewRoot)
 	fmt.Printf("beaconNew[0]: %x\n", beaconNew[0])
 
-	insts := [][inst_length]byte{
-		[inst_length]byte{'h', 'e', 'l', 'l', 'o'},
-		[inst_length]byte{'w', 'o', 'r', 'l', 'd'},
-	}
-	inst := insts[0]
-	instHashes := [][32]byte{
-		keccak256(insts[0][:]),
-		keccak256(insts[1][:]),
-	}
+	inst := decode(r.Result.Instruction)
+	fmt.Printf("inst: %s\n", inst)
 
-	beaconInstRoot := keccak256(instHashes[0][:], instHashes[1][:])
-	beaconInstPath := [inst_path_length][32]byte{instHashes[1]}
-	beaconPathIsLeft := [inst_path_length]bool{false}
+	beaconInstRoot := decode32(r.Result.BeaconInstRoot)
+	beaconInstPath := [max_path][32]byte{}
+	beaconPathIsLeft := [max_path]bool{}
+	for i, path := range r.Result.BeaconInstPath {
+		beaconInstPath[i] = decode32(path)
+		beaconPathIsLeft[i] = r.Result.BeaconInstPathIsLeft[i]
+	}
+	beaconInstPathLen := big.NewInt(int64(len(r.Result.BeaconInstPath)))
 	fmt.Printf("beaconInstRoot: %x\n", beaconInstRoot)
 
-	beaconBlkData := [32]byte{}
-	beaconBlkHash := keccak256(beaconInstRoot[:], beaconBlkData[:])
+	beaconBlkData := toByte32(decode(r.Result.BeaconBlkData))
+	beaconBlkHash := toByte32(decode(r.Result.BeaconBlkHash))
+	fmt.Printf("expected beaconBlkHash: %x\n", keccak256(beaconBlkData[:], beaconInstRoot[:]))
 	fmt.Printf("beaconBlkHash: %x\n\n", beaconBlkHash)
 
-	beaconSignerPubkeys := [comm_size][32]byte{beaconOld[1], beaconOld[0]}
-	beaconSignerSig := [32]byte{}
-	beaconSignerPaths := [pubkey_length][32]byte{beaconOld[0], beaconOld[1]}
-	beaconSignerPathIsLeft := [pubkey_length]bool{true, false}
+	beaconSignerPubkeys := [comm_size][32]byte{}
+	for i, signer := range r.Result.BeaconSignerPubkeys {
+		beaconSignerPubkeys[i] = decode32(signer)
+	}
+
+	beaconSignerSig := toByte32(decode(r.Result.BeaconSignerSig))
+	beaconSignerPaths := [pubkey_length][32]byte{}
+	beaconSignerPathIsLeft := [pubkey_length]bool{}
+	for i, fullPath := range r.Result.BeaconSignerPaths {
+		for j, node := range fullPath {
+			k := i*len(fullPath) + j
+			beaconSignerPaths[k] = decode32(node)
+			beaconSignerPathIsLeft[k] = r.Result.BeaconSignerPathIsLeft[i][j]
+		}
+	}
 
 	// For bridge
-	bridgeInstRoot := keccak256(instHashes[0][:], instHashes[1][:])
-	bridgeInstPath := [inst_path_length][32]byte{instHashes[1]}
-	bridgePathIsLeft := [inst_path_length]bool{false}
+	bridgeInstRoot := decode32(r.Result.BridgeInstRoot)
+	bridgeInstPath := [max_path][32]byte{}
+	bridgePathIsLeft := [max_path]bool{}
+	for i, path := range r.Result.BridgeInstPath {
+		bridgeInstPath[i] = decode32(path)
+		bridgePathIsLeft[i] = r.Result.BridgeInstPathIsLeft[i]
+	}
 	// fmt.Printf("bridgeInstRoot: %x\n", bridgeInstRoot)
 
-	bridgeBlkData := [32]byte{}
-	bridgeBlkHash := keccak256(bridgeInstRoot[:], bridgeBlkData[:])
+	bridgeBlkData := toByte32(decode(r.Result.BridgeBlkData))
+	bridgeBlkHash := toByte32(decode(r.Result.BridgeBlkHash))
 	// fmt.Printf("bridgeBlkHash: %x\n", bridgeBlkHash)
 
-	bridgeSignerPubkeys := [comm_size][32]byte{bridgeOld[1], bridgeOld[0]}
-	bridgeSignerSig := [32]byte{}
-	bridgeSignerPaths := [pubkey_length][32]byte{bridgeOld[0], bridgeOld[1]}
-	bridgeSignerPathIsLeft := [pubkey_length]bool{true, false}
+	bridgeSignerPubkeys := [comm_size][32]byte{}
+	for i, signer := range r.Result.BridgeSignerPubkeys {
+		bridgeSignerPubkeys[i] = decode32(signer)
+	}
+
+	bridgeSignerSig := toByte32(decode(r.Result.BridgeSignerSig))
+	bridgeSignerPaths := [pubkey_length][32]byte{}
+	bridgeSignerPathIsLeft := [pubkey_length]bool{}
+	for i, fullPath := range r.Result.BridgeSignerPaths {
+		for j, node := range fullPath {
+			k := i*len(fullPath) + j
+			bridgeSignerPaths[k] = decode32(node)
+			bridgeSignerPathIsLeft[k] = r.Result.BridgeSignerPathIsLeft[i][j]
+		}
+	}
 
 	auth.GasLimit = 6000000
 	tx, err := p.c.SwapBeacon(
@@ -184,6 +274,7 @@ func TestSwapBeacon(t *testing.T) {
 		inst[:],
 		beaconInstPath,
 		beaconPathIsLeft,
+		beaconInstPathLen,
 		beaconInstRoot,
 		beaconBlkData,
 		beaconBlkHash,
@@ -206,4 +297,19 @@ func TestSwapBeacon(t *testing.T) {
 	}
 	p.sim.Commit()
 	p.printReceipt(tx)
+}
+
+func toByte32(s []byte) [32]byte {
+	a := [32]byte{}
+	copy(a[:], s)
+	return a
+}
+
+func decode(s string) []byte {
+	d, _ := hex.DecodeString(s)
+	return d
+}
+
+func decode32(s string) [32]byte {
+	return toByte32(decode(s))
 }
