@@ -28,8 +28,8 @@ func sayHello(this js.Value, i []js.Value) (interface{}, error) {
 	return i[0].String(), nil
 }
 
-func randomScalar (this js.Value, i []js.Value) (interface{}, error) {
-	res :=  privacy.RandBytes(1)
+func randomScalar(this js.Value, i []js.Value) (interface{}, error) {
+	res := privacy.RandBytes(1)
 	return res, nil
 }
 
@@ -37,14 +37,15 @@ func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
 	println("args:", args[0].String())
 	bytes := []byte(args[0].String())
 	println("Bytes:", bytes)
-	temp := make(map[string] []string)
+	temp := make(map[string][]string)
 
 	err := json.Unmarshal(bytes, &temp)
 	if err != nil {
 		println(err)
 		return nil, nil
 	}
-	println("asfasf", temp["values"][0])
+	println("temp values", temp["values"])
+	println("temp rands", temp["rands"])
 
 	if len(temp["values"]) != len(temp["rands"]) {
 		println("Wrong args")
@@ -53,7 +54,7 @@ func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
 	values := make([]*big.Int, len(temp["values"]))
 	rands := make([]*big.Int, len(temp["values"]))
 
-	for i:=0; i < len(temp["values"]); i++{
+	for i := 0; i < len(temp["values"]); i++ {
 		values[i], _ = new(big.Int).SetString(temp["values"][i], 10)
 		rands[i], _ = new(big.Int).SetString(temp["rands"][i], 10)
 	}
