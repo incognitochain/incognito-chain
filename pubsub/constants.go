@@ -1,6 +1,7 @@
 package pubsub
 
 const ChanWorkLoad = 100
+
 // TOPIC
 const (
 	NewshardblockTopic = "newshardblock"

@@ -14,4 +14,3 @@ func (metricLogger *PubsubLogger) Init(inst common.Logger) {
 
 // Global instant to use
 var Logger = PubsubLogger{}
-
