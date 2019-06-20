@@ -9,15 +9,17 @@ const (
 	UnexpectedError = iota
 	UnmashallJsonError
 	MashallJsonError
+	UnregisteredTopicError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	Message string
 }{
-	UnexpectedError:    {-1000, "Unexpected Error"},
-	UnmashallJsonError: {-1001, "Umarshall Json Error"},
-	MashallJsonError:   {-1002, "Marshall Json Error"},
+	UnexpectedError:        {-1000, "Unexpected Error"},
+	UnmashallJsonError:     {-1001, "Umarshall Json Error"},
+	MashallJsonError:       {-1002, "Marshall Json Error"},
+	UnregisteredTopicError: {-1002, "Subcribed Topic Not Found Error"},
 }
 
 type PubsubError struct {
@@ -39,7 +41,7 @@ func (e *PubsubError) Init(key int, err error) {
 	e.Err = errors.Wrap(err, e.Message)
 }
 
-func NewMetricError(key int, err error) *PubsubError {
+func NewPubsubError(key int, err error) *PubsubError {
 	return &PubsubError{
 		Code:    ErrCodeMessage[key].Code,
 		Message: ErrCodeMessage[key].Message,

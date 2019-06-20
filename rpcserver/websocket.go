@@ -27,13 +27,15 @@ type RpcSubResult struct {
 	Result interface{}
 	Error  *RPCError
 }
+
 // Manage All Subcription from one socket connection
 type SubcriptionManager struct {
-	wsMtx sync.RWMutex
-	subMtx sync.RWMutex
+	wsMtx          sync.RWMutex
+	subMtx         sync.RWMutex
 	subRequestList map[string]map[common.Hash]chan struct{} // String: Subcription Method, Hash: hash from Subcription Params
-	ws *websocket.Conn
+	ws             *websocket.Conn
 }
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -42,12 +44,13 @@ var upgrader = websocket.Upgrader{
 func (wsServer *WsServer) Init(config *RpcServerConfig) {
 	wsServer.config = *config
 }
-func NewSubcriptionManager(ws *websocket.Conn) *SubcriptionManager{
+func NewSubcriptionManager(ws *websocket.Conn) *SubcriptionManager {
 	return &SubcriptionManager{
 		subRequestList: make(map[string]map[common.Hash]chan struct{}),
-		ws: ws,
+		ws:             ws,
 	}
 }
+
 // Start is used by rpcserver.go to start the rpc listener.
 func (wsServer *WsServer) Start() error {
 	if atomic.AddInt32(&wsServer.started, 1) != 1 {
@@ -155,7 +158,7 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 			if subRequest.Type == 1 {
 				go Unsubcribe(subManager, subRequest, msgType)
 				if err != nil {
-				
+
 				}
 			}
 		} else {
@@ -290,4 +293,3 @@ func AddSubcription(subManager *SubcriptionManager, subRequest *SubcriptionReque
 	subManager.subRequestList[subRequest.JsonRequest.Method][hash] = closeChan
 	return nil
 }
-
