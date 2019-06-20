@@ -64,8 +64,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrSendTxData:   {-2002, "Can not send tx"},
 	// socket/subcribe -3xxx
 	ErrSubcribe:   {-3001, "Failed to subcribe"},
-	ErrUnsubcribe:   {-2002, "Failed to unsubcribe"},
-	
+	ErrUnsubcribe: {-2002, "Failed to unsubcribe"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

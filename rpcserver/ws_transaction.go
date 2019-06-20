@@ -4,7 +4,9 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"reflect"
 )
 
 func (wsServer *WsServer) handleSubcribePendingTransaction(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -15,33 +17,44 @@ func (wsServer *WsServer) handleSubcribePendingTransaction(params interface{}, s
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	txHashTemp,ok := arrayParams[0].(string)
+	txHashTemp, ok := arrayParams[0].(string)
 	if !ok {
 		err := NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Tx Hash"))
 		cResult <- RpcSubResult{Error: err}
 	}
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
-	var cShardBlock = make(chan *blockchain.ShardBlock, 10)
-	id := wsServer.config.BlockChain.SubcribeNewShardBlock(cShardBlock)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
+	if err != nil {
+		err := NewRPCError(ErrSubcribe, err)
+		cResult <- RpcSubResult{Error: err}
+		return
+	}
 	defer func() {
-		wsServer.config.BlockChain.UnsubcribeNewShardBlock(id)
+		Logger.log.Info("Finish Subcribe New Pending Transaction ", txHashTemp)
+		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewshardblockTopic, subId)
 		close(cResult)
 	}()
 	for {
 		select {
-		case shardBlock := <-cShardBlock:
+		case msg := <-subChan:
 			{
+				shardBlock, ok := msg.Value.(*blockchain.ShardBlock)
+				if !ok {
+					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.ShardBlock, have %+v", reflect.TypeOf(msg.Value))
+					continue
+				}
 				for index, tx := range shardBlock.Body.Transactions {
 					if tx.Hash().IsEqual(txHash) {
 						res, err := (&HttpServer{}).revertTxToResponseObject(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
-						cResult <- RpcSubResult{Result:res, Error:err}
+						cResult <- RpcSubResult{Result: res, Error: err}
 						return
 					}
 				}
+
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe Pending Transaction " + txHashTemp}}
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe Pending Transaction " + txHashTemp}}
 				return
 			}
 		}
