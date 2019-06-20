@@ -1,4 +1,4 @@
-package pubusb
+package pubsub
 
 const ChanWorkLoad = 100
 // TOPIC

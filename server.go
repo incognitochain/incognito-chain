@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"log"
 	"net"
 	"os"
@@ -59,6 +60,7 @@ type Server struct {
 	wallet            *wallet.Wallet
 	consensusEngine   *constantbft.Engine
 	blockgen          *blockchain.BlkTmplGenerator
+	pubusb            *pubsub.PubsubManager
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -188,7 +190,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	cRoleInCommitteesNetSync := make(chan int)
 	cTxCache := make(chan common.Hash, 1000)
 	var err error
-
+	var pubsub = pubsub.NewPubsubManager()
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
 	if err != nil {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
@@ -198,13 +200,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Logger.log.Error(err)
 		}
 	}
-
+	serverObj.pubusb = pubsub
 	serverObj.beaconPool = mempool.GetBeaconPool()
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
-
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
 	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
-
 	serverObj.blockChain = &blockchain.BlockChain{}
 
 	relayShards := []byte{}
@@ -236,6 +236,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
 		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		PubsubManager:     pubsub,
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
@@ -451,6 +452,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
 			MiningPubKeyB58: miningPubkeyB58,
 			NetSync:         serverObj.netSync,
+			PubsubManager:   pubsub,
+			
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -627,6 +630,7 @@ func (serverObj Server) Start() {
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
 	}
+	go serverObj.pubusb.Start()
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.Scantime)
