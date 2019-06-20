@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"reflect"
 )
 
 func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -18,13 +19,26 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
-	subId, subChan := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
-	defer close(cResult)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
+	if err != nil {
+		err := NewRPCError(ErrSubcribe, err)
+		cResult <- RpcSubResult{Error: err}
+		return
+	}
+	defer func() {
+		Logger.log.Info("Finish Subcribe New Shard Block ShardID ", shardID)
+		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewshardblockTopic, subId)
+		close(cResult)
+	}()
 	for {
 		select {
 		case msg := <-subChan:
-			shardBlock, _ := msg.Value.(*blockchain.ShardBlock)
 			{
+				shardBlock, ok := msg.Value.(*blockchain.ShardBlock)
+				if !ok {
+					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.ShardBlock, have %+v", reflect.TypeOf(msg.Value))
+					continue
+				}
 				if shardBlock.Header.ShardID != shardID {
 					continue
 				}
@@ -39,8 +53,7 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe New Shard Block"}}
-				wsServer.config.PubsubManager.Unsubcribe(pubsub.NewshardblockTopic, subId)
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe New Shard Block"}}
 				return
 			}
 		}
@@ -55,13 +68,26 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	subId, subChan := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewBeaconBlockTopc)
-	defer close(cResult)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewBeaconBlockTopc)
+	if err != nil {
+		err := NewRPCError(ErrSubcribe, err)
+		cResult <- RpcSubResult{Error: err}
+		return
+	}
+	defer func() {
+		Logger.log.Info("Finish Subcribe New Beacon Block")
+		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewBeaconBlockTopc, subId)
+		close(cResult)
+	}()
 	for {
 		select {
 		case msg := <-subChan:
-			beaconBlock, _ := msg.Value.(*blockchain.BeaconBlock)
 			{
+				beaconBlock, ok := msg.Value.(*blockchain.BeaconBlock)
+				if !ok {
+					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBlock, have %+v", reflect.TypeOf(msg.Value))
+					continue
+				}
 				blockBeaconResult := jsonresult.GetBlocksBeaconResult{}
 				blockBytes, err := json.Marshal(beaconBlock)
 				if err != nil {
@@ -73,11 +99,9 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe New Beacon Block"}}
-				wsServer.config.PubsubManager.Unsubcribe(pubsub.NewBeaconBlockTopc, subId)
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe New Beacon Block"}}
 				return
 			}
 		}
 	}
 }
-
