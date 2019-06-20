@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (rpcServer RpcServer) handleGetBridgeTokensAmounts(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	db := rpcServer.config.BlockChain.GetDatabase()
+func (httpServer *HttpServer) handleGetBridgeTokensAmounts(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	db := httpServer.config.BlockChain.GetDatabase()
 	tokensAmtsBytesArr, dbErr := db.GetBridgeTokensAmounts()
 	if dbErr != nil {
 		return nil, NewRPCError(ErrUnexpected, dbErr)
@@ -38,26 +38,26 @@ func (rpcServer RpcServer) handleGetBridgeTokensAmounts(params interface{}, clos
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleCreateIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleCreateIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := metaConstructors[createAndSendIssuingRequest]
-	return rpcServer.createRawTxWithMetadata(params, closeChan, constructor)
+	return httpServer.createRawTxWithMetadata(params, closeChan, constructor)
 }
 
-func (rpcServer RpcServer) handleSendIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.sendRawTxWithMetadata(params, closeChan)
+func (httpServer *HttpServer) handleSendIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return httpServer.sendRawTxWithMetadata(params, closeChan)
 }
 
 // handleCreateAndSendIssuingRequest for user to buy Constant (using USD) or BANK token (using USD/ETH) from DCB
-func (rpcServer RpcServer) handleCreateAndSendIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	return rpcServer.createAndSendTxWithMetadata(
+func (httpServer *HttpServer) handleCreateAndSendIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return httpServer.createAndSendTxWithMetadata(
 		params,
 		closeChan,
-		RpcServer.handleCreateIssuingRequest,
-		RpcServer.handleSendIssuingRequest,
+		(*HttpServer).handleCreateIssuingRequest,
+		(*HttpServer).handleSendIssuingRequest,
 	)
 }
 
-func (rpcServer RpcServer) handleCreateRawTxWithContractingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	if len(arrayParams) >= 5 {
@@ -87,7 +87,7 @@ func (rpcServer RpcServer) handleCreateRawTxWithContractingReq(params interface{
 		*tokenID,
 		metadata.ContractingRequestMeta,
 	)
-	customTokenTx, rpcErr := rpcServer.buildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := httpServer.buildRawPrivacyCustomTokenTransaction(params, meta)
 	// rpcErr := err1.(*RPCError)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
@@ -106,8 +106,8 @@ func (rpcServer RpcServer) handleCreateRawTxWithContractingReq(params interface{
 	return result, nil
 }
 
-func (rpcServer RpcServer) handleCreateAndSendContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := rpcServer.handleCreateRawTxWithContractingReq(params, closeChan)
+func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := httpServer.handleCreateRawTxWithContractingReq(params, closeChan)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -116,8 +116,8 @@ func (rpcServer RpcServer) handleCreateAndSendContractingRequest(params interfac
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	// sendResult, err1 := rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
-	sendResult, err1 := rpcServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	// sendResult, err1 := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
 	if err1 != nil {
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}

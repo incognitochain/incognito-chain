@@ -73,11 +73,13 @@ func GetBeaconPool() *BeaconPool {
 	}
 	return beaconPool
 }
-func (self *BeaconPool) Start(cQuit chan struct{}){
+func (self *BeaconPool) Start(cQuit chan struct{}) {
 	for {
+		fmt.Println("RoleInCommittees wait")
 		select {
 		case role := <-self.CRoleInCommittees:
 			self.mtx.Lock()
+			fmt.Println("RoleInCommittees set", role)
 			self.RoleInCommittees = role
 			self.mtx.Unlock()
 		case <-cQuit:

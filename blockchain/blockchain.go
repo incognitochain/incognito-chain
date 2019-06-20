@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
+	
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -36,6 +36,7 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
+	PubSub            PubSub
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -80,6 +81,11 @@ type Config struct {
 	UserKeySet *cashec.KeySet
 }
 
+type PubSub struct {
+	mtx sync.RWMutex
+	NewShardBlockEvent map[int]chan *ShardBlock
+	NewBeaconBlockEvent map[int]chan *BeaconBlock
+}
 /*
 Init - init a blockchain view from config
 */
@@ -109,8 +115,11 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		blockchain: blockchain,
 		cQuit:      blockchain.cQuitSync,
 	}
+	blockchain.PubSub.NewBeaconBlockEvent = make(map[int]chan *BeaconBlock)
+	blockchain.PubSub.NewShardBlockEvent = make(map[int]chan *ShardBlock)
 	return nil
 }
+
 func (blockchain *BlockChain) SetIsBlockGenStarted(value bool) {
 	blockchain.config.IsBlockGenStarted = value
 }
