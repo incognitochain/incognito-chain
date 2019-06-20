@@ -5,19 +5,21 @@ import (
 	"sync"
 )
 
-type Event chan *Message
+// This package provide an Event Channel for internal pub sub of this application
+// It will issue a list of pre-defined topic
+// Publisher will register to be publisher with a particular topic,
+// then it will be able to publish message of this topic into Event Channel
+// Subcriber will register to be Subcribe with a particular topic,
+// when new message of this topic come to Event Channel,
+// then Event Channel will fire this message to subcriber
 type PubsubManager struct {
-	// only allow registered Topic
-	TopicList []string
-	//List of sender
-	//PublisherList map[string]Publisher
-	//List of Subcriber
-	SubcriberList map[string]map[uint]Event
-	// Message pool
-	MessagePool map[string][]*Message
-	IdGenerator uint
+	TopicList []string // only allow registered Topic
+	SubcriberList map[string]map[uint]Event //List of Subcriber
+	MessagePool map[string][]*Message // Message pool
+	IdGenerator uint // id generator for event
 	cond *sync.Cond
 }
+type Event chan *Message
 type Message struct {
 	Topic          string
 	Value          interface{}
@@ -59,13 +61,6 @@ func (pubsubManager *PubsubManager) Start() {
 	}
 }
 
-//func (pubsubManager *PubsubManager) RegisterNewPublisher(Topic string) chan interface{} {
-//	pubsubManager.cond.L.Lock()
-//	defer pubsubManager.cond.L.Unlock()
-//	cPublish := make(chan interface{}, ChanWorkLoad)
-//	pubsubManager.PublisherList[Topic] = cPublish
-//	return cPublish
-//}
 func (pubsubManager *PubsubManager) RegisterNewSubcriber(topic string) (uint, Event) {
 	pubsubManager.cond.L.Lock()
 	defer pubsubManager.cond.L.Unlock()
@@ -118,6 +113,3 @@ func (pubsubManager *PubsubManager) AddTopic(topic string) {
 		pubsubManager.TopicList = append(pubsubManager.TopicList, topic)
 	}
 }
-
-//TODO: remove message, delete closed chan
-//TODO: unscibe, delete subcribeList if no one list
