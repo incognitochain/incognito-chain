@@ -246,6 +246,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		return err
 	}
 	fmt.Printf("[ndh]  - - - nonerror \n")
+	go blockchain.NotifyNewShardBlockEvent(block)
 	return nil
 }
 
