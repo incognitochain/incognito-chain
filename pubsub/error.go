@@ -15,9 +15,9 @@ var ErrCodeMessage = map[int]struct {
 	Code    int
 	Message string
 }{
-	UnexpectedError: {-1000, "Unexpected Error"},
+	UnexpectedError:    {-1000, "Unexpected Error"},
 	UnmashallJsonError: {-1001, "Umarshall Json Error"},
-	MashallJsonError: {-1002, "Marshall Json Error"},
+	MashallJsonError:   {-1002, "Marshall Json Error"},
 }
 
 type PubsubError struct {
