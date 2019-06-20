@@ -156,9 +156,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 	//===============End Create Header
-	for _, inst := range beaconBlock.Body.Instructions {
-		fmt.Printf("[ndh] - - Beacon block instruction %+v \n", inst)
-	}
 	return beaconBlock, nil
 }
 

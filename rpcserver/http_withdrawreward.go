@@ -53,14 +53,14 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 
-	allCoinIDs, err := rpcServer.config.BlockChain.GetAllCoinID()
+	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	rewardAmounts := make(map[common.Hash]uint64)
 	for _, coinID := range allCoinIDs {
-		amount, err := (httpServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk, coinID)
+		amount, err := (*httpServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk, coinID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
