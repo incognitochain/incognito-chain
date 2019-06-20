@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -36,7 +36,7 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
-	PubSub            PubSub
+	PubSub           PubSub
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -82,10 +82,11 @@ type Config struct {
 }
 
 type PubSub struct {
-	mtx sync.RWMutex
-	NewShardBlockEvent map[int]chan *ShardBlock
+	mtx                 sync.RWMutex
+	NewShardBlockEvent  map[int]chan *ShardBlock
 	NewBeaconBlockEvent map[int]chan *BeaconBlock
 }
+
 /*
 Init - init a blockchain view from config
 */
@@ -1175,10 +1176,6 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 		allCoinID[index] = key
 		index++
 	}
-	fmt.Printf("[ndh] - aaaaaaaaaaaaaaaaaaa CoinID:\n")
-	for _, key := range allCoinID {
-		fmt.Printf("[ndh]  - - - - CoinID: %+v\n", key)
-	}
 	return allCoinID, nil
 }
 
@@ -1218,7 +1215,6 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 			txRequestTable[requester] = tx
 		}
 	}
-	fmt.Printf("[ndh] - - lenght tx request = %+v\n", len(txRequestTable))
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
@@ -1242,9 +1238,6 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
 			txRequestTable[requester] = tx
 		}
-	}
-	for key := range txRequestTable {
-		fmt.Printf("[ndh] - requester: %+v\n", key)
 	}
 	numberOfTxRequest := len(txRequestTable)
 	db := blockchain.config.DataBase
