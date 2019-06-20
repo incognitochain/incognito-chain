@@ -4,8 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"math/big"
+	"fmt"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"time"
 
 	//"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
@@ -26,7 +27,7 @@ func add(this js.Value, i []js.Value) (interface{}, error) {
 }
 
 func sayHello(this js.Value, i []js.Value) (interface{}, error) {
-	println("Hello %s", i[0].String())
+	fmt.Printf("Hello %s \n", i[0].String())
 	return i[0].String(), nil
 }
 
@@ -66,17 +67,16 @@ func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
 	start := time.Now()
 	proof, err := wit.Prove()
 	if err != nil {
-		println("Err: %v\n", err)
+		fmt.Println("Err: %v\n", err)
 	}
 	end := time.Since(start)
-	println("Aggregated range proving time: %v\n", end)
+	fmt.Println("Aggregated range proving time: %v\n", end)
 
 	proofBytes := proof.Bytes()
 	println("Proof bytes: ", proofBytes)
 
 	res := proof.Verify()
 	println("Res Verify: ", res)
-
 
 	proofBase64 := base64.StdEncoding.EncodeToString(proofBytes)
 	println("proofBase64: %v\n", proofBase64)
