@@ -37,6 +37,7 @@ const (
 	defaultMaxPeersNoShard        = 125
 	defaultMaxPeersBeacon         = 50
 	defaultMaxRPCClients          = 20
+	defaultMaxRPCWsClients        = 20
 	defaultMetricUrl              = ""
 	sampleConfigFilename          = "sample-config.conf"
 	defaultDisableRpcTLS          = true
@@ -97,9 +98,11 @@ type config struct {
 	RPCLimitUser   string   `long:"rpclimituser" description:"Username for limited RPC connections"`
 	RPCLimitPass   string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
 	RPCListeners   []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
+	RPCWSListeners []string `long:"rpcwslisten" description:"Add an interface/port to listen for RPC Websocket connections (default port: 19334, testnet: 19334)"`
 	RPCCert        string   `long:"rpccert" description:"File containing the certificate file"`
 	RPCKey         string   `long:"rpckey" description:"File containing the certificate key"`
 	RPCMaxClients  int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
+	RPCMaxWSClients  int      `long:"rpcmaxwsclients" description:"Max number of RPC clients for standard connections"`
 	RPCQuirks      bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
 	DisableRPC     bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
 	DisableTLS     bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
@@ -286,6 +289,7 @@ func loadConfig() (*config, []string, error) {
 		MaxPeersNoShard:      defaultMaxPeersNoShard,
 		MaxPeersBeacon:       defaultMaxPeersBeacon,
 		RPCMaxClients:        defaultMaxRPCClients,
+		RPCMaxWSClients:      defaultMaxRPCWsClients,
 		DataDir:              defaultDataDir,
 		DatabaseDir:          defaultDatabaseDirname,
 		DatabaseMempoolDir:   defaultDatabaseMempoolDirname,
@@ -508,13 +512,33 @@ func loadConfig() (*config, []string, error) {
 				addrs = []string{host}
 			}
 		}
-
 		//Logger.log.Info(externalAddress, addrs)
-
 		cfg.RPCListeners = make([]string, 0, len(addrs))
 		for _, addr := range addrs {
 			addr = net.JoinHostPort(addr, activeNetParams.rpcPort)
 			cfg.RPCListeners = append(cfg.RPCListeners, addr)
+		}
+	}
+	
+	// Default RPC Ws to listen on localhost only.
+	if !cfg.DisableRPC && len(cfg.RPCWSListeners) == 0 {
+		addrs, err := net.LookupHost("0.0.0.0")
+		if err != nil {
+			return nil, nil, err
+		}
+		// Get address from env
+		externalAddress := os.Getenv("EXTERNAL_ADDRESS")
+		if externalAddress != "" {
+			host, _, err := net.SplitHostPort(externalAddress)
+			if err == nil && host != "" {
+				addrs = []string{host}
+			}
+		}
+		//Logger.log.Info(externalAddress, addrs)
+		cfg.RPCWSListeners = make([]string, 0, len(addrs))
+		for _, addr := range addrs {
+			addr = net.JoinHostPort(addr, activeNetParams.rpcPort)
+			cfg.RPCWSListeners = append(cfg.RPCWSListeners, addr)
 		}
 	}
 
@@ -526,6 +550,10 @@ func loadConfig() (*config, []string, error) {
 	// duplicate addresses.
 	cfg.RPCListeners = normalizeAddresses(cfg.RPCListeners,
 		activeNetParams.rpcPort)
+	// Add default port to all rpc listener addresses if needed and remove
+	// duplicate addresses.
+	cfg.RPCWSListeners = normalizeAddresses(cfg.RPCWSListeners,
+		activeNetParams.rpcPort)
 
 	// Only allow TLS to be disabled if the RPC is bound to localhost
 	// addresses.
@@ -536,7 +564,7 @@ func loadConfig() (*config, []string, error) {
 			"::1":       {},
 			"0.0.0.0":   {},
 		}
-
+		
 		for _, addr := range cfg.RPCListeners {
 			host, _, err := net.SplitHostPort(addr)
 			if err != nil {
@@ -549,6 +577,24 @@ func loadConfig() (*config, []string, error) {
 			}
 			if _, ok := allowedTLSListeners[host]; !ok {
 				str := "%s: the --notls option may not be used when binding RPC to non localhost addresses: %s"
+				err := fmt.Errorf(str, funcName, addr)
+				fmt.Fprintln(os.Stderr, err)
+				fmt.Fprintln(os.Stderr, usageMessage)
+				return nil, nil, err
+			}
+		}
+		for _, addr := range cfg.RPCWSListeners {
+			host, _, err := net.SplitHostPort(addr)
+			if err != nil {
+				str := "%s: WS RPC listen interface '%s' is " +
+					"invalid: %v"
+				err := fmt.Errorf(str, funcName, addr, err)
+				fmt.Fprintln(os.Stderr, err)
+				fmt.Fprintln(os.Stderr, usageMessage)
+				return nil, nil, err
+			}
+			if _, ok := allowedTLSListeners[host]; !ok {
+				str := "%s: the --notls option may not be used when binding WS RPC to non localhost addresses: %s"
 				err := fmt.Errorf(str, funcName, addr)
 				fmt.Fprintln(os.Stderr, err)
 				fmt.Fprintln(os.Stderr, usageMessage)
