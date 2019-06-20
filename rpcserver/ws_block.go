@@ -18,13 +18,7 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
-	//var cShardBlock = make(chan *blockchain.ShardBlock, 10)
-	//id := wsServer.config.BlockChain.SubcribeNewShardBlock(cShardBlock)
 	subId, subChan := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
-	//defer func()
-		//wsServer.config.BlockChain.UnsubcribeNewShardBlock(id)
-		//close(cResult)
-	//}()
 	defer close(cResult)
 	for {
 		select {
@@ -61,15 +55,12 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	var cBeaconBlock = make(chan *blockchain.BeaconBlock, 10)
-	id := wsServer.config.BlockChain.SubcribeNewBeaconBlock(cBeaconBlock)
-	defer func() {
-		wsServer.config.BlockChain.UnsubcribeNewBeaconBlock(id)
-		close(cResult)
-	}()
+	subId, subChan := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewBeaconBlockTopc)
+	defer close(cResult)
 	for {
 		select {
-		case beaconBlock := <-cBeaconBlock:
+		case msg := <-subChan:
+			beaconBlock, _ := msg.Value.(*blockchain.BeaconBlock)
 			{
 				blockBeaconResult := jsonresult.GetBlocksBeaconResult{}
 				blockBytes, err := json.Marshal(beaconBlock)
@@ -83,6 +74,7 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 		case <-closeChan:
 			{
 				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe New Beacon Block"}}
+				wsServer.config.PubsubManager.Unsubcribe(pubsub.NewBeaconBlockTopc, subId)
 				return
 			}
 		}
