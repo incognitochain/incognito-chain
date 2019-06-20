@@ -20,7 +20,7 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 	shardID := byte(arrayParams[0].(float64))
 	//var cShardBlock = make(chan *blockchain.ShardBlock, 10)
 	//id := wsServer.config.BlockChain.SubcribeNewShardBlock(cShardBlock)
-	cShardBlock := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
+	subId, subChan := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
 	//defer func()
 		//wsServer.config.BlockChain.UnsubcribeNewShardBlock(id)
 		//close(cResult)
@@ -28,7 +28,7 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 	defer close(cResult)
 	for {
 		select {
-		case msg := <-cShardBlock:
+		case msg := <-subChan:
 			shardBlock, _ := msg.Value.(*blockchain.ShardBlock)
 			{
 				if shardBlock.Header.ShardID != shardID {
@@ -46,7 +46,7 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 		case <-closeChan:
 			{
 				cResult <- RpcSubResult{ Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe New Shard Block"}}
-				cShardBlock.Unsubcribe()
+				wsServer.config.PubsubManager.Unsubcribe(pubsub.NewshardblockTopic, subId)
 				return
 			}
 		}
