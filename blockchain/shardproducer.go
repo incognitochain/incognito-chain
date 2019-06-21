@@ -74,6 +74,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	//Swap instruction
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
+	bridgePubkeyInst := []string{}
 	if beaconHeight%common.EPOCH == 0 {
 		if len(shardPendingValidator) > 0 {
 			Logger.log.Critical("shardPendingValidator", shardPendingValidator)
@@ -85,10 +86,21 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 				Logger.log.Error(err)
 				return nil, err
 			}
+
+		}
+		// TODO(@0xbunyip): move inside previous if: only generate instruction when there's a new committee
+		// Generate instruction storing merkle root of validators pubkey and send to beacon
+		if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
+			bridgePubkeyInst = buildBridgePubkeyRootInstruction(shardCommittee)
 		}
 	}
 	if !reflect.DeepEqual(swapInstruction, []string{}) {
 		instructions = append(instructions, swapInstruction)
+	}
+
+	if len(bridgePubkeyInst) > 0 {
+		instructions = append(instructions, bridgePubkeyInst)
+		fmt.Printf("[db] build bridge pubkey root inst: %s\n", bridgePubkeyInst)
 	}
 
 	block := &ShardBlock{
