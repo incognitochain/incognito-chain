@@ -3,14 +3,16 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"math/big"
+	"time"
+
 	"strconv"
 	"syscall/js"
-	"time"
 )
 
-func add(this js.Value, i []js.Value) (interface{}, error) {
+func add(this js.Value, i []js.Value) interface{} {
 	ret := 0
 
 	for _, item := range i {
@@ -18,51 +20,74 @@ func add(this js.Value, i []js.Value) (interface{}, error) {
 		ret += val
 	}
 
-	return ret, nil
+	return ret
 }
 
-func sayHello(this js.Value, i []js.Value) (interface{}, error) {
-	fmt.Printf("Hello %s \n", i[0].String())
-	return i[0].String(), nil
+func sayHello(this js.Value, i []js.Value) interface{} {
+	println("Hello %s \n", i[0].String())
+	return i[0].String()
 }
 
-func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
+func randomScalar(this js.Value, i []js.Value) interface{} {
+	res := privacy.RandBytes(1)
+	return res
+}
+
+func aggregatedRangeProve(this js.Value, args []js.Value) interface{} {
+	println("args:", args[0].String())
 	bytes := []byte(args[0].String())
-	fmt.Println("Bytes: %v\n", bytes)
+	println("Bytes:", bytes)
+	temp := make(map[string][]string)
 
-	wit := zkp.AggregatedRangeWitness{}
-	_ = wit
+	err := json.Unmarshal(bytes, &temp)
+	if err != nil {
+		println(err)
+		return nil
+	}
+	println("temp values", temp["values"])
+	println("temp rands", temp["rands"])
 
-	fmt.Println("Wit: ", wit)
+	if len(temp["values"]) != len(temp["rands"]) {
+		println("Wrong args")
+	}
 
-	json.Unmarshal(bytes, &wit)
+	values := make([]*big.Int, len(temp["values"]))
+	rands := make([]*big.Int, len(temp["values"]))
 
-	fmt.Println("wit after unmarshal : %v\n", wit)
+	for i := 0; i < len(temp["values"]); i++ {
+		values[i], _ = new(big.Int).SetString(temp["values"][i], 10)
+		rands[i], _ = new(big.Int).SetString(temp["rands"][i], 10)
+	}
+
+	wit := new(zkp.AggregatedRangeWitness)
+	wit.Set(values, rands)
 
 	start := time.Now()
 	proof, err := wit.Prove()
 	if err != nil {
-		fmt.Println("Err: %v\n", err)
+		println("Err: %v\n", err)
 	}
 	end := time.Since(start)
-	fmt.Println("Aggregated range proving time: %v\n", end)
+	println("Aggregated range proving time: %v\n", end)
 
-	//tln("Proof json marshal: %v\n", proofMarshal)proofMarshal, _ :=  json.Marshal(proof)
-	//	//
-	//	//prin
+	proofBytes := proof.Bytes()
+	println("Proof bytes: ", proofBytes)
 
-	proofBase64 := base64.StdEncoding.EncodeToString(proof.Bytes())
+	res := proof.Verify()
+	println("Res Verify: ", res)
 
-	fmt.Println("proofBase64: %v\n", proofBase64)
+	proofBase64 := base64.StdEncoding.EncodeToString(proofBytes)
+	println("proofBase64: %v\n", proofBase64)
 
-	return proofBase64, nil
+	return proofBase64
 }
 
 func main() {
 	c := make(chan struct{}, 0)
-	fmt.Println("Hello WASM")
-	RegisterCallback("add", add)
-	RegisterCallback("sayHello", sayHello)
-	RegisterCallback("aggregatedRangeProve", aggregatedRangeProve)
+	println("Hello WASM")
+	js.Global().Set("add", js.FuncOf(add))
+	js.Global().Set("sayHello", js.FuncOf(sayHello))
+	js.Global().Set("randomScalar", js.FuncOf(randomScalar))
+	js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
 	<-c
 }
