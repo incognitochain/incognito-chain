@@ -126,4 +126,7 @@ const (
 	subcribeNewShardBlock      = "subcribenewshardblock"
 	subcribeNewBeaconBlock     = "subcribenewbeaconblock"
 	subcribePendingTransaction = "subcribependingtransaction"
+	subcribeMempoolInfo = "subcribemempoolinfo"
+	subcribeShardBestState = "subcribeshardbeststate"
+	subcribeBeaconBestState = "subcribebeaconbeststate"
 )
