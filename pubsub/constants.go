@@ -6,9 +6,11 @@ const ChanWorkLoad = 100
 const (
 	NewshardblockTopic = "newshardblock"
 	NewBeaconBlockTopc = "newbeaconblock"
+	TestTopic = "testtopoc"
 )
 
 var Topics = []string{
 	NewshardblockTopic,
 	NewBeaconBlockTopc,
+	TestTopic,
 }
