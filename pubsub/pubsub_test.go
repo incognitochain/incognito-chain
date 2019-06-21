@@ -51,7 +51,18 @@ func TestRegisterNewSubcribeWithUnregisteredTopic(t *testing.T) {
 		}
 	}
 }
-
+func TestUnsubcribe(t *testing.T) {
+	var pubsubManager = NewPubsubManager()
+	id, _, _ := pubsubManager.RegisterNewSubcriber(TestTopic)
+	pubsubManager.Unsubcribe(TestTopic, id)
+	subMap, ok := pubsubManager.SubcriberList[TestTopic]
+	if !ok {
+		t.Error("Can not get subcribe map by topic")
+	}
+	if _, ok := subMap[id]; ok {
+		t.Error("Should have no sub chan")
+	}
+}
 func TestPublishMessage(t *testing.T) {
 	var pubsubManager = NewPubsubManager()
 	pubsubManager.PublishMessage(NewMessage(TestTopic, "abc"))
@@ -104,4 +115,24 @@ func TestMessageBroken(t *testing.T) {
 	wg.Wait()
 	pubsubManager.Unsubcribe(TestTopic, id)
 	return
+}
+func TestHasTopic(t *testing.T) {
+	var pubsubManager = NewPubsubManager()
+	if !pubsubManager.HasTopic(NewBeaconBlockTopic) {
+		t.Error("Pubsub manager should have this topic")
+	}
+	if pubsubManager.HasTopic("lajsdlkjaskldj") {
+		t.Error("Pubsub manager should not have this topic")
+	}
+}
+
+func TestAddTopic(t *testing.T) {
+	var pubsubManager = NewPubsubManager()
+	if pubsubManager.HasTopic("lajsdlkjaskldj") {
+		t.Error("Pubsub manager should not have this topic")
+	}
+	pubsubManager.AddTopic("lajsdlkjaskldj")
+	if !pubsubManager.HasTopic("lajsdlkjaskldj") {
+		t.Error("Pubsub manager should have this topic")
+	}
 }

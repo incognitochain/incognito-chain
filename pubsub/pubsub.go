@@ -74,7 +74,7 @@ func (pubsubManager *PubsubManager) RegisterNewSubcriber(topic string) (uint, Ev
 	pubsubManager.cond.L.Lock()
 	defer pubsubManager.cond.L.Unlock()
 	cSubcribe := make(chan *Message, ChanWorkLoad)
-	if !(common.IndexOfStr(topic, pubsubManager.TopicList) > -1) {
+	if !pubsubManager.HasTopic(topic) {
 		return 0, cSubcribe, NewPubsubError(UnregisteredTopicError, errors.New(topic))
 	}
 	if _, ok := pubsubManager.SubcriberList[topic]; !ok {

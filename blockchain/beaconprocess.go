@@ -238,7 +238,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	if block.Header.Height%50 == 0 {
 		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
 	}
-	go blockchain.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopc,block))
+	go blockchain.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic,block))
 	return nil
 }
 
