@@ -101,11 +101,12 @@ func (protocol *BFTProtocol) phaseListen() error {
 		additionalWaitTime = common.MinShardBlkInterval - timeSinceLastBlk
 	}
 	if additionalWaitTime < 0 {
-		if protocol.RoundData.Layer == common.BEACON_ROLE {
-			additionalWaitTime = common.MinBeaconBlkInterval
-		} else {
-			additionalWaitTime = common.MinShardBlkInterval
-		}
+		additionalWaitTime = 0
+	}
+	if protocol.RoundData.Layer == common.BEACON_ROLE {
+		additionalWaitTime += common.MinBeaconBlkInterval
+	} else {
+		additionalWaitTime += common.MinShardBlkInterval
 	}
 	fmt.Println("BFT: Listen phase", time.Since(protocol.startTime).Seconds())
 
