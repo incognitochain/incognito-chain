@@ -440,6 +440,8 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.BurningRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 		}
 		if err != nil {
 			return err
@@ -483,6 +485,8 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.BurningRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 		}
 		if err != nil {
 			return err
