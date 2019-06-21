@@ -3,6 +3,7 @@ package constantbft
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"sync"
 	"time"
 
@@ -15,13 +16,10 @@ import (
 type Engine struct {
 	sync.Mutex
 	started bool
-
 	// channel
 	cQuit   chan struct{}
 	cBFTMsg chan wire.Message
-
 	config EngineConfig
-
 	currentBFTBlkHeight uint64
 	currentBFTRound     int
 	// prevRoundUserLayer  string
@@ -39,6 +37,7 @@ type EngineConfig struct {
 	Server                      serverInterface
 	ShardToBeaconPool           blockchain.ShardToBeaconPool
 	CrossShardPool              map[byte]blockchain.CrossShardPool
+	PubsubManager               *pubsub.PubsubManager
 	CRoleInCommitteesMempool    chan int
 	CRoleInCommitteesNetSync    chan int
 	CRoleInCommitteesBeaconPool chan bool
@@ -312,12 +311,10 @@ func (engine *Engine) execShardRole(shardID byte) {
 }
 
 func (engine *Engine) NotifyBeaconRole(beaconRole bool) {
-	engine.config.CRoleInCommitteesBeaconPool <- beaconRole
+	engine.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, beaconRole))
+	//engine.config.CRoleInCommitteesBeaconPool <- beaconRole
+	
 }
 func (engine *Engine) NotifyShardRole(shardRole int) {
-	engine.config.CRoleInCommitteesMempool <- shardRole
-	engine.config.CRoleInCommitteesNetSync <- shardRole
-	for _, ch := range engine.config.CRoleInCommitteesShardPool {
-		ch <- shardRole
-	}
+	engine.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, shardRole))
 }
