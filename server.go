@@ -181,14 +181,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
-	cRoleInCommitteesMempool := make(chan int)
-	cRoleInCommitteesBeaconPool := make(chan bool)
-	cRoleInCommitteesShardPool := make([]chan int, 256)
-	for i := 0; i < 256; i++ {
-		cRoleInCommitteesShardPool[i] = make(chan int)
-	}
-	cRoleInCommitteesNetSync := make(chan int)
-	cTxCache := make(chan common.Hash, 1000)
+	
 	var err error
 	var pubsub = pubsub.NewPubsubManager()
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
@@ -243,9 +236,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	//init beacon pol
-	mempool.InitBeaconPool(cRoleInCommitteesBeaconPool)
+	mempool.InitBeaconPool(serverObj.pubusb)
 	//init shard pool
-	mempool.InitShardPool(serverObj.shardPool, cRoleInCommitteesShardPool)
+	mempool.InitShardPool(serverObj.shardPool, serverObj.pubusb)
 	//init cross shard pool
 	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
 
@@ -316,11 +309,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		PersistMempool:    cfg.PersistMempool,
 		RelayShards:       relayShards,
 		UserKeyset:        serverObj.userKeySet,
+		PubsubManager:     serverObj.pubusb,
 	})
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-	serverObj.memPool.InitChannelMempool(cTxCache, cRoleInCommitteesMempool, cPendingTxs)
+	serverObj.memPool.InitChannelMempool(cPendingTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
@@ -329,6 +323,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ChainParams:  chainParams,
 		FeeEstimator: serverObj.feeEstimator,
 		MaxTx:        cfg.TxPoolMaxTx,
+		PubsubManager: pubsub,
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
@@ -349,10 +344,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		BlockGen:                    serverObj.blockgen,
 		NodeMode:                    cfg.NodeMode,
 		UserKeySet:                  serverObj.userKeySet,
-		CRoleInCommitteesMempool:    cRoleInCommitteesMempool,
-		CRoleInCommitteesNetSync:    cRoleInCommitteesNetSync,
-		CRoleInCommitteesShardPool:  cRoleInCommitteesShardPool,
-		CRoleInCommitteesBeaconPool: cRoleInCommitteesBeaconPool,
+		PubsubManager:               serverObj.pubusb,
 	})
 	if err != nil {
 		return err
@@ -365,15 +357,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		TxMemPool:  serverObj.memPool,
 		Server:     serverObj,
 		Consensus:  serverObj.consensusEngine,
-
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
-	}, cTxCache,
-		&netsync.ShardIDConfig{
-			RelayShard:        relayShards,
-			RoleInCommittees:  -1,
-			CRoleInCommittees: cRoleInCommitteesNetSync,
-		})
+		PubsubManager: serverObj.pubusb,
+		RelayShard:        relayShards,
+		RoleInCommittees:  -1,
+	})
 	// Create a connection manager.
 	var peer *peer.Peer
 	if !cfg.DisableListen {

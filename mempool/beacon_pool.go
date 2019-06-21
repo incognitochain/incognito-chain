@@ -6,6 +6,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"sort"
 	"sync"
 	"time"
@@ -32,7 +33,8 @@ type BeaconPool struct {
 	config            BeaconPoolConfig
 	cache             *lru.Cache
 	RoleInCommittees  bool //Current Role of Node
-	CRoleInCommittees <-chan bool
+	RoleInCommitteesEvent pubsub.Event
+	PubsubManager     *pubsub.PubsubManager
 }
 
 var beaconPool *BeaconPool = nil
@@ -49,11 +51,13 @@ func init() {
 	}()
 }
 
-func InitBeaconPool(cRoleInCommitteesBeaconPool chan bool) {
+func InitBeaconPool(pubsubManager *pubsub.PubsubManager) {
 	//do nothing
 	beaconPool := GetBeaconPool()
 	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
-	beaconPool.CRoleInCommittees = cRoleInCommitteesBeaconPool
+	beaconPool.PubsubManager = pubsubManager
+	_, subChanRole, _ := beaconPool.PubsubManager.RegisterNewSubcriber(pubsub.BeaconRoleTopic)
+	beaconPool.RoleInCommitteesEvent = subChanRole
 }
 
 // get singleton instance of ShardToBeacon pool
@@ -75,11 +79,14 @@ func GetBeaconPool() *BeaconPool {
 }
 func (self *BeaconPool) Start(cQuit chan struct{}) {
 	for {
-		fmt.Println("RoleInCommittees wait")
 		select {
-		case role := <-self.CRoleInCommittees:
+		case msg := <-self.RoleInCommitteesEvent:
+			role, ok := msg.Value.(bool)
+			if !ok {
+				continue
+			}
 			self.mtx.Lock()
-			fmt.Println("RoleInCommittees set", role)
+			fmt.Println("RoleInCommittees BEACON set", role)
 			self.RoleInCommittees = role
 			self.mtx.Unlock()
 		case <-cQuit:
