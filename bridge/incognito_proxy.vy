@@ -24,10 +24,9 @@ def __init__(_beaconCommRoot: bytes32, _bridgeCommRoot: bytes32):
 
 @constant
 @public
-def parseSwapBeaconInst(inst: bytes[INST_LENGTH]) -> bytes32[COMM_SIZE]:
-    # TODO: implement
-    comm: bytes32[COMM_SIZE]
-    return comm
+def parseSwapBeaconInst(inst: bytes[INST_LENGTH]) -> bytes32:
+    newCommRoot: bytes32 = convert(slice(inst, start=3, len=32), bytes32)
+    return newCommRoot
 
 @constant
 @public
@@ -102,7 +101,6 @@ def verifyInst(
 
 @public
 def swapBeacon(
-    newCommRoot: bytes32,
     inst: bytes[INST_LENGTH], # content of swap instruction
     beaconInstPath: bytes32[MAX_PATH],
     beaconInstPathIsLeft: bool[MAX_PATH],
@@ -184,10 +182,13 @@ def swapBeacon(
         bridgeSignerPathLen
     ):
         log.NotifyString("failed verify bridge instruction")
-        raise "failed verify bridge instruction"
+        # raise "failed verify bridge instruction"
 
-    # # # Update beacon committee merkle root
-    # self.beaconCommRoot = newCommRoot
+    # Update beacon committee merkle root
+    newCommRoot: bytes32
+    newCommRoot = self.parseSwapBeaconInst(inst)
+    self.beaconCommRoot = newCommRoot
+    log.NotifyBytes32(newCommRoot)
     log.NotifyString("no exeception...")
     return True
 
