@@ -248,6 +248,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	fmt.Printf("[ndh]  - - - nonerror \n")
 	go blockchain.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.NewshardblockTopic,block))
+	go blockchain.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
 	return nil
 }
 
