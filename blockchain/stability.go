@@ -5,9 +5,36 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
+
+// FlattenAndConvertStringInst receives a slice of insts; converts and concats each inst ([]string) and converts to []byte to build merkle tree later
+func FlattenAndConvertStringInst(insts [][]string) [][]byte {
+	flattenInsts := [][]byte{}
+	t1 := strconv.Itoa(metadata.BeaconPubkeyRootMeta)
+	t2 := strconv.Itoa(metadata.BridgePubkeyRootMeta)
+	for _, inst := range insts {
+		flatten := []byte{}
+		for _, part := range inst[:len(inst)-1] {
+			flatten = append(flatten, []byte(part)...)
+		}
+
+		lastPart := []byte(inst[len(inst)-1])
+		if len(inst) == 3 && (inst[0] == t1 || inst[0] == t2) {
+			// Special case: instruction storing merkle root of beacon/bridge's committee => decode the merkle root and sign on that instead
+			// We need to decode and submit the raw merkle root to Ethereum because we can't decode it on smart contract
+			if pk, _, err := (base58.Base58Check{}).Decode(inst[2]); err == nil {
+				lastPart = pk
+			}
+		}
+		flatten = append(flatten, lastPart...)
+
+		flattenInsts = append(flattenInsts, flatten)
+	}
+	return flattenInsts
+}
 
 // build actions from txs and ins at shard
 func buildStabilityActions(
@@ -51,6 +78,25 @@ func pickPubkeyRootInstruction(
 }
 
 // build instructions at beacon chain before syncing to shards
+func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
+	pks := [][]byte{}
+	for _, val := range currentValidators {
+		pk, _, _ := base58.Base58Check{}.Decode(val)
+		// TODO(@0xbunyip): handle error
+		pks = append(pks, pk)
+	}
+	beaconCommRoot := GetKeccak256MerkleRoot(pks)
+	fmt.Printf("[db] added beaconCommRoot: %x\n", beaconCommRoot)
+
+	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
+	instContent := base58.Base58Check{}.Encode(beaconCommRoot, 0x00)
+	return []string{
+		strconv.Itoa(metadata.BeaconPubkeyRootMeta),
+		strconv.Itoa(int(shardID)),
+		instContent,
+	}
+}
+
 func (blockChain *BlockChain) buildStabilityInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
