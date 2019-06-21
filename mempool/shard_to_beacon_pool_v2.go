@@ -254,12 +254,11 @@ func (self *ShardToBeaconPool) GetValidPendingBlockHeight() map[byte][]uint64 {
 
 func (self *ShardToBeaconPool) GetLatestValidPendingBlockHeight() map[byte]uint64 {
 	finalBlocks := make(map[byte]uint64)
-	blks := self.GetValidPendingBlock(nil)
-	for shardID, blkItems := range blks {
-		for _, blk := range blkItems {
-			finalBlocks[shardID] = blk.Header.Height
-		}
+	self.latestValidHeightMutex.Lock()
+	for shardID, height := range self.latestValidHeight {
+		finalBlocks[shardID] = height
 	}
+	self.latestValidHeightMutex.Unlock()
 	return finalBlocks
 }
 
