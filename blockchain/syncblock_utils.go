@@ -84,3 +84,18 @@ func getBlkPrefixSyncKey(isByHash bool, blkType blockType, shardID byte, fromSha
 		return ""
 	}
 }
+
+func arrayCommonElements(a, b []uint64) (c []uint64) {
+	m := make(map[uint64]bool)
+
+	for _, item := range a {
+		m[item] = true
+	}
+
+	for _, item := range b {
+		if _, ok := m[item]; ok {
+			c = append(c, item)
+		}
+	}
+	return
+}
