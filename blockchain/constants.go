@@ -14,7 +14,7 @@ const (
 	defaultMaxBlkReqPerTime = 1200
 
 	defaultBroadcastStateTime = 2 * time.Second  // in second
-	defaultStateUpdateTime    = 3 * time.Second  // in second
+	defaultStateUpdateTime    = 2 * time.Second  // in second
 	defaultMaxBlockSyncTime   = 1 * time.Second  // in second
 	defaultCacheCleanupTime   = 30 * time.Second // in second
 	workerNum                 = 5
