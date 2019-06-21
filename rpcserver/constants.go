@@ -129,4 +129,6 @@ const (
 	subcribeMempoolInfo = "subcribemempoolinfo"
 	subcribeShardBestState = "subcribeshardbeststate"
 	subcribeBeaconBestState = "subcribebeaconbeststate"
+	subcribeBeaconPoolBeststate = "subcribebeaconpoolbeststate"
+	subcribeShardPoolBeststate = "subcribeshardpoolbeststate"
 )
