@@ -111,6 +111,7 @@ const (
 	createAndSendIssuingRequest     = "createandsendissuingrequest"
 	createAndSendContractingRequest = "createandsendcontractingrequest"
 	getBridgeTokensAmounts          = "getbridgetokensamounts"
+	createAndSendBurningRequest     = "createandsendburningrequest"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof = "getbeaconswapproof"
