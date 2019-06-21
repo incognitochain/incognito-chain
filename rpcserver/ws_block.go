@@ -68,7 +68,7 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewBeaconBlockTopc)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -76,7 +76,7 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 	}
 	defer func() {
 		Logger.log.Info("Finish Subcribe New Beacon Block")
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewBeaconBlockTopc, subId)
+		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewBeaconBlockTopic, subId)
 		close(cResult)
 	}()
 	for {
