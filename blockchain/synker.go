@@ -248,18 +248,17 @@ func (synker *synker) UpdateState() {
 				if synker.blockchain.config.NodeMode == common.NODEMODE_AUTO || synker.blockchain.config.NodeMode == common.NODEMODE_BEACON {
 					if peerState.ShardToBeaconPool != nil {
 						for shardID, blkHeights := range *peerState.ShardToBeaconPool {
-							if _, ok := RCS.ShardToBeaconBlks[shardID]; !ok {
-								RCS.ShardToBeaconBlks[shardID] = make(map[libp2p.ID][]uint64)
-							}
-							sort.Slice(blkHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
-
-							RCS.ShardToBeaconBlks[shardID][peerID] = blkHeights
 							if len(synker.States.PoolsState.ShardToBeaconPool[shardID]) > 0 {
-								if synker.States.ClosestState.ShardToBeaconPool[shardID] == synker.States.PoolsState.ShardToBeaconPool[shardID][len(synker.States.PoolsState.ShardToBeaconPool[shardID])-1] {
-									synker.States.ClosestState.ShardToBeaconPool[shardID] = blkHeights[len(blkHeights)-1]
-								} else {
-									if blkHeights[len(blkHeights)-1] < synker.States.ClosestState.ShardToBeaconPool[shardID] {
-										synker.States.ClosestState.ShardToBeaconPool[shardID] = blkHeights[len(blkHeights)-1]
+								if _, ok := RCS.ShardToBeaconBlks[shardID]; !ok {
+									RCS.ShardToBeaconBlks[shardID] = make(map[libp2p.ID][]uint64)
+								}
+								RCS.ShardToBeaconBlks[shardID][peerID] = blkHeights
+
+								if len(blkHeights) <= len(synker.States.PoolsState.ShardToBeaconPool[shardID]) {
+									commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.ShardToBeaconPool[shardID])
+									sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
+									if synker.States.ClosestState.ShardToBeaconPool[shardID] > commonHeights[len(commonHeights)-1] {
+										synker.States.ClosestState.ShardToBeaconPool[shardID] = commonHeights[len(commonHeights)-1]
 									}
 								}
 							}
@@ -287,13 +286,12 @@ func (synker *synker) UpdateState() {
 								RCS.CrossShardBlks[shardID] = make(map[libp2p.ID][]uint64)
 							}
 							RCS.CrossShardBlks[shardID][peerID] = blkHeights
-							if len(synker.States.PoolsState.CrossShardPool[shardID]) > 0 {
-								if synker.States.ClosestState.CrossShardPool[shardID] == synker.States.PoolsState.CrossShardPool[shardID][len(synker.States.PoolsState.CrossShardPool[shardID])-1] {
-									synker.States.ClosestState.CrossShardPool[shardID] = blkHeights[len(blkHeights)-1]
-								} else {
-									if blkHeights[len(blkHeights)-1] < synker.States.ClosestState.CrossShardPool[shardID] {
-										synker.States.ClosestState.CrossShardPool[shardID] = blkHeights[len(blkHeights)-1]
-									}
+
+							if len(blkHeights) <= len(synker.States.PoolsState.CrossShardPool[shardID]) {
+								commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.CrossShardPool[shardID])
+								sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
+								if synker.States.ClosestState.CrossShardPool[shardID] > commonHeights[len(commonHeights)-1] {
+									synker.States.ClosestState.CrossShardPool[shardID] = commonHeights[len(commonHeights)-1]
 								}
 							}
 						}
@@ -733,7 +731,6 @@ func (synker *synker) InsertBeaconBlockFromPool() {
 
 func (synker *synker) InsertShardBlockFromPool(shardID byte) {
 	currentInsert.Shards[shardID].Lock()
-	defer currentInsert.Shards[shardID].Unlock()
 	blks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
 	for _, newBlk := range blks {
 		err := synker.blockchain.InsertShardBlock(newBlk, false)
@@ -743,20 +740,25 @@ func (synker *synker) InsertShardBlockFromPool(shardID byte) {
 			break
 		}
 	}
+	currentInsert.Shards[shardID].Unlock()
 }
 
 func (synker *synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
+	synker.States.Lock()
 	result := make(map[byte]uint64)
 	for shardID, height := range synker.States.ClosestState.ShardToBeaconPool {
 		result[shardID] = height
 	}
+	synker.States.Unlock()
 	return result
 }
 
 func (synker *synker) GetClosestCrossShardPoolState() map[byte]uint64 {
+	synker.States.Lock()
 	result := make(map[byte]uint64)
 	for shardID, height := range synker.States.ClosestState.CrossShardPool {
 		result[shardID] = height
 	}
+	synker.States.Unlock()
 	return result
 }
