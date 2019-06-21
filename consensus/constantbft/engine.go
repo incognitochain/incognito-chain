@@ -312,8 +312,6 @@ func (engine *Engine) execShardRole(shardID byte) {
 
 func (engine *Engine) NotifyBeaconRole(beaconRole bool) {
 	engine.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, beaconRole))
-	//engine.config.CRoleInCommitteesBeaconPool <- beaconRole
-	
 }
 func (engine *Engine) NotifyShardRole(shardRole int) {
 	engine.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, shardRole))
