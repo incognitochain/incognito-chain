@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -26,6 +25,9 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	bridgeInstProof, beaconBlocks, err := getBeaconSwapProofOnBridge(height-1, bc, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	if bridgeInstProof == nil {
+		return nil, nil
 	}
 
 	// Get proof of instruction on beacon
@@ -291,7 +293,7 @@ func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 
 // buildInstProof receives a list of instructions (as string) and returns a merkle proof for one instruction in the list
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
-	flattenInsts := common.FlattenAndConvertStringInst(insts)
+	flattenInsts := blockchain.FlattenAndConvertStringInst(insts)
 	fmt.Printf("[db] insts: %v\n", insts)
 	fmt.Printf("[db] flattenInsts: %x\n", flattenInsts)
 	return buildProof(flattenInsts, id)

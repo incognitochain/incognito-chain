@@ -321,7 +321,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
-	flattenInsts := common.FlattenAndConvertStringInst(block.Body.Instructions)
+	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
 	root := GetKeccak256MerkleRoot(flattenInsts)
 	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))

@@ -20,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -118,7 +119,7 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 func getBeaconSwapProof() string {
 	url := "http://127.0.0.1:9338"
 
-	block := 16
+	block := 15
 	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbeaconswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
 
 	req, _ := http.NewRequest("POST", url, payload)
@@ -142,6 +143,12 @@ func getBeaconSwapProof() string {
 
 	//fmt.Println(string(body))
 	return string(body)
+}
+
+func transformInst(inst []byte) []byte {
+	instTypeAndShardID := inst[:3]
+	decodedInst, _, _ := base58.Base58Check{}.Decode(string(inst[3:]))
+	return append(instTypeAndShardID, decodedInst...)
 }
 
 func TestSwapBeacon(t *testing.T) {
@@ -199,13 +206,8 @@ func TestSwapBeacon(t *testing.T) {
 	const bridge_length = 256
 	_ = p
 
-	beaconNew := [][32]byte{[32]byte{7, 8, 9}, [32]byte{10, 11, 12}}
-	beaconNewRoot := keccak256(beaconNew[0][:], beaconNew[1][:])
-	fmt.Printf("beaconNewRoot: %x\n", beaconNewRoot)
-	fmt.Printf("beaconNew[0]: %x\n", beaconNew[0])
-
-	inst := decode(r.Result.Instruction)
-	fmt.Printf("inst: %s\n", inst)
+	inst := transformInst(decode(r.Result.Instruction))
+	fmt.Printf("inst: %d %x\n", len(inst), inst)
 
 	beaconInstRoot := decode32(r.Result.BeaconInstRoot)
 	beaconInstPath := [max_path][32]byte{}
@@ -276,7 +278,6 @@ func TestSwapBeacon(t *testing.T) {
 	auth.GasLimit = 6000000
 	tx, err := p.c.SwapBeacon(
 		auth,
-		beaconNewRoot,
 		inst[:],
 
 		beaconInstPath,

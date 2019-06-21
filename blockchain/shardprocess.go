@@ -421,8 +421,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	}
 
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
-	flattenTxInsts := common.FlattenAndConvertStringInst(txInstructions)
-	flattenInsts := common.FlattenAndConvertStringInst(block.Body.Instructions)
+	flattenTxInsts := FlattenAndConvertStringInst(txInstructions)
+	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be the same as when creating new shard block
 	root := GetKeccak256MerkleRoot(insts)
 	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
