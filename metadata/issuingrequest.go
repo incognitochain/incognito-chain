@@ -111,10 +111,7 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 }
 
 func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
-	if iReq.Type != IssuingRequestMeta {
-		return false
-	}
-	return true
+	return iReq.Type == IssuingRequestMeta
 }
 
 func (iReq *IssuingRequest) Hash() *common.Hash {
