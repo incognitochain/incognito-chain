@@ -500,6 +500,14 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	if err != nil {
 		Logger.log.Errorf("Build stability instructions failed: %s \n", err.Error())
 	}
+
+	// Pick instruction with merkle root of shard committee's pubkeys and save to beacon block
+	commPubkeyInst := pickBridgePubkeyRootInstruction(shardBlock)
+	if len(commPubkeyInst) > 0 {
+		stabilityInstructionsPerBlock = append(instructions, commPubkeyInst...)
+		fmt.Printf("[db] found bridge pubkey root inst: %s\n", commPubkeyInst)
+	}
+
 	stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 	return shardStates, validStakers, validSwap, stabilityInstructions, acceptedRewardInstructions
