@@ -258,9 +258,13 @@ func (synker *synker) UpdateState() {
 									commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.ShardToBeaconPool[shardID])
 									sort.Slice(commonHeights, func(i, j int) bool { return blkHeights[i] < blkHeights[j] })
 									if len(commonHeights) > 0 {
-										for idx := len(commonHeights) - 1; idx < 0; idx-- {
+										for idx := len(commonHeights) - 1; idx == 0; idx-- {
+											if idx == 0 {
+												synker.States.ClosestState.ShardToBeaconPool[shardID] = synker.blockchain.BestState.Beacon.BestShardHeight[shardID]
+											}
 											if synker.States.ClosestState.ShardToBeaconPool[shardID] > commonHeights[idx] {
 												synker.States.ClosestState.ShardToBeaconPool[shardID] = commonHeights[idx]
+												break
 											}
 										}
 									}
