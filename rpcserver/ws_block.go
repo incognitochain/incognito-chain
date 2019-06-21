@@ -64,7 +64,7 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 	Logger.log.Info("Handle Subcribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 0 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain 1 params"))
+		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain NO params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}

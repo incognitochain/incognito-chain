@@ -618,6 +618,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 				}(tx)
 			}
 		}
+		// Publish Message
+		go tp.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
 	}
 	return hash, txDesc, err
 }
@@ -828,13 +830,18 @@ List all tx ids in mempool
 func (tp *TxPool) ListTxs() []string {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
+	return tp.listTxs()
+}
+/*
+List all tx ids in mempool
+*/
+func (tp *TxPool) listTxs() []string {
 	result := make([]string, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx.Hash().String())
 	}
 	return result
 }
-
 /*
 List all tx ids in mempool
 */
