@@ -4,13 +4,13 @@ const ChanWorkLoad = 100
 
 // TOPIC
 const (
-	NewshardblockTopic = "newshardblock"
-	NewBeaconBlockTopc = "newbeaconblock"
-	TestTopic = "testtopoc"
+	NewshardblockTopic = "newshardblocktopic"
+	NewBeaconBlockTopic = "newbeaconblocktopic"
+	TestTopic = "testtopic"
 )
 
 var Topics = []string{
 	NewshardblockTopic,
-	NewBeaconBlockTopc,
+	NewBeaconBlockTopic,
 	TestTopic,
 }
