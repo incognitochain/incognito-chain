@@ -13,7 +13,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -159,7 +158,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 
 	// Instruction merkle root
-	flattenInsts := common.FlattenAndConvertStringInst(tempInstruction)
+	flattenInsts := FlattenAndConvertStringInst(tempInstruction)
 	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
 
 	//===============End Create Header
@@ -335,25 +334,6 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 		}
 	}
 	return instructions
-}
-
-func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
-	pks := [][]byte{}
-	for _, val := range currentValidators {
-		pk, _, _ := base58.Base58Check{}.Decode(val)
-		// TODO(@0xbunyip): handle error
-		pks = append(pks, pk)
-	}
-	beaconCommRoot := GetKeccak256MerkleRoot(pks)
-	fmt.Printf("[db] added beaconCommRoot: %x\n", beaconCommRoot)
-
-	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
-	instContent := base58.Base58Check{}.Encode(beaconCommRoot, 0x00)
-	return []string{
-		strconv.Itoa(metadata.BeaconPubkeyRootMeta),
-		strconv.Itoa(int(shardID)),
-		instContent,
-	}
 }
 
 func (bestStateBeacon *BestStateBeacon) GetValidStakers(tempStaker []string) []string {
