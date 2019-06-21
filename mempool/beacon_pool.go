@@ -86,7 +86,6 @@ func (self *BeaconPool) Start(cQuit chan struct{}) {
 				continue
 			}
 			self.mtx.Lock()
-			fmt.Println("RoleInCommittees BEACON set", role)
 			self.RoleInCommittees = role
 			self.mtx.Unlock()
 		case <-cQuit:

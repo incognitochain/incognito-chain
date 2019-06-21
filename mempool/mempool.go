@@ -988,7 +988,6 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 				go func() {
 					tp.roleMtx.Lock()
 					defer tp.roleMtx.Unlock()
-					fmt.Println("RoleInCommittees MEM POOL set", shardID)
 					tp.config.RoleInCommittees = shardID
 				}()
 			}
