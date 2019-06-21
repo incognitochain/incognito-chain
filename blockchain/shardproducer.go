@@ -127,9 +127,11 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	for _, tx := range block.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 		txType := tx.GetType()
+		fmt.Printf("[ndh] - - - - TxType %+v\n", txType)
 		if txType == common.TxCustomTokenPrivacyType {
 			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
-			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.TxTokenPrivacyData.TxNormal.Fee
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+			fmt.Printf("[ndh]####################### %+v %+v\n", *txCustomPrivacy.GetTokenID(), totalTxsFee[*txCustomPrivacy.GetTokenID()])
 		}
 	}
 	//============Build Header=============
