@@ -56,42 +56,81 @@ func buildStabilityActions(
 	return actions, nil
 }
 
-// pickPubkeyRootInstruction finds all instructions of type BeaconPubkeyRootMeta returns them to save in bridge block
-// These instructions contain merkle root of beacon/bridge committee's pubkey
+// pickPubkeyRootInstruction finds all instructions contain merkle root of a committee's pubkey
 func pickPubkeyRootInstruction(
+	insts [][]string,
+	typeToFind string,
+) [][]string {
+	commPubkeyInst := [][]string{}
+	for _, inst := range insts {
+		instType := inst[0]
+		if instType != typeToFind {
+			continue
+		}
+		commPubkeyInst = append(commPubkeyInst, inst)
+	}
+	return commPubkeyInst
+}
+
+// pickBeaconPubkeyRootInstruction finds all instructions of type BeaconPubkeyRootMeta and returns them to save in bridge block
+// These instructions contain merkle root of beacon committee's pubkey
+func pickBeaconPubkeyRootInstruction(
 	beaconBlocks []*BeaconBlock,
 ) [][]string {
 	beaconType := strconv.Itoa(metadata.BeaconPubkeyRootMeta)
-	bridgeType := strconv.Itoa(metadata.BridgePubkeyRootMeta)
 	commPubkeyInst := [][]string{}
 	for _, block := range beaconBlocks {
-		for _, inst := range block.Body.Instructions {
-			instType := inst[0]
-			if instType != beaconType && instType != bridgeType {
-				continue
-			}
-			fmt.Printf("[db] found root inst: %v, beacon block %d\n", inst, block.Header.Height)
-			commPubkeyInst = append(commPubkeyInst, inst)
+		found := pickPubkeyRootInstruction(block.Body.Instructions, beaconType)
+		if len(found) > 0 {
+			commPubkeyInst = append(commPubkeyInst, found...)
 		}
 	}
 	return commPubkeyInst
 }
 
-// build instructions at beacon chain before syncing to shards
-func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
+// pickBridgePubkeyRootInstruction finds all instructions of type BridgePubkeyRootMeta and returns them to save in beacon block
+// These instructions contain merkle root of bridge committee's pubkey
+func pickBridgePubkeyRootInstruction(
+	block *ShardToBeaconBlock,
+) [][]string {
+	shardType := strconv.Itoa(metadata.BridgePubkeyRootMeta)
+	return pickPubkeyRootInstruction(block.Instructions, shardType)
+}
+
+// parsePubkeysAndBuildMerkleRoot returns the merkle root of a list of validators'pubkey stored as string
+func parsePubkeysAndBuildMerkleRoot(vals []string) []byte {
 	pks := [][]byte{}
-	for _, val := range currentValidators {
+	for _, val := range vals {
 		pk, _, _ := base58.Base58Check{}.Decode(val)
 		// TODO(@0xbunyip): handle error
 		pks = append(pks, pk)
 	}
-	beaconCommRoot := GetKeccak256MerkleRoot(pks)
+	return GetKeccak256MerkleRoot(pks)
+}
+
+// build instructions at beacon chain before syncing to shards
+func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
+	beaconCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
 	fmt.Printf("[db] added beaconCommRoot: %x\n", beaconCommRoot)
 
 	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
 	instContent := base58.Base58Check{}.Encode(beaconCommRoot, 0x00)
 	return []string{
 		strconv.Itoa(metadata.BeaconPubkeyRootMeta),
+		strconv.Itoa(int(shardID)),
+		instContent,
+	}
+}
+
+// build instructions at beacon chain before syncing to shards
+func buildBridgePubkeyRootInstruction(currentValidators []string) []string {
+	bridgeCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
+	fmt.Printf("[db] added bridgeCommRoot: %x\n", bridgeCommRoot)
+
+	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
+	instContent := base58.Base58Check{}.Encode(bridgeCommRoot, 0x00)
+	return []string{
+		strconv.Itoa(metadata.BridgePubkeyRootMeta),
 		strconv.Itoa(int(shardID)),
 		instContent,
 	}
