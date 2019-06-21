@@ -12,7 +12,7 @@ import (
 	"syscall/js"
 )
 
-func add(this js.Value, i []js.Value) (interface{}, error) {
+func add(this js.Value, i []js.Value) interface{} {
 	ret := 0
 
 	for _, item := range i {
@@ -20,20 +20,20 @@ func add(this js.Value, i []js.Value) (interface{}, error) {
 		ret += val
 	}
 
-	return ret, nil
+	return ret
 }
 
-func sayHello(this js.Value, i []js.Value) (interface{}, error) {
+func sayHello(this js.Value, i []js.Value) interface{} {
 	println("Hello %s \n", i[0].String())
-	return i[0].String(), nil
+	return i[0].String()
 }
 
-func randomScalar(this js.Value, i []js.Value) (interface{}, error) {
+func randomScalar(this js.Value, i []js.Value) interface{} {
 	res := privacy.RandBytes(1)
-	return res, nil
+	return res
 }
 
-func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
+func aggregatedRangeProve(this js.Value, args []js.Value) interface{} {
 	println("args:", args[0].String())
 	bytes := []byte(args[0].String())
 	println("Bytes:", bytes)
@@ -42,7 +42,7 @@ func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
 	err := json.Unmarshal(bytes, &temp)
 	if err != nil {
 		println(err)
-		return nil, nil
+		return nil
 	}
 	println("temp values", temp["values"])
 	println("temp rands", temp["rands"])
@@ -79,16 +79,15 @@ func aggregatedRangeProve(this js.Value, args []js.Value) (interface{}, error) {
 	proofBase64 := base64.StdEncoding.EncodeToString(proofBytes)
 	println("proofBase64: %v\n", proofBase64)
 
-	return proofBase64, nil
-	//return nil, nil
+	return proofBase64
 }
 
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
-	RegisterCallback("add", add)
-	RegisterCallback("sayHello", sayHello)
-	RegisterCallback("randomScalar", randomScalar)
-	RegisterCallback("aggregatedRangeProve", aggregatedRangeProve)
+	js.Global().Set("add", js.FuncOf(add))
+	js.Global().Set("sayHello", js.FuncOf(sayHello))
+	js.Global().Set("randomScalar", js.FuncOf(randomScalar))
+	js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
 	<-c
 }
