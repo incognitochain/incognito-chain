@@ -135,6 +135,7 @@ phase:
 					verifyTime := time.Now()
 					err = protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 					if err != nil {
+						fmt.Println("BFT: verify beaconblk err:", err)
 						Logger.log.Error(err)
 						continue
 					}
