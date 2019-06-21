@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"errors"
-	"fmt"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -81,7 +80,6 @@ func (self *ShardPool) Start(cQuit chan struct{}) {
 				continue
 			}
 			self.mtx.Lock()
-			fmt.Println("RoleInCommittees SHARD set", role)
 			self.RoleInCommittees = role
 			self.mtx.Unlock()
 		case <-cQuit:

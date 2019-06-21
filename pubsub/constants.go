@@ -15,6 +15,8 @@ const (
 var Topics = []string{
 	NewshardblockTopic,
 	NewBeaconBlockTopic,
-	TestTopic,
+	//TestTopic,
 	TransactionHashEnterNodeTopic,
+	ShardRoleTopic,
+	BeaconRoleTopic,
 }
