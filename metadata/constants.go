@@ -6,6 +6,7 @@ const (
 	IssuingRequestMeta     = 24
 	IssuingResponseMeta    = 25
 	ContractingRequestMeta = 26
+	BurningRequestMeta     = 27
 
 	ResponseBaseMeta             = 35
 	ShardBlockReward             = 36

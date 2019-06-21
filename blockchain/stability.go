@@ -156,7 +156,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			return [][]string{}, err
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta:
+		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta, metadata.BurningRequestMeta:
 			newInst = [][]string{inst}
 
 		default:
