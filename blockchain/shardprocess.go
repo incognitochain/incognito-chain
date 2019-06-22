@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"reflect"
 	"sort"
 	"strconv"
@@ -246,7 +247,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		return err
 	}
 	fmt.Printf("[ndh]  - - - nonerror \n")
-	go blockchain.NotifyNewShardBlockEvent(block)
+	go blockchain.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.NewshardblockTopic,block))
+	go blockchain.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
 	return nil
 }
 
