@@ -122,8 +122,13 @@ const (
 )
 
 const (
-	testSubcrice     = "testsubcribe"
-	subcribeNewShardBlock = "subcribenewshardblock"
-	subcribeNewBeaconBlock = "subcribenewbeaconblock"
+	testSubcrice               = "testsubcribe"
+	subcribeNewShardBlock      = "subcribenewshardblock"
+	subcribeNewBeaconBlock     = "subcribenewbeaconblock"
 	subcribePendingTransaction = "subcribependingtransaction"
+	subcribeMempoolInfo = "subcribemempoolinfo"
+	subcribeShardBestState = "subcribeshardbeststate"
+	subcribeBeaconBestState = "subcribebeaconbeststate"
+	subcribeBeaconPoolBeststate = "subcribebeaconpoolbeststate"
+	subcribeShardPoolBeststate = "subcribeshardpoolbeststate"
 )
