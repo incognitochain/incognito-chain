@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -34,6 +35,9 @@ type Config struct {
 	PersistMempool    bool
 	RelayShards       []byte
 	UserKeyset        *cashec.KeySet
+	PubsubManager     *pubsub.PubsubManager
+	RoleInCommittees       int                    //Current Role of Node
+	RoleInCommitteesEvent pubsub.Event
 }
 
 // TxDesc is transaction message in mempool
@@ -57,9 +61,6 @@ type TxPool struct {
 	TokenIDPool            map[common.Hash]string //Token ID List in Mempool
 	tokenIDMtx             sync.RWMutex
 	DuplicateTxs           map[common.Hash]uint64 //For testing
-	cCacheTx               chan<- common.Hash     //Caching received txs
-	RoleInCommittees       int                    //Current Role of Node
-	CRoleInCommittees      <-chan int
 	roleMtx                sync.RWMutex
 	CPendingTxs            chan<- metadata.Transaction // channel to deliver txs to block gen
 	IsBlockGenStarted      bool
@@ -77,13 +78,13 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.TokenIDPool = make(map[common.Hash]string)
 	tp.CandidatePool = make(map[common.Hash]string)
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
-	tp.RoleInCommittees = -1
+	tp.config.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 	tp.IsUnlockMempool = true
+	_, subChanRole, _ := tp.config.PubsubManager.RegisterNewSubcriber(pubsub.ShardRoleTopic)
+	tp.config.RoleInCommitteesEvent = subChanRole
 }
-func (tp *TxPool) InitChannelMempool(cCacheTx chan common.Hash, cRoleInCommittees chan int, cPendingTxs chan metadata.Transaction) {
-	tp.cCacheTx = cCacheTx
-	tp.CRoleInCommittees = cRoleInCommittees
+func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
 }
 func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
@@ -518,7 +519,7 @@ func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	tp.roleMtx.RLock()
-	if tp.RoleInCommittees > -1 && byte(tp.RoleInCommittees) == senderShardID {
+	if tp.config.RoleInCommittees > -1 && byte(tp.config.RoleInCommittees) == senderShardID {
 		tp.roleMtx.RUnlock()
 		return true
 	} else {
@@ -544,7 +545,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	go func(txHash common.Hash) {
-		tp.cCacheTx <- txHash
+		tp.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
 	}(*tx.Hash())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
 		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -617,6 +618,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 				}(tx)
 			}
 		}
+		// Publish Message
+		go tp.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
 	}
 	return hash, txDesc, err
 }
@@ -827,13 +830,18 @@ List all tx ids in mempool
 func (tp *TxPool) ListTxs() []string {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
+	return tp.listTxs()
+}
+/*
+List all tx ids in mempool
+*/
+func (tp *TxPool) listTxs() []string {
 	result := make([]string, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx.Hash().String())
 	}
 	return result
 }
-
 /*
 List all tx ids in mempool
 */
@@ -978,28 +986,16 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 		select {
 		case <-cQuit:
 			return
-		case shardID := <-tp.CRoleInCommittees:
+		case msg := <-tp.config.RoleInCommitteesEvent:
 			{
+				shardID, ok := msg.Value.(int)
+				if !ok {
+					continue
+				}
 				go func() {
 					tp.roleMtx.Lock()
 					defer tp.roleMtx.Unlock()
-					//tp.mtx.RLock()
-					//defer tp.mtx.RUnlock()
-					tp.RoleInCommittees = shardID
-					//if tp.RoleInCommittees > -1 {
-					//	txs := []metadata.Transaction{}
-					//	i := 0
-					//	for _, txDesc := range tp.pool {
-					//		txs = append(txs, txDesc.Desc.Tx)
-					//		i++
-					//		if i == 999 {
-					//			break
-					//		}
-					//	}
-					//	if len(txs) > 0 {
-					//		tp.CPendingTxs <- txs
-					//	}
-					//}
+					tp.config.RoleInCommittees = shardID
 				}()
 			}
 		}
