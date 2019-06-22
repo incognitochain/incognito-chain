@@ -103,6 +103,11 @@ func (protocol *BFTProtocol) phaseListen() error {
 	if additionalWaitTime < 0 {
 		additionalWaitTime = 0
 	}
+	if protocol.RoundData.Layer == common.BEACON_ROLE {
+		additionalWaitTime += common.MinBeaconBlkInterval
+	} else {
+		additionalWaitTime += common.MinShardBlkInterval
+	}
 	fmt.Println("BFT: Listen phase", time.Since(protocol.startTime).Seconds())
 
 	phaseDuration := getTimeout(protocol.phase, len(protocol.RoundData.Committee))
@@ -130,6 +135,7 @@ phase:
 					verifyTime := time.Now()
 					err = protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 					if err != nil {
+						fmt.Println("BFT: verify beaconblk err:", err)
 						Logger.log.Error(err)
 						continue
 					}
