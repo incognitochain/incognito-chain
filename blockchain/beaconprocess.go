@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"reflect"
 	"sort"
 	"strconv"
@@ -237,7 +238,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	if block.Header.Height%50 == 0 {
 		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
 	}
-	go blockchain.NotifyNewBeaconBlockEvent(block)
+	go blockchain.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
+	go blockchain.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, blockchain.BestState.Beacon))
 	return nil
 }
 
