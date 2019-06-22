@@ -1,6 +1,6 @@
 package aggregatelog
 
-import (
+/*import (
 	"errors"
 
 	raven "github.com/getsentry/raven-go"
@@ -96,4 +96,4 @@ func sendMessageToSentry(message string, tags map[string]string) error {
 	}
 	sentryClient.CaptureMessage(message, tags, nil)
 	return nil
-}
+}*/
