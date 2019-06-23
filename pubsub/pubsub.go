@@ -14,23 +14,23 @@ import (
 // when new message of this topic come to Event Channel,
 // then Event Channel will fire this message to subcriber
 type PubSubManager struct {
-	TopicList      []string                  // only allow registered Topic
-	SubscriberList map[string]map[uint]Event // List of Subscriber
-	MessageBroker  map[string][]*Message     // Message pool
-	IdGenerator    uint                      // id generator for event
+	TopicList      []string                         // only allow registered Topic
+	SubscriberList map[string]map[uint]EventChannel // List of Subscriber
+	MessageBroker  map[string][]*Message            // Message pool
+	IdGenerator    uint                             // id generator for event
 	cond           *sync.Cond
 }
 
 func NewPubSubManager() *PubSubManager {
 	pubSubManager := &PubSubManager{
 		TopicList:      Topics,
-		SubscriberList: make(map[string]map[uint]Event),
+		SubscriberList: make(map[string]map[uint]EventChannel),
 		MessageBroker:  make(map[string][]*Message),
 		IdGenerator:    0,
 		cond:           sync.NewCond(&sync.Mutex{}),
 	}
 	for _, topic := range pubSubManager.TopicList {
-		pubSubManager.SubscriberList[topic] = make(map[uint]Event)
+		pubSubManager.SubscriberList[topic] = make(map[uint]EventChannel)
 	}
 	return pubSubManager
 }
@@ -58,20 +58,20 @@ func (pubSubManager *PubSubManager) Start() {
 // Subcriber register with wanted topic
 // Return Event and Id of that Event
 // Event Channel using event to signal subcriber new message
-func (pubSubManager *PubSubManager) RegisterNewSubscriber(topic string) (uint, Event, error) {
+func (pubSubManager *PubSubManager) RegisterNewSubscriber(topic string) (uint, EventChannel, error) {
 	pubSubManager.cond.L.Lock()
 	defer pubSubManager.cond.L.Unlock()
-	cSubcribe := make(chan *Message, ChanWorkLoad)
+	cSubscribe := make(chan *Message, ChanWorkLoad)
 	if !pubSubManager.HasTopic(topic) {
-		return 0, cSubcribe, NewPubsubError(UnregisteredTopicError, errors.New(topic))
+		return 0, cSubscribe, NewPubsubError(UnregisteredTopicError, errors.New(topic))
 	}
 	if _, ok := pubSubManager.SubscriberList[topic]; !ok {
-		pubSubManager.SubscriberList[topic] = make(map[uint]Event)
+		pubSubManager.SubscriberList[topic] = make(map[uint]EventChannel)
 	}
 	id := pubSubManager.IdGenerator
-	pubSubManager.SubscriberList[topic][id] = cSubcribe
+	pubSubManager.SubscriberList[topic][id] = cSubscribe
 	pubSubManager.IdGenerator = id + 1
-	return id, cSubcribe, nil
+	return id, cSubscribe, nil
 }
 
 // Publisher public message to EventChannel
