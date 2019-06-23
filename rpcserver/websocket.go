@@ -204,7 +204,7 @@ func (wsServer *WsServer) subscribe(subManager *SubcriptionManager, subRequest *
 		return
 	} else {
 		cResult = make(chan RpcSubResult)
-		// push this subcription to subcription list
+		// push this subscription to subscription list
 		err := AddSubscription(subManager, subRequest, closeChan)
 		if err != nil {
 			Logger.log.Errorf("Json Params Hash Error %+v, Closing Websocket from Client %+v \n", err, subManager.ws.RemoteAddr())
