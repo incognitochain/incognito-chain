@@ -13,18 +13,18 @@ import (
 // Subcriber will register to be Subcribe with a particular topic,
 // when new message of this topic come to Event Channel,
 // then Event Channel will fire this message to subcriber
-type PubsubManager struct {
-	TopicList     []string                  // only allow registered Topic
-	SubcriberList map[string]map[uint]Event // List of Subcriber
-	MessageBroker map[string][]*Message     // Message pool
-	IdGenerator   uint                      // id generator for event
-	cond          *sync.Cond
+type PubSubManager struct {
+	TopicList      []string                  // only allow registered Topic
+	SubscriberList map[string]map[uint]Event // List of Subscriber
+	MessageBroker  map[string][]*Message     // Message pool
+	IdGenerator    uint                      // id generator for event
+	cond           *sync.Cond
 }
 type Event chan *Message
 type Message struct {
-	Topic          string
-	Value          interface{}
-	unSendSubcribe []chan interface{}
+	Topic           string
+	Value           interface{}
+	unSendSubscribe []chan interface{}
 }
 
 func NewMessage(topic string, value interface{}) *Message {
@@ -33,88 +33,90 @@ func NewMessage(topic string, value interface{}) *Message {
 		Value: value,
 	}
 }
-func NewPubsubManager() *PubsubManager {
-	pubsubManager := &PubsubManager{
-		TopicList:     Topics,
-		SubcriberList: make(map[string]map[uint]Event),
-		MessageBroker: make(map[string][]*Message),
-		IdGenerator:   0,
-		cond:          sync.NewCond(&sync.Mutex{}),
+func NewPubsubManager() *PubSubManager {
+	pubSubManager := &PubSubManager{
+		TopicList:      Topics,
+		SubscriberList: make(map[string]map[uint]Event),
+		MessageBroker:  make(map[string][]*Message),
+		IdGenerator:    0,
+		cond:           sync.NewCond(&sync.Mutex{}),
 	}
-	for _, topic := range pubsubManager.TopicList {
-		pubsubManager.SubcriberList[topic] = make(map[uint]Event)
+	for _, topic := range pubSubManager.TopicList {
+		pubSubManager.SubscriberList[topic] = make(map[uint]Event)
 	}
-	return pubsubManager
+	return pubSubManager
 }
 
 // Forever Loop play as an Event Channel
-func (pubsubManager *PubsubManager) Start() {
+func (pubSubManager *PubSubManager) Start() {
 	for {
-		pubsubManager.cond.L.Lock()
-		for topic, messages := range pubsubManager.MessageBroker {
+		pubSubManager.cond.L.Lock()
+		for topic, messages := range pubSubManager.MessageBroker {
 			for _, message := range messages {
-				if subMap, ok := pubsubManager.SubcriberList[topic]; ok {
+				if subMap, ok := pubSubManager.SubscriberList[topic]; ok {
 					for _, event := range subMap {
 						go event.NotifyMessage(message)
 					}
 				}
 			}
 			// delete message (if no thing subscribe for it then delete msg too)
-			pubsubManager.MessageBroker[topic] = []*Message{}
+			pubSubManager.MessageBroker[topic] = []*Message{}
 		}
-		pubsubManager.cond.Wait()
-		pubsubManager.cond.L.Unlock()
+		pubSubManager.cond.Wait()
+		pubSubManager.cond.L.Unlock()
 	}
 }
 
 // Subcriber register with wanted topic
 // Return Event and Id of that Event
 // Event Channel using event to signal subcriber new message
-func (pubsubManager *PubsubManager) RegisterNewSubscriber(topic string) (uint, Event, error) {
-	pubsubManager.cond.L.Lock()
-	defer pubsubManager.cond.L.Unlock()
+func (pubSubManager *PubSubManager) RegisterNewSubscriber(topic string) (uint, Event, error) {
+	pubSubManager.cond.L.Lock()
+	defer pubSubManager.cond.L.Unlock()
 	cSubcribe := make(chan *Message, ChanWorkLoad)
-	if !pubsubManager.HasTopic(topic) {
+	if !pubSubManager.HasTopic(topic) {
 		return 0, cSubcribe, NewPubsubError(UnregisteredTopicError, errors.New(topic))
 	}
-	if _, ok := pubsubManager.SubcriberList[topic]; !ok {
-		pubsubManager.SubcriberList[topic] = make(map[uint]Event)
+	if _, ok := pubSubManager.SubscriberList[topic]; !ok {
+		pubSubManager.SubscriberList[topic] = make(map[uint]Event)
 	}
-	id := pubsubManager.IdGenerator
-	pubsubManager.SubcriberList[topic][id] = cSubcribe
-	pubsubManager.IdGenerator = id + 1
+	id := pubSubManager.IdGenerator
+	pubSubManager.SubscriberList[topic][id] = cSubcribe
+	pubSubManager.IdGenerator = id + 1
 	return id, cSubcribe, nil
 }
 
 // Publisher public message to EventChannel
-func (pubsubManager *PubsubManager) PublishMessage(message *Message) {
-	pubsubManager.cond.L.Lock()
-	defer pubsubManager.cond.L.Unlock()
-	pubsubManager.MessageBroker[message.Topic] = append(pubsubManager.MessageBroker[message.Topic], message)
-	pubsubManager.cond.Signal()
+func (pubSubManager *PubSubManager) PublishMessage(message *Message) {
+	pubSubManager.cond.L.Lock()
+	defer pubSubManager.cond.L.Unlock()
+	pubSubManager.MessageBroker[message.Topic] = append(pubSubManager.MessageBroker[message.Topic], message)
+	pubSubManager.cond.Signal()
 }
+
 func (event Event) NotifyMessage(message *Message) {
 	event <- message
 }
-func (pubsubManager *PubsubManager) Unsubcribe(topic string, subId uint) {
-	pubsubManager.cond.L.Lock()
-	defer pubsubManager.cond.L.Unlock()
-	if subMap, ok := pubsubManager.SubcriberList[topic]; ok {
+
+func (pubSubManager *PubSubManager) Unsubscribe(topic string, subId uint) {
+	pubSubManager.cond.L.Lock()
+	defer pubSubManager.cond.L.Unlock()
+	if subMap, ok := pubSubManager.SubscriberList[topic]; ok {
 		if _, ok := subMap[subId]; ok {
 			delete(subMap, subId)
 		}
 	}
 }
-func (pubsubManager *PubsubManager) HasTopic(topic string) bool {
-	if common.IndexOfStr(topic, pubsubManager.TopicList) > -1 {
+func (pubSubManager *PubSubManager) HasTopic(topic string) bool {
+	if common.IndexOfStr(topic, pubSubManager.TopicList) > -1 {
 		return true
 	}
 	return false
 }
-func (pubsubManager *PubsubManager) AddTopic(topic string) {
-	pubsubManager.cond.L.Lock()
-	defer pubsubManager.cond.L.Unlock()
-	if !pubsubManager.HasTopic(topic) {
-		pubsubManager.TopicList = append(pubsubManager.TopicList, topic)
+func (pubSubManager *PubSubManager) AddTopic(topic string) {
+	pubSubManager.cond.L.Lock()
+	defer pubSubManager.cond.L.Unlock()
+	if !pubSubManager.HasTopic(topic) {
+		pubSubManager.TopicList = append(pubSubManager.TopicList, topic)
 	}
 }

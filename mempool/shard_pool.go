@@ -34,7 +34,7 @@ type ShardPool struct {
 	cache                 *lru.Cache
 	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.Event
-	PubsubManager         *pubsub.PubsubManager
+	PubsubManager         *pubsub.PubSubManager
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
@@ -59,7 +59,7 @@ func init() {
 	}()
 }
 
-func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.PubsubManager) {
+func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.PubSubManager) {
 	for i := 0; i < 255; i++ {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
 		//update last shard height

@@ -26,7 +26,7 @@ func (wsServer *WsServer) handleSubcribeMempoolInfo(params interface{}, subcript
 	}
 	defer func() {
 		Logger.log.Info("Finish Subcribe Mempool Informantion")
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.MempoolInfoTopic, subId)
+		wsServer.config.PubsubManager.Unsubscribe(pubsub.MempoolInfoTopic, subId)
 		close(cResult)
 	}()
 	for {
