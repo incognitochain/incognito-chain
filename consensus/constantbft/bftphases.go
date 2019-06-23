@@ -222,7 +222,7 @@ phase:
 		case <-protocol.cTimeout:
 			//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
 			// then sig block with this r
-			if len(collectedRiList) < (len(protocol.RoundData.Committee) >> 1) {
+			if len(collectedRiList) < (2*len(protocol.RoundData.Committee)/3)+1 {
 				fmt.Println("BFT: Didn't receive enough Ri to continue", time.Since(protocol.startTime).Seconds())
 				return errors.New("Didn't receive enough Ri to continue")
 			}
