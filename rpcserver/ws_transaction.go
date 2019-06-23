@@ -9,7 +9,7 @@ import (
 	"reflect"
 )
 
-func (wsServer *WsServer) handleSubcribePendingTransaction(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
 	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -23,7 +23,7 @@ func (wsServer *WsServer) handleSubcribePendingTransaction(params interface{}, s
 		cResult <- RpcSubResult{Error: err}
 	}
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewShardblockTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -31,7 +31,7 @@ func (wsServer *WsServer) handleSubcribePendingTransaction(params interface{}, s
 	}
 	defer func() {
 		Logger.log.Info("Finish Subcribe New Pending Transaction ", txHashTemp)
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewshardblockTopic, subId)
+		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewShardblockTopic, subId)
 		close(cResult)
 	}()
 	for {
