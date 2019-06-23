@@ -20,19 +20,7 @@ type PubSubManager struct {
 	IdGenerator    uint                      // id generator for event
 	cond           *sync.Cond
 }
-type Event chan *Message
-type Message struct {
-	Topic           string
-	Value           interface{}
-	unSendSubscribe []chan interface{}
-}
 
-func NewMessage(topic string, value interface{}) *Message {
-	return &Message{
-		Topic: topic,
-		Value: value,
-	}
-}
 func NewPubSubManager() *PubSubManager {
 	pubSubManager := &PubSubManager{
 		TopicList:      Topics,
@@ -94,10 +82,6 @@ func (pubSubManager *PubSubManager) PublishMessage(message *Message) {
 	pubSubManager.cond.Signal()
 }
 
-func (event Event) NotifyMessage(message *Message) {
-	event <- message
-}
-
 func (pubSubManager *PubSubManager) Unsubscribe(topic string, subId uint) {
 	pubSubManager.cond.L.Lock()
 	defer pubSubManager.cond.L.Unlock()
@@ -107,12 +91,14 @@ func (pubSubManager *PubSubManager) Unsubscribe(topic string, subId uint) {
 		}
 	}
 }
+
 func (pubSubManager *PubSubManager) HasTopic(topic string) bool {
 	if common.IndexOfStr(topic, pubSubManager.TopicList) > -1 {
 		return true
 	}
 	return false
 }
+
 func (pubSubManager *PubSubManager) AddTopic(topic string) {
 	pubSubManager.cond.L.Lock()
 	defer pubSubManager.cond.L.Unlock()
