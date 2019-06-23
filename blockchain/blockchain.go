@@ -60,8 +60,8 @@ type Config struct {
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
-	PubSubManager     *pubsub.PubSubManager
-	RandomClient         btc.RandomClient
+	PubsubManager     *pubsub.PubSubManager
+	RandomClient      btc.RandomClient
 	Server            interface {
 		BoardcastNodeState() error
 

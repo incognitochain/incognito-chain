@@ -240,7 +240,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
 		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:     pubsub,
+		PubsubManager:     pubsub,
 		RandomClient:      randomClient,
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
