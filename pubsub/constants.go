@@ -9,9 +9,9 @@ const (
 	TransactionHashEnterNodeTopic = "transactionhashenternodetopic"
 	ShardRoleTopic                = "shardroletopic"
 	BeaconRoleTopic               = "beaconroletopic"
-	MempoolInfoTopic               = "mempoolinfotopic"
-	BeaconBeststateTopic               = "beaconbeststatetopic"
-	ShardBeststateTopic               = "shardbeststatetopic"
+	MempoolInfoTopic              = "mempoolinfotopic"
+	BeaconBeststateTopic          = "beaconbeststatetopic"
+	ShardBeststateTopic           = "shardbeststatetopic"
 	TestTopic                     = "testtopic"
 )
 
