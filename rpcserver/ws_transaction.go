@@ -31,7 +31,7 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe New Pending Transaction ", txHashTemp)
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewShardblockTopic, subId)
+		wsServer.config.PubsubManager.Unsubscribe(pubsub.NewShardblockTopic, subId)
 		close(cResult)
 	}()
 	for {

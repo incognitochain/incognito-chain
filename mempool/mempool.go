@@ -35,7 +35,7 @@ type Config struct {
 	PersistMempool        bool
 	RelayShards           []byte
 	UserKeyset            *cashec.KeySet
-	PubsubManager         *pubsub.PubsubManager
+	PubsubManager         *pubsub.PubSubManager
 	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.Event
 }
