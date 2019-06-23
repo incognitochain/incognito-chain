@@ -128,6 +128,6 @@ var WsHandler = map[string]wsHandler{
 	subcribeMempoolInfo:         (*WsServer).handleSubcribeMempoolInfo,
 	subcribeShardBestState:      (*WsServer).handleSubcribeShardBestState,
 	subcribeBeaconBestState:     (*WsServer).handleSubscribeBeaconBestState,
-	subcribeBeaconPoolBeststate: (*WsServer).handleSubcribeBeaconPoolBeststate,
-	subcribeShardPoolBeststate:  (*WsServer).handleSubcribeShardPoolBeststate,
+	subcribeBeaconPoolBeststate: (*WsServer).handleSubscribeBeaconPoolBestState,
+	subcribeShardPoolBeststate:  (*WsServer).handleSubscribeShardPoolBeststate,
 }
