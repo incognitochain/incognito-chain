@@ -60,7 +60,7 @@ type Config struct {
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
-	PubsubManager     *pubsub.PubSubManager
+	PubSubManager     *pubsub.PubSubManager
 	Server            interface {
 		BoardcastNodeState() error
 
