@@ -21,7 +21,7 @@ func TestNewMessage(t *testing.T) {
 }
 
 func TestRegisterNewSubcriber(t *testing.T) {
-	var pubsubManager = NewPubsubManager()
+	var pubsubManager = NewPubSubManager()
 	id, event, err := pubsubManager.RegisterNewSubscriber(TestTopic)
 	if err != nil {
 		t.Errorf("Counter error %+v \n", err)
@@ -39,7 +39,7 @@ func TestRegisterNewSubcriber(t *testing.T) {
 	}
 }
 func TestRegisterNewSubcribeWithUnregisteredTopic(t *testing.T) {
-	var pubsubManager = NewPubsubManager()
+	var pubsubManager = NewPubSubManager()
 	id, _, err := pubsubManager.RegisterNewSubscriber("ajsdkl;awjdkl")
 	if id != 0 {
 		t.Error("Wrong Event ID")
@@ -53,7 +53,7 @@ func TestRegisterNewSubcribeWithUnregisteredTopic(t *testing.T) {
 	}
 }
 func TestUnsubcribe(t *testing.T) {
-	var pubsubManager = NewPubsubManager()
+	var pubsubManager = NewPubSubManager()
 	id, _, _ := pubsubManager.RegisterNewSubscriber(TestTopic)
 	pubsubManager.Unsubscribe(TestTopic, id)
 	subMap, ok := pubsubManager.SubscriberList[TestTopic]
@@ -65,7 +65,7 @@ func TestUnsubcribe(t *testing.T) {
 	}
 }
 func TestPublishMessage(t *testing.T) {
-	var pubsubManager = NewPubsubManager()
+	var pubsubManager = NewPubSubManager()
 	pubsubManager.PublishMessage(NewMessage(TestTopic, "abc"))
 	msgs, ok := pubsubManager.MessageBroker[TestTopic]
 	if !ok {
@@ -87,7 +87,7 @@ func TestPublishMessage(t *testing.T) {
 	}
 }
 func TestMessageBroken(t *testing.T) {
-	var pubsubManager = NewPubsubManager()
+	var pubsubManager = NewPubSubManager()
 	var wg sync.WaitGroup
 	go pubsubManager.Start()
 	id, event, err := pubsubManager.RegisterNewSubscriber(TestTopic)
@@ -118,7 +118,7 @@ func TestMessageBroken(t *testing.T) {
 	return
 }
 func TestHasTopic(t *testing.T) {
-	var pubsubManager = NewPubsubManager()
+	var pubsubManager = NewPubSubManager()
 	if !pubsubManager.HasTopic(NewBeaconBlockTopic) {
 		t.Error("Pubsub manager should have this topic")
 	}
@@ -128,7 +128,7 @@ func TestHasTopic(t *testing.T) {
 }
 
 func TestAddTopic(t *testing.T) {
-	var pubsubManager = NewPubsubManager()
+	var pubsubManager = NewPubSubManager()
 	if pubsubManager.HasTopic("lajsdlkjaskldj") {
 		t.Error("Pubsub manager should not have this topic")
 	}
