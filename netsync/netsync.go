@@ -32,22 +32,22 @@ type NetSync struct {
 	cMessage chan interface{}
 	cQuit    chan struct{}
 
-	config        *NetSyncConfig
-	Cache         *NetSyncCache
+	config *NetSyncConfig
+	Cache  *NetSyncCache
 }
 type NetSyncConfig struct {
-	BlockChain        *blockchain.BlockChain
-	ChainParam        *blockchain.Params
-	TxMemPool         *mempool.TxPool
-	ShardToBeaconPool blockchain.ShardToBeaconPool
-	CrossShardPool    map[byte]blockchain.CrossShardPool
-	PubsubManager     *pubsub.PubsubManager
-	TransactionEvent  pubsub.Event
+	BlockChain            *blockchain.BlockChain
+	ChainParam            *blockchain.Params
+	TxMemPool             *mempool.TxPool
+	ShardToBeaconPool     blockchain.ShardToBeaconPool
+	CrossShardPool        map[byte]blockchain.CrossShardPool
+	PubsubManager         *pubsub.PubsubManager
+	TransactionEvent      pubsub.Event
 	RoleInCommitteesEvent pubsub.Event
-	RelayShard          []byte
-	RoleInCommittees    int
-	roleInCommitteesMtx sync.RWMutex
-	Server            interface {
+	RelayShard            []byte
+	RoleInCommittees      int
+	roleInCommitteesMtx   sync.RWMutex
+	Server                interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, libp2p.ID) error
 		PushMessageToAll(wire.Message) error
@@ -73,9 +73,9 @@ func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 		txCache:    txCache,
 		blockCache: blockCache,
 	}
-	_, subChanTx, _ := netSync.config.PubsubManager.RegisterNewSubcriber(pubsub.TransactionHashEnterNodeTopic)
+	_, subChanTx, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.TransactionHashEnterNodeTopic)
 	netSync.config.TransactionEvent = subChanTx
-	_, subChanRole, _ := netSync.config.PubsubManager.RegisterNewSubcriber(pubsub.ShardRoleTopic)
+	_, subChanRole, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	netSync.config.RoleInCommitteesEvent = subChanRole
 	return &netSync
 }
