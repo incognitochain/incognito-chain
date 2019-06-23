@@ -80,8 +80,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 			}
 		}
 	}
-	nonce, _, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
-	_, timestamp, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
+	timestamp, nonce, err = btcClient.GetTimeStampAndNonceByBlockHeight(blockHeight)
 	if err != nil {
 		return 0, 0, -1, err
 	}
@@ -172,7 +171,7 @@ func (btcClient *BTCClient) GetChainTimeStampAndNonce() (int, int64, int64, erro
 		return -1, -1, -1, err
 	}
 	bestBlockHash := res["result"].(map[string]interface{})["bestblockhash"].(string)
-	bestBlockHeight := res["result"].(map[string]interface{})["block"].(float64)
+	bestBlockHeight := res["result"].(map[string]interface{})["blocks"].(float64)
 	timestamp, nonce, err := btcClient.GetTimeStampAndNonceByBlockHash(bestBlockHash)
 	return int(bestBlockHeight), timestamp, nonce, err
 
@@ -180,7 +179,7 @@ func (btcClient *BTCClient) GetChainTimeStampAndNonce() (int, int64, int64, erro
 func (btcClient *BTCClient) GetTimeStampAndNonceByBlockHash(blockHash string) (int64, int64, error) {
 	var err error
 	var result = make(map[string]interface{})
-	body := strings.NewReader("{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"getblock\",\"params\":[\"" + blockHash + "\"]}")
+	body := strings.NewReader("{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"getblockheader\",\"params\":[\"" + blockHash + "\"]}")
 	req, err := http.NewRequest("POST", "http://"+btcClient.IP+":"+btcClient.Port, body)
 	if err != nil {
 		return -1, -1, NewBTCAPIError(APIError, err)
