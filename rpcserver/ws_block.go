@@ -10,8 +10,8 @@ import (
 	"reflect"
 )
 
-func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe New Block", params, subcription)
+func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain 1 params"))
@@ -26,7 +26,7 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 		return
 	}
 	defer func() {
-		Logger.log.Info("Finish Subcribe New Shard Block ShardID ", shardID)
+		Logger.log.Info("Finish Subscribe New Shard Block ShardID ", shardID)
 		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewshardblockTopic, subId)
 		close(cResult)
 	}()
@@ -53,15 +53,15 @@ func (wsServer *WsServer) handleSubcribeNewShardBlock(params interface{}, subcri
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe New Shard Block"}}
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubscribe New Shard Block"}}
 				return
 			}
 		}
 	}
 }
 
-func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe New Block", params, subcription)
+func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 0 {
 		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain NO params"))
@@ -75,7 +75,7 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 		return
 	}
 	defer func() {
-		Logger.log.Info("Finish Subcribe New Beacon Block")
+		Logger.log.Info("Finish Subscribe New Beacon Block")
 		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewBeaconBlockTopic, subId)
 		close(cResult)
 	}()
@@ -99,7 +99,7 @@ func (wsServer *WsServer) handleSubcribeNewBeaconBlock(params interface{}, subcr
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe New Beacon Block"}}
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubscribe New Beacon Block"}}
 				return
 			}
 		}
