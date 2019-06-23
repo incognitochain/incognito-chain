@@ -33,7 +33,7 @@ func NewMessage(topic string, value interface{}) *Message {
 		Value: value,
 	}
 }
-func NewPubsubManager() *PubSubManager {
+func NewPubSubManager() *PubSubManager {
 	pubSubManager := &PubSubManager{
 		TopicList:      Topics,
 		SubscriberList: make(map[string]map[uint]Event),

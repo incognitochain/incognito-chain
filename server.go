@@ -184,7 +184,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	var err error
 	// init an pubsub manager
-	var pubsub = pubsub.NewPubsubManager()
+	var pubsub = pubsub.NewPubSubManager()
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
 	if err != nil {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
