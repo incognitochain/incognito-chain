@@ -4,7 +4,7 @@ const ChanWorkLoad = 100
 
 // TOPIC
 const (
-	NewshardblockTopic            = "newshardblocktopic"
+	NewShardblockTopic            = "newshardblocktopic"
 	NewBeaconBlockTopic           = "newbeaconblocktopic"
 	TransactionHashEnterNodeTopic = "transactionhashenternodetopic"
 	ShardRoleTopic                = "shardroletopic"
@@ -16,7 +16,7 @@ const (
 )
 
 var Topics = []string{
-	NewshardblockTopic,
+	NewShardblockTopic,
 	NewBeaconBlockTopic,
 	MempoolInfoTopic,
 	//TestTopic,

@@ -19,7 +19,7 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewshardblockTopic)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewShardblockTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -27,7 +27,7 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe New Shard Block ShardID ", shardID)
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewshardblockTopic, subId)
+		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewShardblockTopic, subId)
 		close(cResult)
 	}()
 	for {
