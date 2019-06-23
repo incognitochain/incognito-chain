@@ -33,7 +33,7 @@ type ShardPool struct {
 	config                ShardPoolConfig
 	cache                 *lru.Cache
 	RoleInCommittees      int //Current Role of Node
-	RoleInCommitteesEvent pubsub.Event
+	RoleInCommitteesEvent pubsub.EventChannel
 	PubsubManager         *pubsub.PubSubManager
 }
 

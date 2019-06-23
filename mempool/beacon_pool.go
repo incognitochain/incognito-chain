@@ -33,7 +33,7 @@ type BeaconPool struct {
 	config                BeaconPoolConfig
 	cache                 *lru.Cache
 	RoleInCommittees      bool //Current Role of Node
-	RoleInCommitteesEvent pubsub.Event
+	RoleInCommitteesEvent pubsub.EventChannel
 	PubsubManager         *pubsub.PubSubManager
 }
 
