@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"sync"
+	"time"
 )
 
 // This package provide an Event Channel for internal pub sub of this application
@@ -52,6 +53,7 @@ func (pubSubManager *PubSubManager) Start() {
 		}
 		pubSubManager.cond.Wait()
 		pubSubManager.cond.L.Unlock()
+		time.Sleep(1 * time.Microsecond)
 	}
 }
 
