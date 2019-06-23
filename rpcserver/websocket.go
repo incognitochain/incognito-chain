@@ -158,10 +158,10 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 		subRequest, jsonErr := parseSubcriptionRequest(msg)
 		if jsonErr == nil {
 			if subRequest.Type == 0 {
-				go wsServer.Subcribe(subManager, subRequest, msgType)
+				go wsServer.subscribe(subManager, subRequest, msgType)
 			}
 			if subRequest.Type == 1 {
-				go Unsubscribe(subManager, subRequest, msgType)
+				go wsServer.unsubscribe(subManager, subRequest, msgType)
 				if err != nil {
 
 				}
@@ -172,7 +172,7 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 	}
 }
 
-func (wsServer *WsServer) Subcribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
+func (wsServer *WsServer) subscribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
 	var cResult chan RpcSubResult
 	var closeChan = make(chan struct{})
 	defer func() {
@@ -234,7 +234,7 @@ func (wsServer *WsServer) Subcribe(subManager *SubcriptionManager, subRequest *S
 	}
 }
 
-func Unsubscribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
+func (wsServer *WsServer) unsubscribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
 	subManager.subMtx.Lock()
 	defer subManager.subMtx.Unlock()
 	var done = true
