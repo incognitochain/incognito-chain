@@ -41,7 +41,7 @@ type NetSyncConfig struct {
 	TxMemPool             *mempool.TxPool
 	ShardToBeaconPool     blockchain.ShardToBeaconPool
 	CrossShardPool        map[byte]blockchain.CrossShardPool
-	PubsubManager         *pubsub.PubsubManager
+	PubsubManager         *pubsub.PubSubManager
 	TransactionEvent      pubsub.Event
 	RoleInCommitteesEvent pubsub.Event
 	RelayShard            []byte

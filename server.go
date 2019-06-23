@@ -60,7 +60,7 @@ type Server struct {
 	wallet            *wallet.Wallet
 	consensusEngine   *constantbft.Engine
 	blockgen          *blockchain.BlkTmplGenerator
-	pusubManager      *pubsub.PubsubManager
+	pusubManager      *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator

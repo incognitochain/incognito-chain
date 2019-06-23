@@ -26,7 +26,7 @@ func (wsServer *WsServer) handleSubcribeShardBestState(params interface{}, subcr
 	}
 	defer func() {
 		Logger.log.Info("Finish Subcribe Beacon Beststate Block")
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.ShardBeststateTopic, subId)
+		wsServer.config.PubsubManager.Unsubscribe(pubsub.ShardBeststateTopic, subId)
 		close(cResult)
 	}()
 	for {
@@ -68,7 +68,7 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe Beacon Beststate Block")
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.BeaconBeststateTopic, subId)
+		wsServer.config.PubsubManager.Unsubscribe(pubsub.BeaconBeststateTopic, subId)
 		close(cResult)
 	}()
 	for {

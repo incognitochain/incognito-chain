@@ -27,7 +27,7 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe New Shard Block ShardID ", shardID)
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewShardblockTopic, subId)
+		wsServer.config.PubsubManager.Unsubscribe(pubsub.NewShardblockTopic, subId)
 		close(cResult)
 	}()
 	for {
@@ -76,7 +76,7 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe New Beacon Block")
-		wsServer.config.PubsubManager.Unsubcribe(pubsub.NewBeaconBlockTopic, subId)
+		wsServer.config.PubsubManager.Unsubscribe(pubsub.NewBeaconBlockTopic, subId)
 		close(cResult)
 	}()
 	for {
