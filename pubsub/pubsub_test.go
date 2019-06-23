@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 )
+
 func TestNewMessage(t *testing.T) {
 	msg := NewMessage(TestTopic, 1)
 	if msg.Topic != TestTopic {
@@ -21,7 +22,7 @@ func TestNewMessage(t *testing.T) {
 
 func TestRegisterNewSubcriber(t *testing.T) {
 	var pubsubManager = NewPubsubManager()
-	id, event, err := pubsubManager.RegisterNewSubcriber(TestTopic)
+	id, event, err := pubsubManager.RegisterNewSubscriber(TestTopic)
 	if err != nil {
 		t.Errorf("Counter error %+v \n", err)
 	}
@@ -39,7 +40,7 @@ func TestRegisterNewSubcriber(t *testing.T) {
 }
 func TestRegisterNewSubcribeWithUnregisteredTopic(t *testing.T) {
 	var pubsubManager = NewPubsubManager()
-	id, _, err := pubsubManager.RegisterNewSubcriber("ajsdkl;awjdkl")
+	id, _, err := pubsubManager.RegisterNewSubscriber("ajsdkl;awjdkl")
 	if id != 0 {
 		t.Error("Wrong Event ID")
 	}
@@ -53,7 +54,7 @@ func TestRegisterNewSubcribeWithUnregisteredTopic(t *testing.T) {
 }
 func TestUnsubcribe(t *testing.T) {
 	var pubsubManager = NewPubsubManager()
-	id, _, _ := pubsubManager.RegisterNewSubcriber(TestTopic)
+	id, _, _ := pubsubManager.RegisterNewSubscriber(TestTopic)
 	pubsubManager.Unsubcribe(TestTopic, id)
 	subMap, ok := pubsubManager.SubcriberList[TestTopic]
 	if !ok {
@@ -89,7 +90,7 @@ func TestMessageBroken(t *testing.T) {
 	var pubsubManager = NewPubsubManager()
 	var wg sync.WaitGroup
 	go pubsubManager.Start()
-	id, event, err := pubsubManager.RegisterNewSubcriber(TestTopic)
+	id, event, err := pubsubManager.RegisterNewSubscriber(TestTopic)
 	if err != nil {
 		t.Error("Error when subcription")
 	}

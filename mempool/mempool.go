@@ -24,19 +24,19 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	BlockChain        *blockchain.BlockChain // Block chain of node
-	DataBase          database.DatabaseInterface
-	DataBaseMempool   databasemp.DatabaseInterface
-	ChainParams       *blockchain.Params
-	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
-	TxLifeTime        uint                   // Transaction life time in pool
-	MaxTx             uint64                 //Max transaction pool may have
-	IsLoadFromMempool bool                   //Reset mempool database when run node
-	PersistMempool    bool
-	RelayShards       []byte
-	UserKeyset        *cashec.KeySet
-	PubsubManager     *pubsub.PubsubManager
-	RoleInCommittees       int                    //Current Role of Node
+	BlockChain            *blockchain.BlockChain // Block chain of node
+	DataBase              database.DatabaseInterface
+	DataBaseMempool       databasemp.DatabaseInterface
+	ChainParams           *blockchain.Params
+	FeeEstimator          map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
+	TxLifeTime            uint                   // Transaction life time in pool
+	MaxTx                 uint64                 //Max transaction pool may have
+	IsLoadFromMempool     bool                   //Reset mempool database when run node
+	PersistMempool        bool
+	RelayShards           []byte
+	UserKeyset            *cashec.KeySet
+	PubsubManager         *pubsub.PubsubManager
+	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.Event
 }
 
@@ -81,7 +81,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 	tp.IsUnlockMempool = true
-	_, subChanRole, _ := tp.config.PubsubManager.RegisterNewSubcriber(pubsub.ShardRoleTopic)
+	_, subChanRole, _ := tp.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
 }
 func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
@@ -832,6 +832,7 @@ func (tp *TxPool) ListTxs() []string {
 	defer tp.mtx.RUnlock()
 	return tp.listTxs()
 }
+
 /*
 List all tx ids in mempool
 */
@@ -842,6 +843,7 @@ func (tp *TxPool) listTxs() []string {
 	}
 	return result
 }
+
 /*
 List all tx ids in mempool
 */

@@ -24,17 +24,17 @@ type ShardPoolConfig struct {
 	CacheSize       int
 }
 type ShardPool struct {
-	validPool         []*blockchain.ShardBlock          // valid, ready to insert into blockchain
-	pendingPool       map[uint64]*blockchain.ShardBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
-	conflictedPool    map[common.Hash]*blockchain.ShardBlock
-	shardID           byte
-	latestValidHeight uint64
-	mtx               *sync.RWMutex
-	config            ShardPoolConfig
-	cache             *lru.Cache
-	RoleInCommittees  int //Current Role of Node
+	validPool             []*blockchain.ShardBlock          // valid, ready to insert into blockchain
+	pendingPool           map[uint64]*blockchain.ShardBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
+	conflictedPool        map[common.Hash]*blockchain.ShardBlock
+	shardID               byte
+	latestValidHeight     uint64
+	mtx                   *sync.RWMutex
+	config                ShardPoolConfig
+	cache                 *lru.Cache
+	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.Event
-	PubsubManager     *pubsub.PubsubManager
+	PubsubManager         *pubsub.PubsubManager
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
@@ -67,7 +67,7 @@ func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.Pub
 		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
 		pool[byte(i)] = shardPoolMap[byte(i)]
 		shardPoolMap[byte(i)].PubsubManager = pubsubManager
-		_, subChanRole, _ := shardPoolMap[byte(i)].PubsubManager.RegisterNewSubcriber(pubsub.ShardRoleTopic)
+		_, subChanRole, _ := shardPoolMap[byte(i)].PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 		shardPoolMap[byte(i)].RoleInCommitteesEvent = subChanRole
 	}
 }
