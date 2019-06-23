@@ -37,7 +37,7 @@ type Config struct {
 	UserKeyset            *cashec.KeySet
 	PubsubManager         *pubsub.PubSubManager
 	RoleInCommittees      int //Current Role of Node
-	RoleInCommitteesEvent pubsub.Event
+	RoleInCommitteesEvent pubsub.EventChannel
 }
 
 // TxDesc is transaction message in mempool
