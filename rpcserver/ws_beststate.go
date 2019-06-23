@@ -18,7 +18,7 @@ func (wsServer *WsServer) handleSubcribeShardBestState(params interface{}, subcr
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.ShardBeststateTopic)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardBeststateTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -60,7 +60,7 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.BeaconBeststateTopic)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubscriber(pubsub.BeaconBeststateTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
