@@ -26,7 +26,7 @@ func TestRegisterNewSubcriber(t *testing.T) {
 	if err != nil {
 		t.Errorf("Counter error %+v \n", err)
 	}
-	subMap, ok := pubsubManager.SubcriberList[TestTopic]
+	subMap, ok := pubsubManager.SubscriberList[TestTopic]
 	if !ok {
 		t.Error("Can not get subcribe map by topic")
 	}
@@ -55,8 +55,8 @@ func TestRegisterNewSubcribeWithUnregisteredTopic(t *testing.T) {
 func TestUnsubcribe(t *testing.T) {
 	var pubsubManager = NewPubsubManager()
 	id, _, _ := pubsubManager.RegisterNewSubscriber(TestTopic)
-	pubsubManager.Unsubcribe(TestTopic, id)
-	subMap, ok := pubsubManager.SubcriberList[TestTopic]
+	pubsubManager.Unsubscribe(TestTopic, id)
+	subMap, ok := pubsubManager.SubscriberList[TestTopic]
 	if !ok {
 		t.Error("Can not get subcribe map by topic")
 	}
@@ -114,7 +114,7 @@ func TestMessageBroken(t *testing.T) {
 	}(event)
 	pubsubManager.PublishMessage(NewMessage(TestTopic, "abc"))
 	wg.Wait()
-	pubsubManager.Unsubcribe(TestTopic, id)
+	pubsubManager.Unsubscribe(TestTopic, id)
 	return
 }
 func TestHasTopic(t *testing.T) {

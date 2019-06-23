@@ -17,9 +17,9 @@ type Engine struct {
 	sync.Mutex
 	started bool
 	// channel
-	cQuit   chan struct{}
-	cBFTMsg chan wire.Message
-	config EngineConfig
+	cQuit               chan struct{}
+	cBFTMsg             chan wire.Message
+	config              EngineConfig
 	currentBFTBlkHeight uint64
 	currentBFTRound     int
 	// prevRoundUserLayer  string
@@ -37,7 +37,7 @@ type EngineConfig struct {
 	Server                      serverInterface
 	ShardToBeaconPool           blockchain.ShardToBeaconPool
 	CrossShardPool              map[byte]blockchain.CrossShardPool
-	PubsubManager               *pubsub.PubsubManager
+	PubsubManager               *pubsub.PubSubManager
 	CRoleInCommitteesMempool    chan int
 	CRoleInCommitteesNetSync    chan int
 	CRoleInCommitteesBeaconPool chan bool

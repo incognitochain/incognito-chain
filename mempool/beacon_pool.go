@@ -34,7 +34,7 @@ type BeaconPool struct {
 	cache                 *lru.Cache
 	RoleInCommittees      bool //Current Role of Node
 	RoleInCommitteesEvent pubsub.Event
-	PubsubManager         *pubsub.PubsubManager
+	PubsubManager         *pubsub.PubSubManager
 }
 
 var beaconPool *BeaconPool = nil
@@ -51,7 +51,7 @@ func init() {
 	}()
 }
 
-func InitBeaconPool(pubsubManager *pubsub.PubsubManager) {
+func InitBeaconPool(pubsubManager *pubsub.PubSubManager) {
 	//do nothing
 	beaconPool := GetBeaconPool()
 	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
