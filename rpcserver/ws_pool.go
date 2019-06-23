@@ -49,8 +49,8 @@ func (wsServer *WsServer) handleSubcribeMempoolInfo(params interface{}, subcript
 	}
 }
 
-func (wsServer *WsServer) handleSubcribeBeaconPoolBeststate(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Beacon Pool Beststate", params, subcription)
+func (wsServer *WsServer) handleSubscribeBeaconPoolBestState(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+	Logger.log.Info("Handle Subscribe Beacon Pool Beststate", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 0 {
 		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain NO params"))
@@ -63,7 +63,7 @@ func (wsServer *WsServer) handleSubcribeBeaconPoolBeststate(params interface{}, 
 		return
 	}
 	defer func() {
-		Logger.log.Info("Finish Subcribe Beacon Pool Beststate")
+		Logger.log.Info("Finish Subscribe Beacon Pool Beststate")
 		close(cResult)
 	}()
 	for {
@@ -83,8 +83,8 @@ func (wsServer *WsServer) handleSubcribeBeaconPoolBeststate(params interface{}, 
 	}
 }
 
-func (wsServer *WsServer) handleSubcribeShardPoolBeststate(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Shard Pool Beststate", params, subcription)
+func (wsServer *WsServer) handleSubscribeShardPoolBeststate(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+	Logger.log.Info("Handle Subscribe Shard Pool Beststate", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain 1 params"))
@@ -98,7 +98,7 @@ func (wsServer *WsServer) handleSubcribeShardPoolBeststate(params interface{}, s
 		return
 	}
 	defer func() {
-		Logger.log.Info("Finish Subcribe Shard Pool Beststate")
+		Logger.log.Info("Finish Subscribe Shard Pool Beststate")
 		close(cResult)
 	}()
 	for {
