@@ -42,8 +42,8 @@ type NetSyncConfig struct {
 	ShardToBeaconPool     blockchain.ShardToBeaconPool
 	CrossShardPool        map[byte]blockchain.CrossShardPool
 	PubsubManager         *pubsub.PubSubManager
-	TransactionEvent      pubsub.Event
-	RoleInCommitteesEvent pubsub.Event
+	TransactionEvent      pubsub.EventChannel
+	RoleInCommitteesEvent pubsub.EventChannel
 	RelayShard            []byte
 	RoleInCommittees      int
 	roleInCommitteesMtx   sync.RWMutex
@@ -532,7 +532,7 @@ func (netSync *NetSync) cacheLoop() {
 	}
 }
 
-func (netSync *NetSync) HandleCacheTxHashWorker(event pubsub.Event) {
+func (netSync *NetSync) HandleCacheTxHashWorker(event pubsub.EventChannel) {
 	for msg := range event {
 		value, ok := msg.Value.(common.Hash)
 		if !ok {

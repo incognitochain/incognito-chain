@@ -13,8 +13,8 @@ func NewMessage(topic string, value interface{}) *Message {
 	}
 }
 
-type Event chan *Message
+type EventChannel chan *Message
 
-func (event Event) NotifyMessage(message *Message) {
+func (event EventChannel) NotifyMessage(message *Message) {
 	event <- message
 }

@@ -9,8 +9,8 @@ import (
 	"reflect"
 )
 
-func (wsServer *WsServer) handleSubcribeShardBestState(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Shard Beststate", params, subcription)
+func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+	Logger.log.Info("Handle Subscribe Shard Beststate", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain 1 params"))
@@ -25,7 +25,7 @@ func (wsServer *WsServer) handleSubcribeShardBestState(params interface{}, subcr
 		return
 	}
 	defer func() {
-		Logger.log.Info("Finish Subcribe Beacon Beststate Block")
+		Logger.log.Info("Finish Subscribe Beacon Beststate Block")
 		wsServer.config.PubsubManager.Unsubscribe(pubsub.ShardBeststateTopic, subId)
 		close(cResult)
 	}()

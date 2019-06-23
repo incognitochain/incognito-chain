@@ -126,7 +126,7 @@ var WsHandler = map[string]wsHandler{
 	subcribeNewBeaconBlock:      (*WsServer).handleSubscribeNewBeaconBlock,
 	subcribePendingTransaction:  (*WsServer).handleSubscribePendingTransaction,
 	subcribeMempoolInfo:         (*WsServer).handleSubcribeMempoolInfo,
-	subcribeShardBestState:      (*WsServer).handleSubcribeShardBestState,
+	subcribeShardBestState:      (*WsServer).handleSubscribeShardBestState,
 	subcribeBeaconBestState:     (*WsServer).handleSubscribeBeaconBestState,
 	subcribeBeaconPoolBeststate: (*WsServer).handleSubscribeBeaconPoolBestState,
 	subcribeShardPoolBeststate:  (*WsServer).handleSubscribeShardPoolBeststate,
