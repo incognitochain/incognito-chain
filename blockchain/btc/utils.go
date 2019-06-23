@@ -2,7 +2,6 @@ package btc
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"time"
 )
@@ -39,7 +38,7 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 		for true {
 			diff := int(offsetSeconds / 600)
 			estimateBlockHeight = estimateBlockHeight + diff
-			fmt.Printf("Estimate blockHeight %d \n", estimateBlockHeight)
+			//fmt.Printf("Estimate blockHeight %d \n", estimateBlockHeight)
 			if math.Abs(float64(diff)) < 3 {
 				return estimateBlockHeight, nil
 			}
