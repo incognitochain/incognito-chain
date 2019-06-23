@@ -45,15 +45,15 @@ func (wsServer *WsServer) handleSubcribeShardBestState(params interface{}, subcr
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe Shard Beststate"}}
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubscribe Shard Beststate"}}
 				return
 			}
 		}
 	}
 }
 
-func (wsServer *WsServer) handleSubcribeBeaconBestState(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
-	Logger.log.Info("Handle Subcribe Beacon Beststate", params, subcription)
+func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+	Logger.log.Info("Handle Subscribe Beacon Beststate", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 0 {
 		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain NO params"))
@@ -67,7 +67,7 @@ func (wsServer *WsServer) handleSubcribeBeaconBestState(params interface{}, subc
 		return
 	}
 	defer func() {
-		Logger.log.Info("Finish Subcribe Beacon Beststate Block")
+		Logger.log.Info("Finish Subscribe Beacon Beststate Block")
 		wsServer.config.PubsubManager.Unsubcribe(pubsub.BeaconBeststateTopic, subId)
 		close(cResult)
 	}()
@@ -84,7 +84,7 @@ func (wsServer *WsServer) handleSubcribeBeaconBestState(params interface{}, subc
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe Beacon Beststate"}}
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubscribe Beacon Beststate"}}
 				return
 			}
 		}

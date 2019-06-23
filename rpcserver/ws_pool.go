@@ -42,13 +42,12 @@ func (wsServer *WsServer) handleSubcribeMempoolInfo(params interface{}, subcript
 			}
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe Mempool Info"}}
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubscribe Mempool Info"}}
 				return
 			}
 		}
 	}
 }
-
 
 func (wsServer *WsServer) handleSubcribeBeaconPoolBeststate(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
 	Logger.log.Info("Handle Subcribe Beacon Pool Beststate", params, subcription)
@@ -71,19 +70,18 @@ func (wsServer *WsServer) handleSubcribeBeaconPoolBeststate(params interface{}, 
 		select {
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe Mempool Info"}}
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubscribe Mempool Info"}}
 				return
 			}
-			default:
-				{
-					result := Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
-					cResult <- RpcSubResult{Result: result, Error: nil}
-					<-time.Tick(1*time.Second)
+		default:
+			{
+				result := Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
+				cResult <- RpcSubResult{Result: result, Error: nil}
+				<-time.Tick(1 * time.Second)
 			}
 		}
 	}
 }
-
 
 func (wsServer *WsServer) handleSubcribeShardPoolBeststate(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
 	Logger.log.Info("Handle Subcribe Shard Pool Beststate", params, subcription)
@@ -105,19 +103,18 @@ func (wsServer *WsServer) handleSubcribeShardPoolBeststate(params interface{}, s
 	}()
 	for {
 		select {
-		
+
 		case <-closeChan:
 			{
-				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubcribe Mempool Info"}}
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubscribe Mempool Info"}}
 				return
 			}
 		default:
 			{
 				result := Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
 				cResult <- RpcSubResult{Result: result, Error: nil}
-				<-time.Tick(1*time.Second)
+				<-time.Tick(1 * time.Second)
 			}
 		}
 	}
 }
-
