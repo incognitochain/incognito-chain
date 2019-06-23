@@ -25,16 +25,16 @@ type BeaconPoolConfig struct {
 	CacheSize       int
 }
 type BeaconPool struct {
-	validPool         []*blockchain.BeaconBlock          // valid, ready to insert into blockchain
-	pendingPool       map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
-	conflictedPool    map[common.Hash]*blockchain.BeaconBlock
-	latestValidHeight uint64
-	mtx               sync.RWMutex
-	config            BeaconPoolConfig
-	cache             *lru.Cache
-	RoleInCommittees  bool //Current Role of Node
+	validPool             []*blockchain.BeaconBlock          // valid, ready to insert into blockchain
+	pendingPool           map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
+	conflictedPool        map[common.Hash]*blockchain.BeaconBlock
+	latestValidHeight     uint64
+	mtx                   sync.RWMutex
+	config                BeaconPoolConfig
+	cache                 *lru.Cache
+	RoleInCommittees      bool //Current Role of Node
 	RoleInCommitteesEvent pubsub.Event
-	PubsubManager     *pubsub.PubsubManager
+	PubsubManager         *pubsub.PubsubManager
 }
 
 var beaconPool *BeaconPool = nil
@@ -56,7 +56,7 @@ func InitBeaconPool(pubsubManager *pubsub.PubsubManager) {
 	beaconPool := GetBeaconPool()
 	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
 	beaconPool.PubsubManager = pubsubManager
-	_, subChanRole, _ := beaconPool.PubsubManager.RegisterNewSubcriber(pubsub.BeaconRoleTopic)
+	_, subChanRole, _ := beaconPool.PubsubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
 	beaconPool.RoleInCommitteesEvent = subChanRole
 }
 

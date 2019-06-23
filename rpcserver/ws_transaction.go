@@ -23,7 +23,7 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 		cResult <- RpcSubResult{Error: err}
 	}
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubcriber(pubsub.NewShardblockTopic)
+	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}

@@ -59,7 +59,7 @@ func (pubsubManager *PubsubManager) Start() {
 					}
 				}
 			}
-			// delete message (if no thing subcribe for it then delete msg too)
+			// delete message (if no thing subscribe for it then delete msg too)
 			pubsubManager.MessageBroker[topic] = []*Message{}
 		}
 		pubsubManager.cond.Wait()
@@ -70,7 +70,7 @@ func (pubsubManager *PubsubManager) Start() {
 // Subcriber register with wanted topic
 // Return Event and Id of that Event
 // Event Channel using event to signal subcriber new message
-func (pubsubManager *PubsubManager) RegisterNewSubcriber(topic string) (uint, Event, error) {
+func (pubsubManager *PubsubManager) RegisterNewSubscriber(topic string) (uint, Event, error) {
 	pubsubManager.cond.L.Lock()
 	defer pubsubManager.cond.L.Unlock()
 	cSubcribe := make(chan *Message, ChanWorkLoad)
