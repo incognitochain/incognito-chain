@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	pubsub "github.com/incognitochain/incognito-chain/pubsub"
 	"math/big"
 	"sort"
 	"strconv"
@@ -36,6 +37,7 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
+	PubSub           PubSub
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -58,6 +60,7 @@ type Config struct {
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
+	PubSubManager     *pubsub.PubSubManager
 	Server            interface {
 		BoardcastNodeState() error
 
@@ -78,6 +81,12 @@ type Config struct {
 		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	}
 	UserKeySet *cashec.KeySet
+}
+
+type PubSub struct {
+	mtx                 sync.RWMutex
+	NewShardBlockEvent  map[int]chan *ShardBlock
+	NewBeaconBlockEvent map[int]chan *BeaconBlock
 }
 
 /*
@@ -109,8 +118,11 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		blockchain: blockchain,
 		cQuit:      blockchain.cQuitSync,
 	}
+	blockchain.PubSub.NewBeaconBlockEvent = make(map[int]chan *BeaconBlock)
+	blockchain.PubSub.NewShardBlockEvent = make(map[int]chan *ShardBlock)
 	return nil
 }
+
 func (blockchain *BlockChain) SetIsBlockGenStarted(value bool) {
 	blockchain.config.IsBlockGenStarted = value
 }

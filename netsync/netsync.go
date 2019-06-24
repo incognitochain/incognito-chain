@@ -2,6 +2,7 @@ package netsync
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,23 +32,22 @@ type NetSync struct {
 	cMessage chan interface{}
 	cQuit    chan struct{}
 
-	config        *NetSyncConfig
-	Cache         *NetSyncCache
-	ShardIDConfig *ShardIDConfig
-}
-type ShardIDConfig struct {
-	RelayShard          []byte
-	RoleInCommittees    int
-	CRoleInCommittees   chan int
-	roleInCommitteesMtx sync.RWMutex
+	config *NetSyncConfig
+	Cache  *NetSyncCache
 }
 type NetSyncConfig struct {
-	BlockChain        *blockchain.BlockChain
-	ChainParam        *blockchain.Params
-	TxMemPool         *mempool.TxPool
-	ShardToBeaconPool blockchain.ShardToBeaconPool
-	CrossShardPool    map[byte]blockchain.CrossShardPool
-	Server            interface {
+	BlockChain            *blockchain.BlockChain
+	ChainParam            *blockchain.Params
+	TxMemPool             *mempool.TxPool
+	ShardToBeaconPool     blockchain.ShardToBeaconPool
+	CrossShardPool        map[byte]blockchain.CrossShardPool
+	PubsubManager         *pubsub.PubSubManager
+	TransactionEvent      pubsub.EventChannel
+	RoleInCommitteesEvent pubsub.EventChannel
+	RelayShard            []byte
+	RoleInCommittees      int
+	roleInCommitteesMtx   sync.RWMutex
+	Server                interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, libp2p.ID) error
 		PushMessageToAll(wire.Message) error
@@ -61,12 +61,10 @@ type NetSyncCache struct {
 	txCache       *cache.Cache
 	txCacheMtx    sync.Mutex
 	blockCacheMtx sync.Mutex
-	CTxCache      <-chan common.Hash
 }
 
-func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgShardID *ShardIDConfig) *NetSync {
+func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 	netSync.config = cfg
-	netSync.ShardIDConfig = cfgShardID
 	netSync.cQuit = make(chan struct{})
 	netSync.cMessage = make(chan interface{})
 	blockCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
@@ -75,10 +73,12 @@ func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgSha
 		txCache:    txCache,
 		blockCache: blockCache,
 	}
-	netSync.Cache.CTxCache = cTxCache
+	_, subChanTx, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.TransactionHashEnterNodeTopic)
+	netSync.config.TransactionEvent = subChanTx
+	_, subChanRole, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	netSync.config.RoleInCommitteesEvent = subChanRole
 	return &netSync
 }
-
 func (netSync *NetSync) Start() {
 	// Already started?
 	if atomic.AddInt32(&netSync.started, 1) != 1 {
@@ -497,59 +497,51 @@ func (netSync *NetSync) HandleCacheTxHash(txHash common.Hash) {
 
 func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	for _, shardID := range netSync.ShardIDConfig.RelayShard {
+	for _, shardID := range netSync.config.RelayShard {
 		if senderShardID == shardID {
 			return true
 		}
 	}
-	netSync.ShardIDConfig.roleInCommitteesMtx.RLock()
-	if netSync.ShardIDConfig.RoleInCommittees > -1 && byte(netSync.ShardIDConfig.RoleInCommittees) == senderShardID {
-		netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
+	netSync.config.roleInCommitteesMtx.RLock()
+	if netSync.config.RoleInCommittees > -1 && byte(netSync.config.RoleInCommittees) == senderShardID {
+		netSync.config.roleInCommitteesMtx.RUnlock()
 		return true
 	} else {
-		netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
+		netSync.config.roleInCommitteesMtx.RUnlock()
 		return false
 	}
 }
 
 func (netSync *NetSync) cacheLoop() {
 	for w := 0; w < workers; w++ {
-		go netSync.HandleCacheTxHashWoker(netSync.Cache.CTxCache)
+		go netSync.HandleCacheTxHashWorker(netSync.config.TransactionEvent)
 	}
 	for {
 		select {
-		//case txHash := <-netSync.Cache.CTxCache: {
-		//	go netSync.HandleCacheTxHash(txHash)
-		//}
-		case shardID := <-netSync.ShardIDConfig.CRoleInCommittees:
+		case msg := <-netSync.config.RoleInCommitteesEvent:
 			{
-				go func() {
-					netSync.ShardIDConfig.roleInCommitteesMtx.Lock()
-					defer netSync.ShardIDConfig.roleInCommitteesMtx.Unlock()
-					netSync.ShardIDConfig.RoleInCommittees = shardID
-				}()
+				if shardID, ok := msg.Value.(int); !ok {
+					continue
+				} else {
+					netSync.config.roleInCommitteesMtx.Lock()
+					netSync.config.RoleInCommittees = shardID
+					netSync.config.roleInCommitteesMtx.Unlock()
+				}
 			}
 		}
 	}
 }
 
-func (netSync *NetSync) HandleCacheTxHashWoker(cTxCache <-chan common.Hash) {
-	for job := range cTxCache {
-		go netSync.HandleCacheTxHash(job)
+func (netSync *NetSync) HandleCacheTxHashWorker(event pubsub.EventChannel) {
+	for msg := range event {
+		value, ok := msg.Value.(common.Hash)
+		if !ok {
+			continue
+		}
+		go netSync.HandleCacheTxHash(value)
 		time.Sleep(time.Nanosecond)
 	}
 }
-
-//GET SHARD HEIGHT BY ROLE
-//func (netSync *NetSync) GetBestShardHeight(shardID byte) (uint64, bool) {
-//netSync.ShardIDConfig.roleInCommitteesMtx.RLock()
-//defer netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
-//if netSync.ShardIDConfig.RoleInCommittees > - 1 {
-//	return blockchain.GetBestStateShard(byte(netSync.ShardIDConfig.RoleInCommittees)).ShardHeight, true
-//}
-//return 0, false
-//GET SHARD HEIGHT BY BLOCK
-//}
 
 //if old block return true, otherwise return false
 func (netSync *NetSync) IsOldShardBlock(shardID byte, blockHeight uint64) bool {
