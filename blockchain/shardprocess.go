@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
@@ -389,12 +390,45 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return err
 	}
 
-	totalTxsFee := uint64(0)
+	wrongTxsFee := errors.New("Wrong blockheader totalTxs fee")
+
+	totalTxsFee := make(map[common.Hash]uint64)
 	for _, tx := range block.Body.Transactions {
-		totalTxsFee += tx.GetTxFee()
+		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
+		txType := tx.GetType()
+		if txType == common.TxCustomTokenPrivacyType {
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+		}
 	}
-	if block.Header.TotalTxsFee != totalTxsFee {
-		return errors.New("Wrong blockheader totalTxs fee")
+
+	tokenIDsfromTxs := make([]common.Hash, 0)
+	for tokenID, _ := range totalTxsFee {
+		tokenIDsfromTxs = append(tokenIDsfromTxs, tokenID)
+	}
+	sort.Slice(tokenIDsfromTxs, func(i int, j int) bool {
+		return tokenIDsfromTxs[i].Cmp(&tokenIDsfromTxs[j]) == -1
+	})
+
+	tokenIDsfromBlock := make([]common.Hash, 0)
+	for tokenID, _ := range block.Header.TotalTxsFee {
+		tokenIDsfromBlock = append(tokenIDsfromBlock, tokenID)
+	}
+	sort.Slice(tokenIDsfromBlock, func(i int, j int) bool {
+		return tokenIDsfromBlock[i].Cmp(&tokenIDsfromBlock[j]) == -1
+	})
+
+	if len(tokenIDsfromTxs) != len(tokenIDsfromBlock) {
+		return wrongTxsFee
+	}
+
+	for i, tokenID := range tokenIDsfromTxs {
+		if !tokenIDsfromTxs[i].IsEqual(&tokenIDsfromBlock[i]) {
+			return wrongTxsFee
+		}
+		if totalTxsFee[tokenID] != block.Header.TotalTxsFee[tokenID] {
+			return wrongTxsFee
+		}
 	}
 
 	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(

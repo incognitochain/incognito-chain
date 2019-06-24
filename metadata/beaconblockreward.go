@@ -18,26 +18,26 @@ type BlockRewardAcceptInstruction struct {
 }
 
 type BeaconRewardInfo struct {
-	BeaconReward   uint64
+	BeaconReward   map[common.Hash]uint64
 	PayToPublicKey string
-	InfoHash       *common.Hash
+	// InfoHash       *common.Hash
 }
 
-func (beaconRewardInfo *BeaconRewardInfo) hash() *common.Hash {
-	record := string(beaconRewardInfo.BeaconReward)
-	record += beaconRewardInfo.PayToPublicKey
-	hash := common.HashH([]byte(record))
-	return &hash
-}
+// func (beaconRewardInfo *BeaconRewardInfo) hash() *common.Hash {
+// 	record := string(beaconRewardInfo.BeaconReward)
+// 	record += beaconRewardInfo.PayToPublicKey
+// 	hash := common.HashH([]byte(record))
+// 	return &hash
+// }
 
-func BuildInstForBeaconReward(reward uint64, payToPublicKey string) ([]string, error) {
+func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey string) ([]string, error) {
 	b, _, _ := base58.Base58Check{}.Decode(payToPublicKey)
 	beaconRewardInfo := BeaconRewardInfo{
 		PayToPublicKey: payToPublicKey,
 		BeaconReward:   reward,
 	}
 
-	beaconRewardInfo.InfoHash = beaconRewardInfo.hash()
+	// beaconRewardInfo.InfoHash = beaconRewardInfo.hash()
 
 	contentStr, err := json.Marshal(beaconRewardInfo)
 	if err != nil {
