@@ -719,6 +719,10 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 					versionChain.Note +
 					"\n*********************************************************************************\n")
 
+				Logger.log.Error("\n*********************************************************************************\n New version: " +
+					versionChain.Version +
+					"\n*********************************************************************************\n")
+
 				Logger.log.Error("\n*********************************************************************************\n" +
 					"We're exited because having a force update on this souce code." +
 					"\nPlease Update source code at https://github.com/incognitochain/incognito-chain" +
