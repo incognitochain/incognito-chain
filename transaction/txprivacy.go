@@ -1155,7 +1155,7 @@ func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.M
 }
 
 func (tx Tx) GetTokenID() *common.Hash {
-	return nil
+	return &common.PRVCoinID
 }
 
 func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
