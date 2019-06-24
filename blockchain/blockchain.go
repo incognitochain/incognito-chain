@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	pubsub "github.com/incognitochain/incognito-chain/pubsub"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -36,7 +37,7 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
-	PubSub            PubSub
+	PubSub           PubSub
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -59,6 +60,7 @@ type Config struct {
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
+	PubSubManager     *pubsub.PubSubManager
 	Server            interface {
 		BoardcastNodeState() error
 
@@ -82,10 +84,11 @@ type Config struct {
 }
 
 type PubSub struct {
-	mtx sync.RWMutex
-	NewShardBlockEvent map[int]chan *ShardBlock
+	mtx                 sync.RWMutex
+	NewShardBlockEvent  map[int]chan *ShardBlock
 	NewBeaconBlockEvent map[int]chan *BeaconBlock
 }
+
 /*
 Init - init a blockchain view from config
 */

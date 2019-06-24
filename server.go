@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"log"
 	"net"
 	"os"
@@ -59,6 +60,7 @@ type Server struct {
 	wallet            *wallet.Wallet
 	consensusEngine   *constantbft.Engine
 	blockgen          *blockchain.BlkTmplGenerator
+	pusubManager      *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -179,16 +181,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
-	cRoleInCommitteesMempool := make(chan int)
-	cRoleInCommitteesBeaconPool := make(chan bool)
-	cRoleInCommitteesShardPool := make([]chan int, 256)
-	for i := 0; i < 256; i++ {
-		cRoleInCommitteesShardPool[i] = make(chan int)
-	}
-	cRoleInCommitteesNetSync := make(chan int)
-	cTxCache := make(chan common.Hash, 1000)
-	var err error
 
+	var err error
+	// init an pubsub manager
+	var pubsub = pubsub.NewPubSubManager()
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
 	if err != nil {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
@@ -198,13 +194,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Logger.log.Error(err)
 		}
 	}
-
+	serverObj.pusubManager = pubsub
 	serverObj.beaconPool = mempool.GetBeaconPool()
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
-
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
 	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
-
 	serverObj.blockChain = &blockchain.BlockChain{}
 
 	relayShards := []byte{}
@@ -236,15 +230,16 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
 		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		PubSubManager:     pubsub,
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
 		return err
 	}
 	//init beacon pol
-	mempool.InitBeaconPool(cRoleInCommitteesBeaconPool)
+	mempool.InitBeaconPool(serverObj.pusubManager)
 	//init shard pool
-	mempool.InitShardPool(serverObj.shardPool, cRoleInCommitteesShardPool)
+	mempool.InitShardPool(serverObj.shardPool, serverObj.pusubManager)
 	//init cross shard pool
 	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
 
@@ -315,19 +310,21 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		PersistMempool:    cfg.PersistMempool,
 		RelayShards:       relayShards,
 		UserKeyset:        serverObj.userKeySet,
+		PubsubManager:     serverObj.pusubManager,
 	})
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-	serverObj.memPool.InitChannelMempool(cTxCache, cRoleInCommitteesMempool, cPendingTxs)
+	serverObj.memPool.InitChannelMempool(cPendingTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
-		BlockChain:   serverObj.blockChain,
-		DataBase:     serverObj.dataBase,
-		ChainParams:  chainParams,
-		FeeEstimator: serverObj.feeEstimator,
-		MaxTx:        cfg.TxPoolMaxTx,
+		BlockChain:    serverObj.blockChain,
+		DataBase:      serverObj.dataBase,
+		ChainParams:   chainParams,
+		FeeEstimator:  serverObj.feeEstimator,
+		MaxTx:         cfg.TxPoolMaxTx,
+		PubsubManager: pubsub,
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
@@ -340,18 +337,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init consensus engine
 	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
-		CrossShardPool:              serverObj.crossShardPool,
-		ShardToBeaconPool:           serverObj.shardToBeaconPool,
-		ChainParams:                 serverObj.chainParams,
-		BlockChain:                  serverObj.blockChain,
-		Server:                      serverObj,
-		BlockGen:                    serverObj.blockgen,
-		NodeMode:                    cfg.NodeMode,
-		UserKeySet:                  serverObj.userKeySet,
-		CRoleInCommitteesMempool:    cRoleInCommitteesMempool,
-		CRoleInCommitteesNetSync:    cRoleInCommitteesNetSync,
-		CRoleInCommitteesShardPool:  cRoleInCommitteesShardPool,
-		CRoleInCommitteesBeaconPool: cRoleInCommitteesBeaconPool,
+		CrossShardPool:    serverObj.crossShardPool,
+		ShardToBeaconPool: serverObj.shardToBeaconPool,
+		ChainParams:       serverObj.chainParams,
+		BlockChain:        serverObj.blockChain,
+		Server:            serverObj,
+		BlockGen:          serverObj.blockgen,
+		NodeMode:          cfg.NodeMode,
+		UserKeySet:        serverObj.userKeySet,
+		PubsubManager:     serverObj.pusubManager,
 	})
 	if err != nil {
 		return err
@@ -359,20 +353,17 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
-		BlockChain: serverObj.blockChain,
-		ChainParam: chainParams,
-		TxMemPool:  serverObj.memPool,
-		Server:     serverObj,
-		Consensus:  serverObj.consensusEngine,
-
+		BlockChain:        serverObj.blockChain,
+		ChainParam:        chainParams,
+		TxMemPool:         serverObj.memPool,
+		Server:            serverObj,
+		Consensus:         serverObj.consensusEngine,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
-	}, cTxCache,
-		&netsync.ShardIDConfig{
-			RelayShard:        relayShards,
-			RoleInCommittees:  -1,
-			CRoleInCommittees: cRoleInCommitteesNetSync,
-		})
+		PubsubManager:     serverObj.pusubManager,
+		RelayShard:        relayShards,
+		RoleInCommittees:  -1,
+	})
 	// Create a connection manager.
 	var peer *peer.Peer
 	if !cfg.DisableListen {
@@ -451,6 +442,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
 			MiningPubKeyB58: miningPubkeyB58,
 			NetSync:         serverObj.netSync,
+			PubsubManager:   pubsub,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -627,6 +619,7 @@ func (serverObj Server) Start() {
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
 	}
+	go serverObj.pusubManager.Start()
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.Scantime)
