@@ -6,11 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
-	
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -229,7 +230,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.ShardIDTag,
-		metrics.TagValue:         metrics.Shard+shardIDForMetric,
+		metrics.TagValue:         metrics.Shard + shardIDForMetric,
 	})
 	// call FeeEstimator for processing
 	if feeEstimator, ok := blockchain.config.FeeEstimator[block.Header.ShardID]; ok {
@@ -246,7 +247,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		return err
 	}
 	fmt.Printf("[ndh]  - - - nonerror \n")
-	go blockchain.NotifyNewShardBlockEvent(block)
+	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, block))
+	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
 	return nil
 }
 
