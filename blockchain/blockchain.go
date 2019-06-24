@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	pubsub "github.com/incognitochain/incognito-chain/pubsub"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	pubsub "github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
@@ -1163,7 +1164,11 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+1)
+	mapBridgeTokenID, err := blockchain.GetDatabase().GetBridgeTokensAmounts()
+	if err != nil {
+		return nil, err
+	}
+	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+len(mapBridgeTokenID)+1)
 	allCoinID[0] = common.PRVCoinID
 	index := 1
 	for key := range mapCustomToken {
@@ -1176,6 +1181,16 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	}
 	for key := range mapCrossShardCustomToken {
 		allCoinID[index] = key
+		index++
+	}
+
+	for _, bridgeTokenIDBytes := range mapBridgeTokenID {
+		var tokenWithAmount lvdb.TokenWithAmount
+		err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
+		if err != nil {
+			return nil, err
+		}
+		allCoinID[index] = *tokenWithAmount.TokenID
 		index++
 	}
 	return allCoinID, nil
@@ -1228,7 +1243,6 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 		txsRes = append(txsRes, txRes)
 	}
 	blkBody.Transactions = append(blkBody.Transactions, txsRes...)
-
 	return nil
 }
 
@@ -1246,26 +1260,30 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	numberOfTxResponse := 0
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
+			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			fmt.Printf("[ndh] - response %+v\n", tx)
-			requesters, amounts := tx.GetReceivers()
-			requester := base58.Base58Check{}.Encode(requesters[0], VERSION)
+
+			requester := base58.Base58Check{}.Encode(requesterRes, VERSION)
 			if txRequestTable[requester] == nil {
 				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
 				return errors.New("This response dont match with any request")
 			}
 			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
-			amount, err := db.GetCommitteeReward(requesters[0], requestMeta.TokenID)
+			if coinID.Cmp(&requestMeta.TokenID) != 0 {
+				return errors.New("Invalid token ID")
+			}
+			amount, err := db.GetCommitteeReward(requesterRes, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
 				fmt.Printf("[ndh] - - [error] Not enough reward %+v %+v\n", amount, err)
 				return errors.New("Not enough reward")
 			}
-			if amount != amounts[0] {
-				fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amounts[0])
+			if amount != amountRes {
+				fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amountRes)
 				return errors.New("Wrong amount")
 			}
 
 			if txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()) != 0 {
-				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amounts[0])
+				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amountRes)
 				return errors.New("This response dont match with any request")
 			}
 			txRequestTable[requester] = nil
@@ -1289,27 +1307,53 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	coinID common.Hash,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	txType := 0
+	txType := -1
 	if coinID.Cmp(&common.PRVCoinID) == 0 {
 		txType = transaction.NormalCoinType
-	} else {
+	}
+	if txType == -1 {
+		mapBridgeTokenID, err := blockchain.GetDatabase().GetBridgeTokensAmounts()
+		if err != nil {
+			return nil, err
+		}
+		for _, bridgeTokenIDBytes := range mapBridgeTokenID {
+			var tokenWithAmount lvdb.TokenWithAmount
+			err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
+			if err != nil {
+				return nil, err
+			}
+
+			if coinID.Cmp(tokenWithAmount.TokenID) == 0 {
+				txType = transaction.CustomTokenPrivacyType
+				fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", tokenWithAmount.TokenID)
+				break
+			}
+		}
+	}
+	if txType == -1 {
 		mapCustomToken, err := blockchain.ListCustomToken()
 		if err != nil {
 			return nil, err
 		}
-		if _, ok := mapCustomToken[coinID]; ok {
-			txType = transaction.CustomTokenType
-		} else {
-			mapPrivacyCustomToken, _, err := blockchain.ListPrivacyCustomToken()
-			if err != nil {
-				return nil, err
-			}
-			if _, ok := mapPrivacyCustomToken[coinID]; ok {
-				txType = transaction.CustomTokenPrivacyType
-			} else {
-				return nil, errors.New("Invalid coin ID")
+		if mapCustomToken != nil {
+			if _, ok := mapCustomToken[coinID]; ok {
+				txType = transaction.CustomTokenType
 			}
 		}
+	}
+	if txType == -1 {
+		mapPrivacyCustomToken, _, err := blockchain.ListPrivacyCustomToken()
+		if err != nil {
+			return nil, err
+		}
+		if mapPrivacyCustomToken != nil {
+			if _, ok := mapPrivacyCustomToken[coinID]; ok {
+				txType = transaction.CustomTokenPrivacyType
+			}
+		}
+	}
+	if txType == -1 {
+		return nil, errors.New("Invalid token ID")
 	}
 	return transaction.BuildCoinbaseTxByCoinID(
 		payToAddress,
@@ -1319,7 +1363,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		meta,
 		coinID,
 		txType,
-		common.PRVCoinID.String(),
+		coinID.String(),
 		shardID,
 	)
 }
