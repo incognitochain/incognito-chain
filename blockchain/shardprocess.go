@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
@@ -393,8 +394,12 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 
 	totalTxsFee := make(map[common.Hash]uint64)
 	for _, tx := range block.Body.Transactions {
-		txTokenID := tx.GetTokenID()
-		totalTxsFee[*txTokenID] += tx.GetTxFee()
+		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
+		txType := tx.GetType()
+		if txType == common.TxCustomTokenPrivacyType {
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+		}
 	}
 
 	tokenIDsfromTxs := make([]common.Hash, 0)

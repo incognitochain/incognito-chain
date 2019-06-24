@@ -368,7 +368,13 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	swapers := [][]string{}
 	stabilityInstructions := [][]string{}
 	acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
+	// str, _ := acceptedBlockRewardInfo.GetStringFormat()
+	fmt.Printf("[ndh] - - - - - - aaaaaaaaaaaaaaa\n\n\n")
+	for key, value := range shardBlock.Header.TotalTxsFee {
+		fmt.Printf("[ndh] ======================= %+v %+v \n", key, value)
+	}
 	acceptedRewardInstructions, err := acceptedBlockRewardInfo.GetStringFormat()
+	fmt.Printf("[ndh] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ %+v\n", acceptedRewardInstructions)
 	if err != nil {
 		panic("[ndh] Cant create acceptedRewardInstructions")
 	}
