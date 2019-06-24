@@ -1,6 +1,8 @@
 package transaction
 
 import (
+	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -65,7 +67,10 @@ func BuildCoinbaseTxByCoinID(
 			false,
 			shardID,
 		)
-		return tx, err
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
+		return tx, nil
 	case CustomTokenPrivacyType:
 		var propertyID [common.HashSize]byte
 		copy(propertyID[:], coinID[:])
@@ -97,7 +102,10 @@ func BuildCoinbaseTxByCoinID(
 			false,
 			shardID,
 		)
-		return tx, err
+		if err != nil {
+			return nil, errors.New(err.Error())
+		}
+		return tx, nil
 	}
 	return nil, nil
 }
