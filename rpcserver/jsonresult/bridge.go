@@ -1,6 +1,6 @@
 package jsonresult
 
-type GetBeaconSwapProof struct {
+type GetSwapProof struct {
 	Instruction string // Hex encoded of the swap inst
 
 	BeaconInstPath         []string   // Hex encoded path of the inst in inst merkle tree

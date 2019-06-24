@@ -13,7 +13,21 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
-// handleGetBestBlock implements the getbestblock command.
+type swapProof struct {
+	inst []string
+
+	instPath         []string
+	instPathIsLeft   []bool
+	instRoot         string
+	blkData          string
+	blkHash          string
+	signerPubkeys    []string
+	signerSig        string
+	signerPaths      [][]string
+	signerPathIsLeft [][]bool
+}
+
+// handleGetBeaconSwapProof returns a proof of a new beacon committee (for a given bridge block height)
 func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetBeaconSwapProof params: %+v", params)
 	listParams := params.([]interface{})
@@ -21,13 +35,16 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	bc := rpcServer.config.BlockChain
 	db := *rpcServer.config.Database
 
-	// Get proof of instruction on bridge
-	bridgeInstProof, beaconBlocks, err := getBeaconSwapProofOnBridge(height-1, bc, db)
+	// Get bridge block and corresponding beacon blocks
+	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height-1, bc, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	if bridgeInstProof == nil {
-		return nil, nil
+
+	// Get proof of instruction on bridge
+	bridgeInstProof, err := getBeaconSwapProofOnBridge(bridgeBlock, bc, db)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	// Get proof of instruction on beacon
@@ -42,7 +59,7 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 		flattenBridgeInst = append(flattenBridgeInst, []byte(part)...)
 	}
 
-	return jsonresult.GetBeaconSwapProof{
+	return jsonresult.GetSwapProof{
 		Instruction: hex.EncodeToString(flattenBridgeInst),
 
 		BeaconInstPath:         beaconInstProof.instPath,
@@ -67,37 +84,23 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 	}, nil
 }
 
-type instructionProof struct {
-	inst []string
-
-	instPath         []string
-	instPathIsLeft   []bool
-	instRoot         string
-	blkData          string
-	blkHash          string
-	signerPubkeys    []string
-	signerSig        string
-	signerPaths      [][]string
-	signerPathIsLeft [][]bool
-}
-
-func getBeaconSwapProofOnBridge(
+// getShardAndBeaconBlocks returns a shard block (with all of its instructions) and the included beacon blocks
+func getShardAndBeaconBlocks(
 	height uint64,
 	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
-) (*instructionProof, []*blockchain.BeaconBlock, error) {
-	// Get bridge block and check if it contains beacon swap instruction
+) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
 	bridgeID := byte(1) // TODO(@0xbunyip): replace with bridge shardID
 	bridgeBlock, err := bc.GetShardBlockByHeight(height, bridgeID)
 	if err != nil {
 		return nil, nil, err
 	}
 	beaconBlocks, err := getIncludedBeaconBlocks(
-		bc,
-		db,
 		bridgeBlock.Header.Height,
 		bridgeBlock.Header.BeaconHeight,
 		bridgeBlock.Header.ShardID,
+		bc,
+		db,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -106,116 +109,153 @@ func getBeaconSwapProofOnBridge(
 	if err != nil {
 		return nil, nil, err
 	}
-	bridgeInst, bridgeInstId := findCommSwapInst(bridgeInsts)
-	if bridgeInstId < 0 {
-		return nil, nil, nil
+	bridgeBlock.Body.Instructions = bridgeInsts
+	return bridgeBlock, beaconBlocks, nil
+}
+
+// getBeaconSwapProofOnBridge finds a beacon committee swap instruction in a given bridge block and returns its proof
+func getBeaconSwapProofOnBridge(
+	bridgeBlock *blockchain.ShardBlock,
+	bc *blockchain.BlockChain,
+	db database.DatabaseInterface,
+) (*swapProof, error) {
+	insts := bridgeBlock.Body.Instructions
+	_, id := findCommSwapInst(insts, metadata.BeaconPubkeyRootMeta)
+	if id < 0 {
+		return nil, fmt.Errorf("cannot find beacon swap instruction in bridge block")
 	}
 
-	// Build merkle proof for instruction in bridge block
-	bridgeProof := buildInstProof(bridgeInsts, bridgeInstId)
+	proof, err := buildProofOnBridge(bridgeBlock, insts, id, db)
+	if err != nil {
+		return nil, err
+	}
+	return proof, nil
+}
 
+// buildProofOnBridge builds a swapProof for an instruction in a bridge block
+func buildProofOnBridge(
+	bridgeBlock *blockchain.ShardBlock,
+	insts [][]string,
+	id int,
+	db database.DatabaseInterface,
+) (*swapProof, error) {
 	// Get committee pubkey and signature
 	pubkeys, signerIdxs, err := getBridgeSignerPubkeys(bridgeBlock, db)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	bridgeSignerPubkeys := make([]string, len(pubkeys))
+	signerPubkeys := make([]string, len(pubkeys))
 	for i, pk := range pubkeys {
-		bridgeSignerPubkeys[i] = hex.EncodeToString(pk)
+		signerPubkeys[i] = hex.EncodeToString(pk)
 	}
 
 	// Build merkle proof for signer pubkeys
 	signerProof := buildSignersProof(pubkeys, signerIdxs)
-	bridgeSignerPaths := make([][]string, len(pubkeys))
-	bridgeSignerPathIsLeft := make([][]bool, len(pubkeys))
+	signerPaths := make([][]string, len(pubkeys))
+	signerPathIsLeft := make([][]bool, len(pubkeys))
 	for i, p := range signerProof {
-		bridgeSignerPaths[i] = p.getPath()
-		bridgeSignerPathIsLeft[i] = p.left
+		signerPaths[i] = p.getPath()
+		signerPathIsLeft[i] = p.left
 	}
 
-	// Get meta hash and block hash
-	bridgeInstRoot := hex.EncodeToString(bridgeBlock.Header.InstructionMerkleRoot[:])
-	bridgeMetaHash := bridgeBlock.Header.MetaHash()
-	bridgeBlkHash := bridgeBlock.Header.Hash()
+	// Build merkle proof for instruction in bridge block
+	instProof := buildInstProof(insts, id)
 
-	return &instructionProof{
-		inst:             bridgeInst,
-		instPath:         bridgeProof.getPath(),
-		instPathIsLeft:   bridgeProof.left,
-		instRoot:         bridgeInstRoot,
-		blkData:          hex.EncodeToString(bridgeMetaHash[:]),
-		blkHash:          hex.EncodeToString(bridgeBlkHash[:]),
-		signerPubkeys:    bridgeSignerPubkeys,
+	// Get meta hash and block hash
+	instRoot := hex.EncodeToString(bridgeBlock.Header.InstructionMerkleRoot[:])
+	metaHash := bridgeBlock.Header.MetaHash()
+	blkHash := bridgeBlock.Header.Hash()
+
+	return &swapProof{
+		inst:             insts[id],
+		instPath:         instProof.getPath(),
+		instPathIsLeft:   instProof.left,
+		instRoot:         instRoot,
+		blkData:          hex.EncodeToString(metaHash[:]),
+		blkHash:          hex.EncodeToString(blkHash[:]),
+		signerPubkeys:    signerPubkeys,
 		signerSig:        bridgeBlock.AggregatedSig,
-		signerPaths:      bridgeSignerPaths,
-		signerPathIsLeft: bridgeSignerPathIsLeft,
-	}, beaconBlocks, nil
+		signerPaths:      signerPaths,
+		signerPathIsLeft: signerPathIsLeft,
+	}, nil
 }
 
+// buildProofOnBeacon builds a swapProof for an instruction in a beacon block
+func buildProofOnBeacon(
+	beaconBlock *blockchain.BeaconBlock,
+	insts [][]string,
+	id int,
+	db database.DatabaseInterface,
+) (*swapProof, error) {
+	// Get committee pubkey and signature
+	pubkeys, signerIdxs, err := getBeaconSignerPubkeys(beaconBlock, db)
+	if err != nil {
+		return nil, err
+	}
+	signerPubkeys := make([]string, len(pubkeys))
+	for i, pk := range pubkeys {
+		signerPubkeys[i] = hex.EncodeToString(pk)
+	}
+
+	// Build merkle proof for signer pubkeys
+	signerProof := buildSignersProof(pubkeys, signerIdxs)
+	signerPaths := make([][]string, len(pubkeys))
+	signerPathIsLeft := make([][]bool, len(pubkeys))
+	for i, p := range signerProof {
+		signerPaths[i] = p.getPath()
+		signerPathIsLeft[i] = p.left
+	}
+
+	// Build merkle proof for instruction in beacon block
+	instProof := buildInstProof(insts, id)
+
+	// Get meta hash and block hash
+	instRoot := hex.EncodeToString(beaconBlock.Header.InstructionMerkleRoot[:])
+	metaHash := beaconBlock.Header.MetaHash()
+	blkHash := beaconBlock.Header.Hash()
+
+	return &swapProof{
+		inst:             insts[id],
+		instPath:         instProof.getPath(),
+		instPathIsLeft:   instProof.left,
+		instRoot:         instRoot,
+		blkData:          hex.EncodeToString(metaHash[:]),
+		blkHash:          hex.EncodeToString(blkHash[:]),
+		signerPubkeys:    signerPubkeys,
+		signerSig:        beaconBlock.AggregatedSig,
+		signerPaths:      signerPaths,
+		signerPathIsLeft: signerPathIsLeft,
+	}, nil
+}
+
+// getBeaconSwapProofOnBeacon finds in given beacon blocks a beacon committee swap instruction and returns its proof
 func getBeaconSwapProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
 	db database.DatabaseInterface,
-) (*instructionProof, error) {
+) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
 	beaconBlock := findBeaconBlockWithInst(beaconBlocks, inst)
 	if beaconBlock == nil {
 		return nil, fmt.Errorf("cannot find corresponding beacon block that includes swap instruction")
 	}
 
-	beaconInsts := beaconBlock.Body.Instructions
-	_, beaconInstId := findCommSwapInst(beaconInsts)
-	if beaconInstId < 0 {
-		return nil, fmt.Errorf("cannot find swap instruction in beacon block")
+	insts := beaconBlock.Body.Instructions
+	_, instID := findCommSwapInst(insts, metadata.BeaconPubkeyRootMeta)
+	if instID < 0 {
+		return nil, fmt.Errorf("cannot find beacon swap instruction in beacon block")
 	}
 
-	// Build merkle proof for instruction in beacon block
-	beaconProof := buildInstProof(beaconInsts, beaconInstId)
-
-	// Get committee pubkey and signature
-	pubkeys, signerIdxs, err := getBeaconSignerPubkeys(beaconBlock, db)
-	if err != nil {
-		return nil, err
-	}
-	beaconSignerPubkeys := make([]string, len(pubkeys))
-	for i, pk := range pubkeys {
-		beaconSignerPubkeys[i] = hex.EncodeToString(pk)
-	}
-
-	// Build merkle proof for signer pubkeys
-	signerProof := buildSignersProof(pubkeys, signerIdxs)
-	beaconSignerPaths := make([][]string, len(pubkeys))
-	beaconSignerPathIsLeft := make([][]bool, len(pubkeys))
-	for i, p := range signerProof {
-		beaconSignerPaths[i] = p.getPath()
-		beaconSignerPathIsLeft[i] = p.left
-	}
-
-	// Get meta hash and block hash
-	beaconInstRoot := hex.EncodeToString(beaconBlock.Header.InstructionMerkleRoot[:])
-	beaconMetaHash := beaconBlock.Header.MetaHash()
-	beaconBlkHash := beaconBlock.Header.Hash()
-
-	return &instructionProof{
-		instPath:         beaconProof.getPath(),
-		instPathIsLeft:   beaconProof.left,
-		instRoot:         beaconInstRoot,
-		blkData:          hex.EncodeToString(beaconMetaHash[:]),
-		blkHash:          hex.EncodeToString(beaconBlkHash[:]),
-		signerPubkeys:    beaconSignerPubkeys,
-		signerSig:        beaconBlock.AggregatedSig,
-		signerPaths:      beaconSignerPaths,
-		signerPathIsLeft: beaconSignerPathIsLeft,
-	}, nil
+	return buildProofOnBeacon(beaconBlock, insts, instID, db)
 }
 
 // getIncludedBeaconBlocks retrieves all beacon blocks included in a shard block
 func getIncludedBeaconBlocks(
-	bc *blockchain.BlockChain,
-	db database.DatabaseInterface,
 	shardHeight uint64,
 	beaconHeight uint64,
 	shardID byte,
+	bc *blockchain.BlockChain,
+	db database.DatabaseInterface,
 ) ([]*blockchain.BeaconBlock, error) {
 	prevShardBlock, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
 	if err != nil {
@@ -254,10 +294,10 @@ func extractInstsFromShardBlock(
 	return shardInsts, nil
 }
 
-// findCommSwapInst finds a beacon swap instruction in a list, returns it with its index
-func findCommSwapInst(insts [][]string) ([]string, int) {
+// findCommSwapInst finds a swap instruction in a list, returns it along with its index
+func findCommSwapInst(insts [][]string, meta int) ([]string, int) {
 	for i, inst := range insts {
-		if strconv.Itoa(metadata.BeaconPubkeyRootMeta) == inst[0] {
+		if strconv.Itoa(meta) == inst[0] {
 			fmt.Println("[db] BeaconPubkeyRootMeta inst:", inst)
 			return inst, i
 		}
