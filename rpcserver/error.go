@@ -27,6 +27,8 @@ const (
 	ErrTxTypeInvalid
 	ErrRejectInvalidFee
 	ErrTxNotExistedInMemAndBLock
+	ErrUnsubcribe
+	ErrSubcribe
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -60,9 +62,12 @@ var ErrCodeMessage = map[int]struct {
 	// processing -2xxx
 	ErrCreateTxData: {-2001, "Can not create tx"},
 	ErrSendTxData:   {-2002, "Can not send tx"},
+	// socket/subcribe -3xxx
+	ErrSubcribe:   {-3001, "Failed to subcribe"},
+	ErrUnsubcribe: {-2002, "Failed to unsubcribe"},
 }
 
-// RPCError represents an error that is used as a part of a JSON-RPC Response
+// RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
 // object.
 type RPCError struct {
 	Code       int    `json:"Code,omitempty"`
@@ -85,11 +90,25 @@ func (e RPCError) GetErr() error {
 }
 
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
-// for use in a JSON-RPC Response object.
+// for use in a JSON-RPC JsonResponse object.
 func NewRPCError(key int, err error) *RPCError {
 	return &RPCError{
 		Code:    ErrCodeMessage[key].code,
 		Message: ErrCodeMessage[key].message,
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 	}
+}
+
+// internalRPCError is a convenience function to convert an internal error to
+// an RPC error with the appropriate Code set.  It also logs the error to the
+// RPC server subsystem since internal errors really should not occur.  The
+// context parameter is only used in the log Message and may be empty if it's
+// not needed.
+func internalRPCError(errStr, context string) *RPCError {
+	logStr := errStr
+	if context != "" {
+		logStr = context + ": " + errStr
+	}
+	Logger.log.Info(logStr)
+	return NewRPCError(ErrRPCInternal, errors.New(errStr))
 }

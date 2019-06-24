@@ -44,7 +44,6 @@ type ShardPool interface {
 	GetValidBlockHeight() []uint64
 	GetLatestValidBlockHeight() uint64
 	SetShardState(uint64)
-	GetValidBlockChan() *chan *ShardBlock
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
 }

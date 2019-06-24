@@ -46,7 +46,7 @@ if [ "$1" == "shard-stake-3" ]; then
 go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rzcRLXhra2ouQo4yCZiQt1iEoZdRkD3m6fixXqCLzygjo28L3isePdPjPbXJ7zcxgyxbiNuF4Ex15NFCHVLwHhJD7QL7AHUfUsH78AP" --nodemode "auto" --datadir "data/shard-stake-3" --listen "127.0.0.1:9447" --externaladdress "127.0.0.1:9447" --norpcauth --rpclisten "127.0.0.1:9345"
 fi
 ####full node
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --nodemode "relay" --relayshards "all" --datadir "data/fullnode" --listen "127.0.0.1:9436" --externaladdress "127.0.0.1:9436" --norpcauth --rpclisten "127.0.0.1:9343"
+# go run *.go --discoverpeersaddress "127.0.0.1:9330" --nodemode "relay" --relayshards "all" --datadir "data/fullnode" --listen "127.0.0.1:9436" --externaladdress "127.0.0.1:9436" --norpcauth --rpclisten "127.0.0.1:9343"
 
 ###### SINGLE_MEMBER
 ######

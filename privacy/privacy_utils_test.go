@@ -24,13 +24,13 @@ func TestConvertBigIntToBinary(t *testing.T) {
 	num := big.NewInt(100)
 	binary := ConvertBigIntToBinary(num, 10)
 
-	for i:=0; i<len(binary); i++{
-		fmt.Printf("%v: %v ",i,  binary[i])
+	for i := 0; i < len(binary); i++ {
+		fmt.Printf("%v: %v ", i, binary[i])
 	}
 }
 
-func TestMultiExponentiation(t *testing.T){
-	exponents := []*big.Int{big.NewInt(5), big.NewInt(10),big.NewInt(5),big.NewInt(7), big.NewInt(5)}
+func TestMultiExponentiation(t *testing.T) {
+	exponents := []*big.Int{big.NewInt(5), big.NewInt(10), big.NewInt(5), big.NewInt(7), big.NewInt(5)}
 
 	//exponents := make([]*big.Int, 64)
 	//fmt.Printf("Values: %v\n", exponents[0])
@@ -41,10 +41,9 @@ func TestMultiExponentiation(t *testing.T){
 	fmt.Printf("normal calculation time: %v\n", end1)
 	fmt.Printf("Res from normal calculation: %+v\n", expectedRes)
 
-
 	start2 := time.Now()
 	testcase4, err := MultiScalarmult(PedCom.G, exponents)
-	if err != nil{
+	if err != nil {
 		Logger.Log.Errorf("Error of multi-exponentiation algorithm")
 	}
 	end2 := time.Since(start2)
@@ -53,7 +52,7 @@ func TestMultiExponentiation(t *testing.T){
 
 	start3 := time.Now()
 	testcase5, err := MultiScalar2(PedCom.G, exponents)
-	if err != nil{
+	if err != nil {
 		Logger.Log.Errorf("Error of multi-exponentiation algorithm")
 	}
 	end3 := time.Since(start3)
@@ -62,8 +61,7 @@ func TestMultiExponentiation(t *testing.T){
 	assert.Equal(t, expectedRes, testcase4)
 }
 
-
-func TestHashEC(t *testing.T){
+func TestHashEC(t *testing.T) {
 	res := PedCom.G[0].Hash(100)
 	fmt.Printf("Res: %v\n", res.Compress())
 
@@ -93,10 +91,10 @@ func TestHashEC(t *testing.T){
 	fmt.Printf("Res: %v\n", res.Compress())
 }
 
-func TestMap(t *testing.T){
+func TestMap(t *testing.T) {
 	m := map[int][]int{
-		0: {0,2,4,6,8},
-		1: {1,3,5,7},
+		0: {0, 2, 4, 6, 8},
+		1: {1, 3, 5, 7},
 	}
 
 	m[2] = append(m[2], 10)

@@ -19,7 +19,7 @@ var metaConstructors = map[string]metaConstructorType{
 	// createAndSendContractingRequest: metadata.NewContractingRequestFromMap,
 }
 
-func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
+func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
@@ -28,12 +28,12 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
 
-	_, errParseKey := rpcServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
+	_, errParseKey := httpServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
 	if err := common.CheckError(errCons, errParseKey); err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	tx, err := rpcServer.buildRawTransaction(params, meta)
+	tx, err := httpServer.buildRawTransaction(params, meta)
 	if err != nil {
 		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error 0 %+v \n\n\n\n\n\n", err)
 		return nil, err
@@ -51,7 +51,7 @@ func (rpcServer RpcServer) createRawTxWithMetadata(params interface{}, closeChan
 	return result, nil
 }
 
-func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
+func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
@@ -59,7 +59,7 @@ func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}
 	if errCons != nil {
 		return nil, NewRPCError(ErrUnexpected, errCons)
 	}
-	tx, err := rpcServer.buildRawCustomTokenTransaction(params, meta)
+	tx, err := httpServer.buildRawCustomTokenTransaction(params, meta)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -77,7 +77,7 @@ func (rpcServer RpcServer) createRawCustomTokenTxWithMetadata(params interface{}
 	return result, nil
 }
 
-func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
@@ -93,7 +93,7 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -107,18 +107,18 @@ func (rpcServer RpcServer) sendRawTxWithMetadata(params interface{}, closeChan <
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
-	err = rpcServer.config.Server.PushMessageToAll(txMsg)
+	err = httpServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+	httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
 	}
 	return result, nil
 }
 
-func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
@@ -134,7 +134,7 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	hash, _, err := rpcServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
+	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -148,19 +148,19 @@ func (rpcServer RpcServer) sendRawCustomTokenTxWithMetadata(params interface{}, 
 	}
 
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
-	err = rpcServer.config.Server.PushMessageToAll(txMsg)
+	err = httpServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	rpcServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+	httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	result := jsonresult.CreateTransactionResult{
 		TxID: tx.Hash().String(),
 	}
 	return result, nil
 }
 
-func (rpcServer RpcServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler commandHandler) (interface{}, *RPCError) {
-	data, err := createHandler(rpcServer, params, closeChan)
+func (httpServer *HttpServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler httpHandler) (interface{}, *RPCError) {
+	data, err := createHandler(httpServer, params, closeChan)
 	fmt.Printf("err create handler: %v\n", err)
 	if err != nil {
 		return nil, err
@@ -169,5 +169,5 @@ func (rpcServer RpcServer) createAndSendTxWithMetadata(params interface{}, close
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	return sendHandler(rpcServer, newParam, closeChan)
+	return sendHandler(httpServer, newParam, closeChan)
 }
