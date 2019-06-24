@@ -152,6 +152,9 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	var resInst [][]string
 
 	allCoinID, err := blockchain.GetAllCoinID()
+	for _, coinID := range allCoinID {
+		fmt.Printf("[ndh] coin IDDDDDDDDDDDDDDDDDDDDDDDDDDDD %+v\n", coinID)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -170,6 +173,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 			totalRewards[ID] = map[common.Hash]uint64{}
 		}
 		for _, coinID := range allCoinID {
+			fmt.Printf("[ndh] aaaaaaaaaaaaaaaaaaaaaaaaaaa %+v\n", coinID)
 			totalRewards[ID][coinID], err = blockchain.GetDatabase().GetRewardOfShardByEpoch(epoch, byte(ID), coinID)
 			if err != nil {
 				return nil, err
@@ -178,6 +182,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 				fmt.Printf("[ndh] Delete key %+v\n", coinID)
 				delete(totalRewards[ID], coinID)
 			}
+			fmt.Printf("[ndh] bbbbbbbbbbbbbbbbbbbbbbbbbbb %+v\n", totalRewards[ID][coinID])
 		}
 		rewardForBeacon, rewardForDev, err := splitReward(&totalRewards[ID], numberOfActiveShards, forDev)
 		if err != nil {
@@ -338,8 +343,8 @@ func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 	db := blockchain.config.DataBase
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
-			receivers, amounts := tx.GetReceivers()
-			err := db.RemoveCommitteeReward(receivers[0], amounts[0], *tx.GetTokenID())
+			_, requesterRes, amountRes, coinID := tx.GetTransferData()
+			err := db.RemoveCommitteeReward(requesterRes, amountRes, *coinID)
 			if err != nil {
 				return err
 			}
@@ -381,7 +386,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v\n", beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID)
+				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
 				err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key)
 				if err != nil {
 					return err
