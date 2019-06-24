@@ -42,7 +42,7 @@ func TestGetTimestampAndNonceByBlockHash(t *testing.T) {
 }
 func TestGetChainTimeStampAndNonce(t *testing.T) {
 	var btcClient = NewBTCClient("admin", "autonomous", "159.65.142.153", "8332")
-	_, _, _, err := btcClient.GetChainTimeStampAndNonce()
+	_, err := btcClient.GetCurrentChainTimeStamp()
 	if err != nil {
 		t.Error("Fail to get chain timestamp and nonce")
 	}
