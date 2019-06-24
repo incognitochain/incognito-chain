@@ -4,13 +4,9 @@ import "time"
 
 // for common
 const (
-	EmptyString          = ""
-	PaymentAddressLength = 66
-	ZeroByte             = byte(0x00)
-	DateOutputFormat     = "2006-01-02T15:04:05.999999"
-	DateInputFormat      = "2006-01-02T15:04:05.999999"
-	NextForceUpdate      = "2019-06-15T23:59:00.000000"
-	FirstDateOfMonth     = "01T23:59:00.000000"
+	EmptyString      = ""
+	ZeroByte         = byte(0x00)
+	DateOutputFormat = "2006-01-02T15:04:05.999999"
 )
 
 // for exit code
