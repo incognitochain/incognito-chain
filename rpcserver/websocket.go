@@ -27,13 +27,15 @@ type RpcSubResult struct {
 	Result interface{}
 	Error  *RPCError
 }
+
 // Manage All Subcription from one socket connection
 type SubcriptionManager struct {
-	wsMtx sync.RWMutex
-	subMtx sync.RWMutex
+	wsMtx          sync.RWMutex
+	subMtx         sync.RWMutex
 	subRequestList map[string]map[common.Hash]chan struct{} // String: Subcription Method, Hash: hash from Subcription Params
-	ws *websocket.Conn
+	ws             *websocket.Conn
 }
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -42,12 +44,14 @@ var upgrader = websocket.Upgrader{
 func (wsServer *WsServer) Init(config *RpcServerConfig) {
 	wsServer.config = *config
 }
-func NewSubcriptionManager(ws *websocket.Conn) *SubcriptionManager{
+
+func NewSubscriptionManager(ws *websocket.Conn) *SubcriptionManager {
 	return &SubcriptionManager{
 		subRequestList: make(map[string]map[common.Hash]chan struct{}),
-		ws: ws,
+		ws:             ws,
 	}
 }
+
 // Start is used by rpcserver.go to start the rpc listener.
 func (wsServer *WsServer) Start() error {
 	if atomic.AddInt32(&wsServer.started, 1) != 1 {
@@ -112,6 +116,7 @@ func (wsServer *WsServer) handleWsRequest(w http.ResponseWriter, r *http.Request
 	}
 	wsServer.ProcessRpcWsRequest(ws)
 }
+
 func (wsServer *WsServer) limitWsConnections(w http.ResponseWriter, remoteAddr string) bool {
 	if int(atomic.LoadInt32(&wsServer.numWsClients)+1) > wsServer.config.RPCMaxWSClients {
 		Logger.log.Infof("Max RPC Web Socket exceeded [%d] - "+
@@ -123,19 +128,22 @@ func (wsServer *WsServer) limitWsConnections(w http.ResponseWriter, remoteAddr s
 	}
 	return false
 }
+
 func (wsServer *WsServer) IncrementWsClients() {
 	atomic.AddInt32(&wsServer.numWsClients, 1)
 }
+
 func (wsServer *WsServer) DecrementWsClients() {
 	atomic.AddInt32(&wsServer.numWsClients, -1)
 }
+
 func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 	if atomic.LoadInt32(&wsServer.shutdown) != 0 {
 		return
 	}
 	defer ws.Close()
 	// one sub manager will manage connection and subcription with one client (one websocket connection)
-	subManager := NewSubcriptionManager(ws)
+	subManager := NewSubscriptionManager(ws)
 	for {
 		msgType, msg, err := ws.ReadMessage()
 		if err != nil {
@@ -150,12 +158,12 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 		subRequest, jsonErr := parseSubcriptionRequest(msg)
 		if jsonErr == nil {
 			if subRequest.Type == 0 {
-				go wsServer.Subcribe(subManager, subRequest, msgType)
+				go wsServer.subscribe(subManager, subRequest, msgType)
 			}
 			if subRequest.Type == 1 {
-				go Unsubcribe(subManager, subRequest, msgType)
+				go wsServer.unsubscribe(subManager, subRequest, msgType)
 				if err != nil {
-				
+
 				}
 			}
 		} else {
@@ -164,7 +172,7 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 	}
 }
 
-func (wsServer *WsServer) Subcribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
+func (wsServer *WsServer) subscribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
 	var cResult chan RpcSubResult
 	var closeChan = make(chan struct{})
 	defer func() {
@@ -196,8 +204,8 @@ func (wsServer *WsServer) Subcribe(subManager *SubcriptionManager, subRequest *S
 		return
 	} else {
 		cResult = make(chan RpcSubResult)
-		// push this subcription to subcription list
-		err := AddSubcription(subManager, subRequest, closeChan)
+		// push this subscription to subscription list
+		err := AddSubscription(subManager, subRequest, closeChan)
 		if err != nil {
 			Logger.log.Errorf("Json Params Hash Error %+v, Closing Websocket from Client %+v \n", err, subManager.ws.RemoteAddr())
 			close(cResult)
@@ -225,7 +233,8 @@ func (wsServer *WsServer) Subcribe(subManager *SubcriptionManager, subRequest *S
 		return
 	}
 }
-func Unsubcribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
+
+func (wsServer *WsServer) unsubscribe(subManager *SubcriptionManager, subRequest *SubcriptionRequest, msgType int) {
 	subManager.subMtx.Lock()
 	defer subManager.subMtx.Unlock()
 	var done = true
@@ -277,7 +286,8 @@ func RemoveSubcription(subManager *SubcriptionManager, subRequest *SubcriptionRe
 	}
 	return nil
 }
-func AddSubcription(subManager *SubcriptionManager, subRequest *SubcriptionRequest, closeChan chan struct{}) error {
+
+func AddSubscription(subManager *SubcriptionManager, subRequest *SubcriptionRequest, closeChan chan struct{}) error {
 	subManager.subMtx.Lock()
 	defer subManager.subMtx.Unlock()
 	hash, err := common.HashArrayInterface(subRequest.JsonRequest.Params)
@@ -290,4 +300,3 @@ func AddSubcription(subManager *SubcriptionManager, subRequest *SubcriptionReque
 	subManager.subRequestList[subRequest.JsonRequest.Method][hash] = closeChan
 	return nil
 }
-

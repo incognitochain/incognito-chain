@@ -36,14 +36,14 @@ func GetService(serviceName string) (*LogService, error) {
 }
 
 func init() {
-	RegisterService(SENTRY_LOG_SERVICENAME, &LogService{
+	/*RegisterService(SENTRY_LOG_SERVICENAME, &LogService{
 		InitSentry,
 		CaptureSentryMessage,
 		CaptureSentryError,
 		CaptureSentryDebug,
 		CaptureSentryWarning,
 		CaptureSentryFatal,
-	})
+	})*/
 
 	RegisterService(ELASTIC_LOG_SERVICENAME, &LogService{
 		InitElastic,

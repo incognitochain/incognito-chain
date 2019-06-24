@@ -121,8 +121,13 @@ var LimitedHttpHandler = map[string]httpHandler{
 }
 
 var WsHandler = map[string]wsHandler{
-	testSubcrice:     (*WsServer).handleTestSubcribe,
-	subcribeNewShardBlock: (*WsServer).handleSubcribeNewShardBlock,
-	subcribeNewBeaconBlock: (*WsServer).handleSubcribeNewBeaconBlock,
-	subcribePendingTransaction: (*WsServer).handleSubcribePendingTransaction,
+	testSubcrice:                (*WsServer).handleTestSubcribe,
+	subcribeNewShardBlock:       (*WsServer).handleSubscribeNewShardBlock,
+	subcribeNewBeaconBlock:      (*WsServer).handleSubscribeNewBeaconBlock,
+	subcribePendingTransaction:  (*WsServer).handleSubscribePendingTransaction,
+	subcribeMempoolInfo:         (*WsServer).handleSubcribeMempoolInfo,
+	subcribeShardBestState:      (*WsServer).handleSubscribeShardBestState,
+	subcribeBeaconBestState:     (*WsServer).handleSubscribeBeaconBestState,
+	subcribeBeaconPoolBeststate: (*WsServer).handleSubscribeBeaconPoolBestState,
+	subcribeShardPoolBeststate:  (*WsServer).handleSubscribeShardPoolBeststate,
 }

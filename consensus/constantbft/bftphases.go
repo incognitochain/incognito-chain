@@ -103,6 +103,11 @@ func (protocol *BFTProtocol) phaseListen() error {
 	if additionalWaitTime < 0 {
 		additionalWaitTime = 0
 	}
+	if protocol.RoundData.Layer == common.BEACON_ROLE {
+		additionalWaitTime += common.MinBeaconBlkInterval
+	} else {
+		additionalWaitTime += common.MinShardBlkInterval
+	}
 	fmt.Println("BFT: Listen phase", time.Since(protocol.startTime).Seconds())
 
 	phaseDuration := getTimeout(protocol.phase, len(protocol.RoundData.Committee))
@@ -130,6 +135,7 @@ phase:
 					verifyTime := time.Now()
 					err = protocol.EngineCfg.BlockChain.VerifyPreSignBeaconBlock(&pendingBlk, true)
 					if err != nil {
+						fmt.Println("BFT: verify beaconblk err:", err)
 						Logger.log.Error(err)
 						continue
 					}
@@ -216,7 +222,7 @@ phase:
 		case <-protocol.cTimeout:
 			//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
 			// then sig block with this r
-			if len(collectedRiList) < (len(protocol.RoundData.Committee) >> 1) {
+			if len(collectedRiList) < (2*len(protocol.RoundData.Committee)/3)+1 {
 				fmt.Println("BFT: Didn't receive enough Ri to continue", time.Since(protocol.startTime).Seconds())
 				return errors.New("Didn't receive enough Ri to continue")
 			}
