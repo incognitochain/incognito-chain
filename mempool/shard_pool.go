@@ -5,6 +5,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"sort"
 	"sync"
 	"time"
@@ -23,17 +24,17 @@ type ShardPoolConfig struct {
 	CacheSize       int
 }
 type ShardPool struct {
-	validPool         []*blockchain.ShardBlock          // valid, ready to insert into blockchain
-	pendingPool       map[uint64]*blockchain.ShardBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
-	conflictedPool    map[common.Hash]*blockchain.ShardBlock
-	shardID           byte
-	latestValidHeight uint64
-	mtx               *sync.RWMutex
-	config            ShardPoolConfig
-	cache             *lru.Cache
-	cValidBlock       chan *blockchain.ShardBlock
-	RoleInCommittees  int //Current Role of Node
-	CRoleInCommittees <-chan int
+	validPool             []*blockchain.ShardBlock          // valid, ready to insert into blockchain
+	pendingPool           map[uint64]*blockchain.ShardBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
+	conflictedPool        map[common.Hash]*blockchain.ShardBlock
+	shardID               byte
+	latestValidHeight     uint64
+	mtx                   *sync.RWMutex
+	config                ShardPoolConfig
+	cache                 *lru.Cache
+	RoleInCommittees      int //Current Role of Node
+	RoleInCommitteesEvent pubsub.EventChannel
+	PubsubManager         *pubsub.PubSubManager
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
@@ -58,21 +59,26 @@ func init() {
 	}()
 }
 
-func InitShardPool(pool map[byte]blockchain.ShardPool, cRoleInCommitteesShardPool []chan int) {
+func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.PubSubManager) {
 	for i := 0; i < 255; i++ {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
 		//update last shard height
 		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
 		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
 		pool[byte(i)] = shardPoolMap[byte(i)]
-		shardPoolMap[byte(i)].CRoleInCommittees = cRoleInCommitteesShardPool[i]
-		shardPoolMap[byte(i)].RoleInCommittees = -1
+		shardPoolMap[byte(i)].PubsubManager = pubsubManager
+		_, subChanRole, _ := shardPoolMap[byte(i)].PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+		shardPoolMap[byte(i)].RoleInCommitteesEvent = subChanRole
 	}
 }
 func (self *ShardPool) Start(cQuit chan struct{}) {
 	for {
 		select {
-		case role := <-self.CRoleInCommittees:
+		case msg := <-self.RoleInCommitteesEvent:
+			role, ok := msg.Value.(int)
+			if !ok {
+				continue
+			}
 			self.mtx.Lock()
 			self.RoleInCommittees = role
 			self.mtx.Unlock()
@@ -97,7 +103,6 @@ func GetShardPool(shardID byte) *ShardPool {
 		shardPool.config = defaultConfig
 		shardPool.pendingPool = make(map[uint64]*blockchain.ShardBlock)
 		shardPool.cache, _ = lru.New(shardPool.config.CacheSize)
-		shardPool.cValidBlock = make(chan *blockchain.ShardBlock, 100)
 	}
 	return shardPoolMap[shardID]
 }
@@ -412,11 +417,4 @@ func (self *ShardPool) GetBlockByHeight(height uint64) *blockchain.ShardBlock {
 		}
 	}
 	return nil
-}
-
-func (self *ShardPool) AddValidBlockToChan(block *blockchain.ShardBlock) {
-	self.cValidBlock <- block
-}
-func (self *ShardPool) GetValidBlockChan() *chan *blockchain.ShardBlock {
-	return &self.cValidBlock
 }
