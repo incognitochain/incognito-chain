@@ -116,10 +116,39 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 	}
 }
 
+func getBridgeSwapProof() string {
+	url := "http://127.0.0.1:9338"
+
+	block := 97
+	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbridgeswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
+
+	req, _ := http.NewRequest("POST", url, payload)
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Cache-Control", "no-cache")
+	req.Header.Add("Host", "127.0.0.1:9338")
+	req.Header.Add("accept-encoding", "gzip, deflate")
+	req.Header.Add("Connection", "keep-alive")
+	req.Header.Add("cache-control", "no-cache")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("err:", err)
+		return ""
+	}
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	//fmt.Println(string(body))
+	return string(body)
+}
+
 func getBeaconSwapProof() string {
 	url := "http://127.0.0.1:9338"
 
-	block := 15
+	block := 18
 	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbeaconswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
 
 	req, _ := http.NewRequest("POST", url, payload)
@@ -152,13 +181,14 @@ func transformInst(inst []byte) []byte {
 }
 
 func TestSwapBeacon(t *testing.T) {
-	body := getBeaconSwapProof()
+	// body := getBeaconSwapProof()
+	body := getBridgeSwapProof()
 	if len(body) < 1 {
 		return
 	}
 
 	type getBeaconSwapProofResult struct {
-		Result jsonresult.GetBeaconSwapProof
+		Result jsonresult.GetSwapProof
 		Error  string
 		Id     int
 	}
@@ -197,7 +227,7 @@ func TestSwapBeacon(t *testing.T) {
 	}
 
 	// Test calling swapBeacon
-	const max_path = 3
+	const max_path = 4
 	const comm_size = 1 << max_path
 	const pubkey_length = comm_size * max_path
 	const inst_size = 1 << max_path
@@ -276,7 +306,7 @@ func TestSwapBeacon(t *testing.T) {
 	bridgeSignerPathLen := big.NewInt(int64(len(r.Result.BridgeSignerPaths[0])))
 
 	auth.GasLimit = 6000000
-	tx, err := p.c.SwapBeacon(
+	tx, err := p.c.SwapCommittee(
 		auth,
 		inst[:],
 
