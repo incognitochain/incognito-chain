@@ -6,6 +6,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"sort"
 	"sync"
 	"time"
@@ -24,15 +25,16 @@ type BeaconPoolConfig struct {
 	CacheSize       int
 }
 type BeaconPool struct {
-	validPool         []*blockchain.BeaconBlock          // valid, ready to insert into blockchain
-	pendingPool       map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
-	conflictedPool    map[common.Hash]*blockchain.BeaconBlock
-	latestValidHeight uint64
-	mtx               sync.RWMutex
-	config            BeaconPoolConfig
-	cache             *lru.Cache
-	RoleInCommittees  bool //Current Role of Node
-	CRoleInCommittees <-chan bool
+	validPool             []*blockchain.BeaconBlock          // valid, ready to insert into blockchain
+	pendingPool           map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
+	conflictedPool        map[common.Hash]*blockchain.BeaconBlock
+	latestValidHeight     uint64
+	mtx                   sync.RWMutex
+	config                BeaconPoolConfig
+	cache                 *lru.Cache
+	RoleInCommittees      bool //Current Role of Node
+	RoleInCommitteesEvent pubsub.EventChannel
+	PubsubManager         *pubsub.PubSubManager
 }
 
 var beaconPool *BeaconPool = nil
@@ -49,11 +51,13 @@ func init() {
 	}()
 }
 
-func InitBeaconPool(cRoleInCommitteesBeaconPool chan bool) {
+func InitBeaconPool(pubsubManager *pubsub.PubSubManager) {
 	//do nothing
 	beaconPool := GetBeaconPool()
 	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
-	beaconPool.CRoleInCommittees = cRoleInCommitteesBeaconPool
+	beaconPool.PubsubManager = pubsubManager
+	_, subChanRole, _ := beaconPool.PubsubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
+	beaconPool.RoleInCommitteesEvent = subChanRole
 }
 
 // get singleton instance of ShardToBeacon pool
@@ -75,11 +79,13 @@ func GetBeaconPool() *BeaconPool {
 }
 func (self *BeaconPool) Start(cQuit chan struct{}) {
 	for {
-		fmt.Println("RoleInCommittees wait")
 		select {
-		case role := <-self.CRoleInCommittees:
+		case msg := <-self.RoleInCommitteesEvent:
+			role, ok := msg.Value.(bool)
+			if !ok {
+				continue
+			}
 			self.mtx.Lock()
-			fmt.Println("RoleInCommittees set", role)
 			self.RoleInCommittees = role
 			self.mtx.Unlock()
 		case <-cQuit:
