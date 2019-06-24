@@ -1,4 +1,4 @@
-MAX_PATH: constant(uint256) = 3 # support up to 2 ** MAX_PATH committee members
+MAX_PATH: constant(uint256) = 4 # support up to 2 ** MAX_PATH committee members
 COMM_SIZE: constant(uint256) = 2 ** MAX_PATH
 
 TOTAL_PUBKEY: constant(uint256) = COMM_SIZE * MAX_PATH
@@ -24,9 +24,10 @@ def __init__(_beaconCommRoot: bytes32, _bridgeCommRoot: bytes32):
 
 @constant
 @public
-def parseSwapBeaconInst(inst: bytes[INST_LENGTH]) -> bytes32:
+def parseSwapInst(inst: bytes[INST_LENGTH]) -> (uint256, bytes32):
+    type: uint256 = convert(slice(inst, start=0, len=3), uint256)
     newCommRoot: bytes32 = convert(slice(inst, start=3, len=32), bytes32)
-    return newCommRoot
+    return type, newCommRoot
 
 @constant
 @public
@@ -100,7 +101,7 @@ def verifyInst(
     return True
 
 @public
-def swapBeacon(
+def swapCommittee(
     inst: bytes[INST_LENGTH], # content of swap instruction
     beaconInstPath: bytes32[MAX_PATH],
     beaconInstPathIsLeft: bool[MAX_PATH],
@@ -185,9 +186,16 @@ def swapBeacon(
         # raise "failed verify bridge instruction"
 
     # Update beacon committee merkle root
+    type: uint256
     newCommRoot: bytes32
-    newCommRoot = self.parseSwapBeaconInst(inst)
-    self.beaconCommRoot = newCommRoot
+    type, newCommRoot = self.parseSwapInst(inst)
+    if type == 3616817: # Metadata type and shardID of swap beacon
+        self.beaconCommRoot = newCommRoot
+        log.NotifyString("updated beacon committee")
+    elif type == 3617073:
+        self.bridgeCommRoot = newCommRoot
+        log.NotifyString("updated bridge committee")
+
     log.NotifyBytes32(newCommRoot)
     log.NotifyString("no exeception...")
     return True
