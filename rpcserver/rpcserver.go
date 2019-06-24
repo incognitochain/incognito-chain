@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"github.com/incognitochain/incognito-chain/netsync"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"net"
 	"net/http"
 	"sync"
@@ -86,6 +87,7 @@ type RpcServerConfig struct {
 	FeeEstimator    map[byte]*mempool.FeeEstimator
 	IsMiningNode    bool   // flag mining node. True: mining, False: not mining
 	MiningPubKeyB58 string // base58check encode of mining pubkey
+	PubsubManager   *pubsub.PubSubManager
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
