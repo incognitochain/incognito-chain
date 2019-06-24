@@ -44,7 +44,7 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 type WithDrawRewardResponse struct {
 	MetadataBase
 	TxRequest *common.Hash
-	TokenIDs  []common.Hash
+	TokenID   common.Hash
 }
 
 func NewWithDrawRewardResponse(txRequestID *common.Hash) (Metadata, error) {
@@ -71,7 +71,6 @@ func (withDrawRewardRequest *WithDrawRewardRequest) ValidateTxWithBlockChain(txr
 		return false, errors.New("This transaction is not private")
 	}
 	isPositive := false
-	// for _, tokenID := range withDrawRewardRequest.TokenIDs {
 	value, err := db.GetCommitteeReward(withDrawRewardRequest.PaymentAddress.Pk, withDrawRewardRequest.TokenID)
 	if err != nil {
 		return false, err
@@ -108,16 +107,15 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if txr.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
-	receivers, amounts := txr.GetReceivers()
-	if len(receivers) != 1 {
-		return false, errors.New("Wrong receiver")
+	unique, requesterRes, amountRes, coinID := txr.GetTransferData()
+	if !unique {
+		return false, errors.New("Just one receiver")
 	}
-	// TODO: Check for every TokenID
-	value, err := db.GetCommitteeReward(receivers[0], common.PRVCoinID)
+	value, err := db.GetCommitteeReward(requesterRes, *coinID)
 	if (err != nil) || (value == 0) {
 		return false, errors.New("Not enough reward")
 	}
-	if value != amounts[0] {
+	if value != amountRes {
 		return false, errors.New("Wrong amounts")
 	}
 	return true, nil
