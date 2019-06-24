@@ -1,6 +1,8 @@
 package lvdb
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 )
 

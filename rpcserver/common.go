@@ -420,7 +420,7 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 
 	// param #6: hasPrivacyToken flag for token
 	hasPrivacyToken := true
-	if len(arrayParams) > 5 {
+	if len(arrayParams) >= 6 {
 		hasPrivacyToken = int(arrayParams[5].(float64)) > 0
 	}
 
