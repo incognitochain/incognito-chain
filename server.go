@@ -728,6 +728,7 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 					"\nPlease Update source code at https://github.com/incognitochain/incognito-chain" +
 					"\n*********************************************************************************\n")
 				if versionChain.RemoveData {
+					serverObject.Stop()
 					os.RemoveAll(cfg.DataDir)
 				}
 				os.Exit(common.ExitCodeForceUpdate)
