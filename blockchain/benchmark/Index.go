@@ -1,10 +1,10 @@
 package benchmark
 
 func GetInitTransaction() []string{
-	//Shard0 := []string{}
-	//Shard1 := []string{}
+	Shard0 := []string{}
+	Shard1 := []string{}
 	//Shard0 = append(Shard0, InitTxsShard0...)
-	//Shard0 = append(Shard0, InitTxsShard0_1...)
+	Shard0 = append(Shard0, InitTxsShard0_1...)
 	//Shard0 = append(Shard0, InitTxsShard0_2...)
 	//Shard0 = append(Shard0, InitTxsShard0_3...)
 	//Shard0 = append(Shard0, InitTxsShard0_4...)
@@ -14,7 +14,7 @@ func GetInitTransaction() []string{
 	//Shard0 = append(Shard0, InitTxsShard0_8...)
 	//Shard0 = append(Shard0, InitTxsShard0_9...)
 	//Shard1 = append(Shard1, InitTxsShard1...)
-	//Shard1 = append(Shard1, InitTxsShard1_1...)
+	Shard1 = append(Shard1, InitTxsShard1_1...)
 	//Shard1 = append(Shard1, InitTxsShard1_2...)
 	//Shard1 = append(Shard1, InitTxsShard1_3...)
 	//Shard1 = append(Shard1, InitTxsShard1_4...)
