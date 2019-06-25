@@ -322,7 +322,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Default FeeCoinPerKbtemp is invalid"))
 	}
 	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbtemp)
-	// param #4: hasPrivacy flag for constant
+	// param #4: hasPrivacy flag for PRV
 	hashPrivacyTemp, ok := arrayParams[3].(float64)
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("hasPrivacy is invalid"))
@@ -392,7 +392,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			}
 		}
 
-		// check real fee(nano constant) per tx
+		// check real fee(nano PRV) per tx
 		_, estimateFeeCoinPerKb, estimateTxSizeInKb = httpServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
 	}
 	result := jsonresult.EstimateFeeResult{

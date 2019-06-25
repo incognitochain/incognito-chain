@@ -47,7 +47,7 @@ func (httpServer *HttpServer) handleSendIssuingRequest(params interface{}, close
 	return httpServer.sendRawTxWithMetadata(params, closeChan)
 }
 
-// handleCreateAndSendIssuingRequest for user to buy Constant (using USD) or BANK token (using USD/ETH) from DCB
+// handleCreateAndSendIssuingRequest for user to buy PRV (using USD) or BANK token (using USD/ETH) from DCB
 func (httpServer *HttpServer) handleCreateAndSendIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	return httpServer.createAndSendTxWithMetadata(
 		params,

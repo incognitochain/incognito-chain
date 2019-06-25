@@ -873,7 +873,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	}
 	usableInputCoins := transaction.ConvertOutputCoinToInputCoin(usableOutputCoins)
 
-	//#3 - tokenID - default constant
+	//#3 - tokenID - default PRV
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.PRVCoinID[:])
 	if len(arrayParams) > 2 {
@@ -930,7 +930,7 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 
 	// #3: optional - token ID - default is prv coin
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.PRVCoinID[:]) // default is constant
+	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[2].(string)
 		if !ok {
@@ -991,7 +991,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 
 	// #3: optional - token ID - default is prv coin
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.PRVCoinID[:]) // default is constant
+	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[1].(string)
 		if !ok {
