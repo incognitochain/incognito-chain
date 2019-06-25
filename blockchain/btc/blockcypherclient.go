@@ -36,11 +36,22 @@ func (blockCypherClient *BlockCypherClient) GetNonceByTimestamp(timestamp int64)
 			return 0, 0, -1, NewBTCAPIError(UnExpectedError, err)
 		}
 		chain := make(map[string]interface{})
-		json.Unmarshal(chainBytes, &chain)
-		chainHeight := int(chain["height"].(float64))
-		chainTimestamp, err := makeTimestamp2(chain["time"].(string))
+		err = json.Unmarshal(chainBytes, &chain)
 		if err != nil {
 			return 0, 0, -1, NewBTCAPIError(UnmashallJsonBlockError, err)
+		}
+		chainHeightFloat, ok := chain["height"].(float64)
+		if !ok {
+			return 0, 0, -1, NewBTCAPIError(WrongTypeError, errors.New("Height's Type should be float64"))
+		}
+		chainHeight := int(chainHeightFloat)
+		chainTimestampString, ok := chain["time"].(string)
+		if !ok {
+			return 0, 0, -1, NewBTCAPIError(WrongTypeError, errors.New("Time's Type should be string"))
+		}
+		chainTimestamp, err := makeTimestamp2(chainTimestampString)
+		if err != nil {
+			return 0, 0, -1, NewBTCAPIError(TimeParseError, err)
 		}
 		blockHeight, err := estimateBlockHeight(blockCypherClient, timestamp, chainHeight, chainTimestamp)
 		if err != nil {
@@ -143,13 +154,20 @@ func (blockCypherClient *BlockCypherClient) GetTimeStampAndNonceByBlockHeight(bl
 		if err != nil {
 			return MAX_TIMESTAMP, -1, NewBTCAPIError(UnmashallJsonBlockError, errors.New("Can't get nonce or timestamp"))
 		}
-		nonce := int64(block["nonce"].(float64))
-		timeTime, err := time.Parse(time.RFC3339, block["time"].(string))
+		nonce, ok := block["nonce"].(float64)
+		if !ok {
+			return MAX_TIMESTAMP, -1, NewBTCAPIError(WrongTypeError, errors.New("Nonce's type should be float64"))
+		}
+		timeString, ok := block["time"].(string)
+		if !ok {
+			return MAX_TIMESTAMP, -1, NewBTCAPIError(WrongTypeError, errors.New("String's type should be string"))
+		}
+		timeTime, err := time.Parse(time.RFC3339, timeString)
 		if err != nil {
 			return MAX_TIMESTAMP, -1, NewBTCAPIError(APIError, err)
 		}
 		timeInt64 := makeTimestamp(timeTime)
-		return timeInt64, nonce, nil
+		return timeInt64, int64(nonce), nil
 	}
 	return MAX_TIMESTAMP, -1, NewBTCAPIError(UnExpectedError, errors.New("Can't get nonce or timestamp, status code response "+strconv.Itoa(resp.StatusCode)+ " when get block height " + strconv.Itoa(blockHeight)))
 }
