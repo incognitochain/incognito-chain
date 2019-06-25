@@ -38,17 +38,17 @@ const (
 	DefaultMaxPeersBeacon         = 50
 	DefaultMaxRPCClients          = 20
 	DefaultMaxRPCWsClients        = 20
-	DefaultMetricUrl              = ""
+	defaultMetricUrl              = ""
 	SampleConfigFilename          = "sample-config.conf"
 	DefaultDisableRpcTLS          = true
-	DefaultFastStartup            = true
+	defaultFastStartup            = true
 	DefaultNodeMode               = common.NODEMODE_RELAY
-	DefaultTxPoolTTL              = uint(86400) * 10 // in second
-	DefaultTxPoolMaxTx            = uint64(100000)
-	DefaultLimitFee               = uint64(1)
+	defaultTxPoolTTL              = uint(86400) * 10 // in second
+	defaultTxPoolMaxTx            = uint64(100000)
+	defaultLimitFee               = uint64(1)
 
 	// For wallet
-	defaultWalletName     = "wallet"
+	DefaultWalletName     = "wallet"
 	defaultPersistMempool = false
 	defaultBtcClient = 0
 	defaultBtcClientPort = "8332"
