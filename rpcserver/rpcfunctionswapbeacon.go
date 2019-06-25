@@ -53,14 +53,11 @@ func (rpcServer RpcServer) handleGetBeaconSwapProof(params interface{}, closeCha
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	// Save instruction as a single slice of byte
-	flattenBridgeInst := []byte{}
-	for _, part := range bridgeInstProof.inst {
-		flattenBridgeInst = append(flattenBridgeInst, []byte(part)...)
-	}
+	// Decode instruction to send to Ethereum without having to decode on client
+	decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(bridgeInstProof.inst))
 
-	return jsonresult.GetSwapProof{
-		Instruction: hex.EncodeToString(flattenBridgeInst),
+	return jsonresult.GetInstructionProof{
+		Instruction: decodedInst,
 
 		BeaconInstPath:         beaconInstProof.instPath,
 		BeaconInstPathIsLeft:   beaconInstProof.instPathIsLeft,
@@ -120,12 +117,12 @@ func getBeaconSwapProofOnBridge(
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
-	_, id := findCommSwapInst(insts, metadata.BeaconPubkeyRootMeta)
-	if id < 0 {
-		return nil, fmt.Errorf("cannot find beacon swap instruction in bridge block")
+	_, instID := findCommSwapInst(insts, metadata.BeaconPubkeyRootMeta)
+	if instID < 0 {
+		return nil, fmt.Errorf("cannot find beacon swap instruction in brinstIDge block")
 	}
 
-	proof, err := buildProofOnBridge(bridgeBlock, insts, id, db)
+	proof, err := buildProofOnBridge(bridgeBlock, insts, instID, db)
 	if err != nil {
 		return nil, err
 	}
@@ -235,17 +232,12 @@ func getBeaconSwapProofOnBeacon(
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
-	beaconBlock := findBeaconBlockWithInst(beaconBlocks, inst)
+	beaconBlock, instID := findBeaconBlockWithInst(beaconBlocks, inst)
 	if beaconBlock == nil {
 		return nil, fmt.Errorf("cannot find corresponding beacon block that includes swap instruction")
 	}
 
 	insts := beaconBlock.Body.Instructions
-	_, instID := findCommSwapInst(insts, metadata.BeaconPubkeyRootMeta)
-	if instID < 0 {
-		return nil, fmt.Errorf("cannot find beacon swap instruction in beacon block")
-	}
-
 	return buildProofOnBeacon(beaconBlock, insts, instID, db)
 }
 
@@ -406,10 +398,10 @@ func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
 	return proofs
 }
 
-// findBeaconBlockWithInst finds a beacon block with a specific instruction; nil if not found
-func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) *blockchain.BeaconBlock {
+// findBeaconBlockWithInst finds a beacon block with a specific instruction and the instruction's index; nil if not found
+func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) (*blockchain.BeaconBlock, int) {
 	for _, b := range beaconBlocks {
-		for _, blkInst := range b.Body.Instructions {
+		for k, blkInst := range b.Body.Instructions {
 			diff := false
 			for i, part := range blkInst {
 				if part != inst[i] {
@@ -418,9 +410,9 @@ func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []stri
 				}
 			}
 			if !diff {
-				return b
+				return b, k
 			}
 		}
 	}
-	return nil
+	return nil, -1
 }
