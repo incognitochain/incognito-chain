@@ -136,6 +136,14 @@ out:
 						{
 							netSync.HandleMessageBFTMsg(msg)
 						}
+					case *wire.MessageBFTProposeV2:
+						{
+							netSync.HandleMessageBFTMsg(msg)
+						}
+					case *wire.MessageBFTPrepareV2:
+						{
+							netSync.HandleMessageBFTMsg(msg)
+						}
 					case *wire.MessageBFTAgree:
 						{
 							netSync.HandleMessageBFTMsg(msg)
