@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -f ./constant ]; then
+if [ -f ./i ]; then
     rm -rf ./incognito
 fi
 if [ -f ./bootnode ]; then

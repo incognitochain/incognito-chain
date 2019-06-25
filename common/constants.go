@@ -38,7 +38,7 @@ const (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	PRVCoinID = Hash{4} // To send Constant in custom token
+	PRVCoinID = Hash{4} // To send PRV in custom token
 )
 
 // centralized website's pubkey

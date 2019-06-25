@@ -30,7 +30,7 @@ type Params struct {
 type GenesisParams struct {
 	InitialPaymentAddress string
 
-	InitialConstant []string
+	InitialIncognito []string
 
 	FeePerTxKb uint64
 
@@ -54,8 +54,8 @@ func init() {
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
 		//@Notice: InitTxsForBenchmark is for testing and benchmark only
-		//InitialConstant: benchmark.GetInitTransaction(),
-		InitialConstant: TestnetInitConstant,
+		//InitialIncognito: benchmark.GetInitTransaction(),
+		InitialIncognito: TestnetInitPRV,
 	}
 
 	ChainTestParam = Params{
@@ -82,7 +82,7 @@ func init() {
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
 
-		InitialConstant: MainnetInitConstant,
+		InitialIncognito: MainnetInitPRV,
 	}
 
 	ChainMainParam = Params{
