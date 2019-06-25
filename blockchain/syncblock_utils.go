@@ -5,32 +5,32 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	cache "github.com/patrickmn/go-cache"
+	"github.com/patrickmn/go-cache"
 )
 
 func getBlkNeedToGetByHash(prefix string, blksHash []common.Hash, cachedItems map[string]cache.Item, peerID libp2p.ID) []common.Hash {
-	var blksNeedToGet []common.Hash
+	var blocksNeedToGet []common.Hash
 	for _, blkHash := range blksHash {
 		if _, ok := cachedItems[blkHash.String()]; !ok {
-			blksNeedToGet = append(blksNeedToGet, blkHash)
+			blocksNeedToGet = append(blocksNeedToGet, blkHash)
 		}
 	}
-	return blksNeedToGet
+	return blocksNeedToGet
 }
 
 func getBlkNeedToGetByHeight(prefix string, fromHeight uint64, toHeight uint64, cachedItems map[string]cache.Item, poolItems []uint64, peerID libp2p.ID) map[uint64]uint64 {
-	blkBatchsNeedToGet := make(map[uint64]uint64)
+	blocksNeedToGet := make(map[uint64]uint64)
 
 	latestBatchBegin := uint64(0)
 	for blkHeight := fromHeight; blkHeight <= toHeight; blkHeight++ {
 		if exist, _ := common.SliceExists(poolItems, blkHeight); !exist {
 			if _, ok := cachedItems[fmt.Sprint(blkHeight)]; !ok {
-				if latestBatchEnd, ok := blkBatchsNeedToGet[latestBatchBegin]; !ok {
-					blkBatchsNeedToGet[blkHeight] = blkHeight
+				if latestBatchEnd, ok := blocksNeedToGet[latestBatchBegin]; !ok {
+					blocksNeedToGet[blkHeight] = blkHeight
 					latestBatchBegin = blkHeight
 				} else {
 					if latestBatchEnd+1 == blkHeight {
-						blkBatchsNeedToGet[latestBatchBegin] = blkHeight
+						blocksNeedToGet[latestBatchBegin] = blkHeight
 					} else {
 						latestBatchBegin = blkHeight
 					}
@@ -42,28 +42,28 @@ func getBlkNeedToGetByHeight(prefix string, fromHeight uint64, toHeight uint64, 
 			latestBatchBegin = blkHeight
 		}
 	}
-	return blkBatchsNeedToGet
+	return blocksNeedToGet
 }
 
 func getBlkNeedToGetBySpecificHeight(prefix string, blksHeight []uint64, cachedItems map[string]cache.Item, poolItems []uint64, peerID libp2p.ID) []uint64 {
-	var blksNeedToGet []uint64
+	var blocksNeedToGet []uint64
 	for _, blkHeight := range blksHeight {
 		if _, ok := cachedItems[fmt.Sprint(blkHeight)]; !ok {
 			if exist, _ := common.SliceExists(poolItems, blkHeight); !exist {
-				blksNeedToGet = append(blksNeedToGet, blkHeight)
+				blocksNeedToGet = append(blocksNeedToGet, blkHeight)
 			}
 		}
 	}
-	return blksNeedToGet
+	return blocksNeedToGet
 }
 
 type blockType int
 
 const (
-	beaconBlk blockType = iota
-	shardBlk
-	shardToBeaconBlk
-	crossShardBlk
+	BeaconBlk blockType = iota
+	ShardBlk
+	ShardToBeaconBlk
+	CrossShardBlk
 )
 
 func getBlkPrefixSyncKey(isByHash bool, blkType blockType, shardID byte, fromShard byte) string {
@@ -72,13 +72,13 @@ func getBlkPrefixSyncKey(isByHash bool, blkType blockType, shardID byte, fromSha
 		key = "hash"
 	}
 	switch blkType {
-	case beaconBlk:
+	case BeaconBlk:
 		return fmt.Sprintf("%v-%v-", key, "beablk")
-	case shardBlk:
+	case ShardBlk:
 		return fmt.Sprintf("%v-%v-%v-", key, "shardblk", shardID)
-	case shardToBeaconBlk:
+	case ShardToBeaconBlk:
 		return fmt.Sprintf("%v-%v-", key, "shtobblk")
-	case crossShardBlk:
+	case CrossShardBlk:
 		return fmt.Sprintf("%v-%v-%v-%v-", key, "crossblk", shardID, fromShard)
 	default:
 		return ""

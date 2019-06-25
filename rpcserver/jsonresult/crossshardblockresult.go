@@ -1,17 +1,17 @@
 package jsonresult
 
 type CrossShardDataResult struct {
-	HasCrossShard                       bool                              `json:"HasCrossShard"`
-	CrossShardConstantResultList        []CrossShardConstantResult        `json:"CrossShardConstantResult"`
-	CrossShardConstantPrivacyResultList []CrossShardConstantPrivacyResult `json:"CrossShardConstantPrivacyResult"`
-	CrossShardCSTokenResultList         []CrossShardCSTokenResult         `json:"CrossShardCSTokenResult"`
+	HasCrossShard                  bool                         `json:"HasCrossShard"`
+	CrossShardPRVResultList        []CrossShardPRVResult        `json:"CrossShardPRVResult"`
+	CrossShardPRVPrivacyResultList []CrossShardPRVPrivacyResult `json:"CrossShardPRVPrivacyResult"`
+	CrossShardCSTokenResultList    []CrossShardCSTokenResult    `json:"CrossShardCSTokenResult"`
 }
-type CrossShardConstantResult struct {
+type CrossShardPRVResult struct {
 	PublicKey string `json:"PublicKey"`
 	Value     uint64 `json:"Value"`
 }
 
-type CrossShardConstantPrivacyResult struct {
+type CrossShardPRVPrivacyResult struct {
 	PublicKey string `json:"PublicKey"`
 }
 type CrossShardCSTokenResult struct {
