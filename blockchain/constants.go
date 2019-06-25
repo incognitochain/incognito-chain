@@ -41,7 +41,7 @@ const (
 
 // VARIABLE for mainnet
 var (
-	MainnetInitConstant = []string{}
+	MainnetInitPRV = []string{}
 	// for beacon
 	// public key
 	PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
@@ -129,7 +129,7 @@ const (
 )
 
 // ---------------------------------------------
-var TestnetInitConstant = []string{
+var TestnetInitPRV = []string{
 	`{  
    "Version":1,
    "Type":"s",
