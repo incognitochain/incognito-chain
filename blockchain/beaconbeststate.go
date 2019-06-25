@@ -432,6 +432,9 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range currentBestStateBlk.Body.Instructions {
+		if inst[0] == StakeAction || inst[0] == RandomAction {
+			continue
+		}
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
 		}
@@ -503,6 +506,10 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
+		if inst[0] == StakeAction || inst[0] == RandomAction {
+			continue
+		}
+
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
 		}
