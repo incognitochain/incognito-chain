@@ -489,7 +489,7 @@ func (rpcServer HttpServer) estimateFee(defaultFee int64, candidateOutputCoins [
 	if numBlock == 0 {
 		numBlock = 10
 	}
-	// check real fee(nano constant) per tx
+	// check real fee(nano PRV) per tx
 	var realFee uint64
 	estimateFeeCoinPerKb := uint64(0)
 	estimateTxSizeInKb := uint64(0)
