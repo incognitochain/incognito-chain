@@ -20,7 +20,8 @@ type ContractingReqAction struct {
 }
 
 type BurningReqAction struct {
-	Meta metadata.BurningRequest `json:"meta"`
+	Meta          metadata.BurningRequest `json:"meta"`
+	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
 type UpdatingInfo struct {
@@ -158,8 +159,6 @@ func (bc *BlockChain) processBurningReq(
 func buildBurningConfirmInst(
 	inst []string,
 	shardID byte,
-	shardHeight uint64,
-	count uint64,
 ) ([]string, error) {
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
@@ -168,12 +167,7 @@ func buildBurningConfirmInst(
 		return nil, err
 	}
 	md := burningReqAction.Meta
-
-	// Get unique id of this inst (to prevent double-release token)
-	data := []byte{shardID}
-	data = append(data, common.Uint64ToBytes(shardHeight)...)
-	data = append(data, common.Uint64ToBytes(count)...)
-	uid := common.HashH(data)
+	txID := burningReqAction.RequestedTxID // to prevent double-release token
 
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)
@@ -184,6 +178,6 @@ func buildBurningConfirmInst(
 		md.TokenID.String(),
 		md.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
-		uid.String(),
+		txID.String(),
 	}, nil
 }

@@ -100,45 +100,58 @@ func buildStabilityActions(
 	return actions, nil
 }
 
-// pickPubkeyRootInstruction finds all instructions contain merkle root of a committee's pubkey
-func pickPubkeyRootInstruction(
+// pickInstructionWithType finds all instructions of a specific type in a list
+func pickInstructionWithType(
 	insts [][]string,
 	typeToFind string,
 ) [][]string {
-	commPubkeyInst := [][]string{}
+	found := [][]string{}
 	for _, inst := range insts {
 		instType := inst[0]
 		if instType != typeToFind {
 			continue
 		}
-		commPubkeyInst = append(commPubkeyInst, inst)
+		found = append(found, inst)
 	}
-	return commPubkeyInst
+	return found
 }
 
-// pickBeaconPubkeyRootInstruction finds all instructions of type BeaconPubkeyRootMeta and returns them to save in bridge block
+// pickInstructionFromBeaconBlocks extracts all instructions of a specific type
+func pickInstructionFromBeaconBlocks(beaconBlocks []*BeaconBlock, instType string) [][]string {
+	insts := [][]string{}
+	for _, block := range beaconBlocks {
+		found := pickInstructionWithType(block.Body.Instructions, instType)
+		if len(found) > 0 {
+			insts = append(insts, found...)
+		}
+	}
+	return insts
+}
+
+// pickBeaconPubkeyRootInstruction finds all BeaconPubkeyRootMeta instructions
 // These instructions contain merkle root of beacon committee's pubkey
 func pickBeaconPubkeyRootInstruction(
 	beaconBlocks []*BeaconBlock,
 ) [][]string {
-	beaconType := strconv.Itoa(metadata.BeaconPubkeyRootMeta)
-	commPubkeyInst := [][]string{}
-	for _, block := range beaconBlocks {
-		found := pickPubkeyRootInstruction(block.Body.Instructions, beaconType)
-		if len(found) > 0 {
-			commPubkeyInst = append(commPubkeyInst, found...)
-		}
-	}
-	return commPubkeyInst
+	instType := strconv.Itoa(metadata.BeaconPubkeyRootMeta)
+	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
 }
 
-// pickBridgePubkeyRootInstruction finds all instructions of type BridgePubkeyRootMeta and returns them to save in beacon block
+// pickBurningConfirmInstruction finds all BurningConfirmMeta instructions
+func pickBurningConfirmInstruction(
+	beaconBlocks []*BeaconBlock,
+) [][]string {
+	instType := strconv.Itoa(metadata.BurningConfirmMeta)
+	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
+}
+
+// pickBridgePubkeyRootInstruction finds all BridgePubkeyRootMeta instructions
 // These instructions contain merkle root of bridge committee's pubkey
 func pickBridgePubkeyRootInstruction(
 	block *ShardToBeaconBlock,
 ) [][]string {
 	shardType := strconv.Itoa(metadata.BridgePubkeyRootMeta)
-	return pickPubkeyRootInstruction(block.Instructions, shardType)
+	return pickInstructionWithType(block.Instructions, shardType)
 }
 
 // parsePubkeysAndBuildMerkleRoot returns the merkle root of a list of validators'pubkey stored as string
@@ -182,12 +195,10 @@ func buildBridgePubkeyRootInstruction(currentValidators []string) []string {
 
 func (blockChain *BlockChain) buildStabilityInstructions(
 	shardID byte,
-	shardHeight uint64,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
 ) ([][]string, error) {
 	instructions := [][]string{}
-	count := uint64(0)
 	for _, inst := range shardBlockInstructions {
 		if len(inst) == 0 {
 			continue
@@ -209,12 +220,11 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			if metaType == metadata.BurningRequestMeta {
 				fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
 			}
-			burningConfirm, err := buildBurningConfirmInst(inst, shardID, shardHeight, count)
+			burningConfirm, err := buildBurningConfirmInst(inst, shardID)
 			if err != nil {
 				return [][]string{}, err
 			}
 			newInst = [][]string{inst, burningConfirm}
-			count++
 
 		default:
 			continue
