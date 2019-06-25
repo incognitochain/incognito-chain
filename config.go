@@ -28,30 +28,30 @@ const (
 	DefaultDatabaseDirname        = "block"
 	DefaultDatabaseMempoolDirname = "mempool"
 	DefaultLogLevel               = "info"
-	DefaultLogDirname             = "logs"
-	DefaultLogFilename            = "log.log"
-	DefaultMaxPeers               = 125
-	DefaultMaxPeersSameShard      = 50
-	DefaultMaxPeersOtherShard     = 50
-	DefaultMaxPeersOther          = 125
-	DefaultMaxPeersNoShard        = 125
-	DefaultMaxPeersBeacon         = 50
-	DefaultMaxRPCClients          = 20
-	DefaultMaxRPCWsClients        = 20
-	defaultMetricUrl              = ""
-	SampleConfigFilename          = "sample-config.conf"
-	DefaultDisableRpcTLS          = true
-	defaultFastStartup            = true
-	DefaultNodeMode               = common.NODEMODE_RELAY
-	defaultTxPoolTTL              = uint(86400) * 10 // in second
-	defaultTxPoolMaxTx            = uint64(100000)
-	defaultLimitFee               = uint64(1)
+	DefaultLogDirname         = "logs"
+	DefaultLogFilename        = "log.log"
+	DefaultMaxPeers           = 125
+	DefaultMaxPeersSameShard  = 50
+	DefaultMaxPeersOtherShard = 50
+	DefaultMaxPeersOther      = 125
+	DefaultMaxPeersNoShard    = 125
+	DefaultMaxPeersBeacon     = 50
+	DefaultMaxRPCClients      = 20
+	DefaultMaxRPCWsClients    = 20
+	DefaultMetricUrl          = ""
+	SampleConfigFilename      = "sample-config.conf"
+	DefaultDisableRpcTLS      = true
+	DefaultFastStartup        = true
+	DefaultNodeMode           = common.NODEMODE_RELAY
+	DefaultTxPoolTTL          = uint(86400) * 10 // in second
+	DefaultTxPoolMaxTx        = uint64(100000)
+	DefaultLimitFee           = uint64(1)
 
 	// For wallet
 	DefaultWalletName     = "wallet"
-	defaultPersistMempool = false
-	defaultBtcClient = 0
-	defaultBtcClientPort = "8332"
+	DefaultPersistMempool = false
+	DefaultBtcClient      = 0
+	DefaultBtcClientPort  = "8332"
 )
 
 var (
@@ -314,14 +314,14 @@ func loadConfig() (*config, []string, error) {
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             DefaultNodeMode,
 		PrivateKey:           common.EmptyString,
-		FastStartup:          defaultFastStartup,
-		TxPoolTTL:            defaultTxPoolTTL,
-		TxPoolMaxTx:          defaultTxPoolMaxTx,
-		PersistMempool:       defaultPersistMempool,
-		LimitFee:             defaultLimitFee,
-		MetricUrl:            defaultMetricUrl,
-		BtcClient:            defaultBtcClient,
-		BtcClientPort:        defaultBtcClientPort,
+		FastStartup:          DefaultFastStartup,
+		TxPoolTTL:            DefaultTxPoolTTL,
+		TxPoolMaxTx:          DefaultTxPoolMaxTx,
+		PersistMempool:       DefaultPersistMempool,
+		LimitFee:             DefaultLimitFee,
+		MetricUrl:            DefaultMetricUrl,
+		BtcClient:            DefaultBtcClient,
+		BtcClientPort:        DefaultBtcClientPort,
 	}
 
 	// Service options which are only added on Windows.

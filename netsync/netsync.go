@@ -529,7 +529,7 @@ func (netSync *NetSync) cacheLoop() {
 				if shardBlock, ok := msg.Value.(*blockchain.ShardBlock); !ok {
 					continue
 				} else {
-					go netSync.HandleCacheBlock(shardBlock.Hash().String())
+					go netSync.HandleCacheBlock("s" + shardBlock.Hash().String())
 				}
 			}
 		case msg := <-netSync.config.BeaconBlockEvent:
@@ -537,7 +537,7 @@ func (netSync *NetSync) cacheLoop() {
 				if beaconBlock, ok := msg.Value.(*blockchain.BeaconBlock); !ok {
 					continue
 				} else {
-					go netSync.HandleCacheBlock(beaconBlock.Hash().String())
+					go netSync.HandleCacheBlock("b" + beaconBlock.Hash().String())
 				}
 			}
 		case msg := <-netSync.config.RoleInCommitteesEvent:
