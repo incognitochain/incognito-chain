@@ -88,7 +88,7 @@ getaccountaddress RPC returns the current coin address for receiving payments to
 If the account doesn’t exist, it creates both the account and a new address for receiving payment.
 Once a payment has been received to an address, future calls to this RPC for the same account will return a different address.
 Parameter #1—an account name
-Result—a constant address
+Result—a incognito address
 */
 func (httpServer *HttpServer) handleGetAccountAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	paramTemp, ok := params.(string)
@@ -570,7 +570,7 @@ func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interf
 		PaymentAddress: senderKeySet.PaymentAddress,
 	}
 	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
-	// check real fee(nano constant) per tx
+	// check real fee(nano PRV) per tx
 	realFee, _, _ := httpServer.estimateFee(estimateFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, nil)
 	if len(outCoins) == 0 {
 		realFee = 0

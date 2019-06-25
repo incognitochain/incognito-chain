@@ -21,11 +21,11 @@ var (
 	cfg *config
 )
 
-// winServiceMain is only invoked on Windows.  It detects when constant network is running
+// winServiceMain is only invoked on Windows.  It detects when incognito network is running
 // as a service and reacts accordingly.
 var winServiceMain func() (bool, error)
 
-// mainMaster is the real main function for constant network.  It is necessary to work around
+// mainMaster is the real main function for Incognito network.  It is necessary to work around
 // the fact that deferred functions do not run when os.Exit() is called.  The
 // optional serverChan parameter is mainly used by the service code to be
 // notified with the server once it is setup so it can gracefully stop it when
@@ -76,7 +76,7 @@ func mainMaster(serverChan chan<- *Server) error {
 			DataDir:        cfg.DataDir,
 			DataFile:       cfg.WalletName,
 			DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
-			IncrementalFee: 0, // 0 mili constant
+			IncrementalFee: 0, // 0 mili PRV
 		}
 		if cfg.WalletShardID >= 0 {
 			// check shardID of wallet
@@ -92,7 +92,7 @@ func mainMaster(serverChan chan<- *Server) error {
 				walletObj.Save(cfg.WalletPassphrase)
 			} else {
 				// write log and exit when can not load wallet
-				Logger.log.Criticalf("Can not load wallet with %s. Please use constantctl to create a new wallet", walletObj.GetConfig().DataPath)
+				Logger.log.Criticalf("Can not load wallet with %s. Please use incognitoctl to create a new wallet", walletObj.GetConfig().DataPath)
 				return err
 			}
 		}
