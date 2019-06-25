@@ -181,3 +181,20 @@ func buildBurningConfirmInst(
 		txID.String(),
 	}, nil
 }
+
+func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
+	for _, inst := range block.Body.Instructions {
+		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
+			continue
+		}
+
+		txID, err := common.NewHashFromStr(inst[5])
+		if err != nil {
+			return err
+		}
+		if err := bc.config.DataBase.StoreBurningConfirm(txID[:], block.Header.Height); err != nil {
+			return err
+		}
+	}
+	return nil
+}

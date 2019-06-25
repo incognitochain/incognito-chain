@@ -62,14 +62,14 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	tokenID, _ := common.NewHashFromStr(inst[2])
 	remoteAddr, _ := hex.DecodeString(inst[3])
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
-	uid, _ := common.NewHashFromStr(inst[5])
+	txID, _ := common.NewHashFromStr(inst[5])
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
 	flatten = append(flatten, tokenID[:]...)
 	flatten = append(flatten, remoteAddr...)
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
-	flatten = append(flatten, uid[:]...)
+	flatten = append(flatten, txID[:]...)
 	return flatten
 }
 
