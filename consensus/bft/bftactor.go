@@ -1,11 +1,9 @@
 package bft
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/consensus"
-	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
 
@@ -20,8 +18,8 @@ type BFTCore struct {
 	State      string
 	Block      consensus.BlockInterface
 
-	ProposeMsgCh chan *wire.MessageBFTProposeV2
-	PrepareMsgCh chan *wire.MessageBFTPrepareV2
+	ProposeMsgCh chan consensus.ProposeMsg
+	PrepareMsgCh chan consensus.PrepareMsg
 	StopCh       chan int
 
 	PrepareMsgs map[string]map[string]bool
@@ -38,14 +36,12 @@ func (e *BFTCore) GetInfo() string {
 	return ""
 }
 
-func (e *BFTCore) ReceiveMsg(msg wire.Message) {
-	switch msg.MessageType() {
-	case wire.CmdBFTPropose:
-		e.ProposeMsgCh <- msg.(*wire.MessageBFTProposeV2)
-	case wire.CmdBFTPrepare:
-		e.PrepareMsgCh <- msg.(*wire.MessageBFTPrepareV2)
+func (e *BFTCore) ReceiveProposeMsg(msg consensus.ProposeMsg) {
+	e.ProposeMsgCh <- msg
+}
 
-	}
+func (e *BFTCore) ReceivePrepareMsg(msg consensus.PrepareMsg) {
+	e.PrepareMsgCh <- msg
 }
 
 func (e *BFTCore) Stop() {
@@ -61,8 +57,8 @@ func (e *BFTCore) Start() {
 	e.PrepareMsgs = map[string]map[string]bool{}
 	e.Blocks = map[string]consensus.BlockInterface{}
 
-	e.ProposeMsgCh = make(chan *wire.MessageBFTProposeV2)
-	e.PrepareMsgCh = make(chan *wire.MessageBFTPrepareV2)
+	e.ProposeMsgCh = make(chan consensus.ProposeMsg)
+	e.PrepareMsgCh = make(chan consensus.PrepareMsg)
 
 	ticker := time.Tick(100 * time.Millisecond)
 
@@ -72,7 +68,6 @@ func (e *BFTCore) Start() {
 			case <-e.StopCh: //stop protocol -> break actor loop
 				return
 			case b := <-e.ProposeMsgCh:
-				block := json.Unmarshal()
 				e.Blocks[b.RoundKey] = b.Block
 			case sig := <-e.PrepareMsgCh:
 				if e.Chain.ValidateSignature(e.Block, sig.ContentSig) {
