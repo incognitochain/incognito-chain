@@ -1,6 +1,6 @@
 package btc
 
 const (
-	NONCE= "nonce"
+	MaxTimeStamp = 4762368000
 	TIMESTAMP = "timestamp"
 )
