@@ -6,24 +6,28 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-// DatabaseInterface provides the interface that is used to store blocks.
+// DatabaseInterface provides the interface that is used to store blocks, txs, or any data of Incognito network.
 type DatabaseInterface interface {
+	// basic function
 	Put(key, value []byte) error
 	Get(key []byte) ([]byte, error)
 	Delete(key []byte) error
 	HasValue(key []byte) (bool, error)
+	Close() error
 
-	// Block
+	// Process on Block data
 	StoreShardBlock(interface{}, common.Hash, byte) error
 	FetchBlock(common.Hash) ([]byte, error)
 	HasBlock(common.Hash) (bool, error)
 	DeleteBlock(common.Hash, uint64, byte) error
 
+	// Process on Incomming Cross shard data
 	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash common.Hash) error
 	HasIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error
 	GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) (uint64, error)
 	DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error
 
+	// Process on Shard -> Beacon
 	StoreAcceptedShardToBeacon(shardID byte, blkHeight uint64, shardBlkHash common.Hash) error
 	HasAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) error
 	GetAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) (uint64, error)
@@ -69,6 +73,7 @@ type DatabaseInterface interface {
 	StoreCommitteeByEpoch(uint64, interface{}) error
 	DeleteCommitteeByEpoch(uint64) error
 
+	//
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
@@ -126,6 +131,7 @@ type DatabaseInterface interface {
 	ListPrivacyCustomToken() ([][]byte, error)                        // get list all custom token which issued in network
 	PrivacyCustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) // from token id get all custom txs
 
+	// Privacy token for Cross Shard
 	StorePrivacyCustomTokenCrossShard(tokenID common.Hash, tokenValue []byte) error // store custom token cross shard privacy
 	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
 	PrivacyCustomTokenIDCrossShardExisted(tokenID common.Hash) bool
@@ -138,12 +144,10 @@ type DatabaseInterface interface {
 	BackupBridgedTokenByTokenID(tokenID common.Hash) error
 	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
 
-	// block reward
+	// Block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error
 	GetRewardOfShardByEpoch(epoch uint64, shardID byte, tokenID common.Hash) (uint64, error)
 	AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
 	GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error)
 	RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
-
-	Close() error
 }
