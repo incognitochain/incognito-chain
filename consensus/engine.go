@@ -1,8 +1,13 @@
 package consensus
 
 import (
+	"encoding/json"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/bft"
 	"github.com/incognitochain/incognito-chain/wire"
+	"strings"
 	"time"
 )
 
@@ -24,17 +29,38 @@ type ChainInterface interface {
 
 type BlockInterface interface {
 	GetHeight() uint64
-	GetRound() uint64
-	GetProducer() string
-	Hash() string
+	GetProducerPubKey() string
+	Hash() *common.Hash
 }
 
 type ProtocolInterface interface {
 	GetInfo() string
+
 	Start()
 	Stop()
 	IsRun() bool
-	ReceiveMsg()
+
+	ReceiveProposeMsg(ProposeMsg)
+	ReceivePrepareMsg(PrepareMsg)
+}
+
+type ProposeMsg struct {
+	ChainKey   string
+	Block      BlockInterface
+	ContentSig string
+	Pubkey     string
+	Timestamp  int64
+	RoundKey   string
+}
+
+type PrepareMsg struct {
+	ChainKey   string
+	IsOk       bool
+	Pubkey     string
+	ContentSig string
+	BlkHash    string
+	RoundKey   string
+	Timestamp  int64
 }
 
 type Engine struct {
@@ -45,7 +71,7 @@ var ConsensusEngine = Engine{
 	ChainList: make(map[string]ProtocolInterface),
 }
 
-func (s *Engine) Start(name string, chain ChainInterface, protocol string) ProtocolInterface {
+func (s *Engine) Start(name string, chain ChainInterface) ProtocolInterface {
 	consensusModule, ok := s.ChainList[name]
 	if ok {
 		if !consensusModule.IsRun() {
@@ -54,14 +80,9 @@ func (s *Engine) Start(name string, chain ChainInterface, protocol string) Proto
 		return consensusModule
 	}
 
-	var bftcore ProtocolInterface
-	switch protocol {
-	case "BFT":
-		bftcore = &bft.BFTCore{Name: name, IsRunning: false}
-		s.ChainList[name] = bftcore
-		bftcore.Start()
-	}
-
+	bftcore := &bft.BFTCore{Name: name, IsRunning: false}
+	s.ChainList[name] = bftcore
+	bftcore.Start()
 	return bftcore
 }
 
@@ -76,13 +97,54 @@ func (s *Engine) Stop(name string) error {
 func (s *Engine) OnBFTMsg(msg wire.Message) {
 	switch msg.MessageType() {
 	case wire.CmdBFTPropose:
-		proposeMsg := msg.(*wire.MessageBFTProposeV2)
-		if ConsensusEngine.ChainList[proposeMsg.ChainKey].IsRun() {
-			ConsensusEngine.ChainList[proposeMsg.ChainKey]
+		rawProposeMsg := msg.(*wire.MessageBFTProposeV2)
+		if ConsensusEngine.ChainList[rawProposeMsg.ChainKey].IsRun() {
+			ConsensusEngine.ChainList[rawProposeMsg.ChainKey].ReceiveProposeMsg(convertProposeMsg(rawProposeMsg))
 		}
 	case wire.CmdBFTPrepare:
-		prepareMsg := msg.(*wire.MessageBFTProposeV2)
-
+		rawPrepareMsg := msg.(*wire.MessageBFTPrepareV2)
+		if ConsensusEngine.ChainList[rawPrepareMsg.ChainKey].IsRun() {
+			ConsensusEngine.ChainList[rawPrepareMsg.ChainKey].ReceivePrepareMsg(convertPrepareMsg(rawPrepareMsg))
+		}
 	}
-	return
+
+}
+
+func convertProposeMsg(msg *wire.MessageBFTProposeV2) ProposeMsg {
+	proposeMsg := ProposeMsg{
+		ChainKey:   msg.ChainKey,
+		ContentSig: msg.ContentSig,
+		Pubkey:     msg.Pubkey,
+		Timestamp:  msg.Timestamp,
+		RoundKey:   msg.RoundKey,
+	}
+	if strings.Index(msg.ChainKey, "beacon") > -1 { //beacon
+		blk := &blockchain.BeaconBlock{}
+		err := json.Unmarshal([]byte(msg.Block), &blk)
+		if err != nil {
+			fmt.Println("BFT: unmarshal beacon propose msg fail", err)
+		}
+		proposeMsg.Block = blk
+	} else { //shard
+		blk := &blockchain.ShardBlock{}
+		err := json.Unmarshal([]byte(msg.Block), &blk)
+		if err != nil {
+			fmt.Println("BFT: unmarshal shard propose msg fail", err)
+		}
+		proposeMsg.Block = blk
+	}
+	return proposeMsg
+}
+
+func convertPrepareMsg(msg *wire.MessageBFTPrepareV2) PrepareMsg {
+	prepareMsg := PrepareMsg{
+		ChainKey:   msg.ChainKey,
+		ContentSig: msg.ContentSig,
+		Pubkey:     msg.Pubkey,
+		Timestamp:  msg.Timestamp,
+		RoundKey:   msg.RoundKey,
+		IsOk:       msg.IsOk,
+		BlkHash:    msg.BlkHash,
+	}
+	return prepareMsg
 }

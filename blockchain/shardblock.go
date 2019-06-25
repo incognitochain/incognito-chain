@@ -102,6 +102,14 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	return nil
 }
 
+func (shardBlock *ShardBlock) GetHeight() uint64 {
+	return shardBlock.Header.Height
+}
+
+func (shardBlock *ShardBlock) GetProducerPubKey() string {
+	return string(shardBlock.Header.ProducerAddress.Pk)
+}
+
 // func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
 // 	hasBlockReward := false
 // 	txsFee := uint64(0)
