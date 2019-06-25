@@ -1,39 +1,83 @@
 package blockchain
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-// FlattenAndConvertStringInst receives a slice of insts; converts and concats each inst ([]string) and converts to []byte to build merkle tree later
+// FlattenAndConvertStringInst receives a slice of insts; concats each inst ([]string) and converts to []byte to build merkle tree later
 func FlattenAndConvertStringInst(insts [][]string) [][]byte {
 	flattenInsts := [][]byte{}
-	t1 := strconv.Itoa(metadata.BeaconPubkeyRootMeta)
-	t2 := strconv.Itoa(metadata.BridgePubkeyRootMeta)
 	for _, inst := range insts {
-		flatten := []byte{}
-		for _, part := range inst[:len(inst)-1] {
-			flatten = append(flatten, []byte(part)...)
-		}
-
-		lastPart := []byte(inst[len(inst)-1])
-		if len(inst) == 3 && (inst[0] == t1 || inst[0] == t2) {
-			// Special case: instruction storing merkle root of beacon/bridge's committee => decode the merkle root and sign on that instead
-			// We need to decode and submit the raw merkle root to Ethereum because we can't decode it on smart contract
-			if pk, _, err := (base58.Base58Check{}).Decode(inst[2]); err == nil {
-				lastPart = pk
-			}
-		}
-		flatten = append(flatten, lastPart...)
-
-		flattenInsts = append(flattenInsts, flatten)
+		flattenInsts = append(flattenInsts, decodeInstruction(inst))
 	}
 	return flattenInsts
+}
+
+// decodeInstruction appends all part of an instruction and decode them if necessary (for special instruction that needed to be decoded before submitting to Ethereum)
+func decodeInstruction(inst []string) []byte {
+	flatten := []byte{}
+	switch inst[0] {
+	case strconv.Itoa(metadata.BeaconPubkeyRootMeta), strconv.Itoa(metadata.BridgePubkeyRootMeta):
+		flatten = decodeLastFieldOnly(inst)
+
+	case strconv.Itoa(metadata.BurningConfirmMeta):
+		flatten = decodeBurningConfirmInst(inst)
+
+	default:
+		for _, part := range inst {
+			flatten = append(flatten, []byte(part)...)
+		}
+	}
+	return flatten
+}
+
+// decodeLastFieldOnly flattens all parts of an instruction, decode the last and concats them
+func decodeLastFieldOnly(inst []string) []byte {
+	flatten := []byte{}
+	for _, part := range inst[:len(inst)-1] {
+		flatten = append(flatten, []byte(part)...)
+	}
+	// Special case: instruction storing merkle root of beacon/bridge's committee => decode the merkle root and sign on that instead
+	// We need to decode and submit the raw merkle root to Ethereum because we can't decode it on smart contract
+	if pk, _, err := (base58.Base58Check{}).Decode(inst[2]); err == nil {
+		flatten = append(flatten, pk...)
+	} else {
+		flatten = append(flatten, []byte(inst[len(inst)-1])...)
+	}
+	return flatten
+}
+
+// decodeBurningConfirmInst decodes and flattens a BurningConfirm instruction
+func decodeBurningConfirmInst(inst []string) []byte {
+	metaType := []byte(inst[0])
+	shardID := []byte(inst[1])
+	tokenID, _ := common.NewHashFromStr(inst[2])
+	remoteAddr, _ := hex.DecodeString(inst[3])
+	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
+	uid, _ := common.NewHashFromStr(inst[5])
+	flatten := []byte{}
+	flatten = append(flatten, metaType...)
+	flatten = append(flatten, shardID...)
+	flatten = append(flatten, tokenID[:]...)
+	flatten = append(flatten, remoteAddr...)
+	flatten = append(flatten, toBytes32BigEndian(amount)...)
+	flatten = append(flatten, uid[:]...)
+	return flatten
+}
+
+// toBytes32BigEndian converts a Big.Int bytes to uint256 for of Ethereum
+func toBytes32BigEndian(b []byte) []byte {
+	a := [32]byte{}
+	copy(a[32-len(b):], b)
+	return a[:]
 }
 
 // build actions from txs and ins at shard
@@ -138,10 +182,12 @@ func buildBridgePubkeyRootInstruction(currentValidators []string) []string {
 
 func (blockChain *BlockChain) buildStabilityInstructions(
 	shardID byte,
+	shardHeight uint64,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
 ) ([][]string, error) {
 	instructions := [][]string{}
+	count := uint64(0)
 	for _, inst := range shardBlockInstructions {
 		if len(inst) == 0 {
 			continue
@@ -156,8 +202,19 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			return [][]string{}, err
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta, metadata.BurningRequestMeta:
+		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta:
 			newInst = [][]string{inst}
+
+		case metadata.BurningRequestMeta:
+			if metaType == metadata.BurningRequestMeta {
+				fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
+			}
+			burningConfirm, err := buildBurningConfirmInst(inst, shardID, shardHeight, count)
+			if err != nil {
+				return [][]string{}, err
+			}
+			newInst = [][]string{inst, burningConfirm}
+			count++
 
 		default:
 			continue

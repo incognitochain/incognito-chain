@@ -494,6 +494,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	// Create stability instruction
 	stabilityInstructionsPerBlock, err := blockChain.buildStabilityInstructions(
 		shardID,
+		shardBlock.Header.Height,
 		shardBlock.Instructions,
 		beaconBestState,
 	)

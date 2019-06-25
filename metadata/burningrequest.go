@@ -3,7 +3,9 @@ package metadata
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strconv"
 
@@ -94,6 +96,10 @@ func (bReq *BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 }
 
 func (bReq *BurningRequest) ValidateMetadataByItself() bool {
+	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
+		fmt.Printf("[db] err decode RemoteAddress: %v\n", err)
+		return false
+	}
 	return bReq.Type == BurningRequestMeta
 }
 
