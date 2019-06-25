@@ -30,7 +30,7 @@ import (
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/consensus/constantbft"
+	"github.com/incognitochain/incognito-chain/consensus/mubft"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
@@ -62,7 +62,7 @@ type Server struct {
 	addrManager       *addrmanager.AddrManager
 	userKeySet        *cashec.KeySet
 	wallet            *wallet.Wallet
-	consensusEngine   *constantbft.Engine
+	consensusEngine   *mubft.Engine
 	blockgen          *blockchain.BlkTmplGenerator
 	pusubManager      *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
@@ -340,7 +340,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	// Init consensus engine
-	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
+	serverObj.consensusEngine, err = mubft.Engine{}.Init(&mubft.EngineConfig{
 		CrossShardPool:    serverObj.crossShardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		ChainParams:       serverObj.chainParams,
@@ -810,7 +810,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnGetAddr:          serverObj.OnGetAddr,
 			OnAddr:             serverObj.OnAddr,
 
-			//constantbft
+			//mubft
 			OnBFTMsg: serverObj.OnBFTMsg,
 			// OnInvalidBlock:  serverObj.OnInvalidBlock,
 			OnPeerState: serverObj.OnPeerState,
