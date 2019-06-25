@@ -10,14 +10,14 @@ import (
 const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion            = 1
-	defaultMaxBlkReqPerPeer = 600
-	defaultMaxBlkReqPerTime = 1200
+	DefaultMaxBlkReqPerPeer = 600
+	DefaultMaxBlkReqPerTime = 1200
 
-	defaultBroadcastStateTime = 2 * time.Second  // in second
-	defaultStateUpdateTime    = 3 * time.Second  // in second
-	defaultMaxBlockSyncTime   = 1 * time.Second  // in second
-	defaultCacheCleanupTime   = 30 * time.Second // in second
-	workerNum                 = 5
+	DefaultBroadcastStateTime = 2 * time.Second  // in second
+	DefaultStateUpdateTime    = 3 * time.Second  // in second
+	DefaultMaxBlockSyncTime   = 1 * time.Second  // in second
+	DefaultCacheCleanupTime   = 30 * time.Second // in second
+	WorkerNumber              = 5
 )
 
 // CONSTANT for network MAINNET
