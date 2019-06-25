@@ -16,13 +16,13 @@ import (
 func FlattenAndConvertStringInst(insts [][]string) [][]byte {
 	flattenInsts := [][]byte{}
 	for _, inst := range insts {
-		flattenInsts = append(flattenInsts, decodeInstruction(inst))
+		flattenInsts = append(flattenInsts, DecodeInstruction(inst))
 	}
 	return flattenInsts
 }
 
 // decodeInstruction appends all part of an instruction and decode them if necessary (for special instruction that needed to be decoded before submitting to Ethereum)
-func decodeInstruction(inst []string) []byte {
+func DecodeInstruction(inst []string) []byte {
 	flatten := []byte{}
 	switch inst[0] {
 	case strconv.Itoa(metadata.BeaconPubkeyRootMeta), strconv.Itoa(metadata.BridgePubkeyRootMeta):
