@@ -103,6 +103,27 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		fmt.Printf("[db] build bridge pubkey root inst: %s\n", bridgePubkeyInst)
 	}
 
+	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
+	// Also, pick BurningConfirm inst and save to bridge block
+	if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
+		// TODO(0xbunyip): validate these instructions in shardprocess
+		commPubkeyInst := pickBeaconPubkeyRootInstruction(beaconBlocks)
+		if len(commPubkeyInst) > 0 {
+			instructions = append(instructions, commPubkeyInst...)
+		}
+
+		confirmInsts := pickBurningConfirmInstruction(beaconBlocks)
+		if len(confirmInsts) > 0 {
+			bid := []uint64{}
+			for _, b := range beaconBlocks {
+				bid = append(bid, b.Header.Height)
+			}
+			prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
+			fmt.Printf("[db] picked burning confirm inst: %s %d %v\n", confirmInsts, prevBlock.Header.Height+1, bid)
+			instructions = append(instructions, confirmInsts...)
+		}
+	}
+
 	block := &ShardBlock{
 		Body: ShardBody{
 			CrossTransactions: crossTransactions,

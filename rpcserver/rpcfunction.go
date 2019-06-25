@@ -117,6 +117,7 @@ var RpcHandler = map[string]commandHandler{
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof: RpcServer.handleGetBeaconSwapProof,
 	getBridgeSwapProof: RpcServer.handleGetBridgeSwapProof,
+	getBurnProof:       RpcServer.handleGetBurnProof,
 
 	// wallet
 	getPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,

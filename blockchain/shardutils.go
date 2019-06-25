@@ -138,22 +138,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 		return nil, err
 	}
 
-	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
-	// Also, pick BurningConfirm inst and save to bridge block
-	if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
-		// Instruction created here won't be sent to validators in block.Body.Instructions
-		// Instead, validators will call CreateShardInstructionsFromTransactionAndIns again and check if inst is correct
-		commPubkeyInst := pickBeaconPubkeyRootInstruction(beaconBlocks)
-		if len(commPubkeyInst) > 0 {
-			instructions = append(instructions, commPubkeyInst...)
-		}
-
-		confirmInsts := pickBurningConfirmInstruction(beaconBlocks)
-		if len(confirmInsts) > 0 {
-			instructions = append(instructions, confirmInsts...)
-		}
-	}
-
 	for _, tx := range transactions {
 
 		switch tx.GetMetadataType() {

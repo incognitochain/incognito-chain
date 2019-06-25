@@ -29,6 +29,14 @@ def parseSwapInst(inst: bytes[INST_LENGTH]) -> (uint256, bytes32):
     newCommRoot: bytes32 = convert(slice(inst, start=3, len=32), bytes32)
     return type, newCommRoot
 
+@public
+def notifyPls(v: bytes32):
+    a: uint256 = 135790246810123
+    b: uint256 = convert(v, uint256)
+    log.NotifyBytes32(convert(a, bytes32))
+    log.NotifyBytes32(v)
+    log.NotifyBool(b == a)
+
 @constant
 @public
 def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[MAX_PATH], left: bool[MAX_PATH], length: int128) -> bool:
