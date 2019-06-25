@@ -47,7 +47,7 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 			if err != nil {
 				return -1, err
 			}
-			if blockTimestamp == MAX_TIMESTAMP {
+			if blockTimestamp == MaxTimeStamp {
 				return -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 			}
 			offsetSeconds = timestamp - blockTimestamp
@@ -55,4 +55,3 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 	}
 	return chainHeight, NewBTCAPIError(UnExpectedError, errors.New("Can't estimate block height"))
 }
-
