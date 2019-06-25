@@ -230,7 +230,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
 		metrics.MeasurementValue: float64(1),
 		metrics.Tag:              metrics.ShardIDTag,
-		metrics.TagValue:         metrics.Shard+shardIDForMetric,
+		metrics.TagValue:         metrics.Shard + shardIDForMetric,
 	})
 	// call FeeEstimator for processing
 	if feeEstimator, ok := blockchain.config.FeeEstimator[block.Header.ShardID]; ok {
@@ -247,6 +247,12 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		return err
 	}
 	fmt.Printf("[ndh]  - - - nonerror \n")
+
+	// Save result of BurningConfirm instruction to get proof later
+	err = blockchain.storeBurningConfirm(block)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
