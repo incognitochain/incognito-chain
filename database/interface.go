@@ -140,6 +140,10 @@ type DatabaseInterface interface {
 	BackupBridgedTokenByTokenID(tokenID common.Hash) error
 	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
 
+	// Incognito -> Ethereum relay
+	StoreBurningConfirm(txID []byte, height uint64) error
+	GetBurningConfirm(txID []byte) (uint64, error)
+
 	// block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uint64) error
 	GetRewardOfShardByEpoch(epoch uint64, shardID byte) (uint64, error)
