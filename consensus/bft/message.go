@@ -5,26 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
-//
-//type ProposeMsg struct {
-//	ChainKey   string
-//	Block      consensus.BlockInterface
-//	ContentSig string
-//	Pubkey     string
-//	Timestamp  int64
-//	RoundKey   string
-//}
-//
-//type PrepareMsg struct {
-//	ChainKey   string
-//	IsOk       bool
-//	Pubkey     string
-//	ContentSig string
-//	BlkHash    string
-//	RoundKey   string
-//	Timestamp  int64
-//}
-
 func MakeBFTProposeMsg(block, chainkey, roundkey string, userKeySet *cashec.KeySet) (wire.Message, error) {
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFTPropose)
 	msg.(*wire.MessageBFTProposeV2).Block = block
