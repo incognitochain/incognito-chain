@@ -49,6 +49,7 @@ func TestVerifyNonceByTimeStampBlockCypher(t *testing.T) {
 	isOk, err := btcClient.VerifyNonceWithTimestamp(1373297940, 3029573794)
 	if err != nil {
 		t.Error("Fail to get chain timestamp and nonce")
+		t.FailNow()
 	}
 	if !isOk {
 		t.Error("Fail to verify nonce by timestamp")
