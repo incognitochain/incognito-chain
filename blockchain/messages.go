@@ -184,10 +184,10 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 	} else {
 		return
 	}
+	fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.ShardID, block.Header.Height, blockchain.Synker.IsLatest(false, 0))
 
 	if blockchain.Synker.IsLatest(false, 0) {
 
-		fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
 		blkHash := block.Header.Hash()
 		err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), block.ProducerSig, blkHash.GetBytes())
 

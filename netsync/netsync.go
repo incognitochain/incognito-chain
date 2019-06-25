@@ -356,7 +356,7 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
 	//if oldBlock := netSync.IsOldBeaconBlock(msg.Block.Header.Height); !oldBlock {
-	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+	if isAdded := netSync.HandleCacheBlock("b" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
 	}
 	//}
@@ -365,7 +365,7 @@ func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
 	//if oldBlock := netSync.IsOldShardBlock(msg.Block.Header.ShardID, msg.Block.Header.Height); !oldBlock {
 	fmt.Println("Shard Block Received In net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
-	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+	if isAdded := netSync.HandleCacheBlock("s" + msg.Block.Header.Hash().String()); !isAdded {
 		fmt.Println("Shard Block NO Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
 		netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
 		return
@@ -375,14 +375,14 @@ func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 }
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")
-	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+	if isAdded := netSync.HandleCacheBlock("c" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
 	}
 
 }
 func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Info("Handling new message ShardToBeacon")
-	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+	if isAdded := netSync.HandleCacheBlock("s2b" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
 	}
 }
@@ -467,14 +467,14 @@ func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 		netSync.GetBlkShardByHeightAndSend(peerID, msg.FromPool, 1, msg.BySpecificHeight, msg.FromShardID, msg.BlkHeights, msg.ToShardID)
 	}
 }
-func (netSync *NetSync) HandleCacheBlock(blockHash common.Hash) bool {
+func (netSync *NetSync) HandleCacheBlock(blockHash string) bool {
 	netSync.Cache.blockCacheMtx.Lock()
 	defer netSync.Cache.blockCacheMtx.Unlock()
-	_, ok := netSync.Cache.blockCache.Get(blockHash.String())
+	_, ok := netSync.Cache.blockCache.Get(blockHash)
 	if ok {
 		return true
 	}
-	netSync.Cache.blockCache.Add(blockHash.String(), 1, MsgLiveTime)
+	netSync.Cache.blockCache.Add(blockHash, 1, MsgLiveTime)
 	return false
 }
 
