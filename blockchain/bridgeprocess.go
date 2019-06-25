@@ -3,9 +3,11 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -121,17 +123,20 @@ func (bc *BlockChain) processContractingReq(
 	return updatingInfoByTokenID, nil
 }
 
+func decodeContent(content string, action interface{}) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(content)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(contentBytes, &action)
+}
+
 func (bc *BlockChain) processBurningReq(
 	inst []string,
 	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
 ) (map[common.Hash]UpdatingInfo, error) {
-	actionContentStr := inst[1]
-	contentBytes, err := base64.StdEncoding.DecodeString(actionContentStr)
-	if err != nil {
-		return nil, err
-	}
 	var burningReqAction BurningReqAction
-	err = json.Unmarshal(contentBytes, &burningReqAction)
+	err := decodeContent(inst[1], &burningReqAction)
 	if err != nil {
 		return nil, err
 	}
@@ -148,4 +153,37 @@ func (bc *BlockChain) processBurningReq(
 	updatingInfoByTokenID[md.TokenID] = updatingInfo
 
 	return updatingInfoByTokenID, nil
+}
+
+func buildBurningConfirmInst(
+	inst []string,
+	shardID byte,
+	shardHeight uint64,
+	count uint64,
+) ([]string, error) {
+	// Parse action and get metadata
+	var burningReqAction BurningReqAction
+	err := decodeContent(inst[1], &burningReqAction)
+	if err != nil {
+		return nil, err
+	}
+	md := burningReqAction.Meta
+
+	// Get unique id of this inst (to prevent double-release token)
+	data := []byte{shardID}
+	data = append(data, common.Uint64ToBytes(shardHeight)...)
+	data = append(data, common.Uint64ToBytes(count)...)
+	uid := common.HashH(data)
+
+	// Convert amount to big.Int to get bytes later
+	amount := big.NewInt(0).SetUint64(md.BurningAmount)
+
+	return []string{
+		strconv.Itoa(metadata.BurningConfirmMeta),
+		strconv.Itoa(int(shardID)),
+		md.TokenID.String(),
+		md.RemoteAddress,
+		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
+		uid.String(),
+	}, nil
 }
