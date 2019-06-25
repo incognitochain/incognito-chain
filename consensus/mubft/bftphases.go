@@ -1,4 +1,4 @@
-package constantbft
+package mubft
 
 import (
 	"bytes"
