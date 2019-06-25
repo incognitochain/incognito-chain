@@ -453,7 +453,7 @@ BeginCheckHashMessage:
 	return bCheck
 }
 
-// QueueMessageWithEncoding adds the passed Constant message to the peer send
+// QueueMessageWithEncoding adds the passed Incognito message to the peer send
 // queue. This function is identical to QueueMessage, however it allows the
 // caller to specify the wire encoding type that should be used when
 // encoding/decoding blocks and transactions.
