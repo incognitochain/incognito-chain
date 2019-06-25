@@ -20,7 +20,7 @@ var (
 )
 
 const (
-	MaxTimeStamp = 4762368000
+
 )
 
 func (blockCypherClient *BlockCypherClient) GetNonceByTimestamp(timestamp int64) (int, int64, int64, error) {
@@ -156,11 +156,11 @@ func (blockCypherClient *BlockCypherClient) GetTimeStampAndNonceByBlockHeight(bl
 		}
 		nonce, ok := block["nonce"].(float64)
 		if !ok {
-			return MAX_TIMESTAMP, -1, NewBTCAPIError(WrongTypeError, errors.New("Nonce's type should be float64"))
+			return MaxTimeStamp, -1, NewBTCAPIError(WrongTypeError, errors.New("Nonce's type should be float64"))
 		}
 		timeString, ok := block["time"].(string)
 		if !ok {
-			return MAX_TIMESTAMP, -1, NewBTCAPIError(WrongTypeError, errors.New("String's type should be string"))
+			return MaxTimeStamp, -1, NewBTCAPIError(WrongTypeError, errors.New("String's type should be string"))
 		}
 		timeTime, err := time.Parse(time.RFC3339, timeString)
 		if err != nil {
