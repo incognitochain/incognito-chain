@@ -23,41 +23,42 @@ import (
 
 // default config
 const (
-	defaultConfigFilename         = "config.conf"
-	defaultDataDirname            = "data"
-	defaultDatabaseDirname        = "block"
-	defaultDatabaseMempoolDirname = "mempool"
-	defaultLogLevel               = "info"
-	defaultLogDirname             = "logs"
-	defaultLogFilename            = "log.log"
-	defaultMaxPeers               = 125
-	defaultMaxPeersSameShard      = 50
-	defaultMaxPeersOtherShard     = 50
-	defaultMaxPeersOther          = 125
-	defaultMaxPeersNoShard        = 125
-	defaultMaxPeersBeacon         = 50
-	defaultMaxRPCClients          = 20
-	defaultMaxRPCWsClients        = 20
-	defaultMetricUrl              = ""
-	sampleConfigFilename          = "sample-config.conf"
-	defaultDisableRpcTLS          = true
-	defaultFastStartup            = true
-	defaultNodeMode               = common.NODEMODE_RELAY
-	defaultTxPoolTTL              = uint(86400) * 10 // in second
-	defaultTxPoolMaxTx            = uint64(100000)
-	defaultLimitFee               = uint64(1)
+	DefaultConfigFilename         = "config.conf"
+	DefaultDataDirname            = "data"
+	DefaultDatabaseDirname        = "block"
+	DefaultDatabaseMempoolDirname = "mempool"
+	DefaultLogLevel               = "info"
+	DefaultLogDirname             = "logs"
+	DefaultLogFilename            = "log.log"
+	DefaultMaxPeers               = 125
+	DefaultMaxPeersSameShard      = 50
+	DefaultMaxPeersOtherShard     = 50
+	DefaultMaxPeersOther          = 125
+	DefaultMaxPeersNoShard        = 125
+	DefaultMaxPeersBeacon         = 50
+	DefaultMaxRPCClients          = 20
+	DefaultMaxRPCWsClients        = 20
+	DefaultMetricUrl              = ""
+	SampleConfigFilename          = "sample-config.conf"
+	DefaultDisableRpcTLS          = true
+	DefaultFastStartup            = true
+	DefaultNodeMode               = common.NODEMODE_RELAY
+	DefaultTxPoolTTL              = uint(86400) * 10 // in second
+	DefaultTxPoolMaxTx            = uint64(100000)
+	DefaultLimitFee               = uint64(1)
+
 	// For wallet
-	defaultWalletName     = "wallet"
-	defaultPersistMempool = false
+	DefaultWalletName     = "wallet"
+	DefaultPersistMempool = false
 )
 
 var (
 	defaultHomeDir     = common.AppDataDir("incognito", false)
-	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
-	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
+	defaultConfigFile  = filepath.Join(defaultHomeDir, DefaultConfigFilename)
+	defaultDataDir     = filepath.Join(defaultHomeDir, DefaultDataDirname)
 	defaultRPCKeyFile  = filepath.Join(defaultHomeDir, "rpc.key")
 	defaultRPCCertFile = filepath.Join(defaultHomeDir, "rpc.cert")
-	defaultLogDir      = filepath.Join(defaultHomeDir, defaultLogDirname)
+	defaultLogDir      = filepath.Join(defaultHomeDir, DefaultLogDirname)
 )
 
 // runServiceCommand is only set to a real function on Windows.  It is used
@@ -175,7 +176,7 @@ func createDefaultConfigFile(destinationPath string) error {
 	if err != nil {
 		return err
 	}
-	sampleConfigPath := filepath.Join(path, sampleConfigFilename)
+	sampleConfigPath := filepath.Join(path, SampleConfigFilename)
 
 	// We generate a random user and password
 	randomBytes := make([]byte, 20)
@@ -279,39 +280,39 @@ func removeDuplicateAddresses(addrs []string) []string {
 func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
-		LogLevel:             defaultLogLevel,
-		MaxOutPeers:          defaultMaxPeers,
-		MaxInPeers:           defaultMaxPeers,
-		MaxPeers:             defaultMaxPeers,
-		MaxPeersSameShard:    defaultMaxPeersSameShard,
-		MaxPeersOtherShard:   defaultMaxPeersOtherShard,
-		MaxPeersOther:        defaultMaxPeersOther,
-		MaxPeersNoShard:      defaultMaxPeersNoShard,
-		MaxPeersBeacon:       defaultMaxPeersBeacon,
-		RPCMaxClients:        defaultMaxRPCClients,
-		RPCMaxWSClients:      defaultMaxRPCWsClients,
+		LogLevel:             DefaultLogLevel,
+		MaxOutPeers:          DefaultMaxPeers,
+		MaxInPeers:           DefaultMaxPeers,
+		MaxPeers:             DefaultMaxPeers,
+		MaxPeersSameShard:    DefaultMaxPeersSameShard,
+		MaxPeersOtherShard:   DefaultMaxPeersOtherShard,
+		MaxPeersOther:        DefaultMaxPeersOther,
+		MaxPeersNoShard:      DefaultMaxPeersNoShard,
+		MaxPeersBeacon:       DefaultMaxPeersBeacon,
+		RPCMaxClients:        DefaultMaxRPCClients,
+		RPCMaxWSClients:      DefaultMaxRPCWsClients,
 		DataDir:              defaultDataDir,
-		DatabaseDir:          defaultDatabaseDirname,
-		DatabaseMempoolDir:   defaultDatabaseMempoolDirname,
+		DatabaseDir:          DefaultDatabaseDirname,
+		DatabaseMempoolDir:   DefaultDatabaseMempoolDirname,
 		LogDir:               defaultLogDir,
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
 		WalletShardID:        -1,
-		WalletName:           defaultWalletName,
-		DisableTLS:           defaultDisableRpcTLS,
+		WalletName:           DefaultWalletName,
+		DisableTLS:           DefaultDisableRpcTLS,
 		DisableRPC:           false,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        true,
 		TestNet:              true,
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
-		NodeMode:             defaultNodeMode,
+		NodeMode:             DefaultNodeMode,
 		PrivateKey:           common.EmptyString,
-		FastStartup:          defaultFastStartup,
-		TxPoolTTL:            defaultTxPoolTTL,
-		TxPoolMaxTx:          defaultTxPoolMaxTx,
-		PersistMempool:       defaultPersistMempool,
-		LimitFee:             defaultLimitFee,
-		MetricUrl:            defaultMetricUrl,
+		FastStartup:          DefaultFastStartup,
+		TxPoolTTL:            DefaultTxPoolTTL,
+		TxPoolMaxTx:          DefaultTxPoolMaxTx,
+		PersistMempool:       DefaultPersistMempool,
+		LimitFee:             DefaultLimitFee,
+		MetricUrl:            DefaultMetricUrl,
 	}
 
 	// Service options which are only added on Windows.
@@ -436,7 +437,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Initialize log rotation.  After log rotation has been initialized, the
 	// logger variables may be used.
-	initLogRotator(filepath.Join(cfg.LogDir, defaultLogFilename))
+	initLogRotator(filepath.Join(cfg.LogDir, DefaultLogFilename))
 
 	// Parse, validate, and set debug log level(s).
 	if err := parseAndSetDebugLevels(cfg.LogLevel); err != nil {
