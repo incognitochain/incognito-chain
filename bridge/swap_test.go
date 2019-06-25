@@ -174,12 +174,6 @@ func getBeaconSwapProof() string {
 	return string(body)
 }
 
-func transformInst(inst []byte) []byte {
-	instTypeAndShardID := inst[:3]
-	decodedInst, _, _ := base58.Base58Check{}.Decode(string(inst[3:]))
-	return append(instTypeAndShardID, decodedInst...)
-}
-
 func TestSwapBeacon(t *testing.T) {
 	// body := getBeaconSwapProof()
 	body := getBridgeSwapProof()
@@ -188,7 +182,7 @@ func TestSwapBeacon(t *testing.T) {
 	}
 
 	type getBeaconSwapProofResult struct {
-		Result jsonresult.GetSwapProof
+		Result jsonresult.GetInstructionProof
 		Error  string
 		Id     int
 	}
@@ -236,7 +230,7 @@ func TestSwapBeacon(t *testing.T) {
 	const bridge_length = 256
 	_ = p
 
-	inst := transformInst(decode(r.Result.Instruction))
+	inst := decode(r.Result.Instruction)
 	fmt.Printf("inst: %d %x\n", len(inst), inst)
 
 	beaconInstRoot := decode32(r.Result.BeaconInstRoot)
@@ -336,6 +330,23 @@ func TestSwapBeacon(t *testing.T) {
 		bridgeSignerPathIsLeft,
 		bridgeSignerPathLen,
 	)
+	if err != nil {
+		fmt.Println("err:", err)
+	}
+	p.sim.Commit()
+	p.printReceipt(tx)
+}
+
+func TestCallFunc(t *testing.T) {
+	p, err := setupWithoutCommittee()
+	if err != nil {
+		t.Fatalf("Fail to deloy contract: %v\n", err)
+	}
+
+	v := [32]byte{}
+	b := big.NewInt(135790246810123).Bytes()
+	copy(v[32-len(b):], b)
+	tx, err := p.c.NotifyPls(auth, v)
 	if err != nil {
 		fmt.Println("err:", err)
 	}
