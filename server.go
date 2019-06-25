@@ -521,7 +521,8 @@ func (serverObj *Server) Stop() error {
 		}
 	}
 
-	serverObj.consensusEngine.Stop()
+	//serverObj.consensusEngine.Stop()
+
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
 	return nil
@@ -625,6 +626,7 @@ func (serverObj Server) Start() {
 	}
 	go serverObj.pusubManager.Start()
 }
+
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.Scantime)
 	serverObj.memPool.LockPool()
