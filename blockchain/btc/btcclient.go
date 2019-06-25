@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+// Bitcoin Fullnode expose RPC api
 type BTCClient struct {
 	User     string
 	Password string
