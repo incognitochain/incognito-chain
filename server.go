@@ -1,19 +1,23 @@
 package main
 
 import (
+	"cloud.google.com/go/storage"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,7 +31,7 @@ import (
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/consensus/constantbft"
+	"github.com/incognitochain/incognito-chain/consensus/mubft"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
@@ -59,7 +63,7 @@ type Server struct {
 	addrManager       *addrmanager.AddrManager
 	userKeySet        *cashec.KeySet
 	wallet            *wallet.Wallet
-	consensusEngine   *constantbft.Engine
+	consensusEngine   *mubft.Engine
 	blockgen          *blockchain.BlkTmplGenerator
 	pusubManager      *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
@@ -347,7 +351,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	// Init consensus engine
-	serverObj.consensusEngine, err = constantbft.Engine{}.Init(&constantbft.EngineConfig{
+	serverObj.consensusEngine, err = mubft.Engine{}.Init(&mubft.EngineConfig{
 		CrossShardPool:    serverObj.crossShardPool,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		ChainParams:       serverObj.chainParams,
@@ -686,46 +690,63 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	serverObj.memPool.UnlockPool()
 }
 
+// CheckForceUpdateSourceCode - loop to check current version with update version is equal
+// Force source code to be updated and remove data
 func (serverObject Server) CheckForceUpdateSourceCode() {
-	now := time.Now()
-	var year int
-	var month int
-	var result string
-	formatedNow := now.Format(common.DateInputFormat)
-	res := strings.Split(formatedNow, "-")
-	year, _ = strconv.Atoi(res[0])
-	if res[1] == "12" {
-		month = 1
-		year += 1
-	} else {
-		month, _ = strconv.Atoi(res[1])
-		month += 1
-	}
-	if month >= 10 {
-		result = strconv.Itoa(year) + "-" + strconv.Itoa(month) + "-" + common.FirstDateOfMonth
-	} else {
-		result = strconv.Itoa(year) + "-" + "0" + strconv.Itoa(month) + "-" + common.FirstDateOfMonth
-	}
-	Logger.log.Warn("\n*********************************************************************************\n" +
-		"* Detected a Force Updating Time for this source code from https://github.com/incognitochain/incognito-chain at " + result + " *" +
-		"\n*********************************************************************************\n")
-	go func(nextUpdated string) {
+	go func() {
+		ctx := context.Background()
+		myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
+		if err != nil {
+			Logger.log.Error(err)
+		}
 		for {
-			forceTime, _ := time.ParseInLocation(common.DateInputFormat, nextUpdated, time.Local)
-			fmt.Println(nextUpdated)
-			fmt.Println(forceTime)
-			forced := now.After(forceTime)
-			if forced {
+			reader, err := myClient.Bucket("incognito").Object("version-chain.json").NewReader(ctx)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			defer reader.Close()
+
+			type VersionChain struct {
+				Version    string `json:"Version"`
+				Note       string `json:"Note"`
+				RemoveData bool   `json:"RemoveData"`
+			}
+			versionChain := VersionChain{}
+			currentVersion := version()
+			body, err := ioutil.ReadAll(reader)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			err = json.Unmarshal(body, &versionChain)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			force := currentVersion != versionChain.Version
+			if force {
+				Logger.log.Error("\n*********************************************************************************\n" +
+					versionChain.Note +
+					"\n*********************************************************************************\n")
+
+				Logger.log.Error("\n*********************************************************************************\n New version: " +
+					versionChain.Version +
+					"\n*********************************************************************************\n")
+
 				Logger.log.Error("\n*********************************************************************************\n" +
 					"We're exited because having a force update on this souce code." +
 					"\nPlease Update source code at https://github.com/incognitochain/incognito-chain" +
 					"\n*********************************************************************************\n")
+				if versionChain.RemoveData {
+					serverObject.Stop()
+					os.RemoveAll(cfg.DataDir)
+				}
 				os.Exit(common.ExitCodeForceUpdate)
 			}
-			Logger.log.Debug("Check time to force update source code from https://github.com/incognitochain/incognito-chain after " + common.NextForceUpdate)
-			time.Sleep(time.Second * 60) // each minute
+			time.Sleep(10 * time.Second)
 		}
-	}(result)
+	}()
 }
 
 /*
@@ -800,7 +821,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			OnGetAddr:          serverObj.OnGetAddr,
 			OnAddr:             serverObj.OnAddr,
 
-			//constantbft
+			//mubft
 			OnBFTMsg: serverObj.OnBFTMsg,
 			// OnInvalidBlock:  serverObj.OnInvalidBlock,
 			OnPeerState: serverObj.OnPeerState,

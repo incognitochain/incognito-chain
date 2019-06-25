@@ -23,29 +23,30 @@ import (
 
 // default config
 const (
-	defaultConfigFilename         = "config.conf"
-	defaultDataDirname            = "data"
-	defaultDatabaseDirname        = "block"
-	defaultDatabaseMempoolDirname = "mempool"
-	defaultLogLevel               = "info"
-	defaultLogDirname             = "logs"
-	defaultLogFilename            = "log.log"
-	defaultMaxPeers               = 125
-	defaultMaxPeersSameShard      = 50
-	defaultMaxPeersOtherShard     = 50
-	defaultMaxPeersOther          = 125
-	defaultMaxPeersNoShard        = 125
-	defaultMaxPeersBeacon         = 50
-	defaultMaxRPCClients          = 20
-	defaultMaxRPCWsClients        = 20
-	defaultMetricUrl              = ""
-	sampleConfigFilename          = "sample-config.conf"
-	defaultDisableRpcTLS          = true
-	defaultFastStartup            = true
-	defaultNodeMode               = common.NODEMODE_RELAY
-	defaultTxPoolTTL              = uint(86400) * 10 // in second
-	defaultTxPoolMaxTx            = uint64(100000)
-	defaultLimitFee               = uint64(1)
+	DefaultConfigFilename         = "config.conf"
+	DefaultDataDirname            = "data"
+	DefaultDatabaseDirname        = "block"
+	DefaultDatabaseMempoolDirname = "mempool"
+	DefaultLogLevel               = "info"
+	DefaultLogDirname             = "logs"
+	DefaultLogFilename            = "log.log"
+	DefaultMaxPeers               = 125
+	DefaultMaxPeersSameShard      = 50
+	DefaultMaxPeersOtherShard     = 50
+	DefaultMaxPeersOther          = 125
+	DefaultMaxPeersNoShard        = 125
+	DefaultMaxPeersBeacon         = 50
+	DefaultMaxRPCClients          = 20
+	DefaultMaxRPCWsClients        = 20
+	DefaultMetricUrl              = ""
+	SampleConfigFilename          = "sample-config.conf"
+	DefaultDisableRpcTLS          = true
+	DefaultFastStartup            = true
+	DefaultNodeMode               = common.NODEMODE_RELAY
+	DefaultTxPoolTTL              = uint(86400) * 10 // in second
+	DefaultTxPoolMaxTx            = uint64(100000)
+	DefaultLimitFee               = uint64(1)
+
 	// For wallet
 	defaultWalletName     = "wallet"
 	defaultPersistMempool = false
@@ -54,12 +55,12 @@ const (
 )
 
 var (
-	defaultHomeDir     = common.AppDataDir("constant", false)
-	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
-	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
+	defaultHomeDir     = common.AppDataDir("incognito", false)
+	defaultConfigFile  = filepath.Join(defaultHomeDir, DefaultConfigFilename)
+	defaultDataDir     = filepath.Join(defaultHomeDir, DefaultDataDirname)
 	defaultRPCKeyFile  = filepath.Join(defaultHomeDir, "rpc.key")
 	defaultRPCCertFile = filepath.Join(defaultHomeDir, "rpc.cert")
-	defaultLogDir      = filepath.Join(defaultHomeDir, defaultLogDirname)
+	defaultLogDir      = filepath.Join(defaultHomeDir, DefaultLogDirname)
 )
 
 // runServiceCommand is only set to a real function on Windows.  It is used
@@ -94,20 +95,20 @@ type config struct {
 
 	ExternalAddress string `long:"externaladdress" description:"External address"`
 
-	RPCDisableAuth bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
-	RPCUser        string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
-	RPCPass        string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
-	RPCLimitUser   string   `long:"rpclimituser" description:"Username for limited RPC connections"`
-	RPCLimitPass   string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
-	RPCListeners   []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
-	RPCWSListeners []string `long:"rpcwslisten" description:"Add an interface/port to listen for RPC Websocket connections (default port: 19334, testnet: 19334)"`
-	RPCCert        string   `long:"rpccert" description:"File containing the certificate file"`
-	RPCKey         string   `long:"rpckey" description:"File containing the certificate key"`
-	RPCMaxClients  int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
-	RPCMaxWSClients  int      `long:"rpcmaxwsclients" description:"Max number of RPC clients for standard connections"`
-	RPCQuirks      bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
-	DisableRPC     bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
-	DisableTLS     bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
+	RPCDisableAuth  bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
+	RPCUser         string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
+	RPCPass         string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
+	RPCLimitUser    string   `long:"rpclimituser" description:"Username for limited RPC connections"`
+	RPCLimitPass    string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
+	RPCListeners    []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
+	RPCWSListeners  []string `long:"rpcwslisten" description:"Add an interface/port to listen for RPC Websocket connections (default port: 19334, testnet: 19334)"`
+	RPCCert         string   `long:"rpccert" description:"File containing the certificate file"`
+	RPCKey          string   `long:"rpckey" description:"File containing the certificate key"`
+	RPCMaxClients   int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
+	RPCMaxWSClients int      `long:"rpcmaxwsclients" description:"Max number of RPC clients for standard connections"`
+	RPCQuirks       bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
+	DisableRPC      bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
+	DisableTLS      bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
 
 	Proxy     string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser string `long:"proxyuser" description:"Username for proxy server"`
@@ -182,7 +183,7 @@ func createDefaultConfigFile(destinationPath string) error {
 	if err != nil {
 		return err
 	}
-	sampleConfigPath := filepath.Join(path, sampleConfigFilename)
+	sampleConfigPath := filepath.Join(path, SampleConfigFilename)
 
 	// We generate a random user and password
 	randomBytes := make([]byte, 20)
@@ -279,39 +280,39 @@ func removeDuplicateAddresses(addrs []string) []string {
 // 	3) Load configuration file overwriting defaults with any specified options
 // 	4) Parse CLI options and overwrite/add any specified options
 //
-// The above results in Constant functioning properly without any config settings
+// The above results in I functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
 */
 func loadConfig() (*config, []string, error) {
 	cfg := config{
 		ConfigFile:           defaultConfigFile,
-		LogLevel:             defaultLogLevel,
-		MaxOutPeers:          defaultMaxPeers,
-		MaxInPeers:           defaultMaxPeers,
-		MaxPeers:             defaultMaxPeers,
-		MaxPeersSameShard:    defaultMaxPeersSameShard,
-		MaxPeersOtherShard:   defaultMaxPeersOtherShard,
-		MaxPeersOther:        defaultMaxPeersOther,
-		MaxPeersNoShard:      defaultMaxPeersNoShard,
-		MaxPeersBeacon:       defaultMaxPeersBeacon,
-		RPCMaxClients:        defaultMaxRPCClients,
-		RPCMaxWSClients:      defaultMaxRPCWsClients,
+		LogLevel:             DefaultLogLevel,
+		MaxOutPeers:          DefaultMaxPeers,
+		MaxInPeers:           DefaultMaxPeers,
+		MaxPeers:             DefaultMaxPeers,
+		MaxPeersSameShard:    DefaultMaxPeersSameShard,
+		MaxPeersOtherShard:   DefaultMaxPeersOtherShard,
+		MaxPeersOther:        DefaultMaxPeersOther,
+		MaxPeersNoShard:      DefaultMaxPeersNoShard,
+		MaxPeersBeacon:       DefaultMaxPeersBeacon,
+		RPCMaxClients:        DefaultMaxRPCClients,
+		RPCMaxWSClients:      DefaultMaxRPCWsClients,
 		DataDir:              defaultDataDir,
-		DatabaseDir:          defaultDatabaseDirname,
-		DatabaseMempoolDir:   defaultDatabaseMempoolDirname,
+		DatabaseDir:          DefaultDatabaseDirname,
+		DatabaseMempoolDir:   DefaultDatabaseMempoolDirname,
 		LogDir:               defaultLogDir,
 		RPCKey:               defaultRPCKeyFile,
 		RPCCert:              defaultRPCCertFile,
 		WalletShardID:        -1,
-		WalletName:           defaultWalletName,
-		DisableTLS:           defaultDisableRpcTLS,
+		WalletName:           DefaultWalletName,
+		DisableTLS:           DefaultDisableRpcTLS,
 		DisableRPC:           false,
 		RPCDisableAuth:       false,
 		DiscoverPeers:        true,
 		TestNet:              true,
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
-		NodeMode:             defaultNodeMode,
+		NodeMode:             DefaultNodeMode,
 		PrivateKey:           common.EmptyString,
 		FastStartup:          defaultFastStartup,
 		TxPoolTTL:            defaultTxPoolTTL,
@@ -445,7 +446,7 @@ func loadConfig() (*config, []string, error) {
 
 	// Initialize log rotation.  After log rotation has been initialized, the
 	// logger variables may be used.
-	initLogRotator(filepath.Join(cfg.LogDir, defaultLogFilename))
+	initLogRotator(filepath.Join(cfg.LogDir, DefaultLogFilename))
 
 	// Parse, validate, and set debug log level(s).
 	if err := parseAndSetDebugLevels(cfg.LogLevel); err != nil {
@@ -528,7 +529,7 @@ func loadConfig() (*config, []string, error) {
 			cfg.RPCListeners = append(cfg.RPCListeners, addr)
 		}
 	}
-	
+
 	// Default RPC Ws to listen on localhost only.
 	if !cfg.DisableRPC && len(cfg.RPCWSListeners) == 0 {
 		addrs, err := net.LookupHost("0.0.0.0")
@@ -573,7 +574,7 @@ func loadConfig() (*config, []string, error) {
 			"::1":       {},
 			"0.0.0.0":   {},
 		}
-		
+
 		for _, addr := range cfg.RPCListeners {
 			host, _, err := net.SplitHostPort(addr)
 			if err != nil {

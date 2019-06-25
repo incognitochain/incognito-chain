@@ -21,6 +21,7 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 	}
 	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
+	param["TokenID"] = arrayParams[4].(map[string]interface{})["TokenID"]
 	arrayParams[4] = interface{}(param)
 	return httpServer.createRawTxWithMetadata(
 		arrayParams,
@@ -51,9 +52,20 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	rewardAmount, err := (*httpServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk)
+
+	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	return rewardAmount, nil
+
+	rewardAmounts := make(map[common.Hash]uint64)
+	for _, coinID := range allCoinIDs {
+		amount, err := (*httpServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk, coinID)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		rewardAmounts[coinID] = amount
+	}
+
+	return rewardAmounts, nil
 }
