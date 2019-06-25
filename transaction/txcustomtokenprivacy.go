@@ -112,7 +112,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 	shardID byte,
 ) *TransactionError {
 	var err error
-	// init data for tx constant for fee
+	// init data for tx PRV for fee
 	normalTx := Tx{}
 	err = normalTx.Init(senderKey,
 		paymentInfo,
