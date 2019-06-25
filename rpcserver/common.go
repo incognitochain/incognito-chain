@@ -61,7 +61,7 @@ func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Payme
 		})
 	}
 
-	// check real fee(nano constant) per tx
+	// check real fee(nano PRV) per tx
 	realFee, _, _ := rpcServer.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
 		metadataParam, customTokenParams,
