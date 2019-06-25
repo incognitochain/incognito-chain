@@ -35,24 +35,24 @@ func (blkTmplGenerator BlkTmplGenerator) Init(txPool TxPool, chain *BlockChain, 
 
 func (blkTmplGenerator *BlkTmplGenerator) Start(cQuit chan struct{}) {
 	Logger.log.Critical("Block Gen is starting")
-	for w := 0; w < workerNum; w++ {
+	for w := 0; w < WorkerNumber; w++ {
 		go blkTmplGenerator.AddTransactionV2Worker(blkTmplGenerator.CPendingTxs)
 	}
-	for w := 0; w < workerNum; w++ {
+	for w := 0; w < WorkerNumber; w++ {
 		go blkTmplGenerator.RemoveTransactionV2Worker(blkTmplGenerator.CRemovedTxs)
 	}
 	for {
 		select {
 		case <-cQuit:
 			return
-		//case addTxs := <-blkTmplGenerator.CPendingTxs:
-		//	{
-		//		go blkTmplGenerator.AddTransactionV2(addTxs)
-		//	}
-		//case removeTxs := <-blkTmplGenerator.CRemovedTxs:
-		//	{
-		//		go blkTmplGenerator.RemoveTransactionV2(removeTxs)
-		//	}
+			//case addTxs := <-blkTmplGenerator.CPendingTxs:
+			//	{
+			//		go blkTmplGenerator.AddTransactionV2(addTxs)
+			//	}
+			//case removeTxs := <-blkTmplGenerator.CRemovedTxs:
+			//	{
+			//		go blkTmplGenerator.RemoveTransactionV2(removeTxs)
+			//	}
 		}
 	}
 }
