@@ -40,8 +40,8 @@ fi
 mkdir ~/go/src/github.com/ninjadotorg -p
 cd ~/go/src/github.com/ninjadotorg
 if [ ! -d constant ]; then
-    echo "Clone constant..."
-    git clone https://github.com/ninjadotorg/constant -b master
+    echo "Clone incognito..."
+    git clone https://github.com/incognitochain/incognito-chain -b master
     echo "Clone constant... DONE"
 else
     echo "Constant directory is existed"
@@ -51,6 +51,6 @@ fi
 echo "Install constant packages..."
 cd constant
 dep ensure -v
-echo "Install constant packages... DONE"
+echo "Install i packages... DONE"
 
-cd ~/go/src/github.com/ninjadotorg/constant/bin
+cd ~/go/src/github.com/incognitochain/incognito-chain/bin
