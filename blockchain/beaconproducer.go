@@ -290,11 +290,13 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	// ["stake", "pubkey.....", "shard" or "beacon"]
 	instructions = append(instructions, stakers...)
 	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && !bestStateBeacon.IsGetRandomNumber {
+		//=================================
 		// COMMENT FOR TESTING
 		//var err error
 		//chainTimeStamp, err := bestStateBeacon.randomClient.GetCurrentChainTimeStamp()
 		// UNCOMMENT FOR TESTING
 		chainTimeStamp := bestStateBeacon.CurrentRandomTimeStamp + 1
+		//==================================
 		assignedCandidates := make(map[byte][]string)
 		if chainTimeStamp > bestStateBeacon.CurrentRandomTimeStamp {
 			randomInstruction, rand := bestStateBeacon.generateRandomInstruction(bestStateBeacon.CurrentRandomTimeStamp)
