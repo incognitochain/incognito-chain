@@ -5,14 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	pubsub "github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-
-	pubsub "github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
@@ -85,13 +83,6 @@ type Config struct {
 	}
 	UserKeySet *cashec.KeySet
 }
-
-type PubSub struct {
-	mtx                 sync.RWMutex
-	NewShardBlockEvent  map[int]chan *ShardBlock
-	NewBeaconBlockEvent map[int]chan *BeaconBlock
-}
-
 /*
 Init - init a blockchain view from config
 */
