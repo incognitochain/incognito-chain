@@ -44,7 +44,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 	if err != nil {
 		return 0, 0, -1, err
 	}
-	if blockTimestamp == MAX_TIMESTAMP {
+	if blockTimestamp == MaxTimeStamp {
 		return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 	}
 	if blockTimestamp > timestamp {
@@ -54,7 +54,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 			if err != nil {
 				return 0, 0, -1, err
 			}
-			if blockTimestamp == MAX_TIMESTAMP {
+			if blockTimestamp == MaxTimeStamp {
 				return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 			}
 			if blockTimestamp <= timestamp {
@@ -72,7 +72,7 @@ func (btcClient *BTCClient) GetNonceByTimestamp(timestamp int64) (int, int64, in
 			if err != nil {
 				return 0, 0, -1, err
 			}
-			if blockTimestamp == MAX_TIMESTAMP {
+			if blockTimestamp == MaxTimeStamp {
 				return 0, 0, -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 			}
 			if blockTimestamp > timestamp {
