@@ -1,4 +1,4 @@
-package constantbft
+package mubft
 
 import (
 	"github.com/incognitochain/incognito-chain/common"

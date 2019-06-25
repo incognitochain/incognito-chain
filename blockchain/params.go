@@ -1,9 +1,5 @@
 package blockchain
 
-import (
-	"github.com/incognitochain/incognito-chain/blockchain/benchmark"
-)
-
 /*
 Params defines a network by its component. These component may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -34,7 +30,7 @@ type Params struct {
 type GenesisParams struct {
 	InitialPaymentAddress string
 
-	InitialConstant []string
+	InitialIncognito []string
 
 	FeePerTxKb uint64
 
@@ -58,7 +54,8 @@ func init() {
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
 		//@Notice: InitTxsForBenchmark is for testing and benchmark only
-		InitialConstant: benchmark.GetInitTransaction(),
+		//InitialIncognito: benchmark.GetInitTransaction(),
+		InitialIncognito: TestnetInitPRV,
 	}
 
 	ChainTestParam = Params{
@@ -85,7 +82,7 @@ func init() {
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
 
-		InitialConstant: MainnetInitConstant,
+		InitialIncognito: MainnetInitPRV,
 	}
 
 	ChainMainParam = Params{
