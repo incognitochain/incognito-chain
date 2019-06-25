@@ -30,14 +30,11 @@ func (rpcServer RpcServer) handleGetBridgeSwapProof(params interface{}, closeCha
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	// Save instruction as a single slice of byte
-	flattenBridgeInst := []byte{}
-	for _, part := range beaconInstProof.inst {
-		flattenBridgeInst = append(flattenBridgeInst, []byte(part)...)
-	}
+	// Decode instruction to send to Ethereum without having to decode on client
+	decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(beaconInstProof.inst))
 
-	return jsonresult.GetSwapProof{
-		Instruction: hex.EncodeToString(flattenBridgeInst),
+	return jsonresult.GetInstructionProof{
+		Instruction: decodedInst,
 
 		BeaconInstPath:         beaconInstProof.instPath,
 		BeaconInstPathIsLeft:   beaconInstProof.instPathIsLeft,
