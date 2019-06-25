@@ -78,6 +78,14 @@ func (beaconBlock *BeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (beaconBlock *BeaconBlock) GetHeight() uint64 {
+	return beaconBlock.Header.Height
+}
+
+func (beaconBlock *BeaconBlock) GetProducerPubKey() string {
+	return string(beaconBlock.Header.ProducerAddress.Pk)
+}
+
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string  `json:"AggregatedSig"`
