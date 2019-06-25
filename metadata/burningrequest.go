@@ -118,7 +118,8 @@ func (bReq *BurningRequest) Hash() *common.Hash {
 
 func (bReq *BurningRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	actionContent := map[string]interface{}{
-		"meta": *bReq,
+		"meta":          *bReq,
+		"RequestedTxID": tx.Hash(),
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
