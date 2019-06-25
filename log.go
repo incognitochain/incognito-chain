@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/consensus/constantbft"
+	"github.com/incognitochain/incognito-chain/consensus/mubft"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
@@ -69,7 +69,7 @@ func init() {
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
-	constantbft.Logger.Init(consensusLogger)
+	mubft.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)

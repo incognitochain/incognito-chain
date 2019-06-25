@@ -52,7 +52,7 @@ func init() {
 		for _ = range ticker {
 			for k, _ := range shardPoolMap {
 				GetShardPool(k).RemoveBlock(blockchain.GetBestStateShard(k).ShardHeight)
-				//GetShardPool(k).CleanOldBlock(blockchain.GetBestStateShard(k).ShardHeight)
+				GetShardPool(k).CleanOldBlock(blockchain.GetBestStateShard(k).ShardHeight)
 				GetShardPool(k).PromotePendingPool()
 			}
 		}
