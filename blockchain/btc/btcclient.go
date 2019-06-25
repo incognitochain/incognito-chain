@@ -3,7 +3,6 @@ package btc
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"io/ioutil"
 	"net/http"
@@ -177,7 +176,6 @@ func (btcClient *BTCClient) callRPC(method string, params string) (map[string]in
 	var err error
 	var result = make(map[string]interface{})
 	body := strings.NewReader("{\"jsonrpc\":\"1.0\",\"id\":\"curltext\",\"method\":\"" + method + "\",\"params\":[" + params + "]}")
-	fmt.Println(">>>>>>>>>>>>>", body)
 	req, err := http.NewRequest("POST", "http://"+btcClient.IP+":"+btcClient.Port, body)
 	if err != nil {
 		return result, NewBTCAPIError(APIError, err)
