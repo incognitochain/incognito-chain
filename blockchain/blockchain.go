@@ -540,7 +540,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // @note: still storage full data of commitments, serialnumbersm snderivator to check double spend
-// @note: this function only work for transaction transfer token/constant within shard
+// @note: this function only work for transaction transfer token/prv within shard
 func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBlock) error {
 	//startTime := time.Now()
 	// Fetch data from block into tx View point

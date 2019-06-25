@@ -52,7 +52,7 @@ const (
 )
 
 var (
-	defaultHomeDir     = common.AppDataDir("constant", false)
+	defaultHomeDir     = common.AppDataDir("incognito", false)
 	defaultConfigFile  = filepath.Join(defaultHomeDir, defaultConfigFilename)
 	defaultDataDir     = filepath.Join(defaultHomeDir, defaultDataDirname)
 	defaultRPCKeyFile  = filepath.Join(defaultHomeDir, "rpc.key")
@@ -92,20 +92,20 @@ type config struct {
 
 	ExternalAddress string `long:"externaladdress" description:"External address"`
 
-	RPCDisableAuth bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
-	RPCUser        string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
-	RPCPass        string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
-	RPCLimitUser   string   `long:"rpclimituser" description:"Username for limited RPC connections"`
-	RPCLimitPass   string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
-	RPCListeners   []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
-	RPCWSListeners []string `long:"rpcwslisten" description:"Add an interface/port to listen for RPC Websocket connections (default port: 19334, testnet: 19334)"`
-	RPCCert        string   `long:"rpccert" description:"File containing the certificate file"`
-	RPCKey         string   `long:"rpckey" description:"File containing the certificate key"`
-	RPCMaxClients  int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
-	RPCMaxWSClients  int      `long:"rpcmaxwsclients" description:"Max number of RPC clients for standard connections"`
-	RPCQuirks      bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
-	DisableRPC     bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
-	DisableTLS     bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
+	RPCDisableAuth  bool     `long:"norpcauth" description:"Disable RPC authorization by username/password"`
+	RPCUser         string   `short:"u" long:"rpcuser" description:"Username for RPC connections"`
+	RPCPass         string   `short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
+	RPCLimitUser    string   `long:"rpclimituser" description:"Username for limited RPC connections"`
+	RPCLimitPass    string   `long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
+	RPCListeners    []string `long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
+	RPCWSListeners  []string `long:"rpcwslisten" description:"Add an interface/port to listen for RPC Websocket connections (default port: 19334, testnet: 19334)"`
+	RPCCert         string   `long:"rpccert" description:"File containing the certificate file"`
+	RPCKey          string   `long:"rpckey" description:"File containing the certificate key"`
+	RPCMaxClients   int      `long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
+	RPCMaxWSClients int      `long:"rpcmaxwsclients" description:"Max number of RPC clients for standard connections"`
+	RPCQuirks       bool     `long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
+	DisableRPC      bool     `long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
+	DisableTLS      bool     `long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
 
 	Proxy     string `long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 	ProxyUser string `long:"proxyuser" description:"Username for proxy server"`
@@ -272,7 +272,7 @@ func removeDuplicateAddresses(addrs []string) []string {
 // 	3) Load configuration file overwriting defaults with any specified options
 // 	4) Parse CLI options and overwrite/add any specified options
 //
-// The above results in Constant functioning properly without any config settings
+// The above results in I functioning properly without any config settings
 // while still allowing the user to override settings with config files and
 // command line options.  Command line options always take precedence.
 */
@@ -519,7 +519,7 @@ func loadConfig() (*config, []string, error) {
 			cfg.RPCListeners = append(cfg.RPCListeners, addr)
 		}
 	}
-	
+
 	// Default RPC Ws to listen on localhost only.
 	if !cfg.DisableRPC && len(cfg.RPCWSListeners) == 0 {
 		addrs, err := net.LookupHost("0.0.0.0")
@@ -564,7 +564,7 @@ func loadConfig() (*config, []string, error) {
 			"::1":       {},
 			"0.0.0.0":   {},
 		}
-		
+
 		for _, addr := range cfg.RPCListeners {
 			host, _, err := net.SplitHostPort(addr)
 			if err != nil {
