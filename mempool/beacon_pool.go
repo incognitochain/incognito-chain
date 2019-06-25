@@ -109,7 +109,7 @@ func (self *BeaconPool) GetBeaconState() uint64 {
 func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-
+	go self.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := self.validateBeaconBlock(block, false)
 	if err != nil {
 		return err

@@ -48,8 +48,10 @@ const (
 	DefaultLimitFee               = uint64(1)
 
 	// For wallet
-	DefaultWalletName     = "wallet"
-	DefaultPersistMempool = false
+	defaultWalletName     = "wallet"
+	defaultPersistMempool = false
+	defaultBtcClient = 0
+	defaultBtcClientPort = "8332"
 )
 
 var (
@@ -135,6 +137,11 @@ type config struct {
 	LoadMempool    bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
 	PersistMempool bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
 	MetricUrl      string `long:"metricurl" description:"Metric URL"`
+	BtcClient      uint `long:"btcclient" description:"Default 0: BlockCypherClient, 1: Self Host Bitcoin Client (Must pass in btcclientip, btcclientport, btcclientusername, btcclientpassword"`
+	BtcClientIP    string  `long:"btcclientip" description:"Bitcoin Client IP (Static IP)"`
+	BtcClientPort  string `long:"btcclientport" description:"Bitcoin Client Port (default 8332)"`
+	BtcClientUsername string `long:"btcclientusername" description:"Bitcoin Client Username for RPC"`
+	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -307,12 +314,14 @@ func loadConfig() (*config, []string, error) {
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             DefaultNodeMode,
 		PrivateKey:           common.EmptyString,
-		FastStartup:          DefaultFastStartup,
-		TxPoolTTL:            DefaultTxPoolTTL,
-		TxPoolMaxTx:          DefaultTxPoolMaxTx,
-		PersistMempool:       DefaultPersistMempool,
-		LimitFee:             DefaultLimitFee,
-		MetricUrl:            DefaultMetricUrl,
+		FastStartup:          defaultFastStartup,
+		TxPoolTTL:            defaultTxPoolTTL,
+		TxPoolMaxTx:          defaultTxPoolMaxTx,
+		PersistMempool:       defaultPersistMempool,
+		LimitFee:             defaultLimitFee,
+		MetricUrl:            defaultMetricUrl,
+		BtcClient:            defaultBtcClient,
+		BtcClientPort:        defaultBtcClientPort,
 	}
 
 	// Service options which are only added on Windows.
