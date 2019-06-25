@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"golang.org/x/net/context"
@@ -220,7 +221,16 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			}
 		}
 	}
-
+	var randomClient btc.RandomClient
+	if cfg.BtcClient == 0 {
+		randomClient = &btc.BlockCypherClient{}
+	} else {
+		if cfg.BtcClientIP == common.EmptyString || cfg.BtcClientUsername == common.EmptyString || cfg.BtcClientPassword == common.EmptyString{
+			Logger.log.Error("Please input Bitcoin Client Ip, Username, password. Otherwise, set btcclient is 0 or leave it to default value")
+			os.Exit(2)
+		}
+		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
+	}
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams:       serverObj.chainParams,
 		DataBase:          serverObj.dataBase,
@@ -234,7 +244,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
 		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:     pubsub,
+		PubsubManager:     pubsub,
+		RandomClient:      randomClient,
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {

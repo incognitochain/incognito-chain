@@ -44,6 +44,8 @@ type NetSyncConfig struct {
 	PubsubManager         *pubsub.PubSubManager
 	TransactionEvent      pubsub.EventChannel
 	RoleInCommitteesEvent pubsub.EventChannel
+	BeaconBlockEvent      pubsub.EventChannel
+	ShardBlockEvent       pubsub.EventChannel
 	RelayShard            []byte
 	RoleInCommittees      int
 	roleInCommitteesMtx   sync.RWMutex
@@ -77,6 +79,10 @@ func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 	netSync.config.TransactionEvent = subChanTx
 	_, subChanRole, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	netSync.config.RoleInCommitteesEvent = subChanRole
+	_, subChanBeaconBlock, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
+	netSync.config.BeaconBlockEvent = subChanBeaconBlock
+	_, subChanShardBlock, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
+	netSync.config.ShardBlockEvent = subChanShardBlock
 	return &netSync
 }
 func (netSync *NetSync) Start() {
@@ -518,6 +524,22 @@ func (netSync *NetSync) cacheLoop() {
 	}
 	for {
 		select {
+		case msg := <-netSync.config.ShardBlockEvent:
+			{
+				if shardBlock, ok := msg.Value.(*blockchain.ShardBlock); !ok {
+					continue
+				} else {
+					go netSync.HandleCacheBlock(*shardBlock.Hash())
+				}
+			}
+		case msg := <-netSync.config.BeaconBlockEvent:
+			{
+				if beaconBlock, ok := msg.Value.(*blockchain.BeaconBlock); !ok {
+					continue
+				} else {
+					go netSync.HandleCacheBlock(*beaconBlock.Hash())
+				}
+			}
 		case msg := <-netSync.config.RoleInCommitteesEvent:
 			{
 				if shardID, ok := msg.Value.(int); !ok {

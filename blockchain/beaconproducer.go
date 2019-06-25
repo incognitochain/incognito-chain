@@ -8,9 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-
+	
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -95,6 +94,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
 	//fmt.Println("[db] NewBlockBeacon GetShardState")
 	tempShardState, staker, swap, stabilityInstructions, acceptedRewardInstructions := blkTmplGenerator.GetShardState(&beaconBestState, shardsToBeacon)
+	bestStateBeacon.InitRandomClient(blkTmplGenerator.chain.config.RandomClient)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions, acceptedRewardInstructions)
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
@@ -290,20 +290,16 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	// ["stake", "pubkey.....", "shard" or "beacon"]
 	instructions = append(instructions, stakers...)
 	if block.Header.Height%common.EPOCH > common.RANDOM_TIME && !bestStateBeacon.IsGetRandomNumber {
-		var err error
+		//=================================
 		// COMMENT FOR TESTING
-		// chainTimeStamp, err := btc.GetCurrentChainTimeStamp()
+		//var err error
+		//chainTimeStamp, err := bestStateBeacon.randomClient.GetCurrentChainTimeStamp()
 		// UNCOMMENT FOR TESTING
 		chainTimeStamp := bestStateBeacon.CurrentRandomTimeStamp + 1
-		if err != nil {
-			panic(err)
-		}
+		//==================================
 		assignedCandidates := make(map[byte][]string)
 		if chainTimeStamp > bestStateBeacon.CurrentRandomTimeStamp {
-			var wg sync.WaitGroup
-			wg.Add(1)
-			randomInstruction, rand := generateRandomInstruction(bestStateBeacon.CurrentRandomTimeStamp, &wg)
-			wg.Wait()
+			randomInstruction, rand := bestStateBeacon.generateRandomInstruction(bestStateBeacon.CurrentRandomTimeStamp)
 			instructions = append(instructions, randomInstruction)
 			Logger.log.Critical("RandomNumber", randomInstruction)
 			for _, candidate := range shardCandidates {
@@ -501,20 +497,32 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 //===================================Util for Beacon=============================
 
 // ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-func generateRandomInstruction(timestamp int64, wg *sync.WaitGroup) ([]string, int64) {
+func (bestStateBeacon *BestStateBeacon) generateRandomInstruction(timestamp int64) ([]string, int64) {
 	//COMMENT FOR TESTING
-	// msg := make(chan string)
-	// go btc.GenerateRandomNumber(timestamp, msg)
-	// res := <-msg
-	// reses := strings.Split(res, (","))
-	strs := []string{}
-	//UNCOMMENT FOR TESTTING
+	//var (
+	//	blockHeight int
+	//	chainTimestamp int64
+	//	nonce int64
+	//  strs []string
+	//	err error
+	//)
+	//for {
+	//	blockHeight, chainTimestamp, nonce, err = bestStateBeacon.randomClient.GetNonceByTimestamp(timestamp)
+	//	if err == nil {
+	//		break
+	//	}
+	//}
+	//strs = append(strs, "random")
+	//strs = append(strs, strconv.Itoa(int(nonce)))
+	//strs = append(strs, strconv.Itoa(blockHeight))
+	//strs = append(strs, strconv.Itoa(int(timestamp)))
+	//strs = append(strs, strconv.Itoa(int(chainTimestamp)))
 	//@NOTICE: Hard Code for testing
+	var	strs []string
 	reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
 	strs = append(strs, RandomAction)
 	strs = append(strs, reses...)
 	strs = append(strs, strconv.Itoa(int(timestamp)))
-	wg.Done()
 	return strs, int64(1000)
 }
 
