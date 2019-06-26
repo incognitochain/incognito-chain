@@ -44,7 +44,7 @@ func TestRegisterNewSubcribeWithUnregisteredTopic(t *testing.T) {
 	if id != 0 {
 		t.Error("Wrong Event ID")
 	}
-	if pubsubErr, ok := err.(*PubsubError); !ok {
+	if pubsubErr, ok := err.(*PubSubError); !ok {
 		t.Error("Wrong error type")
 	} else {
 		if pubsubErr.Code != -1002 {

@@ -225,7 +225,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if cfg.BtcClient == 0 {
 		randomClient = &btc.BlockCypherClient{}
 	} else {
-		if cfg.BtcClientIP == common.EmptyString || cfg.BtcClientUsername == common.EmptyString || cfg.BtcClientPassword == common.EmptyString{
+		if cfg.BtcClientIP == common.EmptyString || cfg.BtcClientUsername == common.EmptyString || cfg.BtcClientPassword == common.EmptyString {
 			Logger.log.Error("Please input Bitcoin Client Ip, Username, password. Otherwise, set btcclient is 0 or leave it to default value")
 			os.Exit(2)
 		}
@@ -244,7 +244,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		UserKeySet:        serverObj.userKeySet,
 		NodeMode:          cfg.NodeMode,
 		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
-		PubsubManager:     pubsub,
+		PubSubManager:     pubsub,
 		RandomClient:      randomClient,
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
@@ -325,7 +325,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		PersistMempool:    cfg.PersistMempool,
 		RelayShards:       relayShards,
 		UserKeyset:        serverObj.userKeySet,
-		PubsubManager:     serverObj.pusubManager,
+		PubSubManager:     serverObj.pusubManager,
 	})
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
@@ -339,7 +339,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ChainParams:   chainParams,
 		FeeEstimator:  serverObj.feeEstimator,
 		MaxTx:         cfg.TxPoolMaxTx,
-		PubsubManager: pubsub,
+		PubSubManager: pubsub,
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
@@ -360,7 +360,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		BlockGen:          serverObj.blockgen,
 		NodeMode:          cfg.NodeMode,
 		UserKeySet:        serverObj.userKeySet,
-		PubsubManager:     serverObj.pusubManager,
+		PubSubManager:     serverObj.pusubManager,
 	})
 	if err != nil {
 		return err
@@ -375,7 +375,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		Consensus:         serverObj.consensusEngine,
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
-		PubsubManager:     serverObj.pusubManager,
+		PubSubManager:     serverObj.pusubManager,
 		RelayShard:        relayShards,
 		RoleInCommittees:  -1,
 	})
@@ -457,7 +457,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
 			MiningPubKeyB58: miningPubkeyB58,
 			NetSync:         serverObj.netSync,
-			PubsubManager:   pubsub,
+			PubSubManager:   pubsub,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)

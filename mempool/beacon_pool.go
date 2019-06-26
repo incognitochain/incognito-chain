@@ -34,7 +34,7 @@ type BeaconPool struct {
 	cache                 *lru.Cache
 	RoleInCommittees      bool //Current Role of Node
 	RoleInCommitteesEvent pubsub.EventChannel
-	PubsubManager         *pubsub.PubSubManager
+	PubSubManager         *pubsub.PubSubManager
 }
 
 var beaconPool *BeaconPool = nil
@@ -55,8 +55,8 @@ func InitBeaconPool(pubsubManager *pubsub.PubSubManager) {
 	//do nothing
 	beaconPool := GetBeaconPool()
 	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
-	beaconPool.PubsubManager = pubsubManager
-	_, subChanRole, _ := beaconPool.PubsubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
+	beaconPool.PubSubManager = pubsubManager
+	_, subChanRole, _ := beaconPool.PubSubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
 	beaconPool.RoleInCommitteesEvent = subChanRole
 }
 
@@ -109,7 +109,7 @@ func (self *BeaconPool) GetBeaconState() uint64 {
 func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-	go self.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
+	go self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := self.validateBeaconBlock(block, false)
 	if err != nil {
 		return err
