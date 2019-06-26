@@ -35,7 +35,7 @@ type Config struct {
 	PersistMempool        bool
 	RelayShards           []byte
 	UserKeyset            *cashec.KeySet
-	PubsubManager         *pubsub.PubSubManager
+	PubSubManager         *pubsub.PubSubManager
 	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.EventChannel
 }
@@ -81,7 +81,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 	tp.IsUnlockMempool = true
-	_, subChanRole, _ := tp.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
 }
 func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
@@ -545,7 +545,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	go func(txHash common.Hash) {
-		tp.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
+		tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
 	}(*tx.Hash())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
 		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -619,7 +619,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 			}
 		}
 		// Publish Message
-		go tp.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
+		go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
 	}
 	return hash, txDesc, err
 }
