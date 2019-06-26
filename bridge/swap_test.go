@@ -20,7 +20,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -119,7 +118,7 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 func getBridgeSwapProof() string {
 	url := "http://127.0.0.1:9338"
 
-	block := 97
+	block := 18
 	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbridgeswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
 
 	req, _ := http.NewRequest("POST", url, payload)
@@ -148,7 +147,7 @@ func getBridgeSwapProof() string {
 func getBeaconSwapProof() string {
 	url := "http://127.0.0.1:9338"
 
-	block := 18
+	block := 11
 	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbeaconswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
 
 	req, _ := http.NewRequest("POST", url, payload)
