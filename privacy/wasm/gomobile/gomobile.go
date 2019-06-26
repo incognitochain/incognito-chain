@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func add(i ...int) interface{} {
+func Add(i ...int) interface{} {
 	ret := 0
 
 	for _, item := range i {
@@ -19,17 +19,17 @@ func add(i ...int) interface{} {
 	return ret
 }
 
-func sayHello(i string) interface{} {
+func SayHello(i string) interface{} {
 	println("Hello %s \n", i)
 	return i
 }
 
-func randomScalar() interface{} {
+func RandomScalar() interface{} {
 	res := privacy.RandBytes(1)
 	return res
 }
 
-func aggregatedRangeProve(args []string) interface{} {
+func AggregatedRangeProve(args []string) interface{} {
 	println("args:", args[0])
 	bytes := []byte(args[0])
 	println("Bytes:", bytes)
