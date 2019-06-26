@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-
-	pubsub "github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
@@ -38,7 +38,6 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
-	PubSub           PubSub
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -62,6 +61,7 @@ type Config struct {
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
 	PubSubManager     *pubsub.PubSubManager
+	RandomClient      btc.RandomClient
 	Server            interface {
 		BoardcastNodeState() error
 
@@ -82,12 +82,6 @@ type Config struct {
 		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	}
 	UserKeySet *cashec.KeySet
-}
-
-type PubSub struct {
-	mtx                 sync.RWMutex
-	NewShardBlockEvent  map[int]chan *ShardBlock
-	NewBeaconBlockEvent map[int]chan *BeaconBlock
 }
 
 /*
@@ -119,8 +113,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		blockchain: blockchain,
 		cQuit:      blockchain.cQuitSync,
 	}
-	blockchain.PubSub.NewBeaconBlockEvent = make(map[int]chan *BeaconBlock)
-	blockchain.PubSub.NewShardBlockEvent = make(map[int]chan *ShardBlock)
 	return nil
 }
 

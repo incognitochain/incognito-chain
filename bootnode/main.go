@@ -11,8 +11,8 @@ var (
 )
 
 func main() {
-	// Show version at startup.
-	log.Printf("Version %s\n", version)
+	// Show Version at startup.
+	log.Printf("Version %s\n", Version)
 
 	// load config
 	tcfg, err := loadConfig()
@@ -22,17 +22,21 @@ func main() {
 	}
 	cfg = tcfg
 
+	// create RPC config for RPC server
 	rpcConfig := server.RpcServerConfig{
 		Port: cfg.RPCPort,
 	}
 	server := &server.RpcServer{}
+	// Init RPC server in golang
 	err = server.Init(&rpcConfig)
+
 	if err != nil {
 		log.Println("Init bootnode error", err.Error())
 		return
 	}
 	log.Printf("Start server with config \n %+v", server.Config)
 	for {
+		// Start server and listen request from rpc client
 		server.Start()
 	}
 }

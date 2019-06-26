@@ -1,5 +1,9 @@
+# Download bitcoin and run node
+## Download Bitcoin Core client: 
+https://bitcoin.org/en/download
+## Run Bitcoin Core Client via this script
+`$ bitcoind -server -rest -rpcport=8332 -rpcallowip=0.0.0.0/0 -rpcbind=0.0.0.0 -rpcuser=[username] -rpcpassword=[password]`
 # JSON RPC Result
-
 ## Get Blockchain Current Infomation
 `$ curl --user username:password --data-binary '{"jsonrpc":"1.0","id":"curltext","method":"getblockchaininfo","params":[]}' -H 'content-type:text/plain;' http://159.65.142.153:8332`
 ```

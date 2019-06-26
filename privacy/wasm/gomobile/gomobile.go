@@ -1,41 +1,39 @@
-package main
+package gomobile
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"math/big"
 	"time"
-
-	"strconv"
-	"syscall/js"
 )
 
-func add(this js.Value, i []js.Value) interface{} {
+func add(i ...int) interface{} {
 	ret := 0
 
 	for _, item := range i {
-		val, _ := strconv.Atoi(item.String())
-		ret += val
+		ret += item
 	}
 
 	return ret
 }
 
-func sayHello(this js.Value, i []js.Value) interface{} {
-	println("Hello %s \n", i[0].String())
-	return i[0].String()
+func sayHello(i string) interface{} {
+	println("Hello %s \n", i)
+	return i
 }
 
-func randomScalar(this js.Value, i []js.Value) interface{} {
+func randomScalar() interface{} {
 	res := privacy.RandBytes(1)
 	return res
 }
 
-func aggregatedRangeProve(this js.Value, args []js.Value) interface{} {
-	println("args:", args[0].String())
-	bytes := []byte(args[0].String())
+//
+// [["100", "200"], ["1", "2"]]
+func aggregatedRangeProve(args []string) interface{} {
+	println("args:", args[0])
+	bytes := []byte(args[0])
 	println("Bytes:", bytes)
 	temp := make(map[string][]string)
 
@@ -73,21 +71,8 @@ func aggregatedRangeProve(this js.Value, args []js.Value) interface{} {
 	proofBytes := proof.Bytes()
 	println("Proof bytes: ", proofBytes)
 
-	/*res := proof.Verify()
-	println("Res Verify: ", res)*/
-
 	proofBase64 := base64.StdEncoding.EncodeToString(proofBytes)
 	println("proofBase64: %v\n", proofBase64)
 
 	return proofBase64
-}
-
-func main() {
-	c := make(chan struct{}, 0)
-	println("Hello WASM")
-	js.Global().Set("add", js.FuncOf(add))
-	js.Global().Set("sayHello", js.FuncOf(sayHello))
-	js.Global().Set("randomScalar", js.FuncOf(randomScalar))
-	js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
-	<-c
 }
