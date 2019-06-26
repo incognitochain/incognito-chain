@@ -403,7 +403,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 			}
 		}
-
+		beaconBestState.InitRandomClient(blockchain.config.RandomClient)
 		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions, acceptedBlockRewardInstructions)
 		if len(rewardByEpochInstruction) != 0 {
 			tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
