@@ -34,17 +34,28 @@ type WalletConfig struct {
 	ShardID        *byte //default is nil -> create account for any shard
 }
 
+// GetConfig returns configuration of wallet
 func (wallet Wallet) GetConfig() *WalletConfig {
 	return wallet.config
 }
 
+// SetConfig sets config to configuration of wallet
 func (wallet *Wallet) SetConfig(config *WalletConfig) {
 	wallet.config = config
 }
 
+// Init initializes new wallet with pass phrase, number of accounts and wallet name
+// It returns error if there are any errors when initializing wallet. Otherwise, it returns nil
+// passPhrase can be empty string, it is used to generate seed and master key
+// If numOfAccount equals zero, wallet is initialized with one account
+// If name is empty string, wallet name is default name
 func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) error {
 	mnemonicGen := MnemonicGenerator{}
-	wallet.Name = name
+	if name == "" {
+		wallet.Name = WalletNameDefault
+	} else {
+		wallet.Name = name
+	}
 	wallet.Entropy, _ = mnemonicGen.NewEntropy(128)
 	wallet.Mnemonic, _ = mnemonicGen.NewMnemonic(wallet.Entropy)
 	wallet.Seed = mnemonicGen.NewSeed(wallet.Mnemonic, passPhrase)
