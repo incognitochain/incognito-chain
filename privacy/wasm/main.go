@@ -8,7 +8,7 @@ import (
 
 func add(_ js.Value, args []js.Value) interface{} {
 	a, _ := strconv.Atoi(args[0].String())
-	b, _ := strconv.Atoi(args[0].String())
+	b, _ := strconv.Atoi(args[1].String())
 	return gomobile.Add(a, b)
 }
 
