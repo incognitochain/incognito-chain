@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"fmt"
 	"sort"
 	"strconv"
@@ -57,20 +58,22 @@ type BestStateBeacon struct {
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
-
 	ShardHandle map[byte]bool `json:"ShardHandle"` // lock sync.RWMutex
 	lockMu      sync.RWMutex
+	randomClient btc.RandomClient
 }
-
-func (s *BestStateBeacon) MarshalJSON() ([]byte, error) {
-	s.lockMu.RLock()
-	defer s.lockMu.RUnlock()
+func (bestStateBeacon *BestStateBeacon) InitRandomClient (randomClient btc.RandomClient) {
+	bestStateBeacon.randomClient = randomClient
+}
+func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 
 	type Alias BestStateBeacon
 	b, err := json.Marshal(&struct {
 		*Alias
 	}{
-		(*Alias)(s),
+		(*Alias)(bestStateBeacon),
 	})
 	if err != nil {
 		Logger.log.Error(err)

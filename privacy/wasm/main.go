@@ -73,8 +73,8 @@ func aggregatedRangeProve(this js.Value, args []js.Value) interface{} {
 	proofBytes := proof.Bytes()
 	println("Proof bytes: ", proofBytes)
 
-	res := proof.Verify()
-	println("Res Verify: ", res)
+	/*res := proof.Verify()
+	println("Res Verify: ", res)*/
 
 	proofBase64 := base64.StdEncoding.EncodeToString(proofBytes)
 	println("proofBase64: %v\n", proofBase64)
