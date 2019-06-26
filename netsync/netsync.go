@@ -41,7 +41,7 @@ type NetSyncConfig struct {
 	TxMemPool             *mempool.TxPool
 	ShardToBeaconPool     blockchain.ShardToBeaconPool
 	CrossShardPool        map[byte]blockchain.CrossShardPool
-	PubsubManager         *pubsub.PubSubManager
+	PubSubManager         *pubsub.PubSubManager
 	TransactionEvent      pubsub.EventChannel
 	RoleInCommitteesEvent pubsub.EventChannel
 	BeaconBlockEvent      pubsub.EventChannel
@@ -75,13 +75,13 @@ func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 		txCache:    txCache,
 		blockCache: blockCache,
 	}
-	_, subChanTx, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.TransactionHashEnterNodeTopic)
+	_, subChanTx, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.TransactionHashEnterNodeTopic)
 	netSync.config.TransactionEvent = subChanTx
-	_, subChanRole, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	_, subChanRole, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	netSync.config.RoleInCommitteesEvent = subChanRole
-	_, subChanBeaconBlock, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
+	_, subChanBeaconBlock, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	netSync.config.BeaconBlockEvent = subChanBeaconBlock
-	_, subChanShardBlock, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
+	_, subChanShardBlock, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	netSync.config.ShardBlockEvent = subChanShardBlock
 	return &netSync
 }

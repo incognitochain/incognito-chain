@@ -60,7 +60,7 @@ type Config struct {
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
-	PubsubManager     *pubsub.PubSubManager
+	PubSubManager     *pubsub.PubSubManager
 	RandomClient      btc.RandomClient
 	Server            interface {
 		BoardcastNodeState() error
@@ -83,6 +83,7 @@ type Config struct {
 	}
 	UserKeySet *cashec.KeySet
 }
+
 /*
 Init - init a blockchain view from config
 */
