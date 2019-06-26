@@ -246,7 +246,7 @@ func (mnemonicGen *MnemonicGenerator) NewSeedWithErrorChecking(mnemonic string, 
 // NewSeed creates a hashed Seed output given a provided string and password.
 // No checking is performed to validate that the string provided is a valid Mnemonic.
 func (mnemonicGen *MnemonicGenerator) NewSeed(mnemonic string, password string) []byte {
-	return pbkdf2.Key([]byte(mnemonic), []byte("Mnemonic"+password), 2048, 64, sha512.New)
+	return pbkdf2.Key([]byte(mnemonic), []byte("Mnemonic"+password), 2048, SeedKeyLen, sha512.New)
 }
 
 // IsMnemonicValid attempts to verify that the provided Mnemonic is valid.
