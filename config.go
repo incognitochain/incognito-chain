@@ -28,28 +28,30 @@ const (
 	DefaultDatabaseDirname        = "block"
 	DefaultDatabaseMempoolDirname = "mempool"
 	DefaultLogLevel               = "info"
-	DefaultLogDirname             = "logs"
-	DefaultLogFilename            = "log.log"
-	DefaultMaxPeers               = 125
-	DefaultMaxPeersSameShard      = 50
-	DefaultMaxPeersOtherShard     = 50
-	DefaultMaxPeersOther          = 125
-	DefaultMaxPeersNoShard        = 125
-	DefaultMaxPeersBeacon         = 50
-	DefaultMaxRPCClients          = 20
-	DefaultMaxRPCWsClients        = 20
-	DefaultMetricUrl              = ""
-	SampleConfigFilename          = "sample-config.conf"
-	DefaultDisableRpcTLS          = true
-	DefaultFastStartup            = true
-	DefaultNodeMode               = common.NODEMODE_RELAY
-	DefaultTxPoolTTL              = uint(86400) * 10 // in second
-	DefaultTxPoolMaxTx            = uint64(100000)
-	DefaultLimitFee               = uint64(1)
+	DefaultLogDirname         = "logs"
+	DefaultLogFilename        = "log.log"
+	DefaultMaxPeers           = 125
+	DefaultMaxPeersSameShard  = 50
+	DefaultMaxPeersOtherShard = 50
+	DefaultMaxPeersOther      = 125
+	DefaultMaxPeersNoShard    = 125
+	DefaultMaxPeersBeacon     = 50
+	DefaultMaxRPCClients      = 20
+	DefaultMaxRPCWsClients    = 20
+	DefaultMetricUrl          = ""
+	SampleConfigFilename      = "sample-config.conf"
+	DefaultDisableRpcTLS      = true
+	DefaultFastStartup        = true
+	DefaultNodeMode           = common.NODEMODE_RELAY
+	DefaultTxPoolTTL          = uint(86400) * 10 // in second
+	DefaultTxPoolMaxTx        = uint64(100000)
+	DefaultLimitFee           = uint64(1)
 
 	// For wallet
 	DefaultWalletName     = "wallet"
 	DefaultPersistMempool = false
+	DefaultBtcClient      = 0
+	DefaultBtcClientPort  = "8332"
 )
 
 var (
@@ -135,6 +137,11 @@ type config struct {
 	LoadMempool    bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
 	PersistMempool bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
 	MetricUrl      string `long:"metricurl" description:"Metric URL"`
+	BtcClient      uint `long:"btcclient" description:"Default 0: BlockCypherClient, 1: Self Host Bitcoin Client (Must pass in btcclientip, btcclientport, btcclientusername, btcclientpassword"`
+	BtcClientIP    string  `long:"btcclientip" description:"Bitcoin Client IP (Static IP)"`
+	BtcClientPort  string `long:"btcclientport" description:"Bitcoin Client Port (default 8332)"`
+	BtcClientUsername string `long:"btcclientusername" description:"Bitcoin Client Username for RPC"`
+	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -313,6 +320,8 @@ func loadConfig() (*config, []string, error) {
 		PersistMempool:       DefaultPersistMempool,
 		LimitFee:             DefaultLimitFee,
 		MetricUrl:            DefaultMetricUrl,
+		BtcClient:            DefaultBtcClient,
+		BtcClientPort:        DefaultBtcClientPort,
 	}
 
 	// Service options which are only added on Windows.
