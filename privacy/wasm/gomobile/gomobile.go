@@ -29,6 +29,7 @@ func RandomScalar() interface{} {
 	return res
 }
 
+// [["100", "200"], ["1", "2"]]
 func AggregatedRangeProve(args []string) interface{} {
 	println("args:", args[0])
 	bytes := []byte(args[0])
