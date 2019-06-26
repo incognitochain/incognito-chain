@@ -24,9 +24,9 @@ func RandomScalar() string {
 }
 
 //// ["["100", "200"]", "["1", "2"]"]
-func AggregatedRangeProve(args []string) string {
-	println("args:", args[0])
-	bytes := []byte(args[0])
+func AggregatedRangeProve(args string) string {
+	println("args:", args)
+	bytes := []byte(args)
 	println("Bytes:", bytes)
 	temp := make(map[string][]string)
 
