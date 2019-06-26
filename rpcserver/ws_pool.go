@@ -18,7 +18,7 @@ func (wsServer *WsServer) handleSubcribeMempoolInfo(params interface{}, subcript
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubscriber(pubsub.MempoolInfoTopic)
+	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.MempoolInfoTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -26,7 +26,7 @@ func (wsServer *WsServer) handleSubcribeMempoolInfo(params interface{}, subcript
 	}
 	defer func() {
 		Logger.log.Info("Finish Subcribe Mempool Informantion")
-		wsServer.config.PubsubManager.Unsubscribe(pubsub.MempoolInfoTopic, subId)
+		wsServer.config.PubSubManager.Unsubscribe(pubsub.MempoolInfoTopic, subId)
 		close(cResult)
 	}()
 	for {

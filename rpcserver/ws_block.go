@@ -19,7 +19,7 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
+	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -27,7 +27,7 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe New Shard Block ShardID ", shardID)
-		wsServer.config.PubsubManager.Unsubscribe(pubsub.NewShardblockTopic, subId)
+		wsServer.config.PubSubManager.Unsubscribe(pubsub.NewShardblockTopic, subId)
 		close(cResult)
 	}()
 	for {
@@ -68,7 +68,7 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
+	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -76,7 +76,7 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe New Beacon Block")
-		wsServer.config.PubsubManager.Unsubscribe(pubsub.NewBeaconBlockTopic, subId)
+		wsServer.config.PubSubManager.Unsubscribe(pubsub.NewBeaconBlockTopic, subId)
 		close(cResult)
 	}()
 	for {
