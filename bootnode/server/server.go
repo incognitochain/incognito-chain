@@ -50,23 +50,25 @@ func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
 	rpcServer.Peers = make(map[string]*Peer)
 	rpcServer.server = rpc.NewServer()
 	// start go routin hertbeat to check invalid peers
-	go rpcServer.PeerHeartBeat()
+	go rpcServer.PeerHeartBeat(HeartbeatTimeout)
 }
 
 // Start - create handler and add into rpc server
 // Listen and serve rpc server with config port
-func (rpcServer *RpcServer) Start() {
+func (rpcServer *RpcServer) Start() error {
 	handler := &Handler{rpcServer}
 	rpcServer.server.Register(handler)
 	l, e := net.Listen("tcp", fmt.Sprintf(":%d", rpcServer.Config.Port))
 	if e != nil {
 		log.Fatal("listen error:", e)
+		return e
 	}
 	rpcServer.server.Accept(l)
 	l.Close()
+	return nil
 }
 
-// AddOrUpdatePeer - push a connected peer in to list of mem
+// AddOrUpdatePeer - push a connected peer in to list of mem or update an old peer node
 func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) error {
 	rpcServer.peersMtx.Lock()
 	defer rpcServer.peersMtx.Unlock()
@@ -88,6 +90,7 @@ func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 stri
 	return nil
 }
 
+// RemovePeerByPbk - remove peer from mem of bootnode
 func (rpcServer *RpcServer) RemovePeerByPbk(publicKey string) {
 	delete(rpcServer.Peers, publicKey)
 }
@@ -102,13 +105,13 @@ func (rpcServer *RpcServer) CombineID(rawAddress string, publicKey string) strin
 // PeerHeartBeat - loop forever after HeartbeatInterval to check peers
 // which are not connected to remove from bootnode
 // use Last Ping time to compare with time.now
-func (rpcServer *RpcServer) PeerHeartBeat() {
+func (rpcServer *RpcServer) PeerHeartBeat(heartbeatTimeout int) {
 	for {
 		now := time.Now().Local()
 		if len(rpcServer.Peers) > 0 {
 		loop:
 			for publicKey, peer := range rpcServer.Peers {
-				if now.Sub(peer.LastPing).Seconds() > HeartbeatTimeout {
+				if now.Sub(peer.LastPing).Seconds() > float64(heartbeatTimeout) {
 					rpcServer.RemovePeerByPbk(publicKey)
 					goto loop
 				}
