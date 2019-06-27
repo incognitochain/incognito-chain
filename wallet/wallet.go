@@ -165,7 +165,7 @@ func (wallet *Wallet) ExportAccount(childIndex uint32) string {
 	return wallet.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
 
-func (wallet *Wallet) RemoveAccount(privateKeyStr string, accountName string, passPhrase string) error {
+func (wallet *Wallet) RemoveAccount(privateKeyStr string, passPhrase string) error {
 	if passPhrase != wallet.PassPhrase {
 		return NewWalletError(WrongPassphraseErr, nil)
 	}
