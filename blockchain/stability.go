@@ -60,7 +60,7 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	metaType := []byte(inst[0])
 	shardID := []byte(inst[1])
 	tokenID, _ := common.NewHashFromStr(inst[2])
-	remoteAddr, _ := hex.DecodeString(inst[3])
+	remoteAddr, _ := decodeRemoteAddr(inst[3])
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
 	txID, _ := common.NewHashFromStr(inst[5])
 	flatten := []byte{}
@@ -71,6 +71,17 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
 	flatten = append(flatten, txID[:]...)
 	return flatten
+}
+
+// decodeRemoteAddr converts address string to 32 bytes slice
+func decodeRemoteAddr(addr string) ([]byte, error) {
+	remoteAddr, err := hex.DecodeString(addr)
+	if err != nil {
+		return nil, err
+	}
+	addrFixedLen := [32]byte{}
+	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
+	return addrFixedLen[:], nil
 }
 
 // toBytes32BigEndian converts a Big.Int bytes to uint256 for of Ethereum
