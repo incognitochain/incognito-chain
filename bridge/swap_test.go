@@ -22,6 +22,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/bridge/incognito_proxy"
 	"github.com/incognitochain/incognito-chain/bridge/vault"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -30,15 +31,22 @@ const max_path = 4
 const comm_size = 1 << max_path
 const pubkey_length = comm_size * max_path
 const inst_size = 1 << max_path
-const inst_length = 120
+const inst_length = 150
 
 var genesisKey *ecdsa.PrivateKey
 var auth *bind.TransactOpts
 
 type Platform struct {
-	inc   *incognito_proxy.IncognitoProxy
-	vault *vault.Vault
-	sim   *backends.SimulatedBackend
+	inc       *incognito_proxy.IncognitoProxy
+	incAddr   common.Address
+	vault     *vault.Vault
+	vaultAddr common.Address
+	sim       *backends.SimulatedBackend
+}
+
+func (p *Platform) getBalance(addr common.Address) *big.Int {
+	bal, _ := p.sim.BalanceAt(context.Background(), addr, nil)
+	return bal
 }
 
 func keccak256(b ...[]byte) [32]byte {
@@ -69,6 +77,7 @@ func setup(beaconCommRoot, bridgeCommRoot [32]byte) (*Platform, error) {
 
 	p.printReceipt(tx)
 	p.inc = inc
+	p.incAddr = incognitoAddr
 	fmt.Printf("deployed bridge, addr: %x\n", incognitoAddr)
 
 	vaultAddr, tx, vault, err := vault.DeployVault(auth, sim, incognitoAddr)
@@ -79,12 +88,71 @@ func setup(beaconCommRoot, bridgeCommRoot [32]byte) (*Platform, error) {
 
 	p.printReceipt(tx)
 	p.vault = vault
+	p.vaultAddr = vaultAddr
 	fmt.Printf("deployed bridge, addr: %x\n", vaultAddr)
 	return p, nil
 }
 
-func setupWithoutCommittee() (*Platform, error) {
-	return setup([32]byte{}, [32]byte{})
+func setupWithCommittee() (*Platform, error) {
+	url := "http://127.0.0.1:9334"
+
+	payload := strings.NewReader("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbeaconbeststate\",\n    \"params\": []\n}")
+
+	req, _ := http.NewRequest("POST", url, payload)
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Cache-Control", "no-cache")
+	req.Header.Add("Host", "127.0.0.1:9334")
+	req.Header.Add("accept-encoding", "gzip, deflate")
+	req.Header.Add("Connection", "keep-alive")
+	req.Header.Add("cache-control", "no-cache")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	type beaconBestStateResult struct {
+		BeaconCommittee []string
+		ShardCommittee  map[string][]string
+	}
+
+	type getBeaconBestStateResult struct {
+		Result beaconBestStateResult
+		Error  string
+		Id     int
+	}
+
+	r := getBeaconBestStateResult{}
+	err = json.Unmarshal([]byte(body), &r)
+	if err != nil {
+		return nil, err
+	}
+
+	// Genesis committee
+	beaconOldFlat := [][]byte{}
+	for i, val := range r.Result.BeaconCommittee {
+		pk, _, _ := base58.Base58Check{}.Decode(val)
+		fmt.Printf("pk[%d]: %x %d\n", i, pk, len(pk))
+		fmt.Printf("hash(pk[%d]): %x\n", i, keccak256(pk))
+		beaconOldFlat = append(beaconOldFlat, pk)
+	}
+	beaconOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(beaconOldFlat))
+	fmt.Printf("beaconOldRoot: %x\n", beaconOldRoot[:])
+
+	bridgeOldFlat := [][]byte{}
+	for _, val := range r.Result.ShardCommittee["1"] {
+		pk, _, _ := base58.Base58Check{}.Decode(val)
+		bridgeOldFlat = append(bridgeOldFlat, pk)
+	}
+	bridgeOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(bridgeOldFlat))
+	fmt.Printf("bridgeOldRoot: %x\n", bridgeOldRoot[:])
+
+	return setup(beaconOldRoot, bridgeOldRoot)
 }
 
 type account struct {
@@ -129,6 +197,9 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 		case "0x8e2fc7b10a4f77a18c553db9a8f8c24d9e379da2557cb61ad4cc513a2f992cbd":
 			format = "%s"
 			data = big.NewInt(int64(0)).SetBytes(log.Data)
+		case "0x0ac6e167e94338a282ec23bdd86f338fc787bd67f48b3ade098144aac3fcd86e":
+			format = "%x"
+			data = log.Data[12:]
 		}
 
 		fmt.Printf(fmt.Sprintf("logs[%%d]: %s\n", format), i, data)
@@ -347,30 +418,7 @@ func TestSwapBeacon(t *testing.T) {
 	proof := decodeProof(&r)
 	_ = proof
 
-	// Genesis committee
-	beaconOldFlat := [][]byte{}
-	for i, val := range r.Result.BeaconSignerPubkeys {
-		pk, _ := hex.DecodeString(val)
-		fmt.Printf("pk[%d]: %x %d\n", i, pk, len(pk))
-		fmt.Printf("hash(pk[%d]): %x\n", i, keccak256(pk))
-		beaconOldFlat = append(beaconOldFlat, pk)
-	}
-	beaconOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(beaconOldFlat))
-	tmpMerkles := blockchain.BuildKeccak256MerkleTree(beaconOldFlat)
-	for i, m := range tmpMerkles {
-		fmt.Printf("merkles[%d]: %x\n", i, m)
-	}
-	fmt.Printf("beaconOldRoot: %x\n", beaconOldRoot[:])
-
-	bridgeOldFlat := [][]byte{}
-	for _, val := range r.Result.BridgeSignerPubkeys {
-		pk, _ := hex.DecodeString(val)
-		bridgeOldFlat = append(bridgeOldFlat, pk)
-	}
-	bridgeOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(bridgeOldFlat))
-	fmt.Printf("bridgeOldRoot: %x\n", bridgeOldRoot[:])
-
-	p, err := setup(beaconOldRoot, bridgeOldRoot)
+	p, err := setupWithCommittee()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -414,10 +462,6 @@ func TestSwapBeacon(t *testing.T) {
 	p.printReceipt(tx)
 }
 
-func getBurnProof() string {
-	return ""
-}
-
 func TestBurn(t *testing.T) {
 	body := getBurnProof()
 	if len(body) < 1 {
@@ -430,11 +474,28 @@ func TestBurn(t *testing.T) {
 		t.Error(err)
 	}
 	proof := decodeProof(&r)
+	_ = proof
 
-	p, err := setupWithoutCommittee()
+	p, err := setupWithCommittee()
 	if err != nil {
 		t.Fatalf("Fail to deloy contract: %v\n", err)
 	}
+
+	oldBalance, newBalance, err := deposit(p, 100000)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("deposit to vault: %d -> %d\n", oldBalance, newBalance)
+
+	// tokenID := proof.instruction[3:35]
+	// to := proof.instruction[35:67]
+	// amount := big.NewInt(0).SetBytes(proof.instruction[67:99])
+	// fmt.Printf("tokenID: %x\n", tokenID)
+	// fmt.Printf("to: %x\n", to)
+	// fmt.Printf("amount: %s\n", amount.String())
+
+	withdrawer := common.HexToAddress("0xe722D8b71DCC0152D47D2438556a45D3357d631f")
+	fmt.Printf("withdrawer init balance: %d\n", p.getBalance(withdrawer))
 
 	auth.GasLimit = 6000000
 	tx, err := p.vault.Withdraw(
@@ -472,10 +533,65 @@ func TestBurn(t *testing.T) {
 	}
 	p.sim.Commit()
 	p.printReceipt(tx)
+
+	fmt.Printf("withdrawer new balance: %d\n", p.getBalance(withdrawer))
+}
+
+func deposit(p *Platform, amount int64) (*big.Int, *big.Int, error) {
+	initBalance := p.getBalance(p.vaultAddr)
+	auth := bind.NewKeyedTransactor(genesisKey)
+	auth.Value = big.NewInt(amount)
+	_, err := p.vault.Deposit(auth, "")
+	if err != nil {
+		return nil, nil, err
+	}
+	p.sim.Commit()
+	newBalance := p.getBalance(p.vaultAddr)
+	return initBalance, newBalance, nil
+}
+
+func getBurnProof() string {
+	url := "http://127.0.0.1:9338"
+
+	txID := "af58af3ea4cf3df3b6b3108663647c70529b7cb1b65023ec597f80ce1f8bee70"
+	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getburnproof\",\n    \"params\": [\n    \t\"%s\"\n    ]\n}", txID))
+
+	req, _ := http.NewRequest("POST", url, payload)
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Cache-Control", "no-cache")
+	req.Header.Add("Host", "127.0.0.1:9338")
+	req.Header.Add("accept-encoding", "gzip, deflate")
+	req.Header.Add("Connection", "keep-alive")
+	req.Header.Add("cache-control", "no-cache")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("err:", err)
+		return ""
+	}
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	//fmt.Println(string(body))
+	return string(body)
+}
+
+func TestExtract(t *testing.T) {
+	p, err := setupWithCommittee()
+	if err != nil {
+		t.Fatalf("Fail to deloy contract: %v\n", err)
+	}
+
+	a, _ := hex.DecodeString("000000000000000000000000e722D8b71DCC0152D47D2438556a45D3357d631f")
+	addr, err := p.vault.TestExtract(nil, a)
+	fmt.Printf("addr: %x\n", addr)
 }
 
 func TestCallFunc(t *testing.T) {
-	p, err := setupWithoutCommittee()
+	p, err := setupWithCommittee()
 	if err != nil {
 		t.Fatalf("Fail to deloy contract: %v\n", err)
 	}
