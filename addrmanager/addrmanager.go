@@ -136,26 +136,26 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 	}
 	defer r.Close()
 
-	var sam serializedAddrManager
+	var storageData serializedAddrManager
 	dec := json.NewDecoder(r)
-	err = dec.Decode(&sam)
+	err = dec.Decode(&storageData)
 	if err != nil {
 		return fmt.Errorf("error reading %s: %+v", filePath, err)
 	}
 
-	if sam.Version != Version {
-		return fmt.Errorf("unknown Version %+v in serialized addrmanager", sam.Version)
+	if storageData.Version != Version {
+		return fmt.Errorf("unknown Version %+v in serialized addrmanager", storageData.Version)
 	}
-	copy(addrManager.key[:], sam.Key[:])
+	copy(addrManager.key[:], storageData.Key[:])
 
-	for _, v := range sam.Addresses {
-		if len(v.Src) > 10000 {
+	for _, storagePeer := range storageData.Addresses {
+		if len(storagePeer.Src) > 10000 {
 			continue
 		}
 		peer := new(peer.Peer)
-		peer.PeerID = peer2.ID(v.Src)
-		peer.RawAddress = v.Addr
-		peer.PublicKey = v.PublicKey
+		peer.PeerID = peer2.ID(storagePeer.Src)
+		peer.RawAddress = storagePeer.Addr
+		peer.PublicKey = storagePeer.PublicKey
 
 		addrManager.addrIndex[peer.RawAddress] = peer
 
