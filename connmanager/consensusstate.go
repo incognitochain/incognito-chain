@@ -37,6 +37,7 @@ func (consensusState *ConsensusState) getBeaconCommittee() []string {
 	return ret
 }
 
+// getCommitteeByShard - return CommitteeByShard
 func (consensusState *ConsensusState) getCommitteeByShard(shard byte) []string {
 	consensusState.Lock()
 	defer consensusState.Unlock()
