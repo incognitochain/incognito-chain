@@ -169,7 +169,7 @@ func (httpServer *HttpServer) handleRemoveAccount(params interface{}, closeChan 
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("privateKey is invalid"))
 	}
-	accountName, ok := arrayParams[1].(string)
+	_, ok = arrayParams[1].(string)
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
 	}
@@ -177,7 +177,7 @@ func (httpServer *HttpServer) handleRemoveAccount(params interface{}, closeChan 
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
 	}
-	err := httpServer.config.Wallet.RemoveAccount(privateKey, accountName, passPhrase)
+	err := httpServer.config.Wallet.RemoveAccount(privateKey, passPhrase)
 	if err != nil {
 		return false, NewRPCError(ErrUnexpected, err)
 	}
