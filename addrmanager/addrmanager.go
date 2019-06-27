@@ -14,35 +14,37 @@ import (
 )
 
 type AddrManager struct {
-	mtx       sync.Mutex
-	peersFile string
-	key       [32]byte
-	started   int32
-	shutdown  int32
-	waitGroup sync.WaitGroup
+	mtx           sync.Mutex
+	peersFilePath string
+	key           [32]byte
+	started       int32
+	shutdown      int32
+	waitGroup     sync.WaitGroup
 
 	cQuit chan struct{}
 
 	addrIndex map[string]*peer.Peer
 }
 
+// data structure of address which need to be saving in file
 type serializedKnownAddress struct {
-	Addr      string
-	Src       string
-	PublicKey string
+	Addr      string `json:"Addr"`
+	Src       string `json:"Src"`
+	PublicKey string `json:"PublicKey"`
 }
 
+// data structure of list address which need to be saving in file
 type serializedAddrManager struct {
-	Version   int
-	Key       [32]byte
-	Addresses []*serializedKnownAddress
+	Version   int                       `json:"Version"`
+	Key       [32]byte                  `json:"Key"`
+	Addresses []*serializedKnownAddress `json:"Addresses"`
 }
 
 func New(dataDir string) *AddrManager {
 	addrManager := AddrManager{
-		peersFile: filepath.Join(dataDir, "peer.json"),
-		cQuit:     make(chan struct{}),
-		mtx:       sync.Mutex{},
+		peersFilePath: filepath.Join(dataDir, "peer.json"), // path to file which is used for storing information in add manager
+		cQuit:         make(chan struct{}),
+		mtx:           sync.Mutex{},
 	}
 	addrManager.reset()
 	return &addrManager
@@ -56,33 +58,39 @@ func (addrManager *AddrManager) savePeers() error {
 		return nil
 	}
 
-	sam := new(serializedAddrManager)
-	sam.Version = 1
-	copy(sam.Key[:], addrManager.key[:])
+	storageData := new(serializedAddrManager)
+	storageData.Version = 1
+	copy(storageData.Key[:], addrManager.key[:])
 
-	sam.Addresses = make([]*serializedKnownAddress, len(addrManager.addrIndex))
+	storageData.Addresses = make([]*serializedKnownAddress, len(addrManager.addrIndex))
 	i := 0
 
-	for k, v := range addrManager.addrIndex {
-		ska := new(serializedKnownAddress)
-		ska.Addr = k
-		fmt.Println("PeerID", len(v.PeerID.String()))
-		ska.Src = v.PeerID.Pretty()
-		ska.PublicKey = v.PublicKey
+	// get all good address in list of addresses manager
+	for rawAddress, peerObj := range addrManager.addrIndex {
+		// init address data to push into storage data
+		addressData := new(serializedKnownAddress)
+		addressData.Addr = rawAddress
+		Logger.log.Info("PeerID", peerObj.PeerID.String(), len(peerObj.PeerID.String()))
+		addressData.Src = peerObj.PeerID.Pretty()
+		addressData.PublicKey = peerObj.PublicKey
 
-		sam.Addresses[i] = ska
+		// push into array
+		storageData.Addresses[i] = addressData
 		i++
 	}
 
-	w, err := os.Create(addrManager.peersFile)
+	// Create file with file path
+	writerFile, err := os.Create(addrManager.peersFilePath)
 	if err != nil {
-		Logger.log.Errorf("Error opening file %s: %+v", addrManager.peersFile, err)
+		Logger.log.Errorf("Error opening file %s: %+peerObj", addrManager.peersFilePath, err)
 		return NewAddrManagerError(UnexpectedError, err)
 	}
-	enc := json.NewEncoder(w)
-	defer w.Close()
-	if err := enc.Encode(&sam); err != nil {
-		Logger.log.Errorf("Failed to encode file %s: %+v", addrManager.peersFile, err)
+	// encode to json format
+	enc := json.NewEncoder(writerFile)
+	defer writerFile.Close()
+	// write into file with json format
+	if err := enc.Encode(&storageData); err != nil {
+		Logger.log.Errorf("Failed to encode file %s: %+v", addrManager.peersFilePath, err)
 		return NewAddrManagerError(UnexpectedError, err)
 	}
 	return nil
@@ -91,17 +99,17 @@ func (addrManager *AddrManager) savePeers() error {
 // loadPeers loads the known address from the saved file.  If empty, missing, or
 // malformed file, just don't load anything and start fresh
 func (addrManager *AddrManager) loadPeers() {
-	err := addrManager.deserializePeers(addrManager.peersFile)
+	err := addrManager.deserializePeers(addrManager.peersFilePath)
 	if err != nil {
-		Logger.log.Errorf("Failed to parse file %s: %+v", addrManager.peersFile, err)
+		Logger.log.Errorf("Failed to parse file %s: %+v", addrManager.peersFilePath, err)
 		// if it is invalid we nuke the old one unconditionally.
-		err = os.Remove(addrManager.peersFile)
+		err = os.Remove(addrManager.peersFilePath)
 		if err != nil {
-			Logger.log.Errorf("Failed to remove corrupt peers file %s: %+v", addrManager.peersFile, err)
+			Logger.log.Errorf("Failed to remove corrupt peers file %s: %+v", addrManager.peersFilePath, err)
 		}
 		addrManager.reset()
 	}
-	Logger.log.Infof("Loaded %d addresses from file '%s'", addrManager.numAddresses(), addrManager.peersFile)
+	Logger.log.Infof("Loaded %d addresses from file '%s'", addrManager.numAddresses(), addrManager.peersFilePath)
 }
 
 // NumAddresses returns the number of addresses known to the address manager.
@@ -115,6 +123,8 @@ func (addrManager *AddrManager) reset() {
 	addrManager.addrIndex = make(map[string]*peer.Peer)
 }
 
+// deserializePeers - read storage data about Addresses manager and restore a object for it
+// data are read from filePath which be used when saving
 func (addrManager *AddrManager) deserializePeers(filePath string) error {
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
@@ -179,6 +189,7 @@ func (addrManager *AddrManager) Stop() error {
 	}
 
 	Logger.log.Infof("Address manager shutting down")
+	// close channel to break loop select channel
 	close(addrManager.cQuit)
 	addrManager.waitGroup.Wait()
 	return nil
@@ -187,7 +198,7 @@ func (addrManager *AddrManager) Stop() error {
 // addressHandler is the main handler for the address manager.  It must be run
 // as a goroutine.
 func (addrManager *AddrManager) addressHandler() {
-	dumpAddressTicker := time.NewTicker(dumpAddressInterval)
+	dumpAddressTicker := time.NewTicker(DumpAddressInterval)
 	defer dumpAddressTicker.Stop()
 out:
 	for {
@@ -196,11 +207,15 @@ out:
 			addrManager.savePeers()
 
 		case <-addrManager.cQuit:
+			// break out loop
 			break out
 		}
 	}
+	// saving before done everything
 	addrManager.savePeers()
+	// Done wait group
 	addrManager.waitGroup.Done()
+	// Log to notice
 	Logger.log.Infof("Address handler done")
 }
 
