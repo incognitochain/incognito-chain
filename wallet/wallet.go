@@ -88,6 +88,10 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 	return nil
 }
 
+
+// CreateNewAccount create new account with accountName
+// If shardID is nil, new account will belong to any shards
+// Otherwise, new account will belong to specific shard
 func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *AccountWallet {
 	if shardID != nil {
 		// only create account for specific Shard
