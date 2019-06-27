@@ -20,15 +20,25 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/bridge/incognito_proxy"
+	"github.com/incognitochain/incognito-chain/bridge/vault"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
+
+// Test calling
+const max_path = 4
+const comm_size = 1 << max_path
+const pubkey_length = comm_size * max_path
+const inst_size = 1 << max_path
+const inst_length = 120
 
 var genesisKey *ecdsa.PrivateKey
 var auth *bind.TransactOpts
 
 type Platform struct {
-	c   *Bridge
-	sim *backends.SimulatedBackend
+	inc   *incognito_proxy.IncognitoProxy
+	vault *vault.Vault
+	sim   *backends.SimulatedBackend
 }
 
 func keccak256(b ...[]byte) [32]byte {
@@ -48,16 +58,29 @@ func setup(beaconCommRoot, bridgeCommRoot [32]byte) (*Platform, error) {
 	alloc := make(core.GenesisAlloc)
 	balance := big.NewInt(123000000000000000)
 	alloc[auth.From] = core.GenesisAccount{Balance: balance}
-	sim := backends.NewSimulatedBackend(alloc, 6000000)
+	sim := backends.NewSimulatedBackend(alloc, 10000000)
+	p := &Platform{sim: sim}
 
-	addr, _, c, err := DeployBridge(auth, sim, beaconCommRoot, bridgeCommRoot)
+	incognitoAddr, tx, inc, err := incognito_proxy.DeployIncognitoProxy(auth, sim, beaconCommRoot, bridgeCommRoot)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to deploy IncognitoProxy contract: %v", err)
 	}
 	sim.Commit()
 
-	fmt.Printf("deployed, addr: %x\n", addr)
-	return &Platform{c, sim}, nil
+	p.printReceipt(tx)
+	p.inc = inc
+	fmt.Printf("deployed bridge, addr: %x\n", incognitoAddr)
+
+	vaultAddr, tx, vault, err := vault.DeployVault(auth, sim, incognitoAddr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deploy Vault contract: %v", err)
+	}
+	sim.Commit()
+
+	p.printReceipt(tx)
+	p.vault = vault
+	fmt.Printf("deployed bridge, addr: %x\n", vaultAddr)
+	return p, nil
 }
 
 func setupWithoutCommittee() (*Platform, error) {
@@ -118,7 +141,7 @@ func (p *Platform) printReceipt(tx *types.Transaction) {
 func getBridgeSwapProof() string {
 	url := "http://127.0.0.1:9338"
 
-	block := 18
+	block := 32
 	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbridgeswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
 
 	req, _ := http.NewRequest("POST", url, payload)
@@ -147,7 +170,7 @@ func getBridgeSwapProof() string {
 func getBeaconSwapProof() string {
 	url := "http://127.0.0.1:9338"
 
-	block := 11
+	block := 51
 	payload := strings.NewReader(fmt.Sprintf("{\n    \"id\": 1,\n    \"jsonrpc\": \"1.0\",\n    \"method\": \"getbeaconswapproof\",\n    \"params\": [\n    \t%d\n    ]\n}", block))
 
 	req, _ := http.NewRequest("POST", url, payload)
@@ -173,71 +196,52 @@ func getBeaconSwapProof() string {
 	return string(body)
 }
 
-func TestSwapBeacon(t *testing.T) {
-	// body := getBeaconSwapProof()
-	body := getBridgeSwapProof()
-	if len(body) < 1 {
-		return
-	}
+type decodedProof struct {
+	instruction []byte
 
-	type getBeaconSwapProofResult struct {
-		Result jsonresult.GetInstructionProof
-		Error  string
-		Id     int
-	}
-	r := getBeaconSwapProofResult{}
-	err := json.Unmarshal([]byte(body), &r)
-	if err != nil {
-		t.Error(err)
-	}
+	beaconInstPath         [max_path][32]byte
+	beaconInstPathIsLeft   [max_path]bool
+	beaconInstPathLen      *big.Int
+	beaconInstRoot         [32]byte
+	beaconBlkData          [32]byte
+	beaconBlkHash          [32]byte
+	beaconSignerPubkeys    []byte
+	beaconSignerCount      *big.Int
+	beaconSignerSig        [32]byte
+	beaconSignerPaths      [pubkey_length][32]byte
+	beaconSignerPathIsLeft [pubkey_length]bool
+	beaconSignerPathLen    *big.Int
 
-	// Genesis committee
-	beaconOldFlat := [][]byte{}
-	for i, val := range r.Result.BeaconSignerPubkeys {
-		pk, _ := hex.DecodeString(val)
-		fmt.Printf("pk[%d]: %x %d\n", i, pk, len(pk))
-		fmt.Printf("hash(pk[%d]): %x\n", i, keccak256(pk))
-		beaconOldFlat = append(beaconOldFlat, pk)
-	}
-	beaconOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(beaconOldFlat))
-	tmpMerkles := blockchain.BuildKeccak256MerkleTree(beaconOldFlat)
-	for i, m := range tmpMerkles {
-		fmt.Printf("merkles[%d]: %x\n", i, m)
-	}
-	fmt.Printf("beaconOldRoot: %x\n", beaconOldRoot[:])
+	bridgeInstPath         [max_path][32]byte
+	bridgeInstPathIsLeft   [max_path]bool
+	bridgeInstPathLen      *big.Int
+	bridgeInstRoot         [32]byte
+	bridgeBlkData          [32]byte
+	bridgeBlkHash          [32]byte
+	bridgeSignerPubkeys    []byte
+	bridgeSignerCount      *big.Int
+	bridgeSignerSig        [32]byte
+	bridgeSignerPaths      [pubkey_length][32]byte
+	bridgeSignerPathIsLeft [pubkey_length]bool
+	bridgeSignerPathLen    *big.Int
+}
 
-	bridgeOldFlat := [][]byte{}
-	for _, val := range r.Result.BridgeSignerPubkeys {
-		pk, _ := hex.DecodeString(val)
-		bridgeOldFlat = append(bridgeOldFlat, pk)
-	}
-	bridgeOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(bridgeOldFlat))
-	fmt.Printf("bridgeOldRoot: %x\n", bridgeOldRoot[:])
+type getProofResult struct {
+	Result jsonresult.GetInstructionProof
+	Error  string
+	Id     int
+}
 
-	p, err := setup(beaconOldRoot, bridgeOldRoot)
-	if err != nil {
-		t.Fatalf("Fail to deloy contract: %v\n", err)
-	}
-
-	// Test calling swapBeacon
-	const max_path = 4
-	const comm_size = 1 << max_path
-	const pubkey_length = comm_size * max_path
-	const inst_size = 1 << max_path
-	const inst_length = 100
-	const beacon_length = 512
-	const bridge_length = 256
-	_ = p
-
+func decodeProof(r *getProofResult) *decodedProof {
 	inst := decode(r.Result.Instruction)
 	fmt.Printf("inst: %d %x\n", len(inst), inst)
 
 	beaconInstRoot := decode32(r.Result.BeaconInstRoot)
 	beaconInstPath := [max_path][32]byte{}
-	beaconPathIsLeft := [max_path]bool{}
+	beaconInstPathIsLeft := [max_path]bool{}
 	for i, path := range r.Result.BeaconInstPath {
 		beaconInstPath[i] = decode32(path)
-		beaconPathIsLeft[i] = r.Result.BeaconInstPathIsLeft[i]
+		beaconInstPathIsLeft[i] = r.Result.BeaconInstPathIsLeft[i]
 	}
 	beaconInstPathLen := big.NewInt(int64(len(r.Result.BeaconInstPath)))
 	fmt.Printf("beaconInstRoot: %x\n", beaconInstRoot)
@@ -268,10 +272,10 @@ func TestSwapBeacon(t *testing.T) {
 	// For bridge
 	bridgeInstRoot := decode32(r.Result.BridgeInstRoot)
 	bridgeInstPath := [max_path][32]byte{}
-	bridgePathIsLeft := [max_path]bool{}
+	bridgeInstPathIsLeft := [max_path]bool{}
 	for i, path := range r.Result.BridgeInstPath {
 		bridgeInstPath[i] = decode32(path)
-		bridgePathIsLeft[i] = r.Result.BridgeInstPathIsLeft[i]
+		bridgeInstPathIsLeft[i] = r.Result.BridgeInstPathIsLeft[i]
 	}
 	bridgeInstPathLen := big.NewInt(int64(len(r.Result.BridgeInstPath)))
 	// fmt.Printf("bridgeInstRoot: %x\n", bridgeInstRoot)
@@ -297,37 +301,171 @@ func TestSwapBeacon(t *testing.T) {
 		}
 	}
 	bridgeSignerPathLen := big.NewInt(int64(len(r.Result.BridgeSignerPaths[0])))
+	return &decodedProof{
+		instruction: inst,
+
+		beaconInstPath:         beaconInstPath,
+		beaconInstPathIsLeft:   beaconInstPathIsLeft,
+		beaconInstPathLen:      beaconInstPathLen,
+		beaconInstRoot:         beaconInstRoot,
+		beaconBlkData:          beaconBlkData,
+		beaconBlkHash:          beaconBlkHash,
+		beaconSignerPubkeys:    beaconSignerPubkeys,
+		beaconSignerCount:      beaconSignerCount,
+		beaconSignerSig:        beaconSignerSig,
+		beaconSignerPaths:      beaconSignerPaths,
+		beaconSignerPathIsLeft: beaconSignerPathIsLeft,
+		beaconSignerPathLen:    beaconSignerPathLen,
+
+		bridgeInstPath:         bridgeInstPath,
+		bridgeInstPathIsLeft:   bridgeInstPathIsLeft,
+		bridgeInstPathLen:      bridgeInstPathLen,
+		bridgeInstRoot:         bridgeInstRoot,
+		bridgeBlkData:          bridgeBlkData,
+		bridgeBlkHash:          bridgeBlkHash,
+		bridgeSignerPubkeys:    bridgeSignerPubkeys,
+		bridgeSignerCount:      bridgeSignerCount,
+		bridgeSignerSig:        bridgeSignerSig,
+		bridgeSignerPaths:      bridgeSignerPaths,
+		bridgeSignerPathIsLeft: bridgeSignerPathIsLeft,
+		bridgeSignerPathLen:    bridgeSignerPathLen,
+	}
+}
+
+func TestSwapBeacon(t *testing.T) {
+	// body := getBeaconSwapProof()
+	body := getBridgeSwapProof()
+	if len(body) < 1 {
+		return
+	}
+
+	r := getProofResult{}
+	err := json.Unmarshal([]byte(body), &r)
+	if err != nil {
+		t.Error(err)
+	}
+	proof := decodeProof(&r)
+	_ = proof
+
+	// Genesis committee
+	beaconOldFlat := [][]byte{}
+	for i, val := range r.Result.BeaconSignerPubkeys {
+		pk, _ := hex.DecodeString(val)
+		fmt.Printf("pk[%d]: %x %d\n", i, pk, len(pk))
+		fmt.Printf("hash(pk[%d]): %x\n", i, keccak256(pk))
+		beaconOldFlat = append(beaconOldFlat, pk)
+	}
+	beaconOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(beaconOldFlat))
+	tmpMerkles := blockchain.BuildKeccak256MerkleTree(beaconOldFlat)
+	for i, m := range tmpMerkles {
+		fmt.Printf("merkles[%d]: %x\n", i, m)
+	}
+	fmt.Printf("beaconOldRoot: %x\n", beaconOldRoot[:])
+
+	bridgeOldFlat := [][]byte{}
+	for _, val := range r.Result.BridgeSignerPubkeys {
+		pk, _ := hex.DecodeString(val)
+		bridgeOldFlat = append(bridgeOldFlat, pk)
+	}
+	bridgeOldRoot := toByte32(blockchain.GetKeccak256MerkleRoot(bridgeOldFlat))
+	fmt.Printf("bridgeOldRoot: %x\n", bridgeOldRoot[:])
+
+	p, err := setup(beaconOldRoot, bridgeOldRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = p
 
 	auth.GasLimit = 6000000
-	tx, err := p.c.SwapCommittee(
+	tx, err := p.inc.SwapCommittee(
 		auth,
-		inst[:],
+		proof.instruction,
 
-		beaconInstPath,
-		beaconPathIsLeft,
-		beaconInstPathLen,
-		beaconInstRoot,
-		beaconBlkData,
-		beaconBlkHash,
-		beaconSignerPubkeys,
-		beaconSignerCount,
-		beaconSignerSig,
-		beaconSignerPaths,
-		beaconSignerPathIsLeft,
-		beaconSignerPathLen,
+		proof.beaconInstPath,
+		proof.beaconInstPathIsLeft,
+		proof.beaconInstPathLen,
+		proof.beaconInstRoot,
+		proof.beaconBlkData,
+		proof.beaconBlkHash,
+		proof.beaconSignerPubkeys,
+		proof.beaconSignerCount,
+		proof.beaconSignerSig,
+		proof.beaconSignerPaths,
+		proof.beaconSignerPathIsLeft,
+		proof.beaconSignerPathLen,
 
-		bridgeInstPath,
-		bridgePathIsLeft,
-		bridgeInstPathLen,
-		bridgeInstRoot,
-		bridgeBlkData,
-		bridgeBlkHash,
-		bridgeSignerPubkeys,
-		bridgeSignerCount,
-		bridgeSignerSig,
-		bridgeSignerPaths,
-		bridgeSignerPathIsLeft,
-		bridgeSignerPathLen,
+		proof.bridgeInstPath,
+		proof.bridgeInstPathIsLeft,
+		proof.bridgeInstPathLen,
+		proof.bridgeInstRoot,
+		proof.bridgeBlkData,
+		proof.bridgeBlkHash,
+		proof.bridgeSignerPubkeys,
+		proof.bridgeSignerCount,
+		proof.bridgeSignerSig,
+		proof.bridgeSignerPaths,
+		proof.bridgeSignerPathIsLeft,
+		proof.bridgeSignerPathLen,
+	)
+	if err != nil {
+		fmt.Println("err:", err)
+	}
+	p.sim.Commit()
+	p.printReceipt(tx)
+}
+
+func getBurnProof() string {
+	return ""
+}
+
+func TestBurn(t *testing.T) {
+	body := getBurnProof()
+	if len(body) < 1 {
+		return
+	}
+
+	r := getProofResult{}
+	err := json.Unmarshal([]byte(body), &r)
+	if err != nil {
+		t.Error(err)
+	}
+	proof := decodeProof(&r)
+
+	p, err := setupWithoutCommittee()
+	if err != nil {
+		t.Fatalf("Fail to deloy contract: %v\n", err)
+	}
+
+	auth.GasLimit = 6000000
+	tx, err := p.vault.Withdraw(
+		auth,
+		proof.instruction,
+
+		proof.beaconInstPath,
+		proof.beaconInstPathIsLeft,
+		proof.beaconInstPathLen,
+		proof.beaconInstRoot,
+		proof.beaconBlkData,
+		proof.beaconBlkHash,
+		proof.beaconSignerPubkeys,
+		proof.beaconSignerCount,
+		proof.beaconSignerSig,
+		proof.beaconSignerPaths,
+		proof.beaconSignerPathIsLeft,
+		proof.beaconSignerPathLen,
+
+		proof.bridgeInstPath,
+		proof.bridgeInstPathIsLeft,
+		proof.bridgeInstPathLen,
+		proof.bridgeInstRoot,
+		proof.bridgeBlkData,
+		proof.bridgeBlkHash,
+		proof.bridgeSignerPubkeys,
+		proof.bridgeSignerCount,
+		proof.bridgeSignerSig,
+		proof.bridgeSignerPaths,
+		proof.bridgeSignerPathIsLeft,
+		proof.bridgeSignerPathLen,
 	)
 	if err != nil {
 		fmt.Println("err:", err)
@@ -345,7 +483,7 @@ func TestCallFunc(t *testing.T) {
 	v := [32]byte{}
 	b := big.NewInt(135790246810123).Bytes()
 	copy(v[32-len(b):], b)
-	tx, err := p.c.NotifyPls(auth, v)
+	tx, err := p.inc.NotifyPls(auth, v)
 	if err != nil {
 		fmt.Println("err:", err)
 	}
