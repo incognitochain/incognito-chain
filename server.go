@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"golang.org/x/net/context"
@@ -30,7 +31,6 @@ import (
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/consensus/mubft"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
@@ -62,7 +62,7 @@ type Server struct {
 	addrManager       *addrmanager.AddrManager
 	userKeySet        *cashec.KeySet
 	wallet            *wallet.Wallet
-	consensusEngine   *mubft.Engine
+	consensusEngine   *consensus.Engine
 	blockgen          *blockchain.BlkTmplGenerator
 	pusubManager      *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
@@ -340,20 +340,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	// Init consensus engine
-	serverObj.consensusEngine, err = mubft.Engine{}.Init(&mubft.EngineConfig{
-		CrossShardPool:    serverObj.crossShardPool,
-		ShardToBeaconPool: serverObj.shardToBeaconPool,
-		ChainParams:       serverObj.chainParams,
-		BlockChain:        serverObj.blockChain,
-		Server:            serverObj,
-		BlockGen:          serverObj.blockgen,
-		NodeMode:          cfg.NodeMode,
-		UserKeySet:        serverObj.userKeySet,
-		PubsubManager:     serverObj.pusubManager,
-	})
-	if err != nil {
-		return err
-	}
+	serverObj.consensusEngine = &consensus.ConsensusEngine
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
@@ -604,19 +591,13 @@ func (serverObj Server) Start() {
 	go serverObj.blockChain.Synker.Start()
 
 	if cfg.NodeMode != common.NODEMODE_RELAY {
-		err := serverObj.consensusEngine.Start()
-		if err != nil {
-			Logger.log.Error(err)
-			go serverObj.Stop()
-			return
-		} else {
-			serverObj.memPool.IsBlockGenStarted = true
-			serverObj.blockChain.SetIsBlockGenStarted(true)
-			for _, shardPool := range serverObj.shardPool {
-				go shardPool.Start(serverObj.cQuit)
-			}
-			go serverObj.beaconPool.Start(serverObj.cQuit)
+		serverObj.consensusEngine.Start("beacon", blockchain.GetBestStateBeacon())
+		serverObj.memPool.IsBlockGenStarted = true
+		serverObj.blockChain.SetIsBlockGenStarted(true)
+		for _, shardPool := range serverObj.shardPool {
+			go shardPool.Start(serverObj.cQuit)
 		}
+		go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
 	if serverObj.memPool != nil {
