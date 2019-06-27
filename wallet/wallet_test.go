@@ -38,3 +38,32 @@ func TestInit(t *testing.T){
 		assert.Greater(t, len(wallet.Mnemonic), 0)
 	}
 }
+
+func TestCreateNewAccount(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"", byte(0)},
+		{"Acc A", byte(1)},
+		//{"Acc A", },
+	}
+
+	wallet := new(Wallet)
+	wallet.Init("", 0, "")
+
+	numAccount := len(wallet.MasterAccount.Child)
+
+	for _, item := range data {
+		Logger.log.Infof("item.accountName: ", item.accountName)
+		wallet.CreateNewAccount(item.accountName, &item.shardID)
+		newAccount := wallet.MasterAccount.Child[numAccount]
+
+		assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+
+		if item.accountName == "" {
+			assert.Equal(t, "AccountWallet "+string(numAccount), newAccount.Name)
+		}
+	}
+}
+
