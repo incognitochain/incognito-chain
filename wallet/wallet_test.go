@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"errors"
 )
 
 var dataDir string
@@ -151,18 +152,6 @@ func TestCreateNewAccountWithEmptyName(t *testing.T){
 func TestCreateNewAccountWithNilShardID(t *testing.T){
 	// init wallet
 	wallet.Init("", 0, "Wallet")
-
-	// set config wallet
-	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
-	dataFile := "wallet"
-	walletConf := &WalletConfig{
-		DataDir:        dataDir,
-		DataFile:       dataFile,
-		DataPath:       filepath.Join(dataDir, dataFile),
-		IncrementalFee: 0, // 0 mili PRV
-	}
-
-	wallet.SetConfig(walletConf)
 	numAccount := len(wallet.MasterAccount.Child)
 
 	// create new account with empty name
@@ -226,6 +215,92 @@ func TestWalletExportAccountWithWrongIndex(t *testing.T) {
 	res := wallet.ExportAccount(uint32(len(wallet.MasterAccount.Child)))
 	assert.Equal(t,"", res)
 }
+
+/*
+		Unit test for ImportAccount function
+ */
+
+func TestWalletImportAccount(t *testing.T){
+	data := []struct {
+		privateKeyStr string
+		accountName string
+		passPhrase string
+	}{
+		{"112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ", "Acc A", "123"},
+		{"112t8rnYJncU5TRMexdSX2X9a58c9dKPfzWMEaS7AXY3WniXbVUXvDVmZaKms2QEXtviEUKPdrqq3auNqZB8wQPtuXv8JfzprtMtgdGRiFij", "Acc B", "123"},
+		{"112t8rnYh9nB6vgnPrsnoMe5Sd39fGUTvyrBtKGN82LLXEcr2EJ2jR2c4rLtEHauCCcaXvwHtYem865L95jKBNUFGrd8mFaExvxtmjuZNqNF", "Acc C", "123"},
+	}
+
+	wallet.Init("123", 0, "Wallet")
+
+	numAccount := len(wallet.MasterAccount.Child)
+
+	for _, item := range data {
+		newAccount, err := wallet.ImportAccount(item.privateKeyStr, item.accountName, item.passPhrase)
+		keyWallet, _ := Base58CheckDeserialize(item.privateKeyStr)
+
+		// TODO:
+		assert.Equal(t, nil, err)
+		assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+		assert.Equal(t, item.accountName, newAccount.Name)
+		assert.Equal(t, true, newAccount.IsImported)
+		assert.Equal(t, 0, len(newAccount.Child))
+		assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
+		assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
+		assert.Equal(t,keyWallet.KeySet.PrivateKey, newAccount.Key.KeySet.PrivateKey)
+
+		numAccount++
+	}
+}
+
+func TestWalletImportAccountWithWrongPrivKeyStr(t *testing.T){
+	privateKeyStr := "abc"
+	accountName := "Acc A"
+	passPhrase := "123"
+
+	wallet.Init(passPhrase, 0, "Wallet")
+
+	_, err := wallet.ImportAccount(privateKeyStr, accountName, passPhrase)
+	assert.Equal(t, errors.New("invalid format: version and/or checksum bytes missing"), err)
+}
+
+func TestWalletImportAccountWithExistedPrivKeyStr(t *testing.T){
+	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
+	accountName := "Acc A"
+	passPhrase := "123"
+
+	wallet.Init(passPhrase, 0, "Wallet")
+	wallet.ImportAccount(privateKeyStr, accountName, passPhrase)
+
+	_, err := wallet.ImportAccount(privateKeyStr, "Acc B", passPhrase)
+	assert.Equal(t, NewWalletError(ExistedAccountErr, nil), err)
+}
+
+func TestWalletImportAccountWithExistedAccountName(t *testing.T){
+	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
+	accountName := "Acc A"
+	passPhrase := "123"
+
+	wallet.Init(passPhrase, 0, "Wallet")
+	wallet.CreateNewAccount(accountName, nil)
+
+	_, err := wallet.ImportAccount(privateKeyStr, accountName, passPhrase)
+	fmt.Printf("err: %v\n", err)
+	assert.Equal(t, NewWalletError(ExistedAccountNameErr, nil), err)
+}
+
+func TestWalletImportAccountWithUnmatchedPassPhrase(t *testing.T){
+	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
+	accountName := "Acc A"
+	passPhrase := "123"
+
+	wallet.Init(passPhrase, 0, "Wallet")
+
+	_, err := wallet.ImportAccount(privateKeyStr, accountName, "1234")
+	fmt.Printf("err: %v\n", err)
+	assert.Equal(t, NewWalletError(WrongPassphraseErr, nil), err)
+}
+
 
 
 
