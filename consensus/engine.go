@@ -4,34 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/bft"
 	"github.com/incognitochain/incognito-chain/wire"
 	"strings"
-	"time"
 )
-
-type ChainInterface interface {
-	PushMessageToValidator(wire.Message) error
-	GetLastBlockTimeStamp() uint64
-	GetBlkMinTime() time.Duration
-	IsReady() bool
-	GetHeight() uint64
-	GetCommitteeSize() int
-	GetNodePubKeyIndex() int
-	GetLastProposerIndex() int
-	GetNodePubKey() string
-	CreateNewBlock() BlockInterface
-	ValidateBlock(interface{}) bool
-	ValidateSignature(interface{}, string) bool
-	InsertBlk(interface{}, bool)
-}
-
-type BlockInterface interface {
-	GetHeight() uint64
-	GetProducerPubKey() string
-	Hash() *common.Hash
-}
 
 type ProtocolInterface interface {
 	GetInfo() string
@@ -40,27 +16,8 @@ type ProtocolInterface interface {
 	Stop()
 	IsRun() bool
 
-	ReceiveProposeMsg(ProposeMsg)
-	ReceivePrepareMsg(PrepareMsg)
-}
-
-type ProposeMsg struct {
-	ChainKey   string
-	Block      BlockInterface
-	ContentSig string
-	Pubkey     string
-	Timestamp  int64
-	RoundKey   string
-}
-
-type PrepareMsg struct {
-	ChainKey   string
-	IsOk       bool
-	Pubkey     string
-	ContentSig string
-	BlkHash    string
-	RoundKey   string
-	Timestamp  int64
+	ReceiveProposeMsg(interface{})
+	ReceivePrepareMsg(interface{})
 }
 
 type Engine struct {
@@ -71,7 +28,7 @@ var ConsensusEngine = Engine{
 	ChainList: make(map[string]ProtocolInterface),
 }
 
-func (s *Engine) Start(name string, chain ChainInterface) ProtocolInterface {
+func (s *Engine) Start(name string, chain bft.ChainInterface) ProtocolInterface {
 	consensusModule, ok := s.ChainList[name]
 	if ok {
 		if !consensusModule.IsRun() {
@@ -110,8 +67,8 @@ func (s *Engine) OnBFTMsg(msg wire.Message) {
 
 }
 
-func convertProposeMsg(msg *wire.MessageBFTProposeV2) ProposeMsg {
-	proposeMsg := ProposeMsg{
+func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
+	proposeMsg := bft.ProposeMsg{
 		ChainKey:   msg.ChainKey,
 		ContentSig: msg.ContentSig,
 		Pubkey:     msg.Pubkey,
@@ -136,8 +93,8 @@ func convertProposeMsg(msg *wire.MessageBFTProposeV2) ProposeMsg {
 	return proposeMsg
 }
 
-func convertPrepareMsg(msg *wire.MessageBFTPrepareV2) PrepareMsg {
-	prepareMsg := PrepareMsg{
+func convertPrepareMsg(msg *wire.MessageBFTPrepareV2) bft.PrepareMsg {
+	prepareMsg := bft.PrepareMsg{
 		ChainKey:   msg.ChainKey,
 		ContentSig: msg.ContentSig,
 		Pubkey:     msg.Pubkey,

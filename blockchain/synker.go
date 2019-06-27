@@ -260,7 +260,7 @@ func (synker *synker) UpdateState() {
 									if len(commonHeights) > 0 {
 										for idx := len(commonHeights) - 1; idx == 0; idx-- {
 											if idx == 0 {
-												synker.States.ClosestState.ShardToBeaconPool[shardID] = synker.blockchain.BestState.Beacon.BestShardHeight[shardID]
+												synker.States.ClosestState.ShardToBeaconPool[shardID] = synker.blockchain.BestState.Beacon.GetBestHeightOfShard(shardID)
 											}
 											if synker.States.ClosestState.ShardToBeaconPool[shardID] > commonHeights[idx] {
 												synker.States.ClosestState.ShardToBeaconPool[shardID] = commonHeights[idx]
