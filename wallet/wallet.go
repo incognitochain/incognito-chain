@@ -179,6 +179,8 @@ func (wallet *Wallet) RemoveAccount(privateKeyStr string, accountName string, pa
 	return NewWalletError(UnexpectedErr, errors.New("Not found"))
 }
 
+// ImportAccount adds account into wallet with privateKeyStr, accountName, and passPhrase which is used to init wallet
+// It returns AccountWallet which is imported and errors (if any)
 func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, passPhrase string) (*AccountWallet, error) {
 	if passPhrase != wallet.PassPhrase {
 		return nil, NewWalletError(WrongPassphraseErr, nil)
