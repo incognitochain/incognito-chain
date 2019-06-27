@@ -18,6 +18,7 @@ type ConsensusState struct {
 	ShardNumber      int
 }
 
+// rebuild - convert CommitteeByShard to ShardByCommittee
 func (consensusState *ConsensusState) rebuild() {
 	consensusState.ShardByCommittee = make(map[string]byte)
 	for shard, committees := range consensusState.CommitteeByShard {
@@ -27,7 +28,8 @@ func (consensusState *ConsensusState) rebuild() {
 	}
 }
 
-func (consensusState *ConsensusState) GetBeaconCommittee() []string {
+// getBeaconCommittee - return BeaconCommittee
+func (consensusState *ConsensusState) getBeaconCommittee() []string {
 	consensusState.Lock()
 	defer consensusState.Unlock()
 	ret := make([]string, len(consensusState.BeaconCommittee))
@@ -35,7 +37,7 @@ func (consensusState *ConsensusState) GetBeaconCommittee() []string {
 	return ret
 }
 
-func (consensusState *ConsensusState) GetShardCommittee(shard byte) []string {
+func (consensusState *ConsensusState) getCommitteeByShard(shard byte) []string {
 	consensusState.Lock()
 	defer consensusState.Unlock()
 	committee, ok := consensusState.CommitteeByShard[shard]
@@ -47,8 +49,8 @@ func (consensusState *ConsensusState) GetShardCommittee(shard byte) []string {
 	return make([]string, 0)
 }
 
-// GetShardByCommittee - return list [commitee public key] = shardID
-func (consensusState *ConsensusState) GetShardByCommittee() map[string]byte {
+// getShardByCommittee - return list [commitee public key] = shardID
+func (consensusState *ConsensusState) getShardByCommittee() map[string]byte {
 	consensusState.Lock()
 	defer consensusState.Unlock()
 	ret := make(map[string]byte)
