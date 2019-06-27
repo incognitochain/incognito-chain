@@ -3,6 +3,7 @@ package addrmanager
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -172,7 +173,7 @@ func (addrManager *AddrManager) Start() {
 	}
 
 	Logger.log.Info("Starting address manager")
-
+	addrManager.shutdown = 0
 	// Load peers we already know about from file.
 	addrManager.loadPeers()
 	// Start the address ticker to save addresses periodically.
@@ -184,10 +185,11 @@ func (addrManager *AddrManager) Start() {
 // Stop gracefully shuts down the address manager by stopping the main handler.
 func (addrManager *AddrManager) Stop() error {
 	if atomic.AddInt32(&addrManager.shutdown, 1) != 1 {
-		Logger.log.Errorf("Address manager is already in the process of shutting down")
-		return nil
+		errStr := fmt.Sprint("Address manager is already in the process of shutting down")
+		Logger.log.Error(errStr)
+		return NewAddrManagerError(UnexpectedError, errors.New(errStr))
 	}
-
+	addrManager.started = 0
 	Logger.log.Infof("Address manager shutting down")
 	// close channel to break loop select channel
 	close(addrManager.cQuit)
