@@ -17,6 +17,19 @@ var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
 	dataDir, _ = os.Getwd()
 	wallet = new(Wallet)
+
+	// set config wallet
+	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
+	dataFile := "wallet"
+	walletConf := &WalletConfig{
+		DataDir:        dataDir,
+		DataFile:       dataFile,
+		DataPath:       filepath.Join(dataDir, dataFile),
+		IncrementalFee: 0, // 0 mili PRV
+	}
+
+	wallet.SetConfig(walletConf)
+
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
@@ -83,19 +96,7 @@ func TestCreateNewAccount(t *testing.T){
 		{"Acc D", byte(3)},
 	}
 
-	wallet := new(Wallet)
 	wallet.Init("", 0, "Wallet")
-
-	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
-	dataFile := "wallet"
-	walletConf := &WalletConfig{
-		DataDir:        dataDir,
-		DataFile:       dataFile,
-		DataPath:       filepath.Join(dataDir, dataFile),
-		IncrementalFee: 0, // 0 mili PRV
-	}
-
-	wallet.SetConfig(walletConf)
 
 	numAccount := len(wallet.MasterAccount.Child)
 
@@ -122,20 +123,8 @@ func TestCreateNewAccount(t *testing.T){
 
 func TestCreateNewAccountWithEmptyName(t *testing.T){
 	// init wallet
-	wallet := new(Wallet)
 	wallet.Init("", 0, "Wallet")
 
-	// set config wallet
-	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
-	dataFile := "wallet"
-	walletConf := &WalletConfig{
-		DataDir:        dataDir,
-		DataFile:       dataFile,
-		DataPath:       filepath.Join(dataDir, dataFile),
-		IncrementalFee: 0, // 0 mili PRV
-	}
-
-	wallet.SetConfig(walletConf)
 	numAccount := len(wallet.MasterAccount.Child)
 
 	// create new account with empty name
@@ -161,7 +150,6 @@ func TestCreateNewAccountWithEmptyName(t *testing.T){
 
 func TestCreateNewAccountWithNilShardID(t *testing.T){
 	// init wallet
-	wallet := new(Wallet)
 	wallet.Init("", 0, "Wallet")
 
 	// set config wallet
@@ -199,22 +187,10 @@ func TestCreateNewAccountWithNilShardID(t *testing.T){
 
 
 func TestWalletCreateNewAccountDuplicateAccountName(t *testing.T) {
-	wallet := new(Wallet)
 	wallet.Init("", 0, "Wallet")
 
-	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
-	dataFile := "wallet"
-	walletConf := &WalletConfig{
-		DataDir:        dataDir,
-		DataFile:       dataFile,
-		DataPath:       filepath.Join(dataDir, dataFile),
-		IncrementalFee: 0, // 0 mili PRV
-	}
-
-	wallet.SetConfig(walletConf)
-
 	// create the first account with name = "Acc A"
-	accountName := "Acc A"
+	accountName := "Acc E"
 	shardID := byte(0)
 
 	wallet.CreateNewAccount(accountName, &shardID)
@@ -227,6 +203,29 @@ func TestWalletCreateNewAccountDuplicateAccountName(t *testing.T) {
 
 // max len of name account???
 
+/*
+		Unit test for ExportAccount function
+ */
+
+func TestWalletExportAccount(t *testing.T) {
+	accountName := "Acc F"
+	shardID := byte(0)
+	wallet.CreateNewAccount(accountName, &shardID)
+
+	for i := range wallet.MasterAccount.Child {
+		res := wallet.ExportAccount(uint32(i))
+		assert.Equal(t, PrivateKeySerializedLen, len(res))
+	}
+}
+
+func TestWalletExportAccountWithWrongIndex(t *testing.T) {
+	accountName := "Acc G"
+	shardID := byte(0)
+	wallet.CreateNewAccount(accountName, &shardID)
+
+	res := wallet.ExportAccount(uint32(len(wallet.MasterAccount.Child)))
+	assert.Equal(t,"", res)
+}
 
 
 

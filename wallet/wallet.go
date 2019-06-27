@@ -156,8 +156,12 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*Acco
 	}
 }
 
-// ExportAccount
+// ExportAccount returns a private key string of account at childIndex in wallet
+// It is base58 check serialized
 func (wallet *Wallet) ExportAccount(childIndex uint32) string {
+	if int(childIndex) >= len(wallet.MasterAccount.Child) {
+		return ""
+	}
 	return wallet.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
 
