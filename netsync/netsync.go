@@ -160,11 +160,11 @@ out:
 						{
 							netSync.HandleMessageBFTMsg(msg)
 						}
-					case *wire.MessageBeaconBlock:
+					case *wire.MessageBlockBeacon:
 						{
 							netSync.HandleMessageBeaconBlock(msg)
 						}
-					case *wire.MessageShardBlock:
+					case *wire.MessageBlockShard:
 						{
 							netSync.HandleMessageShardBlock(msg)
 						}
@@ -361,7 +361,7 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 	netSync.cMessage <- msg
 }
 
-func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBeaconBlock) {
+func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
 	//if oldBlock := netSync.IsOldBeaconBlock(msg.Block.Header.Height); !oldBlock {
 	if isAdded := netSync.HandleCacheBlock("b" + msg.Block.Header.Hash().String()); !isAdded {
@@ -369,7 +369,7 @@ func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBeaconBlock) {
 	}
 	//}
 }
-func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageShardBlock) {
+func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
 	//if oldBlock := netSync.IsOldShardBlock(msg.Block.Header.ShardID, msg.Block.Header.Height); !oldBlock {
 	fmt.Println("Shard Block Received In net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
