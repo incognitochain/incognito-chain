@@ -213,7 +213,7 @@ func TestNetSyncHandleMessageBeaconBlock(t *testing.T) {
 	netSync := NetSync{}.New(&NetSyncConfig{
 		PubSubManager: pubsub.NewPubSubManager(),
 	})
-	netSync.HandleMessageBeaconBlock(&wire.MessageBeaconBlock{Block: block})
+	netSync.HandleMessageBeaconBlock(&wire.MessageBlockBeacon{Block: block})
 }
 func TestNetSyncHandleMessageShardBlock(t *testing.T) {
 	defer func() {
@@ -228,7 +228,7 @@ func TestNetSyncHandleMessageShardBlock(t *testing.T) {
 	netSync := NetSync{}.New(&NetSyncConfig{
 		PubSubManager: pubsub.NewPubSubManager(),
 	})
-	netSync.HandleMessageShardBlock(&wire.MessageShardBlock{Block: block})
+	netSync.HandleMessageShardBlock(&wire.MessageBlockShard{Block: block})
 }
 func TestNetSyncHandleMessageShardToBeacon(t *testing.T) {
 	defer func() {
