@@ -262,9 +262,8 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
 			Logger.log.Error(err)
-
-			// Broadcast to network
 		} else {
+			// Broadcast to network
 			Logger.log.Infof("there is hash of transaction %s", hash.String())
 			err := netSync.config.Server.PushMessageToAll(msg)
 			if err != nil {
