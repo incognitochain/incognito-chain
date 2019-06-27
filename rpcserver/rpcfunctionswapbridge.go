@@ -112,7 +112,7 @@ func findBridgeBlockWithInst(
 		}
 
 		_, bridgeInstID := findCommSwapInst(bridgeBlock.Body.Instructions, metadata.BridgePubkeyRootMeta)
-		if bridgeInstID > 0 {
+		if bridgeInstID >= 0 {
 			return bridgeBlock, bridgeInstID, nil
 		}
 	}
