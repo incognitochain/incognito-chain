@@ -8,10 +8,18 @@ COMM_SIZE: constant(uint256) = 2 ** MAX_PATH
 TOTAL_PUBKEY: constant(uint256) = COMM_SIZE * MAX_PATH
 PUBKEY_SIZE: constant(int128) = 33
 PUBKEY_LENGTH: constant(int128) = PUBKEY_SIZE * COMM_SIZE
-INST_LENGTH: constant(uint256) = 120
+INST_LENGTH: constant(uint256) = 150
 
 Deposit: event({_from: indexed(address), _incognito_address: string[64], _amount: wei_value})
 Withdraw: event({_to: indexed(address), _amount: wei_value})
+
+
+NotifyString: event({content: string[120]})
+NotifyBytes32: event({content: bytes32})
+NotifyBool: event({content: bool})
+NotifyUint256: event({content: uint256})
+NotifyAddress: event({content: address})
+
 
 withdrawed: public(map(bytes32, bool))
 incognito: public(Incognito_proxy)
@@ -31,11 +39,14 @@ def parseBurnInst(inst: bytes[INST_LENGTH]) -> (uint256, bytes32, address, uint2
     type: uint256 = convert(slice(inst, start=0, len=3), uint256)
     tokenID: bytes32 = extract32(inst, 3, type=bytes32)
     to: address = extract32(inst, 35, type=address)
-    amount: uint256 = extract32(inst, 55, type=uint256)
-    # tokenID: bytes32 = convert(slice(inst, start=3, len=32), bytes32)
-    # to: address = convert(slice(inst, start=35, len=20), address)
-    # amount: uint256 = convert(slice(inst, start=55, len=32), uint256)
+    amount: uint256 = extract32(inst, 67, type=uint256)
     return type, tokenID, to, amount
+
+@constant
+@public
+def testExtract(a: bytes[INST_LENGTH]) -> address:
+    x: address = extract32(a, 0, type=address)
+    return x
 
 @public
 def withdraw(
@@ -70,15 +81,20 @@ def withdraw(
     to: address
     amount: uint256 = 0
     type, tokenID, to, amount = self.parseBurnInst(inst)
+    log.NotifyUint256(type)
+    log.NotifyBytes32(tokenID)
+    log.NotifyAddress(to)
+    log.NotifyUint256(amount)
 
     # TODO: check type and tokenID
 
     # Each instruction can only by redeemed once
     instHash: bytes32 = keccak256(inst)
-    assert self.withdrawed[instHash] == False
+    # assert self.withdrawed[instHash] == False
+    log.NotifyBool(self.withdrawed[instHash])
 
     # Check if instruction is approved on Incognito
-    if self.incognito.instructionApproved(
+    assert self.incognito.instructionApproved(
         instHash,
         beaconInstPath,
         beaconInstPathIsLeft,
@@ -104,10 +120,10 @@ def withdraw(
         bridgeSignerPaths,
         bridgeSignerPathIsLeft,
         bridgeSignerPathLen
-    ):
-        self.withdrawed[instHash] = True
+    )
 
     # Check if balance is enough
+    log.NotifyBool(self.balance >= amount)
     assert self.balance >= amount
 
     # Send and notify
