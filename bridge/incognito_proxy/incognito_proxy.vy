@@ -5,7 +5,7 @@ TOTAL_PUBKEY: constant(uint256) = COMM_SIZE * MAX_PATH
 PUBKEY_SIZE: constant(int128) = 33 # each pubkey is 33 bytes
 PUBKEY_LENGTH: constant(int128) = PUBKEY_SIZE * COMM_SIZE # length of the array storing all pubkeys
 
-INST_LENGTH: constant(uint256) = 120
+INST_LENGTH: constant(uint256) = 150
 
 MIN_SIGN: constant(uint256) = 2
 
@@ -46,16 +46,16 @@ def inMerkleTree(leaf: bytes32, root: bytes32, path: bytes32[MAX_PATH], left: bo
     hash: bytes32 = leaf
     for i in range(MAX_PATH):
         if i >= length:
-            log.NotifyUint256(convert(i, uint256))
+            # log.NotifyUint256(convert(i, uint256))
             break
-        log.NotifyBytes32(path[i])
+        # log.NotifyBytes32(path[i])
         if left[i]:
             hash = keccak256(concat(path[i], hash))
         elif convert(path[i], uint256) == 0:
             hash = keccak256(concat(hash, hash))
         else:
             hash = keccak256(concat(hash, path[i]))
-        log.NotifyBytes32(hash)
+        # log.NotifyBytes32(hash)
     return hash == root
 
 @constant
@@ -103,9 +103,9 @@ def verifyInst(
             path[j] = signerPaths[i * signerPathLen + j]
             left[j] = signerPathIsLeft[i * signerPathLen + j]
 
-        log.NotifyBytes32(signerPubkeyHash)
+        # log.NotifyBytes32(signerPubkeyHash)
         if not self.inMerkleTree(signerPubkeyHash, commRoot, path, left, signerPathLen):
-            log.NotifyString("pubkey not in merkle tree")
+            # log.NotifyString("pubkey not in merkle tree")
             return False
 
     return True
