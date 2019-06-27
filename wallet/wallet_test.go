@@ -3,8 +3,11 @@ package wallet
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -18,7 +21,9 @@ var _ = func() (_ struct{}) {
 	return
 }()
 
-
+/*
+		Unit test for Init function
+ */
 func TestInit(t *testing.T){
 	data := []struct {
 		passPhrase string
@@ -26,142 +31,202 @@ func TestInit(t *testing.T){
 		name string
 	}{
 		{"", uint32(2), "Wallet1"},
-		{"12345678", uint32(0), "Wallet1"},
-		{"12345678", uint32(3), ""},
+		{"12345678", uint32(3), "Wallet2"},
+		{"12345678", uint32(10), "Wallet3"},
 	}
 
-	wallet := new(Wallet)
-
 	for _, item := range data {
-		wallet.Init(item.passPhrase, item.numOfAccount, item.name)
+		err := wallet.Init(item.passPhrase, item.numOfAccount, item.name)
 
-		if item.numOfAccount == 0{
-			assert.Equal(t, 1, len(wallet.MasterAccount.Child))
-		} else {
-			assert.Equal(t, int(item.numOfAccount), len(wallet.MasterAccount.Child))
-		}
-
-		if item.name == "" {
-			assert.Equal(t, WalletNameDefault, wallet.Name)
-		} else {
-			assert.Equal(t, item.name, wallet.Name)
-		}
-
-		Logger.log.Infof("Wallet: %v\n", wallet)
-
+		assert.Equal(t, nil, err)
+		assert.Equal(t, int(item.numOfAccount), len(wallet.MasterAccount.Child))
+		assert.Equal(t, item.name, wallet.Name)
 		assert.Equal(t, item.passPhrase, wallet.PassPhrase)
 		assert.Equal(t, SeedKeyLen, len(wallet.Seed))
 		assert.Greater(t, len(wallet.Mnemonic), 0)
 	}
 }
 
-func TestWallet_ExportAccount(t *testing.T) {
+func TestInitWithNumAccIsZero(t *testing.T){
+	passPhrase :=  "12345678"
+	numOfAccount :=  uint32(0)
+	name := "Wallet 1"
 
+	err := wallet.Init(passPhrase, numOfAccount, name)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 1, len(wallet.MasterAccount.Child))
 }
+
+func TestInitWithEmptyName(t *testing.T){
+	passPhrase :=  "12345678"
+	numOfAccount :=  uint32(3)
+	name := ""
+
+	err := wallet.Init(passPhrase, numOfAccount, name)
+
+	assert.Equal(t, NewWalletError(EmptyWalletNameErr, nil), err)
+}
+
+/*
+		Unit test for CreateNewAccount function
+ */
 
 func TestCreateNewAccount(t *testing.T){
 	data := []struct {
 		accountName string
 		shardID byte
 	}{
-		{"", byte(0)},
-		{"Acc A", byte(1)},
-		//{"Acc A", },
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
 	}
 
 	wallet := new(Wallet)
-	wallet.Init("", 0, "")
+	wallet.Init("", 0, "Wallet")
 
-	//tempConfig, _, err := loadConfig()
-	//if err != nil {
-	//	log.Println("Load config error")
-	//	log.Println(err)
-	//	return err
-	//}
-	//cfg = tempConfig
-	//// Get a channel that will be closed when a shutdown signal has been
-	//// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
-	//// another subsystem such as the RPC server.
-	//interrupt := interruptListener()
-	//defer Logger.log.Warn("Shutdown complete")
-	//
-	//// Show version at startup.
-	//version := version()
-	//Logger.log.Infof("Version %s", version)
-	//
-	//// Return now if an interrupt signal was triggered.
-	//if interruptRequested(interrupt) {
-	//	return nil
-	//}
-	//
-	//db, err := database.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
-	//// Create db and use it.
-	//if err != nil {
-	//	Logger.log.Error("could not open connection to leveldb")
-	//	Logger.log.Error(err)
-	//	panic(err)
-	//}
-	//// Create db mempool and use it
-	//dbmp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, cfg.DatabaseMempoolDir))
-	//if err != nil {
-	//	Logger.log.Error("could not open connection to leveldb")
-	//	Logger.log.Error(err)
-	//	panic(err)
-	//}
-	//
-	//// Check wallet and start it
-	//var walletObj *wallet.Wallet
-	//if cfg.Wallet {
-	//	walletObj = &wallet.Wallet{}
-	//	walletConf := wallet.WalletConfig{
-	//		DataDir:        cfg.DataDir,
-	//		DataFile:       cfg.WalletName,
-	//		DataPath:       filepath.Join(cfg.DataDir, cfg.WalletName),
-	//		IncrementalFee: 0, // 0 mili PRV
-	//	}
-	//	if cfg.WalletShardID >= 0 {
-	//		// check shardID of wallet
-	//		temp := byte(cfg.WalletShardID)
-	//		walletConf.ShardID = &temp
-	//	}
-	//	walletObj.SetConfig(&walletConf)
-	//	err = walletObj.LoadWallet(cfg.WalletPassphrase)
-	//	if err != nil {
-	//		if cfg.WalletAutoInit {
-	//			Logger.log.Critical("\n **** Auto init wallet flag is TRUE ****\n")
-	//			walletObj.Init(cfg.WalletPassphrase, 0, cfg.WalletName)
-	//			walletObj.Save(cfg.WalletPassphrase)
-	//		} else {
-	//			// write log and exit when can not load wallet
-	//			Logger.log.Criticalf("Can not load wallet with %s. Please use incognitoctl to create a new wallet", walletObj.GetConfig().DataPath)
-	//			return err
-	//		}
-	//	}
-	//}
-
-	numAccount := len(wallet.MasterAccount.Child)
-	Logger.log.Errorf("numAccount: %v\n", numAccount)
-	//fmt.Printf("numAccount: %v\n", numAccount)
-	for _, item := range data {
-		//fmt.Printf("item.accountName: %v\n", item.accountName)
-		Logger.log.Infof("item.accountName: %v\n", item.accountName)
-		wallet.CreateNewAccount(item.accountName, &item.shardID)
-		newAccount := wallet.MasterAccount.Child[numAccount]
-
-		assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
-
-		if item.accountName == "" {
-			assert.Equal(t, "AccountWallet "+string(numAccount), newAccount.Name)
-		}
+	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
+	dataFile := "wallet"
+	walletConf := &WalletConfig{
+		DataDir:        dataDir,
+		DataFile:       dataFile,
+		DataPath:       filepath.Join(dataDir, dataFile),
+		IncrementalFee: 0, // 0 mili PRV
 	}
 
+	wallet.SetConfig(walletConf)
 
-	//wallet := new(Wallet)
-	//wallet.Init("123", 1, "Wallet A")
-	//var shardID *byte
-	//shard0 := byte(0)
-	//shardID = &shard0
-	//wallet.CreateNewAccount("Hien",shardID)
+	numAccount := len(wallet.MasterAccount.Child)
 
+	for _, item := range data {
+		newAccount, err := wallet.CreateNewAccount(item.accountName, &item.shardID)
+		actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk) -1])
+
+		assert.Equal(t, nil, err)
+		assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+		assert.Equal(t, item.accountName, newAccount.Name)
+		assert.Equal(t, item.shardID, actualShardID)
+		assert.Equal(t, false, newAccount.IsImported)
+		assert.Equal(t, 0, len(newAccount.Child))
+		assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
+		assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
+		assert.Equal(t, privacy.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
+		assert.Equal(t, privacy.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
+		assert.Equal(t, privacy.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
+		assert.Equal(t, privacy.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
+
+		numAccount++
+	}
 }
+
+func TestCreateNewAccountWithEmptyName(t *testing.T){
+	// init wallet
+	wallet := new(Wallet)
+	wallet.Init("", 0, "Wallet")
+
+	// set config wallet
+	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
+	dataFile := "wallet"
+	walletConf := &WalletConfig{
+		DataDir:        dataDir,
+		DataFile:       dataFile,
+		DataPath:       filepath.Join(dataDir, dataFile),
+		IncrementalFee: 0, // 0 mili PRV
+	}
+
+	wallet.SetConfig(walletConf)
+	numAccount := len(wallet.MasterAccount.Child)
+
+	// create new account with empty name
+	accountName := ""
+	shardID := byte(0)
+
+	newAccount, err := wallet.CreateNewAccount(accountName, &shardID)
+	actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk) -1])
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+	assert.Equal(t, "AccountWallet " + strconv.Itoa(numAccount), newAccount.Name)
+	assert.Equal(t, shardID, actualShardID)
+	assert.Equal(t, false, newAccount.IsImported)
+	assert.Equal(t, 0, len(newAccount.Child))
+	assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
+	assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
+	assert.Equal(t, privacy.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
+	assert.Equal(t, privacy.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
+	assert.Equal(t, privacy.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
+	assert.Equal(t, privacy.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
+}
+
+func TestCreateNewAccountWithNilShardID(t *testing.T){
+	// init wallet
+	wallet := new(Wallet)
+	wallet.Init("", 0, "Wallet")
+
+	// set config wallet
+	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
+	dataFile := "wallet"
+	walletConf := &WalletConfig{
+		DataDir:        dataDir,
+		DataFile:       dataFile,
+		DataPath:       filepath.Join(dataDir, dataFile),
+		IncrementalFee: 0, // 0 mili PRV
+	}
+
+	wallet.SetConfig(walletConf)
+	numAccount := len(wallet.MasterAccount.Child)
+
+	// create new account with empty name
+	accountName := "Acc A"
+
+	newAccount, err := wallet.CreateNewAccount(accountName, nil)
+	actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk) -1])
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+	assert.Equal(t, accountName, newAccount.Name)
+	assert.GreaterOrEqual(t, actualShardID, byte(0))
+	assert.Equal(t, false, newAccount.IsImported)
+	assert.Equal(t, 0, len(newAccount.Child))
+	assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
+	assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
+	assert.Equal(t, privacy.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
+	assert.Equal(t, privacy.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
+	assert.Equal(t, privacy.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
+	assert.Equal(t, privacy.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
+}
+
+
+func TestWalletCreateNewAccountDuplicateAccountName(t *testing.T) {
+	wallet := new(Wallet)
+	wallet.Init("", 0, "Wallet")
+
+	dataDir := filepath.Join(common.AppDataDir("incognito", false), "data")
+	dataFile := "wallet"
+	walletConf := &WalletConfig{
+		DataDir:        dataDir,
+		DataFile:       dataFile,
+		DataPath:       filepath.Join(dataDir, dataFile),
+		IncrementalFee: 0, // 0 mili PRV
+	}
+
+	wallet.SetConfig(walletConf)
+
+	// create the first account with name = "Acc A"
+	accountName := "Acc A"
+	shardID := byte(0)
+
+	wallet.CreateNewAccount(accountName, &shardID)
+
+	// create new account with existed name
+	_, err := wallet.CreateNewAccount(accountName, &shardID)
+
+	assert.Equal(t,  NewWalletError(ExistedAccountNameErr, nil), err)
+}
+
+// max len of name account???
+
+
+
 

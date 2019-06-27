@@ -48,14 +48,14 @@ func (wallet *Wallet) SetConfig(config *WalletConfig) {
 // It returns error if there are any errors when initializing wallet. Otherwise, it returns nil
 // passPhrase can be empty string, it is used to generate seed and master key
 // If numOfAccount equals zero, wallet is initialized with one account
-// If name is empty string, wallet name is default name
+// If name is empty string, it returns error
 func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) error {
-	mnemonicGen := MnemonicGenerator{}
 	if name == "" {
-		wallet.Name = WalletNameDefault
-	} else {
-		wallet.Name = name
+		return NewWalletError(EmptyWalletNameErr, nil)
 	}
+
+	mnemonicGen := MnemonicGenerator{}
+	wallet.Name = name
 	wallet.Entropy, _ = mnemonicGen.NewEntropy(128)
 	wallet.Mnemonic, _ = mnemonicGen.NewMnemonic(wallet.Entropy)
 	wallet.Seed = mnemonicGen.NewSeed(wallet.Mnemonic, passPhrase)
@@ -90,9 +90,18 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 
 
 // CreateNewAccount create new account with accountName
+// it returns that new account and returns errors if accountName is existed
 // If shardID is nil, new account will belong to any shards
 // Otherwise, new account will belong to specific shard
-func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *AccountWallet {
+func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*AccountWallet, error) {
+	if accountName != "" {
+		for _, acc := range wallet.MasterAccount.Child {
+			if acc.Name == accountName{
+				return nil, NewWalletError(ExistedAccountNameErr, nil)
+			}
+		}
+	}
+
 	if shardID != nil {
 		// only create account for specific Shard
 		newIndex := uint64(0)
@@ -128,7 +137,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 		}
 		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
 		wallet.Save(wallet.PassPhrase)
-		return &account
+		return &account, nil
 
 	} else {
 		newIndex := uint32(len(wallet.MasterAccount.Child))
@@ -143,10 +152,11 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 		}
 		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
 		wallet.Save(wallet.PassPhrase)
-		return &account
+		return &account, nil
 	}
 }
 
+// ExportAccount
 func (wallet *Wallet) ExportAccount(childIndex uint32) string {
 	return wallet.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
@@ -273,7 +283,7 @@ func (wallet *Wallet) GetAccountAddress(accountParam string, shardID *byte) KeyS
 			return key
 		}
 	}
-	newAccount := wallet.CreateNewAccount(accountParam, shardID)
+	newAccount, _ := wallet.CreateNewAccount(accountParam, shardID)
 	key := KeySerializedData{
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
 		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
