@@ -143,8 +143,8 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 		return fmt.Errorf("error reading %s: %+v", filePath, err)
 	}
 
-	if sam.Version != version {
-		return fmt.Errorf("unknown version %+v in serialized addrmanager", sam.Version)
+	if sam.Version != Version {
+		return fmt.Errorf("unknown Version %+v in serialized addrmanager", sam.Version)
 	}
 	copy(addrManager.key[:], sam.Key[:])
 
@@ -220,7 +220,7 @@ out:
 }
 
 // Good marks the given address as good.  To be called after a successful
-// connection and version exchange.  If the address is unknown to the address
+// connection and Version exchange.  If the address is unknown to the address
 // manager it will be ignored.
 func (addrManager *AddrManager) Good(addr *peer.Peer) {
 	addrManager.mtx.Lock()
