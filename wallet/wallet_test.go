@@ -301,6 +301,89 @@ func TestWalletImportAccountWithUnmatchedPassPhrase(t *testing.T){
 	assert.Equal(t, NewWalletError(WrongPassphraseErr, nil), err)
 }
 
+/*
+		Unit test for RemoveAccount function
+ */
+
+func TestWalletRemoveAccount(t *testing.T){
+	data := []struct {
+		privateKeyStr string
+		accountName string
+		passPhrase string
+	}{
+		{"112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ", "Acc A", "123"},
+		{"112t8rnYJncU5TRMexdSX2X9a58c9dKPfzWMEaS7AXY3WniXbVUXvDVmZaKms2QEXtviEUKPdrqq3auNqZB8wQPtuXv8JfzprtMtgdGRiFij", "Acc B", "123"},
+		{"112t8rnYh9nB6vgnPrsnoMe5Sd39fGUTvyrBtKGN82LLXEcr2EJ2jR2c4rLtEHauCCcaXvwHtYem865L95jKBNUFGrd8mFaExvxtmjuZNqNF", "Acc C", "123"},
+	}
+
+	wallet.Init("123", 0, "Wallet")
+
+	// import account before removing
+	for _, item := range data {
+		wallet.ImportAccount(item.privateKeyStr, item.accountName, item.passPhrase)
+	}
+	numAccount := len(wallet.MasterAccount.Child)
+
+	for _, item := range data {
+		err := wallet.RemoveAccount(item.privateKeyStr, item.passPhrase)
+
+		assert.Equal(t, nil, err)
+		assert.Equal(t, numAccount - 1, len(wallet.MasterAccount.Child))
+		numAccount--
+
+		indexAccount := -1
+		for i, account := range wallet.MasterAccount.Child {
+			if account.Name == item.accountName {
+				indexAccount = i
+				break
+			}
+		}
+
+		assert.Equal(t, -1, indexAccount)
+
+	}
+}
+
+func TestWalletRemoveAccountWithWrongPrivKeyStr(t *testing.T){
+	privateKeyStr := "abc"
+	passPhrase := "123"
+
+	wallet.Init(passPhrase, 0, "Wallet")
+
+	err := wallet.RemoveAccount(privateKeyStr, passPhrase)
+	fmt.Printf("err: %v\n", err)
+	//Todo:
+	assert.Equal(t, NewWalletError(UnexpectedErr, errors.New("Not found")), err)
+}
+
+func TestWalletRemoveAccountWithNotExistedPrivKeyStr(t *testing.T){
+	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
+	accountName := "Acc A"
+	passPhrase := "123"
+	privateKeyStr2 := "112t8rnYJncU5TRMexdSX2X9a58c9dKPfzWMEaS7AXY3WniXbVUXvDVmZaKms2QEXtviEUKPdrqq3auNqZB8wQPtuXv8JfzprtMtgdGRiFij"
+
+	wallet.Init(passPhrase, 0, "Wallet")
+	wallet.ImportAccount(privateKeyStr, accountName, passPhrase)
+
+	err := wallet.RemoveAccount(privateKeyStr2, passPhrase)
+	//Todo:
+	assert.Equal(t, NewWalletError(UnexpectedErr, errors.New("Not found")), err)
+}
+
+func TestWalletRemoveAccountWithUnmatchedPassPhrase(t *testing.T){
+	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
+	accountName := "Acc A"
+	passPhrase := "123"
+	passPhrase2 := "1234"
+
+	wallet.Init(passPhrase, 0, "Wallet")
+
+	_, err := wallet.ImportAccount(privateKeyStr, accountName, passPhrase2)
+	fmt.Printf("err: %v\n", err)
+	assert.Equal(t, NewWalletError(WrongPassphraseErr, nil), err)
+}
+
+
 
 
 
