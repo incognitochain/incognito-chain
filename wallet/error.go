@@ -11,6 +11,7 @@ const (
 	ExistedAccountErr
 	ExistedAccountNameErr
 	UnexpectedErr
+	EmptyWalletNameErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -24,6 +25,7 @@ var ErrCodeMessage = map[int]struct {
 	WrongPassphraseErr:    {-1001, "Wrong passphrase"},
 	ExistedAccountErr:     {-1002, "Existed account"},
 	ExistedAccountNameErr: {-1002, "Existed account name"},
+	EmptyWalletNameErr: {-1003, "Wallet name is empty"},
 }
 
 type WalletError struct {
