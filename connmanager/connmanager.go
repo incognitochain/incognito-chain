@@ -470,7 +470,7 @@ func (connManager *ConnManager) checkPeerConnOfPbk(pbk string) bool {
 }
 
 func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
-	beaconCommittee := connManager.Config.ConsensusState.GetBeaconCommittee()
+	beaconCommittee := connManager.Config.ConsensusState.getBeaconCommittee()
 	if pbk != "" && common.IndexOfStr(pbk, beaconCommittee) >= 0 {
 		return true
 	}
@@ -501,7 +501,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 		}
 		return maxPeers
 	}
-	pBKs := connManager.Config.ConsensusState.GetShardCommittee(*shard)
+	pBKs := connManager.Config.ConsensusState.getCommitteeByShard(*shard)
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -546,7 +546,7 @@ func (connManager *ConnManager) handleRandPeersOfOtherShard(cShard *byte, maxSha
 func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPeers map[string]*wire.RawPeer) int {
 	Logger.log.Info("handleRandPeersOfBeacon")
 	countPeerShard := 0
-	pBKs := connManager.Config.ConsensusState.GetBeaconCommittee()
+	pBKs := connManager.Config.ConsensusState.getBeaconCommittee()
 	for len(pBKs) > 0 {
 		randN := common.RandInt() % len(pBKs)
 		pbk := pBKs[randN]
@@ -569,11 +569,11 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 
 func (connManager *ConnManager) handleRandPeersOfNoShard(maxPeers int, mPeers map[string]*wire.RawPeer) int {
 	countPeers := 0
-	shardByCommittee := connManager.Config.ConsensusState.GetShardByCommittee()
+	shardByCommittee := connManager.Config.ConsensusState.getShardByCommittee()
 	for _, peer := range mPeers {
 		publicKey := peer.PublicKey
 		if !connManager.checkPeerConnOfPbk(publicKey) {
-			pBKs := connManager.Config.ConsensusState.GetBeaconCommittee()
+			pBKs := connManager.Config.ConsensusState.getBeaconCommittee()
 			if common.IndexOfStr(publicKey, pBKs) >= 0 {
 				continue
 			}
