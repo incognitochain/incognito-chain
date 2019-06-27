@@ -3,7 +3,6 @@ package gomobile
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"math/big"
 	"time"
@@ -18,12 +17,6 @@ func SayHello(i string) string {
 	return i
 }
 
-func RandomScalar() string {
-	res := privacy.RandBytes(1)
-	return base64.StdEncoding.EncodeToString(res)
-}
-
-//// ["["100", "200"]", "["1", "2"]"]
 func AggregatedRangeProve(args string) string {
 	println("args:", args)
 	bytes := []byte(args)
