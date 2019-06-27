@@ -38,6 +38,7 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
+	IsTest           bool
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -98,6 +99,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
+	blockchain.IsTest = false
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
