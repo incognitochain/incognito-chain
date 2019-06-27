@@ -8,4 +8,6 @@ const (
 	SeedKeyLen        = 64 //bytes
 	ChildNumberLen = 4 // bytes
 	ChainCodeLen = 32 // bytes
+
+	PrivateKeySerializedLen = 108
 )
