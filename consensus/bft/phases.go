@@ -42,7 +42,7 @@ func (e *BFTCore) enterPreparePhase() {
 	//e.debug("start prepare phase")
 	//TODO: validate block isOK???
 
-	msg, _ := MakeBFTPrepareMsg(true, e.Name, e.Block.Hash(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
+	msg, _ := MakeBFTPrepareMsg(true, e.Name, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
 	go e.Chain.PushMessageToValidator(msg)
 }
 
