@@ -11,12 +11,31 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wire"
 	"testing"
+	"time"
 )
 var _= func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
+func TestNetSyncStart(t *testing.T) {
+	netSync := NetSync{}.New(&NetSyncConfig{
+		PubSubManager: pubsub.NewPubSubManager(),
+	})
+	netSync.Start()
+	if netSync.started != 1 {
+		t.Fatal("Netsync should already start")
+	}
+}
+func TestNetSyncStop(t *testing.T) {
+	netSync := NetSync{}.New(&NetSyncConfig{
+		PubSubManager: pubsub.NewPubSubManager(),
+	})
+	netSync.Stop()
+	if netSync.shutdown!= 1 {
+		t.Fatal("Netsync should already start")
+	}
+}
 func TestNetSyncHandleTxWithRole(t *testing.T) {
 	netSync := NetSync{}.New(&NetSyncConfig{
 		RoleInCommittees: 0,
@@ -31,7 +50,7 @@ func TestNetSyncHandleTxWithRole(t *testing.T) {
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTx{ Transaction: &tx, }
 	if !netSync.HandleTxWithRole(msg.Transaction) {
-		t.Fatal("NetSync should acception this transaction")
+		t.Fatal("NetSync should accept this transaction")
 	}
 }
 func TestNetSyncHandleCacheTx(t *testing.T) {
@@ -61,20 +80,12 @@ func TestNetSyncHandleCacheTxHash(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageTx(t *testing.T) {
-	//mempool.Logger.Init(mempoolLogger)
-	//Logger.Init(netsyncLogger)
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		} else {
-			t.Fatal("Blockchain not called")
-		}
-	}()
 	pubSub := pubsub.NewPubSubManager()
 	txPool := mempool.TxPool{}
 	txPool.Init(&mempool.Config{
 		PubSubManager: pubSub,
 	})
+	txPool.IsTest = true
 	netSync := NetSync{}.New(&NetSyncConfig{
 		RoleInCommittees: 0,
 		PubSubManager: pubSub,
@@ -88,28 +99,23 @@ func TestNetSyncHandleMessageTx(t *testing.T) {
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTx{ Transaction: &tx, }
-	netSync.HandleMessageTx(msg)
+	netSync.Start()
+	netSync.cMessage <- msg
+	<-time.Tick(1*time.Second)
 	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
 	if !res {
-		t.Fatal("Transaction should be in cache")
+		t.Error("Transaction should be in cache")
 	}
+	netSync.Stop()
 }
 
 func TestNetSyncHandleMessageTxToken(t *testing.T) {
-	//mempool.Logger.Init(mempoolLogger)
-	//Logger.Init(netsyncLogger)
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		} else {
-			t.Fatal("Blockchain not called")
-		}
-	}()
 	pubSub := pubsub.NewPubSubManager()
 	txPool := mempool.TxPool{}
 	txPool.Init(&mempool.Config{
 		PubSubManager: pubSub,
 	})
+	txPool.IsTest = true
 	netSync := NetSync{}.New(&NetSyncConfig{
 		RoleInCommittees: 1,
 		PubSubManager: pubSub,
@@ -122,29 +128,28 @@ func TestNetSyncHandleMessageTxToken(t *testing.T) {
 	}
 	tx := transaction.TxCustomToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
+	if err != nil {
+		t.Fatal("Error umarshall tx")
+	}
 	msg := &wire.MessageTxToken{ Transaction: &tx, }
-	netSync.HandleMessageTxToken(msg)
+	netSync.Start()
+	netSync.cMessage <- msg
+	<-time.Tick(1*time.Second)
 	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
 	if !res {
-		t.Fatal("Transaction should be in cache")
+		t.Error("Transaction should be in cache")
 	}
+	netSync.Stop()
+
 }
 
 func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T) {
-	//mempool.Logger.Init(mempoolLogger)
-	//Logger.Init(netsyncLogger)
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		} else {
-			t.Fatal("Blockchain not called")
-		}
-	}()
 	pubSub := pubsub.NewPubSubManager()
 	txPool := mempool.TxPool{}
 	txPool.Init(&mempool.Config{
 		PubSubManager: pubSub,
 	})
+	txPool.IsTest = true
 	netSync := NetSync{}.New(&NetSyncConfig{
 		RoleInCommittees: 1,
 		PubSubManager: pubSub,
@@ -158,11 +163,14 @@ func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T) {
 	tx := transaction.TxCustomTokenPrivacy{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTxPrivacyToken{ Transaction: &tx, }
-	netSync.HandleMessageTxPrivacyToken(msg)
+	netSync.Start()
+	netSync.cMessage <- msg
+	<-time.Tick(1*time.Second)
 	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
 	if !res {
-		t.Fatal("Transaction should be in cache")
+		t.Error("Transaction should be in cache")
 	}
+	netSync.Stop()
 }
 /*
 	case *wire.MessageBFTPropose:
@@ -186,6 +194,7 @@ func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T) {
 			netSync.HandleMessageBFTMsg(msg)
 		}
 */
+
 func TestHandleCacheBlock(t *testing.T) {
 	netSync := NetSync{}.New(&NetSyncConfig{
 		PubSubManager: pubsub.NewPubSubManager(),
@@ -201,62 +210,78 @@ func TestHandleCacheBlock(t *testing.T) {
 	}
 }
 func TestNetSyncHandleMessageBeaconBlock(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		} else {
-			t.Fatal("Blockchain not called")
-		}
-	}()
+	bc := &blockchain.BlockChain{}
+	bc.Init(&blockchain.Config{})
+	bc.IsTest = true
+	netSync := NetSync{}.New(&NetSyncConfig{
+		PubSubManager: pubsub.NewPubSubManager(),
+		BlockChain: bc,
+	})
 	block := blockchain.BeaconBlock{}
 	block.Header.Height = 2
-	netSync := NetSync{}.New(&NetSyncConfig{
-		PubSubManager: pubsub.NewPubSubManager(),
-	})
-	netSync.HandleMessageBeaconBlock(&wire.MessageBlockBeacon{Block: block})
+	netSync.Start()
+	netSync.cMessage <- &wire.MessageBlockBeacon{Block:block}
+	<-time.Tick(1*time.Second)
+	res := netSync.HandleCacheBlock("b" + block.Hash().String())
+	if !res {
+		t.Fatal("Block should be in pool")
+	}
+	netSync.Stop()
 }
 func TestNetSyncHandleMessageShardBlock(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		} else {
-			t.Fatal("Blockchain not called")
-		}
-	}()
+	bc := &blockchain.BlockChain{}
+	bc.Init(&blockchain.Config{})
+	bc.IsTest = true
+	netSync := NetSync{}.New(&NetSyncConfig{
+		PubSubManager: pubsub.NewPubSubManager(),
+		BlockChain: bc,
+	})
 	block := blockchain.ShardBlock{}
 	block.Header.Height = 2
-	netSync := NetSync{}.New(&NetSyncConfig{
-		PubSubManager: pubsub.NewPubSubManager(),
-	})
-	netSync.HandleMessageShardBlock(&wire.MessageBlockShard{Block: block})
+	netSync.Start()
+	netSync.cMessage <- &wire.MessageBlockShard{Block:block}
+	<-time.Tick(1*time.Second)
+	res := netSync.HandleCacheBlock("s" + block.Hash().String())
+	if !res {
+		t.Fatal("Block should be in pool")
+	}
+	netSync.Stop()
 }
 func TestNetSyncHandleMessageShardToBeacon(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		} else {
-			t.Fatal("Blockchain not called")
-		}
-	}()
+	bc := &blockchain.BlockChain{}
+	bc.Init(&blockchain.Config{})
+	bc.IsTest = true
+	netSync := NetSync{}.New(&NetSyncConfig{
+		PubSubManager: pubsub.NewPubSubManager(),
+		BlockChain: bc,
+	})
 	block := blockchain.ShardToBeaconBlock{}
 	block.Header.Height = 2
-	netSync := NetSync{}.New(&NetSyncConfig{
-		PubSubManager: pubsub.NewPubSubManager(),
-	})
-	netSync.HandleMessageShardToBeacon(&wire.MessageShardToBeacon{Block: block})
+	netSync.Start()
+	netSync.cMessage <- &wire.MessageShardToBeacon{Block:block}
+	<-time.Tick(1*time.Second)
+	res := netSync.HandleCacheBlock("s2b" + block.Hash().String())
+	if !res {
+		t.Fatal("Block should be in pool")
+	}
+	netSync.Stop()
 }
 func TestNetSyncHandleMessageCrossShard(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
-		} else {
-			t.Fatal("Blockchain not called")
-		}
-	}()
-	block := blockchain.CrossShardBlock{}
-	block.Header.Height = 2
+	bc := &blockchain.BlockChain{}
+	bc.Init(&blockchain.Config{})
+	bc.IsTest = true
 	netSync := NetSync{}.New(&NetSyncConfig{
 		PubSubManager: pubsub.NewPubSubManager(),
+		BlockChain: bc,
 	})
-	netSync.HandleMessageCrossShard(&wire.MessageCrossShard{Block: block})
+	block := blockchain.CrossShardBlock{}
+	block.Header.Height = 2
+	netSync.Start()
+	netSync.cMessage <- &wire.MessageCrossShard{Block:block}
+	<-time.Tick(1*time.Second)
+	res := netSync.HandleCacheBlock("c" + block.Hash().String())
+	if !res {
+		t.Fatal("Block should be in pool")
+	}
+	netSync.Stop()
 }
