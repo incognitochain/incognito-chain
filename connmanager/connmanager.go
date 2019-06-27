@@ -95,34 +95,34 @@ func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string
 		copy(connManager.Config.ConsensusState.BeaconCommittee, beaconCommittee)
 		bChange = true
 	}
-	if len(connManager.Config.ConsensusState.ShardCommittee) != len(shardCommittee) {
-		for shardID, _ := range connManager.Config.ConsensusState.ShardCommittee {
+	if len(connManager.Config.ConsensusState.CommitteeByShard) != len(shardCommittee) {
+		for shardID, _ := range connManager.Config.ConsensusState.CommitteeByShard {
 			_, ok := shardCommittee[shardID]
 			if !ok {
-				delete(connManager.Config.ConsensusState.ShardCommittee, shardID)
+				delete(connManager.Config.ConsensusState.CommitteeByShard, shardID)
 			}
 		}
 		bChange = true
 	}
-	if connManager.Config.ConsensusState.ShardCommittee == nil {
-		connManager.Config.ConsensusState.ShardCommittee = make(map[byte][]string)
+	if connManager.Config.ConsensusState.CommitteeByShard == nil {
+		connManager.Config.ConsensusState.CommitteeByShard = make(map[byte][]string)
 	}
 	for shardID, committee := range shardCommittee {
-		_, ok := connManager.Config.ConsensusState.ShardCommittee[shardID]
+		_, ok := connManager.Config.ConsensusState.CommitteeByShard[shardID]
 		if ok {
-			if !common.CompareStringArray(connManager.Config.ConsensusState.ShardCommittee[shardID], committee) {
-				connManager.Config.ConsensusState.ShardCommittee[shardID] = make([]string, len(committee))
-				copy(connManager.Config.ConsensusState.ShardCommittee[shardID], committee)
+			if !common.CompareStringArray(connManager.Config.ConsensusState.CommitteeByShard[shardID], committee) {
+				connManager.Config.ConsensusState.CommitteeByShard[shardID] = make([]string, len(committee))
+				copy(connManager.Config.ConsensusState.CommitteeByShard[shardID], committee)
 				bChange = true
 			}
 		} else {
-			connManager.Config.ConsensusState.ShardCommittee[shardID] = make([]string, len(committee))
-			copy(connManager.Config.ConsensusState.ShardCommittee[shardID], committee)
+			connManager.Config.ConsensusState.CommitteeByShard[shardID] = make([]string, len(committee))
+			copy(connManager.Config.ConsensusState.CommitteeByShard[shardID], committee)
 			bChange = true
 		}
 	}
-	if connManager.Config.ConsensusState.UserPbk != userPbk {
-		connManager.Config.ConsensusState.UserPbk = userPbk
+	if connManager.Config.ConsensusState.UserPublicKey != userPbk {
+		connManager.Config.ConsensusState.UserPublicKey = userPbk
 		bChange = true
 	}
 
@@ -508,7 +508,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
 		peerI, ok := mPeers[pbk]
 		if ok {
-			cPbk := connManager.Config.ConsensusState.UserPbk
+			cPbk := connManager.Config.ConsensusState.UserPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPbk(pbk) {
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, nil)
@@ -553,7 +553,7 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
 		peerI, ok := mPeers[pbk]
 		if ok {
-			cPbk := connManager.Config.ConsensusState.UserPbk
+			cPbk := connManager.Config.ConsensusState.UserPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPbk(pbk) {
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, nil)
@@ -569,15 +569,15 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 
 func (connManager *ConnManager) handleRandPeersOfNoShard(maxPeers int, mPeers map[string]*wire.RawPeer) int {
 	countPeers := 0
-	committee := connManager.Config.ConsensusState.GetCommittee()
+	shardByCommittee := connManager.Config.ConsensusState.GetShardByCommittee()
 	for _, peer := range mPeers {
-		pbk := peer.PublicKey
-		if !connManager.checkPeerConnOfPbk(pbk) {
+		publicKey := peer.PublicKey
+		if !connManager.checkPeerConnOfPbk(publicKey) {
 			pBKs := connManager.Config.ConsensusState.GetBeaconCommittee()
-			if common.IndexOfStr(pbk, pBKs) >= 0 {
+			if common.IndexOfStr(publicKey, pBKs) >= 0 {
 				continue
 			}
-			_, ok := committee[pbk]
+			_, ok := shardByCommittee[publicKey]
 			if ok {
 				continue
 			}
@@ -636,7 +636,7 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) bool
 }
 
 func (connManager *ConnManager) getShardOfPbk(pbk string) *byte {
-	shard, ok := connManager.Config.ConsensusState.Committee[pbk]
+	shard, ok := connManager.Config.ConsensusState.ShardByCommittee[pbk]
 	if ok {
 		return &shard
 	}

@@ -9,20 +9,20 @@ import "sync"
 
 type ConsensusState struct {
 	sync.Mutex
-	Role            string
-	CurrentShard    *byte
-	BeaconCommittee []string
-	ShardCommittee  map[byte][]string
-	UserPbk         string
-	Committee       map[string]byte
-	ShardNumber     int
+	Role             string
+	CurrentShard     *byte
+	BeaconCommittee  []string
+	CommitteeByShard map[byte][]string // map[shardID] = list committeePubkeyBase58CheckStr of shard
+	UserPublicKey    string            // in base58check encode format
+	ShardByCommittee map[string]byte   // store conversion of ShardCommittee data map[committeePubkeyBase58CheckStr] = shardID
+	ShardNumber      int
 }
 
 func (consensusState *ConsensusState) rebuild() {
-	consensusState.Committee = make(map[string]byte)
-	for shard, committees := range consensusState.ShardCommittee {
+	consensusState.ShardByCommittee = make(map[string]byte)
+	for shard, committees := range consensusState.CommitteeByShard {
 		for _, committee := range committees {
-			consensusState.Committee[committee] = shard
+			consensusState.ShardByCommittee[committee] = shard
 		}
 	}
 }
@@ -38,7 +38,7 @@ func (consensusState *ConsensusState) GetBeaconCommittee() []string {
 func (consensusState *ConsensusState) GetShardCommittee(shard byte) []string {
 	consensusState.Lock()
 	defer consensusState.Unlock()
-	committee, ok := consensusState.ShardCommittee[shard]
+	committee, ok := consensusState.CommitteeByShard[shard]
 	if ok {
 		ret := make([]string, len(committee))
 		copy(ret, committee)
@@ -47,11 +47,12 @@ func (consensusState *ConsensusState) GetShardCommittee(shard byte) []string {
 	return make([]string, 0)
 }
 
-func (consensusState *ConsensusState) GetCommittee() map[string]byte {
+// GetShardByCommittee - return list [commitee public key] = shardID
+func (consensusState *ConsensusState) GetShardByCommittee() map[string]byte {
 	consensusState.Lock()
 	defer consensusState.Unlock()
 	ret := make(map[string]byte)
-	for k, v := range consensusState.Committee {
+	for k, v := range consensusState.ShardByCommittee {
 		ret[k] = v
 	}
 	return ret
