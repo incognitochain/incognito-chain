@@ -335,6 +335,7 @@ func Int32ToBytes(value int32) []byte {
 }
 
 func BytesToUint64(b []byte) uint64 {
+	fmt.Printf("BytesToUint64 b: %v\n", b)
 	return binary.LittleEndian.Uint64(b)
 }
 

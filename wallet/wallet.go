@@ -101,7 +101,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 			temp := wallet.MasterAccount.Child[j]
 			if !temp.IsImported {
 				childNumber := temp.Key.ChildNumber
-				newIndex = common.BytesToUint64(childNumber) + uint64(1)
+				newIndex = uint64(common.BytesToInt32(childNumber) + 1)
 				break
 			}
 		}
@@ -109,7 +109,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 		// loop to get create a new child which can be equal shardID param
 		var childKey *KeyWallet
 		for true {
-			childKey, _ := wallet.MasterAccount.Key.NewChildKey(uint32(newIndex))
+			childKey, _ = wallet.MasterAccount.Key.NewChildKey(uint32(newIndex))
 			lastByte := childKey.KeySet.PaymentAddress.Pk[len(childKey.KeySet.PaymentAddress.Pk)-1]
 			if common.GetShardIDFromLastByte(lastByte) == *shardID {
 				break
@@ -120,6 +120,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 		if accountName == "" {
 			accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
 		}
+
 		account := AccountWallet{
 			Key:   *childKey,
 			Child: make([]AccountWallet, 0),
