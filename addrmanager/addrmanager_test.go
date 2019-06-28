@@ -91,7 +91,7 @@ func TestAddrManager_AddressCache(t *testing.T) {
 	}
 }
 
-func TestNewAddrManager_SavePeer(t *testing.T) {
+func TestNewAddrManager_SaveAndLoadPeer(t *testing.T) {
 	addrManager = New(dataDir)
 	rawAddress := "localhost:9333"
 	// add peer into addr manager
