@@ -9,8 +9,9 @@ TOTAL_PUBKEY: constant(uint256) = COMM_SIZE * MAX_PATH
 PUBKEY_SIZE: constant(int128) = 33
 PUBKEY_LENGTH: constant(int128) = PUBKEY_SIZE * COMM_SIZE
 INST_LENGTH: constant(uint256) = 150
+INC_ADDRESS_LENGTH: constant(uint256) = 105
 
-Deposit: event({_from: indexed(address), _incognito_address: string[64], _amount: wei_value})
+Deposit: event({_from: indexed(address), _incognito_address: string[INC_ADDRESS_LENGTH], _amount: wei_value})
 Withdraw: event({_to: indexed(address), _amount: wei_value})
 
 
@@ -30,7 +31,7 @@ def __init__(incognitoProxyAddress: address):
 
 @public
 @payable
-def deposit(incognito_address: string[64]):
+def deposit(incognito_address: string[INC_ADDRESS_LENGTH]):
     log.Deposit(msg.sender, incognito_address, msg.value)
 
 @constant
@@ -44,9 +45,11 @@ def parseBurnInst(inst: bytes[INST_LENGTH]) -> (uint256, bytes32, address, uint2
 
 @constant
 @public
-def testExtract(a: bytes[INST_LENGTH]) -> address:
+def testExtract(a: bytes[INST_LENGTH]) -> (address, wei_value):
     x: address = extract32(a, 0, type=address)
-    return x
+    s: uint256 = 12345
+    t: wei_value = as_wei_value(s, "gwei")
+    return x, t
 
 @public
 def withdraw(
@@ -79,19 +82,20 @@ def withdraw(
     type: uint256 = 0
     tokenID: bytes32
     to: address
-    amount: uint256 = 0
-    type, tokenID, to, amount = self.parseBurnInst(inst)
-    log.NotifyUint256(type)
-    log.NotifyBytes32(tokenID)
-    log.NotifyAddress(to)
-    log.NotifyUint256(amount)
+    burned: uint256 = 0
+    type, tokenID, to, burned = self.parseBurnInst(inst)
+    # log.NotifyUint256(type)
+    # log.NotifyBytes32(tokenID)
+    # log.NotifyAddress(to)
+    # log.NotifyUint256(burned)
 
-    # TODO: check type and tokenID
+    # Check type and tokenID
+    assert type == 3617328 # Burn metadata and shardID of bridge
+    assert tokenID == 0x0500000000000000000000000000000000000000000000000000000000000000
 
     # Each instruction can only by redeemed once
     instHash: bytes32 = keccak256(inst)
-    # assert self.withdrawed[instHash] == False
-    log.NotifyBool(self.withdrawed[instHash])
+    assert self.withdrawed[instHash] == False
 
     # Check if instruction is approved on Incognito
     assert self.incognito.instructionApproved(
@@ -123,7 +127,7 @@ def withdraw(
     )
 
     # Check if balance is enough
-    log.NotifyBool(self.balance >= amount)
+    amount: wei_value = as_wei_value(burned, "gwei")
     assert self.balance >= amount
 
     # Send and notify
