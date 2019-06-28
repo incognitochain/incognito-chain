@@ -1154,7 +1154,7 @@ PushMessageToPeer push msg to pbk
 */
 func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 	Logger.log.Debugf("Push msg to pbk %s", pbk)
-	peerConns := serverObj.connManager.GetPeerConnOfPbk(pbk)
+	peerConns := serverObj.connManager.GetPeerConnOfPublicKey(pbk)
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
