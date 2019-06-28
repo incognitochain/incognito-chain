@@ -422,8 +422,9 @@ func TestWalletSaveWithUnmatchedPassPhrase(t *testing.T){
 	assert.Equal(t, NewWalletError(WrongPassphraseErr, nil), err)
 }
 
-func TestWalletSaveWithNotExistedDataPath(t *testing.T){
+func TestWalletSaveWithWrongConfig(t *testing.T){
 	passPhrase := "123"
+	wallet := new (Wallet)
 	wallet.Init(passPhrase, 0, "Wallet")
 
 	// set wrong config wallet
@@ -442,8 +443,127 @@ func TestWalletSaveWithNotExistedDataPath(t *testing.T){
 	assert.Equal(t, ErrCodeMessage[WriteFileErr].code, err.(*WalletError).GetCode())
 }
 
+/*
+		Unit test for LoadWallet function
+ */
 
+func TestWalletLoadWallet(t *testing.T){
+	passPhrase := "123"
+	numAcc := 2
+	name := "Wallet"
+	wallet.Init(passPhrase, uint32(numAcc), name)
+	wallet.Save(passPhrase)
 
+	wallet2 := new(Wallet)
+	wallet2.SetConfig(wallet.config)
+	err := wallet2.LoadWallet(passPhrase)
 
+	assert.Equal(t, nil, err)
+	assert.Equal(t, numAcc, len(wallet2.MasterAccount.Child))
+	assert.Equal(t, wallet, wallet2)
+}
 
+func TestWalletLoadWalletWithUnmatchedPassPhrase(t *testing.T){
+	passPhrase := "123"
+	passPhrase2 := "1234"
+	numAcc := 2
+	name := "Wallet"
+	wallet.Init(passPhrase, uint32(numAcc), name)
+	wallet.Save(passPhrase)
+
+	wallet2 := new(Wallet)
+	wallet2.SetConfig(wallet.config)
+	err := wallet2.LoadWallet(passPhrase2)
+
+	assert.Equal(t, ErrCodeMessage[AESDecryptErr].code, err.(*WalletError).GetCode())
+}
+
+func TestWalletLoadWalletWithEmptyPassPhrase(t *testing.T){
+	passPhrase := "123"
+	passPhrase2 := ""
+	numAcc := 2
+	name := "Wallet"
+	wallet.Init(passPhrase, uint32(numAcc), name)
+	wallet.Save(passPhrase)
+
+	wallet2 := new(Wallet)
+	wallet2.SetConfig(wallet.config)
+	err := wallet2.LoadWallet(passPhrase2)
+
+	assert.Equal(t, ErrCodeMessage[AESDecryptErr].code, err.(*WalletError).GetCode())
+}
+
+func TestWalletLoadWalletWithWrongConfig(t *testing.T){
+	passPhrase := "123"
+	numAcc := 2
+	name := "Wallet"
+	wallet.Init(passPhrase, uint32(numAcc), name)
+	wallet.Save(passPhrase)
+
+	wallet2 := new(Wallet)
+	// set wrong config wallet
+	dataDir := ""
+	dataFile := ""
+	walletConf := &WalletConfig{
+		DataDir:        dataDir,
+		DataFile:       dataFile,
+		DataPath:       filepath.Join(dataDir, dataFile),
+		IncrementalFee: 0, // 0 mili PRV
+	}
+	wallet2.SetConfig(walletConf)
+	err := wallet2.LoadWallet(passPhrase)
+
+	assert.Equal(t, ErrCodeMessage[ReadFileErr].code, err.(*WalletError).GetCode())
+}
+
+/*
+		Unit test for DumpPrivkey function
+ */
+
+func TestWalletDumpPrivkey(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		newAccount, _ := wallet.CreateNewAccount(item.accountName, &item.shardID)
+		paymentAddrSerialized := newAccount.Key.Base58CheckSerialize(PaymentAddressType)
+		privateKeySerialized := newAccount.Key.Base58CheckSerialize(PriKeyType)
+
+		keyData := wallet.DumpPrivkey(paymentAddrSerialized)
+
+		assert.Equal(t, privateKeySerialized, keyData.PrivateKey)
+	}
+}
+
+func TestWalletDumpPrivkeyWithNotExistedAcc(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		newAccount, _ := wallet.CreateNewAccount(item.accountName, &item.shardID)
+		paymentAddrSerialized := newAccount.Key.Base58CheckSerialize(PaymentAddressType)
+
+		keyData := wallet.DumpPrivkey(paymentAddrSerialized + "123")
+
+		assert.Equal(t, "", keyData.PrivateKey)
+	}
+}
 

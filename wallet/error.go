@@ -14,8 +14,11 @@ const (
 	EmptyWalletNameErr
 	NotFoundAccountErr
 	JsonMarshalErr
+	JsonUnmarshalErr
 	WriteFileErr
+	ReadFileErr
 	AESEncryptErr
+	AESDecryptErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -31,8 +34,11 @@ var ErrCodeMessage = map[int]struct {
 	EmptyWalletNameErr: {-1003, "Wallet name is empty"},
 	NotFoundAccountErr: {-1004, "Account wallet is not found"},
 	JsonMarshalErr: {-1005, "Can not json marshal"},
-	WriteFileErr: {-1006, "Can not write file"},
-	AESEncryptErr: {-1007, "Can not ASE encrypt data"},
+	JsonUnmarshalErr: {-1006, "Can not json unmarshal"},
+	WriteFileErr: {-1007, "Can not write file"},
+	ReadFileErr: {-1008, "Can not read file"},
+	AESEncryptErr: {-1009, "Can not ASE encrypt data"},
+	AESDecryptErr: {-1010, "Can not ASE decrypt data"},
 }
 
 type WalletError struct {
