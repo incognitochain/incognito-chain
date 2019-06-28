@@ -453,7 +453,7 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	peerConn := PeerConn{
-		isOutbound:         true,
+		isOutbound:         true, // we are connecting to remote peer -> this is an outbound peer
 		RemotePeer:         peer,
 		RemotePeerID:       remotePeerID,
 		RemoteRawAddress:   peer.RawAddress,
@@ -509,6 +509,8 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 	return &peerConn, nil
 }
 
+// handleStream - this mean we have other peer want to be connect to us(an inbound peer)
+// we need to create data about this inbound peer and handle our inbound stream
 func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
@@ -538,7 +540,7 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
 
 	peerConn := PeerConn{
-		isOutbound:   false,
+		isOutbound:   false, // we are connected from remote peer -> this is an inbound peer
 		ListenerPeer: peerObj,
 		RemotePeer: &Peer{
 			PeerID: remotePeerID,

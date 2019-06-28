@@ -59,10 +59,10 @@ func (peerConn *PeerConn) GetIsOutbound() bool {
 	return peerConn.isOutbound
 }
 
-func (peerConn *PeerConn) SetIsOutbound(v bool) {
+func (peerConn *PeerConn) SetIsOutbound(isOutbound bool) {
 	peerConn.isOutboundMtx.Lock()
 	defer peerConn.isOutboundMtx.Unlock()
-	peerConn.isOutbound = v
+	peerConn.isOutbound = isOutbound
 }
 
 func (peerConn *PeerConn) GetIsForceClose() bool {
