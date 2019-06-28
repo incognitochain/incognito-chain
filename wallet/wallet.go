@@ -330,6 +330,7 @@ func (wallet *Wallet) GetAddressesByAccName(accountName string) []KeySerializedD
 	return result
 }
 
+// ListAccounts returns a map with key is account name and value is account wallet
 func (wallet *Wallet) ListAccounts() map[string]AccountWallet {
 	result := make(map[string]AccountWallet)
 	for _, account := range wallet.MasterAccount.Child {
@@ -338,6 +339,7 @@ func (wallet *Wallet) ListAccounts() map[string]AccountWallet {
 	return result
 }
 
+// ContainPubKey checks whether the wallet contains any account with pubKey or not
 func (wallet *Wallet) ContainPubKey(pubKey []byte) bool {
 	for _, account := range wallet.MasterAccount.Child {
 		if bytes.Equal(account.Key.KeySet.PaymentAddress.Pk[:], pubKey) {
