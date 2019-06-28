@@ -289,11 +289,11 @@ func (wallet *Wallet) DumpPrivkey(paymentAddrSerialized string) KeySerializedDat
 	return KeySerializedData{}
 }
 
-// GetAccountAddress receives accountName and shardID
+// GetAddressByAccName receives accountName and shardID
 // and returns corresponding account's KeySerializedData object contains base58 check serialized PaymentAddress,
 // hex encoding Pubkey and base58 check serialized ReadonlyKey
 // If there is not any account corresponding to accountName, we will create new account
-func (wallet *Wallet) GetAccountAddress(accountName string, shardID *byte) KeySerializedData {
+func (wallet *Wallet) GetAddressByAccName(accountName string, shardID *byte) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
 		if account.Name == accountName {
 			key := KeySerializedData{
@@ -313,9 +313,9 @@ func (wallet *Wallet) GetAccountAddress(accountName string, shardID *byte) KeySe
 	return key
 }
 
-// GetAddressesByAccount receives accountName
+// GetAddressesByAccName receives accountName
 // and returns list of KeySerializedData of accounts which has accountName
-func (wallet *Wallet) GetAddressesByAccount(accountName string) []KeySerializedData {
+func (wallet *Wallet) GetAddressesByAccName(accountName string) []KeySerializedData {
 	result := make([]KeySerializedData, 0)
 	for _, account := range wallet.MasterAccount.Child {
 		if account.Name == accountName {
