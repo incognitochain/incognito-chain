@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -56,20 +58,22 @@ type BestStateBeacon struct {
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
-
 	ShardHandle map[byte]bool `json:"ShardHandle"` // lock sync.RWMutex
 	lockMu      sync.RWMutex
+	randomClient btc.RandomClient
 }
-
-func (s *BestStateBeacon) MarshalJSON() ([]byte, error) {
-	s.lockMu.RLock()
-	defer s.lockMu.RUnlock()
+func (bestStateBeacon *BestStateBeacon) InitRandomClient (randomClient btc.RandomClient) {
+	bestStateBeacon.randomClient = randomClient
+}
+func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
 
 	type Alias BestStateBeacon
 	b, err := json.Marshal(&struct {
 		*Alias
 	}{
-		(*Alias)(s),
+		(*Alias)(bestStateBeacon),
 	})
 	if err != nil {
 		Logger.log.Error(err)
@@ -431,15 +435,46 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range currentBestStateBlk.Body.Instructions {
+		if inst[0] == StakeAction || inst[0] == RandomAction {
+			continue
+		}
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
 		}
 		var err error
-		switch inst[0] {
-		case strconv.Itoa(metadata.IssuingRequestMeta):
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			fmt.Printf("[ndh] error - - %+v\n", err)
+			return err
+		}
+		switch metaType {
+		case metadata.IssuingRequestMeta:
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
-		case strconv.Itoa(metadata.ContractingRequestMeta):
+		case metadata.ContractingRequestMeta:
 			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
+		case metadata.AcceptedBlockRewardInfoMeta:
+			fmt.Printf("[ndh] - - %+v\n", inst[2])
+			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
+			if err != nil {
+				fmt.Printf("[ndh] error1 - - %+v\n", err)
+				return err
+			}
+			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = val + blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			} else {
+				if acceptedBlkRewardInfo.TxsFee == nil {
+					acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
+				}
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			}
+			for key, value := range acceptedBlkRewardInfo.TxsFee {
+				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+				err = blockchain.config.DataBase.RestoreShardRewardRequest(currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
+				if err != nil {
+					return err
+				}
+
+			}
 		}
 		if err != nil {
 			return err
@@ -474,16 +509,50 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
+		if inst[0] == StakeAction || inst[0] == RandomAction {
+			continue
+		}
+
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
 		}
 		var err error
-		switch inst[0] {
-		case strconv.Itoa(metadata.IssuingRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
-		case strconv.Itoa(metadata.ContractingRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			fmt.Printf("[ndh] error - - %+v\n", err)
+			return err
 		}
+
+		switch metaType {
+		case metadata.IssuingRequestMeta:
+			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
+		case metadata.ContractingRequestMeta:
+			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
+		case metadata.AcceptedBlockRewardInfoMeta:
+			fmt.Printf("[ndh] - - %+v\n", inst[2])
+			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
+			if err != nil {
+				fmt.Printf("[ndh] error1 - - %+v\n", err)
+				return err
+			}
+			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = val + blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			} else {
+				if acceptedBlkRewardInfo.TxsFee == nil {
+					acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
+				}
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			}
+			for key, value := range acceptedBlkRewardInfo.TxsFee {
+				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+				err = blockchain.config.DataBase.BackupShardRewardRequest(block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
+				if err != nil {
+					return err
+				}
+
+			}
+		}
+
 		if err != nil {
 			return err
 		}
