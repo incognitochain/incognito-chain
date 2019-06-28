@@ -187,24 +187,24 @@ func (connManager *ConnManager) GetPeerId(addr string) (string, error) {
 
 // Connect assigns an id and dials a connection to the address of the
 // connection request.
-func (connManager *ConnManager) Connect(addr string, pubKey string, cConn chan *peer.PeerConn) {
+func (connManager *ConnManager) Connect(addr string, publicKey string, cConn chan *peer.PeerConn) {
 	if atomic.LoadInt32(&connManager.stop) != 0 {
 		return
 	}
 	// The following code extracts target's peer Id from the
 	// given multiaddress
-	ipfsaddr, err := ma.NewMultiaddr(addr)
+	ipfsAddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
 
-	pid, err := ipfsaddr.ValueForProtocol(ma.P_IPFS)
+	// decode to a peerID from ipfs address
+	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		Logger.log.Error(err)
 		return
 	}
-
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
 		Logger.log.Error(err)
@@ -213,20 +213,20 @@ func (connManager *ConnManager) Connect(addr string, pubKey string, cConn chan *
 
 	// Decapsulate the /ipfs/<peerID> part from the target
 	// /ip4/<a.b.c.d>/ipfs/<peer> becomes /ip4/<a.b.c.d>
-
+	// Create a Peer object
 	targetPeerAddr, _ := ma.NewMultiaddr(fmt.Sprintf("/ipfs/%s", libpeer.IDB58Encode(peerId)))
-	targetAddr := ipfsaddr.Decapsulate(targetPeerAddr)
+	targetAddr := ipfsAddr.Decapsulate(targetPeerAddr)
 
-	listen := connManager.Config.ListenerPeer
-	listen.HandleConnected = connManager.handleConnected
-	listen.HandleDisconnected = connManager.handleDisconnected
-	listen.HandleFailed = connManager.handleFailed
+	listeningPeer := connManager.Config.ListenerPeer
+	listeningPeer.HandleConnected = connManager.handleConnected
+	listeningPeer.HandleDisconnected = connManager.handleDisconnected
+	listeningPeer.HandleFailed = connManager.handleFailed
 
 	peer := peer.Peer{
 		TargetAddress:      targetAddr,
 		PeerID:             peerId,
 		RawAddress:         addr,
-		Config:             listen.Config,
+		Config:             listeningPeer.Config,
 		PeerConns:          make(map[string]*peer.PeerConn),
 		PendingPeers:       make(map[string]*peer.Peer),
 		HandleConnected:    connManager.handleConnected,
@@ -234,14 +234,17 @@ func (connManager *ConnManager) Connect(addr string, pubKey string, cConn chan *
 		HandleFailed:       connManager.handleFailed,
 	}
 
-	if pubKey != common.EmptyString {
-		peer.PublicKey = pubKey
+	// if we can get an pubbic key from params?
+	if publicKey != common.EmptyString {
+		// use public key to detect role in network
+		peer.PublicKey = publicKey
 	}
 
-	listen.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
+	// add remote address peer into our listening node peer
+	listeningPeer.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
 	Logger.log.Info("DEBUG Connect to RemotePeer", peer.PublicKey)
-	Logger.log.Info(listen.Host.Peerstore().Addrs(peer.PeerID))
-	listen.PushConn(&peer, cConn)
+	Logger.log.Info(listeningPeer.Host.Peerstore().Addrs(peer.PeerID))
+	listeningPeer.PushConn(&peer, cConn)
 }
 
 func (connManager *ConnManager) Start(discoverPeerAddress string) {
@@ -251,7 +254,7 @@ func (connManager *ConnManager) Start(discoverPeerAddress string) {
 	}
 
 	Logger.log.Info("Connection manager started")
-	// Start handler to listent channel from connection peer
+	// Start handler to listen channel from connection peer
 	//go connManager.connHandler()
 
 	// Start all the listeners so long as the caller requested them and
@@ -265,7 +268,10 @@ func (connManager *ConnManager) Start(discoverPeerAddress string) {
 		connManager.ListeningPeer = listner
 
 		if connManager.Config.DiscoverPeers && connManager.Config.DiscoverPeersAddress != common.EmptyString {
-			Logger.log.Infof("DiscoverPeers: true\n----------------------------------------------------------------\n|               Discover peer url: %s               |\n----------------------------------------------------------------", connManager.Config.DiscoverPeersAddress)
+			Logger.log.Infof("DiscoverPeers: true\n----------------------------------------------------------------"+
+				"\n|               Discover peer url: %s               |"+
+				"\n----------------------------------------------------------------",
+				connManager.Config.DiscoverPeersAddress)
 			go connManager.DiscoverPeers(discoverPeerAddress)
 		}
 	}
