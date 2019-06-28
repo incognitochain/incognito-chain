@@ -19,7 +19,7 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
-// NetSync is a gate for message to enter node from network (after Wire),
+// NetSync is a gate for message to enter node from network (after Peerconn),
 // all message must be process by NetSync before proccessed by other package in node
 // NetSync parses message from other peer, identifies type of message
 // After parsing, it will detect if message is duplicate or not
@@ -29,7 +29,7 @@ import (
 type NetSync struct {
 	started   int32
 	shutdown  int32
-	waitgroup sync.WaitGroup
+	//waitgroup sync.WaitGroup
 
 	cMessage chan interface{}
 	cQuit    chan struct{}
@@ -70,7 +70,7 @@ type NetSyncCache struct {
 func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 	netSync.config = cfg
 	netSync.cQuit = make(chan struct{})
-	netSync.cMessage = make(chan interface{})
+	netSync.cMessage = make(chan interface{}, 1000)
 	blockCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	txCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	netSync.Cache = &NetSyncCache{
@@ -93,7 +93,7 @@ func (netSync *NetSync) Start() {
 		return
 	}
 	Logger.log.Info("Starting sync manager")
-	netSync.waitgroup.Add(1)
+	//netSync.waitgroup.Add(1)
 	go netSync.messageHandler()
 	go netSync.cacheLoop()
 }
@@ -209,7 +209,8 @@ out:
 		}
 	}
 
-	netSync.waitgroup.Done()
+	//netSync.waitgroup.Done()
+	close(netSync.cMessage)
 	Logger.log.Info("Block handler done")
 }
 
@@ -364,7 +365,7 @@ func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
 	//if oldBlock := netSync.IsOldBeaconBlock(msg.Block.Header.Height); !oldBlock {
 	if isAdded := netSync.HandleCacheBlock("b" + msg.Block.Header.Hash().String()); !isAdded {
-		netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
+		netSync.config.BlockChain.OnBlockBeaconReceived(msg.Block)
 	}
 	//}
 }
@@ -374,7 +375,7 @@ func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	fmt.Println("Shard Block Received In net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
 	if isAdded := netSync.HandleCacheBlock("s" + msg.Block.Header.Hash().String()); !isAdded {
 		fmt.Println("Shard Block NO Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
-		netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
+		netSync.config.BlockChain.OnBlockShardReceived(msg.Block)
 		return
 	}
 	fmt.Println("Shard Block Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
@@ -403,11 +404,6 @@ func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
 	netSync.config.Consensus.OnBFTMsg(msg)
 }
 
-// func (netSync *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
-// 	Logger.log.Info("Handling new message invalidblock")
-// 	netSync.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.shardID, msg.Reason)
-// }
-
 func (netSync *NetSync) HandleMessagePeerState(msg *wire.MessagePeerState) {
 	Logger.log.Info("Handling new message peerstate", msg.SenderID)
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
@@ -415,7 +411,6 @@ func (netSync *NetSync) HandleMessagePeerState(msg *wire.MessagePeerState) {
 		Logger.log.Error(err)
 		return
 	}
-
 	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, peerID)
 }
 
