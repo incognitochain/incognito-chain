@@ -1381,7 +1381,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 	}
 	msg.(*wire.MessageGetBlockShard).ByHash = true
 	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
-	msg.(*wire.MessageGetBlockShard).BlksHash = blksHash
+	msg.(*wire.MessageGetBlockShard).BlkHashes = blksHash
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, shardID)

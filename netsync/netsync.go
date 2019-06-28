@@ -27,8 +27,8 @@ import (
 // NetSync start when node start and run all the time while node is alive
 // and it will stop when received quit signal
 type NetSync struct {
-	started   int32
-	shutdown  int32
+	started  int32
+	shutdown int32
 	//waitgroup sync.WaitGroup
 
 	cMessage chan interface{}
@@ -422,7 +422,7 @@ func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 		return
 	}
 	if msg.ByHash {
-		netSync.GetBlkShardByHashAndSend(peerID, 0, msg.BlksHash, 0)
+		netSync.GetBlkShardByHashAndSend(peerID, 0, msg.BlkHashes, 0)
 	} else {
 		netSync.GetBlkShardByHeightAndSend(peerID, msg.FromPool, 0, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
 	}
