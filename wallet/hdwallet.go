@@ -46,7 +46,7 @@ func NewMasterKey(seed []byte) (*KeyWallet, error) {
 	return key, nil
 }
 
-// NewChildKey derives a Child PubKey from a given parent as outlined by bip32
+// NewChildKey derives a Child KeyWallet from a given parent as outlined by bip32
 func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 	intermediary, err := key.getIntermediary(childIdx)
 	if err != nil {
