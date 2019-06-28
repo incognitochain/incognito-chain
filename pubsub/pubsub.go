@@ -65,7 +65,7 @@ func (pubSubManager *PubSubManager) RegisterNewSubscriber(topic string) (uint, E
 	defer pubSubManager.cond.L.Unlock()
 	cSubscribe := make(chan *Message, ChanWorkLoad)
 	if !pubSubManager.HasTopic(topic) {
-		return 0, cSubscribe, NewPubsubError(UnregisteredTopicError, errors.New(topic))
+		return 0, cSubscribe, NewPubSubError(UnregisteredTopicError, errors.New(topic))
 	}
 	if _, ok := pubSubManager.SubscriberList[topic]; !ok {
 		pubSubManager.SubscriberList[topic] = make(map[uint]EventChannel)

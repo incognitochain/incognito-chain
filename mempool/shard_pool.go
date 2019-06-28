@@ -34,7 +34,7 @@ type ShardPool struct {
 	cache                 *lru.Cache
 	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.EventChannel
-	PubsubManager         *pubsub.PubSubManager
+	PubSubManager         *pubsub.PubSubManager
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
@@ -66,8 +66,8 @@ func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.Pub
 		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
 		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
 		pool[byte(i)] = shardPoolMap[byte(i)]
-		shardPoolMap[byte(i)].PubsubManager = pubsubManager
-		_, subChanRole, _ := shardPoolMap[byte(i)].PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+		shardPoolMap[byte(i)].PubSubManager = pubsubManager
+		_, subChanRole, _ := shardPoolMap[byte(i)].PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 		shardPoolMap[byte(i)].RoleInCommitteesEvent = subChanRole
 	}
 }

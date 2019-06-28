@@ -5,13 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
-	
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // BestState houses information about the current best block and other info
@@ -257,6 +260,16 @@ func (blockchain *BlockChain) RevertShardState(shardID byte) error {
 		return err
 	}
 
+	prevBeaconHeight := shardBestState.BeaconHeight
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, prevBeaconHeight+1, currentBestStateBlk.Header.BeaconHeight)
+	if err != nil {
+		return err
+	}
+
+	if err := blockchain.restoreDatabaseFromBeaconInstruction(beaconBlocks, currentBestStateBlk.Header.ShardID); err != nil {
+		return err
+	}
+
 	// DeleteIncomingCrossShard
 	blockchain.config.DataBase.DeleteBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height, shardID)
 	blockchain.BestState.Shard[shardID] = &shardBestState
@@ -266,7 +279,7 @@ func (blockchain *BlockChain) RevertShardState(shardID byte) error {
 	return nil
 }
 
-func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock) error {
+func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock, beaconblks []*BeaconBlock) error {
 
 	//Steps:
 	// 1. Backup beststate
@@ -289,6 +302,117 @@ func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock) error {
 		return err
 	}
 
+	if err := blockchain.backupDatabaseFromBeaconInstruction(beaconblks, block.Header.ShardID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks []*BeaconBlock,
+	shardID byte) error {
+
+	shardCommittee := make(map[byte][]string)
+	isInit := false
+	epoch := uint64(0)
+	db := blockchain.config.DataBase
+	// listShardCommittee := blockchain.config.DataBase.FetchCommitteeByEpoch
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			if l[0] == StakeAction || l[0] == RandomAction {
+				continue
+			}
+			if len(l) <= 2 {
+				continue
+			}
+			shardToProcess, err := strconv.Atoi(l[1])
+			if err != nil {
+				continue
+			}
+			if shardToProcess == int(shardID) {
+				metaType, err := strconv.Atoi(l[0])
+				if err != nil {
+					return err
+				}
+				switch metaType {
+				case metadata.BeaconRewardRequestMeta:
+					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
+					if err != nil {
+						return err
+					}
+					publicKeyCommittee, _, err := base58.Base58Check{}.Decode(beaconBlkRewardInfo.PayToPublicKey)
+					if err != nil {
+						return err
+					}
+					for key := range beaconBlkRewardInfo.BeaconReward {
+						err = db.BackupCommitteeReward(publicKeyCommittee, key)
+						if err != nil {
+							return err
+						}
+					}
+					continue
+
+				case metadata.DevRewardRequestMeta:
+					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
+					if err != nil {
+						return err
+					}
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
+					if err != nil {
+						return err
+					}
+					for key := range devRewardInfo.DevReward {
+						err = db.BackupCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, key)
+						if err != nil {
+							return err
+						}
+					}
+					continue
+
+				case metadata.ShardBlockRewardRequestMeta:
+					shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
+					if err != nil {
+						return err
+					}
+					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+						isInit = true
+						epoch = shardRewardInfo.Epoch
+						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(epoch)
+						if err != nil {
+							return err
+						}
+						json.Unmarshal(temp, &shardCommittee)
+					}
+					err = blockchain.backupShareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
+					if err != nil {
+						return err
+					}
+					continue
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) backupShareRewardForShardCommittee(epoch uint64, totalReward map[common.Hash]uint64, listCommitee []string) error {
+	// reward := totalReward / uint64(len(listCommitee))
+	reward := map[common.Hash]uint64{}
+	for key, value := range totalReward {
+		reward[key] = value / uint64(len(listCommitee))
+	}
+	for key := range totalReward {
+		for _, committee := range listCommitee {
+			committeeBytes, _, err := base58.Base58Check{}.Decode(committee)
+			if err != nil {
+				return err
+			}
+			err = blockchain.config.DataBase.BackupCommitteeReward(committeeBytes, key)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -404,6 +528,113 @@ func (blockchain *BlockChain) backupCommitmentsFromTxViewPoint(view TxViewPoint)
 	// 		}
 	// 	}
 	// }
+	return nil
+}
+
+func (blockchain *BlockChain) restoreDatabaseFromBeaconInstruction(beaconBlocks []*BeaconBlock,
+	shardID byte) error {
+
+	shardCommittee := make(map[byte][]string)
+	isInit := false
+	epoch := uint64(0)
+	db := blockchain.config.DataBase
+	// listShardCommittee := blockchain.config.DataBase.FetchCommitteeByEpoch
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			if l[0] == StakeAction || l[0] == RandomAction {
+				continue
+			}
+			if len(l) <= 2 {
+				continue
+			}
+			shardToProcess, err := strconv.Atoi(l[1])
+			if err != nil {
+				continue
+			}
+			if shardToProcess == int(shardID) {
+				metaType, err := strconv.Atoi(l[0])
+				if err != nil {
+					return err
+				}
+				switch metaType {
+				case metadata.BeaconRewardRequestMeta:
+					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
+					if err != nil {
+						return err
+					}
+					publicKeyCommittee, _, err := base58.Base58Check{}.Decode(beaconBlkRewardInfo.PayToPublicKey)
+					if err != nil {
+						return err
+					}
+					for key := range beaconBlkRewardInfo.BeaconReward {
+						err = db.RestoreCommitteeReward(publicKeyCommittee, key)
+						if err != nil {
+							return err
+						}
+					}
+					continue
+
+				case metadata.DevRewardRequestMeta:
+					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
+					if err != nil {
+						return err
+					}
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
+					if err != nil {
+						return err
+					}
+					for key := range devRewardInfo.DevReward {
+						err = db.RestoreCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, key)
+						if err != nil {
+							return err
+						}
+					}
+					continue
+
+				case metadata.ShardBlockRewardRequestMeta:
+					shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
+					if err != nil {
+						return err
+					}
+					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+						isInit = true
+						epoch = shardRewardInfo.Epoch
+						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(epoch)
+						if err != nil {
+							return err
+						}
+						json.Unmarshal(temp, &shardCommittee)
+					}
+					err = blockchain.restoreShareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
+					if err != nil {
+						return err
+					}
+					continue
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) restoreShareRewardForShardCommittee(epoch uint64, totalReward map[common.Hash]uint64, listCommitee []string) error {
+	// reward := totalReward / uint64(len(listCommitee))
+	reward := map[common.Hash]uint64{}
+	for key, value := range totalReward {
+		reward[key] = value / uint64(len(listCommitee))
+	}
+	for key := range totalReward {
+		for _, committee := range listCommitee {
+			committeeBytes, _, err := base58.Base58Check{}.Decode(committee)
+			if err != nil {
+				return err
+			}
+			err = blockchain.config.DataBase.RestoreCommitteeReward(committeeBytes, key)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

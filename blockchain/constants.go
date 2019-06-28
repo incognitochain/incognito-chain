@@ -3,6 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -79,6 +81,9 @@ var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
 var PreSelectShardNodeTestnetSerializedPubkey = []string{}
 
 func init() {
+	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
+		return
+	}
 	keyData, err := ioutil.ReadFile("keylist.json")
 	if err != nil {
 		panic(err)

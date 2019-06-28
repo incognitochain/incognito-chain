@@ -2,7 +2,6 @@ package btc
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"time"
 )
@@ -39,7 +38,7 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 		for true {
 			diff := int(offsetSeconds / 600)
 			estimateBlockHeight = estimateBlockHeight + diff
-			fmt.Printf("Estimate blockHeight %d \n", estimateBlockHeight)
+			//fmt.Printf("Estimate blockHeight %d \n", estimateBlockHeight)
 			if math.Abs(float64(diff)) < 3 {
 				return estimateBlockHeight, nil
 			}
@@ -48,7 +47,7 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 			if err != nil {
 				return -1, err
 			}
-			if blockTimestamp == MAX_TIMESTAMP {
+			if blockTimestamp == MaxTimeStamp {
 				return -1, NewBTCAPIError(APIError, errors.New("Can't get result from API"))
 			}
 			offsetSeconds = timestamp - blockTimestamp
@@ -56,4 +55,3 @@ func estimateBlockHeight(self RandomClient, timestamp int64, chainHeight int, ch
 	}
 	return chainHeight, NewBTCAPIError(UnExpectedError, errors.New("Can't estimate block height"))
 }
-
