@@ -701,3 +701,81 @@ func TestWalletGetAddressesByAccNameWithNotExistedAcc(t *testing.T){
 
 	assert.Equal(t, 0, len(keyData))
 }
+
+/*
+		Unit test for ListAccounts function
+ */
+
+func TestWalletListAccounts(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		wallet.CreateNewAccount(item.accountName, &item.shardID)
+	}
+
+	mapAcc := wallet.ListAccounts()
+
+	assert.Equal(t, len(data) + 1, len(mapAcc))
+
+	for _, item := range data {
+		assert.Equal(t, item.accountName, mapAcc[item.accountName].Name)
+	}
+}
+
+/*
+		Unit test for ContainPubKey function
+ */
+
+func TestWalletContainPubKey(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		newAcc, _ := wallet.CreateNewAccount(item.accountName, &item.shardID)
+
+		res := wallet.ContainPubKey(newAcc.Key.KeySet.PaymentAddress.Pk)
+		assert.Equal(t, true, res)
+	}
+}
+
+func TestWalletContainPubKeyWithNotExistedPubKey(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		wallet.CreateNewAccount(item.accountName, &item.shardID)
+	}
+
+	randPubKey := privacy.RandBytes(privacy.PublicKeySize)
+	res := wallet.ContainPubKey(randPubKey)
+	assert.Equal(t, false, res)
+}
+
