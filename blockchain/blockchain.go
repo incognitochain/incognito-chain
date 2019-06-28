@@ -305,6 +305,9 @@ func (blockchain *BlockChain) GetBeaconBlockHashByHeight(height uint64) (common.
 Fetch DatabaseInterface and get block by index(height) of block
 */
 func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBlock, error) {
+	if blockchain.IsTest {
+		return &BeaconBlock{}, nil
+	}
 	hashBlock, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
 	if err != nil {
 		return nil, err
