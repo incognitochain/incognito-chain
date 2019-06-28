@@ -24,6 +24,7 @@ const (
 	MaxPoolSizeError
 	UnexpectedTransactionError
 	TransactionNotFoundError
+	RejectTestTransactionError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -45,6 +46,7 @@ var ErrCodeMessage = map[int]struct {
 	MaxPoolSizeError:           {-1011, "Max Pool Size Error"},
 	UnexpectedTransactionError: {-1012, "Unexpected Transaction Error"},
 	TransactionNotFoundError:   {-1013, "Transaction Not Found Error"},
+	RejectTestTransactionError:   {-1014, "Reject Test Transaction Error"},
 }
 
 type MempoolTxError struct {
