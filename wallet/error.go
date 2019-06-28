@@ -12,6 +12,7 @@ const (
 	ExistedAccountNameErr
 	UnexpectedErr
 	EmptyWalletNameErr
+	NotFoundAccountErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -20,12 +21,12 @@ var ErrCodeMessage = map[int]struct {
 }{
 	UnexpectedErr: {-1, "Unexpected error"},
 
-
 	InvalidChecksumErr:    {-1000, "Checksum does not match"},
 	WrongPassphraseErr:    {-1001, "Wrong passphrase"},
 	ExistedAccountErr:     {-1002, "Existed account"},
 	ExistedAccountNameErr: {-1002, "Existed account name"},
 	EmptyWalletNameErr: {-1003, "Wallet name is empty"},
+	NotFoundAccountErr: {-1004, "Account wallet is not found"},
 }
 
 type WalletError struct {

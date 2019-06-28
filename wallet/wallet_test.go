@@ -351,9 +351,8 @@ func TestWalletRemoveAccountWithWrongPrivKeyStr(t *testing.T){
 	wallet.Init(passPhrase, 0, "Wallet")
 
 	err := wallet.RemoveAccount(privateKeyStr, passPhrase)
-	fmt.Printf("err: %v\n", err)
-	//Todo:
-	assert.Equal(t, NewWalletError(UnexpectedErr, errors.New("Not found")), err)
+
+	assert.Equal(t, NewWalletError(NotFoundAccountErr, nil), err)
 }
 
 func TestWalletRemoveAccountWithNotExistedPrivKeyStr(t *testing.T){
@@ -366,8 +365,8 @@ func TestWalletRemoveAccountWithNotExistedPrivKeyStr(t *testing.T){
 	wallet.ImportAccount(privateKeyStr, accountName, passPhrase)
 
 	err := wallet.RemoveAccount(privateKeyStr2, passPhrase)
-	//Todo:
-	assert.Equal(t, NewWalletError(UnexpectedErr, errors.New("Not found")), err)
+
+	assert.Equal(t, NewWalletError(NotFoundAccountErr, nil), err)
 }
 
 func TestWalletRemoveAccountWithUnmatchedPassPhrase(t *testing.T){
