@@ -3,7 +3,6 @@ package connmanager
 import "testing"
 
 func TestConnManager_New(t *testing.T) {
-	connManager := ConnManager{}.New()
 }
 
 func TestConnManager_Connect(t *testing.T) {
