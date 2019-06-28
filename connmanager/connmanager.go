@@ -166,23 +166,23 @@ func (connManager ConnManager) New(cfg *Config) *ConnManager {
 	return &connManager
 }
 
-func (connManager *ConnManager) GetPeerId(addr string) string {
+func (connManager *ConnManager) GetPeerId(addr string) (string, error) {
 	ipfsAddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString
+		return common.EmptyString, err
 	}
 	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString
+		return common.EmptyString, err
 	}
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString
+		return common.EmptyString, err
 	}
-	return peerId.Pretty()
+	return peerId.Pretty(), nil
 }
 
 // Connect assigns an id and dials a connection to the address of the
