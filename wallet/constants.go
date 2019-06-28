@@ -10,4 +10,9 @@ const (
 	ChainCodeLen = 32 // bytes
 
 	PrivateKeySerializedLen = 108
+
+	PrivKeySerializedBytesLen     = 75 // bytes
+	PaymentAddrSerializedBytesLen = 73 // bytes
+	ReadOnlyKeySerializedBytesLen = 72 // bytes
+
 )

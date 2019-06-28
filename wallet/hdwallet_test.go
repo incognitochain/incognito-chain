@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/magiconair/properties/assert"
 	"testing"
@@ -102,3 +103,33 @@ func TestHDWalletNewChildKeyWithSameChildIdx(t *testing.T) {
 	assert.Equal(t, masterKey.Depth + 1, childKey2.Depth)
 }
 
+/*
+		Unit test for Serialize function
+ */
+
+func TestHDWalletSerialize( t *testing.T){
+	seed := []byte{1,2,3}
+	masterKey, _ := NewMasterKey(seed)
+
+	privKeyBytes, err := masterKey.Serialize(PriKeyType)
+	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
+	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
+
+	actualCheckSumPrivKey := privKeyBytes[PrivKeySerializedBytesLen - 4:]
+	expectedCheckSumPrivKey := base58.ChecksumFirst4Bytes(privKeyBytes[:PrivKeySerializedBytesLen - 4])
+
+	actualCheckSumPaymentAddr := paymentAddrBytes[PaymentAddrSerializedBytesLen - 4:]
+	expectedCheckSumPaymentAddr := base58.ChecksumFirst4Bytes(paymentAddrBytes[:PaymentAddrSerializedBytesLen - 4])
+
+	actualCheckSumReadOnlyKey := readonlyKeyBytes[ReadOnlyKeySerializedBytesLen - 4:]
+	expectedCheckSumReadOnlyKey := base58.ChecksumFirst4Bytes(readonlyKeyBytes[:ReadOnlyKeySerializedBytesLen - 4])
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, PrivKeySerializedBytesLen, len(privKeyBytes))
+	assert.Equal(t, PaymentAddrSerializedBytesLen, len(paymentAddrBytes))
+	assert.Equal(t, ReadOnlyKeySerializedBytesLen, len(readonlyKeyBytes))
+
+	assert.Equal(t, expectedCheckSumPrivKey, actualCheckSumPrivKey)
+	assert.Equal(t, expectedCheckSumPaymentAddr, actualCheckSumPaymentAddr)
+	assert.Equal(t, expectedCheckSumReadOnlyKey, actualCheckSumReadOnlyKey)
+}
