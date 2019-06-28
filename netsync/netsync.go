@@ -2,10 +2,11 @@ package netsync
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -18,12 +19,13 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
-const (
-	workers             = 5
-	MsgLiveTime         = 40 * time.Second  // in second
-	MsgsCleanupInterval = 300 * time.Second //in second
-)
-
+// NetSync is a gate for message to enter node from network (after Wire),
+// all message must be process by NetSync before proccessed by other package in node
+// NetSync parses message from other peer, identifies type of message
+// After parsing, it will detect if message is duplicate or not
+// If message is duplicate then discard it, otherwise pass it to the right handler
+// NetSync start when node start and run all the time while node is alive
+// and it will stop when received quit signal
 type NetSync struct {
 	started   int32
 	shutdown  int32
@@ -41,9 +43,11 @@ type NetSyncConfig struct {
 	TxMemPool             *mempool.TxPool
 	ShardToBeaconPool     blockchain.ShardToBeaconPool
 	CrossShardPool        map[byte]blockchain.CrossShardPool
-	PubsubManager         *pubsub.PubSubManager
-	TransactionEvent      pubsub.EventChannel
-	RoleInCommitteesEvent pubsub.EventChannel
+	PubSubManager         *pubsub.PubSubManager
+	TransactionEvent      pubsub.EventChannel // transaction event
+	RoleInCommitteesEvent pubsub.EventChannel // role in committees event
+	BeaconBlockEvent      pubsub.EventChannel // beacon block event
+	ShardBlockEvent       pubsub.EventChannel // shard block event
 	RelayShard            []byte
 	RoleInCommittees      int
 	roleInCommitteesMtx   sync.RWMutex
@@ -73,10 +77,14 @@ func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 		txCache:    txCache,
 		blockCache: blockCache,
 	}
-	_, subChanTx, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.TransactionHashEnterNodeTopic)
+	_, subChanTx, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.TransactionHashEnterNodeTopic)
 	netSync.config.TransactionEvent = subChanTx
-	_, subChanRole, _ := netSync.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	_, subChanRole, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	netSync.config.RoleInCommitteesEvent = subChanRole
+	_, subChanBeaconBlock, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
+	netSync.config.BeaconBlockEvent = subChanBeaconBlock
+	_, subChanShardBlock, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
+	netSync.config.ShardBlockEvent = subChanShardBlock
 	return &netSync
 }
 func (netSync *NetSync) Start() {
@@ -262,9 +270,8 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
 			Logger.log.Error(err)
-
-			// Broadcast to network
 		} else {
+			// Broadcast to network
 			Logger.log.Infof("there is hash of transaction %s", hash.String())
 			err := netSync.config.Server.PushMessageToAll(msg)
 			if err != nil {
@@ -526,6 +533,22 @@ func (netSync *NetSync) cacheLoop() {
 	}
 	for {
 		select {
+		case msg := <-netSync.config.ShardBlockEvent:
+			{
+				if shardBlock, ok := msg.Value.(*blockchain.ShardBlock); !ok {
+					continue
+				} else {
+					go netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+				}
+			}
+		case msg := <-netSync.config.BeaconBlockEvent:
+			{
+				if beaconBlock, ok := msg.Value.(*blockchain.BeaconBlock); !ok {
+					continue
+				} else {
+					go netSync.HandleCacheBlock("b" + beaconBlock.Header.Hash().String())
+				}
+			}
 		case msg := <-netSync.config.RoleInCommitteesEvent:
 			{
 				if shardID, ok := msg.Value.(int); !ok {
@@ -549,17 +572,4 @@ func (netSync *NetSync) HandleCacheTxHashWorker(event pubsub.EventChannel) {
 		go netSync.HandleCacheTxHash(value)
 		time.Sleep(time.Nanosecond)
 	}
-}
-
-//if old block return true, otherwise return false
-func (netSync *NetSync) IsOldShardBlock(shardID byte, blockHeight uint64) bool {
-	shardBestState, err := netSync.config.BlockChain.GetShardBestState(shardID)
-	// ignore if can't get shard best state
-	if err != nil {
-		return false
-	}
-	return shardBestState.ShardHeight >= blockHeight
-}
-func (netSync *NetSync) IsOldBeaconBlock(blockHeight uint64) bool {
-	return netSync.config.BlockChain.GetBeaconHeight() >= blockHeight
 }

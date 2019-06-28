@@ -22,27 +22,27 @@ var ErrCodeMessage = map[int]struct {
 	UnregisteredTopicError: {-1002, "Subcribed Topic Not Found Error"},
 }
 
-type PubsubError struct {
+type PubSubError struct {
 	Code    int    // The code to send with reject messages
 	Message string // Human readable message of the issue
 	Err     error
 }
 
 // Error satisfies the error interface and prints human-readable errors.
-func (e PubsubError) Error() string {
+func (e PubSubError) Error() string {
 	return fmt.Sprintf("%d: %s %+v", e.Code, e.Message, e.Err)
 }
 
 // txRuleError creates an underlying MempoolTxError with the given a set of
 // arguments and returns a RuleError that encapsulates it.
-func (e *PubsubError) Init(key int, err error) {
+func (e *PubSubError) Init(key int, err error) {
 	e.Code = ErrCodeMessage[key].Code
 	e.Message = ErrCodeMessage[key].Message
 	e.Err = errors.Wrap(err, e.Message)
 }
 
-func NewPubsubError(key int, err error) *PubsubError {
-	return &PubsubError{
+func NewPubSubError(key int, err error) *PubSubError {
+	return &PubSubError{
 		Code:    ErrCodeMessage[key].Code,
 		Message: ErrCodeMessage[key].Message,
 		Err:     errors.Wrap(err, ErrCodeMessage[key].Message),

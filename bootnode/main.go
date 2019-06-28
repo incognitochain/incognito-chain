@@ -10,11 +10,13 @@ var (
 	cfg *config
 )
 
+// Bootnode is a centralized rpc server, which be used for receive Ping method from incognito node
+// and store in mem list connectable peers in incognito network
 func main() {
-	// Show version at startup.
-	log.Printf("Version %s\n", version)
+	// Show Version at startup.
+	log.Printf("Version %s\n", Version)
 
-	// load config
+	// Load config
 	tcfg, err := loadConfig()
 	if err != nil {
 		log.Println("Parse config error", err.Error())
@@ -22,17 +24,19 @@ func main() {
 	}
 	cfg = tcfg
 
+	// create RPC config for RPC server
 	rpcConfig := server.RpcServerConfig{
 		Port: cfg.RPCPort,
 	}
-	server := &server.RpcServer{}
-	err = server.Init(&rpcConfig)
-	if err != nil {
-		log.Println("Init bootnode error", err.Error())
-		return
-	}
-	log.Printf("Start server with config \n %+v", server.Config)
+
+	// Init RPC Serer in golang
+	rpcServer := &server.RpcServer{}
+	log.Printf("Init rpcServer with config \n")
+	rpcServer.Init(&rpcConfig)
+
+	log.Printf("Start rpcServer with config \n %+v\n", rpcServer.Config)
 	for {
-		server.Start()
+		// Start rpcServer and listen request from rpc client
+		rpcServer.Start()
 	}
 }

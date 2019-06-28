@@ -35,7 +35,7 @@ type Config struct {
 	PersistMempool        bool
 	RelayShards           []byte
 	UserKeyset            *cashec.KeySet
-	PubsubManager         *pubsub.PubSubManager
+	PubSubManager         *pubsub.PubSubManager
 	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.EventChannel
 }
@@ -65,6 +65,7 @@ type TxPool struct {
 	CPendingTxs            chan<- metadata.Transaction // channel to deliver txs to block gen
 	IsBlockGenStarted      bool
 	IsUnlockMempool        bool
+	IsTest                 bool
 }
 
 /*
@@ -81,8 +82,9 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 	tp.IsUnlockMempool = true
-	_, subChanRole, _ := tp.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
+	tp.IsTest = false
 }
 func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
@@ -544,8 +546,13 @@ func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
+	if tp.IsTest {
+		err := MempoolTxError{}
+		err.Init(UnexpectedTransactionError, errors.New("Not allowed test tx"))
+		return &common.Hash{}, &TxDesc{}, err
+	}
 	go func(txHash common.Hash) {
-		tp.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
+		tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
 	}(*tx.Hash())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
 		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -619,7 +626,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 			}
 		}
 		// Publish Message
-		go tp.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
+		go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
 	}
 	return hash, txDesc, err
 }
