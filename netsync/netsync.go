@@ -19,7 +19,7 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
-// NetSync is a gate for message to enter node from network (after Wire),
+// NetSync is a gate for message to enter node from network (after Peerconn),
 // all message must be process by NetSync before proccessed by other package in node
 // NetSync parses message from other peer, identifies type of message
 // After parsing, it will detect if message is duplicate or not
@@ -70,7 +70,7 @@ type NetSyncCache struct {
 func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 	netSync.config = cfg
 	netSync.cQuit = make(chan struct{})
-	netSync.cMessage = make(chan interface{})
+	netSync.cMessage = make(chan interface{}, 1000)
 	blockCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	txCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	netSync.Cache = &NetSyncCache{
