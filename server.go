@@ -1036,7 +1036,8 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		rawPeers := []wire.RawPeer{}
 		peers := serverObj.addrManager.AddressCache()
 		for _, peer := range peers {
-			if peerConn.RemotePeerID.Pretty() != serverObj.connManager.GetPeerId(peer.RawAddress) {
+			getPeerId, _ := serverObj.connManager.GetPeerId(peer.RawAddress)
+			if peerConn.RemotePeerID.Pretty() != getPeerId {
 				rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 			}
 		}
@@ -1066,7 +1067,8 @@ func (serverObj *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGet
 	peers := serverObj.addrManager.AddressCache()
 	rawPeers := []wire.RawPeer{}
 	for _, peer := range peers {
-		if peerConn.RemotePeerID.Pretty() != serverObj.connManager.GetPeerId(peer.RawAddress) {
+		getPeerId, _ := serverObj.connManager.GetPeerId(peer.RawAddress)
+		if peerConn.RemotePeerID.Pretty() != getPeerId {
 			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 		}
 	}
