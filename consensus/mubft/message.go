@@ -108,7 +108,7 @@ func MakeMsgBeaconBlock(block *blockchain.BeaconBlock) (wire.Message, error) {
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBlockBeacon).Block = *block
+	msg.(*wire.MessageBlockBeacon).Block = block
 	return msg, nil
 }
 
@@ -118,7 +118,7 @@ func MakeMsgShardBlock(block *blockchain.ShardBlock) (wire.Message, error) {
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBlockShard).Block = *block
+	msg.(*wire.MessageBlockShard).Block = block
 	return msg, nil
 }
 
@@ -128,7 +128,7 @@ func MakeMsgShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (wire.Messa
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageShardToBeacon).Block = *block
+	msg.(*wire.MessageShardToBeacon).Block = block
 	return msg, nil
 }
 
@@ -138,6 +138,6 @@ func MakeMsgCrossShardBlock(block *blockchain.CrossShardBlock) (wire.Message, er
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageCrossShard).Block = *block
+	msg.(*wire.MessageCrossShard).Block = block
 	return msg, nil
 }
