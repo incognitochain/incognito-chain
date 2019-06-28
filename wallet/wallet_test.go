@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
@@ -566,4 +567,61 @@ func TestWalletDumpPrivkeyWithNotExistedAcc(t *testing.T){
 		assert.Equal(t, "", keyData.PrivateKey)
 	}
 }
+
+/*
+		Unit test for GetAccountAddress function
+ */
+
+func TestWalletGetAccountAddress(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		newAccount, _ := wallet.CreateNewAccount(item.accountName, &item.shardID)
+		paymentAddrSerialized := newAccount.Key.Base58CheckSerialize(PaymentAddressType)
+		PubKeyHexEncoding := hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk)
+		ReadOnlyKeySerialized := newAccount.Key.Base58CheckSerialize(ReadonlyKeyType)
+
+		keyData := wallet.GetAccountAddress(item.accountName, &item.shardID)
+
+		assert.Equal(t, paymentAddrSerialized, keyData.PaymentAddress)
+		assert.Equal(t, PubKeyHexEncoding, keyData.Pubkey)
+		assert.Equal(t, ReadOnlyKeySerialized, keyData.ReadonlyKey)
+	}
+}
+
+func TestWalletGetAccountAddressWithNotExistedAcc(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		wallet.CreateNewAccount(item.accountName, &item.shardID)
+	}
+	numAccount := len(wallet.MasterAccount.Child)
+
+	shardId := byte(0)
+	accName := "acc E"
+	_ = wallet.GetAccountAddress(accName, &shardId)
+
+	assert.Equal(t, numAccount+1, len(wallet.MasterAccount.Child))
+}
+
 
