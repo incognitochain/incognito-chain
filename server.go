@@ -383,6 +383,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	var peer *peer.Peer
 	if !cfg.DisableListen {
 		var err error
+
+		// this is initializing our listening peer
 		peer, err = serverObj.InitListenerPeer(serverObj.addrManager, listenAddrs, cfg.MaxPeers, cfg.MaxOutPeers, cfg.MaxInPeers)
 		if err != nil {
 			Logger.log.Error(err)
