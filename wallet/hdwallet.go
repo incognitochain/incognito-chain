@@ -19,6 +19,7 @@ type KeyWallet struct {
 }
 
 // NewMasterKey creates a new master extended PubKey from a Seed
+// Seed is a bytes array which any size
 func NewMasterKey(seed []byte) (*KeyWallet, error) {
 	// Generate PubKey and chaincode
 	hmac := hmac.New(sha512.New, []byte("Incognito Seed"))
@@ -47,6 +48,7 @@ func NewMasterKey(seed []byte) (*KeyWallet, error) {
 }
 
 // NewChildKey derives a Child KeyWallet from a given parent as outlined by bip32
+// 2 child keys is derived from one key and a same child index are the same
 func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 	intermediary, err := key.getIntermediary(childIdx)
 	if err != nil {
@@ -58,7 +60,7 @@ func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 	newKeyset := (&cashec.KeySet{}).GenerateKey(newSeed)
 	// Create Child KeySet with data common to all both scenarios
 	childKey := &KeyWallet{
-		ChildNumber: uint32Bytes(childIdx),
+		ChildNumber: common.Uint32ToBytes(childIdx),
 		ChainCode:   intermediary[32:],
 		Depth:       key.Depth + 1,
 		KeySet:      *newKeyset,
@@ -68,7 +70,7 @@ func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 }
 
 func (key *KeyWallet) getIntermediary(childIdx uint32) ([]byte, error) {
-	childIndexBytes := uint32Bytes(childIdx)
+	childIndexBytes := common.Uint32ToBytes(childIdx)
 
 	var data []byte
 	data = append(data, childIndexBytes...)
