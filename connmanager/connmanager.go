@@ -437,7 +437,7 @@ func (connManager *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn
 	listener := connManager.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
-		sh := connManager.getShardOfPbk(peerConn.RemotePeer.PublicKey)
+		sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
 		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 			c = append(c, peerConn)
 		}
@@ -450,7 +450,7 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	listener := connManager.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
-		sh := connManager.getShardOfPbk(peerConn.RemotePeer.PublicKey)
+		sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
 		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 			c++
 		}
@@ -469,6 +469,7 @@ func (connManager *ConnManager) checkPeerConnOfPbk(pbk string) bool {
 	return false
 }
 
+// checkBeaconOfPbk - check a public key is beacon committee?
 func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
 	beaconCommittee := connManager.Config.ConsensusState.getBeaconCommittee()
 	if pbk != "" && common.IndexOfStr(pbk, beaconCommittee) >= 0 {
@@ -611,7 +612,7 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) bool
 		return false
 	}
 	// check max shard conn
-	sh := connManager.getShardOfPbk(peerConn.RemotePeer.PublicKey)
+	sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
 	currentShard := connManager.Config.ConsensusState.CurrentShard
 	if sh != nil && currentShard != nil && *sh == *currentShard {
 		//	same shard
@@ -635,8 +636,9 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) bool
 	return true
 }
 
-func (connManager *ConnManager) getShardOfPbk(pbk string) *byte {
-	shard, ok := connManager.Config.ConsensusState.ShardByCommittee[pbk]
+//getShardOfPublicKey - return shardID of publickey of peer connection
+func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
+	shard, ok := connManager.Config.ConsensusState.ShardByCommittee[publicKey]
 	if ok {
 		return &shard
 	}
@@ -652,7 +654,7 @@ func (connManager *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn 
 	listener := connManager.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
-		shardT := connManager.getShardOfPbk(peerConn.RemotePeer.PublicKey)
+		shardT := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
 		if shardT != nil && *shardT == shard {
 			peerConns = append(peerConns, peerConn)
 		}
@@ -660,6 +662,7 @@ func (connManager *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn 
 	return peerConns
 }
 
+// GetPeerConnOfBeacon - return peer connection of nodes which are beacon committee
 func (connManager *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
 	listener := connManager.Config.ListenerPeer
@@ -673,21 +676,23 @@ func (connManager *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 	return peerConns
 }
 
-func (connManager *ConnManager) GetPeerConnOfPbk(pbk string) []*peer.PeerConn {
+// GetPeerConnOfPublicKey - return PeerConn from public key
+func (connManager *ConnManager) GetPeerConnOfPublicKey(publicKey string) []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
-	if pbk == "" {
+	if publicKey == "" {
 		return peerConns
 	}
 	listener := connManager.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
-		if pbk == peerConn.RemotePeer.PublicKey {
+		if publicKey == peerConn.RemotePeer.PublicKey {
 			peerConns = append(peerConns, peerConn)
 		}
 	}
 	return peerConns
 }
 
+// GetPeerConnOfAll - return all Peer connection of node
 func (connManager *ConnManager) GetPeerConnOfAll() []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
 	listener := connManager.Config.ListenerPeer
