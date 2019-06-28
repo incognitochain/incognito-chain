@@ -272,7 +272,6 @@ func (wallet *Wallet) LoadWallet(password string) error {
 	return nil
 }
 
-
 // DumpPrivkey receives base58 check serialized payment address (paymentAddrSerialized)
 // and returns KeySerializedData object contains PrivateKey
 // which is corresponding to paymentAddrSerialized in all wallet accounts
@@ -290,9 +289,13 @@ func (wallet *Wallet) DumpPrivkey(paymentAddrSerialized string) KeySerializedDat
 	return KeySerializedData{}
 }
 
-func (wallet *Wallet) GetAccountAddress(accountParam string, shardID *byte) KeySerializedData {
+// GetAccountAddress receives accountName and shardID
+// and returns corresponding account's KeySerializedData object contains base58 check serialized PaymentAddress,
+// hex encoding Pubkey and base58 check serialized ReadonlyKey
+// If there is not any account corresponding to accountName, we will create new account
+func (wallet *Wallet) GetAccountAddress(accountName string, shardID *byte) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
-		if account.Name == accountParam {
+		if account.Name == accountName {
 			key := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
 				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
@@ -301,7 +304,7 @@ func (wallet *Wallet) GetAccountAddress(accountParam string, shardID *byte) KeyS
 			return key
 		}
 	}
-	newAccount, _ := wallet.CreateNewAccount(accountParam, shardID)
+	newAccount, _ := wallet.CreateNewAccount(accountName, shardID)
 	key := KeySerializedData{
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
 		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
