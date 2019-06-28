@@ -181,7 +181,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	}
 }
 
-func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
+func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconBlock) {
 	if blockchain.IsTest {
 		return
 	}
@@ -228,7 +228,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 	}
 }
 
-func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
+func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) {
 	if blockchain.IsTest {
 		return
 	}

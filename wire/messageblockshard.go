@@ -14,7 +14,7 @@ const (
 )
 
 type MessageBlockShard struct {
-	Block blockchain.ShardBlock
+	Block *blockchain.ShardBlock
 }
 
 func (msg *MessageBlockShard) Hash() string {
