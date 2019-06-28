@@ -1,17 +1,16 @@
 package netsync
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
-
+	
 	"github.com/incognitochain/incognito-chain/pubsub"
-
+	
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/patrickmn/go-cache"
-
+	
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/peer"
@@ -371,15 +370,10 @@ func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 }
 func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
-	//if oldBlock := netSync.IsOldShardBlock(msg.Block.Header.ShardID, msg.Block.Header.Height); !oldBlock {
-	fmt.Println("Shard Block Received In net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
 	if isAdded := netSync.HandleCacheBlock("s" + msg.Block.Header.Hash().String()); !isAdded {
-		fmt.Println("Shard Block NO Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
 		netSync.config.BlockChain.OnBlockShardReceived(msg.Block)
 		return
 	}
-	fmt.Println("Shard Block Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
-	//}
 }
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")

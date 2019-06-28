@@ -23,6 +23,8 @@ var (
 	txPool = &mempool.TxPool{}
 	server = &Server{}
 	consensus = &Consensus{}
+	shardToBeaconPool = mempool.GetShardToBeaconPool()
+	crossShardPool = make(map[byte]blockchain.CrossShardPool)
 	msgBFTPropose = &wire.MessageBFTPropose{
 		Layer:      "shard",
 		ShardID:    0,
@@ -82,7 +84,7 @@ var (
 		BlkHashes:        []common.Hash{},
 		BlkHeights:       []uint64{1, 2, 3},
 		ShardID:          0,
-		SenderID:         "",
+		SenderID:         "QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
 		Timestamp:        1561733485,
 	}
 	msgGetBlockShardWithSenderID   = &wire.MessageGetBlockShard{
@@ -92,6 +94,69 @@ var (
 		BlkHashes:        []common.Hash{},
 		BlkHeights:       []uint64{1, 2, 3},
 		ShardID:          0,
+		SenderID:         "QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
+		Timestamp:        1561733485,
+	}
+	msgGetShardToBeacon   = &wire.MessageGetShardToBeacon{
+		FromPool:         true,
+		ByHash:           false,
+		BySpecificHeight: true,
+		BlkHashes:        []common.Hash{},
+		BlkHeights:       []uint64{1, 2, 3},
+		ShardID:          0,
+		SenderID:         "",
+		Timestamp:        1561733485,
+	}
+	msgGetShardToBeaconWithHash   = &wire.MessageGetShardToBeacon{
+		FromPool:         true,
+		ByHash:           true,
+		BySpecificHeight: false,
+		BlkHashes:        []common.Hash{},
+		BlkHeights:       []uint64{1, 2, 3},
+		ShardID:          0,
+		SenderID:         "QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
+		Timestamp:        1561733485,
+	}
+	msgGetShardToBeaconWithSenderID   = &wire.MessageGetShardToBeacon{
+		FromPool:         true,
+		ByHash:           false,
+		BySpecificHeight: true,
+		BlkHashes:        []common.Hash{},
+		BlkHeights:       []uint64{1, 2, 3},
+		ShardID:          0,
+		SenderID:         "QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
+		Timestamp:        1561733485,
+	}
+	msgGetCrossShard   = &wire.MessageGetCrossShard{
+		FromPool:         true,
+		ByHash:           false,
+		BySpecificHeight: true,
+		BlkHashes:        []common.Hash{},
+		BlkHeights:       []uint64{1, 2, 3},
+		FromShardID:          0,
+		ToShardID: 1,
+		SenderID:         "",
+		Timestamp:        1561733485,
+	}
+	msgGetCrossShardWithHash   = &wire.MessageGetCrossShard{
+		FromPool:         true,
+		ByHash:           true,
+		BySpecificHeight: false,
+		BlkHashes:        []common.Hash{},
+		BlkHeights:       []uint64{1, 2, 3},
+		FromShardID:          0,
+		ToShardID: 1,
+		SenderID:         "QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
+		Timestamp:        1561733485,
+	}
+	msgGetCrossShardWithSenderID   = &wire.MessageGetCrossShard{
+		FromPool:         true,
+		ByHash:           false,
+		BySpecificHeight: true,
+		BlkHashes:        []common.Hash{},
+		BlkHeights:       []uint64{1, 2, 3},
+		FromShardID:          0,
+		ToShardID: 1,
 		SenderID:         "QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
 		Timestamp:        1561733485,
 	}
@@ -110,7 +175,7 @@ var (
 		BySpecificHeight: false,
 		BlkHashes:        []common.Hash{},
 		BlkHeights:       []uint64{},
-		SenderID:         "",
+		SenderID:         "QmSoLer265NRgSp2LA3dPaeykiS1J6DifTC88f5uVQKNAd",
 		Timestamp:        1561733485,
 	}
 	msgGetBlockBeaconWithSenderID = &wire.MessageGetBlockBeacon{
@@ -173,6 +238,9 @@ var _ = func() (_ struct{}) {
 		PubSubManager: pb,
 	})
 	txPool.IsTest = true
+	for i := 0; i < 255; i++ {
+		crossShardPool[byte(i)] = mempool.GetCrossShardPool(byte(i))
+	}
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
@@ -792,6 +860,46 @@ func TestNetSyncQueueGetBlockBeacon(t *testing.T){
 	<-time.Tick(1 * time.Second)
 	netSync.Stop()
 }
+func TestNetSyncHandleMessageGetShardToBeacon(t *testing.T){
+	netSync := NetSync{}.New(&NetSyncConfig{
+		BlockChain: bc,
+		PubSubManager: pb,
+		Server: server,
+		TxMemPool: txPool,
+		Consensus: consensus,
+		ShardToBeaconPool: shardToBeaconPool,
+	})
+	consensus.ch = make(chan interface{})
+	// start netsyc
+	netSync.Start()
+	netSync.cMessage <- msgGetShardToBeacon
+	//<-time.Tick(1 * time.Second)
+	netSync.cMessage <- msgGetShardToBeaconWithHash
+	//<-time.Tick(1 * time.Second)
+	netSync.cMessage <- msgGetShardToBeaconWithSenderID
+	<-time.Tick(3 * time.Second)
+	netSync.Stop()
+}
+func TestNetSyncHandleMessageGetCrossShard(t *testing.T){
+	netSync := NetSync{}.New(&NetSyncConfig{
+		BlockChain: bc,
+		PubSubManager: pb,
+		Server: server,
+		TxMemPool: txPool,
+		Consensus: consensus,
+		CrossShardPool: crossShardPool,
+	})
+	consensus.ch = make(chan interface{})
+	// start netsyc
+	netSync.Start()
+	netSync.cMessage <- msgGetCrossShard
+	<-time.Tick(1 * time.Second)
+	netSync.cMessage <- msgGetCrossShardWithHash
+	<-time.Tick(1 * time.Second)
+	netSync.cMessage <- msgGetCrossShardWithSenderID
+	<-time.Tick(1 * time.Second)
+	netSync.Stop()
+}
 func TestNetSyncQueueMessage(t *testing.T){
 	netSync := NetSync{}.New(&NetSyncConfig{
 		BlockChain: bc,
@@ -850,6 +958,23 @@ func (consensus *Consensus) OnBFTMsg(msg wire.Message) {
 		consensus.ch <- msg
 		return
 	}
+}
+func TestNetSyncHandleMessageBFTMsgError(t *testing.T) {
+	netSync := NetSync{}.New(&NetSyncConfig{
+		BlockChain:    bc,
+		PubSubManager: pb,
+		Server:        server,
+		TxMemPool:     txPool,
+		Consensus:     consensus,
+	})
+	consensus.ch = make(chan interface{})
+	netSync.Start()
+	// fail to verify sanity
+	go func() {
+		netSync.cMessage <- &wire.MessageBFTPropose{}
+	}()
+	<-time.Tick(1 * time.Second)
+	netSync.Stop()
 }
 func TestNetSyncHandleMessageBFTMsg(t *testing.T){
 	netSync := NetSync{}.New(&NetSyncConfig{
@@ -1003,7 +1128,9 @@ func TestHandleMessagePeerState(t *testing.T){
 	consensus.ch = make(chan interface{})
 	netSync.Start()
 	netSync.cMessage <- msgPeerState
+	<-time.Tick(1 * time.Second)
 	netSync.cMessage <- msgPeerStateWithSenderID
+	<-time.Tick(1 * time.Second)
 	netSync.Stop()
 }
 
