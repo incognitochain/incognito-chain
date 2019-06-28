@@ -23,7 +23,7 @@ type ConnManager struct {
 	start int32
 	stop  int32
 	// Discover Peers
-	discoveredPeers     map[string]*DiscoverPeerInfo
+	//discoveredPeers     map[string]*DiscoverPeerInfo
 	discoverPeerAddress string
 	// channel
 	cQuit            chan struct{}
@@ -159,7 +159,7 @@ func (connManager *ConnManager) Stop() {
 func (connManager ConnManager) New(cfg *Config) *ConnManager {
 	connManager.Config = *cfg
 	connManager.cQuit = make(chan struct{})
-	connManager.discoveredPeers = make(map[string]*DiscoverPeerInfo)
+	//connManager.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 	connManager.ListeningPeer = nil
 	connManager.Config.ConsensusState = &ConsensusState{}
 	connManager.cDiscoveredPeers = make(chan struct{})
@@ -307,10 +307,17 @@ func (connManager *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	connManager.randShards = connManager.makeRandShards(common.MAX_SHARD_NUMBER)
 	connManager.discoverPeerAddress = discoverPeerAddress
 	for {
-		connManager.processDiscoverPeers()
+		// main process of discover peer
+		// connect RPC server of boot node
+		// -> get response of peers
+		// -> use to make peer connection
+		err := connManager.processDiscoverPeers()
+		if err != nil {
+			continue
+		}
 		select {
 		case <-connManager.cDiscoveredPeers:
-			// reveive channel stop
+			// receive channel stop
 			Logger.log.Info("Stop Discover Peers")
 			return
 		case <-time.NewTimer(IntervalDiscoverPeer * time.Second).C:
@@ -322,20 +329,38 @@ func (connManager *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 	}
 }
 
-func (connManager *ConnManager) processDiscoverPeers() {
+// processDiscoverPeers - create a connection to
+// RPC server of bootnode with golang RPC client
+// after receive a response which contains data
+// of peers(connectable peers) from bootnode
+// conneManager should use this data to make connections with
+// node peers are beacon committee
+// node peers are shard commttee
+// other role of other peers
+func (connManager *ConnManager) processDiscoverPeers() error {
 	discoverPeerAddress := connManager.discoverPeerAddress
 	if discoverPeerAddress == "" {
-		return
+		// we dont have config to make discover peer
+		// so we dont need to do anything here
+		return nil
 	}
+
+	// create a rpc client object,
+	// connect to boot node with URL
+	// get from discoverPeerAddress
+	// in conf of our node
 	client, err := rpc.Dial("tcp", discoverPeerAddress)
 	if err != nil {
+		// can not create connection to rpc server with
+		// provided "discover peer address" in config
 		Logger.log.Error("[Exchange Peers] re-connect:")
 		Logger.log.Error(err)
-		return
+		return err
 	}
 	if client != nil {
 		defer client.Close()
 
+		// get data about our current node peer
 		listener := connManager.Config.ListenerPeer
 		var response []wire.RawPeer
 
@@ -360,62 +385,69 @@ func (connManager *ConnManager) processDiscoverPeers() {
 			rawAddress = ""
 		}
 
-		pbkB58 := ""
-		signDataB58 := ""
+		// In case WE run a node look like  committee of shard or beacon
+		// we need TO Generate a signature with base58check format string
+		// and send to boot node like a notice from us that
+		// we live and we send info about us to bootnode(peerID, node rol, ...)
+		publicKeyInBase58CheckEncode := ""
+		signDataInBase58CheckEncode := ""
 		if listener.Config.UserKeySet != nil {
-			pbkB58 = listener.Config.UserKeySet.GetPublicKeyB58()
-			Logger.log.Info("Start Process Discover Peers", pbkB58)
+			publicKeyInBase58CheckEncode = listener.Config.UserKeySet.GetPublicKeyB58()
+			Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 			// sign data
-			signDataB58, err = listener.Config.UserKeySet.SignDataB58([]byte(rawAddress))
+			signDataInBase58CheckEncode, err = listener.Config.UserKeySet.SignDataB58([]byte(rawAddress))
 			if err != nil {
 				Logger.log.Error(err)
 			}
 		}
 
+		// packing in a object PingArgs
 		args := &server.PingArgs{
 			RawAddress: rawAddress,
-			PublicKey:  pbkB58,
-			SignData:   signDataB58,
+			PublicKey:  publicKeyInBase58CheckEncode,
+			SignData:   signDataInBase58CheckEncode,
 		}
 		Logger.log.Infof("[Exchange Peers] Ping %+v", args)
 
-		Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
-		for pubK, info := range connManager.discoveredPeers {
-			var result []string
-			for _, peerConn := range listener.PeerConns {
-				if peerConn.RemotePeer.PublicKey == pubK {
-					result = append(result, peerConn.RemotePeer.PeerID.Pretty())
-				}
-			}
-			Logger.log.Infof("Public PubKey %s, %s, %s", pubK, info.PeerID.Pretty(), result)
-		}
+		// Write more log to debug
+		//Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
+		//for pubK, info := range connManager.discoveredPeers {
+		//	var result []string
+		//	for _, peerConn := range listener.PeerConns {
+		//		if peerConn.RemotePeer.PublicKey == pubK {
+		//			result = append(result, peerConn.RemotePeer.PeerID.Pretty())
+		//		}
+		//	}
+		//	Logger.log.Infof("Public PubKey %s, %s, %s", pubK, info.PeerID.Pretty(), result)
 
-		for _, peerConn := range listener.PeerConns {
-			Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.GetIsOutbound(), peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
-		}
+		//for _, peerConn := range listener.PeerConns {
+		//	Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.GetIsOutbound(), peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+		//}
 
 		err := client.Call("Handler.Ping", args, &response)
 		if err != nil {
+			// can not call method PING to rpc server of boot node
 			Logger.log.Error("[Exchange Peers] Ping:")
 			Logger.log.Error(err)
 			client = nil
-			return
+			return err
 		}
 		// make models
-		mPeers := make(map[string]*wire.RawPeer)
+		responsePeers := make(map[string]*wire.RawPeer)
 		for _, rawPeer := range response {
 			p := rawPeer
-			mPeers[rawPeer.PublicKey] = &p
+			responsePeers[rawPeer.PublicKey] = &p
 		}
 		// connect to beacon peers
-		connManager.handleRandPeersOfBeacon(connManager.Config.MaxPeersBeacon, mPeers)
+		connManager.handleRandPeersOfBeacon(connManager.Config.MaxPeersBeacon, responsePeers)
 		// connect to same shard peers
-		connManager.handleRandPeersOfShard(connManager.Config.ConsensusState.CurrentShard, connManager.Config.MaxPeersSameShard, mPeers)
+		connManager.handleRandPeersOfShard(connManager.Config.ConsensusState.CurrentShard, connManager.Config.MaxPeersSameShard, responsePeers)
 		// connect to other shard peers
-		connManager.handleRandPeersOfOtherShard(connManager.Config.ConsensusState.CurrentShard, connManager.Config.MaxPeersOtherShard, connManager.Config.MaxPeersOther, mPeers)
+		connManager.handleRandPeersOfOtherShard(connManager.Config.ConsensusState.CurrentShard, connManager.Config.MaxPeersOtherShard, connManager.Config.MaxPeersOther, responsePeers)
 		// connect to no shard peers
-		connManager.handleRandPeersOfNoShard(connManager.Config.MaxPeersNoShard, mPeers)
+		connManager.handleRandPeersOfNoShard(connManager.Config.MaxPeersNoShard, responsePeers)
 	}
+	return nil
 }
 
 func (connManager *ConnManager) getPeerIdsFromPbk(pbk string) []libpeer.ID {
