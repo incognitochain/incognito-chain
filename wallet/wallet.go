@@ -222,11 +222,15 @@ func (wallet *Wallet) Save(password string) error {
 		password = wallet.PassPhrase
 	}
 
+	if password != wallet.PassPhrase {
+		return NewWalletError(WrongPassphraseErr, nil)
+	}
+
 	// parse to byte[]
 	data, err := json.Marshal(*wallet)
 	if err != nil {
 		Logger.log.Error(err)
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(JsonMarshalErr, err)
 	}
 
 	// encrypt
@@ -240,7 +244,7 @@ func (wallet *Wallet) Save(password string) error {
 	cipherTexInBytes := []byte(cipherText)
 	err = ioutil.WriteFile(wallet.config.DataPath, cipherTexInBytes, 0644)
 	if err != nil {
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(WriteFileErr, err)
 	}
 	return nil
 }

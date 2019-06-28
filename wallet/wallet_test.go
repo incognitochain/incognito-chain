@@ -1,15 +1,16 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
-	"errors"
 )
 
 var dataDir string
@@ -239,7 +240,6 @@ func TestWalletImportAccount(t *testing.T){
 		newAccount, err := wallet.ImportAccount(item.privateKeyStr, item.accountName, item.passPhrase)
 		keyWallet, _ := Base58CheckDeserialize(item.privateKeyStr)
 
-		// TODO:
 		assert.Equal(t, nil, err)
 		assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
 		assert.Equal(t, item.accountName, newAccount.Name)
@@ -381,6 +381,67 @@ func TestWalletRemoveAccountWithUnmatchedPassPhrase(t *testing.T){
 	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, NewWalletError(WrongPassphraseErr, nil), err)
 }
+
+
+/*
+		Unit test for Save function
+ */
+
+func TestWalletSave(t *testing.T){
+	passPhrase := "123"
+	wallet.Init(passPhrase, 0, "Wallet")
+
+	err := wallet.Save(passPhrase)
+	fileData, err2 := ioutil.ReadFile(wallet.config.DataPath)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, nil, err2)
+	assert.Greater(t, len(fileData), 0)
+}
+
+func TestWalletSaveWithEmptyPassPhrase(t *testing.T){
+	passPhrase := "123"
+	passPhrase2 := ""
+	wallet.Init(passPhrase, 0, "Wallet")
+
+	err := wallet.Save(passPhrase2)
+	fileData, err2 := ioutil.ReadFile(wallet.config.DataPath)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, nil, err2)
+	assert.Greater(t, len(fileData), 0)
+}
+
+func TestWalletSaveWithUnmatchedPassPhrase(t *testing.T){
+	passPhrase := "123"
+	passPhrase2 := "1234"
+	wallet.Init(passPhrase, 0, "Wallet")
+
+	err := wallet.Save(passPhrase2)
+
+	assert.Equal(t, NewWalletError(WrongPassphraseErr, nil), err)
+}
+
+func TestWalletSaveWithNotExistedDataPath(t *testing.T){
+	passPhrase := "123"
+	wallet.Init(passPhrase, 0, "Wallet")
+
+	// set wrong config wallet
+	dataDir := ""
+	dataFile := ""
+	walletConf := &WalletConfig{
+		DataDir:        dataDir,
+		DataFile:       dataFile,
+		DataPath:       filepath.Join(dataDir, dataFile),
+		IncrementalFee: 0, // 0 mili PRV
+	}
+	wallet.SetConfig(walletConf)
+
+	err := wallet.Save(passPhrase)
+
+	assert.Equal(t, ErrCodeMessage[WriteFileErr].code, err.(*WalletError).GetCode())
+}
+
 
 
 
