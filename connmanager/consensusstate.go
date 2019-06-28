@@ -11,7 +11,7 @@ type ConsensusState struct {
 	sync.Mutex
 	Role             string
 	CurrentShard     *byte
-	BeaconCommittee  []string
+	BeaconCommittee  []string          // list public key of beacon committee
 	CommitteeByShard map[byte][]string // map[shardID] = list committeePubkeyBase58CheckStr of shard
 	UserPublicKey    string            // in base58check encode format
 	ShardByCommittee map[string]byte   // store conversion of ShardCommittee data map[committeePubkeyBase58CheckStr] = shardID
