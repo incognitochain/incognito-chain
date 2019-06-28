@@ -21,22 +21,77 @@ var _= func() (_ struct{}) {
 	return
 }()
 func TestNetSyncStart(t *testing.T) {
+	pubSub := pubsub.NewPubSubManager()
 	netSync := NetSync{}.New(&NetSyncConfig{
-		PubSubManager: pubsub.NewPubSubManager(),
+		PubSubManager: pubSub,
 	})
+	go pubSub.Start()
 	netSync.Start()
 	if netSync.started != 1 {
 		t.Fatal("Netsync should already start")
 	}
+	
+	// Test forever loop when start
+	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, 2))
+	<-time.Tick(1*time.Second)
+	netSync.config.roleInCommitteesMtx.Lock()
+	if netSync.config.RoleInCommittees != 2 {
+		netSync.config.roleInCommitteesMtx.Unlock()
+		t.Fatal("Netsync role not received by pubsub manager")
+	}
+	netSync.config.roleInCommitteesMtx.Unlock()
+	
+	shardBlock := blockchain.ShardBlock{}
+	shardBlock.Header.Height = 2
+	beaconBlock := blockchain.BeaconBlock{}
+	beaconBlock.Header.Height = 2
+	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, &shardBlock))
+	<-time.Tick(1*time.Second)
+	res := netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+	if !res {
+		t.Error("Block should be in cache")
+	}
+	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, &beaconBlock))
+	<-time.Tick(1*time.Second)
+	res = netSync.HandleCacheBlock("b" + beaconBlock.Header.Hash().String())
+	if !res {
+		t.Error("Block should be in cache")
+	}
+	// test transaction worker
+	base58CheckData := "13AHwQTSToFvjZFGjxKZbVKL6Mq2sLaGyevhwFUGMvdNd7745xSXhzJ2q2ra6d8pmb8CgieHM4zgbMJSVpsxJFhprUzUu9Ba7FWYcdmHCkqviF1LhysmBugQP7mEGQVo6PJrFp7Xim72ndfwPovTLhWrqYa8475MAM8XMKMEtYRvNXjPghMJuYvN9yxPPWzXUFQGnw3temoR3heaXMCwH4ZGMVWVaom2prZZwQqdKQkC3Yi2E7hjntDny2oCVsvyHpCv7nAZganw9ZqXc2H4V15GNnvTKWUBRxZo8tRK79tnyoRH23SNtPrc7hG3tJc8gtLoZ2FLQP2UrGPi88XpnzNagTix3ydZ3HUMu29bBRJALKdREn7jsMPECN8EjgZayx2XuZNZGJ1Tqzdq7dosUB1TfKfdXk9rVQXuLqxSM7sszST2kdYQ4sLB5YnpcePtFpX3SsR2fbBB7NWNzdq8JroWiLcAcxmH5jVMtkXTkrdLYtEdHDDSm1RQgPEzTkKT3479Hoge5ocDeVBdEqp8v21vbTLvBYWW7cjy3UH9KucqCRWWN7Tiztbnujs3nkazAAHBLFgSSbmVHD9MGKScqnB249ECGqeoHwCnuTTC2GPehyFb3N67mR9bHNFfJz1MG7qwAt3CDVACR68FqCrBpEkkk1ko2jhedYe2ZAmDAWgL8HWvXK112Ji3ucwyaNm3CvjGDWpyyYAs7TjkF58RtMGojwGCutHNoNHwkEtdGoekRoHfVrTQgmgfsxEsAPbL4JcCNKzjMReDAwGVNXu4kWF6KwFtyD5z6jQyYZZX9aEm1fcMmTvFcmX1DBUjsW4BnELPZR6iYeJkikL7bYZZPLmfzKenD17jFLe4F5xhwFcBPN2kxjTFsLKG6VT2EKeShJGzuWgNAbBVBjgjECk6jrZC44HaXgUTdRcgr3MEfp1JAgegCaKJTaXn3eacHqPQrDovMoJ1wijwok4DNFWhA2Ano75udeZHZjHEvytsdEtL1VV74Rs6dFjz591EHvGqvCVFx9qgTRHmSxRDkGox2rYD5LFXSDsL9AZ2aLaoisysT21Dc81WNuG36QhgRjpZ9LZeaCVL8ffjDV5Wbe8uqedN8uZy9P6ZXothXgCjBiAxsDgyHLAbMqND742Sq3wh2N1mTgTRg75S8ijN1smca3U7Snj2iELXRhLrwr6zR8aUxWe4Tdy19knpbEwBoUQcd5i9pwii3q67nYSKLYQZyPnJC5K1tmhskFp7Sxi1Em4wxm3WrQ9aRj2oGLSaKimQ8ECyD8nKSDRynotXC1mFJB2MaMujDUKkEQ9SiVVg2sDvVy6EHGXvQbJtxFu9LiNYa9s23ro4qMAmNL7GaRVew7ss6Rh2f5D6mhBpEG58DewYwNfQnS43xmhDPQ4x55GGDCbxBApRcQd5pqCxF6HmLvipCy3DKm2F59y9QyKNVr1eJzgyRiXUNZFnaSvXdMKcAwBakNjoDSmFzLTQ711WFN731eCr8KtzVR3hpu9U3mptYwRRZXD8oL7FwZt4LaytcvB6x2Rz7ZkQcRFh6wMcEzVugwZvLPAoFyA4ZhcTsFCW8RKgJ1aEUHg79Rjti8p8QffqYaMapr2zKiqqcd4CxA8ssEy1DCNtXDmyMVBEeyQfr9ELeMk8XMTFYGKYMfF6tSDLQWn4gq3beVXC7vD3H2qGk2WKM8sY6jZC4rmJL1arRrN8NARMLwnkqTMWrtWb5Vmj7YDVR92nxdKFGK7Fabhyz6cQP3SxEAHbMfo4B6C1hTv1XebCp4pcBBLsurndpoDgSkTUFdHBFygg5t3jNByF7eJHoRoDQd892wg53zjY13rQ8QbrMJav"
+	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
+	if err != nil {
+		t.Fatal("Error parse tx", err)
+	}
+	var tx transaction.Tx
+	err = json.Unmarshal(rawTxBytes, &tx)
+	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, *tx.Hash()))
+	<-time.Tick(1*time.Second)
+	res = netSync.HandleCacheTx(*tx.Hash())
+	if !res {
+		t.Error("Transaction should be in cache")
+	}
+	netSync.Stop()
 }
 func TestNetSyncStop(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Skipped()
+		} else {
+			t.Fatal("Should panic when send to closed chan")
+		}
+	}()
 	netSync := NetSync{}.New(&NetSyncConfig{
 		PubSubManager: pubsub.NewPubSubManager(),
 	})
+	netSync.Start()
+	netSync.cMessage <- "test"
 	netSync.Stop()
 	if netSync.shutdown!= 1 {
 		t.Fatal("Netsync should already start")
 	}
+	<-time.Tick(1*time.Second)
+	netSync.cMessage <- "test"
 }
 func TestNetSyncHandleTxWithRole(t *testing.T) {
 	netSync := NetSync{}.New(&NetSyncConfig{
@@ -222,7 +277,7 @@ func TestNetSyncHandleMessageBeaconBlock(t *testing.T) {
 	block := blockchain.BeaconBlock{}
 	block.Header.Height = 2
 	netSync.Start()
-	netSync.cMessage <- &wire.MessageBlockBeacon{Block:block}
+	netSync.cMessage <- &wire.MessageBlockBeacon{Block: &block}
 	<-time.Tick(1*time.Second)
 	res := netSync.HandleCacheBlock("b" + block.Hash().String())
 	if !res {
@@ -241,7 +296,7 @@ func TestNetSyncHandleMessageShardBlock(t *testing.T) {
 	block := blockchain.ShardBlock{}
 	block.Header.Height = 2
 	netSync.Start()
-	netSync.cMessage <- &wire.MessageBlockShard{Block:block}
+	netSync.cMessage <- &wire.MessageBlockShard{Block: &block}
 	<-time.Tick(1*time.Second)
 	res := netSync.HandleCacheBlock("s" + block.Hash().String())
 	if !res {
@@ -260,7 +315,7 @@ func TestNetSyncHandleMessageShardToBeacon(t *testing.T) {
 	block := blockchain.ShardToBeaconBlock{}
 	block.Header.Height = 2
 	netSync.Start()
-	netSync.cMessage <- &wire.MessageShardToBeacon{Block:block}
+	netSync.cMessage <- &wire.MessageShardToBeacon{Block:&block}
 	<-time.Tick(1*time.Second)
 	res := netSync.HandleCacheBlock("s2b" + block.Hash().String())
 	if !res {
@@ -279,7 +334,7 @@ func TestNetSyncHandleMessageCrossShard(t *testing.T) {
 	block := blockchain.CrossShardBlock{}
 	block.Header.Height = 2
 	netSync.Start()
-	netSync.cMessage <- &wire.MessageCrossShard{Block:block}
+	netSync.cMessage <- &wire.MessageCrossShard{Block:&block}
 	<-time.Tick(1*time.Second)
 	res := netSync.HandleCacheBlock("c" + block.Hash().String())
 	if !res {
@@ -440,11 +495,20 @@ func TestNetSyncQueueBlock(t *testing.T) {
 		PubSubManager: pubsub.NewPubSubManager(),
 		BlockChain: bc,
 	})
-	block := blockchain.CrossShardBlock{}
-	block.Header.Height = 2
 	pr := &peer.Peer{}
 	done := make(chan struct{})
-	msg := &wire.MessageCrossShard{ Block: block, }
+	crossShardBlock := blockchain.CrossShardBlock{}
+	crossShardBlock.Header.Height = 2
+	msgCrossShardBlock := &wire.MessageCrossShard{ Block: &crossShardBlock, }
+	shardToBeaconBlock := blockchain.ShardToBeaconBlock{}
+	shardToBeaconBlock.Header.Height = 2
+	msgShardToBeaconBlock := &wire.MessageShardToBeacon{ Block: &shardToBeaconBlock, }
+	shardBlock := blockchain.ShardBlock{}
+	shardBlock.Header.Height = 2
+	msgShardBlock := &wire.MessageBlockShard{ Block: &shardBlock, }
+	beaconBlock := blockchain.BeaconBlock{}
+	beaconBlock.Header.Height = 2
+	msgBeaconBlock := &wire.MessageBlockBeacon{ Block: &beaconBlock, }
 	// no start net sync
 	if atomic.AddInt32(&netSync.shutdown, 1) != 1 {
 		t.Fatal("Netsync is not shutdown")
@@ -452,22 +516,67 @@ func TestNetSyncQueueBlock(t *testing.T) {
 	go func () {
 		<-done
 	}()
-	netSync.QueueTxPrivacyToken(pr, msg, done)
+	netSync.QueueBlock(pr, msgCrossShardBlock, done)
 	<-time.Tick(1*time.Second)
-	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res := netSync.HandleCacheBlock("c" + crossShardBlock.Header.Hash().String())
 	if res {
-		t.Error("Transaction should NOT be in cache")
+		t.Error("Block should NOT be in cache")
+	}
+	go func () {
+		<-done
+	}()
+	netSync.QueueBlock(pr, msgShardToBeaconBlock, done)
+	<-time.Tick(1*time.Second)
+	res = netSync.HandleCacheBlock("s2b" + shardToBeaconBlock.Header.Hash().String())
+	if res {
+		t.Error("Block should NOT be in cache")
+	}
+	go func () {
+		<-done
+	}()
+	netSync.QueueBlock(pr, msgShardBlock, done)
+	<-time.Tick(1*time.Second)
+	res = netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+	if res {
+		t.Error("Block should NOT be in cache")
+	}
+	go func () {
+		<-done
+	}()
+	netSync.QueueBlock(pr, msgBeaconBlock, done)
+	<-time.Tick(1*time.Second)
+	res = netSync.HandleCacheBlock("b" + beaconBlock.Header.Hash().String())
+	if res {
+		t.Error("Block should NOT be in cache")
 	}
 	if atomic.AddInt32(&netSync.shutdown, -1) != 0 {
 		t.Fatal("Netsync is shutdown")
 	}
 	// start netsyc
 	netSync.Start()
-	netSync.QueueTxPrivacyToken(pr, msg, done)
+	netSync.QueueBlock(pr, msgCrossShardBlock, done)
 	<-time.Tick(1*time.Second)
-	res = netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res = netSync.HandleCacheBlock("c" + crossShardBlock.Header.Hash().String())
 	if !res {
-		t.Error("Transaction should be in cache")
+		t.Error("Block should be in cache")
+	}
+	netSync.QueueBlock(pr, msgShardToBeaconBlock, done)
+	<-time.Tick(1*time.Second)
+	res = netSync.HandleCacheBlock("s2b" + shardToBeaconBlock.Header.Hash().String())
+	if !res {
+		t.Error("Block should be in cache")
+	}
+	netSync.QueueBlock(pr, msgShardBlock, done)
+	<-time.Tick(1*time.Second)
+	res = netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+	if !res {
+		t.Error("Block should be in cache")
+	}
+	netSync.QueueBlock(pr, msgBeaconBlock, done)
+	<-time.Tick(1*time.Second)
+	res = netSync.HandleCacheBlock("b" + beaconBlock.Header.Hash().String())
+	if !res {
+		t.Error("Block should be in cache")
 	}
 	netSync.Stop()
 }
