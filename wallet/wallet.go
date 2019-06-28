@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/pkg/errors"
 	"io/ioutil"
 )
 
@@ -176,7 +175,7 @@ func (wallet *Wallet) RemoveAccount(privateKeyStr string, passPhrase string) err
 			return nil
 		}
 	}
-	return NewWalletError(UnexpectedErr, errors.New("Not found"))
+	return NewWalletError(NotFoundAccountErr, nil)
 }
 
 // ImportAccount adds account into wallet with privateKeyStr, accountName, and passPhrase which is used to init wallet
