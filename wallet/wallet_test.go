@@ -653,3 +653,51 @@ func TestWalletGetAccountAddressWithNilShardID(t *testing.T){
 		assert.Equal(t, ReadOnlyKeySerialized, keyData.ReadonlyKey)
 	}
 }
+
+/*
+		Unit test for GetAddressesByAccount function
+ */
+
+func TestWalletGetAddressesByAccount(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		wallet.CreateNewAccount(item.accountName, &item.shardID)
+	}
+
+	keyData := wallet.GetAddressesByAccount("Acc A")
+
+	assert.Equal(t, 1, len(keyData))
+}
+
+func TestWalletGetAddressesByAccountWithNotExistedAcc(t *testing.T){
+	data := []struct {
+		accountName string
+		shardID byte
+	}{
+		{"Acc A", byte(0)},
+		{"Acc B", byte(1)},
+		{"Acc C", byte(2)},
+		{"Acc D", byte(3)},
+	}
+
+	wallet.Init("", 0, "Wallet")
+
+	for _, item := range data {
+		wallet.CreateNewAccount(item.accountName, &item.shardID)
+	}
+
+	keyData := wallet.GetAddressesByAccount("Acc E")
+
+	assert.Equal(t, 0, len(keyData))
+}

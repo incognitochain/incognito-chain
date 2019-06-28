@@ -313,10 +313,12 @@ func (wallet *Wallet) GetAccountAddress(accountName string, shardID *byte) KeySe
 	return key
 }
 
-func (wallet *Wallet) GetAddressesByAccount(accountParam string) []KeySerializedData {
+// GetAddressesByAccount receives accountName
+// and returns list of KeySerializedData of accounts which has accountName
+func (wallet *Wallet) GetAddressesByAccount(accountName string) []KeySerializedData {
 	result := make([]KeySerializedData, 0)
 	for _, account := range wallet.MasterAccount.Child {
-		if account.Name == accountParam {
+		if account.Name == accountName {
 			item := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
 				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
