@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 )
@@ -74,9 +75,44 @@ func TestConnManager_GetPeerConnOfPbk(t *testing.T) {
 		ListenerPeer: &peer1,
 	})
 	result := make([]*peer.PeerConn, 0)
-	pbk := "abc"
+	pbk := "abc1"
 	result = connManager.GetPeerConnOfPbk(pbk)
+	if len(result) != 1 {
+		t.Error("Error GetPeerConnOfPbk")
+	}
+}
+
+func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
+	consensusState := &ConsensusState{}
+	beaconCommittee := []string{"abc1", "abc2"}
+
+	consensusState.BeaconCommittee = make([]string, len(beaconCommittee))
+	copy(consensusState.BeaconCommittee, beaconCommittee)
+
+	peer1 := peer.Peer{
+		PeerConnsMtx: sync.Mutex{},
+	}
+	mapPeerConnection := make(map[string]*peer.PeerConn)
+	peerConn1 := peer.PeerConn{RemotePeer: &peer.Peer{
+		PublicKey: "abc1",
+	},
+		RemotePeerID: "a"}
+	peerConn2 := peer.PeerConn{RemotePeer: &peer.Peer{
+		PublicKey: "abc2",
+	},
+		RemotePeerID: "b"}
+	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
+	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
+	peer1.PeerConns = mapPeerConnection
+	connManager := ConnManager{}.New(&Config{
+		ListenerPeer: &peer1,
+	})
+	connManager.Config.ConsensusState = consensusState
+	result := make([]*peer.PeerConn, 0)
+	result = connManager.GetPeerConnOfBeacon()
 	if len(result) != 2 {
 		t.Error("Error GetPeerConnOfPbk")
+	} else {
+		assert.Equal(t, 1, 1)
 	}
 }
