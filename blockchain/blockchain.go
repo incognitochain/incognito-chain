@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-
-	pubsub "github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
@@ -38,7 +38,7 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
-	PubSub           PubSub
+	IsTest           bool
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -62,6 +62,7 @@ type Config struct {
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
 	PubSubManager     *pubsub.PubSubManager
+	RandomClient      btc.RandomClient
 	Server            interface {
 		BoardcastNodeState() error
 
@@ -84,12 +85,6 @@ type Config struct {
 	UserKeySet *cashec.KeySet
 }
 
-type PubSub struct {
-	mtx                 sync.RWMutex
-	NewShardBlockEvent  map[int]chan *ShardBlock
-	NewBeaconBlockEvent map[int]chan *BeaconBlock
-}
-
 /*
 Init - init a blockchain view from config
 */
@@ -104,6 +99,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
+	blockchain.IsTest = false
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
@@ -119,8 +115,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		blockchain: blockchain,
 		cQuit:      blockchain.cQuitSync,
 	}
-	blockchain.PubSub.NewBeaconBlockEvent = make(map[int]chan *BeaconBlock)
-	blockchain.PubSub.NewShardBlockEvent = make(map[int]chan *ShardBlock)
 	return nil
 }
 

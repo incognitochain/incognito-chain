@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	heartbeatInterval = 5
-	heartbeatTimeout  = 60
+	HeartbeatInterval = 10
+	HeartbeatTimeout  = 60
 )
 
 // timeZeroVal is simply the zero value for a time.Time and is used to avoid
@@ -32,76 +32,91 @@ type Peer struct {
 	LastPing   time.Time
 }
 
-// rpcServer provides a concurrent safe RPC server to a chain server.
+// rpcServer provides a concurrent safe RPC server to a bootnode server.
 type RpcServer struct {
-	Peers    map[string]*Peer
+	Peers    map[string]*Peer // list peers which are still pinging to bootnode continuously
 	peersMtx sync.Mutex
-
-	Config RpcServerConfig
+	server   *rpc.Server
+	Config   RpcServerConfig // config for RPC server
 }
 
 type RpcServerConfig struct {
-	Port int
+	Port int // rpc port
 }
 
-func (self *RpcServer) Init(config *RpcServerConfig) error {
-	self.Config = *config
-	self.Peers = make(map[string]*Peer)
-	go self.PeerHeartBeat()
+func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
+	// get config and init list Peers
+	rpcServer.Config = *config
+	rpcServer.Peers = make(map[string]*Peer)
+	rpcServer.server = rpc.NewServer()
+	// start go routin hertbeat to check invalid peers
+	go rpcServer.PeerHeartBeat(HeartbeatTimeout)
+}
+
+// Start - create handler and add into rpc server
+// Listen and serve rpc server with config port
+func (rpcServer *RpcServer) Start() error {
+	handler := &Handler{rpcServer}
+	rpcServer.server.Register(handler)
+	l, e := net.Listen("tcp", fmt.Sprintf(":%d", rpcServer.Config.Port))
+	if e != nil {
+		log.Fatal("listen error:", e)
+		return e
+	}
+	rpcServer.server.Accept(l)
+	l.Close()
 	return nil
 }
 
-func (self *RpcServer) Start() {
-	handler := &Handler{self}
-	server := rpc.NewServer()
-	server.Register(handler)
-	l, e := net.Listen("tcp", fmt.Sprintf(":%d", self.Config.Port))
-	if e != nil {
-		log.Fatal("listen error:", e)
-	}
-	server.Accept(l)
-	l.Close()
-}
-
-func (self *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) {
+// AddOrUpdatePeer - push a connected peer in to list of mem or update an old peer node
+func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 string, signDataB58 string) error {
+	rpcServer.peersMtx.Lock()
+	defer rpcServer.peersMtx.Unlock()
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
 		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
 		if err == nil {
-			self.peersMtx.Lock()
-			self.Peers[publicKeyB58] = &Peer{
-				ID:         self.CombineID(rawAddress, publicKeyB58),
+			rpcServer.Peers[publicKeyB58] = &Peer{
+				ID:         rpcServer.CombineID(rawAddress, publicKeyB58),
 				RawAddress: rawAddress,
 				PublicKey:  publicKeyB58,
 				FirstPing:  time.Now().Local(),
 				LastPing:   time.Now().Local(),
 			}
-			self.peersMtx.Unlock()
 		} else {
 			log.Println("AddOrUpdatePeer error", err)
+			return err
 		}
 	}
+	return nil
 }
 
-func (self *RpcServer) RemovePeerByPbk(publicKey string) {
-	delete(self.Peers, publicKey)
+// RemovePeerByPbk - remove peer from mem of bootnode
+func (rpcServer *RpcServer) RemovePeerByPbk(publicKey string) {
+	delete(rpcServer.Peers, publicKey)
 }
 
-func (self *RpcServer) CombineID(rawAddress string, publicKey string) string {
+// CombineID - return string = rawAddress of peer + public key in base58check encode of node(run as committee)
+// in case node is not running like a committee, we dont have public key of user who running node
+// from this, we can check who is committee in network from bootnode if node provide data for bootnode about key
+func (rpcServer *RpcServer) CombineID(rawAddress string, publicKey string) string {
 	return rawAddress + publicKey
 }
 
-func (self *RpcServer) PeerHeartBeat() {
+// PeerHeartBeat - loop forever after HeartbeatInterval to check peers
+// which are not connected to remove from bootnode
+// use Last Ping time to compare with time.now
+func (rpcServer *RpcServer) PeerHeartBeat(heartbeatTimeout int) {
 	for {
 		now := time.Now().Local()
-		if len(self.Peers) > 0 {
+		if len(rpcServer.Peers) > 0 {
 		loop:
-			for publicKey, peer := range self.Peers {
-				if now.Sub(peer.LastPing).Seconds() > heartbeatTimeout {
-					self.RemovePeerByPbk(publicKey)
+			for publicKey, peer := range rpcServer.Peers {
+				if now.Sub(peer.LastPing).Seconds() > float64(heartbeatTimeout) {
+					rpcServer.RemovePeerByPbk(publicKey)
 					goto loop
 				}
 			}
 		}
-		time.Sleep(heartbeatInterval * time.Second)
+		time.Sleep(HeartbeatInterval * time.Second)
 	}
 }

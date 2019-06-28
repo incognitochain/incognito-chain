@@ -37,7 +37,7 @@ type EngineConfig struct {
 	Server                      serverInterface
 	ShardToBeaconPool           blockchain.ShardToBeaconPool
 	CrossShardPool              map[byte]blockchain.CrossShardPool
-	PubsubManager               *pubsub.PubSubManager
+	PubSubManager               *pubsub.PubSubManager
 	CRoleInCommitteesMempool    chan int
 	CRoleInCommitteesNetSync    chan int
 	CRoleInCommitteesBeaconPool chan bool
@@ -311,8 +311,8 @@ func (engine *Engine) execShardRole(shardID byte) {
 }
 
 func (engine *Engine) NotifyBeaconRole(beaconRole bool) {
-	engine.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, beaconRole))
+	engine.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, beaconRole))
 }
 func (engine *Engine) NotifyShardRole(shardRole int) {
-	engine.config.PubsubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, shardRole))
+	engine.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, shardRole))
 }

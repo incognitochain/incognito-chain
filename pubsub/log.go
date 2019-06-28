@@ -4,13 +4,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type PubsubLogger struct {
+type PubSubLogger struct {
 	log common.Logger
 }
 
-func (metricLogger *PubsubLogger) Init(inst common.Logger) {
+func (metricLogger *PubSubLogger) Init(inst common.Logger) {
 	metricLogger.log = inst
 }
 
 // Global instant to use
-var Logger = PubsubLogger{}
+var Logger = PubSubLogger{}

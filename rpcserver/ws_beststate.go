@@ -18,7 +18,7 @@ func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subc
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubscriber(pubsub.ShardBeststateTopic)
+	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardBeststateTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -26,7 +26,7 @@ func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subc
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe Beacon Beststate Block")
-		wsServer.config.PubsubManager.Unsubscribe(pubsub.ShardBeststateTopic, subId)
+		wsServer.config.PubSubManager.Unsubscribe(pubsub.ShardBeststateTopic, subId)
 		close(cResult)
 	}()
 	for {
@@ -60,7 +60,7 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	subId, subChan, err := wsServer.config.PubsubManager.RegisterNewSubscriber(pubsub.BeaconBeststateTopic)
+	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.BeaconBeststateTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -68,7 +68,7 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 	}
 	defer func() {
 		Logger.log.Info("Finish Subscribe Beacon Beststate Block")
-		wsServer.config.PubsubManager.Unsubscribe(pubsub.BeaconBeststateTopic, subId)
+		wsServer.config.PubSubManager.Unsubscribe(pubsub.BeaconBeststateTopic, subId)
 		close(cResult)
 	}()
 	for {
