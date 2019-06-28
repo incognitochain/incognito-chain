@@ -79,7 +79,7 @@ func (httpServer *HttpServer) handleGetAddressesByAccount(params interface{}, cl
 		return nil, nil
 	}
 	result := jsonresult.GetAddressesByAccount{}
-	result.Addresses = httpServer.config.Wallet.GetAddressesByAccount(paramTemp)
+	result.Addresses = httpServer.config.Wallet.GetAddressesByAccName(paramTemp)
 	return result, nil
 }
 
@@ -103,7 +103,7 @@ func (httpServer *HttpServer) handleGetAccountAddress(params interface{}, closeC
 		temp := byte(randShard)
 		shardID = &temp
 	}
-	result := httpServer.config.Wallet.GetAccountAddress(paramTemp, shardID)
+	result := httpServer.config.Wallet.GetAddressByAccName(paramTemp, shardID)
 	return result, nil
 }
 

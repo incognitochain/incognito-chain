@@ -569,10 +569,10 @@ func TestWalletDumpPrivkeyWithNotExistedAcc(t *testing.T){
 }
 
 /*
-		Unit test for GetAccountAddress function
+		Unit test for GetAddressByAccName function
  */
 
-func TestWalletGetAccountAddress(t *testing.T){
+func TestWalletGetAddressByAccName(t *testing.T){
 	data := []struct {
 		accountName string
 		shardID byte
@@ -591,7 +591,7 @@ func TestWalletGetAccountAddress(t *testing.T){
 		PubKeyHexEncoding := hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk)
 		ReadOnlyKeySerialized := newAccount.Key.Base58CheckSerialize(ReadonlyKeyType)
 
-		keyData := wallet.GetAccountAddress(item.accountName, &item.shardID)
+		keyData := wallet.GetAddressByAccName(item.accountName, &item.shardID)
 
 		assert.Equal(t, paymentAddrSerialized, keyData.PaymentAddress)
 		assert.Equal(t, PubKeyHexEncoding, keyData.Pubkey)
@@ -599,7 +599,7 @@ func TestWalletGetAccountAddress(t *testing.T){
 	}
 }
 
-func TestWalletGetAccountAddressWithNotExistedAcc(t *testing.T){
+func TestWalletGetAddressByAccNameWithNotExistedAcc(t *testing.T){
 	data := []struct {
 		accountName string
 		shardID byte
@@ -619,15 +619,15 @@ func TestWalletGetAccountAddressWithNotExistedAcc(t *testing.T){
 
 	shardId := byte(0)
 	accName := "acc E"
-	_ = wallet.GetAccountAddress(accName, &shardId)
+	_ = wallet.GetAddressByAccName(accName, &shardId)
 	assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
 
 	accName2 := "acc F"
-	_ = wallet.GetAccountAddress(accName2, nil)
+	_ = wallet.GetAddressByAccName(accName2, nil)
 	assert.Equal(t, numAccount + 2, len(wallet.MasterAccount.Child))
 }
 
-func TestWalletGetAccountAddressWithNilShardID(t *testing.T){
+func TestWalletGetAddressByAccNameWithNilShardID(t *testing.T){
 	data := []struct {
 		accountName string
 		shardID byte
@@ -646,7 +646,7 @@ func TestWalletGetAccountAddressWithNilShardID(t *testing.T){
 		PubKeyHexEncoding := hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk)
 		ReadOnlyKeySerialized := newAccount.Key.Base58CheckSerialize(ReadonlyKeyType)
 
-		keyData := wallet.GetAccountAddress(item.accountName, nil)
+		keyData := wallet.GetAddressByAccName(item.accountName, nil)
 
 		assert.Equal(t, paymentAddrSerialized, keyData.PaymentAddress)
 		assert.Equal(t, PubKeyHexEncoding, keyData.Pubkey)
@@ -655,10 +655,10 @@ func TestWalletGetAccountAddressWithNilShardID(t *testing.T){
 }
 
 /*
-		Unit test for GetAddressesByAccount function
+		Unit test for GetAddressesByAccName function
  */
 
-func TestWalletGetAddressesByAccount(t *testing.T){
+func TestWalletGetAddressesByAccName(t *testing.T){
 	data := []struct {
 		accountName string
 		shardID byte
@@ -675,12 +675,12 @@ func TestWalletGetAddressesByAccount(t *testing.T){
 		wallet.CreateNewAccount(item.accountName, &item.shardID)
 	}
 
-	keyData := wallet.GetAddressesByAccount("Acc A")
+	keyData := wallet.GetAddressesByAccName("Acc A")
 
 	assert.Equal(t, 1, len(keyData))
 }
 
-func TestWalletGetAddressesByAccountWithNotExistedAcc(t *testing.T){
+func TestWalletGetAddressesByAccNameWithNotExistedAcc(t *testing.T){
 	data := []struct {
 		accountName string
 		shardID byte
@@ -697,7 +697,7 @@ func TestWalletGetAddressesByAccountWithNotExistedAcc(t *testing.T){
 		wallet.CreateNewAccount(item.accountName, &item.shardID)
 	}
 
-	keyData := wallet.GetAddressesByAccount("Acc E")
+	keyData := wallet.GetAddressesByAccName("Acc E")
 
 	assert.Equal(t, 0, len(keyData))
 }
