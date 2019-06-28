@@ -1,5 +1,5 @@
 all: incognito_proxy/incognito_proxy.abi vault/vault.abi
-	go test -run=TestBurn
+	go test -run=TestSimulatedBurn
 
 incognito_proxy/incognito_proxy.abi: incognito_proxy/incognito_proxy.vy
 	./gengo.sh incognito_proxy/incognito_proxy.vy incognito_proxy
