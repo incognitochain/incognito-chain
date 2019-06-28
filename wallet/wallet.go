@@ -217,6 +217,8 @@ func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, pa
 	return &account, nil
 }
 
+// Save saves encrypted wallet (using AES encryption scheme) in config data file of wallet
+// It returns error if any
 func (wallet *Wallet) Save(password string) error {
 	if password == "" {
 		password = wallet.PassPhrase
@@ -249,29 +251,36 @@ func (wallet *Wallet) Save(password string) error {
 	return nil
 }
 
+// LoadWallet loads encrypted wallet from file and then decrypts it to wallet struct
+// It returns error if any
 func (wallet *Wallet) LoadWallet(password string) error {
 	// read file and decrypt
 	bytesData, err := ioutil.ReadFile(wallet.config.DataPath)
 	if err != nil {
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(ReadFileErr, err)
 	}
 	bufBytes, err := AES{}.Decrypt(password, string(bytesData))
 	if err != nil {
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(AESDecryptErr, err)
 	}
 
 	// read to struct
 	err = json.Unmarshal(bufBytes, &wallet)
 	if err != nil {
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(JsonUnmarshalErr, err)
 	}
 	return nil
 }
 
-func (wallet *Wallet) DumpPrivkey(addressP string) KeySerializedData {
+
+// DumpPrivkey receives base58 check serialized payment address (paymentAddrSerialized)
+// and returns KeySerializedData object contains PrivateKey
+// which is corresponding to paymentAddrSerialized in all wallet accounts
+// If there is not any wallet account corresponding to paymentAddrSerialized, it returns empty KeySerializedData object
+func (wallet *Wallet) DumpPrivkey(paymentAddrSerialized string) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(PaymentAddressType)
-		if address == addressP {
+		if address == paymentAddrSerialized {
 			key := KeySerializedData{
 				PrivateKey: account.Key.Base58CheckSerialize(PriKeyType),
 			}
