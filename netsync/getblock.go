@@ -40,7 +40,7 @@ func (netSync *NetSync) GetBlkBeaconByHashAndSend(peerID libp2p.ID, blkHashes []
 			Logger.log.Error(err)
 			continue
 		}
-		newMsg.(*wire.MessageBlockBeacon).Block = *blk
+		newMsg.(*wire.MessageBlockBeacon).Block = blk
 		netSync.config.Server.PushMessageToPeer(newMsg, peerID)
 	}
 }
@@ -153,7 +153,7 @@ func (netSync *NetSync) GetBlkBeaconByHeightAndSend(peerID libp2p.ID, fromPool b
 			Logger.log.Error(err)
 			continue
 		}
-		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = *blk
+		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = blk
 		err = netSync.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
 		if err != nil {
 			Logger.log.Error(err)
@@ -178,7 +178,7 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 			Logger.log.Error(err)
 			return nil, err
 		}
-		blkMsg.(*wire.MessageBlockShard).Block = *block
+		blkMsg.(*wire.MessageBlockShard).Block = block
 	case 1:
 		blkToSend, err := block.CreateCrossShardBlock(crossShardID)
 		if err != nil {
