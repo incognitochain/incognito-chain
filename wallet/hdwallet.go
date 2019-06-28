@@ -69,6 +69,7 @@ func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 	return childKey, nil
 }
 
+// getIntermediary
 func (key *KeyWallet) getIntermediary(childIdx uint32) ([]byte, error) {
 	childIndexBytes := common.Uint32ToBytes(childIdx)
 
@@ -83,7 +84,8 @@ func (key *KeyWallet) getIntermediary(childIdx uint32) ([]byte, error) {
 	return hmac.Sum(nil), nil
 }
 
-// Serialize a KeySet to a 78 byte byte slice
+// Serialize receives keyType and serializes key which has keyType to bytes array
+// and append 4-byte checksum into bytes array
 func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
