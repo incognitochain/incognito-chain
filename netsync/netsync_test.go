@@ -22,7 +22,7 @@ var (
 	pb = pubsub.NewPubSubManager()
 	txPool = &mempool.TxPool{}
 	server = &Server{}
-	consensus = &Consensus{}
+	consensus = NewConsensus()
 	shardToBeaconPool = mempool.GetShardToBeaconPool()
 	crossShardPool = make(map[byte]blockchain.CrossShardPool)
 	msgBFTPropose = &wire.MessageBFTPropose{
@@ -259,7 +259,7 @@ func TestNetSyncStart(t *testing.T){
 	if netSync.started != 1 {
 		t.Fatal("Netsync should already start")
 	}
-	
+	netSync.Start()
 	// Test forever loop when start
 	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, 2))
 	<-time.Tick(1 * time.Second)
@@ -323,6 +323,7 @@ func TestNetSyncStop(t *testing.T){
 	if netSync.shutdown != 1 {
 		t.Fatal("Netsync should already start")
 	}
+	netSync.Stop()
 	<-time.Tick(1 * time.Second)
 	netSync.cMessage <- "test"
 }
@@ -343,6 +344,11 @@ func TestNetSyncHandleTxWithRole(t *testing.T){
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTx{Transaction: &tx}
+	if !netSync.HandleTxWithRole(msg.Transaction) {
+		t.Fatal("NetSync should accept this transaction")
+	}
+	netSync.config.RoleInCommittees = -1
+	netSync.config.RelayShard = []byte{0}
 	if !netSync.HandleTxWithRole(msg.Transaction) {
 		t.Fatal("NetSync should accept this transaction")
 	}
@@ -403,10 +409,15 @@ func TestNetSyncHandleMessageTx(t *testing.T){
 	netSync.Start()
 	netSync.cMessage <- msg
 	<-time.Tick(1 * time.Second)
+	netSync.cMessage <- msg
+	<-time.Tick(1 * time.Second)
 	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
 	if !res {
 		t.Error("Transaction should be in cache")
 	}
+	netSync.config.RoleInCommittees = -1
+	netSync.cMessage <- msg
+	<-time.Tick(1 * time.Second)
 	netSync.Stop()
 }
 
@@ -431,6 +442,8 @@ func TestNetSyncHandleMessageTxToken(t *testing.T){
 	}
 	msg := &wire.MessageTxToken{Transaction: &tx}
 	netSync.Start()
+	netSync.cMessage <- msg
+	<-time.Tick(1 * time.Second)
 	netSync.cMessage <- msg
 	<-time.Tick(1 * time.Second)
 	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
@@ -459,6 +472,8 @@ func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T){
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTxPrivacyToken{Transaction: &tx}
 	netSync.Start()
+	netSync.cMessage <- msg
+	<-time.Tick(1 * time.Second)
 	netSync.cMessage <- msg
 	<-time.Tick(1 * time.Second)
 	res := netSync.HandleCacheTx(*msg.Transaction.Hash())

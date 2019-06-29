@@ -2,7 +2,7 @@ package netsync
 
 import (
 	"sort"
-
+	
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -170,7 +170,6 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 		blkMsg wire.Message
 		err    error
 	)
-
 	switch blkType {
 	case 0:
 		blkMsg, err = wire.MakeEmptyMessage(wire.CmdBlockShard)
