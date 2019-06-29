@@ -273,6 +273,7 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 			}
 		}
 	}
+	Logger.log.Info("Transaction %+v found in cache", *msg.Transaction.Hash())
 }
 
 // handleTxMsg handles transaction messages from all peers.
@@ -297,6 +298,7 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 			}
 		}
 	}
+	Logger.log.Info("Transaction %+v found in cache", *msg.Transaction.Hash())
 }
 
 // handleTxMsg handles transaction messages from all peers.
@@ -320,6 +322,7 @@ func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 			}
 		}
 	}
+	Logger.log.Info("Transaction %+v found in cache", *msg.Transaction.Hash())
 }
 
 // QueueBlock adds the passed block message and peer to the block handling
