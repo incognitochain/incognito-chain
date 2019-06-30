@@ -108,6 +108,7 @@ func getBurnProofOnBeacon(
 		return nil, fmt.Errorf("cannot find corresponding beacon block that includes burn instruction")
 	}
 
+	fmt.Printf("[db] found burn inst id %d in beaconBlock: %d\n", instID, beaconBlock.Header.Height)
 	insts := beaconBlock.Body.Instructions
 	return buildProofOnBeacon(beaconBlock, insts, instID, db)
 }

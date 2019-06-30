@@ -492,6 +492,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 		}
 	}
 	// Create stability instruction
+	fmt.Printf("[db] included shardID %d, block %d, insts: %s\n", shardID, shardBlock.Header.Height, shardBlock.Instructions)
 	stabilityInstructionsPerBlock, err := blockChain.buildStabilityInstructions(
 		shardID,
 		shardBlock.Instructions,
