@@ -190,7 +190,6 @@ func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
 	}
 }
 
-
 func buildBridgePubkeyRootInstruction(currentValidators []string) []string {
 	bridgeCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
 
@@ -236,7 +235,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 
 		case metadata.BurningRequestMeta:
 			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
-			burningConfirm, err := buildBurningConfirmInst(inst, shardID)
+			burningConfirm, err := buildBurningConfirmInst(inst)
 			if err != nil {
 				return [][]string{}, err
 			}
