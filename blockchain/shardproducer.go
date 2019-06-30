@@ -17,12 +17,13 @@ import (
 )
 
 func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
-	var txsToAdd = make([]metadata.Transaction,0)
+	var txsToAdd = make([]metadata.Transaction, 0)
 	var totalTxsFee uint64
 	//============Build body=============
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	fmt.Printf("[ndh] Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	fmt.Printf("\n[db] producing block: %d\n", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
 		return nil, err
@@ -76,6 +77,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
 	bridgePubkeyInst := []string{}
 	if beaconHeight%common.EPOCH == 0 {
+		fmt.Printf("[db] shardPendingValidator: %s\n", shardPendingValidator)
 		if len(shardPendingValidator) > 0 {
 			Logger.log.Critical("shardPendingValidator", shardPendingValidator)
 			Logger.log.Critical("shardCommittee", shardCommittee)
@@ -92,6 +94,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
 			bridgePubkeyInst = buildBridgePubkeyRootInstruction(shardCommittee)
+			prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
+			fmt.Printf("[db] added bridgeCommRoot in shard block %d\n", prevBlock.Header.Height+1)
 		}
 	}
 	if !reflect.DeepEqual(swapInstruction, []string{}) {
@@ -198,6 +202,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	flattenInsts := FlattenAndConvertStringInst(instructions)
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
+	if len(insts) >= 2 {
+		fmt.Printf("[db] block %d has %d insts\n", prevBlock.Header.Height, len(insts))
+	}
 
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
 	block.Header = ShardHeader{
@@ -251,11 +258,11 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 			blockgen.chain.config.CRemovedTxs <- tx
 		}
 	}()
-	
+
 	var respTxsShard, respTxsBeacon []metadata.Transaction
 	var errCh chan error
 	errCh = make(chan error)
-	go func(){
+	go func() {
 		var err error
 		respTxsShard, err = blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
 		errCh <- err
@@ -410,7 +417,7 @@ func (blockgen *BlkTmplGenerator) getPendingTransactionV2(
 	}
 	currentSize := uint64(0)
 	for _, tx := range sourceTxns {
-		if tx.IsPrivacy(){
+		if tx.IsPrivacy() {
 			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(500*time.Millisecond).Nanoseconds()
 		} else {
 			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(50*time.Millisecond).Nanoseconds()

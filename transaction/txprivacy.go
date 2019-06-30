@@ -690,8 +690,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 		return nil
 	}
 	if tx.Metadata != nil {
-		fmt.Printf("[db] validate metadata with blockchain: %d %h\n", tx.GetMetadataType(), tx.Hash())
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
+		fmt.Printf("[db] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
 			return err
 		}

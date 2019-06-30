@@ -193,7 +193,6 @@ func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
 
 func buildBridgePubkeyRootInstruction(currentValidators []string) []string {
 	bridgeCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
-	fmt.Printf("[db] added bridgeCommRoot: %x\n", bridgeCommRoot)
 
 	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
 	instContent := base58.Base58Check{}.Encode(bridgeCommRoot, 0x00)
@@ -212,6 +211,9 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 ) ([][]string, error) {
 	instructions := [][]string{}
 	for _, inst := range shardBlockInstructions {
+		if inst[0] == strconv.Itoa(metadata.BurningRequestMeta) {
+			fmt.Printf("[db] shardBlockInst: %s\n", inst)
+		}
 		if len(inst) == 0 {
 			continue
 		}
@@ -233,9 +235,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			newInst, err = buildInstructionsForETHIssuingReq(contentStr)
 
 		case metadata.BurningRequestMeta:
-			if metaType == metadata.BurningRequestMeta {
-				fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
-			}
+			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
 			burningConfirm, err := buildBurningConfirmInst(inst, shardID)
 			if err != nil {
 				return [][]string{}, err

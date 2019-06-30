@@ -290,7 +290,7 @@ func extractInstsFromShardBlock(
 func findCommSwapInst(insts [][]string, meta int) ([]string, int) {
 	for i, inst := range insts {
 		if strconv.Itoa(meta) == inst[0] {
-			fmt.Println("[db] BeaconPubkeyRootMeta inst:", inst)
+			fmt.Println("[db] CommSwap inst:", inst)
 			return inst, i
 		}
 	}
