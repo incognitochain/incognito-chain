@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/incognitochain/incognito-chain/ethrelaying/crypto"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
