@@ -197,6 +197,6 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, errors.Errorf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String())
 	}
-	txsUsed[idx] = 1
+	instUsed[idx] = 1
 	return true, nil
 }

@@ -79,59 +79,60 @@ def withdraw(
     bridgeSignerPathIsLeft: bool[TOTAL_PUBKEY],
     bridgeSignerPathLen: int128
 ):
-    type: uint256 = 0
-    tokenID: bytes32
-    to: address
-    burned: uint256 = 0
-    type, tokenID, to, burned = self.parseBurnInst(inst)
-    # log.NotifyUint256(type)
-    # log.NotifyBytes32(tokenID)
-    # log.NotifyAddress(to)
-    # log.NotifyUint256(burned)
-
-    # Check type and tokenID
-    assert type == 3617328 # Burn metadata and shardID of bridge
-    assert tokenID == 0x0500000000000000000000000000000000000000000000000000000000000000
-
-    # Each instruction can only by redeemed once
-    instHash: bytes32 = keccak256(inst)
-    assert self.withdrawed[instHash] == False
-
-    # Check if instruction is approved on Incognito
-    assert self.incognito.instructionApproved(
-        instHash,
-        beaconInstPath,
-        beaconInstPathIsLeft,
-        beaconInstPathLen,
-        beaconInstRoot,
-        beaconBlkData,
-        beaconBlkHash,
-        beaconSignerPubkeys,
-        beaconSignerCount,
-        beaconSignerSig,
-        beaconSignerPaths,
-        beaconSignerPathIsLeft,
-        beaconSignerPathLen,
-        bridgeInstPath,
-        bridgeInstPathIsLeft,
-        bridgeInstPathLen,
-        bridgeInstRoot,
-        bridgeBlkData,
-        bridgeBlkHash,
-        bridgeSignerPubkeys,
-        bridgeSignerCount,
-        bridgeSignerSig,
-        bridgeSignerPaths,
-        bridgeSignerPathIsLeft,
-        bridgeSignerPathLen
-    )
-
-    # Check if balance is enough
-    amount: wei_value = as_wei_value(burned, "gwei")
-    assert self.balance >= amount
-
-    # Send and notify
-    self.withdrawed[instHash] = True
-    send(to, amount)
+    # type: uint256 = 0
+    # tokenID: bytes32
+    # to: address
+    # burned: uint256 = 0
+    # type, tokenID, to, burned = self.parseBurnInst(inst)
+    # # log.NotifyUint256(type)
+    # # log.NotifyBytes32(tokenID)
+    # # log.NotifyAddress(to)
+    # # log.NotifyUint256(burned)
+# 
+    # # Check type and tokenID
+    # assert type == 3617328 # Burn metadata and shardID of bridge
+    # assert tokenID == # 0x05000000000000000000000000000000000000000000000000000000000000#   00
+# 
+    # # Each instruction can only by redeemed once
+    # instHash: bytes32 = keccak256(inst)
+    # assert self.withdrawed[instHash] == False
+# 
+    # # Check if instruction is approved on Incognito
+    # assert self.incognito.instructionApproved(
+    #     instHash,
+    #     beaconInstPath,
+    #     beaconInstPathIsLeft,
+    #     beaconInstPathLen,
+    #     beaconInstRoot,
+    #     beaconBlkData,
+    #     beaconBlkHash,
+    #     beaconSignerPubkeys,
+    #     beaconSignerCount,
+    #     beaconSignerSig,
+    #     beaconSignerPaths,
+    #     beaconSignerPathIsLeft,
+    #     beaconSignerPathLen,
+    #     bridgeInstPath,
+    #     bridgeInstPathIsLeft,
+    #     bridgeInstPathLen,
+    #     bridgeInstRoot,
+    #     bridgeBlkData,
+    #     bridgeBlkHash,
+    #     bridgeSignerPubkeys,
+    #     bridgeSignerCount,
+    #     bridgeSignerSig,
+    #     bridgeSignerPaths,
+    #     bridgeSignerPathIsLeft,
+    #     bridgeSignerPathLen
+    # )
+# 
+    # # Check if balance is enough
+    # amount: wei_value = as_wei_value(burned, "gwei")
+    # assert self.balance >= amount
+# 
+    # # Send and notify
+    # self.withdrawed[instHash] = True
+    # send(to, amount)
     log.Withdraw(to, amount)
-
+# 
+# 

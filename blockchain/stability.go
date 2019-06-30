@@ -311,7 +311,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
 				bridgeShardIDStr, _ := strconv.Atoi(l[1])
-				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, byte(bridgeShardIDStr))
+				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, byte(bridgeShardIDStr), shardID)
 
 			default:
 				continue
