@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/ethrelaying/les"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -104,4 +105,8 @@ func (blkTmplGenerator *BlkTmplGenerator) GetPendingTxsV2() []metadata.Transacti
 		pendingTxs = append(pendingTxs, tx)
 	}
 	return pendingTxs
+}
+
+func (blkTmplGenerator *BlkTmplGenerator) SetLightETHToChain(leth *les.LightEthereum) {
+	blkTmplGenerator.chain.LightEthereum = leth
 }
