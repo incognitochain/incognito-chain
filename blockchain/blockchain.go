@@ -34,29 +34,7 @@ type BlockChain struct {
 	config    Config
 	chainLock sync.Mutex
 	//channel
-	cQuitSync chan struct{}
-	// syncStatus struct {
-	// 	Beacon bool
-	// 	Shards map[byte]struct{}
-	// 	sync.Mutex
-
-	// 	CurrentlySyncShardBlkByHash           map[byte]*cache.Cache
-	// 	CurrentlySyncShardBlkByHeight         map[byte]*cache.Cache
-	// 	CurrentlySyncBeaconBlkByHash          *cache.Cache
-	// 	CurrentlySyncBeaconBlkByHeight        *cache.Cache
-	// 	CurrentlySyncShardToBeaconBlkByHash   map[byte]*cache.Cache
-	// 	CurrentlySyncShardToBeaconBlkByHeight map[byte]*cache.Cache
-	// 	CurrentlySyncCrossShardBlkByHash      map[byte]*cache.Cache
-	// 	CurrentlySyncCrossShardBlkByHeight    map[byte]*cache.Cache
-
-	// 	PeersState     map[libp2p.ID]*peerState
-	// 	PeersStateLock sync.Mutex
-	// 	IsReady        struct {
-	// 		sync.Mutex
-	// 		Beacon bool
-	// 		Shards map[byte]bool
-	// 	}
-	// }
+	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
 	LightEthereum    *les.LightEthereum
@@ -295,6 +273,9 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
+		return err
+	}
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
 		return err
 	}
 	blockHash := initBlock.Hash()
@@ -1097,49 +1078,6 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, blockchain.config.DataBase)
 }
 
-// GetRecentTransactions - find all recent history txs which are created by user
-// by number of block, maximum is 100 newest blocks
-func (blockchain *BlockChain) GetRecentTransactions(numBlock uint64, key *privacy.ViewingKey, shardID byte) (map[string]metadata.Transaction, error) {
-	if numBlock > 100 { // maximum is 100
-		numBlock = 100
-	}
-	// var err error
-	result := make(map[string]metadata.Transaction)
-	// bestBlock := blockchain.BestState[shardID].BestBlock
-	// for {
-	// 	for _, tx := range bestBlock.Transactions {
-	// 		info := tx.GetInfo()
-	// 		if info == nil {
-	// 			continue
-	// 		}
-	// 		// info of tx with contain encrypted pubkey of creator in 1st 64bytes
-	// 		lenInfo := 66
-	// 		if len(info) < lenInfo {
-	// 			continue
-	// 		}
-	// 		// decrypt to get pubkey data from info
-	// 		pubkeyData, err1 := privacy.ElGamalDecrypt(key.Rk[:], info[0:lenInfo])
-	// 		if err1 != nil {
-	// 			continue
-	// 		}
-	// 		// compare to check pubkey
-	// 		if !bytes.Equal(pubkeyData.Compress(), key.Pk[:]) {
-	// 			continue
-	// 		}
-	// 		result[tx.Hash().String()] = tx
-	// 	}
-	// 	numBlock--
-	// 	if numBlock == 0 {
-	// 		break
-	// 	}
-	// 	bestBlock, err = blockchain.GetBlockByBlockHash(&bestBlock.Header.PrevBlockHash)
-	// 	if err != nil {
-	// 		break
-	// 	}
-	// }
-	return result, nil
-}
-
 // func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
 // 	// fmt.Println("SetReadyState", shard, shardID, ready)
 // 	blockchain.syncStatus.IsReady.Lock()
@@ -1220,12 +1158,14 @@ func (blockchain *BlockChain) BuildInstRewardForDev(epoch, totalReward uint64) (
 func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalRewards []uint64) ([][]string, error) {
 	resInst := [][]string{}
 	for i, reward := range totalRewards {
-		shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
-		if err != nil {
-			Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
-			return nil, err
+		if totalRewards[i] > 0 {
+			shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
+			if err != nil {
+				Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
+				return nil, err
+			}
+			resInst = append(resInst, shardRewardInst...)
 		}
-		resInst = append(resInst, shardRewardInst...)
 	}
 	return resInst, nil
 }

@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const HashSize = 32
@@ -215,4 +217,12 @@ func ConvertArrayStringToArrayHash(strs []string) ([]*Hash, error) {
 		hashes = append(hashes, hash)
 	}
 	return hashes, nil
+}
+
+// Keccak256 returns Keccak256 hash as a Hash object for storing and comparing
+func Keccak256(data ...[]byte) Hash {
+	h := crypto.Keccak256(data...)
+	r := Hash{}
+	copy(r[:], h)
+	return r
 }

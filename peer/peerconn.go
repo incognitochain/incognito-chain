@@ -281,9 +281,9 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
 						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
 					}
-				case reflect.TypeOf(&wire.MessageBFTPrepare{}):
+				case reflect.TypeOf(&wire.MessageBFTAgree{}):
 					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPrepare))
+						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTAgree))
 					}
 				case reflect.TypeOf(&wire.MessageBFTCommit{}):
 					if peerConn.Config.MessageListeners.OnBFTMsg != nil {

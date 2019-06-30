@@ -131,6 +131,84 @@ func (rpcServer RpcServer) handleCreateAndSendContractingRequest(params interfac
 	return result, nil
 }
 
+func (rpcServer RpcServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	if len(arrayParams) >= 5 {
+		hasPrivacyToken := int(arrayParams[5].(float64)) > 0
+		if hasPrivacyToken {
+			return nil, NewRPCError(ErrUnexpected, errors.New("The privacy mode must be disabled"))
+		}
+	}
+
+	senderKeyParam := arrayParams[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	paymentAddr := senderKey.KeySet.PaymentAddress
+
+	tokenParamsRaw := arrayParams[4].(map[string]interface{})
+	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	tokenID, err := common.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	tokenName := tokenParamsRaw["TokenName"].(string)
+	remoteAddress := tokenParamsRaw["RemoteAddress"].(string)
+
+	meta, _ := metadata.NewBurningRequest(
+		paymentAddr,
+		uint64(voutsAmount),
+		*tokenID,
+		tokenName,
+		remoteAddress,
+		metadata.BurningRequestMeta,
+	)
+	customTokenTx, rpcErr := rpcServer.buildRawPrivacyCustomTokenTransaction(params, meta)
+	// rpcErr := err1.(*RPCError)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	byteArrays, err := json.Marshal(customTokenTx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            customTokenTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (rpcServer RpcServer) handleCreateAndSendBurningRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	data, err := rpcServer.handleCreateRawTxWithBurningReq(params, closeChan)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	// sendResult, err1 := rpcServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := rpcServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, NewRPCError(ErrUnexpected, err1)
+	}
+
+	txID := sendResult.(*common.Hash)
+	result := jsonresult.CreateTransactionResult{
+		// TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
+		TxID: txID.String(),
+	}
+	return result, nil
+}
+
 func (rpcServer RpcServer) handleCreateRawTxWithETHHeadersRelaying(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 

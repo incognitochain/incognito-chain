@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MaxBFTCommitPayload = 1000 // 1 Kb
+	MaxBFTCommitPayload = 2000 // 1 Kb
 )
 
 type MessageBFTCommit struct {

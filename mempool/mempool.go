@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -62,6 +63,7 @@ type TxPool struct {
 	roleMtx                sync.RWMutex
 	CPendingTxs            chan<- metadata.Transaction // channel to deliver txs to block gen
 	IsBlockGenStarted      bool
+	IsUnlockMempool        bool
 }
 
 /*
@@ -77,6 +79,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
 	tp.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
+	tp.IsUnlockMempool = true
 }
 func (tp *TxPool) InitChannelMempool(cCacheTx chan common.Hash, cRoleInCommittees chan int, cPendingTxs chan metadata.Transaction) {
 	tp.cCacheTx = cCacheTx
@@ -226,33 +229,50 @@ Param#2: isStore: store transaction to persistence storage only work for transac
 func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	var shardID byte
 	var err error
+	var now time.Time
 	txHash := tx.Hash()
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
-			txType = common.TxNormalPrivacy
+			txType = metrics.TxNormalPrivacy
 		} else {
-			txType = common.TxNormalNoPrivacy
+			txType = metrics.TxNormalNoPrivacy
 		}
 	}
+	now = time.Now()
 	// Don't accept the transaction if it already exists in the pool.
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
-		go common.AnalyzeTimeSeriesTxDuplicateTimesMetric(txType, float64(1))
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolDuplicateTxs,
+			metrics.MeasurementValue: float64(1),
+		})
 		err := MempoolTxError{}
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return err
 	}
-
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition1,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// check version
+	now = time.Now()
 	ok := tx.CheckTxVersion(MaxVersion)
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
 		return err
 	}
-
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition2,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// check actual size
+	now = time.Now()
 	actualSize := tx.GetTxActualSize()
 	Logger.log.Debugf("Transaction %+v 's size %+v \n", *txHash, actualSize)
 	if actualSize >= common.MaxBlockSize || actualSize >= common.MaxTxSize {
@@ -260,15 +280,27 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
 		return err
 	}
-
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition3,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// A standalone transaction must not be a salary transaction.
+	now = time.Now()
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
 		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 		return err
 	}
-
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition4,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// check fee of tx
+	now = time.Now()
 	limitFee := tp.config.FeeEstimator[shardID].limitFee
 	txFee := tx.GetTxFee()
 	ok = tx.CheckTransactionFee(limitFee)
@@ -277,30 +309,59 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
 		return err
 	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition5,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// end check with policy
-
+	now = time.Now()
 	ok = tx.ValidateType()
 	if !ok {
 		return err
 	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition6,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// check tx with all txs in current mempool
+	now = time.Now()
 	err = tx.ValidateTxWithCurrentMempool(tp)
 	if err != nil {
 		return err
 	}
-
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition7,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// sanity data
+	now = time.Now()
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
 		err := MempoolTxError{}
 		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
 		return err
 	}
-
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition8,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	startValidate := time.Now()
+	now = time.Now()
 	validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.BlockChain.GetDatabase(), tp.config.BlockChain, shardID)
-	go common.AnalyzeTimeSeriesVTBITxTypeMetric(txType, float64(time.Since(startValidate).Seconds()))
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.VTBITxTypeMetic,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	if !validated {
 		err := MempoolTxError{}
 		messageError := "Invalid tx - "
@@ -312,11 +373,18 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	}
 
 	// validate tx with data of blockchain
+	now = time.Now()
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.BlockChain.GetDatabase())
 	if err != nil {
 		return err
 	}
-
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition9,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
+	now = time.Now()
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
@@ -332,8 +400,14 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			}
 		}
 	}
-
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition10,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	// check duplicate stake public key ONLY with staking transaction
+	now = time.Now()
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
@@ -348,6 +422,12 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			}
 		}
 	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition11,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	return nil
 }
 
@@ -361,21 +441,29 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
-			txType = common.TxNormalPrivacy
+			txType = metrics.TxNormalPrivacy
 		} else {
-			txType = common.TxNormalNoPrivacy
+			txType = metrics.TxNormalNoPrivacy
 		}
 	}
+	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
 	startValidate := time.Now()
 	err := tp.validateTransaction(tx)
-	elapsed := float64(time.Since(startValidate).Seconds())
-	//if isNewTransaction {
-	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolValidated, elapsed)
-	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolValidatedWithType, elapsed)
-	//}
 	if err != nil {
 		return nil, nil, err
 	}
+	elapsed := float64(time.Since(startValidate).Seconds())
+
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidated,
+		metrics.MeasurementValue: elapsed,
+		metrics.Tag:              metrics.TxSizeTag,
+		metrics.TagValue:         txSize})
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidatedWithType,
+		metrics.MeasurementValue: elapsed,
+		metrics.Tag:              metrics.TxSizeTag,
+		metrics.TagValue:         txSize})
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	txFee := tx.GetTxFee()
@@ -384,20 +472,21 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	tp.addTx(txD, isStore)
 	if isNewTransaction {
 		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
-		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolAddedAfterValidation, float64(time.Since(startAdd).Seconds()))
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolAddedAfterValidation,
+			metrics.MeasurementValue: float64(time.Since(startAdd).Seconds()),
+			metrics.Tag:              metrics.TxSizeTag,
+			metrics.TagValue:         txSize})
 	}
 	return tx.Hash(), txD, nil
 }
 
 // remove transaction for pool
-func (tp *TxPool) removeTx(tx *metadata.Transaction) error {
+func (tp *TxPool) removeTx(tx *metadata.Transaction) {
 	//Logger.log.Infof((*tx).Hash().String())
 	if _, exists := tp.pool[*(*tx).Hash()]; exists {
 		delete(tp.pool, *(*tx).Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-		return nil
-	} else {
-		return errors.New("not exist tx in pool")
 	}
 }
 
@@ -442,49 +531,86 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		tp.cCacheTx <- txHash
 	}(*tx.Hash())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
-		err := errors.New("Unexpected Transaction Source Shard")
+		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		err := MempoolTxError{}
+		err.Init(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
 		Logger.log.Error(err)
 		return &common.Hash{}, &TxDesc{}, err
 	}
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
-			txType = common.TxNormalPrivacy
+			txType = metrics.TxNormalPrivacy
 		} else {
-			txType = common.TxNormalNoPrivacy
+			txType = metrics.TxNormalNoPrivacy
 		}
 	}
+	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
+	txTypePrivacyOrNot := metrics.TxPrivacy
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolTxBeginEnter,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.TxTypeTag,
+		metrics.TagValue:         txType})
+	//==========
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
-		return nil, nil, errors.New("Pool reach max number of transaction")
+		err := MempoolTxError{}
+		err.Init(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
+		return nil, nil, err
 	}
 	startAdd := time.Now()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
-	// fmt.Printf("[db] pool maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), hash, err)
 	elapsed := float64(time.Since(startAdd).Seconds())
-
-	go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolEntered, elapsed)
-	go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolEnteredWithType, elapsed)
-
-	size := tp.calPoolSize()
-
-	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
-	go common.AnalyzeTimeSeriesTxTypeMetric(tx.GetType(), float64(1))
-
-	if tx.IsPrivacy() {
-		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxPrivacy, float64(1))
-	} else {
-		go common.AnalyzeTimeSeriesTxPrivacyOrNotMetric(common.TxNoPrivacy, float64(1))
+	//==========
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolEntered,
+		metrics.MeasurementValue: elapsed,
+		metrics.Tag:              metrics.TxSizeTag,
+		metrics.TagValue:         txSize})
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolEnteredWithType,
+		metrics.MeasurementValue: elapsed,
+		metrics.Tag:              metrics.TxSizeTag,
+		metrics.TagValue:         txSize})
+	size := len(tp.pool)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.PoolSize,
+		metrics.MeasurementValue: float64(size)})
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxAddedIntoPoolType,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.TxTypeTag,
+		metrics.TagValue:         txType,
+	})
+	if !tx.IsPrivacy() {
+		txTypePrivacyOrNot = metrics.TxNoPrivacy
 	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolPrivacyOrNot,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.TxPrivacyOrNotTag,
+		metrics.TagValue:         txTypePrivacyOrNot,
+	})
 	if err != nil {
 		Logger.log.Error(err)
 	} else {
 		if tp.IsBlockGenStarted {
-			go func(tx metadata.Transaction) {
-				tp.CPendingTxs <- tx
-			}(tx)
+			if tp.IsUnlockMempool {
+				go func(tx metadata.Transaction) {
+					tp.CPendingTxs <- tx
+				}(tx)
+			}
 		}
 	}
 	return hash, txDesc, err
+}
+func (tp *TxPool) SendTransactionToBlockGen() {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+	for _, txdesc := range tp.pool {
+		tp.CPendingTxs <- txdesc.Desc.Tx
+	}
+	tp.IsUnlockMempool = true
 }
 
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
@@ -496,7 +622,6 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
-	// fmt.Printf("[db] pool bp maybe accept: %d, %h, %+v\n", tx.GetMetadataType(), tx.Hash(), err)
 	if err != nil {
 		Logger.log.Error(err)
 		fmt.Printf("[db] maybe err: %+v\n", tx.GetMetadataType())
@@ -507,36 +632,86 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(tx metadata.Transaction, isInBlock bool) error {
+func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	// remove transaction from database mempool
-	txDesc, ok := tp.pool[*tx.Hash()]
-	if !ok {
-		return nil
-	}
-	startTime := txDesc.StartTime
-	tp.RemoveTransactionFromDatabaseMP(tx.Hash())
-	err := tp.removeTx(&tx)
-	// remove serialNumbersHashH
-	delete(tp.poolSerialNumbersHashH, *(tx.Hash()))
-	if isInBlock {
+	for _, tx := range txs {
+		var now time.Time
+		start := time.Now()
+		now = time.Now()
+		txDesc, ok := tp.pool[*tx.Hash()]
+		if !ok {
+			continue
+		}
 		txType := tx.GetType()
 		if txType == common.TxNormalType {
 			if tx.IsPrivacy() {
-				txType = common.TxNormalPrivacy
+				txType = metrics.TxNormalPrivacy
 			} else {
-				txType = common.TxNormalNoPrivacy
+				txType = metrics.TxNormalNoPrivacy
 			}
 		}
-		elapsed := float64(time.Since(startTime).Seconds())
-		go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlock, elapsed)
-		go common.AnalyzeTimeSeriesTxSizeWithTypeMetric(txType+":"+fmt.Sprintf("%d", tx.GetTxActualSize()), common.TxPoolRemoveAfterInBlockWithType, elapsed)
+		startTime := txDesc.StartTime
+		if tp.config.PersistMempool {
+			tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+		}
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
+			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+			metrics.Tag:              metrics.ValidateConditionTag,
+			metrics.TagValue:         metrics.Condition1,
+		})
+		tp.removeTx(&tx)
+		// remove serialNumbersHashH
+		now = time.Now()
+		delete(tp.poolSerialNumbersHashH, *(tx.Hash()))
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
+			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+			metrics.Tag:              metrics.ValidateConditionTag,
+			metrics.TagValue:         metrics.Condition2,
+		})
+		now = time.Now()
+		if isInBlock {
+			elapsed := float64(time.Since(startTime).Seconds())
+			txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+				metrics.Measurement:      metrics.TxPoolRemoveAfterInBlock,
+				metrics.MeasurementValue: elapsed,
+				metrics.Tag:              metrics.TxSizeTag,
+				metrics.TagValue:         txSize,
+			})
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+				metrics.Measurement:      metrics.TxPoolRemoveAfterInBlockWithType,
+				metrics.MeasurementValue: elapsed,
+				metrics.Tag:              metrics.TxSizeWithTypeTag,
+				metrics.TagValue:         txType + txSize,
+			})
+		}
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolRemovedNumber,
+			metrics.MeasurementValue: float64(1),
+		})
+		size := len(tp.pool)
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.PoolSize,
+			metrics.MeasurementValue: fmt.Sprintf("%d", size),
+		})
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
+			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+			metrics.Tag:              metrics.ValidateConditionTag,
+			metrics.TagValue:         metrics.Condition3,
+		})
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolRemovedTime,
+			metrics.MeasurementValue: float64(time.Since(start).Seconds()),
+			metrics.Tag:              metrics.TxTypeTag,
+			metrics.TagValue:         txType,
+		})
 	}
-	size := tp.calPoolSize()
-	go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
-
-	return err
+	return
 }
 
 // GetTx get transaction info by hash
@@ -548,8 +723,10 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 	if exists {
 		return txDesc.Desc.Tx, nil
 	}
-
-	return nil, errors.New("transaction is not in the pool")
+	err := MempoolTxError{}
+	err.Init(TransactionNotFoundError, errors.New("Transaction "+txHash.String()+" Not Found!"))
+	Logger.log.Error(err)
+	return nil, err
 }
 
 // // MiningDescs returns a slice of mining descriptors for all the transactions
@@ -632,6 +809,8 @@ func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 List all tx ids in mempool
 */
 func (tp *TxPool) ListTxs() []string {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	result := make([]string, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx.Hash().String())
@@ -761,9 +940,17 @@ func (tp *TxPool) monitorPool() {
 			delete(tp.poolSerialNumbersHashH, txHash)
 			delete(tp.CandidatePool, txHash)
 			delete(tp.TokenIDPool, txHash)
-			go common.AnalyzeTimeSeriesTxSizeMetric(fmt.Sprintf("%d", txDesc.Desc.Tx.GetTxActualSize()), common.TxPoolRemoveAfterLifeTime, float64(time.Since(startTime).Seconds()))
-			size := tp.calPoolSize()
-			go common.AnalyzeTimeSeriesPoolSizeMetric(fmt.Sprintf("%d", len(tp.pool)), float64(size))
+			txSize := txDesc.Desc.Tx.GetTxActualSize()
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
+				metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
+				metrics.Tag:              metrics.TxSizeTag,
+				metrics.TagValue:         txSize,
+			})
+			size := len(tp.pool)
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+				metrics.Measurement:      metrics.PoolSize,
+				metrics.MeasurementValue: float64(size)})
 		}
 		tp.mtx.Unlock()
 	}

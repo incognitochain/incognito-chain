@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,6 +14,7 @@ func ValidateAggSignature(validatorIdx [][]int, committees []string, aggSig stri
 	// return nil //single-node
 	//multi-node
 	pubKeysR := []*privacy.PublicKey{}
+	fmt.Println("Bug: validatorIdx", validatorIdx)
 	for _, index := range validatorIdx[0] {
 		pubkeyBytes, _, err := base58.Base58Check{}.Decode(committees[index])
 		if err != nil {

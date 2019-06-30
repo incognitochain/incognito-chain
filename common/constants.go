@@ -35,8 +35,9 @@ const (
 const (
 	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock        = 1000
-	MinBeaconBlkInterval = 3 * time.Second //second
-	MinShardBlkInterval  = 5 * time.Second //second
+	MinBeaconBlkInterval = 5 * time.Second //second
+	MinShardBlkInterval  = 5 * time.Second //second => process block in
+	MinShardBlkCreation  = 2 * time.Second //second => process block in
 )
 
 // special token ids (aka. PropertyID in custom token)
