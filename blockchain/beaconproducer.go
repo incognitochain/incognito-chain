@@ -286,7 +286,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
-		_, currentValidators, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
+		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
@@ -296,8 +296,8 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 		}
 
 		// Generate instruction storing merkle root of validators pubkey and send to bridge
-		beaconRootInst := buildBeaconPubkeyRootInstruction(currentValidators)
-		instructions = append(instructions, beaconRootInst)
+		// beaconRootInst := buildBeaconPubkeyRootInstruction(currentValidators)
+		// instructions = append(instructions, beaconRootInst)
 	}
 	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
@@ -503,11 +503,11 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	}
 
 	// Pick instruction with merkle root of shard committee's pubkeys and save to beacon block
-	// commPubkeyInst := pickBridgePubkeyRootInstruction(shardBlock)
-	// if len(commPubkeyInst) > 0 {
-	// 	stabilityInstructionsPerBlock = append(instructions, commPubkeyInst...)
-	// 	fmt.Printf("[db] found bridge pubkey root inst: %s\n", commPubkeyInst)
-	// }
+	commPubkeyInst := pickBridgePubkeyRootInstruction(shardBlock)
+	if len(commPubkeyInst) > 0 {
+		stabilityInstructionsPerBlock = append(instructions, commPubkeyInst...)
+		fmt.Printf("[db] found bridge pubkey root inst: %s\n", commPubkeyInst)
+	}
 
 	stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
