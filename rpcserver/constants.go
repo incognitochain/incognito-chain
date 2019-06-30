@@ -74,27 +74,28 @@ const (
 	createAndSendStakingTransaction = "createandsendstakingtransaction"
 
 	//===========For Testing and Benchmark==============
-	getAndSendTxsFromFile = "getandsendtxsfromfile"
+	getAndSendTxsFromFile   = "getandsendtxsfromfile"
+	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
+	unlockMempool           = "unlockmempool"
 	//==================================================
 
 	getShardBestState  = "getshardbeststate"
 	getBeaconBestState = "getbeaconbeststate"
 
 	// Wallet rpc cmd
-	listAccounts                       = "listaccounts"
-	getAccount                         = "getaccount"
-	getAddressesByAccount              = "getaddressesbyaccount"
-	getAccountAddress                  = "getaccountaddress"
-	dumpPrivkey                        = "dumpprivkey"
-	importAccount                      = "importaccount"
-	removeAccount                      = "removeaccount"
-	listUnspentOutputCoins             = "listunspentoutputcoins"
-	getBalance                         = "getbalance"
-	getBalanceByPrivatekey             = "getbalancebyprivatekey"
-	getBalanceByPaymentAddress         = "getbalancebypaymentaddress"
-	getReceivedByAccount               = "getreceivedbyaccount"
-	setTxFee                           = "settxfee"
-	getRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
+	listAccounts               = "listaccounts"
+	getAccount                 = "getaccount"
+	getAddressesByAccount      = "getaddressesbyaccount"
+	getAccountAddress          = "getaccountaddress"
+	dumpPrivkey                = "dumpprivkey"
+	importAccount              = "importaccount"
+	removeAccount              = "removeaccount"
+	listUnspentOutputCoins     = "listunspentoutputcoins"
+	getBalance                 = "getbalance"
+	getBalanceByPrivatekey     = "getbalancebyprivatekey"
+	getBalanceByPaymentAddress = "getbalancebypaymentaddress"
+	getReceivedByAccount       = "getreceivedbyaccount"
+	setTxFee                   = "settxfee"
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
@@ -105,17 +106,25 @@ const (
 	// utils
 	hashToIdenticon = "hashtoidenticon"
 
-	// bridge
 	createIssuingRequest                  = "createissuingrequest"
 	sendIssuingRequest                    = "sendissuingrequest"
 	createAndSendIssuingRequest           = "createandsendissuingrequest"
 	createAndSendContractingRequest       = "createandsendcontractingrequest"
 	getBridgeTokensAmounts                = "getbridgetokensamounts"
+	createAndSendBurningRequest           = "createandsendburningrequest"
 	createAndSendTxWithETHHeadersRelaying = "createandsendtxwithethheadersrelaying"
 	createAndSendTxWithIssuingETHReq      = "createandsendtxwithissuingethreq"
 	getRelayedETHHeader                   = "getrelayedethheader"
 
+	// Incognito -> Ethereum bridge
+	getBeaconSwapProof = "getbeaconswapproof"
+	getBridgeSwapProof = "getbridgeswapproof"
+	getBurnProof       = "getburnproof"
+
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
+
+	revertbeaconchain = "revertbeaconchain"
+	revertshardchain  = "revertshardchain"
 )

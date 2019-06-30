@@ -82,6 +82,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
 	beaconBlock.Header.Round = round
+	fmt.Printf("[db] producing block: %d\n", beaconBlock.Header.Height)
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
 	rewardByEpochInstruction := [][]string{}
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
@@ -155,6 +156,11 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 		return nil, err
 	}
 	beaconBlock.Header.InstructionHash = tempInstructionHash
+
+	// Instruction merkle root
+	flattenInsts := FlattenAndConvertStringInst(tempInstruction)
+	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
+
 	//===============End Create Header
 	for _, inst := range beaconBlock.Body.Instructions {
 		fmt.Printf("[ndh] - - Beacon block instruction %+v \n", inst)
@@ -280,7 +286,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
+		_, currentValidators, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
@@ -288,6 +294,10 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 			swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 			instructions = append(instructions, swapBeaconInstructions)
 		}
+
+		// Generate instruction storing merkle root of validators pubkey and send to bridge
+		beaconRootInst := buildBeaconPubkeyRootInstruction(currentValidators)
+		instructions = append(instructions, beaconRootInst)
 	}
 	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
@@ -490,6 +500,14 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	if err != nil {
 		Logger.log.Errorf("Build stability instructions failed: %s \n", err.Error())
 	}
+
+	// Pick instruction with merkle root of shard committee's pubkeys and save to beacon block
+	commPubkeyInst := pickBridgePubkeyRootInstruction(shardBlock)
+	if len(commPubkeyInst) > 0 {
+		stabilityInstructionsPerBlock = append(instructions, commPubkeyInst...)
+		fmt.Printf("[db] found bridge pubkey root inst: %s\n", commPubkeyInst)
+	}
+
 	stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 	return shardStates, validStakers, validSwap, stabilityInstructions, acceptedRewardInstructions

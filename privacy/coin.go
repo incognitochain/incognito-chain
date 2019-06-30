@@ -43,6 +43,7 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// return hash of coin data
 func (coin *Coin) HashH() *common.Hash {
 	hash := common.HashH(coin.Bytes())
 	return &hash

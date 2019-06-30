@@ -32,6 +32,8 @@ type ShardPool struct {
 	config            ShardPoolConfig
 	cache             *lru.Cache
 	cValidBlock       chan *blockchain.ShardBlock
+	RoleInCommittees  int //Current Role of Node
+	CRoleInCommittees <-chan int
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
@@ -56,14 +58,27 @@ func init() {
 	}()
 }
 
-func InitShardPool(pool map[byte]blockchain.ShardPool) {
+func InitShardPool(pool map[byte]blockchain.ShardPool, cRoleInCommitteesShardPool []chan int) {
 	for i := 0; i < 255; i++ {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
 		//update last shard height
 		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
 		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
 		pool[byte(i)] = shardPoolMap[byte(i)]
-
+		shardPoolMap[byte(i)].CRoleInCommittees = cRoleInCommitteesShardPool[i]
+		shardPoolMap[byte(i)].RoleInCommittees = -1
+	}
+}
+func (shardPool *ShardPool) Start(cQuit chan struct{}) {
+	for {
+		select {
+		case role := <-shardPool.CRoleInCommittees:
+			shardPool.mtx.Lock()
+			shardPool.RoleInCommittees = role
+			shardPool.mtx.Unlock()
+		case <-cQuit:
+			return
+		}
 	}
 }
 
@@ -302,7 +317,18 @@ func (self *ShardPool) CleanOldBlock(latestBlockHeight uint64) {
 	}
 }
 
+// @NOTICE: this function only serve insert block from pool
 func (self *ShardPool) GetValidBlock() []*blockchain.ShardBlock {
+	self.mtx.RLock()
+	defer self.mtx.RUnlock()
+	if self.RoleInCommittees != -1 {
+		if len(self.validPool) == 0 {
+			if block, ok := self.pendingPool[self.latestValidHeight+1]; ok {
+				//delete(self.pendingPool, self.latestValidHeight+1)
+				return []*blockchain.ShardBlock{block}
+			}
+		}
+	}
 	return self.validPool
 }
 func (self *ShardPool) GetPendingBlock() []*blockchain.ShardBlock {

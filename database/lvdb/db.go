@@ -55,6 +55,9 @@ var (
 	centralizedBridgePrefix = []byte("centralizedbridge-")
 	decentralizedBridgePrefix = []byte("decentralizedbridge-")
 
+	// Incognito -> Ethereum relayer
+	burnConfirmPrefix = []byte("burnConfirm-")
+
 	Spent      = []byte("spent")
 	Unspent    = []byte("unspent")
 	Mintable   = []byte("mintable")

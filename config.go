@@ -31,18 +31,19 @@ const (
 	defaultLogDirname             = "logs"
 	defaultLogFilename            = "log.log"
 	defaultMaxPeers               = 125
-	defaultMaxPeersSameShard      = 10
-	defaultMaxPeersOtherShard     = 10
+	defaultMaxPeersSameShard      = 50
+	defaultMaxPeersOtherShard     = 50
 	defaultMaxPeersOther          = 125
 	defaultMaxPeersNoShard        = 125
-	defaultMaxPeersBeacon         = 20
-	defaultMaxRPCClients          = 10
+	defaultMaxPeersBeacon         = 50
+	defaultMaxRPCClients          = 20
+	defaultMetricUrl              = ""
 	sampleConfigFilename          = "sample-config.conf"
 	defaultDisableRpcTLS          = true
 	defaultFastStartup            = true
 	defaultNodeMode               = common.NODEMODE_RELAY
 	defaultTxPoolTTL              = uint(86400) * 10 // in second
-	defaultTxPoolMaxTx            = uint64(20000)
+	defaultTxPoolMaxTx            = uint64(100000)
 	defaultLimitFee               = uint64(1)
 	// For wallet
 	defaultWalletName     = "wallet"
@@ -119,6 +120,7 @@ type config struct {
 	WalletName       string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase string `long:"walletpassphrase" description:"Wallet passphrase"`
 	WalletAutoInit   bool   `long:"walletautoinit" description:"Init wallet automatically if not exist"`
+	WalletShardID    int    `long:"walletshardid" description:"ShardID which wallet use to create account"`
 
 	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 
@@ -126,8 +128,9 @@ type config struct {
 	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
 	LimitFee    uint64 `long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.01 PRV"`
 
-	LoadMempool    bool `long:"loadmempool" description:"Load transactions from Mempool database"`
-	PersistMempool bool `long:"persistmempool" description:"Persistence transaction in memepool database"`
+	LoadMempool    bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
+	PersistMempool bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
+	MetricUrl      string `long:"metricurl" description:"Metric URL"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -272,24 +275,24 @@ func removeDuplicateAddresses(addrs []string) []string {
 */
 func loadConfig() (*config, []string, error) {
 	cfg := config{
-		ConfigFile:         defaultConfigFile,
-		LogLevel:           defaultLogLevel,
-		MaxOutPeers:        defaultMaxPeers,
-		MaxInPeers:         defaultMaxPeers,
-		MaxPeers:           defaultMaxPeers,
-		MaxPeersSameShard:  defaultMaxPeersSameShard,
-		MaxPeersOtherShard: defaultMaxPeersOtherShard,
-		MaxPeersOther:      defaultMaxPeersOther,
-		MaxPeersNoShard:    defaultMaxPeersNoShard,
-		MaxPeersBeacon:     defaultMaxPeersBeacon,
-		RPCMaxClients:      defaultMaxRPCClients,
-		DataDir:            defaultDataDir,
-		DatabaseDir:        defaultDatabaseDirname,
-		DatabaseMempoolDir: defaultDatabaseMempoolDirname,
-		LogDir:             defaultLogDir,
-		RPCKey:             defaultRPCKeyFile,
-		RPCCert:            defaultRPCCertFile,
-		// Generate:             defaultGenerate,
+		ConfigFile:           defaultConfigFile,
+		LogLevel:             defaultLogLevel,
+		MaxOutPeers:          defaultMaxPeers,
+		MaxInPeers:           defaultMaxPeers,
+		MaxPeers:             defaultMaxPeers,
+		MaxPeersSameShard:    defaultMaxPeersSameShard,
+		MaxPeersOtherShard:   defaultMaxPeersOtherShard,
+		MaxPeersOther:        defaultMaxPeersOther,
+		MaxPeersNoShard:      defaultMaxPeersNoShard,
+		MaxPeersBeacon:       defaultMaxPeersBeacon,
+		RPCMaxClients:        defaultMaxRPCClients,
+		DataDir:              defaultDataDir,
+		DatabaseDir:          defaultDatabaseDirname,
+		DatabaseMempoolDir:   defaultDatabaseMempoolDirname,
+		LogDir:               defaultLogDir,
+		RPCKey:               defaultRPCKeyFile,
+		RPCCert:              defaultRPCCertFile,
+		WalletShardID:        -1,
 		WalletName:           defaultWalletName,
 		DisableTLS:           defaultDisableRpcTLS,
 		DisableRPC:           false,
@@ -304,6 +307,7 @@ func loadConfig() (*config, []string, error) {
 		TxPoolMaxTx:          defaultTxPoolMaxTx,
 		PersistMempool:       defaultPersistMempool,
 		LimitFee:             defaultLimitFee,
+		MetricUrl:            defaultMetricUrl,
 	}
 
 	// Service options which are only added on Windows.

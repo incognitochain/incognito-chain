@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/pkg/errors"
 	"io/ioutil"
 )
@@ -30,17 +31,18 @@ type WalletConfig struct {
 	DataFile       string
 	DataPath       string
 	IncrementalFee uint64
+	ShardID        *byte //default is nil -> create account for any shard
 }
 
 func (wallet Wallet) GetConfig() *WalletConfig {
-	return wallet.config;
+	return wallet.config
 }
 
 func (wallet *Wallet) SetConfig(config *WalletConfig) {
-	wallet.config = config;
+	wallet.config = config
 }
 
-func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) (error) {
+func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) error {
 	mnemonicGen := MnemonicGenerator{}
 	wallet.Name = name
 	wallet.Entropy, _ = mnemonicGen.NewEntropy(128)
@@ -75,40 +77,58 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 	return nil
 }
 
-func (wallet *Wallet) CreateNewAccount(accountName string, shardID byte) *AccountWallet {
-	newIndex := uint32(len(wallet.MasterAccount.Child))
-	childKey, _ := wallet.MasterAccount.Key.NewChildKey(newIndex)
-	/* TODO 0xsirrush: waiting for next phase: when use active shard num from beancon chain
-	newIndex := uint32(0)
-	for i := len(wallet.MasterAccount.Child) - 1; i >= 0; i-- {
-		temp := wallet.MasterAccount.Child[i]
-		if !temp.IsImported {
-			newIndex = binary.BigEndian.Uint32(temp.Key.ChildNumber)
-			newIndex += 1
-			break
+func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *AccountWallet {
+	if shardID != nil {
+		// only create account for specific Shard
+		newIndex := uint64(0)
+		// loop to get newest index of childs
+		for j := len(wallet.MasterAccount.Child) - 1; j >= 0; j-- {
+			temp := wallet.MasterAccount.Child[j]
+			if !temp.IsImported {
+				childNumber := temp.Key.ChildNumber
+				newIndex = common.BytesToUint64(childNumber) + uint64(1)
+				break
+			}
 		}
-	}
-	var childKey *KeyWallet
-	for {
-		childKey, _ = wallet.MasterAccount.Key.NewChildKey(newIndex)
-		lastByte := childKey.KeySet.PaymentAddress.Pk[len(childKey.KeySet.PaymentAddress.Pk)-1]
-		if lastByte == shardID {
-			break
-		}
-		newIndex += 1
-	}*/
 
-	if accountName == "" {
-		accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
+		// loop to get create a new child which can be equal shardID param
+		var childKey *KeyWallet
+		for true {
+			childKey, _ := wallet.MasterAccount.Key.NewChildKey(uint32(newIndex))
+			lastByte := childKey.KeySet.PaymentAddress.Pk[len(childKey.KeySet.PaymentAddress.Pk)-1]
+			if common.GetShardIDFromLastByte(lastByte) == *shardID {
+				break
+			}
+			newIndex += 1
+		}
+		// use chosen childKey tp create an child account for wallet
+		if accountName == "" {
+			accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
+		}
+		account := AccountWallet{
+			Key:   *childKey,
+			Child: make([]AccountWallet, 0),
+			Name:  accountName,
+		}
+		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
+		wallet.Save(wallet.PassPhrase)
+		return &account
+
+	} else {
+		newIndex := uint32(len(wallet.MasterAccount.Child))
+		childKey, _ := wallet.MasterAccount.Key.NewChildKey(newIndex)
+		if accountName == "" {
+			accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
+		}
+		account := AccountWallet{
+			Key:   *childKey,
+			Child: make([]AccountWallet, 0),
+			Name:  accountName,
+		}
+		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
+		wallet.Save(wallet.PassPhrase)
+		return &account
 	}
-	account := AccountWallet{
-		Key:   *childKey,
-		Child: make([]AccountWallet, 0),
-		Name:  accountName,
-	}
-	wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
-	wallet.Save(wallet.PassPhrase)
-	return &account
 }
 
 func (wallet *Wallet) ExportAccount(childIndex uint32) string {
@@ -213,7 +233,7 @@ func (wallet *Wallet) LoadWallet(password string) error {
 	return nil
 }
 
-func (wallet *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
+func (wallet *Wallet) DumpPrivkey(addressP string) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(PaymentAddressType)
 		if address == addressP {
@@ -226,7 +246,7 @@ func (wallet *Wallet) DumpPrivkey(addressP string) (KeySerializedData) {
 	return KeySerializedData{}
 }
 
-func (wallet *Wallet) GetAccountAddress(accountParam string, shardID byte) (KeySerializedData) {
+func (wallet *Wallet) GetAccountAddress(accountParam string, shardID *byte) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
 		if account.Name == accountParam {
 			key := KeySerializedData{
@@ -246,7 +266,7 @@ func (wallet *Wallet) GetAccountAddress(accountParam string, shardID byte) (KeyS
 	return key
 }
 
-func (wallet *Wallet) GetAddressesByAccount(accountParam string) ([]KeySerializedData) {
+func (wallet *Wallet) GetAddressesByAccount(accountParam string) []KeySerializedData {
 	result := make([]KeySerializedData, 0)
 	for _, account := range wallet.MasterAccount.Child {
 		if account.Name == accountParam {
