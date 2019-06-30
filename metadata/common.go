@@ -50,6 +50,9 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
 
+	case BurningRequestMeta:
+		md = &BurningRequest{}
+
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:

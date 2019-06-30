@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"log"
 	"net"
 	"os"
@@ -135,11 +136,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.dataBase = db
 
 	//Init channel
-	cPendingTxs := make(chan metadata.Transaction, 100)
-	cRemovedTxs := make(chan metadata.Transaction)
+	cPendingTxs := make(chan metadata.Transaction, 500)
+	cRemovedTxs := make(chan metadata.Transaction, 500)
 	cRoleInCommitteesMempool := make(chan int)
+	cRoleInCommitteesShardPool := make([]chan int,256)
+	for i:=0; i < 256; i++ {
+		cRoleInCommitteesShardPool[i] = make(chan int)
+	}
 	cRoleInCommitteesNetSync := make(chan int)
-	cTxCache := make(chan common.Hash, 100)
+	cTxCache := make(chan common.Hash, 1000)
 	var err error
 
 	serverObj.userKeySet, err = cfg.GetUserKeySet()
@@ -197,7 +202,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//init beacon pol
 	mempool.InitBeaconPool()
 	//init shard pool
-	mempool.InitShardPool(serverObj.shardPool)
+	mempool.InitShardPool(serverObj.shardPool, cRoleInCommitteesShardPool)
 	//init cross shard pool
 	mempool.InitCrossShardPool(serverObj.crossShardPool, db)
 
@@ -303,6 +308,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		UserKeySet:               serverObj.userKeySet,
 		CRoleInCommitteesMempool: cRoleInCommitteesMempool,
 		CRoleInCommitteesNetSync: cRoleInCommitteesNetSync,
+		CRoleInCommitteesShardPool:cRoleInCommitteesShardPool,
 	})
 	if err != nil {
 		return err
@@ -431,7 +437,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			shutdownRequestChannel <- struct{}{}
 		}()
 	}
-
+	
+	//Init Metric Tool
+	if cfg.MetricUrl != "" {
+		grafana := metrics.NewGrafana(cfg.MetricUrl)
+		metrics.InitMetricTool(&grafana)
+	}
 	return nil
 }
 
@@ -587,6 +598,9 @@ func (serverObj Server) Start() {
 		serverObj.memPool.LoadOrResetDatabaseMP()
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
+		for _, shardPool := range serverObj.shardPool {
+			go shardPool.Start(serverObj.cQuit)
+		}
 	}
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
@@ -978,20 +992,11 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		}
 		msgSA.(*wire.MessageAddr).RawPeers = rawPeers
 		var doneChan chan<- struct{}
+		listen.PeerConnsMtx.Lock()
 		for _, _peerConn := range listen.PeerConns {
 			go _peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MESSAGE_TO_PEER, nil)
 		}
-
-		// send message get blocks
-
-		//msgNew, err := wire.MakeEmptyMessage(wire.CmdGetBlocks)
-		//msgNew.(*wire.MessageGetBlocks).LastBlockHash = *serverObj.blockChain.BestState.BestBlockHash
-		//println(peerConn.ListenerPeer.PeerId.String())
-		//msgNew.(*wire.MessageGetBlocks).SenderID = peerConn.ListenerPeer.PeerId.String()
-		//if err != nil {
-		//	return
-		//}
-		//peerConn.QueueMessageWithEncoding(msgNew, nil)
+		listen.PeerConnsMtx.Unlock()
 	} else {
 		peerConn.VerValid = true
 	}

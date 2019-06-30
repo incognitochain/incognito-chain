@@ -39,6 +39,9 @@ func (blkTmplGenerator *BlkTmplGenerator) Start(cQuit chan struct{}) {
 	for w := 0; w < workerNum; w++ {
 		go blkTmplGenerator.AddTransactionV2Worker(blkTmplGenerator.CPendingTxs)
 	}
+	for w := 0; w < workerNum; w++ {
+		go blkTmplGenerator.RemoveTransactionV2Worker(blkTmplGenerator.CRemovedTxs)
+	}
 	for {
 		select {
 		case <-cQuit:
@@ -47,10 +50,10 @@ func (blkTmplGenerator *BlkTmplGenerator) Start(cQuit chan struct{}) {
 		//	{
 		//		go blkTmplGenerator.AddTransactionV2(addTxs)
 		//	}
-		case removeTxs := <-blkTmplGenerator.CRemovedTxs:
-			{
-				go blkTmplGenerator.RemoveTransactionV2(removeTxs)
-			}
+		//case removeTxs := <-blkTmplGenerator.CRemovedTxs:
+		//	{
+		//		go blkTmplGenerator.RemoveTransactionV2(removeTxs)
+		//	}
 		}
 	}
 }
@@ -96,6 +99,12 @@ func (blkTmplGenerator *BlkTmplGenerator) RemoveTransactionV2(tx metadata.Transa
 	blkTmplGenerator.mtx.Lock()
 	defer blkTmplGenerator.mtx.Unlock()
 	delete(blkTmplGenerator.PendingTxs, *tx.Hash())
+}
+func (blkTmplGenerator *BlkTmplGenerator) RemoveTransactionV2Worker(cRemoveTx <-chan metadata.Transaction) {
+	for tx := range cRemoveTx {
+		blkTmplGenerator.RemoveTransactionV2(tx)
+		time.Sleep(time.Nanosecond)
+	}
 }
 func (blkTmplGenerator *BlkTmplGenerator) GetPendingTxsV2() []metadata.Transaction {
 	blkTmplGenerator.mtx.Lock()

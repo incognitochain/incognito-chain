@@ -103,7 +103,12 @@ func main() {
 					log.Println("Wrong param")
 					return
 				}
-				account, err := createAccount(cfg.WalletAccountName)
+				var shardID *byte
+				if cfg.ShardID > -1 {
+					temp := byte(cfg.ShardID)
+					shardID = &temp
+				}
+				account, err := createAccount(cfg.WalletAccountName, shardID)
 				if err != nil {
 					log.Println(err)
 					return

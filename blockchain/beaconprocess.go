@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/metrics"
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -111,6 +113,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		Logger.log.Infof("BEACON %+v | SKIP Verify BestState with Block %+v \n", blockHash)
 	}
 
+	// Backup beststate
 	// if blockchain.config.UserKeySet != nil {
 	// 	userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 	// 	if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
@@ -150,6 +153,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	// res, err := blockchain.config.DataBase.HasCommitteeByEpoch(block.Header.Epoch)
 	// if res == false {
 	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
+		return err
+	}
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
 		return err
 	}
 	// }
@@ -225,8 +231,12 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
 	}
-
-	go common.AnalyzeTimeSeriesBlockPerSecondTimesMetric(common.Beacon, float64(1), block.Header.Height)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.ShardIDTag,
+		metrics.TagValue:         metrics.Beacon,
+	})
 	Logger.log.Infof("Finish Insert new block %+v, with hash %+v \n", block.Header.Height, *block.Hash())
 	if block.Header.Height%50 == 0 {
 		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
@@ -309,6 +319,14 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			}
 		}
 	}
+
+	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
+	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
+	root := GetKeccak256MerkleRoot(flattenInsts)
+	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
+		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
+	}
+
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
 		rewardByEpochInstruction := [][]string{}

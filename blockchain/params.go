@@ -42,55 +42,60 @@ type GenesisParams struct {
 	PreSelectShardNode                  []string
 }
 
+var ChainTestParam = Params{}
+var ChainMainParam = Params{}
+
 // FOR TESTNET
-var genesisParamsTestnetNew = GenesisParams{
-	InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
-	RandomNumber:                        0,
-	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
-	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
+func init() {
+	var genesisParamsTestnetNew = GenesisParams{
+		InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
+		RandomNumber:                        0,
+		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
+		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
-	//@Notice: InitTxsForBenchmark is for testing and benchmark only
-	InitialConstant: TestnetInitConstant,
-}
+		//@Notice: InitTxsForBenchmark is for testing and benchmark only
+		InitialConstant: TestnetInitConstant,
+	}
 
-var ChainTestParam = Params{
-	Name:                TestnetName,
-	Net:                 Testnet,
-	DefaultPort:         TestnetDefaultPort,
-	ShardCommitteeSize:  TestNetShardCommitteeSize,  //TestNetShardCommitteeSize,
-	BeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
-	StakingAmountShard:  TestNetStakingAmountShard,
-	ActiveShards:        TestNetActiveShards,
-	// blockChain parameters
-	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
-	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
-	BasicReward:        TestnetBasicReward,
-	RewardHalflife:     TestnetRewardHalflife,
-}
+	ChainTestParam = Params{
+		Name:                TestnetName,
+		Net:                 Testnet,
+		DefaultPort:         TestnetDefaultPort,
+		ShardCommitteeSize:  TestNetShardCommitteeSize,  //TestNetShardCommitteeSize,
+		BeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+		StakingAmountShard:  TestNetStakingAmountShard,
+		ActiveShards:        TestNetActiveShards,
+		// blockChain parameters
+		GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
+		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
+		BasicReward:        TestnetBasicReward,
+		RewardHalflife:     TestnetRewardHalflife,
+	}
 
-// END TESTNET
+	// END TESTNET
 
-// FOR MAINNET
-var genesisParamsMainnetNew = GenesisParams{
-	InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
-	RandomNumber:                        0,
-	PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
-	PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
+	// FOR MAINNET
+	var genesisParamsMainnetNew = GenesisParams{
+		InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
+		RandomNumber:                        0,
+		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
+		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
 
-	InitialConstant: MainnetInitConstant,
-}
+		InitialConstant: MainnetInitConstant,
+	}
 
-var ChainMainParam = Params{
-	Name:                MainetName,
-	Net:                 Mainnet,
-	DefaultPort:         MainnetDefaultPort,
-	ShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
-	BeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
-	StakingAmountShard:  MainNetStakingAmountShard,
-	ActiveShards:        MainNetActiveShards,
-	// blockChain parameters
-	GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
-	GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
-	BasicReward:        MainnetBasicReward,
-	RewardHalflife:     MainnetRewardHalflife,
+	ChainMainParam = Params{
+		Name:                MainetName,
+		Net:                 Mainnet,
+		DefaultPort:         MainnetDefaultPort,
+		ShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
+		BeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
+		StakingAmountShard:  MainNetStakingAmountShard,
+		ActiveShards:        MainNetActiveShards,
+		// blockChain parameters
+		GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
+		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
+		BasicReward:        MainnetBasicReward,
+		RewardHalflife:     MainnetRewardHalflife,
+	}
 }

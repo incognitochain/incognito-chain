@@ -68,9 +68,11 @@ type DatabaseInterface interface {
 	StoreBeaconBestState(interface{}) error
 	StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
+	StoreBeaconCommitteeByEpoch(uint64, interface{}) error
 	DeleteCommitteeByEpoch(uint64) error
 
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
+	FetchBeaconCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
 	CleanBeaconBestState() error
@@ -94,8 +96,7 @@ type DatabaseInterface interface {
 	GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error)
 	BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte) error
 	RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubkey []byte, commitments [][]byte) error
-	BackupOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error
-	RestoreOutputCoin(tokenID common.Hash, pubkey []byte, shardID byte) error
+	DeleteOutputCoin(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error
 	CleanCommitments() error
 
 	// SNDerivator
@@ -137,6 +138,12 @@ type DatabaseInterface interface {
 	GetBridgeTokensAmounts() ([][]byte, error)
 	IsBridgeTokenExisted(common.Hash) (bool, error)
 	UpdateAmtByTokenID(common.Hash, uint64, string) error
+	BackupBridgedTokenByTokenID(tokenID common.Hash) error
+	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
+
+	// Incognito -> Ethereum relay
+	StoreBurningConfirm(txID []byte, height uint64) error
+	GetBurningConfirm(txID []byte) (uint64, error)
 
 	// Decentralized bridge
 	InsertETHTxHashIssued(rCommon.Hash) error

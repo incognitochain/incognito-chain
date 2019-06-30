@@ -4,13 +4,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"log"
-	"math/rand"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"log"
+	"math/rand"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -98,8 +96,14 @@ func (rpcServer RpcServer) handleGetAccountAddress(params interface{}, closeChan
 		return nil, nil
 	}
 	activeShards := rpcServer.config.BlockChain.BestState.Beacon.ActiveShards
-	randShard := rand.Int31n(int32(activeShards))
-	result := rpcServer.config.Wallet.GetAccountAddress(paramTemp, byte(randShard))
+	shardID := rpcServer.config.Wallet.GetConfig().ShardID
+	shardIDInt := int(*shardID)
+	if shardID != nil && (shardIDInt >= activeShards) {
+		randShard := rand.Int31n(int32(activeShards))
+		temp := byte(randShard)
+		shardID = &temp
+	}
+	result := rpcServer.config.Wallet.GetAccountAddress(paramTemp, shardID)
 	return result, nil
 }
 
@@ -459,53 +463,6 @@ func (rpcServer RpcServer) handleGetPublicKeyFromPaymentAddress(params interface
 	}
 
 	return base58.Base58Check{}.Encode(key.KeySet.PaymentAddress.Pk[:], common.ZeroByte), nil
-}
-
-// handleGetRecentTransactionsByBlockNumber - RPC return list rencent txs by number of confirmed blocks
-func (rpcServer RpcServer) handleGetRecentTransactionsByBlockNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if len(arrayParams) < 2 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
-	}
-	// #param 1: number of confirmed blocks
-	numOfBlockTemp, ok := arrayParams[0].(float64)
-	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("numberOfBlock is invalid"))
-	}
-	numberOfBlock := uint64(numOfBlockTemp)
-
-	// #param 2: viewing key
-	senderKeysetStr, ok := arrayParams[1].(string)
-	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKeysetStr is invalid"))
-	}
-	senderKeySet, err := rpcServer.GetKeySetFromKeyParams(senderKeysetStr)
-	if err != nil {
-		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
-	}
-	readOnlyKey := senderKeySet.ReadonlyKey
-
-	// get chain from pubkey
-	shardID := common.GetShardIDFromLastByte(readOnlyKey.Pk[len(readOnlyKey.Pk)-1])
-
-	txs, err := rpcServer.config.BlockChain.GetRecentTransactions(numberOfBlock, &readOnlyKey, shardID)
-	if err != nil {
-		return nil, NewRPCError(ErrInvalidSenderViewingKey, err)
-	}
-
-	result := jsonresult.GetRecentTransactions{
-		Txs: make(map[string]jsonresult.TransactionDetail),
-	}
-	if len(txs) > 0 {
-		for txId, tx := range txs {
-			result.Txs[txId] = jsonresult.TransactionDetail{
-				Hash:     txId,
-				LockTime: time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
-				Image:    common.Render([]byte(txId)),
-			}
-		}
-	}
-	return result, nil
 }
 
 // ------------------------------------ Defragment output coin of account by combine many input coin in to 1 output coin --------------------
