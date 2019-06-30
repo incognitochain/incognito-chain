@@ -7,13 +7,13 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/incognitochain/incognito-chain/bridge/incognito_proxy"
 	"github.com/incognitochain/incognito-chain/bridge/vault"
+	"github.com/incognitochain/incognito-chain/ethrelaying/accounts/abi/bind"
+	"github.com/incognitochain/incognito-chain/ethrelaying/common"
+	"github.com/incognitochain/incognito-chain/ethrelaying/crypto"
+	"github.com/incognitochain/incognito-chain/ethrelaying/ethclient"
+	"github.com/incognitochain/incognito-chain/ethrelaying/params"
 )
 
 const VaultAddress = "8caa0be79b109257d243ce4b430c7fc14f3e5ce8"
