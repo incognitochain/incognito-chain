@@ -48,8 +48,6 @@ src/golang.org
 src/google.golang.org
 src/rpcserver
 bootnode
-go.mod
-go.sum
 
 priv.json
 bin/keylist.json

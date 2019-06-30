@@ -13,16 +13,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/bridge/incognito_proxy"
 	"github.com/incognitochain/incognito-chain/bridge/vault"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/ethrelaying/accounts/abi/bind"
+	"github.com/incognitochain/incognito-chain/ethrelaying/accounts/abi/bind/backends"
+	"github.com/incognitochain/incognito-chain/ethrelaying/common"
+	"github.com/incognitochain/incognito-chain/ethrelaying/core"
+	"github.com/incognitochain/incognito-chain/ethrelaying/core/types"
+	"github.com/incognitochain/incognito-chain/ethrelaying/crypto"
 )
 
 var genesisKey *ecdsa.PrivateKey
