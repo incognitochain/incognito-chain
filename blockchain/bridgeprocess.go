@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -160,6 +161,7 @@ func buildBurningConfirmInst(
 	inst []string,
 	shardID byte,
 ) ([]string, error) {
+	fmt.Printf("[db] build BurningConfirmInst: %s\n", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
 	err := decodeContent(inst[1], &burningReqAction)
@@ -183,15 +185,21 @@ func buildBurningConfirmInst(
 }
 
 func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
+	if len(block.Body.Instructions) > 0 {
+		fmt.Printf("[db] storeBurningConfirm for block %d %v\n", block.Header.Height, block.Body.Instructions)
+	}
 	for _, inst := range block.Body.Instructions {
 		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
 			continue
 		}
+		fmt.Printf("[db] storeBurning: %s\n", inst)
 
 		txID, err := common.NewHashFromStr(inst[5])
 		if err != nil {
+			fmt.Printf("[db] storeBurning err: %v\n", err)
 			return err
 		}
+		fmt.Printf("[db] storing BurningConfirm inst with txID: %x\n", txID)
 		if err := bc.config.DataBase.StoreBurningConfirm(txID[:], block.Header.Height); err != nil {
 			return err
 		}

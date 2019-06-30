@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -30,7 +29,7 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 	for _, receiver := range paymentInfos {
 		totalAmmount += receiver.Amount
 	}
-	
+
 	// get list outputcoins tx
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
@@ -60,7 +59,7 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 			Amount:         overBalanceAmount,
 		})
 	}
-	
+
 	// check real fee(nano constant) per tx
 	realFee, _, _ := rpcServer.estimateFee(estimateFeeCoinPerKb, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
@@ -96,11 +95,11 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 
 func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
 	Logger.log.Infof("Params: \n%+v\n\n\n", params)
-	
+
 	/******* START Fetch all component to ******/
 	// all component
 	arrayParams := common.InterfaceSlice(params)
-	
+
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
@@ -110,7 +109,7 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
-	
+
 	// param #2: list receiver
 	receiversPaymentAddressStrParam := make(map[string]interface{})
 	if arrayParams[1] != nil {
@@ -128,22 +127,22 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
-	
+
 	// param #3: estimation fee nano constant per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
-	
+
 	// param #4: hasPrivacyCoin flag: 1 or -1
 	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
 	/********* END Fetch all component to *******/
-	
+
 	/******* START choose output native coins(PRV), which is used to create tx *****/
 	inputCoins, realFee, err1 := rpcServer.chooseOutsCoinByKeyset(paymentInfos, estimateFeeCoinPerKb, 0, senderKeySet, shardIDSender, hasPrivacyCoin, meta, nil, nil)
 	if err1 != nil {
 		return nil, err1
 	}
-	
+
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
-	
+
 	// START create tx
 	// missing flag for privacy
 	// false by default
@@ -160,11 +159,11 @@ func (rpcServer RpcServer) buildRawTransaction(params interface{}, meta metadata
 		meta,
 	)
 	// END create tx
-	
+
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	
+
 	return &tx, nil
 }
 
@@ -185,16 +184,16 @@ func (rpcServer RpcServer) buildCustomTokenParam(tokenParamsRaw map[string]inter
 			if err != nil {
 				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.Wrap(err, "Token ID is invalid"))
 			}
-			
+
 			//if _, ok := listCustomTokens[*tokenID]; !ok {
 			//	return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
 			//}
-			
+
 			existed := rpcServer.config.BlockChain.CustomTokenIDExisted(tokenID)
 			if !existed {
 				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
 			}
-			
+
 			unspentTxTokenOuts, err := rpcServer.config.BlockChain.GetUnspentTxCustomTokenVout(*senderKeySet, tokenID)
 			Logger.log.Info("buildRawCustomTokenTransaction ", unspentTxTokenOuts)
 			if err != nil {
@@ -246,7 +245,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 ) (*transaction.TxCustomToken, *RPCError) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
-	
+
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
@@ -255,7 +254,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	
+
 	// param #2: list receiver
 	receiversPaymentAddressParam := make(map[string]interface{})
 	if arrayParams[1] != nil {
@@ -273,13 +272,13 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
-	
+
 	// param #3: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
-	
+
 	// param #4: hasPrivacyCoin flag
 	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
-	
+
 	// param #5: token params
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, err := rpcServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
@@ -298,7 +297,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 		hasPrivacyCoin = false
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
-	
+
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
@@ -315,7 +314,7 @@ func (rpcServer RpcServer) buildRawCustomTokenTransaction(
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	
+
 	return tx, nil
 }
 
@@ -331,7 +330,7 @@ func (rpcServer RpcServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 	}
 	voutsAmount := int64(0)
 	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
-	
+
 	// get list custom token
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
@@ -373,7 +372,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 ) (*transaction.TxCustomTokenPrivacy, *RPCError) {
 	// all component
 	arrayParams := common.InterfaceSlice(params)
-	
+
 	/****** START FEtch data from component *********/
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
@@ -383,7 +382,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	
+
 	// param #2: list receiver
 	receiversPaymentAddressStrParam := make(map[string]interface{})
 	if arrayParams[1] != nil {
@@ -401,31 +400,31 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
 	}
-	
+
 	// param #3: estimation fee coin per kb
 	estimateFeeCoinPerKb := int64(arrayParams[2].(float64))
-	
+
 	// param #4: hasPrivacy flag for native coin
 	hasPrivacyCoin := int(arrayParams[3].(float64)) > 0
-	
+
 	// param #5: token component
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	tokenParams, listCustomTokens, listCustomTokenCrossShard, err := rpcServer.buildPrivacyCustomTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
-	
+
 	_ = listCustomTokenCrossShard
 	_ = listCustomTokens
 	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
-	
+
 	// param #6: hasPrivacyToken flag for token
 	hasPrivacyToken := true
 	if len(arrayParams) >= 5 {
 		hasPrivacyToken = int(arrayParams[5].(float64)) > 0
 	}
-	
+
 	/****** END FEtch data from params *********/
-	
+
 	/******* START choose output native coins(PRV), which is used to create tx *****/
 	inputCoins, realFeePrv, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
 		estimateFeeCoinPerKb, 0, senderKeySet,
@@ -438,7 +437,7 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		hasPrivacyCoin = false
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
-	
+
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
 		&senderKeySet.PrivateKey,
@@ -452,11 +451,11 @@ func (rpcServer RpcServer) buildRawPrivacyCustomTokenTransaction(
 		hasPrivacyToken,
 		shardIDSender,
 	)
-	
+
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	
+
 	return tx, nil
 }
 
@@ -493,19 +492,19 @@ func (rpcServer RpcServer) estimateFee(defaultFee int64, candidateOutputCoins []
 	var realFee uint64
 	estimateFeeCoinPerKb := uint64(0)
 	estimateTxSizeInKb := uint64(0)
-	
+
 	estimateFeeCoinPerKb = rpcServer.estimateFeeWithEstimator(defaultFee, shardID, numBlock)
-	
+
 	if rpcServer.config.Wallet != nil {
 		estimateFeeCoinPerKb += uint64(rpcServer.config.Wallet.GetConfig().IncrementalFee)
 	}
-	
+
 	limitFee := uint64(0)
 	if feeEstimator, ok := rpcServer.config.FeeEstimator[shardID]; ok {
 		limitFee = feeEstimator.GetLimitFee()
 	}
 	estimateTxSizeInKb = transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee)
-	
+
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb
 }
@@ -525,11 +524,11 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 	resultOutputCoins = make([]*privacy.OutputCoin, 0)
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)
-	
+
 	// either take the smallest coins, or a single largest one
 	var outCoinOverLimit *privacy.OutputCoin
 	outCoinsUnderLimit := make([]*privacy.OutputCoin, 0)
-	
+
 	for _, outCoin := range outCoins {
 		if outCoin.CoinDetails.Value < amount {
 			outCoinsUnderLimit = append(outCoinsUnderLimit, outCoin)
@@ -542,11 +541,11 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 			outCoinOverLimit = outCoin
 		}
 	}
-	
+
 	sort.Slice(outCoinsUnderLimit, func(i, j int) bool {
 		return outCoinsUnderLimit[i].CoinDetails.Value < outCoinsUnderLimit[j].CoinDetails.Value
 	})
-	
+
 	for _, outCoin := range outCoinsUnderLimit {
 		if totalResultOutputCoinAmount < amount {
 			totalResultOutputCoinAmount += outCoin.CoinDetails.Value
@@ -555,7 +554,7 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
-	
+
 	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.Value > 2*amount || totalResultOutputCoinAmount < amount) {
 		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
 		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
@@ -563,7 +562,7 @@ func (rpcServer RpcServer) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 	} else if outCoinOverLimit != nil {
 		remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
 	}
-	
+
 	if totalResultOutputCoinAmount < amount {
 		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, errors.New("Not enough coin")
 	} else {
