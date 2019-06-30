@@ -44,7 +44,7 @@ const (
 	defaultNodeMode               = common.NODEMODE_RELAY
 	defaultTxPoolTTL              = uint(86400) * 10 // in second
 	defaultTxPoolMaxTx            = uint64(100000)
-	defaultLimitFee               = uint64(1)
+	defaultLimitFee               = uint64(0)
 	// For wallet
 	defaultWalletName     = "wallet"
 	defaultPersistMempool = false
