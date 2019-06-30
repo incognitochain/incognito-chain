@@ -143,7 +143,7 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	if shardID != 0 { // TODO: will have dedicated bridge shard with its shardID
+	if shardID != byte(common.BRIDGE_SHARD_ID) { // TODO: will have dedicated bridge shard with its shardID
 		return nil, nil
 	}
 

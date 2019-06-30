@@ -81,7 +81,8 @@ const (
 
 // ETH Decentralized bridge
 const (
-	ABIJSON       = `[{"name":"Deposit","inputs":[{"type":"address","name":"_from","indexed":false},{"type":"string","name":"_incognito_address","indexed":false},{"type":"uint256","name":"_amount","indexed":false,"unit":"wei"}],"anonymous":false,"type":"event"},{"name":"Withdraw","inputs":[{"type":"address","name":"_to","indexed":false},{"type":"uint256","name":"_amount","indexed":false,"unit":"wei"}],"anonymous":false,"type":"event"},{"name":"deposit","outputs":[],"inputs":[{"type":"string","name":"incognito_address"}],"constant":false,"payable":true,"type":"function","gas":25589},{"name":"withdraw","outputs":[],"inputs":[{"type":"address","name":"to"},{"type":"uint256","name":"amount","unit":"wei"}],"constant":false,"payable":false,"type":"function","gas":37617}]`
-	PETHTokenID   = "ffd8d42dc40a8d166ea4848baf8b5f6e912ad79875f4373070b59392b1756c8f"
-	PETHTokenName = "pETH"
+	ABIJSON         = `[{"name":"Deposit","inputs":[{"type":"address","name":"_from","indexed":false},{"type":"string","name":"_incognito_address","indexed":false},{"type":"uint256","name":"_amount","indexed":false,"unit":"wei"}],"anonymous":false,"type":"event"},{"name":"Withdraw","inputs":[{"type":"address","name":"_to","indexed":false},{"type":"uint256","name":"_amount","indexed":false,"unit":"wei"}],"anonymous":false,"type":"event"},{"name":"deposit","outputs":[],"inputs":[{"type":"string","name":"incognito_address"}],"constant":false,"payable":true,"type":"function","gas":25589},{"name":"withdraw","outputs":[],"inputs":[{"type":"address","name":"to"},{"type":"uint256","name":"amount","unit":"wei"}],"constant":false,"payable":false,"type":"function","gas":37617}]`
+	PETHTokenID     = "ffd8d42dc40a8d166ea4848baf8b5f6e912ad79875f4373070b59392b1756c8f"
+	PETHTokenName   = "pETH"
+	BRIDGE_SHARD_ID = 1
 )
