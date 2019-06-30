@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
+	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks.
@@ -136,6 +137,10 @@ type DatabaseInterface interface {
 	GetBridgeTokensAmounts() ([][]byte, error)
 	IsBridgeTokenExisted(common.Hash) (bool, error)
 	UpdateAmtByTokenID(common.Hash, uint64, string) error
+
+	// Decentralized bridge
+	InsertETHTxHashIssued(rCommon.Hash) error
+	IsETHTxHashIssued(rCommon.Hash) (bool, error)
 
 	// block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uint64) error

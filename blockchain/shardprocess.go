@@ -233,6 +233,62 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	return nil
 }
 
+func (blockchain *BlockChain) insertETHHeaders(
+	shardBlock *ShardBlock,
+	tx metadata.Transaction,
+) error {
+	relayingRewardMeta := tx.GetMetadata().(*metadata.ETHHeaderRelayingReward)
+	reqID := relayingRewardMeta.RequestedTxID
+	txs := shardBlock.Body.Transactions
+	var relayingTx metadata.Transaction
+	for _, item := range txs {
+		metaType := item.GetMetadataType()
+		if metaType == metadata.ETHHeaderRelayingMeta &&
+			bytes.Equal(reqID[:], item.Hash()[:]) {
+			relayingTx = item
+			break
+		}
+	}
+	relayingMeta := relayingTx.GetMetadata().(*metadata.ETHHeaderRelaying)
+	lc := blockchain.LightEthereum.GetLightChain()
+	_, err := lc.InsertHeaderChain(relayingMeta.ETHHeaders, 0)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) insertETHTxHashIssued(
+	tx metadata.Transaction,
+) error {
+	issuingETHResdMeta := tx.GetMetadata().(*metadata.IssuingETHResponse)
+	err := blockchain.GetDatabase().InsertETHTxHashIssued(issuingETHResdMeta.ETHTxHash)
+	fmt.Println("haha finally")
+	return err
+}
+
+func (blockchain *BlockChain) updateDatabaseFromShardBlock(
+	shardBlock *ShardBlock,
+) error {
+	db := blockchain.config.DataBase
+	for _, tx := range shardBlock.Body.Transactions {
+		metaType := tx.GetMetadataType()
+		var err error
+		if metaType == metadata.WithDrawRewardResponseMeta {
+			receivers, amounts := tx.GetReceivers()
+			err = db.RemoveCommitteeReward(receivers[0], amounts[0])
+		} else if metaType == metadata.ETHHeaderRelayingRewardMeta {
+			err = blockchain.insertETHHeaders(shardBlock, tx)
+		} else if metaType == metadata.IssuingETHResponseMeta {
+			err = blockchain.insertETHTxHashIssued(tx)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 /*
 	Store All information after Insert
 	- Shard Block
@@ -446,6 +502,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(TransactionError, err)
 	}
 	if len(invalidTxs) > 0 {
+		fmt.Println("haha failed: ", invalidTxs[0].GetMetadata())
 		return NewBlockChainError(TransactionError, fmt.Errorf("There are %d invalid txs", len(invalidTxs)))
 	}
 	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(&block.Body)

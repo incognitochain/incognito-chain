@@ -104,7 +104,7 @@ func (bc *BlockChain) processContractingReq(
 	md := contractingReqAction.Meta
 	updatingInfo, found := updatingInfoByTokenID[md.TokenID]
 	if found {
-		updatingInfo.deductAmt -= md.BurnedAmount
+		updatingInfo.deductAmt += md.BurnedAmount
 	} else {
 		updatingInfo = UpdatingInfo{
 			countUpAmt: 0,

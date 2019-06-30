@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/ethrelaying/les"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -58,6 +59,7 @@ type BlockChain struct {
 	// }
 	Synker           synker
 	ConsensusOngoing bool
+	LightEthereum    *les.LightEthereum
 }
 type BestState struct {
 	Beacon *BestStateBeacon
@@ -1288,4 +1290,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 		return errors.New("Not match request and response")
 	}
 	return nil
+}
+
+func (blockchain *BlockChain) GetLightEthereum() *les.LightEthereum {
+	return blockchain.LightEthereum
 }

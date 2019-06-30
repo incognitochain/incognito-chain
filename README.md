@@ -66,8 +66,8 @@ NOTE: The GOROOT and GOPATH above must not be the same path. It is recommended t
     `
 ## Config values
 ### How to use config
--   Refer to [config.go](https://github.com/constant-money/constant-chain/blob/master/config.go) or [sample-config.conf](https://github.com/ninjadotorg/constant/blob/master/sample-config.conf) in source code to get full explanation
+-   Refer to [config.go](https://github.com/incognitochain/incognito-chain/blob/master/config.go) or [sample-config.conf](https://github.com/ninjadotorg/constant/blob/master/sample-config.conf) in source code to get full explanation
 -   Run node with config param in long or short format to change features of running node
 
 ## Other Utilities
--   Wallet client js https://github.com/constant-money/constant-chain-wallet-client-2
+-   Wallet client js https://github.com/incognitochain/incognito-chain-wallet-client-2
