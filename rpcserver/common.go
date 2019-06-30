@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain"

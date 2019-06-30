@@ -109,7 +109,7 @@ func (iReq *IssuingETHRequest) Hash() *common.Hash {
 func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	actionContent := map[string]interface{}{
 		"meta":          *iReq,
-		"bridgeShardID": byte(0), // TODO: update to dedicated bridge shard id
+		"bridgeShardID": byte(common.BRIDGE_SHARD_ID), // TODO: update to dedicated bridge shard id
 		"txReqId":       *(tx.Hash()),
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
