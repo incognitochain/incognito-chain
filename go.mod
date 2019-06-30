@@ -21,7 +21,8 @@ require (
 	github.com/hashicorp/golang-lru v0.5.1
 	github.com/huin/goupnp v1.0.0
 	github.com/jackpal/go-nat-pmp v1.0.1
-	github.com/jessevdk/go-flags v1.4.0 // indirect
+	github.com/jessevdk/go-flags v1.4.0
+	github.com/jrick/logrotate v1.0.0
 	github.com/karalabe/usb v0.0.0-20190613070255-4d6ba34a8414
 	github.com/libp2p/go-libp2p v0.2.0
 	github.com/libp2p/go-libp2p-crypto v0.1.0
