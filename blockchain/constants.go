@@ -62,8 +62,8 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 4
-	TestNetBeaconCommitteeSize = 4
+	TestNetShardCommitteeSize  = 3
+	TestNetBeaconCommitteeSize = 3
 	TestNetActiveShards        = 2
 	TestNetStakingAmountShard  = 175000
 
@@ -75,10 +75,28 @@ const (
 
 // for beacon
 // public key
-var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
-var PreSelectShardNodeTestnetSerializedPubkey = []string{}
+//var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
+var PreSelectBeaconNodeTestnetSerializedPubkey = []string{
+	"17YiepCpN6tMwD91MGSXbEBjLBjeUysVcQJm87kCSHfXA2bWM46",
+	"16jWkWY5xRqZDkwDQaA32uvnakS27YyyWqeWtap6a6ELEc2Vbwi",
+	"15gXn3sEVp41Kdquy696ftT5bi3fRRbExFT7p5ZftEQusaJGi3y",
+}
+
+//var PreSelectShardNodeTestnetSerializedPubkey = []string{}
+var PreSelectShardNodeTestnetSerializedPubkey = []string{
+	// Committee of shard 0
+	"183GBqPhSfcEFZP7MQFTnuLVuX2PRkd5HFA3qkqkLN4STghvxpw", //shard 0
+	"15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi", //shard 0
+	"16VVUEPJR3uwbkgyVXcwiifsJLcqqR95onn7sZ3jzfs1QofLv11", //shard 1
+
+	// Committee of shard 1
+	"14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3", //shard 1
+	"16H5t5ezMF16S5j5ZEyHP3N4nBBcsppg5bRfU5Ft8N1VZYBQu38", //shard 1
+	"156qsnqcYWPUb8PLbdowV4TtUhS8kuEboABfHgVeh4MguoPwqVj", //shard 1
+}
 
 func init() {
+	return
 	keyData, err := ioutil.ReadFile("keylist.json")
 	if err != nil {
 		panic(err)
@@ -130,7 +148,7 @@ const (
 
 // ---------------------------------------------
 var TestnetInitConstant = []string{
-	`{  
+	`{
    "Version":1,
    "Type":"s",
    "LockTime":1557799670,

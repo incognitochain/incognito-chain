@@ -112,6 +112,7 @@ func findBridgeBlockWithInst(
 		}
 
 		_, bridgeInstID := findCommSwapInst(bridgeBlock.Body.Instructions, metadata.BridgePubkeyRootMeta)
+		fmt.Printf("[db] finding swap bridge inst in bridge block %d %d\n", state.Height, bridgeInstID)
 		if bridgeInstID >= 0 {
 			return bridgeBlock, bridgeInstID, nil
 		}
