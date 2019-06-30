@@ -9,13 +9,13 @@ TOTAL_PUBKEY: constant(uint256) = COMM_SIZE * MAX_PATH
 PUBKEY_SIZE: constant(int128) = 33
 PUBKEY_LENGTH: constant(int128) = PUBKEY_SIZE * COMM_SIZE
 INST_LENGTH: constant(uint256) = 150
-INC_ADDRESS_LENGTH: constant(uint256) = 105
+INC_ADDRESS_LENGTH: constant(uint256) = 128
 
 Deposit: event({_from: indexed(address), _incognito_address: string[INC_ADDRESS_LENGTH], _amount: wei_value})
 Withdraw: event({_to: indexed(address), _amount: wei_value})
 
 
-NotifyString: event({content: string[120]})
+NotifyString: event({content: string[128]})
 NotifyBytes32: event({content: bytes32})
 NotifyBool: event({content: bool})
 NotifyUint256: event({content: uint256})

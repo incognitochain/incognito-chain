@@ -49,9 +49,9 @@ func init() {
 
 func setup(beaconCommRoot, bridgeCommRoot [32]byte) (*Platform, error) {
 	alloc := make(core.GenesisAlloc)
-	balance := big.NewInt(123000000000000000)
+	balance, _ := big.NewInt(1).SetString("100000000000000000000", 10) // 100 eth
 	alloc[auth.From] = core.GenesisAccount{Balance: balance}
-	sim := backends.NewSimulatedBackend(alloc, 10000000)
+	sim := backends.NewSimulatedBackend(alloc, 6000000)
 	p := &Platform{sim: sim}
 
 	incognitoAddr, tx, inc, err := incognito_proxy.DeployIncognitoProxy(auth, sim, beaconCommRoot, bridgeCommRoot)
@@ -322,7 +322,7 @@ func TestSimulatedBurn(t *testing.T) {
 		t.Fatalf("Fail to deloy contract: %v\n", err)
 	}
 
-	oldBalance, newBalance, err := deposit(p, int64(500000000000))
+	oldBalance, newBalance, err := deposit(p, int64(5e18))
 	if err != nil {
 		t.Error(err)
 	}
