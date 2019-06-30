@@ -3,11 +3,12 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 
@@ -303,7 +304,8 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	now = time.Now()
 	limitFee := tp.config.FeeEstimator[shardID].limitFee
 	txFee := tx.GetTxFee()
-	ok = tx.CheckTransactionFee(limitFee)
+	// ok = tx.CheckTransactionFee(limitFee)
+	ok = true
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
@@ -530,13 +532,13 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	go func(txHash common.Hash) {
 		tp.cCacheTx <- txHash
 	}(*tx.Hash())
-	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
-		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		err := MempoolTxError{}
-		err.Init(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
-		Logger.log.Error(err)
-		return &common.Hash{}, &TxDesc{}, err
-	}
+	// if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
+	// 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	// 	err := MempoolTxError{}
+	// 	err.Init(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
+	// 	Logger.log.Error(err)
+	// 	return &common.Hash{}, &TxDesc{}, err
+	// }
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
