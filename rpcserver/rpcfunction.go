@@ -105,11 +105,14 @@ var RpcHandler = map[string]commandHandler{
 	getListPrivacyCustomTokenBalance:           RpcServer.handleGetListPrivacyCustomTokenBalance,
 
 	// Bridge
-	createIssuingRequest:            RpcServer.handleCreateIssuingRequest,
-	sendIssuingRequest:              RpcServer.handleSendIssuingRequest,
-	createAndSendIssuingRequest:     RpcServer.handleCreateAndSendIssuingRequest,
-	createAndSendContractingRequest: RpcServer.handleCreateAndSendContractingRequest,
-	getBridgeTokensAmounts:          RpcServer.handleGetBridgeTokensAmounts,
+	createIssuingRequest:                  RpcServer.handleCreateIssuingRequest,
+	sendIssuingRequest:                    RpcServer.handleSendIssuingRequest,
+	createAndSendIssuingRequest:           RpcServer.handleCreateAndSendIssuingRequest,
+	createAndSendContractingRequest:       RpcServer.handleCreateAndSendContractingRequest,
+	getBridgeTokensAmounts:                RpcServer.handleGetBridgeTokensAmounts,
+	createAndSendTxWithETHHeadersRelaying: RpcServer.handleCreateAndSendTxWithETHHeadersRelaying,
+	createAndSendTxWithIssuingETHReq:      RpcServer.handleCreateAndSendTxWithIssuingETHReq,
+	getRelayedETHHeader:                   RpcServer.handleGetRelayedETHHeader,
 
 	// wallet
 	getPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,

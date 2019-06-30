@@ -105,11 +105,15 @@ const (
 	// utils
 	hashToIdenticon = "hashtoidenticon"
 
-	createIssuingRequest            = "createissuingrequest"
-	sendIssuingRequest              = "sendissuingrequest"
-	createAndSendIssuingRequest     = "createandsendissuingrequest"
-	createAndSendContractingRequest = "createandsendcontractingrequest"
-	getBridgeTokensAmounts          = "getbridgetokensamounts"
+	// bridge
+	createIssuingRequest                  = "createissuingrequest"
+	sendIssuingRequest                    = "sendissuingrequest"
+	createAndSendIssuingRequest           = "createandsendissuingrequest"
+	createAndSendContractingRequest       = "createandsendcontractingrequest"
+	getBridgeTokensAmounts                = "getbridgetokensamounts"
+	createAndSendTxWithETHHeadersRelaying = "createandsendtxwithethheadersrelaying"
+	createAndSendTxWithIssuingETHReq      = "createandsendtxwithissuingethreq"
+	getRelayedETHHeader                   = "getrelayedethheader"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"

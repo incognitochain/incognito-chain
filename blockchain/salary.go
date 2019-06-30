@@ -300,22 +300,6 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 	return nil
 }
 
-func (blockchain *BlockChain) updateDatabaseFromShardBlock(
-	shardBlock *ShardBlock,
-) error {
-	db := blockchain.config.DataBase
-	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
-			receivers, amounts := tx.GetReceivers()
-			err := db.RemoveCommitteeReward(receivers[0], amounts[0])
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 	beaconBlock *BeaconBlock,
 ) error {

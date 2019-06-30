@@ -53,6 +53,7 @@ var (
 
 	// centralized bridge
 	centralizedBridgePrefix = []byte("centralizedbridge-")
+	decentralizedBridgePrefix = []byte("decentralizedbridge-")
 
 	Spent      = []byte("spent")
 	Unspent    = []byte("unspent")
