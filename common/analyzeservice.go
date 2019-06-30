@@ -12,114 +12,24 @@ import (
 
 // Measurement
 const (
-	TxPoolValidated                  = "TxPoolValidated"
-	TxPoolValidatedWithType          = "TxPoolValidatedWithType"
-	TxPoolEntered                    = "TxPoolEntered"
-	TxPoolEnteredWithType            = "TxPoolEnteredWithType"
-	TxPoolAddedAfterValidation       = "TxPoolAddedAfterValidation"
-	TxPoolRemoveAfterInBlock         = "TxPoolRemoveAfterInBlock"
-	TxPoolRemoveAfterInBlockWithType = "TxPoolRemoveAfterInBlockWithType"
-	TxPoolRemoveAfterLifeTime        = "TxPoolRemoveAfterLifeTime"
-	TxAddedIntoPoolType              = "TxAddedIntoPoolType"
-	TxPoolPrivacyOrNot               = "TxAddedIntoPoolType"
-	PoolSize                         = "PoolSize"
-	TxValidateByItSelfInPoolType     = "TxValidateByItSelfInPoolType"
-	TxInOneBlock                     = "TxInOneBlock"
-	DuplicateTxs                     = "DuplicateTxs"
-	
-	CreateAndSaveTxViewPointFromBlock = "CreateAndSaveTxViewPointFromBlock"
-	
-	NumOfBlockInsertToChain         = "NumOfBlockInsertToChain"
-)
+	PoolSize                          = "PoolSize"
+ )
 
 // tag
 const (
 	BeaconBlock = "BeaconBlock"
 	ShardBlock  = "ShardBlock"
-	
-	TxSizeMetric         = "txsize"
-	TxSizeWithTypeMetric = "txsizewithtype"
-	PoolSizeMetric       = "poolsize"
-	TxTypeMetic          = "txtype"
-	VTBITxTypeMetic      = "vtbitxtype"
-	TxPrivacyOrNotMetric = "txprivacyornot"
 	BlockHeight          = "blockheight"
 	TxHash               = "txhash"
 	ShardID              = "shardid"
 	Func = "func"
+
 )
 
 //Tag value
 const (
-	TxPrivacy                             = "privacy"
-	TxNormalPrivacy                       = "normaltxprivacy"
-	TxNoPrivacy                           = "noprivacy"
-	TxNormalNoPrivacy                     = "normaltxnoprivacy"
-	FuncCreateAndSaveTxViewPointFromBlock = "func-CreateAndSaveTxViewPointFromBlock"
 	Beacon                                = "beacon"
 )
-// test value
-var (
-	blockpersecond int
-)
-func AnalyzeTimeSeriesTxSizeMetric(txSize string, metric string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(TxSizeMetric, txSize, metric, value)
-}
-func AnalyzeTimeSeriesTxSizeWithTypeMetric(txSizeWithType string, metric string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(TxSizeWithTypeMetric, txSizeWithType, metric, value)
-}
-func AnalyzeTimeSeriesTxsInOneBlockMetric(blockHeight string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(BlockHeight, blockHeight, TxInOneBlock, value)
-}
-func AnalyzeTimeSeriesTxTypeMetric(txType string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(TxTypeMetic, txType, TxAddedIntoPoolType, value)
-}
-func AnalyzeTimeSeriesTxPrivacyOrNotMetric(txType string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(TxPrivacyOrNotMetric, txType, TxPoolPrivacyOrNot, value)
-}
-func AnalyzeTimeSeriesVTBITxTypeMetric(txType string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(VTBITxTypeMetic, txType, TxValidateByItSelfInPoolType, value)
-}
-func AnalyzeTimeSeriesPoolSizeMetric(numOfTxs string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(PoolSizeMetric, numOfTxs, PoolSize, value)
-}
-func AnalyzeTimeSeriesTxDuplicateTimesMetric(txHash string, value float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(TxHash, txHash, DuplicateTxs, value)
-}
-func AnalyzeTimeSeriesBlockPerSecondTimesMetric(shardID string, value float64, blockHeight uint64) {
-	sendTimeSeriesMetricDataInfluxDBV2(ShardID, shardID, NumOfBlockInsertToChain, value)
-}
-func AnalyzeFuncCreateAndSaveTxViewPointFromBlock(time float64) {
-	sendTimeSeriesMetricDataInfluxDBV2(Func, FuncCreateAndSaveTxViewPointFromBlock, CreateAndSaveTxViewPointFromBlock, time)
-}
-
-func sendTimeSeriesMetricDataInfluxDBV2(metricTag string, tagValue string, metric string, value ...float64) error {
-	//os.Setenv("GrafanaURL", "http://128.199.96.206:8086/write?db=mydb")
-	databaseUrl := os.Getenv("GRAFANAURL")
-	if databaseUrl == "" {
-		return nil
-	}
-	dataBinary := fmt.Sprintf("%s,%+v=%s value=%f %d", metric, metricTag, tagValue, value[0], time.Now().UnixNano())
-	req, err := http.NewRequest(http.MethodPost, databaseUrl, bytes.NewBuffer([]byte(dataBinary)))
-	if err != nil {
-		log.Println("Create Request failed with err: ", err)
-		return err
-	}
-	
-	ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
-	defer cancel()
-	req = req.WithContext(ctx)
-	
-	client := &http.Client{}
-	//res, err := client.Do(req)
-	_, err = client.Do(req)
-	if err != nil {
-		log.Println("Push to Grafana error:", err)
-		return err
-	}
-	return nil
-	//fmt.Println("Grafana Response: ", res)
-}
 
 func AnalyzeTimeSeriesBeaconBlockMetric(paymentAddress string, value float64) {
 	sendTimeSeriesMetricDataInfluxDB(paymentAddress, BeaconBlock, value)

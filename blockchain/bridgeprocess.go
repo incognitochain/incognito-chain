@@ -3,9 +3,11 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -15,6 +17,11 @@ type IssuingReqAction struct {
 
 type ContractingReqAction struct {
 	Meta metadata.ContractingRequest `json:"meta"`
+}
+
+type BurningReqAction struct {
+	Meta          metadata.BurningRequest `json:"meta"`
+	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
 type UpdatingInfo struct {
@@ -34,6 +41,8 @@ func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 			updatingInfoByTokenID, err = chain.processIssuingReq(inst, updatingInfoByTokenID)
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			updatingInfoByTokenID, err = chain.processContractingReq(inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.BurningRequestMeta):
+			updatingInfoByTokenID, err = chain.processBurningReq(inst, updatingInfoByTokenID)
 		}
 		if err != nil {
 			return err
@@ -113,4 +122,79 @@ func (bc *BlockChain) processContractingReq(
 	}
 	updatingInfoByTokenID[md.TokenID] = updatingInfo
 	return updatingInfoByTokenID, nil
+}
+
+func decodeContent(content string, action interface{}) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(content)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(contentBytes, &action)
+}
+
+func (bc *BlockChain) processBurningReq(
+	inst []string,
+	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
+) (map[common.Hash]UpdatingInfo, error) {
+	var burningReqAction BurningReqAction
+	err := decodeContent(inst[1], &burningReqAction)
+	if err != nil {
+		return nil, err
+	}
+	md := burningReqAction.Meta
+	updatingInfo, found := updatingInfoByTokenID[md.TokenID]
+	if found {
+		updatingInfo.deductAmt += md.BurningAmount
+	} else {
+		updatingInfo = UpdatingInfo{
+			countUpAmt: 0,
+			deductAmt:  md.BurningAmount,
+		}
+	}
+	updatingInfoByTokenID[md.TokenID] = updatingInfo
+
+	return updatingInfoByTokenID, nil
+}
+
+func buildBurningConfirmInst(
+	inst []string,
+	shardID byte,
+) ([]string, error) {
+	// Parse action and get metadata
+	var burningReqAction BurningReqAction
+	err := decodeContent(inst[1], &burningReqAction)
+	if err != nil {
+		return nil, err
+	}
+	md := burningReqAction.Meta
+	txID := burningReqAction.RequestedTxID // to prevent double-release token
+
+	// Convert amount to big.Int to get bytes later
+	amount := big.NewInt(0).SetUint64(md.BurningAmount)
+
+	return []string{
+		strconv.Itoa(metadata.BurningConfirmMeta),
+		strconv.Itoa(int(shardID)),
+		md.TokenID.String(),
+		md.RemoteAddress,
+		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
+		txID.String(),
+	}, nil
+}
+
+func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
+	for _, inst := range block.Body.Instructions {
+		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
+			continue
+		}
+
+		txID, err := common.NewHashFromStr(inst[5])
+		if err != nil {
+			return err
+		}
+		if err := bc.config.DataBase.StoreBurningConfirm(txID[:], block.Header.Height); err != nil {
+			return err
+		}
+	}
+	return nil
 }

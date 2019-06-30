@@ -36,7 +36,7 @@ const (
 
 	// POS Cmd
 	CmdBFTPropose = "bftpropose"
-	CmdBFTPrepare = "bftprepare"
+	CmdBFTAgree   = "bftagree"
 	CmdBFTCommit  = "bftcommit"
 	CmdBFTReady   = "bftready"
 	CmdBFTReq     = "bftreq"
@@ -128,8 +128,8 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 			Timestamp: time.Now().Unix(),
 		}
 		break
-	case CmdBFTPrepare:
-		msg = &MessageBFTPrepare{
+	case CmdBFTAgree:
+		msg = &MessageBFTAgree{
 			Timestamp: time.Now().Unix(),
 		}
 		break
@@ -211,8 +211,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdPing, nil
 	case reflect.TypeOf(&MessageBFTPropose{}):
 		return CmdBFTPropose, nil
-	case reflect.TypeOf(&MessageBFTPrepare{}):
-		return CmdBFTPrepare, nil
+	case reflect.TypeOf(&MessageBFTAgree{}):
+		return CmdBFTAgree, nil
 	case reflect.TypeOf(&MessageBFTCommit{}):
 		return CmdBFTCommit, nil
 	case reflect.TypeOf(&MessageBFTReady{}):

@@ -1,22 +1,101 @@
 package blockchain
 
 import (
+	"encoding/hex"
+	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
+
+// FlattenAndConvertStringInst receives a slice of insts; concats each inst ([]string) and converts to []byte to build merkle tree later
+func FlattenAndConvertStringInst(insts [][]string) [][]byte {
+	flattenInsts := [][]byte{}
+	for _, inst := range insts {
+		flattenInsts = append(flattenInsts, DecodeInstruction(inst))
+	}
+	return flattenInsts
+}
+
+// decodeInstruction appends all part of an instruction and decode them if necessary (for special instruction that needed to be decoded before submitting to Ethereum)
+func DecodeInstruction(inst []string) []byte {
+	flatten := []byte{}
+	switch inst[0] {
+	case strconv.Itoa(metadata.BeaconPubkeyRootMeta), strconv.Itoa(metadata.BridgePubkeyRootMeta):
+		flatten = decodeLastFieldOnly(inst)
+
+	case strconv.Itoa(metadata.BurningConfirmMeta):
+		flatten = decodeBurningConfirmInst(inst)
+
+	default:
+		for _, part := range inst {
+			flatten = append(flatten, []byte(part)...)
+		}
+	}
+	return flatten
+}
+
+// decodeLastFieldOnly flattens all parts of an instruction, decode the last and concats them
+func decodeLastFieldOnly(inst []string) []byte {
+	flatten := []byte{}
+	for _, part := range inst[:len(inst)-1] {
+		flatten = append(flatten, []byte(part)...)
+	}
+	// Special case: instruction storing merkle root of beacon/bridge's committee => decode the merkle root and sign on that instead
+	// We need to decode and submit the raw merkle root to Ethereum because we can't decode it on smart contract
+	if pk, _, err := (base58.Base58Check{}).Decode(inst[2]); err == nil {
+		flatten = append(flatten, pk...)
+	} else {
+		flatten = append(flatten, []byte(inst[len(inst)-1])...)
+	}
+	return flatten
+}
+
+// decodeBurningConfirmInst decodes and flattens a BurningConfirm instruction
+func decodeBurningConfirmInst(inst []string) []byte {
+	metaType := []byte(inst[0])
+	shardID := []byte(inst[1])
+	tokenID, _ := common.NewHashFromStr(inst[2])
+	remoteAddr, _ := decodeRemoteAddr(inst[3])
+	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
+	txID, _ := common.NewHashFromStr(inst[5])
+	flatten := []byte{}
+	flatten = append(flatten, metaType...)
+	flatten = append(flatten, shardID...)
+	flatten = append(flatten, tokenID[:]...)
+	flatten = append(flatten, remoteAddr...)
+	flatten = append(flatten, toBytes32BigEndian(amount)...)
+	flatten = append(flatten, txID[:]...)
+	return flatten
+}
+
+// decodeRemoteAddr converts address string to 32 bytes slice
+func decodeRemoteAddr(addr string) ([]byte, error) {
+	remoteAddr, err := hex.DecodeString(addr)
+	if err != nil {
+		return nil, err
+	}
+	addrFixedLen := [32]byte{}
+	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
+	return addrFixedLen[:], nil
+}
+
+// toBytes32BigEndian converts a Big.Int bytes to uint256 for of Ethereum
+func toBytes32BigEndian(b []byte) []byte {
+	a := [32]byte{}
+	copy(a[32-len(b):], b)
+	return a[:]
+}
 
 // build actions from txs and ins at shard
 func buildStabilityActions(
 	txs []metadata.Transaction,
 	bc *BlockChain,
 	shardID byte,
-	producerAddress *privacy.PaymentAddress,
-	shardBlockHeight uint64,
-	beaconBlocks []*BeaconBlock,
-	beaconHeight uint64,
 ) ([][]string, error) {
 	actions := [][]string{}
 	for _, tx := range txs {
@@ -30,6 +109,99 @@ func buildStabilityActions(
 		}
 	}
 	return actions, nil
+}
+
+// pickInstructionWithType finds all instructions of a specific type in a list
+func pickInstructionWithType(
+	insts [][]string,
+	typeToFind string,
+) [][]string {
+	found := [][]string{}
+	for _, inst := range insts {
+		instType := inst[0]
+		if instType != typeToFind {
+			continue
+		}
+		found = append(found, inst)
+	}
+	return found
+}
+
+// pickInstructionFromBeaconBlocks extracts all instructions of a specific type
+func pickInstructionFromBeaconBlocks(beaconBlocks []*BeaconBlock, instType string) [][]string {
+	insts := [][]string{}
+	for _, block := range beaconBlocks {
+		found := pickInstructionWithType(block.Body.Instructions, instType)
+		if len(found) > 0 {
+			insts = append(insts, found...)
+		}
+	}
+	return insts
+}
+
+// pickBeaconPubkeyRootInstruction finds all BeaconPubkeyRootMeta instructions
+// These instructions contain merkle root of beacon committee's pubkey
+func pickBeaconPubkeyRootInstruction(
+	beaconBlocks []*BeaconBlock,
+) [][]string {
+	instType := strconv.Itoa(metadata.BeaconPubkeyRootMeta)
+	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
+}
+
+// pickBurningConfirmInstruction finds all BurningConfirmMeta instructions
+func pickBurningConfirmInstruction(
+	beaconBlocks []*BeaconBlock,
+) [][]string {
+	instType := strconv.Itoa(metadata.BurningConfirmMeta)
+	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
+}
+
+// pickBridgePubkeyRootInstruction finds all BridgePubkeyRootMeta instructions
+// These instructions contain merkle root of bridge committee's pubkey
+func pickBridgePubkeyRootInstruction(
+	block *ShardToBeaconBlock,
+) [][]string {
+	shardType := strconv.Itoa(metadata.BridgePubkeyRootMeta)
+	return pickInstructionWithType(block.Instructions, shardType)
+}
+
+// parsePubkeysAndBuildMerkleRoot returns the merkle root of a list of validators'pubkey stored as string
+func parsePubkeysAndBuildMerkleRoot(vals []string) []byte {
+	pks := [][]byte{}
+	for _, val := range vals {
+		pk, _, _ := base58.Base58Check{}.Decode(val)
+		// TODO(@0xbunyip): handle error
+		pks = append(pks, pk)
+	}
+	return GetKeccak256MerkleRoot(pks)
+}
+
+// build instructions at beacon chain before syncing to shards
+func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
+	beaconCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
+	fmt.Printf("[db] added beaconCommRoot: %x\n", beaconCommRoot)
+
+	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
+	instContent := base58.Base58Check{}.Encode(beaconCommRoot, 0x00)
+	return []string{
+		strconv.Itoa(metadata.BeaconPubkeyRootMeta),
+		strconv.Itoa(int(shardID)),
+		instContent,
+	}
+}
+
+
+func buildBridgePubkeyRootInstruction(currentValidators []string) []string {
+	bridgeCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
+	fmt.Printf("[db] added bridgeCommRoot: %x\n", bridgeCommRoot)
+
+	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
+	instContent := base58.Base58Check{}.Encode(bridgeCommRoot, 0x00)
+	return []string{
+		strconv.Itoa(metadata.BridgePubkeyRootMeta),
+		strconv.Itoa(int(shardID)),
+		instContent,
+	}
 }
 
 // build instructions at beacon chain before syncing to shards
@@ -56,8 +228,20 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		switch metaType {
 		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta:
 			newInst = [][]string{inst}
+
 		case metadata.IssuingETHRequestMeta:
 			newInst, err = buildInstructionsForETHIssuingReq(contentStr)
+
+		case metadata.BurningRequestMeta:
+			if metaType == metadata.BurningRequestMeta {
+				fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
+			}
+			burningConfirm, err := buildBurningConfirmInst(inst, shardID)
+			if err != nil {
+				return [][]string{}, err
+			}
+			newInst = [][]string{inst, burningConfirm}
+
 		default:
 			continue
 		}

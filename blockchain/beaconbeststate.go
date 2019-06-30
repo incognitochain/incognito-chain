@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -427,6 +428,32 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		}
 		blockchain.config.CrossShardPool[fromShard].UpdatePool()
 	}
+
+	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	for _, inst := range currentBestStateBlk.Body.Instructions {
+		if len(inst) < 2 {
+			continue // Not error, just not bridge instruction
+		}
+		var err error
+		switch inst[0] {
+		case strconv.Itoa(metadata.IssuingRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.ContractingRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.BurningRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	for tokenID, _ := range updatingInfoByTokenID {
+		err := blockchain.config.DataBase.RestoreBridgedTokenByTokenID(tokenID)
+		if err != nil {
+			return err
+		}
+	}
+
 	blockchain.config.DataBase.DeleteBeaconBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height)
 	blockchain.BestState.Beacon = &beaconBestState
 	if err := blockchain.StoreBeaconBestState(); err != nil {
@@ -446,5 +473,31 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 	if err := blockchain.config.DataBase.StorePrevBestState(tempMarshal, true, 0); err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
+
+	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	for _, inst := range block.Body.Instructions {
+		if len(inst) < 2 {
+			continue // Not error, just not bridge instruction
+		}
+		var err error
+		switch inst[0] {
+		case strconv.Itoa(metadata.IssuingRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.ContractingRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.BurningRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	for tokenID, _ := range updatingInfoByTokenID {
+		err := blockchain.config.DataBase.BackupBridgedTokenByTokenID(tokenID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

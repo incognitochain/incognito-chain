@@ -69,7 +69,9 @@ var RpcHandler = map[string]commandHandler{
 	hasSnDerivators:                 RpcServer.handleHasSnDerivators,
 
 	//======Testing and Benchmark======
-	getAndSendTxsFromFile: RpcServer.handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFile:   RpcServer.handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFileV2: RpcServer.handleGetAndSendTxsFromFileV2,
+	unlockMempool:           RpcServer.handleUnlockMempool,
 	//=================================
 
 	//pool
@@ -110,9 +112,15 @@ var RpcHandler = map[string]commandHandler{
 	createAndSendIssuingRequest:           RpcServer.handleCreateAndSendIssuingRequest,
 	createAndSendContractingRequest:       RpcServer.handleCreateAndSendContractingRequest,
 	getBridgeTokensAmounts:                RpcServer.handleGetBridgeTokensAmounts,
+	createAndSendBurningRequest:           RpcServer.handleCreateAndSendBurningRequest,
 	createAndSendTxWithETHHeadersRelaying: RpcServer.handleCreateAndSendTxWithETHHeadersRelaying,
 	createAndSendTxWithIssuingETHReq:      RpcServer.handleCreateAndSendTxWithIssuingETHReq,
 	getRelayedETHHeader:                   RpcServer.handleGetRelayedETHHeader,
+
+	// Incognito -> Ethereum bridge
+	getBeaconSwapProof: RpcServer.handleGetBeaconSwapProof,
+	getBridgeSwapProof: RpcServer.handleGetBridgeSwapProof,
+	getBurnProof:       RpcServer.handleGetBurnProof,
 
 	// wallet
 	getPublicKeyFromPaymentAddress: RpcServer.handleGetPublicKeyFromPaymentAddress,
@@ -125,25 +133,28 @@ var RpcHandler = map[string]commandHandler{
 	//reward
 	CreateRawWithDrawTransaction: RpcServer.handleCreateAndSendWithDrawTransaction,
 	getRewardAmount:              RpcServer.handleGetRewardAmount,
+
+	//revert
+	revertbeaconchain: RpcServer.handleRevertBeacon,
+	revertshardchain:  RpcServer.handleRevertShard,
 }
 
 // Commands that are available to a limited user
 var RpcLimited = map[string]commandHandler{
 	// local WALLET
-	listAccounts:                       RpcServer.handleListAccounts,
-	getAccount:                         RpcServer.handleGetAccount,
-	getAddressesByAccount:              RpcServer.handleGetAddressesByAccount,
-	getAccountAddress:                  RpcServer.handleGetAccountAddress,
-	dumpPrivkey:                        RpcServer.handleDumpPrivkey,
-	importAccount:                      RpcServer.handleImportAccount,
-	removeAccount:                      RpcServer.handleRemoveAccount,
-	listUnspentOutputCoins:             RpcServer.handleListUnspentOutputCoins,
-	getBalance:                         RpcServer.handleGetBalance,
-	getBalanceByPrivatekey:             RpcServer.handleGetBalanceByPrivatekey,
-	getBalanceByPaymentAddress:         RpcServer.handleGetBalanceByPaymentAddress,
-	getReceivedByAccount:               RpcServer.handleGetReceivedByAccount,
-	setTxFee:                           RpcServer.handleSetTxFee,
-	getRecentTransactionsByBlockNumber: RpcServer.handleGetRecentTransactionsByBlockNumber,
+	listAccounts:               RpcServer.handleListAccounts,
+	getAccount:                 RpcServer.handleGetAccount,
+	getAddressesByAccount:      RpcServer.handleGetAddressesByAccount,
+	getAccountAddress:          RpcServer.handleGetAccountAddress,
+	dumpPrivkey:                RpcServer.handleDumpPrivkey,
+	importAccount:              RpcServer.handleImportAccount,
+	removeAccount:              RpcServer.handleRemoveAccount,
+	listUnspentOutputCoins:     RpcServer.handleListUnspentOutputCoins,
+	getBalance:                 RpcServer.handleGetBalance,
+	getBalanceByPrivatekey:     RpcServer.handleGetBalanceByPrivatekey,
+	getBalanceByPaymentAddress: RpcServer.handleGetBalanceByPaymentAddress,
+	getReceivedByAccount:       RpcServer.handleGetReceivedByAccount,
+	setTxFee:                   RpcServer.handleSetTxFee,
 }
 
 /*
