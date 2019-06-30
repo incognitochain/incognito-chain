@@ -16,7 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/ethrelaying/params"
 )
 
-const VaultAddress = "8caa0be79b109257d243ce4b430c7fc14f3e5ce8"
+const VaultAddress = "a61b76afe33830E564bf0f07cEb4e39D5Ca43280"
 
 func Burn(txID string) error {
 	// Get proof
@@ -96,7 +96,7 @@ func Deposit() error {
 
 	// Deposit
 	auth := bind.NewKeyedTransactor(privKey)
-	auth.Value = big.NewInt(5 * params.Ether)
+	auth.Value = big.NewInt(1 * params.Ether)
 	incAddr := "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 	tx, err := c.Deposit(auth, incAddr)
 	if err != nil {
@@ -146,7 +146,7 @@ func connect() (*ecdsa.PrivateKey, *ethclient.Client, error) {
 		return nil, nil, err
 	}
 
-	client, err := ethclient.Dial("https://rinkeby.infura.io")
+	client, err := ethclient.Dial("https://ropsten.infura.io")
 	if err != nil {
 		return nil, nil, err
 	}
