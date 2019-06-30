@@ -111,10 +111,10 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	// Also, pick BurningConfirm inst and save to bridge block
 	if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
 		// TODO(0xbunyip): validate these instructions in shardprocess
-		commPubkeyInst := pickBeaconPubkeyRootInstruction(beaconBlocks)
-		if len(commPubkeyInst) > 0 {
-			instructions = append(instructions, commPubkeyInst...)
-		}
+		// commPubkeyInst := pickBeaconPubkeyRootInstruction(beaconBlocks)
+		// if len(commPubkeyInst) > 0 {
+		// 	instructions = append(instructions, commPubkeyInst...)
+		// }
 
 		confirmInsts := pickBurningConfirmInstruction(beaconBlocks)
 		if len(confirmInsts) > 0 {
