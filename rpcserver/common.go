@@ -68,14 +68,14 @@ func (rpcServer RpcServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Paymen
 		privacyCustomTokenParams)
 
 	if totalAmmount == 0 && realFee == 0 {
-		metadataType := metadataParam.GetType()
-		switch metadataType {
-		case metadata.WithDrawRewardRequestMeta:
-			{
-				return nil, realFee, nil
-			}
-		}
-		return nil, realFee, NewRPCError(ErrRejectInvalidFee, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
+		// metadataType := metadataParam.GetType()
+		// switch metadataType {
+		// case metadata.WithDrawRewardRequestMeta:
+		// 	{
+		// 		return nil, realFee, nil
+		// 	}
+		// }
+		// return nil, realFee, NewRPCError(ErrRejectInvalidFee, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
 	}
 
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
