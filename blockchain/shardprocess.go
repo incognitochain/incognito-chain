@@ -276,8 +276,10 @@ func (blockchain *BlockChain) insertETHHeaders(
 	lc := blockchain.LightEthereum.GetLightChain()
 	_, err := lc.InsertHeaderChain(relayingMeta.ETHHeaders, 0)
 	if err != nil {
+		fmt.Println("haha insert error: ", err)
 		return err
 	}
+	fmt.Println("haha insert header chain ok")
 	return nil
 }
 

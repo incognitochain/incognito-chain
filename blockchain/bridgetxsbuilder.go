@@ -141,11 +141,14 @@ func (blockgen *BlkTmplGenerator) buildETHHeaderRelayingRewardTx(
 func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
+	bridgeShardID byte,
+	currentShardID byte,
 ) (metadata.Transaction, error) {
-	if shardID != byte(common.BRIDGE_SHARD_ID) { // TODO: will have dedicated bridge shard with its shardID
+	if bridgeShardID != currentShardID { // TODO: will have dedicated bridge shard with its shardID
 		return nil, nil
 	}
+
+	fmt.Println("haha start buildETHIssuanceTx")
 
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -209,6 +212,10 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	amt := logMap["_amount"].(*big.Int)
 	// convert amt from wei (10^18) to nano eth (10^9)
 	amount := big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
+
+	fmt.Println("haha addressStr: ", addressStr)
+	fmt.Println("haha amount: ", amount)
+
 	receiver := &privacy.PaymentInfo{
 		Amount:         amount,
 		PaymentAddress: key.KeySet.PaymentAddress,
@@ -247,11 +254,12 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		issuingETHRes,
 		false,
 		false,
-		shardID,
+		currentShardID,
 	)
 
 	if initErr != nil {
 		return nil, initErr
 	}
+	fmt.Println("haha create res tx ok")
 	return resTx, nil
 }
