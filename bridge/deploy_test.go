@@ -1,6 +1,8 @@
 package bridge
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestBurn(t *testing.T) {
 	txID := ""
