@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/incognitochain/incognito-chain/ethrelaying"
+	ethereum "github.com/incognitochain/incognito-chain/ethrelaying"
 	"github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/ethrelaying/common/hexutil"
 	"github.com/incognitochain/incognito-chain/ethrelaying/core/types"

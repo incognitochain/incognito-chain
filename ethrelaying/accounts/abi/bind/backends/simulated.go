@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/ethrelaying"
+	ethereum "github.com/incognitochain/incognito-chain/ethrelaying"
 	"github.com/incognitochain/incognito-chain/ethrelaying/accounts/abi/bind"
 	"github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/ethrelaying/common/math"
