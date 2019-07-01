@@ -142,7 +142,9 @@ func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 	return base58.Base58Check{}.Encode(serializedKey, common.ZeroByte)
 }
 
-// Deserialize a byte slice into a KeySet
+// Deserialize receives a byte array and deserializes into KeySet
+// because data contains keyType and serialized data of corresponding key
+// it returns KeySet just contain corresponding key
 func Deserialize(data []byte) (*KeyWallet, error) {
 	var key = &KeyWallet{}
 	keyType := data[0]
@@ -181,22 +183,12 @@ func Deserialize(data []byte) (*KeyWallet, error) {
 }
 
 // Base58CheckDeserialize deserializes a KeySet encoded in base58 encoding
-// because data contained serialized key type -> return object can contain data of keyset with only one of data keyset
+// because data contains keyType and serialized data of corresponding key
+// it returns KeySet just contain corresponding key
 func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	b, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {
 		return nil, err
 	}
 	return Deserialize(b)
-}
-
-func GetPublicKeyFromPrivateKeyStr(privateKeyStr string) ([]byte, error) {
-	keyWallet, err := Base58CheckDeserialize(privateKeyStr)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
-
-	return keyWallet.KeySet.PaymentAddress.Pk, nil
 }
