@@ -6,6 +6,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"sort"
 	"sync"
 	"time"
@@ -24,13 +25,16 @@ type BeaconPoolConfig struct {
 	CacheSize       int
 }
 type BeaconPool struct {
-	validPool         []*blockchain.BeaconBlock          // valid, ready to insert into blockchain
-	pendingPool       map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
-	conflictedPool    map[common.Hash]*blockchain.BeaconBlock
-	latestValidHeight uint64
-	mtx               sync.RWMutex
-	config            BeaconPoolConfig
-	cache             *lru.Cache
+	validPool             []*blockchain.BeaconBlock          // valid, ready to insert into blockchain
+	pendingPool           map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
+	conflictedPool        map[common.Hash]*blockchain.BeaconBlock
+	latestValidHeight     uint64
+	mtx                   sync.RWMutex
+	config                BeaconPoolConfig
+	cache                 *lru.Cache
+	RoleInCommittees      bool //Current Role of Node
+	RoleInCommitteesEvent pubsub.EventChannel
+	PubSubManager         *pubsub.PubSubManager
 }
 
 var beaconPool *BeaconPool = nil
@@ -47,9 +51,13 @@ func init() {
 	}()
 }
 
-func InitBeaconPool() {
+func InitBeaconPool(pubsubManager *pubsub.PubSubManager) {
 	//do nothing
-	GetBeaconPool().SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
+	beaconPool := GetBeaconPool()
+	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
+	beaconPool.PubSubManager = pubsubManager
+	_, subChanRole, _ := beaconPool.PubSubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
+	beaconPool.RoleInCommitteesEvent = subChanRole
 }
 
 // get singleton instance of ShardToBeacon pool
@@ -69,7 +77,25 @@ func GetBeaconPool() *BeaconPool {
 	}
 	return beaconPool
 }
-
+func (self *BeaconPool) Start(cQuit chan struct{}) {
+	for {
+		select {
+		case msg := <-self.RoleInCommitteesEvent:
+			role, ok := msg.Value.(bool)
+			if !ok {
+				continue
+			}
+			self.mtx.Lock()
+			self.RoleInCommittees = role
+			self.mtx.Unlock()
+		case <-cQuit:
+			self.mtx.Lock()
+			self.RoleInCommittees = false
+			self.mtx.Unlock()
+			return
+		}
+	}
+}
 func (self *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
 	if self.latestValidHeight < lastestBeaconHeight {
 		self.latestValidHeight = lastestBeaconHeight
@@ -83,7 +109,7 @@ func (self *BeaconPool) GetBeaconState() uint64 {
 func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-
+	go self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := self.validateBeaconBlock(block, false)
 	if err != nil {
 		return err
@@ -100,7 +126,7 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
 	if block.Header.Height <= self.latestValidHeight {
-		if self.latestValidHeight-block.Header.Height > 2 {
+		if self.latestValidHeight-block.Header.Height < 2 {
 			self.conflictedPool[block.Header.Hash()] = block
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive old block: "+fmt.Sprintf("%d", block.Header.Height)))
@@ -248,6 +274,15 @@ func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
 }
 
 func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
+	self.mtx.RLock()
+	defer self.mtx.RUnlock()
+	if self.RoleInCommittees {
+		if len(self.validPool) == 0 {
+			if block, ok := self.pendingPool[self.latestValidHeight+1]; ok {
+				return []*blockchain.BeaconBlock{block}
+			}
+		}
+	}
 	return self.validPool
 }
 

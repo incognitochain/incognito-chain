@@ -3,6 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -10,14 +12,14 @@ import (
 const (
 	// BlockVersion is the current latest supported block version.
 	BlockVersion            = 1
-	defaultMaxBlkReqPerPeer = 600
-	defaultMaxBlkReqPerTime = 1200
+	DefaultMaxBlkReqPerPeer = 600
+	DefaultMaxBlkReqPerTime = 1200
 
-	defaultBroadcastStateTime = 2 * time.Second  // in second
-	defaultStateUpdateTime    = 3 * time.Second  // in second
-	defaultMaxBlockSyncTime   = 1 * time.Second  // in second
-	defaultCacheCleanupTime   = 30 * time.Second // in second
-	workerNum                 = 5
+	DefaultBroadcastStateTime = 2 * time.Second  // in second
+	DefaultStateUpdateTime    = 3 * time.Second  // in second
+	DefaultMaxBlockSyncTime   = 1 * time.Second  // in second
+	DefaultCacheCleanupTime   = 30 * time.Second // in second
+	WorkerNumber              = 5
 )
 
 // CONSTANT for network MAINNET
@@ -41,7 +43,7 @@ const (
 
 // VARIABLE for mainnet
 var (
-	MainnetInitConstant = []string{}
+	MainnetInitPRV = []string{}
 	// for beacon
 	// public key
 	PreSelectBeaconNodeMainnetSerializedPubkey = PreSelectBeaconNodeTestnetSerializedPubkey
@@ -97,6 +99,10 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 
 func init() {
 	return
+
+	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
+		return
+	}
 	keyData, err := ioutil.ReadFile("keylist.json")
 	if err != nil {
 		panic(err)
@@ -147,7 +153,7 @@ const (
 )
 
 // ---------------------------------------------
-var TestnetInitConstant = []string{
+var TestnetInitPRV = []string{
 	`{
    "Version":1,
    "Type":"s",
