@@ -39,8 +39,8 @@ var ErrCodeMessage = map[int]struct {
 	JsonUnmarshalErr: {-1006, "Can not json unmarshal"},
 	WriteFileErr: {-1007, "Can not write file"},
 	ReadFileErr: {-1008, "Can not read file"},
-	AESEncryptErr: {-1009, "Can not ASE encrypt data"},
-	AESDecryptErr: {-1010, "Can not ASE decrypt data"},
+	AESEncryptErr: {-1009, "Can not AES encrypt data"},
+	AESDecryptErr: {-1010, "Can not AES decrypt data"},
 	InvalidKeyTypeErr: {-1011, "Serialized key type is invalid"},
 	InvalidPlaintextErr : {-1012, "Plaintext is invalid"},
 }
