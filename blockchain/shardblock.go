@@ -38,7 +38,7 @@ type CrossShardBlock struct {
 	Header          ShardHeader
 	ToShardID       byte
 	MerklePathShard []common.Hash
-	// Cross Shard data for constant
+	// Cross Shard data for PRV
 	CrossOutputCoin []privacy.OutputCoin
 	// Cross Shard Data for Custom Token Tx
 	CrossTxTokenData []transaction.TxTokenData
@@ -139,6 +139,9 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 // }
 
 func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
+	if bc.IsTest {
+		return &ShardToBeaconBlock{}
+	}
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
 

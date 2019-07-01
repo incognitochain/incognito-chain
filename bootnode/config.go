@@ -17,9 +17,14 @@ func newConfigParser(cfg *config, options flags.Options) *flags.Parser {
 	return parser
 }
 
+// loadConfig
+// - set default config
+// - read config from cmd line params
+// - return config object
 func loadConfig() (*config, error) {
+	// create config object from default values
 	cfg := config{
-		RPCPort: rpcServerPort,
+		RPCPort: DefaultRPCServerPort,
 	}
 
 	//preCfg := cfg
