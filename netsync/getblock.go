@@ -2,7 +2,7 @@ package netsync
 
 import (
 	"sort"
-
+	
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -40,7 +40,7 @@ func (netSync *NetSync) GetBlkBeaconByHashAndSend(peerID libp2p.ID, blkHashes []
 			Logger.log.Error(err)
 			continue
 		}
-		newMsg.(*wire.MessageBlockBeacon).Block = *blk
+		newMsg.(*wire.MessageBlockBeacon).Block = blk
 		netSync.config.Server.PushMessageToPeer(newMsg, peerID)
 	}
 }
@@ -85,7 +85,7 @@ func (netSync *NetSync) GetBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bo
 					Logger.log.Error(err)
 					continue
 				}
-				blkMsg.(*wire.MessageCrossShard).Block = *blkToSend
+				blkMsg.(*wire.MessageCrossShard).Block = blkToSend
 			case 2:
 				blkToSend := netSync.config.ShardToBeaconPool.GetBlockByHeight(shardID, blkHeight)
 				if blkToSend == nil {
@@ -97,7 +97,7 @@ func (netSync *NetSync) GetBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bo
 					Logger.log.Error(err)
 					continue
 				}
-				blkMsg.(*wire.MessageShardToBeacon).Block = *blkToSend
+				blkMsg.(*wire.MessageShardToBeacon).Block = blkToSend
 			}
 		} else {
 			blk, err := netSync.config.BlockChain.GetShardBlockByHeight(blkHeight, shardID)
@@ -153,7 +153,7 @@ func (netSync *NetSync) GetBlkBeaconByHeightAndSend(peerID libp2p.ID, fromPool b
 			Logger.log.Error(err)
 			continue
 		}
-		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = *blk
+		msgBeaconBlk.(*wire.MessageBlockBeacon).Block = blk
 		err = netSync.config.Server.PushMessageToPeer(msgBeaconBlk, peerID)
 		if err != nil {
 			Logger.log.Error(err)
@@ -170,7 +170,6 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 		blkMsg wire.Message
 		err    error
 	)
-
 	switch blkType {
 	case 0:
 		blkMsg, err = wire.MakeEmptyMessage(wire.CmdBlockShard)
@@ -178,7 +177,7 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 			Logger.log.Error(err)
 			return nil, err
 		}
-		blkMsg.(*wire.MessageBlockShard).Block = *block
+		blkMsg.(*wire.MessageBlockShard).Block = block
 	case 1:
 		blkToSend, err := block.CreateCrossShardBlock(crossShardID)
 		if err != nil {
@@ -192,7 +191,7 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 			Logger.log.Error(err)
 			return nil, err
 		}
-		blkMsg.(*wire.MessageCrossShard).Block = *blkToSend
+		blkMsg.(*wire.MessageCrossShard).Block = blkToSend
 	case 2:
 		blkToSend := block.CreateShardToBeaconBlock(netSync.config.BlockChain)
 		blkMsg, err = wire.MakeEmptyMessage(wire.CmdBlkShardToBeacon)
@@ -200,7 +199,7 @@ func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, bl
 			Logger.log.Error(err)
 			return nil, err
 		}
-		blkMsg.(*wire.MessageShardToBeacon).Block = *blkToSend
+		blkMsg.(*wire.MessageShardToBeacon).Block = blkToSend
 	}
 	return blkMsg, nil
 }

@@ -38,13 +38,13 @@ type Policy struct {
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
 func (self *Policy) calcMinFeeTxCustomTokenAccepted(tx *transaction.TxCustomToken) uint64 {
 	// return self.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
-	return 0
+	return 1
 }
 
 // return min transacton fee required for a transaction that we accepted into the memmory pool and replayed.
 func (self *Policy) calcMinFeeTxAccepted(tx *transaction.Tx) uint64 {
 	// return self.BlockChain.BestState[0].BestBlock.Header.GOVConstitution.GOVParams.TxFee
-	return 0
+	return 1
 }
 
 /*

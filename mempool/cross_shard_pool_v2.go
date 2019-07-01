@@ -145,7 +145,7 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 	3. Duplicate block in pending or valid
 	4. Signature
 */
-func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
+func (pool *CrossShardPool_v2) AddCrossShardBlock(blk *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
 	pool.poolMu.Lock()
 	defer pool.poolMu.Unlock()
 
@@ -194,7 +194,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk blockchain.CrossShardBlock
 		}
 	}
 
-	pool.pendingPool[shardID] = append(pool.pendingPool[shardID], &blk)
+	pool.pendingPool[shardID] = append(pool.pendingPool[shardID], blk)
 	sort.Slice(pool.pendingPool[shardID], func(i, j int) bool {
 		return pool.pendingPool[shardID][i].Header.Height < pool.pendingPool[shardID][j].Header.Height
 	})

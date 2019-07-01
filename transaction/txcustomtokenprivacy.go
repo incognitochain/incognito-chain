@@ -16,13 +16,13 @@ import (
 	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 )
 
-// TxCustomTokenPrivacy is class tx which is inherited from constant tx(supporting privacy) for fee
+// TxCustomTokenPrivacy is class tx which is inherited from P tx(supporting privacy) for fee
 // and contain data(with supporting privacy format) to support issuing and transfer a custom token(token from end-user, look like erc-20)
 // Dev or end-user can use this class tx to create an token type which use personal purpose
 // TxCustomTokenPrivacy is an advance format of TxCustomToken
 // so that user need to spend a lot fee to create this class tx
 type TxCustomTokenPrivacy struct {
-	Tx                                    // inherit from normal tx of constant(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
+	Tx                                    // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
 
 	cachedHash *common.Hash // cached hash data of tx
@@ -113,7 +113,7 @@ func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 	shardID byte,
 ) *TransactionError {
 	var err error
-	// init data for tx constant for fee
+	// init data for tx PRV for fee
 	normalTx := Tx{}
 	err = normalTx.Init(senderKey,
 		paymentInfo,
@@ -452,4 +452,12 @@ func (tx *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 
 func (tx *TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return tx.TxTokenPrivacyData.TxNormal.SigPubKey
+}
+
+func (tx *TxCustomTokenPrivacy) GetTxFeeToken() uint64 {
+	return tx.TxTokenPrivacyData.TxNormal.Fee
+}
+
+func (tx *TxCustomTokenPrivacy) GetTokenID() *common.Hash {
+	return &tx.TxTokenPrivacyData.PropertyID
 }

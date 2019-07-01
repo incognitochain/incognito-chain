@@ -280,10 +280,6 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	return filepath.Clean(os.ExpandEnv(path))
 }
 
-/*func ConstantToMiliConstant(constant uint64) uint64 {
-	return constant * uint64(math.Pow(10, NanoConstant))
-}*/
-
 func Max(x, y int) int {
 	if x > y {
 		return x

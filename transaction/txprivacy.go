@@ -494,6 +494,10 @@ func (tx *Tx) GetTxFee() uint64 {
 	return tx.Fee
 }
 
+func (tx *Tx) GetTxFeeToken() uint64 {
+	return uint64(0)
+}
+
 // GetTxActualSize computes the actual size of a given transaction in kilobyte
 func (tx *Tx) GetTxActualSize() uint64 {
 	if tx.cachedActualSize != nil {
@@ -1152,7 +1156,7 @@ func (tx Tx) GetMetadataFromVinsTx(bcr metadata.BlockchainRetriever) (metadata.M
 }
 
 func (tx Tx) GetTokenID() *common.Hash {
-	return nil
+	return &common.PRVCoinID
 }
 
 func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
