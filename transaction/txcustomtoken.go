@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
+	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 )
 
 // TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
@@ -662,6 +663,7 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
+	ethTxHashUsed []rCommon.Hash,
 ) (bool, error) {
 	if !tx.TxTokenData.Mintable {
 		return true, nil
@@ -675,5 +677,5 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr, ethTxHashUsed)
 }
