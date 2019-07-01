@@ -14,7 +14,7 @@ import (
 // )
 
 type MessageCrossShard struct {
-	Block blockchain.CrossShardBlock
+	Block *blockchain.CrossShardBlock
 }
 
 func (msg *MessageCrossShard) Hash() string {

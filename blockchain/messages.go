@@ -11,6 +11,9 @@ import (
 )
 
 func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]uint64, crossShardPool *map[byte]map[byte][]uint64, peerID libp2p.ID) {
+	if blockchain.IsTest {
+		return
+	}
 	var (
 		userRole      string
 		userShardID   byte
@@ -181,7 +184,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	}
 }
 
-func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
+func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconBlock) {
 	if blockchain.IsTest {
 		return
 	}
@@ -228,7 +231,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 	}
 }
 
-func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
+func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) {
 	if blockchain.IsTest {
 		return
 	}
