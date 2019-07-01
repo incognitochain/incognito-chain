@@ -193,3 +193,103 @@ func TestHDWalletBase58CheckSerializeWithInvalidKeyType( t *testing.T){
 		assert.Equal(t, "", serializedKey)
 	}
 }
+
+/*
+		Unit test for Deserialize function
+ */
+
+func TestHDWalletDeserialize( t *testing.T){
+	seed := []byte{1,2,3}
+	masterKey, _ := NewMasterKey(seed)
+
+	privKeyBytes, err := masterKey.Serialize(PriKeyType)
+	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
+	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
+
+	keyWallet, err := Deserialize(privKeyBytes)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, masterKey.KeySet.PrivateKey, keyWallet.KeySet.PrivateKey)
+
+	keyWallet, err = Deserialize(paymentAddrBytes)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, masterKey.KeySet.PaymentAddress.Pk, keyWallet.KeySet.PaymentAddress.Pk)
+	assert.Equal(t, masterKey.KeySet.PaymentAddress.Tk, keyWallet.KeySet.PaymentAddress.Tk)
+
+	keyWallet, err = Deserialize(readonlyKeyBytes)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Pk, keyWallet.KeySet.ReadonlyKey.Pk)
+	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Rk, keyWallet.KeySet.ReadonlyKey.Rk)
+}
+
+func TestHDWalletDeserializeWithInvalidChecksum( t *testing.T){
+	seed := []byte{1,2,3}
+	masterKey, _ := NewMasterKey(seed)
+
+	privKeyBytes, err := masterKey.Serialize(PriKeyType)
+	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
+	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
+
+	// edit checksum
+	privKeyBytes[len(privKeyBytes) - 1] = 0
+	paymentAddrBytes[len(paymentAddrBytes) - 1] = 0
+	readonlyKeyBytes[len(readonlyKeyBytes) - 1] = 0
+
+	_, err = Deserialize(privKeyBytes)
+	assert.Equal(t, NewWalletError(InvalidChecksumErr, nil), err)
+
+	_, err = Deserialize(paymentAddrBytes)
+	assert.Equal(t, NewWalletError(InvalidChecksumErr, nil), err)
+
+	_, err = Deserialize(readonlyKeyBytes)
+	assert.Equal(t, NewWalletError(InvalidChecksumErr, nil), err)
+}
+
+/*
+		Unit test for Base58CheckDeserialize function
+ */
+
+func TestHDWalletBase58CheckDeserialize( t *testing.T){
+	seed := []byte{1,2,3}
+	masterKey, _ := NewMasterKey(seed)
+
+	privKeyStr := masterKey.Base58CheckSerialize(PriKeyType)
+	paymentAddrStr := masterKey.Base58CheckSerialize(PaymentAddressType)
+	readonlyKeyStr := masterKey.Base58CheckSerialize(ReadonlyKeyType)
+
+	keyWallet, err := Base58CheckDeserialize(privKeyStr)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, masterKey.KeySet.PrivateKey, keyWallet.KeySet.PrivateKey)
+
+	keyWallet, err = Base58CheckDeserialize(paymentAddrStr)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, masterKey.KeySet.PaymentAddress.Pk, keyWallet.KeySet.PaymentAddress.Pk)
+
+	keyWallet, err = Base58CheckDeserialize(readonlyKeyStr)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Pk, keyWallet.KeySet.ReadonlyKey.Pk)
+	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Rk, keyWallet.KeySet.ReadonlyKey.Rk)
+}
+
+func TestHDWalletBase58CheckDeserializeWithInvalidData( t *testing.T) {
+	seed := []byte{1, 2, 3}
+	masterKey, _ := NewMasterKey(seed)
+
+	privKeyStr := masterKey.Base58CheckSerialize(PriKeyType)
+	paymentAddrStr := masterKey.Base58CheckSerialize(PaymentAddressType)
+	readonlyKeyStr := masterKey.Base58CheckSerialize(ReadonlyKeyType)
+
+	// edit base58 check serialized string
+	privKeyStr = privKeyStr + "a"
+	paymentAddrStr = paymentAddrStr + "b"
+	readonlyKeyStr = readonlyKeyStr + "c"
+
+	_, err := Base58CheckDeserialize(privKeyStr)
+	assert.NotEqual(t, nil, err)
+
+	_, err = Base58CheckDeserialize(paymentAddrStr)
+	assert.NotEqual(t, nil, err)
+
+	_, err = Base58CheckDeserialize(readonlyKeyStr)
+	assert.NotEqual(t, nil, err)
+}
+
