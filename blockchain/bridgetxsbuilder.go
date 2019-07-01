@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/ethrelaying/core/types"
 	"github.com/incognitochain/incognito-chain/ethrelaying/light"
 	"github.com/incognitochain/incognito-chain/ethrelaying/rlp"
@@ -22,6 +23,7 @@ import (
 
 func buildInstructionsForETHIssuingReq(
 	contentStr string,
+	shardID byte,
 ) ([][]string, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -36,12 +38,12 @@ func buildInstructionsForETHIssuingReq(
 
 	returnedInst := []string{
 		strconv.Itoa(metadata.IssuingETHRequestMeta),
-		strconv.Itoa(int(issuingETHReqAction.BridgeShardID)),
+		strconv.Itoa(int(shardID)),
 		"accepted",
 		contentStr,
 	}
 	instructions = append(instructions, returnedInst)
-	fmt.Println("hahah shard id : ", issuingETHReqAction.BridgeShardID)
+	fmt.Println("hahah returnedInst : ", returnedInst)
 	return instructions, nil
 }
 
@@ -141,10 +143,10 @@ func (blockgen *BlkTmplGenerator) buildETHHeaderRelayingRewardTx(
 func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
-	bridgeShardID byte,
-	currentShardID byte,
+	shardID byte,
+	ethTxHashUsed []rCommon.Hash,
 ) (metadata.Transaction, error) {
-	if bridgeShardID != currentShardID { // TODO: will have dedicated bridge shard with its shardID
+	if shardID != common.BRIDGE_SHARD_ID {
 		return nil, nil
 	}
 
@@ -187,14 +189,21 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		return nil, err
 	}
 	ethTxHash := constructedReceipt.TxHash
+	isUsedInBlock := metadata.IsETHHashUsedInBlock(ethTxHash, ethTxHashUsed)
+	if isUsedInBlock {
+		fmt.Println("WARNING: already issued for the hash in current block: ", ethTxHash)
+		return nil, nil
+	}
 	isIssued, err := blockgen.chain.GetDatabase().IsETHTxHashIssued(ethTxHash)
 	if err != nil {
 		return nil, err
 	}
 	if isIssued {
-		fmt.Println("WARNING: already issued for the hash: ", ethTxHash)
+		fmt.Println("WARNING: already issued for the hash in previous blocks: ", ethTxHash)
 		return nil, nil
 	}
+
+	fmt.Println("haha virgin request")
 
 	if len(constructedReceipt.Logs) == 0 {
 		return nil, nil
@@ -254,12 +263,13 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		issuingETHRes,
 		false,
 		false,
-		currentShardID,
+		shardID,
 	)
 
 	if initErr != nil {
 		return nil, initErr
 	}
+	ethTxHashUsed = append(ethTxHashUsed, ethTxHash)
 	fmt.Println("haha create res tx ok")
 	return resTx, nil
 }
