@@ -141,7 +141,7 @@ func (self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPendin
 		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork"))
 	}
 	if block.Header.Height <= self.latestValidHeight {
-		if self.latestValidHeight-block.Header.Height > 2 {
+		if self.latestValidHeight-block.Header.Height < 2 {
 			self.conflictedPool[block.Header.Hash()] = block
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive old block"))
