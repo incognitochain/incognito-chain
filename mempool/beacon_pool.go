@@ -131,6 +131,12 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive old block: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
+	// if next valid block then check max valid pool
+	if self.latestValidHeight+1 == block.Header.Height {
+		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
+			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
+		}
+	}
 	if !isPending {
 		//If block already in pool, it will ignore
 		_, ok := self.pendingPool[block.Header.Height]
@@ -144,12 +150,6 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 			}
 		}
 	}
-	// if next valid block then check max valid pool
-	if self.latestValidHeight+1 == block.Header.Height {
-		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
-		}
-	}
 	return nil
 }
 
@@ -157,7 +157,8 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
  New block only become valid after
 	1. This block height is next block height ( latest valid height + 1)
 	2. Valid Pool still has avaiable capacity
-	3. Pending pool has next block, and previous hash of next block == this block hash
+	3. Pending pool has next block,
+	4. and next block has previous hash == this block hash
 */
 func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock) bool {
 	// Condition 1: check height
@@ -169,6 +170,7 @@ func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock
 			if nextBlock, ok := self.pendingPool[nextHeight]; ok {
 				preHash := &nextBlock.Header.PrevBlockHash
 				blockHeader := block.Header.Hash()
+				// Condition 4: next block should point to this block
 				if preHash.IsEqual(&blockHeader) {
 					self.validPool = append(self.validPool, block)
 					self.updateLatestBeaconState()
