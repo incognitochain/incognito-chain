@@ -694,7 +694,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
 // Force source code to be updated and remove data
-func (serverObject Server) CheckForceUpdateSourceCode() {
+func (serverObject Server) checkforceupdatesourcecode() {
 	go func() {
 		ctx := context.Background()
 		myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
@@ -705,6 +705,7 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 			reader, err := myClient.Bucket("incognito").Object("version-chain.json").NewReader(ctx)
 			if err != nil {
 				Logger.log.Error(err)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			defer reader.Close()
