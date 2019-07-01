@@ -33,7 +33,7 @@ type reportedChainState struct {
 	CrossShardBlks     map[byte]map[libp2p.ID][]uint64
 }
 
-type synker struct {
+type Synker struct {
 	Status struct {
 		sync.Mutex
 		Beacon            bool
@@ -66,7 +66,7 @@ type synker struct {
 	cQuit      chan struct{}
 }
 
-func (synker *synker) Start() {
+func (synker *Synker) Start() {
 	if synker.Status.Beacon {
 		return
 	}
@@ -125,13 +125,13 @@ func (synker *synker) Start() {
 	}
 }
 
-func (synker *synker) SyncShard(shardID byte) error {
+func (synker *Synker) SyncShard(shardID byte) error {
 	synker.Status.Lock()
 	defer synker.Status.Unlock()
 	return synker.syncShard(shardID)
 }
 
-func (synker *synker) syncShard(shardID byte) error {
+func (synker *Synker) syncShard(shardID byte) error {
 	if _, ok := synker.Status.Shards[shardID]; ok {
 		return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation is already started")
 	}
@@ -139,7 +139,7 @@ func (synker *synker) syncShard(shardID byte) error {
 	return nil
 }
 
-func (synker *synker) startSyncRelayShards() {
+func (synker *Synker) startSyncRelayShards() {
 	for _, shardID := range synker.blockchain.config.RelayShards {
 		if shardID > byte(synker.blockchain.BestState.Beacon.ActiveShards-1) {
 			break
@@ -148,19 +148,19 @@ func (synker *synker) startSyncRelayShards() {
 	}
 }
 
-func (synker *synker) StopSyncUnnecessaryShard() {
+func (synker *Synker) StopSyncUnnecessaryShard() {
 	synker.Status.Lock()
 	defer synker.Status.Unlock()
 	synker.stopSyncUnnecessaryShard()
 }
 
-func (synker *synker) stopSyncUnnecessaryShard() {
+func (synker *Synker) stopSyncUnnecessaryShard() {
 	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		synker.stopSyncShard(shardID)
 	}
 }
 
-func (synker *synker) stopSyncShard(shardID byte) error {
+func (synker *Synker) stopSyncShard(shardID byte) error {
 	if synker.blockchain.config.NodeMode == common.NODEMODE_AUTO || synker.blockchain.config.NodeMode == common.NODEMODE_SHARD {
 		userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(synker.blockchain.config.UserKeySet.GetPublicKeyB58(), synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
 		if userRole == common.SHARD_ROLE && shardID == userShardID {
@@ -177,7 +177,7 @@ func (synker *synker) stopSyncShard(shardID byte) error {
 	return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation is already stopped")
 }
 
-func (synker *synker) UpdateState() {
+func (synker *Synker) UpdateState() {
 	synker.Status.Lock()
 	synker.States.Lock()
 	synker.GetPoolsState()
@@ -435,7 +435,7 @@ func (synker *synker) UpdateState() {
 	- from + to: get from main chain by height
 	- GetFromPool: ignore mainchain, used only for hash
 */
-func (synker *synker) SyncBlkBeacon(byHash bool, bySpecificHeights bool, getFromPool bool, blksHash []common.Hash, blkHeights []uint64, from uint64, to uint64, peerID libp2p.ID) {
+func (synker *Synker) SyncBlkBeacon(byHash bool, bySpecificHeights bool, getFromPool bool, blksHash []common.Hash, blkHeights []uint64, from uint64, to uint64, peerID libp2p.ID) {
 	cacheItems := synker.Status.CurrentlySyncBlks.Items()
 	if byHash {
 		//Sync block by hash
@@ -472,7 +472,7 @@ func (synker *synker) SyncBlkBeacon(byHash bool, bySpecificHeights bool, getFrom
 	- from + to: get from main chain by height
 	- GetFromPool: ignore mainchain, used only for hash
 */
-func (synker *synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights bool, getFromPool bool, blksHash []common.Hash, blkHeights []uint64, from uint64, to uint64, peerID libp2p.ID) {
+func (synker *Synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights bool, getFromPool bool, blksHash []common.Hash, blkHeights []uint64, from uint64, to uint64, peerID libp2p.ID) {
 	cacheItems := synker.Status.CurrentlySyncBlks.Items()
 	if byHash {
 		//Sync block by hash
@@ -517,7 +517,7 @@ func (synker *synker) SyncBlkShard(shardID byte, byHash bool, bySpecificHeights 
 	- from + to: get from main chain by height
 	- GetFromPool: ignore mainchain, used only for hash
 */
-func (synker *synker) SyncBlkShardToBeacon(shardID byte, byHash bool, bySpecificHeights bool, getFromPool bool, blksHash []common.Hash, blkHeights []uint64, from uint64, to uint64, peerID libp2p.ID) {
+func (synker *Synker) SyncBlkShardToBeacon(shardID byte, byHash bool, bySpecificHeights bool, getFromPool bool, blksHash []common.Hash, blkHeights []uint64, from uint64, to uint64, peerID libp2p.ID) {
 	cacheItems := synker.Status.CurrentlySyncBlks.Items()
 	if byHash {
 		//Sync block by hash
@@ -560,7 +560,7 @@ func (synker *synker) SyncBlkShardToBeacon(shardID byte, byHash bool, bySpecific
 	From Shard: shard creates cross shard block
 	To  Shard: shard receive cross shard block
 */
-func (synker *synker) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash []common.Hash, blksHeight []uint64, fromShard byte, toShard byte, peerID libp2p.ID) {
+func (synker *Synker) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash []common.Hash, blksHeight []uint64, fromShard byte, toShard byte, peerID libp2p.ID) {
 	Logger.log.Criticalf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", fromShard, blksHeight, toShard)
 	cacheItems := synker.Status.CurrentlySyncBlks.Items()
 	if byHash {
@@ -596,7 +596,7 @@ func (synker *synker) SyncBlkCrossShard(getFromPool bool, byHash bool, blksHash 
 	}
 }
 
-func (synker *synker) SetChainState(shard bool, shardID byte, ready bool) {
+func (synker *Synker) SetChainState(shard bool, shardID byte, ready bool) {
 	synker.Status.IsLatest.Lock()
 	defer synker.Status.IsLatest.Unlock()
 	if shard {
@@ -612,7 +612,7 @@ func (synker *synker) SetChainState(shard bool, shardID byte, ready bool) {
 	}
 }
 
-func (synker *synker) IsLatest(shard bool, shardID byte) bool {
+func (synker *Synker) IsLatest(shard bool, shardID byte) bool {
 	synker.Status.IsLatest.Lock()
 	defer synker.Status.IsLatest.Unlock()
 	if shard {
@@ -624,7 +624,7 @@ func (synker *synker) IsLatest(shard bool, shardID byte) bool {
 	return synker.Status.IsLatest.Beacon
 }
 
-func (synker *synker) GetPoolsState() {
+func (synker *Synker) GetPoolsState() {
 
 	var (
 		userRole      string
@@ -657,7 +657,7 @@ func (synker *synker) GetPoolsState() {
 	}
 }
 
-func (synker *synker) GetBeaconPoolStateByHeight() []uint64 {
+func (synker *Synker) GetBeaconPoolStateByHeight() []uint64 {
 	synker.States.PoolsState.Lock()
 	defer synker.States.PoolsState.Unlock()
 	result := make([]uint64, len(synker.States.PoolsState.BeaconPool))
@@ -665,7 +665,7 @@ func (synker *synker) GetBeaconPoolStateByHeight() []uint64 {
 	return result
 }
 
-func (synker *synker) GetShardPoolStateByHeight(shardID byte) []uint64 {
+func (synker *Synker) GetShardPoolStateByHeight(shardID byte) []uint64 {
 	synker.States.PoolsState.Lock()
 	defer synker.States.PoolsState.Unlock()
 	result := make([]uint64, len(synker.States.PoolsState.ShardsPool[shardID]))
@@ -673,7 +673,7 @@ func (synker *synker) GetShardPoolStateByHeight(shardID byte) []uint64 {
 	return result
 }
 
-func (synker *synker) GetShardToBeaconPoolStateByHeight(shardID byte) []uint64 {
+func (synker *Synker) GetShardToBeaconPoolStateByHeight(shardID byte) []uint64 {
 	synker.States.PoolsState.Lock()
 	defer synker.States.PoolsState.Unlock()
 	if blks, ok := synker.States.PoolsState.ShardToBeaconPool[shardID]; ok {
@@ -684,7 +684,7 @@ func (synker *synker) GetShardToBeaconPoolStateByHeight(shardID byte) []uint64 {
 	return nil
 }
 
-func (synker *synker) GetCrossShardPoolStateByHeight(fromShard byte) []uint64 {
+func (synker *Synker) GetCrossShardPoolStateByHeight(fromShard byte) []uint64 {
 	synker.States.PoolsState.Lock()
 	defer synker.States.PoolsState.Unlock()
 	if blks, ok := synker.States.PoolsState.CrossShardPool[fromShard]; ok {
@@ -695,7 +695,7 @@ func (synker *synker) GetCrossShardPoolStateByHeight(fromShard byte) []uint64 {
 	return nil
 }
 
-func (synker *synker) GetCurrentSyncShards() []byte {
+func (synker *Synker) GetCurrentSyncShards() []byte {
 	synker.Status.Lock()
 	defer synker.Status.Unlock()
 	var currentSyncShards []byte
@@ -712,7 +712,7 @@ var currentInsert = struct {
 	Shards: make(map[byte]*sync.Mutex),
 }
 
-func (synker *synker) InsertBlockFromPool() {
+func (synker *Synker) InsertBlockFromPool() {
 
 	go synker.InsertBeaconBlockFromPool()
 
@@ -728,7 +728,7 @@ func (synker *synker) InsertBlockFromPool() {
 	synker.Status.Unlock()
 }
 
-func (synker *synker) InsertBeaconBlockFromPool() {
+func (synker *Synker) InsertBeaconBlockFromPool() {
 	currentInsert.Beacon.Lock()
 	defer currentInsert.Beacon.Unlock()
 	blks := synker.blockchain.config.BeaconPool.GetValidBlock()
@@ -741,7 +741,7 @@ func (synker *synker) InsertBeaconBlockFromPool() {
 	}
 }
 
-func (synker *synker) InsertShardBlockFromPool(shardID byte) {
+func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	currentInsert.Shards[shardID].Lock()
 	blks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
 	for _, newBlk := range blks {
@@ -755,7 +755,7 @@ func (synker *synker) InsertShardBlockFromPool(shardID byte) {
 	currentInsert.Shards[shardID].Unlock()
 }
 
-func (synker *synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
+func (synker *Synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
 	synker.States.Lock()
 	result := make(map[byte]uint64)
 	fmt.Println("ClosestShardToBeaconPoolState", synker.States.ClosestState.ShardToBeaconPool)
@@ -766,7 +766,7 @@ func (synker *synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
 	return result
 }
 
-func (synker *synker) GetClosestCrossShardPoolState() map[byte]uint64 {
+func (synker *Synker) GetClosestCrossShardPoolState() map[byte]uint64 {
 	synker.States.Lock()
 	result := make(map[byte]uint64)
 	for shardID, height := range synker.States.ClosestState.CrossShardPool {
