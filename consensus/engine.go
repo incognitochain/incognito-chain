@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus/bft"
 	"github.com/incognitochain/incognito-chain/wire"
 	"strings"
+	"time"
 )
 
 type ProtocolInterface interface {
@@ -21,14 +22,31 @@ type ProtocolInterface interface {
 }
 
 type Engine struct {
-	ChainList map[string]ProtocolInterface
+	ChainList        map[string]ProtocolInterface
+	Blockchain       *blockchain.BlockChain
+	ConsensusOnGoing bool
 }
 
 var ConsensusEngine = Engine{
 	ChainList: make(map[string]ProtocolInterface),
 }
 
-func (s *Engine) Start(name string, chain bft.ChainInterface) ProtocolInterface {
+func init() {
+	go func() {
+		ticker := time.Tick(time.Millisecond * 1000)
+		for _ = range ticker {
+			if ConsensusEngine.Blockchain != nil && ConsensusEngine.Blockchain.Synker.IsLatest(false, 0) { //beacon synced
+
+			}
+		}
+	}()
+}
+
+func (s *Engine) Start(server Node, blockchain blockchain.BlockChain) ProtocolInterface {
+
+	//start beacon
+
+	//start shard
 	consensusModule, ok := s.ChainList[name]
 	if ok {
 		if !consensusModule.IsRun() {

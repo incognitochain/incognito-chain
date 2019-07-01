@@ -12,7 +12,7 @@ func (e *BFTCore) enterProposePhase() {
 	}
 	e.setState(PROPOSE)
 
-	block := e.Chain.CreateNewBlock()
+	block := e.Chain.CreateNewBlock(int(e.Round))
 	e.Block = block
 	e.debug("start propose block", block)
 
