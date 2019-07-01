@@ -126,7 +126,7 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
 	if block.Header.Height <= self.latestValidHeight {
-		if self.latestValidHeight-block.Header.Height > 2 {
+		if self.latestValidHeight-block.Header.Height < 2 {
 			self.conflictedPool[block.Header.Hash()] = block
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive old block: "+fmt.Sprintf("%d", block.Header.Height)))

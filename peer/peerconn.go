@@ -59,10 +59,10 @@ func (peerConn *PeerConn) GetIsOutbound() bool {
 	return peerConn.isOutbound
 }
 
-func (peerConn *PeerConn) SetIsOutbound(v bool) {
+func (peerConn *PeerConn) SetIsOutbound(isOutbound bool) {
 	peerConn.isOutboundMtx.Lock()
 	defer peerConn.isOutboundMtx.Unlock()
-	peerConn.isOutbound = v
+	peerConn.isOutbound = isOutbound
 }
 
 func (peerConn *PeerConn) GetIsForceClose() bool {
@@ -89,6 +89,8 @@ func (peerConn *PeerConn) SetIsConnected(v bool) {
 	peerConn.isConnected = v
 }
 
+// ReadString - read data from received message on stream
+// and convert to string format
 func (peerConn *PeerConn) ReadString(rw *bufio.ReadWriter, delim byte, maxReadBytes int) (string, error) {
 	buf := make([]byte, 0)
 	bufL := 0
@@ -110,16 +112,19 @@ func (peerConn *PeerConn) ReadString(rw *bufio.ReadWriter, delim byte, maxReadBy
 	return string(buf), nil
 }
 
-/*
-Handle all in message
-*/
+// InMessageHandler - Handle all in-coming message
+// We receive a message with stream connection  of peer-to-peer
+// convert to string data
+// check type object which map with string data
+// call corresponding function to process message
 func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	peerConn.SetIsConnected(true)
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 
-		str, errR := peerConn.ReadString(rw, delimMessageByte, SPAM_MESSAGE_SIZE)
+		str, errR := peerConn.ReadString(rw, DelimMessageByte, SpamMessageSize)
 		if errR != nil {
+			// we has an error when read stream message an can not parse to string data
 			peerConn.SetIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
 			Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
@@ -130,7 +135,8 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			return
 		}
 
-		if str != delimMessageStr {
+		if str != DelimMessageStr {
+			// Get an good message, make an process to do something on it
 			go func(msgStr string) {
 				// Parse Message header from last 24 bytes header message
 				jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
@@ -176,7 +182,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					cRole, cShard := peerConn.Config.MessageListeners.GetCurrentRoleShard()
 					if cShard != nil {
 						fT := messageHeader[wire.MessageCmdTypeSize]
-						if fT == MESSAGE_TO_SHARD {
+						if fT == MessageToShard {
 							fS := messageHeader[wire.MessageCmdTypeSize+1]
 							if *cShard != fS {
 								if peerConn.Config.MessageListeners.PushRawBytesToShard != nil {
@@ -188,7 +194,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 					}
 					if cRole != "" {
 						fT := messageHeader[wire.MessageCmdTypeSize]
-						if fT == MESSAGE_TO_BEACON && cRole != "beacon" {
+						if fT == MessageToBeacon && cRole != "beacon" {
 							if peerConn.Config.MessageListeners.PushRawBytesToBeacon != nil {
 								peerConn.Config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
 							}
@@ -313,12 +319,10 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	}
 }
 
-/*
 // OutMessageHandler handles the queuing of outgoing data for the peer. This runs as
 // a muxer for various sources of input so we can ensure that server and peer
 // handlers will not block on us sending a message.  That data is then passed on
 // to outHandler to be actually written.
-*/
 func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		select {
@@ -328,7 +332,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
 					Logger.log.Infof("OutMessageHandler with raw bytes")
 					message := hex.EncodeToString(*outMsg.rawBytes)
-					message += delimMessageStr
+					message += DelimMessageStr
 					sendString = message
 					Logger.log.Infof("Send a messageHex raw bytes to %s", peerConn.RemotePeer.PeerID.Pretty())
 				} else {
@@ -366,7 +370,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					messageHex := hex.EncodeToString(messageBytes)
 					//Logger.log.Infof("Content in hex encode: %s", string(messageHex))
 					// add end character to messageHex (delim '\n')
-					messageHex += delimMessageStr
+					messageHex += DelimMessageStr
 
 					// send on p2p stream
 					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.RemotePeer.PeerID.Pretty())
@@ -400,6 +404,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 	}
 }
 
+// checkMessageHashBeforeSend - pre-process message before pushing it into Send Queue
 func (peerConn *PeerConn) checkMessageHashBeforeSend(hash string) bool {
 	numRetries := 0
 BeginCheckHashMessage:
@@ -417,11 +422,11 @@ BeginCheckHashMessage:
 			return
 		}
 		msgCheck.(*wire.MessageMsgCheck).HashStr = hash
-		peerConn.QueueMessageWithEncoding(msgCheck, nil, MESSAGE_TO_PEER, nil)
+		peerConn.QueueMessageWithEncoding(msgCheck, nil, MessageToPeer, nil)
 	}()
 	// set time out for check message
 	go func() {
-		_, ok := <-time.NewTimer(MAX_TIMEOUT_CHECK_HASH_MESSAGE * time.Second).C
+		_, ok := <-time.NewTimer(MaxTimeoutCheckHashMessage * time.Second).C
 		if !ok {
 			if cTimeOut != nil {
 				Logger.log.Infof("checkMessageHashBeforeSend TIMER time out %s", hash)
@@ -447,7 +452,7 @@ BeginCheckHashMessage:
 		delete(peerConn.cMsgHash, hash)
 	}
 	Logger.log.Infof("checkMessageHashBeforeSend FINISHED check hash %s %s", hash, bCheck)
-	if bTimeOut && numRetries < MAX_RETRIES_CHECK_HASH_MESSAGE {
+	if bTimeOut && numRetries < MaxRetriesCheckHashMessage {
 		goto BeginCheckHashMessage
 	}
 	return bCheck
@@ -464,9 +469,9 @@ func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan ch
 	go func() {
 		if peerConn.GetIsConnected() {
 			data, _ := msg.JsonSerialize()
-			if len(data) >= HEAVY_MESSAGE_SIZE && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
+			if len(data) >= HeavyMessageSize && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := msg.Hash()
-				Logger.log.Infof("QueueMessageWithEncoding HEAVY_MESSAGE_SIZE %s %s", hash, msg.MessageType())
+				Logger.log.Infof("QueueMessageWithEncoding HeavyMessageSize %s %s", hash, msg.MessageType())
 
 				if peerConn.checkMessageHashBeforeSend(hash) {
 					peerConn.sendMessageQueue <- outMsg{
@@ -495,9 +500,9 @@ func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<
 	}
 	go func() {
 		if peerConn.GetIsConnected() {
-			if len(*msgBytes) >= HEAVY_MESSAGE_SIZE+wire.MessageHeaderSize {
+			if len(*msgBytes) >= HeavyMessageSize+wire.MessageHeaderSize {
 				hash := common.HashH(*msgBytes).String()
-				Logger.log.Infof("QueueMessageWithBytes HEAVY_MESSAGE_SIZE %s", hash)
+				Logger.log.Infof("QueueMessageWithBytes HeavyMessageSize %s", hash)
 
 				if peerConn.checkMessageHashBeforeSend(hash) {
 					peerConn.sendMessageQueue <- outMsg{
@@ -529,7 +534,7 @@ func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
 		msgResp.(*wire.MessageMsgCheckResp).HashStr = msg.HashStr
 		msgResp.(*wire.MessageMsgCheckResp).Accept = true
 	}
-	p.QueueMessageWithEncoding(msgResp, nil, MESSAGE_TO_PEER, nil)
+	p.QueueMessageWithEncoding(msgResp, nil, MessageToPeer, nil)
 }
 
 func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) {

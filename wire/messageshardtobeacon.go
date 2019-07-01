@@ -14,7 +14,7 @@ import (
 // )
 
 type MessageShardToBeacon struct {
-	Block blockchain.ShardToBeaconBlock
+	Block *blockchain.ShardToBeaconBlock
 }
 
 func (msg *MessageShardToBeacon) Hash() string {

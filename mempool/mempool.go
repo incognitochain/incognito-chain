@@ -549,7 +549,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if tp.IsTest {
 		err := MempoolTxError{}
 		err.Init(UnexpectedTransactionError, errors.New("Not allowed test tx"))
-		return &common.Hash{}, &TxDesc{}, err
+		return &common.Hash{}, &TxDesc{}, nil
 	}
 	go func(txHash common.Hash) {
 		tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
@@ -640,6 +640,9 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 }
 
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
+	if tp.IsTest {
+		return
+	}
 	tp.pool[txHash].IsFowardMessage = true
 }
 

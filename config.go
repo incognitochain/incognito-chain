@@ -547,7 +547,7 @@ func loadConfig() (*config, []string, error) {
 		//Logger.log.Info(externalAddress, addrs)
 		cfg.RPCWSListeners = make([]string, 0, len(addrs))
 		for _, addr := range addrs {
-			addr = net.JoinHostPort(addr, activeNetParams.rpcPort)
+			addr = net.JoinHostPort(addr, activeNetParams.wsPort)
 			cfg.RPCWSListeners = append(cfg.RPCWSListeners, addr)
 		}
 	}
@@ -563,7 +563,7 @@ func loadConfig() (*config, []string, error) {
 	// Add default port to all rpc listener addresses if needed and remove
 	// duplicate addresses.
 	cfg.RPCWSListeners = normalizeAddresses(cfg.RPCWSListeners,
-		activeNetParams.rpcPort)
+		activeNetParams.wsPort)
 
 	// Only allow TLS to be disabled if the RPC is bound to localhost
 	// addresses.

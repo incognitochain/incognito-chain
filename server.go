@@ -383,6 +383,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	var peer *peer.Peer
 	if !cfg.DisableListen {
 		var err error
+
+		// this is initializing our listening peer
 		peer, err = serverObj.InitListenerPeer(serverObj.addrManager, listenAddrs, cfg.MaxPeers, cfg.MaxOutPeers, cfg.MaxInPeers)
 		if err != nil {
 			Logger.log.Error(err)
@@ -703,6 +705,7 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 			reader, err := myClient.Bucket("incognito").Object("version-chain.json").NewReader(ctx)
 			if err != nil {
 				Logger.log.Error(err)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			defer reader.Close()
@@ -717,11 +720,13 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 			body, err := ioutil.ReadAll(reader)
 			if err != nil {
 				Logger.log.Error(err)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			err = json.Unmarshal(body, &versionChain)
 			if err != nil {
 				Logger.log.Error(err)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			force := currentVersion != versionChain.Version
@@ -992,7 +997,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	msgV.(*wire.MessageVerAck).Valid = valid
 	msgV.(*wire.MessageVerAck).Timestamp = time.Now()
 
-	peerConn.QueueMessageWithEncoding(msgV, nil, peer.MESSAGE_TO_PEER, nil)
+	peerConn.QueueMessageWithEncoding(msgV, nil, peer.MessageToPeer, nil)
 
 	//	push version message again
 	if !peerConn.VerAckReceived() {
@@ -1024,7 +1029,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 			return
 		}
 		var dc chan<- struct{}
-		peerConn.QueueMessageWithEncoding(msgSG, dc, peer.MESSAGE_TO_PEER, nil)
+		peerConn.QueueMessageWithEncoding(msgSG, dc, peer.MessageToPeer, nil)
 
 		//	broadcast addr to all peer
 		listen := serverObj.connManager.ListeningPeer
@@ -1036,7 +1041,8 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		rawPeers := []wire.RawPeer{}
 		peers := serverObj.addrManager.AddressCache()
 		for _, peer := range peers {
-			if peerConn.RemotePeerID.Pretty() != serverObj.connManager.GetPeerId(peer.RawAddress) {
+			getPeerId, _ := serverObj.connManager.GetPeerId(peer.RawAddress)
+			if peerConn.RemotePeerID.Pretty() != getPeerId {
 				rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 			}
 		}
@@ -1044,7 +1050,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		var doneChan chan<- struct{}
 		listen.PeerConnsMtx.Lock()
 		for _, _peerConn := range listen.PeerConns {
-			go _peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MESSAGE_TO_PEER, nil)
+			go _peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
 		}
 		listen.PeerConnsMtx.Unlock()
 	} else {
@@ -1066,13 +1072,14 @@ func (serverObj *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGet
 	peers := serverObj.addrManager.AddressCache()
 	rawPeers := []wire.RawPeer{}
 	for _, peer := range peers {
-		if peerConn.RemotePeerID.Pretty() != serverObj.connManager.GetPeerId(peer.RawAddress) {
+		getPeerId, _ := serverObj.connManager.GetPeerId(peer.RawAddress)
+		if peerConn.RemotePeerID.Pretty() != getPeerId {
 			rawPeers = append(rawPeers, wire.RawPeer{peer.RawAddress, peer.PublicKey})
 		}
 	}
 	msgS.(*wire.MessageAddr).RawPeers = rawPeers
 	var dc chan<- struct{}
-	peerConn.QueueMessageWithEncoding(msgS, dc, peer.MESSAGE_TO_PEER, nil)
+	peerConn.QueueMessageWithEncoding(msgS, dc, peer.MessageToPeer, nil)
 
 	Logger.log.Debug("Receive getaddr message END")
 }
@@ -1125,7 +1132,7 @@ func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Debug("Push msg to all peers")
 	var dc chan<- struct{}
 	msg.SetSenderID(serverObj.connManager.Config.ListenerPeer.PeerID)
-	serverObj.connManager.Config.ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MESSAGE_TO_ALL, nil)
+	serverObj.connManager.Config.ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
 	return nil
 }
 
@@ -1138,7 +1145,7 @@ func (serverObj *Server) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) e
 	peerConn := serverObj.connManager.Config.ListenerPeer.GetPeerConnByPeerID(peerId.Pretty())
 	if peerConn != nil {
 		msg.SetSenderID(serverObj.connManager.Config.ListenerPeer.PeerID)
-		peerConn.QueueMessageWithEncoding(msg, dc, peer.MESSAGE_TO_PEER, nil)
+		peerConn.QueueMessageWithEncoding(msg, dc, peer.MessageToPeer, nil)
 		Logger.log.Debugf("Pushed peer %s", peerId.Pretty())
 		return nil
 	} else {
@@ -1152,11 +1159,11 @@ PushMessageToPeer push msg to pbk
 */
 func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 	Logger.log.Debugf("Push msg to pbk %s", pbk)
-	peerConns := serverObj.connManager.GetPeerConnOfPbk(pbk)
+	peerConns := serverObj.connManager.GetPeerConnOfPublicKey(pbk)
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
-			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
+			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToPeer, nil)
 		}
 		Logger.log.Debugf("Pushed pbk %s", pbk)
 		return nil
@@ -1175,13 +1182,13 @@ func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error 
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
-			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_SHARD, &shard)
+			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
 		}
 		Logger.log.Debugf("Pushed shard %d", shard)
 	} else {
 		Logger.log.Error("RemotePeer of shard not exist!")
 		listener := serverObj.connManager.Config.ListenerPeer
-		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_SHARD, &shard)
+		listener.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
 	}
 	return nil
 }
@@ -1218,14 +1225,14 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
 		fmt.Println("BFT:", len(peerConns))
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
-			peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_BEACON, nil)
+			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToBeacon, nil)
 		}
 		Logger.log.Debugf("Pushed beacon done")
 		return nil
 	} else {
 		Logger.log.Error("RemotePeer of beacon not exist!")
 		listener := serverObj.connManager.Config.ListenerPeer
-		listener.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_BEACON, nil)
+		listener.QueueMessageWithEncoding(msg, nil, peer.MessageToBeacon, nil)
 	}
 	return errors.New("RemotePeer of beacon not found")
 }
@@ -1286,7 +1293,7 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	if err != nil {
 		return err
 	}
-	peerConn.QueueMessageWithEncoding(msg, nil, peer.MESSAGE_TO_PEER, nil)
+	peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToPeer, nil)
 	return nil
 }
 
@@ -1377,7 +1384,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 	}
 	msg.(*wire.MessageGetBlockShard).ByHash = true
 	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
-	msg.(*wire.MessageGetBlockShard).BlksHash = blksHash
+	msg.(*wire.MessageGetBlockShard).BlkHashes = blksHash
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, shardID)
