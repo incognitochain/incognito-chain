@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
@@ -1161,6 +1162,7 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
+	ethTxHashUsed []rCommon.Hash,
 ) (bool, error) {
 	if tx.IsPrivacy() {
 		return true, nil
@@ -1177,7 +1179,7 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 	}
 	if meta != nil {
-		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr)
+		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr, ethTxHashUsed)
 	}
 	return true, nil
 }

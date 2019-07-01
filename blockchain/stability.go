@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -231,7 +232,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			newInst = [][]string{inst}
 
 		case metadata.IssuingETHRequestMeta:
-			newInst, err = buildInstructionsForETHIssuingReq(contentStr)
+			newInst, err = buildInstructionsForETHIssuingReq(contentStr, shardID)
 
 		case metadata.BurningRequestMeta:
 			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
@@ -261,6 +262,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
+	ethTxHashUsed := []rCommon.Hash{}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -309,8 +311,8 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			var newTx metadata.Transaction
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
-				bridgeShardIDStr, _ := strconv.Atoi(l[1])
-				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, byte(bridgeShardIDStr), shardID)
+				fmt.Println("haha isntruction: ", l)
+				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, ethTxHashUsed)
 
 			default:
 				continue

@@ -9,8 +9,8 @@ const (
 	BurningRequestMeta          = 27
 	ETHHeaderRelayingMeta       = 28
 	ETHHeaderRelayingRewardMeta = 29
-	IssuingETHRequestMeta       = 30
-	IssuingETHResponseMeta      = 31
+	IssuingETHRequestMeta       = 80
+	IssuingETHResponseMeta      = 81
 
 	ResponseBaseMeta             = 35
 	ShardBlockReward             = 36

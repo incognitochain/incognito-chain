@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
+	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 )
 
 type ReturnStakingMetadata struct {
@@ -79,6 +80,7 @@ func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
+	ethTxHashUsed []rCommon.Hash,
 ) (bool, error) {
 
 	if len(insts) == 0 {
