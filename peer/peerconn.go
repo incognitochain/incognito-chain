@@ -89,9 +89,9 @@ func (peerConn *PeerConn) SetIsConnected(v bool) {
 	peerConn.isConnected = v
 }
 
-// ReadString - read data from received message on stream
+// readString - read data from received message on stream
 // and convert to string format
-func (peerConn *PeerConn) ReadString(rw *bufio.ReadWriter, delim byte, maxReadBytes int) (string, error) {
+func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBytes int) (string, error) {
 	buf := make([]byte, 0)
 	bufL := 0
 	for {
@@ -122,7 +122,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 
-		str, errR := peerConn.ReadString(rw, DelimMessageByte, SpamMessageSize)
+		str, errR := peerConn.readString(rw, DelimMessageByte, SpamMessageSize)
 		if errR != nil {
 			// we has an error when read stream message an can not parse to string data
 			peerConn.SetIsConnected(false)
