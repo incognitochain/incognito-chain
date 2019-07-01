@@ -95,6 +95,15 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
+func IsETHHashUsedInBlock(ethTxHash rCommon.Hash, ethTxHashesUsed []rCommon.Hash) bool {
+	for _, hash := range ethTxHashesUsed {
+		if bytes.Equal(ethTxHash[:], hash[:]) {
+			return true
+		}
+	}
+	return false
+}
+
 func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
@@ -103,6 +112,7 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
+	ethTxHashesUsed []rCommon.Hash,
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
@@ -156,11 +166,18 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		if !bytes.Equal(ethTxHash[:], iRes.ETHTxHash[:]) {
 			continue
 		}
+		isUsedInBlock := IsETHHashUsedInBlock(ethTxHash, ethTxHashesUsed)
+		if isUsedInBlock {
+			fmt.Println("WARNING: already issued for the hash in current block: ", ethTxHash)
+			continue
+		}
+
 		isIssued, err := bcr.GetDatabase().IsETHTxHashIssued(ethTxHash)
 		if err != nil {
 			continue
 		}
 		if isIssued {
+			fmt.Println("WARNING: already issued for the hash in previous block: ", ethTxHash)
 			continue
 		}
 		if len(constructedReceipt.Logs) == 0 {
@@ -190,7 +207,7 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			!bytes.Equal(tokenID[:], assetID[:]) {
 			continue
 		}
-
+		ethTxHashesUsed = append(ethTxHashesUsed, ethTxHash)
 		idx = i
 		break
 	}

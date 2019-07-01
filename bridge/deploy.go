@@ -16,7 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/ethrelaying/params"
 )
 
-const VaultAddress = "a61b76afe33830E564bf0f07cEb4e39D5Ca43280"
+const VaultAddress = "0x8CAA0BE79B109257D243CE4b430C7Fc14f3E5CE8"
 
 func Burn(txID string) error {
 	// Get proof
