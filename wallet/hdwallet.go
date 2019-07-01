@@ -91,7 +91,6 @@ func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 	buffer := new(bytes.Buffer)
 	buffer.WriteByte(keyType)
 	if keyType == PriKeyType {
-
 		buffer.WriteByte(key.Depth)
 		buffer.Write(key.ChildNumber)
 		buffer.Write(key.ChainCode)
@@ -117,6 +116,8 @@ func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Rk))) // set length Skenc
 		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Rk[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
+	} else {
+		return []byte{}, NewWalletError(InvalidKeyTypeErr, nil)
 	}
 
 	// Append the standard doublesha256 checksum
@@ -129,7 +130,9 @@ func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 	return serializedKey, nil
 }
 
-// Base58CheckSerialize encodes the KeySet in the standard Incognito base58 encoding
+// Base58CheckSerialize encodes the key corresponding to keyType in KeySet
+// in the standard Incognito base58 encoding
+// It returns the encoding string of the key
 func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {

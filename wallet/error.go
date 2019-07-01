@@ -19,6 +19,7 @@ const (
 	ReadFileErr
 	AESEncryptErr
 	AESDecryptErr
+	InvalidKeyTypeErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -39,6 +40,7 @@ var ErrCodeMessage = map[int]struct {
 	ReadFileErr: {-1008, "Can not read file"},
 	AESEncryptErr: {-1009, "Can not ASE encrypt data"},
 	AESDecryptErr: {-1010, "Can not ASE decrypt data"},
+	InvalidKeyTypeErr: {-1011, "Serialized key type is invalid"},
 }
 
 type WalletError struct {
