@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -34,7 +35,7 @@ type ShardHeader struct {
 	BeaconHeight uint64 //Beacon check point
 	BeaconHash   common.Hash
 
-	TotalTxsFee uint64
+	TotalTxsFee map[common.Hash]uint64
 
 	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionRoot but for simplicity, we keep it for now
@@ -59,7 +60,18 @@ func (shardHeader *ShardHeader) String() string {
 	res += shardHeader.PendingValidatorRoot.String()
 	res += shardHeader.BeaconHash.String()
 	res += fmt.Sprintf("%v", shardHeader.BeaconHeight)
-	res += fmt.Sprintf("%v", shardHeader.TotalTxsFee)
+
+	tokenIDs := make([]common.Hash, 0)
+	for tokenID, _ := range shardHeader.TotalTxsFee {
+		tokenIDs = append(tokenIDs, tokenID)
+	}
+	sort.Slice(tokenIDs, func(i int, j int) bool {
+		return tokenIDs[i].Cmp(&tokenIDs[j]) == -1
+	})
+
+	for _, tokenID := range tokenIDs {
+		res += fmt.Sprintf("%v~%v", tokenID.String(), shardHeader.TotalTxsFee[tokenID])
+	}
 	for _, value := range shardHeader.CrossShards {
 		res += string(value)
 	}

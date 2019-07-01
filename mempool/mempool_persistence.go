@@ -28,7 +28,7 @@ func (tp *TxPool) AddTransactionToDatabaseMP(txHash *common.Hash, txDesc TxDesc)
 		FeePerKB:      txDesc.Desc.FeePerKB,
 	}
 	switch tx.GetType() {
-	//==================For Constant Transfer Only
+	//==================For PRV Transfer Only
 	case common.TxNormalType:
 		{
 			normalTx := tx.(*transaction.Tx)
@@ -45,7 +45,7 @@ func (tp *TxPool) AddTransactionToDatabaseMP(txHash *common.Hash, txDesc TxDesc)
 				return err
 			}
 		}
-	//==================For Constant & TxCustomToken Transfer
+	//==================For PRV & TxCustomToken Transfer
 	case common.TxCustomTokenType:
 		{
 			customTokenTx := tx.(*transaction.TxCustomToken)

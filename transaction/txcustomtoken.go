@@ -18,11 +18,11 @@ import (
 	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 )
 
-// TxCustomToken is class tx which is inherited from constant tx(supporting privacy) for fee
+// TxCustomToken is class tx which is inherited from PRV tx(supporting privacy) for fee
 // and contain data(vin, vout) to support issuing and transfer a custom token(token from end-user, look like erc-20)
 // Dev or end-user can use this class tx to create an token type which use personal purpose
 type TxCustomToken struct {
-	Tx                      // inherit from normal tx of constant(supporting privacy)
+	Tx                      // inherit from normal tx of PRV(supporting privacy)
 	TxTokenData TxTokenData // vin - vout format
 
 	// Template data variable to process logic
@@ -193,7 +193,7 @@ func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRe
 	}
 }
 
-// ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by constant
+// ValidateTransaction - validate inheritance data from normal tx to check privacy and double spend for fee and transfer by PRV
 // if pass normal tx validation, it continue check signature on (vin-vout) custom token data
 func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// validate for normal tx
