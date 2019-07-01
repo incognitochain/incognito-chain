@@ -694,7 +694,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
 // Force source code to be updated and remove data
-func (serverObject Server) checkforceupdatesourcecode() {
+func (serverObject Server) CheckForceUpdateSourceCode() {
 	go func() {
 		ctx := context.Background()
 		myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
