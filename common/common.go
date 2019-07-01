@@ -334,7 +334,19 @@ func Int32ToBytes(value int32) []byte {
 	return b
 }
 
+func BytesToUint32(b []byte) uint32 {
+	return binary.LittleEndian.Uint32(b)
+}
+
+func Uint32ToBytes(value uint32) []byte {
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, value)
+	return b
+}
+
+
 func BytesToUint64(b []byte) uint64 {
+	fmt.Printf("BytesToUint64 b: %v\n", b)
 	return binary.LittleEndian.Uint64(b)
 }
 
