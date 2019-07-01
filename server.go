@@ -720,11 +720,13 @@ func (serverObject Server) checkforceupdatesourcecode() {
 			body, err := ioutil.ReadAll(reader)
 			if err != nil {
 				Logger.log.Error(err)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			err = json.Unmarshal(body, &versionChain)
 			if err != nil {
 				Logger.log.Error(err)
+				time.Sleep(10 * time.Second)
 				continue
 			}
 			force := currentVersion != versionChain.Version
