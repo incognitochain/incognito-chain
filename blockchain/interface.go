@@ -14,7 +14,7 @@ type BFTBlockInterface interface {
 type ShardToBeaconPool interface {
 	RemovePendingBlock(map[byte]uint64)
 	//GetFinalBlock() map[byte][]ShardToBeaconBlock
-	AddShardToBeaconBlock(ShardToBeaconBlock) (uint64, uint64, error)
+	AddShardToBeaconBlock(*ShardToBeaconBlock) (uint64, uint64, error)
 	//ValidateShardToBeaconBlock(ShardToBeaconBlock) error
 	GetValidPendingBlockHash() map[byte][]common.Hash
 	GetValidPendingBlock(map[byte]uint64) map[byte][]*ShardToBeaconBlock
@@ -26,7 +26,7 @@ type ShardToBeaconPool interface {
 }
 
 type CrossShardPool interface {
-	AddCrossShardBlock(CrossShardBlock) (map[byte]uint64, byte, error)
+	AddCrossShardBlock(*CrossShardBlock) (map[byte]uint64, byte, error)
 	GetValidBlock(map[byte]uint64) map[byte][]*CrossShardBlock
 	GetLatestValidBlockHeight() map[byte]uint64
 	GetValidBlockHeight() map[byte][]uint64
@@ -44,7 +44,6 @@ type ShardPool interface {
 	GetValidBlockHeight() []uint64
 	GetLatestValidBlockHeight() uint64
 	SetShardState(uint64)
-	GetValidBlockChan() *chan *ShardBlock
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
 }
@@ -58,6 +57,7 @@ type BeaconPool interface {
 	GetLatestValidBlockHeight() uint64
 	SetBeaconState(uint64)
 	GetAllBlockHeight() []uint64
+	Start(chan struct{})
 }
 type TxPool interface {
 	// LastUpdated returns the last time a transaction was added to or

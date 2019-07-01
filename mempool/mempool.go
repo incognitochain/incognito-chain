@@ -3,12 +3,12 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/incognitochain/incognito-chain/metrics"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 
@@ -24,17 +24,20 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	BlockChain        *blockchain.BlockChain // Block chain of node
-	DataBase          database.DatabaseInterface
-	DataBaseMempool   databasemp.DatabaseInterface
-	ChainParams       *blockchain.Params
-	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
-	TxLifeTime        uint                   // Transaction life time in pool
-	MaxTx             uint64                 //Max transaction pool may have
-	IsLoadFromMempool bool                   //Reset mempool database when run node
-	PersistMempool    bool
-	RelayShards       []byte
-	UserKeyset        *cashec.KeySet
+	BlockChain            *blockchain.BlockChain // Block chain of node
+	DataBase              database.DatabaseInterface
+	DataBaseMempool       databasemp.DatabaseInterface
+	ChainParams           *blockchain.Params
+	FeeEstimator          map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
+	TxLifeTime            uint                   // Transaction life time in pool
+	MaxTx                 uint64                 //Max transaction pool may have
+	IsLoadFromMempool     bool                   //Reset mempool database when run node
+	PersistMempool        bool
+	RelayShards           []byte
+	UserKeyset            *cashec.KeySet
+	PubSubManager         *pubsub.PubSubManager
+	RoleInCommittees      int //Current Role of Node
+	RoleInCommitteesEvent pubsub.EventChannel
 }
 
 // TxDesc is transaction message in mempool
@@ -58,13 +61,11 @@ type TxPool struct {
 	TokenIDPool            map[common.Hash]string //Token ID List in Mempool
 	tokenIDMtx             sync.RWMutex
 	DuplicateTxs           map[common.Hash]uint64 //For testing
-	cCacheTx               chan<- common.Hash     //Caching received txs
-	RoleInCommittees       int                    //Current Role of Node
-	CRoleInCommittees      <-chan int
 	roleMtx                sync.RWMutex
 	CPendingTxs            chan<- metadata.Transaction // channel to deliver txs to block gen
 	IsBlockGenStarted      bool
 	IsUnlockMempool        bool
+	IsTest                 bool
 }
 
 /*
@@ -78,13 +79,14 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.TokenIDPool = make(map[common.Hash]string)
 	tp.CandidatePool = make(map[common.Hash]string)
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
-	tp.RoleInCommittees = -1
+	tp.config.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 	tp.IsUnlockMempool = true
+	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	tp.config.RoleInCommitteesEvent = subChanRole
+	tp.IsTest = false
 }
-func (tp *TxPool) InitChannelMempool(cCacheTx chan common.Hash, cRoleInCommittees chan int, cPendingTxs chan metadata.Transaction) {
-	tp.cCacheTx = cCacheTx
-	tp.CRoleInCommittees = cRoleInCommittees
+func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
 }
 func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
@@ -139,12 +141,13 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	return false
 }
 
-func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64) *TxDesc {
+func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
 	txDesc := &TxDesc{
 		Desc: metadata.TxDesc{
-			Tx:     tx,
-			Height: height,
-			Fee:    fee,
+			Tx:       tx,
+			Height:   height,
+			Fee:      fee,
+			FeeToken: feeToken,
 		},
 		StartTime:       time.Now(),
 		IsFowardMessage: false,
@@ -174,16 +177,30 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	//==================================================
 	tp.poolSerialNumbersHashH[*txHash] = txD.Desc.Tx.ListSerialNumbersHashH()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-	// Record this tx for fee estimation if enabled. only apply for normal tx
-	if tx.GetType() == common.TxNormalType {
-		if tp.config.FeeEstimator != nil {
-			shardID := common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+
+	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
+	if tp.config.FeeEstimator != nil {
+		var shardID byte
+		flag := false
+		switch tx.GetType() {
+		case common.TxNormalType:
+			{
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+				flag = true
+			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxCustomTokenPrivacy).PubKeyLastByteSender)
+				flag = true
+			}
+		}
+		if flag {
 			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
 				temp.ObserveTransaction(txD)
 			}
-
 		}
 	}
+
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		metadataType := tx.GetMetadata().GetType()
@@ -304,8 +321,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	now = time.Now()
 	limitFee := tp.config.FeeEstimator[shardID].limitFee
 	txFee := tx.GetTxFee()
-	// ok = tx.CheckTransactionFee(limitFee)
-	ok = true
+	ok = tx.CheckTransactionFee(limitFee)
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
@@ -469,7 +485,8 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
 	txFee := tx.GetTxFee()
-	txD := createTxDescMempool(tx, bestHeight, txFee)
+	txFeeToken := tx.GetTxFeeToken()
+	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
 	startAdd := time.Now()
 	tp.addTx(txD, isStore)
 	if isNewTransaction {
@@ -504,7 +521,7 @@ func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	tp.roleMtx.RLock()
-	if tp.RoleInCommittees > -1 && byte(tp.RoleInCommittees) == senderShardID {
+	if tp.config.RoleInCommittees > -1 && byte(tp.config.RoleInCommittees) == senderShardID {
 		tp.roleMtx.RUnlock()
 		return true
 	} else {
@@ -529,16 +546,21 @@ func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
+	if tp.IsTest {
+		err := MempoolTxError{}
+		err.Init(UnexpectedTransactionError, errors.New("Not allowed test tx"))
+		return &common.Hash{}, &TxDesc{}, nil
+	}
 	go func(txHash common.Hash) {
-		tp.cCacheTx <- txHash
+		tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
 	}(*tx.Hash())
-	// if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
-	// 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	// 	err := MempoolTxError{}
-	// 	err.Init(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
-	// 	Logger.log.Error(err)
-	// 	return &common.Hash{}, &TxDesc{}, err
-	// }
+	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
+		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		err := MempoolTxError{}
+		err.Init(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
+		Logger.log.Error(err)
+		return &common.Hash{}, &TxDesc{}, err
+	}
 	txType := tx.GetType()
 	if txType == common.TxNormalType {
 		if tx.IsPrivacy() {
@@ -603,6 +625,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 				}(tx)
 			}
 		}
+		// Publish Message
+		go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
 	}
 	return hash, txDesc, err
 }
@@ -616,6 +640,9 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 }
 
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
+	if tp.IsTest {
+		return
+	}
 	tp.pool[txHash].IsFowardMessage = true
 }
 
@@ -698,7 +725,7 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		size := len(tp.pool)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.PoolSize,
-			metrics.MeasurementValue: fmt.Sprintf("%d", size),
+			metrics.MeasurementValue: float64(size),
 		})
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
@@ -813,6 +840,13 @@ List all tx ids in mempool
 func (tp *TxPool) ListTxs() []string {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
+	return tp.listTxs()
+}
+
+/*
+List all tx ids in mempool
+*/
+func (tp *TxPool) listTxs() []string {
 	result := make([]string, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx.Hash().String())
@@ -964,28 +998,16 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 		select {
 		case <-cQuit:
 			return
-		case shardID := <-tp.CRoleInCommittees:
+		case msg := <-tp.config.RoleInCommitteesEvent:
 			{
+				shardID, ok := msg.Value.(int)
+				if !ok {
+					continue
+				}
 				go func() {
 					tp.roleMtx.Lock()
 					defer tp.roleMtx.Unlock()
-					//tp.mtx.RLock()
-					//defer tp.mtx.RUnlock()
-					tp.RoleInCommittees = shardID
-					//if tp.RoleInCommittees > -1 {
-					//	txs := []metadata.Transaction{}
-					//	i := 0
-					//	for _, txDesc := range tp.pool {
-					//		txs = append(txs, txDesc.Desc.Tx)
-					//		i++
-					//		if i == 999 {
-					//			break
-					//		}
-					//	}
-					//	if len(txs) > 0 {
-					//		tp.CPendingTxs <- txs
-					//	}
-					//}
+					tp.config.RoleInCommittees = shardID
 				}()
 			}
 		}

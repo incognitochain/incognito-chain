@@ -377,3 +377,86 @@ func (db *db) RestoreBridgedTokenByTokenID(tokenID common.Hash) error {
 	}
 	return nil
 }
+
+// REWARD
+
+func (db *db) BackupShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error {
+	backupKey := getPrevPrefix(true, 0)
+	key, err := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	if err != nil {
+		return err
+	}
+	backupKey = append(backupKey, key...)
+	curValue, err := db.Get(key)
+	if err != nil {
+		err1 := db.Put(backupKey, common.Uint64ToBytes(0))
+		if err1 != nil {
+			return err1
+		}
+	} else {
+		err1 := db.Put(backupKey, curValue)
+		if err1 != nil {
+			return err1
+		}
+	}
+
+	return nil
+}
+func (db *db) BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash) error {
+	backupKey := getPrevPrefix(true, 0)
+	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
+	if err != nil {
+		return err
+	}
+	backupKey = append(backupKey, key...)
+	curValue, err := db.Get(key)
+	if err != nil {
+		err := db.Put(backupKey, common.Uint64ToBytes(0))
+		if err != nil {
+			return err
+		}
+	} else {
+		err1 := db.Put(backupKey, curValue)
+		if err1 != nil {
+			return err1
+		}
+	}
+
+	return nil
+}
+func (db *db) RestoreShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error {
+	backupKey := getPrevPrefix(true, 0)
+	key, err := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	if err != nil {
+		return err
+	}
+	backupKey = append(backupKey, key...)
+	bakValue, err := db.Get(backupKey)
+	if err != nil {
+		return err
+	}
+	err1 := db.Put(key, bakValue)
+	if err1 != nil {
+		return err1
+	}
+
+	return nil
+}
+func (db *db) RestoreCommitteeReward(committeeAddress []byte, tokenID common.Hash) error {
+	backupKey := getPrevPrefix(true, 0)
+	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
+	if err != nil {
+		return err
+	}
+	backupKey = append(backupKey, key...)
+	bakValue, err := db.Get(backupKey)
+	if err != nil {
+		return err
+	}
+	err1 := db.Put(key, bakValue)
+	if err1 != nil {
+		return err1
+	}
+
+	return nil
+}

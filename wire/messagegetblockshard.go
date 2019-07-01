@@ -12,7 +12,7 @@ type MessageGetBlockShard struct {
 	FromPool         bool
 	ByHash           bool
 	BySpecificHeight bool
-	BlksHash         []common.Hash
+	BlkHashes        []common.Hash
 	BlkHeights       []uint64
 	ShardID          byte
 	SenderID         string

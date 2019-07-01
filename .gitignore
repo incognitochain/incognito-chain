@@ -31,6 +31,7 @@ constant-bootnode
 *.o
 
 privacy/server/proving\.key
+/privacy/wasm/*.wasm
 
 privacy/server/verifying\.key
 .DS_Store
@@ -47,9 +48,12 @@ src/.com
 src/golang.org
 src/google.golang.org
 src/rpcserver
-bootnode
+
+go.mod
+go.sum
 
 priv.json
 bin/keylist.json
 bin/incognito
 incognito
+config
