@@ -4,13 +4,9 @@ import "time"
 
 // for common
 const (
-	EmptyString          = ""
-	PaymentAddressLength = 66
-	ZeroByte             = byte(0x00)
-	DateOutputFormat     = "2006-01-02T15:04:05.999999"
-	DateInputFormat      = "2006-01-02T15:04:05.999999"
-	NextForceUpdate      = "2019-06-15T23:59:00.000000"
-	FirstDateOfMonth     = "01T23:59:00.000000"
+	EmptyString      = ""
+	ZeroByte         = byte(0x00)
+	DateOutputFormat = "2006-01-02T15:04:05.999999"
 )
 
 // for exit code
@@ -42,7 +38,7 @@ const (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	PRVCoinID = Hash{4} // To send Constant in custom token
+	PRVCoinID = Hash{4} // To send PRV in custom token
 )
 
 // centralized website's pubkey
@@ -76,7 +72,7 @@ const (
 	VALIDATOR_ROLE = "validator"
 	PENDING_ROLE   = "pending"
 
-	MAX_SHARD_NUMBER = 2
+	MAX_SHARD_NUMBER = 8
 )
 
 // ETH Decentralized bridge

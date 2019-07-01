@@ -17,7 +17,7 @@ type Merkle struct {
 // is stored in a linear array.
 //
 // A merkle tree is a tree in which every non-leaf node is the hash of its
-// children nodes.  A diagram depicting how this works for constant transactions
+// children nodes.  A diagram depicting how this works for Incognito transactions
 // where h(x) is a double sha256 follows:
 //
 //	         root = h1234 = h(h12 + h34)

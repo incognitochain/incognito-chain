@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
@@ -136,7 +137,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 			blockchain.config.DataBase.CleanBackup(true, block.Header.ShardID)
-			err = blockchain.BackupCurrentShardState(block)
+			err = blockchain.BackupCurrentShardState(block, beaconBlocks)
 			if err != nil {
 				return err
 			}
@@ -253,6 +254,9 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if err != nil {
 		return err
 	}
+
+	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, block))
+	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
 	return nil
 }
 
@@ -300,8 +304,8 @@ func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 		metaType := tx.GetMetadataType()
 		var err error
 		if metaType == metadata.WithDrawRewardResponseMeta {
-			receivers, amounts := tx.GetReceivers()
-			err = db.RemoveCommitteeReward(receivers[0], amounts[0])
+			_, requesterRes, amountRes, coinID := tx.GetTransferData()
+			err = db.RemoveCommitteeReward(requesterRes, amountRes, *coinID)
 		} else if metaType == metadata.ETHHeaderRelayingRewardMeta {
 			err = blockchain.insertETHHeaders(shardBlock, tx)
 		} else if metaType == metadata.IssuingETHResponseMeta {
@@ -451,12 +455,45 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return err
 	}
 
-	totalTxsFee := uint64(0)
+	wrongTxsFee := errors.New("Wrong blockheader totalTxs fee")
+
+	totalTxsFee := make(map[common.Hash]uint64)
 	for _, tx := range block.Body.Transactions {
-		totalTxsFee += tx.GetTxFee()
+		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
+		txType := tx.GetType()
+		if txType == common.TxCustomTokenPrivacyType {
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+		}
 	}
-	if block.Header.TotalTxsFee != totalTxsFee {
-		return errors.New("Wrong blockheader totalTxs fee")
+
+	tokenIDsfromTxs := make([]common.Hash, 0)
+	for tokenID, _ := range totalTxsFee {
+		tokenIDsfromTxs = append(tokenIDsfromTxs, tokenID)
+	}
+	sort.Slice(tokenIDsfromTxs, func(i int, j int) bool {
+		return tokenIDsfromTxs[i].Cmp(&tokenIDsfromTxs[j]) == -1
+	})
+
+	tokenIDsfromBlock := make([]common.Hash, 0)
+	for tokenID, _ := range block.Header.TotalTxsFee {
+		tokenIDsfromBlock = append(tokenIDsfromBlock, tokenID)
+	}
+	sort.Slice(tokenIDsfromBlock, func(i int, j int) bool {
+		return tokenIDsfromBlock[i].Cmp(&tokenIDsfromBlock[j]) == -1
+	})
+
+	if len(tokenIDsfromTxs) != len(tokenIDsfromBlock) {
+		return wrongTxsFee
+	}
+
+	for i, tokenID := range tokenIDsfromTxs {
+		if !tokenIDsfromTxs[i].IsEqual(&tokenIDsfromBlock[i]) {
+			return wrongTxsFee
+		}
+		if totalTxsFee[tokenID] != block.Header.TotalTxsFee[tokenID] {
+			return wrongTxsFee
+		}
 	}
 
 	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(
