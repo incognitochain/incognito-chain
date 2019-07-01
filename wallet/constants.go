@@ -5,11 +5,11 @@ const (
 	PaymentAddressType = byte(0x1) // Serialize wallet account key into string with only PAYMENT ADDRESS of account keyset
 	ReadonlyKeyType    = byte(0x2) // Serialize wallet account key into string with only READONLY KEY of account keyset
 
-	SeedKeyLen        = 64 //bytes
-	ChildNumberLen = 4 // bytes
-	ChainCodeLen = 32 // bytes
+	SeedKeyLen     = 64 // bytes
+	ChildNumberLen = 4  // bytes
+	ChainCodeLen   = 32 // bytes
 
-	PrivateKeySerializedLen = 108
+	PrivateKeySerializedLen = 108 // len string
 
 	PrivKeySerializedBytesLen     = 75 // bytes
 	PaymentAddrSerializedBytesLen = 73 // bytes
@@ -20,5 +20,4 @@ const (
 	ReadOnlyKeyBase58CheckSerializedBytesLen = 104 // len string
 
 	AESKeySize = 32 // bytes
-
 )
