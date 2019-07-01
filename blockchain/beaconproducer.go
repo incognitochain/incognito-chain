@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -518,7 +518,7 @@ func (bestStateBeacon *BestStateBeacon) generateRandomInstruction(timestamp int6
 	//strs = append(strs, strconv.Itoa(int(timestamp)))
 	//strs = append(strs, strconv.Itoa(int(chainTimestamp)))
 	//@NOTICE: Hard Code for testing
-	var	strs []string
+	var strs []string
 	reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
 	strs = append(strs, RandomAction)
 	strs = append(strs, reses...)

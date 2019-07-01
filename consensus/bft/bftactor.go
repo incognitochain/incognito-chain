@@ -43,7 +43,7 @@ type ChainInterface interface {
 	GetNodePubKeyIndex() int
 	GetLastProposerIndex() int
 	GetNodePubKey() string
-	CreateNewBlock() BlockInterface
+	CreateNewBlock(round int) BlockInterface
 	ValidateBlock(interface{}) bool
 	ValidateSignature(interface{}, string) bool
 	InsertBlk(interface{}, bool)
@@ -140,11 +140,11 @@ func (e *BFTCore) Start() {
 					//retrieve all block with next height and check for majority vote
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
 					if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == 1 {
-						e.Chain.InsertBlk(e.Block, true)
+						e.Chain.InsertBlk(&e.Block, true)
 						e.enterNewRound()
 					}
 					if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == -1 {
-						e.Chain.InsertBlk(e.Block, false)
+						e.Chain.InsertBlk(&e.Block, false)
 						e.enterNewRound()
 					}
 				}

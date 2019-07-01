@@ -36,7 +36,7 @@ type BlockChain struct {
 	chainLock sync.Mutex
 	//channel
 	cQuitSync        chan struct{}
-	Synker           synker
+	Synker           Synker
 	ConsensusOngoing bool
 	IsTest           bool
 }
@@ -111,7 +111,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	// blockchain.syncStatus.Shards = make(map[byte]struct{})
 	// blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
 	// blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
-	blockchain.Synker = synker{
+	blockchain.Synker = Synker{
 		blockchain: blockchain,
 		cQuit:      blockchain.cQuitSync,
 	}
