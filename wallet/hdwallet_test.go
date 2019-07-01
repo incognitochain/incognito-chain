@@ -4,7 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -132,4 +132,64 @@ func TestHDWalletSerialize( t *testing.T){
 	assert.Equal(t, expectedCheckSumPrivKey, actualCheckSumPrivKey)
 	assert.Equal(t, expectedCheckSumPaymentAddr, actualCheckSumPaymentAddr)
 	assert.Equal(t, expectedCheckSumReadOnlyKey, actualCheckSumReadOnlyKey)
+}
+
+func TestHDWalletSerializeWithInvalidKeyType( t *testing.T){
+	seed := []byte{1,2,3}
+	masterKey, _ := NewMasterKey(seed)
+
+	data := []struct{
+		keyType byte
+	}{
+		{byte(3)},
+		{byte(10)},
+		{byte(123)},
+		{byte(234)},
+		{byte(255)},
+	}
+
+	for _, item := range data{
+		serializedKey, err := masterKey.Serialize(item.keyType)
+
+		assert.Equal(t, []byte{}, serializedKey)
+		assert.Equal(t, NewWalletError(InvalidKeyTypeErr, nil), err)
+	}
+}
+
+/*
+		Unit test for Base58CheckSerialize function
+ */
+
+func TestHDWalletBase58CheckSerialize( t *testing.T){
+	seed := []byte{1,2,3}
+	masterKey, _ := NewMasterKey(seed)
+
+	privKeyBytes := masterKey.Base58CheckSerialize(PriKeyType)
+	paymentAddrBytes := masterKey.Base58CheckSerialize(PaymentAddressType)
+	readonlyKeyBytes := masterKey.Base58CheckSerialize(ReadonlyKeyType)
+
+	assert.Equal(t, PrivKeyBase58CheckSerializedBytesLen, len(privKeyBytes))
+	assert.Equal(t, PaymentAddrBase58CheckSerializedBytesLen, len(paymentAddrBytes))
+	assert.Equal(t, ReadOnlyKeyBase58CheckSerializedBytesLen, len(readonlyKeyBytes))
+}
+
+func TestHDWalletBase58CheckSerializeWithInvalidKeyType( t *testing.T){
+	seed := []byte{1,2,3}
+	masterKey, _ := NewMasterKey(seed)
+
+	data := []struct{
+		keyType byte
+	}{
+		{byte(3)},
+		{byte(10)},
+		{byte(123)},
+		{byte(234)},
+		{byte(255)},
+	}
+
+	for _, item := range data{
+		serializedKey := masterKey.Base58CheckSerialize(item.keyType)
+
+		assert.Equal(t, "", serializedKey)
+	}
 }

@@ -15,4 +15,8 @@ const (
 	PaymentAddrSerializedBytesLen = 73 // bytes
 	ReadOnlyKeySerializedBytesLen = 72 // bytes
 
+	PrivKeyBase58CheckSerializedBytesLen     = 107 // len string
+	PaymentAddrBase58CheckSerializedBytesLen = 105 // len string
+	ReadOnlyKeyBase58CheckSerializedBytesLen = 104 // len string
+
 )
