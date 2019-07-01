@@ -19,4 +19,6 @@ const (
 	PaymentAddrBase58CheckSerializedBytesLen = 105 // len string
 	ReadOnlyKeyBase58CheckSerializedBytesLen = 104 // len string
 
+	AESKeySize = 32 // bytes
+
 )
