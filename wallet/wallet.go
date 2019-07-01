@@ -235,8 +235,8 @@ func (wallet *Wallet) Save(password string) error {
 		return NewWalletError(JsonMarshalErr, err)
 	}
 
-	// encrypt
-	cipherText, err := AES{}.Encrypt(password, data)
+	// encrypt data
+	cipherText, err := EncryptByPassPhrase(password, data)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewWalletError(UnexpectedErr, err)
@@ -259,7 +259,7 @@ func (wallet *Wallet) LoadWallet(password string) error {
 	if err != nil {
 		return NewWalletError(ReadFileErr, err)
 	}
-	bufBytes, err := AES{}.Decrypt(password, string(bytesData))
+	bufBytes, err := DecryptByPassPhrase(password, string(bytesData))
 	if err != nil {
 		return NewWalletError(AESDecryptErr, err)
 	}

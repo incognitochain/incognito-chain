@@ -192,8 +192,6 @@ func TestWalletCreateNewAccountDuplicateAccountName(t *testing.T) {
 	assert.Equal(t,  NewWalletError(ExistedAccountNameErr, nil), err)
 }
 
-// max len of name account???
-
 /*
 		Unit test for ExportAccount function
  */
@@ -476,7 +474,7 @@ func TestWalletLoadWalletWithUnmatchedPassPhrase(t *testing.T){
 	wallet2.SetConfig(wallet.config)
 	err := wallet2.LoadWallet(passPhrase2)
 
-	assert.Equal(t, ErrCodeMessage[AESDecryptErr].code, err.(*WalletError).GetCode())
+	assert.Equal(t, ErrCodeMessage[JsonUnmarshalErr].code, err.(*WalletError).GetCode())
 }
 
 func TestWalletLoadWalletWithEmptyPassPhrase(t *testing.T){
@@ -491,7 +489,7 @@ func TestWalletLoadWalletWithEmptyPassPhrase(t *testing.T){
 	wallet2.SetConfig(wallet.config)
 	err := wallet2.LoadWallet(passPhrase2)
 
-	assert.Equal(t, ErrCodeMessage[AESDecryptErr].code, err.(*WalletError).GetCode())
+	assert.Equal(t, ErrCodeMessage[JsonUnmarshalErr].code, err.(*WalletError).GetCode())
 }
 
 func TestWalletLoadWalletWithWrongConfig(t *testing.T){
