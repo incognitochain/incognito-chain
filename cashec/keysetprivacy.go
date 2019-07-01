@@ -13,7 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-// This is real raw data of wallet account, which user can use to
+// KeySet is real raw data of wallet account, which user can use to
 // - spend and check double spend coin with private key
 // - receive coin with payment address
 // - read tx data with readonly key
@@ -23,9 +23,7 @@ type KeySet struct {
 	ReadonlyKey    privacy.ViewingKey
 }
 
-/*
-GenerateKey - generate key set from seed byte[]
-*/
+// GenerateKey generates key set from seed in byte array
 func (keysetObj *KeySet) GenerateKey(seed []byte) *KeySet {
 	keysetObj.PrivateKey = privacy.GeneratePrivateKey(seed)
 	keysetObj.PaymentAddress = privacy.GeneratePaymentAddress(keysetObj.PrivateKey[:])
@@ -33,17 +31,15 @@ func (keysetObj *KeySet) GenerateKey(seed []byte) *KeySet {
 	return keysetObj
 }
 
-/*
-ImportFromPrivateKeyByte - from private-key byte[], regenerate pub-key and readonly-key
-*/
+// ImportFromPrivateKeyByte receives private key in bytes array,
+// and regenerates payment address and readonly key
+// returns error if private key is invalid
 func (keysetObj *KeySet) ImportFromPrivateKeyByte(privateKey []byte) error {
-	if privateKey == nil {
-		return errors2.Wrap(nil, "Priv key is invalid")
-	}
 	if len(privateKey) != 32 {
 		return errors2.Wrap(nil, "Priv key is invalid")
 	}
-	copy(keysetObj.PrivateKey[:], privateKey)
+
+	keysetObj.PrivateKey = privateKey
 	keysetObj.PaymentAddress = privacy.GeneratePaymentAddress(keysetObj.PrivateKey[:])
 	keysetObj.ReadonlyKey = privacy.GenerateViewingKey(keysetObj.PrivateKey[:])
 	return nil
