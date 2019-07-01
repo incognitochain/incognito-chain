@@ -1,15 +1,16 @@
 package netsync
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
-
+	
+	"github.com/incognitochain/incognito-chain/pubsub"
+	
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/patrickmn/go-cache"
-
+	
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/peer"
@@ -17,37 +18,39 @@ import (
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
-const (
-	workers             = 5
-	MsgLiveTime         = 40 * time.Second  // in second
-	MsgsCleanupInterval = 300 * time.Second //in second
-)
-
+// NetSync is a gate for message to enter node from network (after Peerconn),
+// all message must be process by NetSync before proccessed by other package in node
+// NetSync parses message from other peer, identifies type of message
+// After parsing, it will detect if message is duplicate or not
+// If message is duplicate then discard it, otherwise pass it to the right handler
+// NetSync start when node start and run all the time while node is alive
+// and it will stop when received quit signal
 type NetSync struct {
-	started   int32
-	shutdown  int32
-	waitgroup sync.WaitGroup
+	started  int32
+	shutdown int32
+	//waitgroup sync.WaitGroup
 
 	cMessage chan interface{}
 	cQuit    chan struct{}
 
-	config        *NetSyncConfig
-	Cache         *NetSyncCache
-	ShardIDConfig *ShardIDConfig
-}
-type ShardIDConfig struct {
-	RelayShard          []byte
-	RoleInCommittees    int
-	CRoleInCommittees   chan int
-	roleInCommitteesMtx sync.RWMutex
+	config *NetSyncConfig
+	Cache  *NetSyncCache
 }
 type NetSyncConfig struct {
-	BlockChain        *blockchain.BlockChain
-	ChainParam        *blockchain.Params
-	TxMemPool         *mempool.TxPool
-	ShardToBeaconPool blockchain.ShardToBeaconPool
-	CrossShardPool    map[byte]blockchain.CrossShardPool
-	Server            interface {
+	BlockChain            *blockchain.BlockChain
+	ChainParam            *blockchain.Params
+	TxMemPool             *mempool.TxPool
+	ShardToBeaconPool     blockchain.ShardToBeaconPool
+	CrossShardPool        map[byte]blockchain.CrossShardPool
+	PubSubManager         *pubsub.PubSubManager
+	TransactionEvent      pubsub.EventChannel // transaction event
+	RoleInCommitteesEvent pubsub.EventChannel // role in committees event
+	BeaconBlockEvent      pubsub.EventChannel // beacon block event
+	ShardBlockEvent       pubsub.EventChannel // shard block event
+	RelayShard            []byte
+	RoleInCommittees      int
+	roleInCommitteesMtx   sync.RWMutex
+	Server                interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, libp2p.ID) error
 		PushMessageToAll(wire.Message) error
@@ -61,31 +64,35 @@ type NetSyncCache struct {
 	txCache       *cache.Cache
 	txCacheMtx    sync.Mutex
 	blockCacheMtx sync.Mutex
-	CTxCache      <-chan common.Hash
 }
 
-func (netSync NetSync) New(cfg *NetSyncConfig, cTxCache chan common.Hash, cfgShardID *ShardIDConfig) *NetSync {
+func (netSync NetSync) New(cfg *NetSyncConfig) *NetSync {
 	netSync.config = cfg
-	netSync.ShardIDConfig = cfgShardID
 	netSync.cQuit = make(chan struct{})
-	netSync.cMessage = make(chan interface{})
+	netSync.cMessage = make(chan interface{}, 1000)
 	blockCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	txCache := cache.New(MsgLiveTime, MsgsCleanupInterval)
 	netSync.Cache = &NetSyncCache{
 		txCache:    txCache,
 		blockCache: blockCache,
 	}
-	netSync.Cache.CTxCache = cTxCache
+	_, subChanTx, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.TransactionHashEnterNodeTopic)
+	netSync.config.TransactionEvent = subChanTx
+	_, subChanRole, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	netSync.config.RoleInCommitteesEvent = subChanRole
+	_, subChanBeaconBlock, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
+	netSync.config.BeaconBlockEvent = subChanBeaconBlock
+	_, subChanShardBlock, _ := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
+	netSync.config.ShardBlockEvent = subChanShardBlock
 	return &netSync
 }
-
 func (netSync *NetSync) Start() {
 	// Already started?
 	if atomic.AddInt32(&netSync.started, 1) != 1 {
 		return
 	}
 	Logger.log.Info("Starting sync manager")
-	netSync.waitgroup.Add(1)
+	//netSync.waitgroup.Add(1)
 	go netSync.messageHandler()
 	go netSync.cacheLoop()
 }
@@ -201,7 +208,8 @@ out:
 		}
 	}
 
-	netSync.waitgroup.Done()
+	//netSync.waitgroup.Done()
+	close(netSync.cMessage)
 	Logger.log.Info("Block handler done")
 }
 
@@ -254,9 +262,8 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction)
 		if err != nil {
 			Logger.log.Error(err)
-
-			// Broadcast to network
 		} else {
+			// Broadcast to network
 			Logger.log.Infof("there is hash of transaction %s", hash.String())
 			err := netSync.config.Server.PushMessageToAll(msg)
 			if err != nil {
@@ -266,6 +273,7 @@ func (netSync *NetSync) HandleMessageTx(msg *wire.MessageTx) {
 			}
 		}
 	}
+	Logger.log.Info("Transaction %+v found in cache", *msg.Transaction.Hash())
 }
 
 // handleTxMsg handles transaction messages from all peers.
@@ -290,6 +298,7 @@ func (netSync *NetSync) HandleMessageTxToken(msg *wire.MessageTxToken) {
 			}
 		}
 	}
+	Logger.log.Info("Transaction %+v found in cache", *msg.Transaction.Hash())
 }
 
 // handleTxMsg handles transaction messages from all peers.
@@ -313,6 +322,7 @@ func (netSync *NetSync) HandleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 			}
 		}
 	}
+	Logger.log.Info("Transaction %+v found in cache", *msg.Transaction.Hash())
 }
 
 // QueueBlock adds the passed block message and peer to the block handling
@@ -356,33 +366,28 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	Logger.log.Info("Handling new message BlockBeacon")
 	//if oldBlock := netSync.IsOldBeaconBlock(msg.Block.Header.Height); !oldBlock {
-	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
-		netSync.config.BlockChain.OnBlockBeaconReceived(&msg.Block)
+	if isAdded := netSync.HandleCacheBlock("b" + msg.Block.Header.Hash().String()); !isAdded {
+		netSync.config.BlockChain.OnBlockBeaconReceived(msg.Block)
 	}
 	//}
 }
 func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
-	//if oldBlock := netSync.IsOldShardBlock(msg.Block.Header.ShardID, msg.Block.Header.Height); !oldBlock {
-	fmt.Println("Shard Block Received In net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
-	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
-		fmt.Println("Shard Block NO Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
-		netSync.config.BlockChain.OnBlockShardReceived(&msg.Block)
+	if isAdded := netSync.HandleCacheBlock("s" + msg.Block.Header.Hash().String()); !isAdded {
+		netSync.config.BlockChain.OnBlockShardReceived(msg.Block)
 		return
 	}
-	fmt.Println("Shard Block Duplicate net Sync: ", msg.Block.Header.Height, msg.Block.Header.ShardID, msg.Block.Header.Hash())
-	//}
 }
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")
-	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+	if isAdded := netSync.HandleCacheBlock("c" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnCrossShardBlockReceived(msg.Block)
 	}
 
 }
 func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Info("Handling new message ShardToBeacon")
-	if isAdded := netSync.HandleCacheBlock(msg.Block.Header.Hash()); !isAdded {
+	if isAdded := netSync.HandleCacheBlock("s2b" + msg.Block.Header.Hash().String()); !isAdded {
 		netSync.config.BlockChain.OnShardToBeaconBlockReceived(msg.Block)
 	}
 }
@@ -396,11 +401,6 @@ func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
 	netSync.config.Consensus.OnBFTMsg(msg)
 }
 
-// func (netSync *NetSync) HandleMessageInvalidBlock(msg *wire.MessageInvalidBlock) {
-// 	Logger.log.Info("Handling new message invalidblock")
-// 	netSync.config.Consensus.OnInvalidBlockReceived(msg.BlockHash, msg.shardID, msg.Reason)
-// }
-
 func (netSync *NetSync) HandleMessagePeerState(msg *wire.MessagePeerState) {
 	Logger.log.Info("Handling new message peerstate", msg.SenderID)
 	peerID, err := libp2p.IDB58Decode(msg.SenderID)
@@ -408,7 +408,6 @@ func (netSync *NetSync) HandleMessagePeerState(msg *wire.MessagePeerState) {
 		Logger.log.Error(err)
 		return
 	}
-
 	netSync.config.BlockChain.OnPeerStateReceived(&msg.Beacon, &msg.Shards, &msg.ShardToBeaconPool, &msg.CrossShardPool, peerID)
 }
 
@@ -420,7 +419,7 @@ func (netSync *NetSync) HandleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 		return
 	}
 	if msg.ByHash {
-		netSync.GetBlkShardByHashAndSend(peerID, 0, msg.BlksHash, 0)
+		netSync.GetBlkShardByHashAndSend(peerID, 0, msg.BlkHashes, 0)
 	} else {
 		netSync.GetBlkShardByHeightAndSend(peerID, msg.FromPool, 0, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
 	}
@@ -467,14 +466,14 @@ func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 		netSync.GetBlkShardByHeightAndSend(peerID, msg.FromPool, 1, msg.BySpecificHeight, msg.FromShardID, msg.BlkHeights, msg.ToShardID)
 	}
 }
-func (netSync *NetSync) HandleCacheBlock(blockHash common.Hash) bool {
+func (netSync *NetSync) HandleCacheBlock(blockHash string) bool {
 	netSync.Cache.blockCacheMtx.Lock()
 	defer netSync.Cache.blockCacheMtx.Unlock()
-	_, ok := netSync.Cache.blockCache.Get(blockHash.String())
+	_, ok := netSync.Cache.blockCache.Get(blockHash)
 	if ok {
 		return true
 	}
-	netSync.Cache.blockCache.Add(blockHash.String(), 1, MsgLiveTime)
+	netSync.Cache.blockCache.Add(blockHash, 1, MsgLiveTime)
 	return false
 }
 
@@ -497,69 +496,64 @@ func (netSync *NetSync) HandleCacheTxHash(txHash common.Hash) {
 
 func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	for _, shardID := range netSync.ShardIDConfig.RelayShard {
+	for _, shardID := range netSync.config.RelayShard {
 		if senderShardID == shardID {
 			return true
 		}
 	}
-	netSync.ShardIDConfig.roleInCommitteesMtx.RLock()
-	if netSync.ShardIDConfig.RoleInCommittees > -1 && byte(netSync.ShardIDConfig.RoleInCommittees) == senderShardID {
-		netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
+	netSync.config.roleInCommitteesMtx.RLock()
+	if netSync.config.RoleInCommittees > -1 && byte(netSync.config.RoleInCommittees) == senderShardID {
+		netSync.config.roleInCommitteesMtx.RUnlock()
 		return true
 	} else {
-		netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
+		netSync.config.roleInCommitteesMtx.RUnlock()
 		return false
 	}
 }
 
 func (netSync *NetSync) cacheLoop() {
 	for w := 0; w < workers; w++ {
-		go netSync.HandleCacheTxHashWoker(netSync.Cache.CTxCache)
+		go netSync.HandleCacheTxHashWorker(netSync.config.TransactionEvent)
 	}
 	for {
 		select {
-		//case txHash := <-netSync.Cache.CTxCache: {
-		//	go netSync.HandleCacheTxHash(txHash)
-		//}
-		case shardID := <-netSync.ShardIDConfig.CRoleInCommittees:
+		case msg := <-netSync.config.ShardBlockEvent:
 			{
-				go func() {
-					netSync.ShardIDConfig.roleInCommitteesMtx.Lock()
-					defer netSync.ShardIDConfig.roleInCommitteesMtx.Unlock()
-					netSync.ShardIDConfig.RoleInCommittees = shardID
-				}()
+				if shardBlock, ok := msg.Value.(*blockchain.ShardBlock); !ok {
+					continue
+				} else {
+					go netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+				}
+			}
+		case msg := <-netSync.config.BeaconBlockEvent:
+			{
+				if beaconBlock, ok := msg.Value.(*blockchain.BeaconBlock); !ok {
+					continue
+				} else {
+					go netSync.HandleCacheBlock("b" + beaconBlock.Header.Hash().String())
+				}
+			}
+		case msg := <-netSync.config.RoleInCommitteesEvent:
+			{
+				if shardID, ok := msg.Value.(int); !ok {
+					continue
+				} else {
+					netSync.config.roleInCommitteesMtx.Lock()
+					netSync.config.RoleInCommittees = shardID
+					netSync.config.roleInCommitteesMtx.Unlock()
+				}
 			}
 		}
 	}
 }
 
-func (netSync *NetSync) HandleCacheTxHashWoker(cTxCache <-chan common.Hash) {
-	for job := range cTxCache {
-		go netSync.HandleCacheTxHash(job)
+func (netSync *NetSync) HandleCacheTxHashWorker(event pubsub.EventChannel) {
+	for msg := range event {
+		value, ok := msg.Value.(common.Hash)
+		if !ok {
+			continue
+		}
+		go netSync.HandleCacheTxHash(value)
 		time.Sleep(time.Nanosecond)
 	}
-}
-
-//GET SHARD HEIGHT BY ROLE
-//func (netSync *NetSync) GetBestShardHeight(shardID byte) (uint64, bool) {
-//netSync.ShardIDConfig.roleInCommitteesMtx.RLock()
-//defer netSync.ShardIDConfig.roleInCommitteesMtx.RUnlock()
-//if netSync.ShardIDConfig.RoleInCommittees > - 1 {
-//	return blockchain.GetBestStateShard(byte(netSync.ShardIDConfig.RoleInCommittees)).ShardHeight, true
-//}
-//return 0, false
-//GET SHARD HEIGHT BY BLOCK
-//}
-
-//if old block return true, otherwise return false
-func (netSync *NetSync) IsOldShardBlock(shardID byte, blockHeight uint64) bool {
-	shardBestState, err := netSync.config.BlockChain.GetShardBestState(shardID)
-	// ignore if can't get shard best state
-	if err != nil {
-		return false
-	}
-	return shardBestState.ShardHeight >= blockHeight
-}
-func (netSync *NetSync) IsOldBeaconBlock(blockHeight uint64) bool {
-	return netSync.config.BlockChain.GetBeaconHeight() >= blockHeight
 }

@@ -364,7 +364,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 	txTokenPrivacyDataMap := make([]map[common.Hash]*ContentCrossTokenPrivacyData, common.MAX_SHARD_NUMBER)
 	for _, tx := range txList {
 		switch tx.GetType() {
-		//==================For Constant Transfer Only
+		//==================For PRV Transfer Only
 		//TxReturnStakingType cannot be crossshard tx
 		case common.TxNormalType, common.TxRewardType:
 			{
@@ -377,7 +377,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 					}
 				}
 			}
-		//==================For Constant & TxCustomToken Transfer
+		//==================For PRV & TxCustomToken Transfer
 		case common.TxCustomTokenType:
 			{
 				customTokenTx := tx.(*transaction.TxCustomToken)
@@ -451,7 +451,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 }
 
 // helper function to get cross data (send to a shard) from list of transaction:
-// 1. (Privacy) Constant: Output coin
+// 1. (Privacy) PRV: Output coin
 // 2. Tx Custom Token: Tx Token Data
 // 3. Privacy Custom Token: Token Data + Output coin
 func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.OutputCoin,
