@@ -16,6 +16,8 @@ const (
 	UnmashallJsonBlockError
 	TimestampError
 	NonceError
+	WrongTypeError
+	TimeParseError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -27,6 +29,8 @@ var ErrCodeMessage = map[int]struct {
 	TimestampError:          {-3, "Timestamp Error"},
 	UnmashallJsonBlockError: {-4, "Unmarshall json block is failed"},
 	NonceError:              {-5, "Nonce Error"},
+	WrongTypeError:              {-6, "Wrong Type Error"},
+	TimeParseError:              {-7, "Time Parse Error"},
 }
 
 type BTCAPIError struct {

@@ -70,7 +70,7 @@ func (self *ShardToBeaconPool) GetShardState() map[byte]uint64 {
 //#Return Param:
 //#1 and #2: requested block from height to height
 //#3 error
-func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
+func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk *blockchain.ShardToBeaconBlock) (uint64, uint64, error) {
 
 	blkShardID := blk.Header.ShardID
 	blkHeight := blk.Header.Height
@@ -129,7 +129,7 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(blk blockchain.ShardToBeaco
 	if self.pool[blkShardID] == nil {
 		self.pool[blkShardID] = []*blockchain.ShardToBeaconBlock{}
 	}
-	self.pool[blkShardID] = append(self.pool[blkShardID], &blk)
+	self.pool[blkShardID] = append(self.pool[blkShardID], blk)
 
 	//sort pool
 	sort.Slice(self.pool[blkShardID], func(i, j int) bool {
@@ -254,12 +254,11 @@ func (self *ShardToBeaconPool) GetValidPendingBlockHeight() map[byte][]uint64 {
 
 func (self *ShardToBeaconPool) GetLatestValidPendingBlockHeight() map[byte]uint64 {
 	finalBlocks := make(map[byte]uint64)
-	blks := self.GetValidPendingBlock(nil)
-	for shardID, blkItems := range blks {
-		for _, blk := range blkItems {
-			finalBlocks[shardID] = blk.Header.Height
-		}
+	self.latestValidHeightMutex.Lock()
+	for shardID, height := range self.latestValidHeight {
+		finalBlocks[shardID] = height
 	}
+	self.latestValidHeightMutex.Unlock()
 	return finalBlocks
 }
 

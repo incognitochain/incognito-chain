@@ -11,6 +11,9 @@ import (
 )
 
 func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map[byte]ChainState, shardToBeaconPool *map[byte][]uint64, crossShardPool *map[byte]map[byte][]uint64, peerID libp2p.ID) {
+	if blockchain.IsTest {
+		return
+	}
 	var (
 		userRole      string
 		userShardID   byte
@@ -63,6 +66,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 }
 
 func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
+	if blockchain.IsTest {
+		return
+	}
 	fmt.Println("Shard block received from shard A", newBlk.Header.ShardID, newBlk.Header.Height)
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
 		if _, ok := currentInsert.Shards[newBlk.Header.ShardID]; !ok {
@@ -124,6 +130,9 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 }
 
 func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
+	if blockchain.IsTest {
+		return
+	}
 	if blockchain.Synker.Status.Beacon {
 		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
@@ -137,19 +146,19 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				if blockchain.config.UserKeySet != nil {
 					// Revert beststate
 
-					// currentBeaconBestState := blockchain.BestState.Beacon
-					// if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
-					// 	fmt.Println("FORK BEACON", newBlk.Header.Height)
-					// 	if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
-					// 		Logger.log.Error(err)
-					// 		return
-					// 	}
-					// 	if err := blockchain.RevertBeaconState(); err != nil {
-					// 		Logger.log.Error(err)
-					// 		return
-					// 	}
-					// 	fmt.Println("REVERTED BEACON", newBlk.Header.Height)
-					// }
+					currentBeaconBestState := blockchain.BestState.Beacon
+					if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
+						fmt.Println("FORK BEACON", newBlk.Header.Height)
+						if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
+							Logger.log.Error(err)
+							return
+						}
+						if err := blockchain.RevertBeaconState(); err != nil {
+							Logger.log.Error(err)
+							return
+						}
+						fmt.Println("REVERTED BEACON", newBlk.Header.Height)
+					}
 
 					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
@@ -175,7 +184,10 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 	}
 }
 
-func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBlock) {
+func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconBlock) {
+	if blockchain.IsTest {
+		return
+	}
 	if blockchain.config.NodeMode == common.NODEMODE_BEACON || blockchain.config.NodeMode == common.NODEMODE_AUTO {
 		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
 		if beaconRole != common.PROPOSER_ROLE && beaconRole != common.VALIDATOR_ROLE {
@@ -184,10 +196,10 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 	} else {
 		return
 	}
+	fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.ShardID, block.Header.Height, blockchain.Synker.IsLatest(false, 0))
 
 	if blockchain.Synker.IsLatest(false, 0) {
 
-		fmt.Println("Blockchain Message/OnShardToBeaconBlockReceived: Block Height", block.Header.Height)
 		blkHash := block.Header.Hash()
 		err := cashec.ValidateDataB58(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), block.ProducerSig, blkHash.GetBytes())
 
@@ -219,7 +231,10 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block ShardToBeaconBl
 	}
 }
 
-func (blockchain *BlockChain) OnCrossShardBlockReceived(block CrossShardBlock) {
+func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) {
+	if blockchain.IsTest {
+		return
+	}
 	Logger.log.Info("Received CrossShardBlock", block.Header.Height, block.Header.ShardID)
 	if blockchain.config.NodeMode == common.NODEMODE_SHARD || blockchain.config.NodeMode == common.NODEMODE_AUTO {
 		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
