@@ -10,9 +10,9 @@ import (
 )
 var (
 	beaconPoolTest *BeaconPool
-	err error
-	pb = pubsub.NewPubSubManager()
-	beaconBlock2 = &blockchain.BeaconBlock{
+	err            error
+	pbBeaconPool   = pubsub.NewPubSubManager()
+	beaconBlock2   = &blockchain.BeaconBlock{
 		Header: blockchain.BeaconHeader{
 			Height: 2,
 		},
@@ -53,8 +53,8 @@ var (
 			PrevBlockHash: beaconBlock6.Header.Hash(),
 		},
 	}
-	pendingBlocks = []*blockchain.BeaconBlock{}
-	validBlocks = []*blockchain.BeaconBlock{}
+	pendingBeaconBlocks = []*blockchain.BeaconBlock{}
+	validBeaconBlocks = []*blockchain.BeaconBlock{}
 	defaultLatestValidHeight = uint64(1)
 	testLatestValidHeight = uint64(4)
 )
@@ -76,9 +76,9 @@ var InitBeaconPoolTest = func(pubsubManager *pubsub.PubSubManager) {
 }
 var _ = func() (_ struct{}) {
 	GetBeaconPool()
-	InitBeaconPool(pb)
-	InitBeaconPoolTest(pb)
-	go pb.Start()
+	InitBeaconPool(pbBeaconPool)
+	InitBeaconPoolTest(pbBeaconPool)
+	go pbBeaconPool.Start()
 	oldBlockHash := common.Hash{}
 	for i := testLatestValidHeight + 1; i < MAX_VALID_BEACON_BLK_IN_POOL + testLatestValidHeight+2; i++ {
 		beaconBlock := &blockchain.BeaconBlock{
@@ -90,7 +90,7 @@ var _ = func() (_ struct{}) {
 			beaconBlock.Header.PrevBlockHash = oldBlockHash
 		}
 		oldBlockHash = beaconBlock.Header.Hash()
-		validBlocks = append(validBlocks, beaconBlock)
+		validBeaconBlocks = append(validBeaconBlocks, beaconBlock)
 	}
 	for i := MAX_VALID_BEACON_BLK_IN_POOL + testLatestValidHeight + 2; i < MAX_VALID_BEACON_BLK_IN_POOL + MAX_PENDING_BEACON_BLK_IN_POOL + testLatestValidHeight + 3; i++ {
 		beaconBlock := &blockchain.BeaconBlock{
@@ -102,7 +102,7 @@ var _ = func() (_ struct{}) {
 			beaconBlock.Header.PrevBlockHash = oldBlockHash
 		}
 		oldBlockHash = beaconBlock.Header.Hash()
-		pendingBlocks = append(pendingBlocks, beaconBlock)
+		pendingBeaconBlocks = append(pendingBeaconBlocks, beaconBlock)
 	}
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
@@ -119,9 +119,9 @@ func ResetBeaconPool(){
 		CacheSize:       BEACON_CACHE_SIZE,
 	}
 	beaconPool.cache, _ = lru.New(beaconPool.config.CacheSize)
-	InitBeaconPool(pb)
+	InitBeaconPool(pbBeaconPool)
 	// reset beacon pool test value
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 }
 func TestGetbeaconPool(t *testing.T) {
 	if beaconPool.latestValidHeight != 1 {
@@ -154,16 +154,15 @@ func TestBeaconPoolSetBeaconState(t *testing.T) {
 	if beaconPool.latestValidHeight != 1 {
 		t.Fatal("Invalid Latest Valid Height")
 	}
-	latestValidHeight := beaconPool.latestValidHeight
-	beaconPool.SetBeaconState(latestValidHeight+10)
-	if beaconPool.latestValidHeight != latestValidHeight + 10{
-		t.Fatalf("Height Should be set %+v but get %+v \n", latestValidHeight+10, beaconPool.latestValidHeight)
+	beaconPool.SetBeaconState(testLatestValidHeight)
+	if beaconPool.latestValidHeight != testLatestValidHeight {
+		t.Fatalf("Height Should be set %+v but get %+v \n", testLatestValidHeight, beaconPool.latestValidHeight)
 	}
 	ResetBeaconPool()
 }
 func TestBeaconPoolInitBeaconPool(t *testing.T) {
 	latestValidHeight := beaconPool.latestValidHeight
-	//InitBeaconPool(pb)
+	//InitBeaconPool(pbBeaconPool)
 	// because blockchain beacon beststate is nil => return latestvalidheight is 0
 	if beaconPool.latestValidHeight != latestValidHeight {
 		t.Fatalf("Height Should be set %+v but get %+v \n", latestValidHeight, beaconPool.latestValidHeight)
@@ -180,28 +179,28 @@ func TestBeaconPoolTestStart(t *testing.T) {
 	cQuit := make(chan struct{})
 	go beaconPool.Start(cQuit)
 	// send event
-	go pb.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, true))
+	go pbBeaconPool.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, true))
 	<-time.Tick(500 * time.Millisecond)
 	beaconPool.mtx.RLock()
 	if beaconPool.RoleInCommittees != true {
 		t.Fatal("Fail to get Role In committees from event")
 	}
 	beaconPool.mtx.RUnlock()
-	go pb.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, -1))
+	go pbBeaconPool.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, -1))
 	<-time.Tick(500 * time.Millisecond)
 	beaconPool.mtx.RLock()
 	if beaconPool.RoleInCommittees != true {
 		t.Fatal("Should not get wrong format information")
 	}
 	beaconPool.mtx.RUnlock()
-	go pb.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, false))
+	go pbBeaconPool.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, false))
 	<-time.Tick(500 * time.Millisecond)
 	beaconPool.mtx.RLock()
 	if beaconPool.RoleInCommittees != false {
 		t.Fatal("Fail to get Role In committees from event")
 	}
 	beaconPool.mtx.RUnlock()
-	go pb.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, true))
+	go pbBeaconPool.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, true))
 	<-time.Tick(500 * time.Millisecond)
 	beaconPool.mtx.RLock()
 	if beaconPool.RoleInCommittees != true {
@@ -230,7 +229,7 @@ func TestBeaconPoolValidateBeaconBlock(t *testing.T) {
 	// skip old block
 	// Test receive old block than latestvalidheight
 	// - Test old block is less than latestvalidheight 2 value => store in conflicted block
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	beaconPoolTest.SetBeaconState(4)
 	err = beaconPoolTest.validateBeaconBlock(beaconBlock3,false)
 	if err != nil {
@@ -287,8 +286,8 @@ func TestBeaconPoolValidateBeaconBlock(t *testing.T) {
 		t.Fatalf("Block %+v should not be duplicate \n", beaconBlock6.Header.Height)
 	}
 	delete(beaconPoolTest.pendingPool, beaconBlock6.Header.Height)
-	for index, beaconBlock := range pendingBlocks {
-		if index < len(pendingBlocks) - 1 {
+	for index, beaconBlock := range pendingBeaconBlocks {
+		if index < len(pendingBeaconBlocks) - 1 {
 			beaconPoolTest.pendingPool[beaconBlock.Header.Height] = beaconBlock
 		}  else {
 			err = beaconPoolTest.validateBeaconBlock(beaconBlock, false)
@@ -301,8 +300,8 @@ func TestBeaconPoolValidateBeaconBlock(t *testing.T) {
 			}
 		}
 	}
-	for index, beaconBlock := range validBlocks {
-		if index < len(validBlocks) - 1 {
+	for index, beaconBlock := range validBeaconBlocks {
+		if index < len(validBeaconBlocks) - 1 {
 			beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock)
 			beaconPoolTest.latestValidHeight = beaconBlock.Header.Height
 		}  else {
@@ -318,7 +317,7 @@ func TestBeaconPoolValidateBeaconBlock(t *testing.T) {
 	}
 }
 func TestBeaconPoolInsertNewBeaconBlockToPool(t *testing.T) {
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	// Condition 1: check height
 	// Test Height is not equal to latestvalidheight + 1 (not expected block)
 	isOk := beaconPoolTest.insertNewBeaconBlockToPool(beaconBlock3)
@@ -331,8 +330,8 @@ func TestBeaconPoolInsertNewBeaconBlockToPool(t *testing.T) {
 	}
 	// Test Height equal to latestvalidheight + 1
 	// Condition 2: Pool is full capacity -> push to pending pool
-	for index, beaconBlock := range validBlocks {
-		if index < len(validBlocks) - 1 {
+	for index, beaconBlock := range validBeaconBlocks {
+		if index < len(validBeaconBlocks) - 1 {
 			beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock)
 			beaconPoolTest.latestValidHeight = beaconBlock.Header.Height
 		} else {
@@ -347,7 +346,7 @@ func TestBeaconPoolInsertNewBeaconBlockToPool(t *testing.T) {
 		}
 	}
 	// reset valid pool and pending pool
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	// Condition 3: check next block
 	// - Next block doesn't exist
 	isOk = beaconPoolTest.insertNewBeaconBlockToPool(beaconBlock2)
@@ -413,7 +412,7 @@ func TestBeaconPoolInsertNewBeaconBlockToPool(t *testing.T) {
 }
 
 func TestBeaconPoolPromotePendingPool(t *testing.T) {
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	beaconPoolTest.pendingPool[beaconBlock2.Header.Height] = beaconBlock2
 	beaconPoolTest.pendingPool[beaconBlock3.Header.Height] = beaconBlock3
 	beaconPoolTest.pendingPool[beaconBlock4.Header.Height] = beaconBlock4
@@ -452,9 +451,9 @@ func TestBeaconPoolPromotePendingPool(t *testing.T) {
 }
 
 func TestBeaconPoolAddBeaconBlock(t *testing.T) {
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	beaconPoolTest.SetBeaconState(testLatestValidHeight)
-	for _, block := range validBlocks {
+	for _, block := range validBeaconBlocks {
 			err := beaconPoolTest.AddBeaconBlock(block)
 			if err != nil {
 				t.Fatalf("Block %+v should be added into pool but get %+v", block.Header.Height, err )
@@ -466,12 +465,12 @@ func TestBeaconPoolAddBeaconBlock(t *testing.T) {
 	if len(beaconPoolTest.pendingPool) != 1 {
 		t.Fatalf("Expected number of block %+v in pending pool but get %+v", 1, len(beaconPoolTest.pendingPool))
 	}
-	if _, isOk := beaconPoolTest.pendingPool[validBlocks[len(validBlocks)-1].Header.Height]; !isOk {
-		t.Fatalf("Expect block %+v to be in pending pool", validBlocks[len(validBlocks)-1].Header.Height)
+	if _, isOk := beaconPoolTest.pendingPool[validBeaconBlocks[len(validBeaconBlocks)-1].Header.Height]; !isOk {
+		t.Fatalf("Expect block %+v to be in pending pool", validBeaconBlocks[len(validBeaconBlocks)-1].Header.Height)
 	}
-	delete(beaconPoolTest.pendingPool, validBlocks[len(validBlocks)-1].Header.Height)
-	for index, block := range pendingBlocks {
-		if index < len(pendingBlocks) - 1 {
+	delete(beaconPoolTest.pendingPool, validBeaconBlocks[len(validBeaconBlocks)-1].Header.Height)
+	for index, block := range pendingBeaconBlocks {
+		if index < len(pendingBeaconBlocks) - 1 {
 			err := beaconPoolTest.AddBeaconBlock(block)
 			if err != nil {
 				t.Fatalf("Block %+v should be added into pool but get %+v", block.Header.Height, err)
@@ -492,7 +491,7 @@ func TestBeaconPoolAddBeaconBlock(t *testing.T) {
 	}
 }
 func TestBeaconPoolUpdateLatestBeaconState(t *testing.T) {
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	// init state of latestvalidheight
 	if beaconPoolTest.latestValidHeight != 1 {
 		t.Fatalf("Expect to latestvalidheight is 1 but get %+v", beaconPoolTest.latestValidHeight)
@@ -536,7 +535,7 @@ func TestBeaconPoolUpdateLatestBeaconState(t *testing.T) {
 	}
 }
 func TestBeaconPoolRemoveBlock(t *testing.T) {
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock2)
 	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock3)
 	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock4)
@@ -561,7 +560,7 @@ func TestBeaconPoolRemoveBlock(t *testing.T) {
 	}
 }
 func TestBeaconPoolCleanOldBlock(t *testing.T) {
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	if len(beaconPoolTest.pendingPool) != 0 {
 		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
 	}
@@ -610,7 +609,7 @@ func TestBeaconPoolCleanOldBlock(t *testing.T) {
 	}
 }
 func TestBeaconPoolGetValidBlock(t *testing.T) {
-	InitBeaconPoolTest(pb)
+	InitBeaconPoolTest(pbBeaconPool)
 	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock2)
 	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock3)
 	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock4)
@@ -620,11 +619,11 @@ func TestBeaconPoolGetValidBlock(t *testing.T) {
 	beaconPoolTest.pendingPool[beaconBlock7.Header.Height] = beaconBlock7
 	// no role in committee then return only valid pool
 	beaconPoolTest.RoleInCommittees = false
-	validBlocks := beaconPoolTest.GetValidBlock()
-	if len(validBlocks) != 4 {
-		t.Fatalf("Expect return 4 blocks but get %+v", len(validBlocks))
+	validBeaconBlocks := beaconPoolTest.GetValidBlock()
+	if len(validBeaconBlocks) != 4 {
+		t.Fatalf("Expect return 4 blocks but get %+v", len(validBeaconBlocks))
 	}
-	for _, block := range validBlocks {
+	for _, block := range validBeaconBlocks {
 		if block.Header.Height == beaconBlock6.Header.Height {
 			t.Fatal("Return block height 6 should not have block in pending pool")
 		}
