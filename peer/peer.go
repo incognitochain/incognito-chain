@@ -240,6 +240,7 @@ func (peerObj *Peer) PushConn(peer *Peer, cConn chan *PeerConn) {
 	}(peer, cConn)
 }
 
+// processConn - control all channel which correspond to connection and process
 func (peerObj *Peer) processConn() {
 	for {
 		select {
