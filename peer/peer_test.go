@@ -3,6 +3,7 @@ package peer
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	swarm "github.com/libp2p/go-libp2p-swarm"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"strconv"
@@ -109,6 +110,31 @@ func TestPeer_PushConn(t *testing.T) {
 		case newPeerMsg := <-peerObj.cNewConn:
 			{
 				assert.Equal(t, newPeerMsg.Peer.PublicKey, "abc1")
+				return
+			}
+		}
+	}
+}
+
+func TestPeer_PushStream(t *testing.T) {
+	seed, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
+	netAddr, err := common.ParseListener("127.0.0.1:9333", "ip")
+	if err != nil {
+		t.Error(err)
+	}
+	peerObj, err := Peer{
+		Seed:             seed,
+		ListeningAddress: *netAddr,
+	}.NewPeer()
+
+	stream := &swarm.Stream{}
+	peerObj.PushStream(stream)
+	for {
+		fmt.Print(111)
+		select {
+		case newStream := <-peerObj.cNewStream:
+			{
+				assert.Equal(t, newStream.Stream, stream)
 				return
 			}
 		}
