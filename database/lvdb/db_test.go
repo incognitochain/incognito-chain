@@ -3,6 +3,8 @@ package lvdb_test
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
@@ -168,6 +170,33 @@ func TestDb_StoreBeaconBlock(t *testing.T) {
 	}
 }
 
+// Block beacon index
+func TestDb_StoreShardBlockBeaconIndex(t *testing.T) {
+	if db != nil {
+		beaconBlock := &blockchain.BeaconBlock{
+			Header: blockchain.BeaconHeader{
+				Version: 1,
+				Height:  1,
+			},
+		}
+		// test store block
+		err := db.StoreBeaconBlockIndex(*beaconBlock.Hash(), beaconBlock.Header.Height)
+		assert.Equal(t, err, nil)
+
+		// test GetIndexOfBlock
+		blockHeigh, err := db.GetIndexOfBeaconBlock(*beaconBlock.Hash())
+		assert.Equal(t, err, nil)
+		assert.Equal(t, blockHeigh, uint64(1))
+
+		// GetBlockByIndex
+		hash, err := db.GetBeaconBlockHashByIndex(1)
+		assert.Equal(t, hash.String(), beaconBlock.Hash().String())
+
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
 //Crossshard
 func TestDb_StoreCrossShardNextHeight(t *testing.T) {
 	if db != nil {
@@ -181,6 +210,41 @@ func TestDb_StoreCrossShardNextHeight(t *testing.T) {
 		//err = db.RestoreCrossShardNextHeights(0, 1, 2)
 		// TODO: 0xbahamooth\
 		//assert.Equal(t, err, nil)
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+// Transaction index
+func TestDb_StoreTxIndex(t *testing.T) {
+	if db != nil {
+		block := &blockchain.ShardBlock{
+			Header: blockchain.ShardHeader{
+				Version: 1,
+				ShardID: 3,
+				Height:  1,
+			},
+			Body: blockchain.ShardBody{
+				Transactions: []metadata.Transaction{},
+			},
+		}
+		block.Body.Transactions = append(block.Body.Transactions, &transaction.Tx{
+			Version: 1,
+			Info:    []byte("Test 1"),
+		})
+		block.Body.Transactions = append(block.Body.Transactions, &transaction.Tx{
+			Version: 1,
+			Info:    []byte("Test "),
+		})
+		err := db.StoreTransactionIndex(*block.Body.Transactions[1].Hash(), *block.Hash(), 1)
+		assert.Equal(t, err, nil)
+
+		blockHash, index, err := db.GetTransactionIndexById(*block.Body.Transactions[1].Hash())
+		if err != nil {
+
+		}
+		assert.Equal(t, blockHash, *block.Hash())
+		assert.Equal(t, index, 1)
 	} else {
 		t.Error("DB is not open")
 	}
