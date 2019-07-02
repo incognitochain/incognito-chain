@@ -66,6 +66,20 @@ func TestPeer_Start(t *testing.T) {
 	peerObj.Start()
 }
 
+func TestPeer_Stop(t *testing.T) {
+	seed, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
+	netAddr, err := common.ParseListener("127.0.0.1:9333", "ip")
+	if err != nil {
+		t.Error(err)
+	}
+	peerObj, err := Peer{
+		Seed:             seed,
+		ListeningAddress: *netAddr,
+	}.NewPeer()
+	go peerObj.Start()
+	//peerObj.Stop()
+}
+
 func TestPeer_PushConn(t *testing.T) {
 	seed, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
 	netAddr, err := common.ParseListener("127.0.0.1:9333", "ip")
