@@ -163,8 +163,8 @@ func TestPeer_RemovePeerConn(t *testing.T) {
 			PublicKey: "abc1",
 		},
 	}
-	peerObj.SetPeerConn(peerConn)
+	peerObj.setPeerConn(peerConn)
 	assert.Equal(t, len(peerObj.PeerConns), 1)
-	peerObj.RemovePeerConn(peerConn)
+	peerObj.removePeerConn(peerConn)
 	assert.Equal(t, len(peerObj.PeerConns), 0)
 }
