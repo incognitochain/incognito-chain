@@ -481,7 +481,7 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 	}()
 
 	peerConn.RetryCount = 0
-	peerConn.updateConnState(ConnEstablished)
+	peerConn.SetConnState(ConnEstablished)
 
 	go peerObj.handleConnected(&peerConn)
 
@@ -565,7 +565,7 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 	go peerConn.OutMessageHandler(rw)
 
 	peerConn.RetryCount = 0
-	peerConn.updateConnState(ConnEstablished)
+	peerConn.SetConnState(ConnEstablished)
 
 	go peerObj.handleConnected(&peerConn)
 
@@ -622,7 +622,7 @@ func (peerObj *Peer) Stop() {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	for _, peerConn := range peerObj.PeerConns {
-		peerConn.updateConnState(ConnCanceled)
+		peerConn.SetConnState(ConnCanceled)
 	}
 
 	close(peerObj.cStop)
@@ -635,7 +635,7 @@ handleConnected - set established flag to a peer when being connected
 func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.RetryCount = 0
-	peerConn.updateConnState(ConnEstablished)
+	peerConn.SetConnState(ConnEstablished)
 
 	peerObj.ConnEstablished(peerConn.RemotePeer)
 
@@ -649,7 +649,7 @@ handleDisconnected - handle connected peer when it is disconnected, remove and r
 */
 func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
-	peerConn.updateConnState(ConnCanceled)
+	peerConn.SetConnState(ConnCanceled)
 	if peerConn.GetIsOutbound() && !peerConn.GetIsForceClose() {
 		go peerObj.retryPeerConnection(peerConn)
 	}
@@ -681,7 +681,7 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 		peerConn.RetryCount += 1
 
 		if peerConn.RetryCount < MaxRetryConn {
-			peerConn.updateConnState(ConnPending)
+			peerConn.SetConnState(ConnPending)
 			cConn := make(chan *PeerConn)
 			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, cConn)
 			p := <-cConn
