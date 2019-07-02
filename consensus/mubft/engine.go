@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -32,7 +32,7 @@ type EngineConfig struct {
 	BlockChain                  *blockchain.BlockChain
 	ChainParams                 *blockchain.Params
 	BlockGen                    *blockchain.BlkTmplGenerator
-	UserKeySet                  *cashec.KeySet
+	UserKeySet                  *incognitokey.KeySet
 	NodeMode                    string
 	Server                      serverInterface
 	ShardToBeaconPool           blockchain.ShardToBeaconPool

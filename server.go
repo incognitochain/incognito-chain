@@ -28,7 +28,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/consensus/mubft"
@@ -61,7 +61,7 @@ type Server struct {
 	waitGroup         sync.WaitGroup
 	netSync           *netsync.NetSync
 	addrManager       *addrmanager.AddrManager
-	userKeySet        *cashec.KeySet
+	userKeySet        *incognitokey.KeySet
 	wallet            *wallet.Wallet
 	consensusEngine   *mubft.Engine
 	blockgen          *blockchain.BlkTmplGenerator
@@ -960,7 +960,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 
 	pbk := ""
 	if msg.PublicKey != "" {
-		err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
+		err := incognitokey.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
 		if err == nil {
 			pbk = msg.PublicKey
 		} else {

@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/databasemp"
 
@@ -34,7 +34,7 @@ type Config struct {
 	IsLoadFromMempool     bool                   //Reset mempool database when run node
 	PersistMempool        bool
 	RelayShards           []byte
-	UserKeyset            *cashec.KeySet
+	UserKeyset            *incognitokey.KeySet
 	PubSubManager         *pubsub.PubSubManager
 	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.EventChannel
