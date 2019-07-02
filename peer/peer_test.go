@@ -140,3 +140,31 @@ func TestPeer_PushStream(t *testing.T) {
 		}
 	}
 }
+
+func TestPeer_RemovePeerConn(t *testing.T) {
+	seed, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
+	netAddr, err := common.ParseListener("127.0.0.1:9333", "ip")
+	if err != nil {
+		t.Error(err)
+	}
+	peerObj, err := Peer{
+		Seed:             seed,
+		ListeningAddress: *netAddr,
+		PeerConns:        make(map[string]*PeerConn),
+	}.NewPeer()
+
+	peerConn := &PeerConn{
+		cMsgHash:   make(map[string]chan bool),
+		isUnitTest: true,
+		ListenerPeer: &Peer{
+			PublicKey: "abc1",
+		},
+		RemotePeer: &Peer{
+			PublicKey: "abc1",
+		},
+	}
+	peerObj.SetPeerConn(peerConn)
+	assert.Equal(t, len(peerObj.PeerConns), 1)
+	peerObj.RemovePeerConn(peerConn)
+	assert.Equal(t, len(peerObj.PeerConns), 0)
+}
