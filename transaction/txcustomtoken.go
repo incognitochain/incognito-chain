@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -206,7 +206,7 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 		}
 		totalVinAmount := uint64(0)
 		for _, vin := range tx.TxTokenData.Vins {
-			keySet := cashec.KeySet{}
+			keySet := incognitokey.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
 
 			// get data from utxo
@@ -524,7 +524,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	return nil
 }
 
-func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte, error) {
+func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset incognitokey.KeySet) ([]byte, error) {
 	buff := new(bytes.Buffer)
 	json.NewEncoder(buff).Encode(tx)
 	return keyset.Sign(buff.Bytes())
