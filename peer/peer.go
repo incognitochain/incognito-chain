@@ -250,7 +250,7 @@ func (peerObj *Peer) processConn() {
 			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.Peer.PeerID.Pretty(), newPeerMsg.Peer.RawAddress)
 			cConn := make(chan *PeerConn)
 			go func(peerObj *Peer) {
-				peerConn, err := peerObj.handleConn(newPeerMsg.Peer, cConn)
+				peerConn, err := peerObj.handleNewConnectionOut(newPeerMsg.Peer, cConn)
 				if err != nil && peerConn == nil {
 					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", peerObj.PeerID.Pretty(), err.Error())
 				}
@@ -265,7 +265,7 @@ func (peerObj *Peer) processConn() {
 			remotePeerID := newStreamMsg.Stream.Conn().RemotePeer()
 			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID.Pretty())
 			cConn := make(chan *PeerConn)
-			go peerObj.handleStream(newStreamMsg.Stream, cConn)
+			go peerObj.handleNewStreamIn(newStreamMsg.Stream, cConn)
 			p := <-cConn
 			if newStreamMsg.CConn != nil {
 				newStreamMsg.CConn <- p
@@ -276,14 +276,14 @@ func (peerObj *Peer) processConn() {
 	}
 }
 
-func (peerObj *Peer) ConnPending(peer *Peer) {
+func (peerObj *Peer) connPending(peer *Peer) {
 	peerObj.pendingPeersMtx.Lock()
 	defer peerObj.pendingPeersMtx.Unlock()
 	peerIDStr := peer.PeerID.Pretty()
 	peerObj.PendingPeers[peerIDStr] = peer
 }
 
-func (peerObj *Peer) ConnEstablished(peer *Peer) {
+func (peerObj *Peer) connEstablished(peer *Peer) {
 	peerObj.pendingPeersMtx.Lock()
 	defer peerObj.pendingPeersMtx.Unlock()
 	peerIDStr := peer.PeerID.Pretty()
@@ -293,7 +293,7 @@ func (peerObj *Peer) ConnEstablished(peer *Peer) {
 	}
 }
 
-func (peerObj *Peer) ConnCanceled(peer *Peer) {
+func (peerObj *Peer) connCanceled(peer *Peer) {
 	peerObj.PeerConnsMtx.Lock()
 	peerObj.pendingPeersMtx.Lock()
 	defer func() {
@@ -308,7 +308,7 @@ func (peerObj *Peer) ConnCanceled(peer *Peer) {
 	peerObj.PendingPeers[peerIDStr] = peer
 }
 
-func (peerObj *Peer) CountOfInboundConn() int {
+func (peerObj *Peer) countOfInboundConn() int {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	ret := int(0)
@@ -320,7 +320,7 @@ func (peerObj *Peer) CountOfInboundConn() int {
 	return ret
 }
 
-func (peerObj *Peer) CountOfOutboundConn() int {
+func (peerObj *Peer) countOfOutboundConn() int {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	ret := int(0)
@@ -342,18 +342,7 @@ func (peerObj *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
 	return nil
 }
 
-func (peerObj *Peer) GetPeerConnByPbk(pbk string) *PeerConn {
-	peerObj.PeerConnsMtx.Lock()
-	defer peerObj.PeerConnsMtx.Unlock()
-	for _, peerConn := range peerObj.PeerConns {
-		if peerConn.RemotePeer.PublicKey == pbk {
-			return peerConn
-		}
-	}
-	return nil
-}
-
-func (peerObj *Peer) SetPeerConn(peerConn *PeerConn) {
+func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
@@ -367,7 +356,7 @@ func (peerObj *Peer) SetPeerConn(peerConn *PeerConn) {
 	peerObj.PeerConns[peerIDStr] = peerConn
 }
 
-func (peerObj *Peer) RemovePeerConn(peerConn *PeerConn) error {
+func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
@@ -384,7 +373,9 @@ func (peerObj *Peer) RemovePeerConn(peerConn *PeerConn) error {
 	}
 }
 
-func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
+// handleNewConnectionOut - main process when receiving a new peer connection,
+// this mean we want to connect out to other peer
+func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
 
 	peerIDStr := peer.PeerID.Pretty()
@@ -409,11 +400,11 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 		return nil, nil
 	}
 
-	if peerObj.CountOfOutboundConn() >= peerObj.Config.MaxOutPeers && peerObj.Config.MaxOutPeers > 0 && !ok {
+	if peerObj.countOfOutboundConn() >= peerObj.Config.MaxOutPeers && peerObj.Config.MaxOutPeers > 0 && !ok {
 		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
 
 		//push to pending peers
-		peerObj.ConnPending(peer)
+		peerObj.connPending(peer)
 
 		if cConn != nil {
 			cConn <- nil
@@ -456,10 +447,10 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
 
-	peerObj.SetPeerConn(&peerConn)
+	peerObj.setPeerConn(&peerConn)
 	defer func() {
 		stream.Close()
-		err := peerObj.RemovePeerConn(&peerConn)
+		err := peerObj.removePeerConn(&peerConn)
 		Logger.log.Error(err)
 	}()
 
@@ -492,13 +483,13 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 	return &peerConn, nil
 }
 
-// handleStream - this mean we have other peer want to be connect to us(an inbound peer)
+// handleNewStreamIn - this mean we have other peer want to be connect to us(an inbound peer)
 // we need to create data about this inbound peer and handle our inbound stream
-func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
+func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if peerObj.CountOfInboundConn() >= peerObj.Config.MaxInPeers && peerObj.Config.MaxInPeers > 0 {
+	if peerObj.countOfInboundConn() >= peerObj.Config.MaxInPeers && peerObj.Config.MaxInPeers > 0 {
 		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {
@@ -542,7 +533,7 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 		HandleFailed:       peerObj.handleFailed,
 	}
 
-	peerObj.SetPeerConn(&peerConn)
+	peerObj.setPeerConn(&peerConn)
 
 	go peerConn.InMessageHandler(rw)
 	go peerConn.OutMessageHandler(rw)
@@ -558,7 +549,7 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 
 	defer func() {
 		stream.Close()
-		err := peerObj.RemovePeerConn(&peerConn)
+		err := peerObj.removePeerConn(&peerConn)
 		Logger.log.Error(err)
 	}()
 
@@ -593,16 +584,6 @@ func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- 
 	}
 }
 
-// QueueMessageWithEncoding adds the passed Incognito message to the peer send
-// queue. This function is identical to QueueMessage, however it allows the
-//// caller to specify the bytes
-//// This function is safe for concurrent access.
-func (peerObj *Peer) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
-	for _, peerConnection := range peerObj.PeerConns {
-		go peerConnection.QueueMessageWithBytes(msgBytes, doneChan)
-	}
-}
-
 // Stop - stop all features of peer,
 // not connect,
 // not stream,
@@ -627,7 +608,7 @@ func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 	peerConn.RetryCount = 0
 	peerConn.SetConnState(ConnEstablished)
 
-	peerObj.ConnEstablished(peerConn.RemotePeer)
+	peerObj.connEstablished(peerConn.RemotePeer)
 
 	if peerObj.HandleConnected != nil {
 		peerObj.HandleConnected(peerConn)
@@ -651,7 +632,7 @@ func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
 func (peerObj *Peer) handleFailed(peerConn *PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
 
-	peerObj.ConnCanceled(peerConn.RemotePeer)
+	peerObj.connCanceled(peerConn.RemotePeer)
 
 	if peerObj.HandleFailed != nil {
 		peerObj.HandleFailed(peerConn)
