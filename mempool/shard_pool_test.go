@@ -5,14 +5,15 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"sync"
 	"testing"
 	"time"
 )
 var (
-	shardPoolTest *ShardPool
-	shardPoolMapTest = make(map[byte]blockchain.ShardPool)
-	pbShardPool = pubsub.NewPubSubManager()
-	shardBlock2 = &blockchain.ShardBlock{
+	shardPoolTest         *ShardPool
+	shardPoolMapInterface = make(map[byte]blockchain.ShardPool)
+	pbShardPool           = pubsub.NewPubSubManager()
+	shardBlock2           = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
 			ShardID: 0,
 			Height: 2,
@@ -25,7 +26,7 @@ var (
 			PrevBlockHash: shardBlock2.Header.Hash(),
 		},
 	}
-	shardBlock23Forked = &blockchain.ShardBlock{
+	shardBlock3Forked = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
 			ShardID: 0,
 			Height: 3,
@@ -65,6 +66,7 @@ var (
 )
 var InitShardPoolTest = func(pubsubManager *pubsub.PubSubManager) {
 	shardPoolTest = new(ShardPool)
+	shardPoolTest.mtx = new(sync.RWMutex)
 	shardPoolTest.shardID = 0
 	shardPoolTest.latestValidHeight = 1
 	shardPoolTest.validPool = []*blockchain.ShardBlock{}
@@ -81,7 +83,7 @@ var InitShardPoolTest = func(pubsubManager *pubsub.PubSubManager) {
 	shardPoolTest.RoleInCommitteesEvent = subChanRole
 }
 var _ = func() (_ struct{}) {
-	InitShardPool(shardPoolMapTest, pbShardPool)
+	InitShardPool(shardPoolMapInterface, pbShardPool)
 	InitShardPoolTest(pbShardPool)
 	go pbShardPool.Start()
 	oldBlockHash := common.Hash{}
@@ -123,6 +125,7 @@ func ResetShardPool(){
 		shardPoolMap[shardID] = new(ShardPool)
 		shardPoolMap[shardID].shardID = shardID
 		shardPoolMap[shardID].latestValidHeight = 1
+		shardPoolMap[shardID].RoleInCommittees = -1
 		shardPoolMap[shardID].validPool = []*blockchain.ShardBlock{}
 		shardPoolMap[shardID].conflictedPool = make(map[common.Hash]*blockchain.ShardBlock)
 		shardPoolMap[shardID].config = defaultConfig
@@ -133,215 +136,190 @@ func ResetShardPool(){
 		shardPoolMap[shardID].RoleInCommitteesEvent = subChanRole
 	}
 }
-func TestGetShardPool(t *testing.T) {
-	for _, shardPool := range shardPoolMap {
-		if shardPool.latestValidHeight != 1 {
-			t.Fatal("Invalid Latest valid height")
+func TestInitShardPool(t *testing.T) {
+	for i:= 0; i < 255; i++ {
+		shardID := byte(i)
+		if shardPoolMap[shardID].latestValidHeight != 1 {
+			t.Fatalf("Shard %+v Invalid Latest valid height, expect 1 but get %+v", shardPoolMap[shardID].shardID, shardPoolMap[shardID].latestValidHeight)
 		}
-		if shardPool.RoleInCommittees != -1 {
+		if shardPoolMap[shardID].RoleInCommittees != -1 {
 			t.Fatal("Invalid Latest Role in committees")
 		}
-		if shardPool.validPool == nil || (shardPool.validPool != nil && len(shardPool.validPool) != 0 ){
+		if shardPoolMap[shardID].validPool == nil || (shardPoolMap[shardID].validPool != nil && len(shardPoolMap[shardID].validPool) != 0 ){
 			t.Fatal("Invalid Valid Pool")
 		}
-		if shardPool.pendingPool == nil {
+		if shardPoolMap[shardID].pendingPool == nil {
 			t.Fatal("Invalid Pending Pool")
 		}
-		if shardPool.conflictedPool == nil {
+		if shardPoolMap[shardID].conflictedPool == nil {
 			t.Fatal("Invalid Conflicted Pool")
 		}
-		if shardPool.config.MaxValidBlock != MAX_VALID_SHARD_BLK_IN_POOL {
+		if shardPoolMap[shardID].config.MaxValidBlock != MAX_VALID_SHARD_BLK_IN_POOL {
 			t.Fatal("Invalid Max Valid Pool")
 		}
-		if shardPool.config.MaxPendingBlock != MAX_PENDING_SHARD_BLK_IN_POOL {
+		if shardPoolMap[shardID].config.MaxPendingBlock != MAX_PENDING_SHARD_BLK_IN_POOL {
 			t.Fatal("Invalid Max Pending Pool")
 		}
-		if shardPool.config.CacheSize != SHARD_CACHE_SIZE {
+		if shardPoolMap[shardID].config.CacheSize != SHARD_CACHE_SIZE {
 			t.Fatal("Invalid Shard Cache Size")
 		}
-		if shardPool.cache == nil {
+		if shardPoolMap[shardID].cache == nil {
 			t.Fatal("Invalid Cache")
 		}
-		if shardPool.PubSubManager == nil {
+		if shardPoolMap[shardID].PubSubManager == nil {
 			t.Fatal("Invalid Pubsub manager")
 		}
-		if shardPool.RoleInCommitteesEvent == nil {
+		if shardPoolMap[shardID].RoleInCommitteesEvent == nil {
 			t.Fatal("Invalid Role event")
 		}
 	}
 }
-//func TestShardPoolInitShardPool(t *testing.T) {
-//	for _, shardPool := range shardPoolMap {
-//		latestValidHeight := shardPool.latestValidHeight
-//		//InitShardPool(pbShardPool)
-//		// because blockchain beacon beststate is nil => return latestvalidheight is 0
-//		if beaconPool.latestValidHeight != latestValidHeight {
-//			t.Fatalf("Height Should be set %+v but get %+v \n", latestValidHeight, beaconPool.latestValidHeight)
-//		}
-//		if beaconPool.PubSubManager == nil {
-//			t.Fatal("Pubsub manager is nil after init")
-//		}
-//		if beaconPool.RoleInCommitteesEvent == nil {
-//			t.Fatal("Role Event is nil after init")
-//		}
-//	}
-//	ResetShardPool()
-//}
-
-func TestShardPoolSetBeaconState(t *testing.T) {
-	for _, shardPool := range shardPoolMap {
-		shardPool.SetShardState(0)
-		if shardPool.latestValidHeight != 1 {
-			t.Fatal("Invalid Latest Valid Height")
-		}
-		shardPool.SetShardState(testLatestValidHeight)
-		if shardPool.latestValidHeight != testLatestValidHeight {
-			t.Fatalf("Height Should be set %+v but get %+v \n", testLatestValidHeight, shardPool.latestValidHeight)
-		}
-	}
-	ResetShardPool()
-}
-func TestShardPoolTestStart(t *testing.T) {
+func TestShardPoolStart(t *testing.T) {
+	InitShardPoolTest(pbShardPool)
 	cQuit := make(chan struct{})
-	go beaconPool.Start(cQuit)
+	go shardPoolTest.Start(cQuit)
 	// send event
-	go pbShardPool.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, true))
-	<-time.Tick(500 * time.Millisecond)
-	beaconPool.mtx.RLock()
-	if beaconPool.RoleInCommittees != true {
-		t.Fatal("Fail to get Role In committees from event")
+	for i := 200 ; i < 255; i++ {
+		go pbShardPool.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, i))
+		<-time.Tick(100 * time.Millisecond)
+		shardPoolTest.mtx.RLock()
+		if shardPoolTest.RoleInCommittees != i {
+			t.Fatal("Fail to get Role In committees from event")
+		}
+		shardPoolTest.mtx.RUnlock()
 	}
-	beaconPool.mtx.RUnlock()
-	go pbShardPool.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, -1))
-	<-time.Tick(500 * time.Millisecond)
-	beaconPool.mtx.RLock()
-	if beaconPool.RoleInCommittees != true {
-		t.Fatal("Should not get wrong format information")
-	}
-	beaconPool.mtx.RUnlock()
-	go pbShardPool.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, false))
-	<-time.Tick(500 * time.Millisecond)
-	beaconPool.mtx.RLock()
-	if beaconPool.RoleInCommittees != false {
-		t.Fatal("Fail to get Role In committees from event")
-	}
-	beaconPool.mtx.RUnlock()
-	go pbShardPool.PublishMessage(pubsub.NewMessage(pubsub.BeaconRoleTopic, true))
-	<-time.Tick(500 * time.Millisecond)
-	beaconPool.mtx.RLock()
-	if beaconPool.RoleInCommittees != true {
-		t.Fatal("Fail to get Role In committees from event")
-	}
-	beaconPool.mtx.RUnlock()
 	close(cQuit)
 	<-time.Tick(500 * time.Millisecond)
-	beaconPool.mtx.RLock()
-	if beaconPool.RoleInCommittees != false {
+	shardPoolTest.mtx.RLock()
+	if shardPoolTest.RoleInCommittees != -1 {
 		t.Fatal("Fail to set default Role In committees when beacon pool is stop")
 	}
-	beaconPool.mtx.RUnlock()
+	shardPoolTest.mtx.RUnlock()
+}
+func TestShardPoolSetShardState(t *testing.T) {
+	for i:= 0; i < 255; i++ {
+		shardID := byte(i)
+		shardPoolMap[shardID].SetShardState(0)
+		if shardPoolMap[shardID].latestValidHeight != 1 {
+			t.Fatal("Invalid Latest Valid Height")
+		}
+		shardPoolMap[shardID].SetShardState(testLatestValidHeight)
+		if shardPoolMap[shardID].latestValidHeight != testLatestValidHeight {
+			t.Fatalf("Height Should be set %+v but get %+v \n", testLatestValidHeight, shardPoolMap[shardID].latestValidHeight)
+		}
+	}
 	ResetShardPool()
 }
-//
-//func TestShardPoolGetBeaconState(t *testing.T) {
-//	latestValidHeight := beaconPool.latestValidHeight
-//	if beaconPool.GetBeaconState() != latestValidHeight {
-//		t.Fatal("Fail when try to get state of beacon pool")
-//	}
-//	ResetShardPool()
-//}
-//
-//func TestShardPoolValidateBeaconBlock(t *testing.T) {
-//	// skip old block
-//	// Test receive old block than latestvalidheight
-//	// - Test old block is less than latestvalidheight 2 value => store in conflicted block
-//	InitShardPoolTest(pb)
-//	beaconPoolTest.SetBeaconState(4)
-//	err = beaconPoolTest.validateBeaconBlock(beaconBlock3,false)
-//	if err != nil {
-//		if err.(*BlockPoolError).Code != ErrCodeMessage[OldBlockError].Code {
-//			t.Fatalf("Block %+v should return error %+v but get %+v", beaconBlock3.Header.Height, ErrCodeMessage[OldBlockError].Code, err.(*BlockPoolError).Code)
-//		}
-//		if block, ok := beaconPoolTest.conflictedPool[beaconBlock3.Header.Hash()]; !ok {
-//			t.Fatalf("Block %+v should be in conflict pool but get %+v", beaconBlock3.Header.Height, block.Header.Height)
-//		}
-//	}
-//	delete(beaconPoolTest.conflictedPool, beaconBlock3.Header.Hash())
-//	err = beaconPoolTest.validateBeaconBlock(beaconBlock4,true)
-//	if err != nil {
-//		if err.(*BlockPoolError).Code != ErrCodeMessage[OldBlockError].Code {
-//			t.Fatalf("Block %+v should return error %+v but get %+v", beaconBlock4.Header.Height, ErrCodeMessage[OldBlockError].Code, err.(*BlockPoolError).Code)
-//		}
-//		if block, ok := beaconPoolTest.conflictedPool[beaconBlock4.Header.Hash()]; !ok {
-//			t.Fatalf("Block %+v should be in conflict pool but get %+v", beaconBlock4.Header.Height, block.Header.Height)
-//		}
-//	}
-//	delete(beaconPoolTest.conflictedPool, beaconBlock4.Header.Hash())
-//	// - Test old block discard and not store in conflicted pool
-//	err = beaconPoolTest.validateBeaconBlock(beaconBlock2, false)
-//	if err == nil {
-//		t.Fatalf("Block %+v should be discard with state %+v", beaconBlock2.Header.Height, beaconPoolTest.latestValidHeight)
-//	} else {
-//		if err.(*BlockPoolError).Code != ErrCodeMessage[OldBlockError].Code {
-//			t.Fatalf("Block %+v should be discard with state %+v, error should be %+v but get %+v", beaconBlock2.Header.Height, beaconPoolTest.latestValidHeight, ErrCodeMessage[OldBlockError].Code, err.(*BlockPoolError).Code)
-//		}
-//		if block, ok := beaconPoolTest.conflictedPool[beaconBlock2.Header.Hash()]; ok {
-//			t.Fatalf("Block %+v should NOT be in conflict pool but get %+v", beaconBlock2.Header.Height, block.Header.Height)
-//		}
-//	}
-//	//test duplicate and pending
-//	err = beaconPoolTest.validateBeaconBlock(beaconBlock6, false)
-//	if err != nil {
-//		t.Fatalf("Block %+v should be able to get in pending pool, state %+v", beaconBlock6.Header.Height, beaconPoolTest.latestValidHeight)
-//	}
-//	beaconPoolTest.pendingPool[beaconBlock6.Header.Height] = beaconBlock6
-//	if _, ok := beaconPoolTest.pendingPool[beaconBlock6.Header.Height]; !ok {
-//		t.Fatalf("Block %+v should be in pending pool", beaconBlock6.Header.Height)
-//	}
-//	err = beaconPoolTest.validateBeaconBlock(beaconBlock6, false)
-//	if err == nil {
-//		t.Fatalf("Block %+v should be duplicate \n", beaconBlock6.Header.Height)
-//	} else {
-//		if err.(*BlockPoolError).Code != ErrCodeMessage[DuplicateBlockError].Code {
-//			t.Fatalf("Block %+v should return error %+v but get %+v", beaconBlock6.Header.Height, ErrCodeMessage[DuplicateBlockError].Code, err.(*BlockPoolError).Code)
-//		}
-//	}
-//	// ignore if block is duplicate or exceed pool size or not
-//	err = beaconPoolTest.validateBeaconBlock(beaconBlock6, true)
-//	if err != nil {
-//		t.Fatalf("Block %+v should not be duplicate \n", beaconBlock6.Header.Height)
-//	}
-//	delete(beaconPoolTest.pendingPool, beaconBlock6.Header.Height)
-//	for index, beaconBlock := range pendingShardBlocks {
-//		if index < len(pendingShardBlocks) - 1 {
-//			beaconPoolTest.pendingPool[beaconBlock.Header.Height] = beaconBlock
-//		}  else {
-//			err = beaconPoolTest.validateBeaconBlock(beaconBlock, false)
-//			if err == nil {
-//				t.Fatalf("Block %+v exceed pending pool capacity %+v \n", beaconBlock.Header.Height, len(beaconPoolTest.pendingPool))
-//			} else {
-//				if err.(*BlockPoolError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
-//					t.Fatalf("Block %+v should return error %+v but get %+v", beaconBlock.Header.Height, ErrCodeMessage[MaxPoolSizeError].Code, err.(*BlockPoolError).Code)
-//				}
-//			}
-//		}
-//	}
-//	for index, beaconBlock := range validShardBlocks {
-//		if index < len(validShardBlocks) - 1 {
-//			beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock)
-//			beaconPoolTest.latestValidHeight = beaconBlock.Header.Height
-//		}  else {
-//			err = beaconPoolTest.validateBeaconBlock(beaconBlock, false)
-//			if err == nil {
-//				t.Fatalf("Block %+v exceed valid pool capacity %+v plus pending pool capacity %+v \n", beaconBlock.Header.Height, len(beaconPool.validPool), len(beaconPool.pendingPool))
-//			} else {
-//				if err.(*BlockPoolError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
-//					t.Fatalf("Block %+v should return error %+v but get %+v", beaconBlock.Header.Height, ErrCodeMessage[MaxPoolSizeError].Code, err.(*BlockPoolError).Code)
-//				}
-//			}
-//		}
-//	}
-//}
+func TestShardPoolGetShardState(t *testing.T) {
+	for i:= 0; i < 255; i++ {
+		shardID := byte(i)
+		shardPoolMap[shardID].SetShardState(0)
+		if shardPoolMap[shardID].GetShardState() != uint64(1) {
+			t.Fatal("Invalid Latest Valid Height")
+		}
+		shardPoolMap[shardID].SetShardState(testLatestValidHeight)
+		if shardPoolMap[shardID].GetShardState() != testLatestValidHeight {
+			t.Fatalf("Height Should be set %+v but get %+v \n", testLatestValidHeight, shardPoolMap[shardID].latestValidHeight)
+		}
+	}
+	ResetShardPool()
+}
+
+func TestShardPoolValidateShardBlock(t *testing.T) {
+	// skip old block
+	// Test receive old block than latestvalidheight
+	// - Test old block is less than latestvalidheight 2 value => store in conflicted block
+	InitShardPoolTest(pbShardPool)
+	shardPoolTest.SetShardState(4)
+	err = shardPoolTest.validateShardBlock(shardBlock3,false)
+	if err != nil {
+		if err.(*BlockPoolError).Code != ErrCodeMessage[OldBlockError].Code {
+			t.Fatalf("Block %+v should return error %+v but get %+v", shardBlock3.Header.Height, ErrCodeMessage[OldBlockError].Code, err.(*BlockPoolError).Code)
+		}
+		if block, ok := shardPoolTest.conflictedPool[shardBlock3.Header.Hash()]; !ok {
+			t.Fatalf("Block %+v should be in conflict pool but get %+v", shardBlock3.Header.Height, block.Header.Height)
+		}
+	}
+	delete(shardPoolTest.conflictedPool, shardBlock3.Header.Hash())
+	err = shardPoolTest.validateShardBlock(shardBlock4,true)
+	if err != nil {
+		if err.(*BlockPoolError).Code != ErrCodeMessage[OldBlockError].Code {
+			t.Fatalf("Block %+v should return error %+v but get %+v", shardBlock4.Header.Height, ErrCodeMessage[OldBlockError].Code, err.(*BlockPoolError).Code)
+		}
+		if block, ok := shardPoolTest.conflictedPool[shardBlock4.Header.Hash()]; !ok {
+			t.Fatalf("Block %+v should be in conflict pool but get %+v", shardBlock4.Header.Height, block.Header.Height)
+		}
+	}
+	delete(shardPoolTest.conflictedPool, shardBlock4.Header.Hash())
+	// - Test old block discard and not store in conflicted pool
+	err = shardPoolTest.validateShardBlock(shardBlock2, false)
+	if err == nil {
+		t.Fatalf("Block %+v should be discard with state %+v", shardBlock2.Header.Height, shardPoolTest.latestValidHeight)
+	} else {
+		if err.(*BlockPoolError).Code != ErrCodeMessage[OldBlockError].Code {
+			t.Fatalf("Block %+v should be discard with state %+v, error should be %+v but get %+v", beaconBlock2.Header.Height, beaconPoolTest.latestValidHeight, ErrCodeMessage[OldBlockError].Code, err.(*BlockPoolError).Code)
+		}
+		if block, ok := shardPoolTest.conflictedPool[shardBlock2.Header.Hash()]; ok {
+			t.Fatalf("Block %+v should NOT be in conflict pool but get %+v", shardBlock2.Header.Height, block.Header.Height)
+		}
+	}
+	//test duplicate and pending
+	err = shardPoolTest.validateShardBlock(shardBlock6, false)
+	if err != nil {
+		t.Fatalf("Block %+v should be able to get in pending pool, state %+v", beaconBlock6.Header.Height, beaconPoolTest.latestValidHeight)
+	}
+	shardPoolTest.pendingPool[shardBlock6.Header.Height] = shardBlock6
+	if _, ok := shardPoolTest.pendingPool[shardBlock6.Header.Height]; !ok {
+		t.Fatalf("Block %+v should be in pending pool", shardBlock6.Header.Height)
+	}
+	err = shardPoolTest.validateShardBlock(shardBlock6, false)
+	if err == nil {
+		t.Fatalf("Block %+v should be duplicate \n", shardBlock6.Header.Height)
+	} else {
+		if err.(*BlockPoolError).Code != ErrCodeMessage[DuplicateBlockError].Code {
+			t.Fatalf("Block %+v should return error %+v but get %+v", shardBlock6.Header.Height, ErrCodeMessage[DuplicateBlockError].Code, err.(*BlockPoolError).Code)
+		}
+	}
+	// ignore if block is duplicate or exceed pool size or not
+	err = shardPoolTest.validateShardBlock(shardBlock6, true)
+	if err != nil {
+		t.Fatalf("Block %+v should not be duplicate \n", shardBlock6.Header.Height)
+	}
+	delete(shardPoolTest.pendingPool, shardBlock6.Header.Height)
+	for index, shardBlock := range pendingShardBlocks {
+		if index < len(pendingShardBlocks) - 1 {
+			shardPoolTest.pendingPool[shardBlock.Header.Height] = shardBlock
+		}  else {
+			err = shardPoolTest.validateShardBlock(shardBlock, false)
+			if err == nil {
+				t.Fatalf("Block %+v exceed pending pool capacity %+v \n", shardBlock.Header.Height, len(beaconPoolTest.pendingPool))
+			} else {
+				if err.(*BlockPoolError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
+					t.Fatalf("Block %+v should return error %+v but get %+v", shardBlock.Header.Height, ErrCodeMessage[MaxPoolSizeError].Code, err.(*BlockPoolError).Code)
+				}
+			}
+			err = shardPoolTest.validateShardBlock(shardBlock, true)
+			if err != nil {
+				t.Fatalf("Block %+v exceed pending pool capacity %+v BUT SHOULD BE Ignore \n", shardBlock.Header.Height, len(beaconPoolTest.pendingPool))
+			}
+		}
+	}
+	for index, shardBlock := range validShardBlocks {
+		if index < len(validShardBlocks) - 1 {
+			shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock)
+			shardPoolTest.latestValidHeight = shardBlock.Header.Height
+		} else {
+			err = shardPoolTest.validateShardBlock(shardBlock, false)
+			if err == nil {
+				t.Fatalf("Block %+v exceed valid pool capacity %+v plus pending pool capacity %+v \n", shardBlock.Header.Height, len(shardPoolTest.validPool), len(shardPoolTest.pendingPool))
+			} else {
+				if err.(*BlockPoolError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
+					t.Fatalf("Block %+v should return error %+v but get %+v", shardBlock.Header.Height, ErrCodeMessage[MaxPoolSizeError].Code, err.(*BlockPoolError).Code)
+				}
+			}
+		}
+	}
+}
 //func TestShardPoolInsertNewBeaconBlockToPool(t *testing.T) {
 //	InitShardPoolTest(pb)
 //	// Condition 1: check height
