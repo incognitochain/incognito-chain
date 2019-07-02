@@ -97,11 +97,16 @@ func (httpServer *HttpServer) handleGetAccountAddress(params interface{}, closeC
 	}
 	activeShards := httpServer.config.BlockChain.BestState.Beacon.ActiveShards
 	shardID := httpServer.config.Wallet.GetConfig().ShardID
-	shardIDInt := int(*shardID)
-	if shardID != nil && (shardIDInt >= activeShards) {
-		randShard := rand.Int31n(int32(activeShards))
-		temp := byte(randShard)
-		shardID = &temp
+	// if shardID is nil -> create with any shard
+	if shardID != nil {
+		// if shardID is configured with not nil
+		shardIDInt := int(*shardID)
+		// check with activeshards
+		if shardIDInt >= activeShards || shardIDInt <= 0 {
+			randShard := rand.Int31n(int32(activeShards))
+			temp := byte(randShard)
+			shardID = &temp
+		}
 	}
 	result := httpServer.config.Wallet.GetAddressByAccName(paramTemp, shardID)
 	return result, nil
