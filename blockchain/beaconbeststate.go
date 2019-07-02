@@ -80,6 +80,11 @@ func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
 	}
 	return b, err
 }
+func (bestStateBeacon *BestStateBeacon) SetBestShardHeight(shardID byte, height uint64) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	bestStateBeacon.BestShardHeight[shardID] = height
+}
 
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
 	bestStateBeacon.lockMu.RLock()
