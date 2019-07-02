@@ -77,7 +77,7 @@ func TestPeer_Stop(t *testing.T) {
 		ListeningAddress: *netAddr,
 	}.NewPeer()
 	go peerObj.Start()
-	//peerObj.Stop()
+	peerObj.Stop()
 }
 
 func TestPeer_PushConn(t *testing.T) {
