@@ -7,7 +7,8 @@ import (
 
 const (
 	// RemotePeer err
-	PeerGenerateKeyPairErr   = iota
+	UnexpectedErr = iota
+	PeerGenerateKeyPairErr
 	CreateP2PNodeErr
 	CreateP2PAddressErr
 	GetPeerIdFromProtocolErr
@@ -21,11 +22,12 @@ var ErrCodeMessage = map[int]struct {
 	message string
 }{
 	// -1xxx for peer
-	PeerGenerateKeyPairErr:   {-1000, "Can not generate key pair with reader"},
-	CreateP2PNodeErr:         {-1001, "Can not create libp2p node"},
-	CreateP2PAddressErr:      {-1002, "Can not create libp2p address for node"},
-	GetPeerIdFromProtocolErr: {-1003, "Can not get peer id from protocol"},
-	OpeningStreamP2PErr:      {-1004, "Fail in opening stream "},
+	UnexpectedErr:            {-1001, "Unexpected"},
+	PeerGenerateKeyPairErr:   {-1001, "Can not generate key pair with reader"},
+	CreateP2PNodeErr:         {-1002, "Can not create libp2p node"},
+	CreateP2PAddressErr:      {-1003, "Can not create libp2p address for node"},
+	GetPeerIdFromProtocolErr: {-1004, "Can not get peer id from protocol"},
+	OpeningStreamP2PErr:      {-1005, "Fail in opening stream "},
 
 	// -2xxx for peer connection
 }
