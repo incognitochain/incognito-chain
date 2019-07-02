@@ -10,7 +10,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/mempool"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -88,7 +88,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		}
 
 		// create a key set
-		keySet := cashec.KeySet{
+		keySet := incognitokey.KeySet{
 			ReadonlyKey:    readonlyKey.KeySet.ReadonlyKey,
 			PaymentAddress: pubKey.KeySet.PaymentAddress,
 		}
@@ -596,11 +596,16 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
 	}
 	account, err := wallet.Base58CheckDeserialize(privateKey)
-	account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Infof("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+	err = account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
+	if err != nil {
+		Logger.log.Infof("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	temps, listCustomTokenCrossShard, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
@@ -800,7 +805,7 @@ func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interf
 	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Infof("handleCreateSignatureOnCustomTokenTx result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -1148,7 +1153,10 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		Logger.log.Infof("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
+	}
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 

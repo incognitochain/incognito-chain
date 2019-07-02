@@ -198,7 +198,11 @@ func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, pa
 	if err != nil {
 		return nil, err
 	}
-	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+
+	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
 
 	Logger.log.Infof("Pub-key : %s", keyWallet.Base58CheckSerialize(PaymentAddressType))
 	Logger.log.Infof("Readonly-key : %s", keyWallet.Base58CheckSerialize(ReadonlyKeyType))

@@ -198,11 +198,15 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	log.Println(err)
 	if err != nil {
+		log.Println(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		log.Println(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	log.Println(senderKey)
 
 	// get balance for accountName in wallet

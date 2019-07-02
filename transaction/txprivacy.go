@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -105,8 +105,12 @@ func (tx *Tx) Init(
 	}
 
 	// create sender's key set from sender's spending key
-	senderFullKey := cashec.KeySet{}
-	senderFullKey.ImportFromPrivateKey(senderSK)
+	senderFullKey := incognitokey.KeySet{}
+	err = senderFullKey.ImportFromPrivateKey(senderSK)
+	if err != nil {
+		Logger.log.Error(err)
+		return NewTransactionErr(UnexpectedErr, err)
+	}
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 
