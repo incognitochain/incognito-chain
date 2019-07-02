@@ -51,6 +51,8 @@ type PeerConn struct {
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
 	HandleFailed       func(peerConn *PeerConn)
+
+	isUnitTest bool // default = false, use for unit test
 }
 
 func (peerConn *PeerConn) GetIsOutbound() bool {
@@ -112,12 +114,196 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 	return string(buf), nil
 }
 
+func (peerConn *PeerConn) processInMessageString(msgStr string) error {
+	// Parse Message header from last 24 bytes header message
+	jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
+
+	// cache message hash
+	hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
+	if peerConn.ListenerPeer != nil {
+		if err := peerConn.ListenerPeer.HashToPool(hashMsgRaw); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+	}
+	// unzip data before process
+	jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytesRaw)
+	if err != nil {
+		Logger.log.Error("Can not unzip from message")
+		Logger.log.Error(err)
+		return err
+	}
+
+	Logger.log.Infof("In message content : %s", string(jsonDecodeBytes))
+
+	// Parse Message body
+	messageBody := jsonDecodeBytes[:len(jsonDecodeBytes)-wire.MessageHeaderSize]
+
+	messageHeader := jsonDecodeBytes[len(jsonDecodeBytes)-wire.MessageHeaderSize:]
+
+	// get cmd type in header message
+	commandInHeader := bytes.Trim(messageHeader[:wire.MessageCmdTypeSize], "\x00")
+	commandType := string(messageHeader[:len(commandInHeader)])
+	// convert to particular message from message cmd type
+	message, err := wire.MakeEmptyMessage(string(commandType))
+	if err != nil {
+		Logger.log.Error("Can not find particular message for message cmd type")
+		Logger.log.Error(err)
+		return err
+	}
+
+	if len(jsonDecodeBytes) > message.MaxPayloadLength(1) {
+		Logger.log.Errorf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
+		return err
+	}
+	// check forward
+	if peerConn.Config.MessageListeners.GetCurrentRoleShard != nil {
+		cRole, cShard := peerConn.Config.MessageListeners.GetCurrentRoleShard()
+		if cShard != nil {
+			fT := messageHeader[wire.MessageCmdTypeSize]
+			if fT == MessageToShard {
+				fS := messageHeader[wire.MessageCmdTypeSize+1]
+				if *cShard != fS {
+					if peerConn.Config.MessageListeners.PushRawBytesToShard != nil {
+						peerConn.Config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
+					}
+					return err
+				}
+			}
+		}
+		if cRole != "" {
+			fT := messageHeader[wire.MessageCmdTypeSize]
+			if fT == MessageToBeacon && cRole != "beacon" {
+				if peerConn.Config.MessageListeners.PushRawBytesToBeacon != nil {
+					peerConn.Config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
+				}
+				return err
+			}
+		}
+	}
+
+	err = json.Unmarshal(messageBody, &message)
+	if err != nil {
+		Logger.log.Error("Can not parse struct from json message")
+		Logger.log.Error(err)
+		return err
+	}
+	realType := reflect.TypeOf(message)
+	Logger.log.Infof("Cmd message type of struct %s", realType.String())
+
+	// cache message hash
+	if peerConn.ListenerPeer != nil {
+		hashMsg := message.Hash()
+		if err := peerConn.ListenerPeer.HashToPool(hashMsg); err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+	}
+
+	// process message for each of message type
+	switch realType {
+	case reflect.TypeOf(&wire.MessageTx{}):
+		if peerConn.Config.MessageListeners.OnTx != nil {
+			peerConn.Config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
+		}
+	case reflect.TypeOf(&wire.MessageTxToken{}):
+		if peerConn.Config.MessageListeners.OnTxToken != nil {
+			peerConn.Config.MessageListeners.OnTxToken(peerConn, message.(*wire.MessageTxToken))
+		}
+	case reflect.TypeOf(&wire.MessageTxPrivacyToken{}):
+		if peerConn.Config.MessageListeners.OnTxPrivacyToken != nil {
+			peerConn.Config.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
+		}
+	case reflect.TypeOf(&wire.MessageBlockShard{}):
+		if peerConn.Config.MessageListeners.OnBlockShard != nil {
+			peerConn.Config.MessageListeners.OnBlockShard(peerConn, message.(*wire.MessageBlockShard))
+		}
+	case reflect.TypeOf(&wire.MessageBlockBeacon{}):
+		if peerConn.Config.MessageListeners.OnBlockBeacon != nil {
+			peerConn.Config.MessageListeners.OnBlockBeacon(peerConn, message.(*wire.MessageBlockBeacon))
+		}
+	case reflect.TypeOf(&wire.MessageCrossShard{}):
+		if peerConn.Config.MessageListeners.OnCrossShard != nil {
+			peerConn.Config.MessageListeners.OnCrossShard(peerConn, message.(*wire.MessageCrossShard))
+		}
+	case reflect.TypeOf(&wire.MessageShardToBeacon{}):
+		if peerConn.Config.MessageListeners.OnShardToBeacon != nil {
+			peerConn.Config.MessageListeners.OnShardToBeacon(peerConn, message.(*wire.MessageShardToBeacon))
+		}
+	case reflect.TypeOf(&wire.MessageGetBlockBeacon{}):
+		if peerConn.Config.MessageListeners.OnGetBlockBeacon != nil {
+			peerConn.Config.MessageListeners.OnGetBlockBeacon(peerConn, message.(*wire.MessageGetBlockBeacon))
+		}
+	case reflect.TypeOf(&wire.MessageGetBlockShard{}):
+		if peerConn.Config.MessageListeners.OnGetBlockShard != nil {
+			peerConn.Config.MessageListeners.OnGetBlockShard(peerConn, message.(*wire.MessageGetBlockShard))
+		}
+	case reflect.TypeOf(&wire.MessageGetCrossShard{}):
+		if peerConn.Config.MessageListeners.OnGetCrossShard != nil {
+			peerConn.Config.MessageListeners.OnGetCrossShard(peerConn, message.(*wire.MessageGetCrossShard))
+		}
+	case reflect.TypeOf(&wire.MessageGetShardToBeacon{}):
+		if peerConn.Config.MessageListeners.OnGetShardToBeacon != nil {
+			peerConn.Config.MessageListeners.OnGetShardToBeacon(peerConn, message.(*wire.MessageGetShardToBeacon))
+		}
+	case reflect.TypeOf(&wire.MessageVersion{}):
+		if peerConn.Config.MessageListeners.OnVersion != nil {
+			versionMessage := message.(*wire.MessageVersion)
+			peerConn.Config.MessageListeners.OnVersion(peerConn, versionMessage)
+		}
+	case reflect.TypeOf(&wire.MessageVerAck{}):
+		peerConn.verAckReceived = true
+		if peerConn.Config.MessageListeners.OnVerAck != nil {
+			peerConn.Config.MessageListeners.OnVerAck(peerConn, message.(*wire.MessageVerAck))
+		}
+	case reflect.TypeOf(&wire.MessageGetAddr{}):
+		if peerConn.Config.MessageListeners.OnGetAddr != nil {
+			peerConn.Config.MessageListeners.OnGetAddr(peerConn, message.(*wire.MessageGetAddr))
+		}
+	case reflect.TypeOf(&wire.MessageAddr{}):
+		if peerConn.Config.MessageListeners.OnGetAddr != nil {
+			peerConn.Config.MessageListeners.OnAddr(peerConn, message.(*wire.MessageAddr))
+		}
+	case reflect.TypeOf(&wire.MessageBFTPropose{}):
+		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
+		}
+	case reflect.TypeOf(&wire.MessageBFTAgree{}):
+		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTAgree))
+		}
+	case reflect.TypeOf(&wire.MessageBFTCommit{}):
+		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTCommit))
+		}
+	case reflect.TypeOf(&wire.MessageBFTReady{}):
+		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
+		}
+	case reflect.TypeOf(&wire.MessageBFTReq{}):
+		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
+			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReq))
+		}
+	case reflect.TypeOf(&wire.MessagePeerState{}):
+		if peerConn.Config.MessageListeners.OnPeerState != nil {
+			peerConn.Config.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
+		}
+	case reflect.TypeOf(&wire.MessageMsgCheck{}):
+		peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
+	case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
+		peerConn.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
+	default:
+		Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, peerConn)
+	}
+	return nil
+}
+
 // InMessageHandler - Handle all in-coming message
 // We receive a message with stream connection  of peer-to-peer
 // convert to string data
 // check type object which map with string data
 // call corresponding function to process message
-func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
+func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
 	peerConn.SetIsConnected(true)
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
@@ -132,189 +318,20 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) {
 			Logger.log.Errorf("InMessageHandler QUIT")
 			Logger.log.Error("---------------------------------------------------------------------")
 			close(peerConn.cWrite)
-			return
+			return errR
 		}
 
 		if str != DelimMessageStr {
 			// Get an good message, make an process to do something on it
-			go func(msgStr string) {
-				// Parse Message header from last 24 bytes header message
-				jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
-
-				// cache message hash
-				hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
-				if err := peerConn.ListenerPeer.HashToPool(hashMsgRaw); err != nil {
-					Logger.log.Error(err)
-					return
-				}
-				// unzip data before process
-				jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytesRaw)
-				if err != nil {
-					Logger.log.Error("Can not unzip from message")
-					Logger.log.Error(err)
-					return
-				}
-
-				Logger.log.Infof("In message content : %s", string(jsonDecodeBytes))
-
-				// Parse Message body
-				messageBody := jsonDecodeBytes[:len(jsonDecodeBytes)-wire.MessageHeaderSize]
-
-				messageHeader := jsonDecodeBytes[len(jsonDecodeBytes)-wire.MessageHeaderSize:]
-
-				// get cmd type in header message
-				commandInHeader := bytes.Trim(messageHeader[:wire.MessageCmdTypeSize], "\x00")
-				commandType := string(messageHeader[:len(commandInHeader)])
-				// convert to particular message from message cmd type
-				message, err := wire.MakeEmptyMessage(string(commandType))
-				if err != nil {
-					Logger.log.Error("Can not find particular message for message cmd type")
-					Logger.log.Error(err)
-					return
-				}
-
-				if len(jsonDecodeBytes) > message.MaxPayloadLength(1) {
-					Logger.log.Errorf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
-					return
-				}
-				// check forward
-				if peerConn.Config.MessageListeners.GetCurrentRoleShard != nil {
-					cRole, cShard := peerConn.Config.MessageListeners.GetCurrentRoleShard()
-					if cShard != nil {
-						fT := messageHeader[wire.MessageCmdTypeSize]
-						if fT == MessageToShard {
-							fS := messageHeader[wire.MessageCmdTypeSize+1]
-							if *cShard != fS {
-								if peerConn.Config.MessageListeners.PushRawBytesToShard != nil {
-									peerConn.Config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
-								}
-								return
-							}
-						}
-					}
-					if cRole != "" {
-						fT := messageHeader[wire.MessageCmdTypeSize]
-						if fT == MessageToBeacon && cRole != "beacon" {
-							if peerConn.Config.MessageListeners.PushRawBytesToBeacon != nil {
-								peerConn.Config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
-							}
-							return
-						}
-					}
-				}
-
-				err = json.Unmarshal(messageBody, &message)
-				if err != nil {
-					Logger.log.Error("Can not parse struct from json message")
-					Logger.log.Error(err)
-					return
-				}
-				realType := reflect.TypeOf(message)
-				Logger.log.Infof("Cmd message type of struct %s", realType.String())
-
-				// cache message hash
-				hashMsg := message.Hash()
-				if err := peerConn.ListenerPeer.HashToPool(hashMsg); err != nil {
-					Logger.log.Error(err)
-					return
-				}
-
-				// process message for each of message type
-				switch realType {
-				case reflect.TypeOf(&wire.MessageTx{}):
-					if peerConn.Config.MessageListeners.OnTx != nil {
-						peerConn.Config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
-					}
-				case reflect.TypeOf(&wire.MessageTxToken{}):
-					if peerConn.Config.MessageListeners.OnTxToken != nil {
-						peerConn.Config.MessageListeners.OnTxToken(peerConn, message.(*wire.MessageTxToken))
-					}
-				case reflect.TypeOf(&wire.MessageTxPrivacyToken{}):
-					if peerConn.Config.MessageListeners.OnTxPrivacyToken != nil {
-						peerConn.Config.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
-					}
-				case reflect.TypeOf(&wire.MessageBlockShard{}):
-					if peerConn.Config.MessageListeners.OnBlockShard != nil {
-						peerConn.Config.MessageListeners.OnBlockShard(peerConn, message.(*wire.MessageBlockShard))
-					}
-				case reflect.TypeOf(&wire.MessageBlockBeacon{}):
-					if peerConn.Config.MessageListeners.OnBlockBeacon != nil {
-						peerConn.Config.MessageListeners.OnBlockBeacon(peerConn, message.(*wire.MessageBlockBeacon))
-					}
-				case reflect.TypeOf(&wire.MessageCrossShard{}):
-					if peerConn.Config.MessageListeners.OnCrossShard != nil {
-						peerConn.Config.MessageListeners.OnCrossShard(peerConn, message.(*wire.MessageCrossShard))
-					}
-				case reflect.TypeOf(&wire.MessageShardToBeacon{}):
-					if peerConn.Config.MessageListeners.OnShardToBeacon != nil {
-						peerConn.Config.MessageListeners.OnShardToBeacon(peerConn, message.(*wire.MessageShardToBeacon))
-					}
-				case reflect.TypeOf(&wire.MessageGetBlockBeacon{}):
-					if peerConn.Config.MessageListeners.OnGetBlockBeacon != nil {
-						peerConn.Config.MessageListeners.OnGetBlockBeacon(peerConn, message.(*wire.MessageGetBlockBeacon))
-					}
-				case reflect.TypeOf(&wire.MessageGetBlockShard{}):
-					if peerConn.Config.MessageListeners.OnGetBlockShard != nil {
-						peerConn.Config.MessageListeners.OnGetBlockShard(peerConn, message.(*wire.MessageGetBlockShard))
-					}
-				case reflect.TypeOf(&wire.MessageGetCrossShard{}):
-					if peerConn.Config.MessageListeners.OnGetCrossShard != nil {
-						peerConn.Config.MessageListeners.OnGetCrossShard(peerConn, message.(*wire.MessageGetCrossShard))
-					}
-				case reflect.TypeOf(&wire.MessageGetShardToBeacon{}):
-					if peerConn.Config.MessageListeners.OnGetShardToBeacon != nil {
-						peerConn.Config.MessageListeners.OnGetShardToBeacon(peerConn, message.(*wire.MessageGetShardToBeacon))
-					}
-				case reflect.TypeOf(&wire.MessageVersion{}):
-					if peerConn.Config.MessageListeners.OnVersion != nil {
-						versionMessage := message.(*wire.MessageVersion)
-						peerConn.Config.MessageListeners.OnVersion(peerConn, versionMessage)
-					}
-				case reflect.TypeOf(&wire.MessageVerAck{}):
-					peerConn.verAckReceived = true
-					if peerConn.Config.MessageListeners.OnVerAck != nil {
-						peerConn.Config.MessageListeners.OnVerAck(peerConn, message.(*wire.MessageVerAck))
-					}
-				case reflect.TypeOf(&wire.MessageGetAddr{}):
-					if peerConn.Config.MessageListeners.OnGetAddr != nil {
-						peerConn.Config.MessageListeners.OnGetAddr(peerConn, message.(*wire.MessageGetAddr))
-					}
-				case reflect.TypeOf(&wire.MessageAddr{}):
-					if peerConn.Config.MessageListeners.OnGetAddr != nil {
-						peerConn.Config.MessageListeners.OnAddr(peerConn, message.(*wire.MessageAddr))
-					}
-				case reflect.TypeOf(&wire.MessageBFTPropose{}):
-					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
-					}
-				case reflect.TypeOf(&wire.MessageBFTAgree{}):
-					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTAgree))
-					}
-				case reflect.TypeOf(&wire.MessageBFTCommit{}):
-					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTCommit))
-					}
-				case reflect.TypeOf(&wire.MessageBFTReady{}):
-					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
-					}
-				case reflect.TypeOf(&wire.MessageBFTReq{}):
-					if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-						peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReq))
-					}
-				case reflect.TypeOf(&wire.MessagePeerState{}):
-					if peerConn.Config.MessageListeners.OnPeerState != nil {
-						peerConn.Config.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
-					}
-				case reflect.TypeOf(&wire.MessageMsgCheck{}):
-					peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
-				case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
-					peerConn.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
-				default:
-					Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, peerConn)
-				}
-			}(str)
+			if !peerConn.isUnitTest {
+				// not use for unit test -> call go routine for process
+				go peerConn.processInMessageString(str)
+			} else {
+				// not use for unit test -> not call go routine for process
+				// and break for loop
+				peerConn.processInMessageString(str)
+				return nil
+			}
 		}
 	}
 }
