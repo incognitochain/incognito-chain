@@ -116,17 +116,6 @@ type MessageListeners struct {
 	GetCurrentRoleShard  func() (string, *byte)
 }
 
-// outMsg is used to house a message to be sent along with a channel to signal
-// when the message has been sent (or won't be sent due to things such as
-// shutdown)
-type outMsg struct {
-	forwardType  byte // a all, s shard, p  peer, b beacon
-	forwardValue *byte
-	rawBytes     *[]byte
-	message      wire.Message
-	doneChan     chan<- struct{}
-}
-
 func (peerObj *Peer) HashToPool(hash string) error {
 	if peerObj.messagePoolNew == nil {
 		peerObj.messagePoolNew = cache.New(MessageLiveTime, MessageCleanupInterval)
@@ -609,12 +598,20 @@ func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- 
 	}
 }
 
+// QueueMessageWithEncoding adds the passed Incognito message to the peer send
+// queue. This function is identical to QueueMessage, however it allows the
+//// caller to specify the bytes
+//// This function is safe for concurrent access.
 func (peerObj *Peer) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
 	for _, peerConnection := range peerObj.PeerConns {
 		go peerConnection.QueueMessageWithBytes(msgBytes, doneChan)
 	}
 }
 
+// Stop - stop all features of peer,
+// not connect,
+// not stream,
+// not read and write message on stream
 func (peerObj *Peer) Stop() {
 	Logger.log.Warnf("Stopping PEER %s", peerObj.PeerID.Pretty())
 
@@ -629,9 +626,7 @@ func (peerObj *Peer) Stop() {
 	Logger.log.Criticalf("PEER %s stopped", peerObj.PeerID.Pretty())
 }
 
-/*
-handleConnected - set established flag to a peer when being connected
-*/
+// handleConnected - set established flag to a peer when being connected
 func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.RetryCount = 0
@@ -644,9 +639,7 @@ func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 	}
 }
 
-/*
-handleDisconnected - handle connected peer when it is disconnected, remove and retry connection
-*/
+// handleDisconnected - handle connected peer when it is disconnected, remove and retry connection
 func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.SetConnState(ConnCanceled)
@@ -659,9 +652,7 @@ func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
 	}
 }
 
-/*
-handleFailed - handle when connecting peer failure
-*/
+// handleFailed - handle when connecting peer failure
 func (peerObj *Peer) handleFailed(peerConn *PeerConn) {
 	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
 
@@ -672,9 +663,7 @@ func (peerObj *Peer) handleFailed(peerConn *PeerConn) {
 	}
 }
 
-/*
-retryPeerConnection - retry to connect to peer when being disconnected
-*/
+// retryPeerConnection - retry to connect to peer when being disconnected
 func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 	time.AfterFunc(RetryConnDuration, func() {
 		Logger.log.Infof("Retry Zero RemotePeer Connection %s", peerConn.RemoteRawAddress)
@@ -693,6 +682,7 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 	})
 }
 
+// GetPeerConnOfAll - return all Peer connection to other peers
 func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
