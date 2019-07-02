@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 )
 
 // DatabaseInterface provides the interface that is used to store blocks, txs, or any data of Incognito network.
@@ -152,8 +151,8 @@ type DatabaseInterface interface {
 	GetBurningConfirm(txID []byte) (uint64, error)
 
 	// Decentralized bridge
-	InsertETHTxHashIssued(rCommon.Hash) error
-	IsETHTxHashIssued(rCommon.Hash) (bool, error)
+	InsertETHTxHashIssued([]byte) error
+	IsETHTxHashIssued([]byte) (bool, error)
 
 	// Block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error

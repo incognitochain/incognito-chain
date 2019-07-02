@@ -6,7 +6,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/ethrelaying/les"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
@@ -88,7 +87,7 @@ func (mb *MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	txr Transaction,
 	bcr BlockchainRetriever,
-	ethTxHashesUsed []rCommon.Hash,
+	uniqETHTxsUsed [][]byte,
 ) (bool, error) {
 	return true, nil
 }
@@ -146,7 +145,7 @@ type Metadata interface {
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, []rCommon.Hash) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, [][]byte) (bool, error)
 	IsMinerCreatedMetaType() bool
 }
 
@@ -193,5 +192,5 @@ type Transaction interface {
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, []rCommon.Hash) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, [][]byte) (bool, error)
 }

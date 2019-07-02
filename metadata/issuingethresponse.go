@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/ethrelaying/accounts/abi"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/ethrelaying/core/types"
 	"github.com/incognitochain/incognito-chain/ethrelaying/light"
 	"github.com/incognitochain/incognito-chain/ethrelaying/rlp"
@@ -24,7 +23,7 @@ import (
 type IssuingETHResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
-	ETHTxHash     rCommon.Hash
+	UniqETHTx     []byte
 }
 
 type IssuingETHReqAction struct {
@@ -49,7 +48,7 @@ func ParseETHLogData(data []byte) (map[string]interface{}, error) {
 
 func NewIssuingETHResponse(
 	requestedTxID common.Hash,
-	ethTxHash rCommon.Hash,
+	uniqETHTx []byte,
 	metaType int,
 ) *IssuingETHResponse {
 	metadataBase := MetadataBase{
@@ -57,7 +56,7 @@ func NewIssuingETHResponse(
 	}
 	return &IssuingETHResponse{
 		RequestedTxID: requestedTxID,
-		ETHTxHash:     ethTxHash,
+		UniqETHTx:     uniqETHTx,
 		MetadataBase:  metadataBase,
 	}
 }
@@ -83,7 +82,7 @@ func (iRes *IssuingETHResponse) ValidateMetadataByItself() bool {
 
 func (iRes *IssuingETHResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
-	record += iRes.ETHTxHash.String()
+	record += string(iRes.UniqETHTx)
 	record += iRes.MetadataBase.Hash().String()
 
 	// final hash
@@ -95,9 +94,9 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func IsETHHashUsedInBlock(ethTxHash rCommon.Hash, ethTxHashesUsed []rCommon.Hash) bool {
-	for _, hash := range ethTxHashesUsed {
-		if bytes.Equal(ethTxHash[:], hash[:]) {
+func IsETHHashUsedInBlock(uniqETHTx []byte, uniqETHTxsUsed [][]byte) bool {
+	for _, item := range uniqETHTxsUsed {
+		if bytes.Equal(uniqETHTx, item) {
 			return true
 		}
 	}
@@ -112,7 +111,7 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	ethTxHashesUsed []rCommon.Hash,
+	uniqETHTxsUsed [][]byte,
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
@@ -137,6 +136,10 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 
 		md := issuingETHReqAction.Meta
 		ethHeader := bcr.GetLightEthereum().GetLightChain().GetHeaderByHash(md.BlockHash)
+		if ethHeader == nil {
+			fmt.Println("WARNING: Could not find out the ETH block header with the hash: ", md.BlockHash)
+			continue
+		}
 		keybuf := new(bytes.Buffer)
 		keybuf.Reset()
 		rlp.Encode(keybuf, md.TxIndex)
@@ -162,22 +165,22 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		if err != nil {
 			continue
 		}
-		ethTxHash := constructedReceipt.TxHash
-		if !bytes.Equal(ethTxHash[:], iRes.ETHTxHash[:]) {
+		uniqETHTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
+		if !bytes.Equal(uniqETHTx, iRes.UniqETHTx) {
 			continue
 		}
-		isUsedInBlock := IsETHHashUsedInBlock(ethTxHash, ethTxHashesUsed)
+		isUsedInBlock := IsETHHashUsedInBlock(uniqETHTx, uniqETHTxsUsed)
 		if isUsedInBlock {
-			fmt.Println("WARNING: already issued for the hash in current block: ", ethTxHash)
+			fmt.Println("WARNING: already issued for the hash in current block: ", uniqETHTx)
 			continue
 		}
 
-		isIssued, err := bcr.GetDatabase().IsETHTxHashIssued(ethTxHash)
+		isIssued, err := bcr.GetDatabase().IsETHTxHashIssued(uniqETHTx)
 		if err != nil {
 			continue
 		}
 		if isIssued {
-			fmt.Println("WARNING: already issued for the hash in previous block: ", ethTxHash)
+			fmt.Println("WARNING: already issued for the hash in previous block: ", uniqETHTx)
 			continue
 		}
 		if len(constructedReceipt.Logs) == 0 {
@@ -207,7 +210,7 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			!bytes.Equal(tokenID[:], assetID[:]) {
 			continue
 		}
-		ethTxHashesUsed = append(ethTxHashesUsed, ethTxHash)
+		uniqETHTxsUsed = append(uniqETHTxsUsed, uniqETHTx)
 		idx = i
 		break
 	}
