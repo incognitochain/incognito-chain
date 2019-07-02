@@ -3,7 +3,7 @@ package wire
 import (
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	peer "github.com/libp2p/go-libp2p-peer"
 
 	"time"
@@ -55,7 +55,7 @@ func (msg *MessageAddr) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageAddr) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageAddr) SignMsg(_ *incognitokey.KeySet) error {
 	return nil
 }
 
