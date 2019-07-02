@@ -11,12 +11,21 @@ import (
 )
 var (
 	shardPoolTest         *ShardPool
+	bestShardHeight = make(map[byte]uint64)
 	shardPoolMapInterface = make(map[byte]blockchain.ShardPool)
 	pbShardPool           = pubsub.NewPubSubManager()
 	shardBlock2           = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
 			ShardID: 0,
 			Height: 2,
+			Timestamp: time.Now().Unix()-100,
+		},
+	}
+	shardBlock2Forked           = &blockchain.ShardBlock{
+		Header: blockchain.ShardHeader{
+			ShardID: 0,
+			Height: 2,
+			Timestamp: time.Now().Unix(),
 		},
 	}
 	shardBlock3 = &blockchain.ShardBlock{
@@ -30,7 +39,7 @@ var (
 		Header: blockchain.ShardHeader{
 			ShardID: 0,
 			Height: 3,
-			PrevBlockHash: common.HashH([]byte{0}),
+			PrevBlockHash: shardBlock2Forked.Header.Hash(),
 		},
 	}
 	shardBlock4 = &blockchain.ShardBlock{
@@ -83,6 +92,16 @@ var InitShardPoolTest = func(pubsubManager *pubsub.PubSubManager) {
 	shardPoolTest.RoleInCommitteesEvent = subChanRole
 }
 var _ = func() (_ struct{}) {
+	for i:=0; i < 255; i++ {
+		shardID := byte(i)
+		bestShardHeight[shardID] = 1
+	}
+	blockchain.SetBestStateBeacon(&blockchain.BestStateBeacon{
+		BestShardHeight: bestShardHeight,
+	})
+	blockchain.SetBestStateShard(0,&blockchain.BestStateShard{
+		ShardHeight:1,
+	} )
 	InitShardPool(shardPoolMapInterface, pbShardPool)
 	InitShardPoolTest(pbShardPool)
 	go pbShardPool.Start()
@@ -224,7 +243,6 @@ func TestShardPoolGetShardState(t *testing.T) {
 	}
 	ResetShardPool()
 }
-
 func TestShardPoolValidateShardBlock(t *testing.T) {
 	// skip old block
 	// Test receive old block than latestvalidheight
@@ -320,100 +338,172 @@ func TestShardPoolValidateShardBlock(t *testing.T) {
 		}
 	}
 }
-//func TestShardPoolInsertNewBeaconBlockToPool(t *testing.T) {
-//	InitShardPoolTest(pb)
-//	// Condition 1: check height
-//	// Test Height is not equal to latestvalidheight + 1 (not expected block)
-//	isOk := beaconPoolTest.insertNewBeaconBlockToPool(beaconBlock3)
-//	if isOk {
-//		t.Fatalf("Block %+v is invalid with state %+v", beaconBlock3.Header.Height, beaconPoolTest.latestValidHeight)
-//	} else {
-//		if _, ok := beaconPoolTest.pendingPool[beaconBlock3.Header.Height]; !ok {
-//			t.Fatalf("Block %+v should be in pending pool", beaconBlock3.Header.Height)
-//		}
-//	}
-//	// Test Height equal to latestvalidheight + 1
-//	// Condition 2: Pool is full capacity -> push to pending pool
-//	for index, beaconBlock := range validShardBlocks {
-//		if index < len(validShardBlocks) - 1 {
-//			beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock)
-//			beaconPoolTest.latestValidHeight = beaconBlock.Header.Height
-//		} else {
-//			isOk := beaconPoolTest.insertNewBeaconBlockToPool(beaconBlock)
-//			if isOk {
-//				t.Fatalf("Block %+v is valid with state %+v but pool cappacity reach max %+v", beaconBlock.Header.Height, beaconPoolTest.latestValidHeight, len(beaconPoolTest.validPool))
-//			} else {
-//				if _, ok := beaconPoolTest.pendingPool[beaconBlock.Header.Height]; !ok {
-//					t.Fatalf("Block %+v should be in pending pool", beaconBlock.Header.Height)
-//				}
-//			}
-//		}
-//	}
-//	// reset valid pool and pending pool
-//	InitShardPoolTest(pb)
-//	// Condition 3: check next block
-//	// - Next block doesn't exist
-//	isOk = beaconPoolTest.insertNewBeaconBlockToPool(beaconBlock2)
-//	if isOk {
-//		t.Fatalf("Block %+v is invalid because next block does not exit", beaconBlock3.Header.Height)
-//	} else {
-//		if len(beaconPoolTest.validPool) != 0 {
-//			t.Fatalf("No block should enter pool")
-//		}
-//		if _, ok := beaconPoolTest.pendingPool[beaconBlock2.Header.Height]; !ok {
-//			t.Fatalf("Block %+v should be in pending pool ", beaconBlock2.Header.Height)
-//		}
-//		if _, ok := beaconPoolTest.pendingPool[beaconBlock3.Header.Height]; ok {
-//			t.Fatalf("Block %+v exist in pending pool but block %+v still not in pool", beaconBlock3.Header.Height, beaconBlock2.Header.Height)
-//		}
-//	}
-//	delete(beaconPoolTest.pendingPool, beaconBlock2.Header.Height)
-//	// push next block to pending pool
-//	// Condition 4: next block does not point to this block
-//	beaconPoolTest.pendingPool[beaconBlock3Forked.Header.Height] = beaconBlock3Forked
-//	isOk = beaconPoolTest.insertNewBeaconBlockToPool(beaconBlock2)
-//	if isOk {
-//		t.Fatalf("Block %+v is invalid because next block exit but not ponit to this block", beaconBlock3.Header.Height)
-//	} else {
-//		//isExist := beaconPool.cache.Contains(beaconBlock2.Header.Hash())
-//		//if !isExist {
-//		//	t.Fatalf("Forked block %+v should be push into conflict pool", beaconBlock2.Header.Hash())
-//		//} else {
-//		//	err = beaconPoolTest.validateBeaconBlock(beaconBlock2, false)
-//		//	if err == nil {
-//		//		t.Fatalf("Forked block %+v should failed to validate", beaconBlock2.Header.Height)
-//		//	} else {}
-//		//	if err.(*BlockPoolError).Code != ErrCodeMessage[OldBlockError].Code {
-//		//		t.Fatal("Wrong Error Code")
-//		//	}
-//		//	if err.(*BlockPoolError).Err.Error() != errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork: "+fmt.Sprintf("%d", beaconBlock2.Header.Height)).Error() {
-//		//		t.Fatal("Wrong Expected Error")
-//		//	}
-//		//}
-//	}
-//	// delete forked block out of pool and push next valid block
-//	delete(beaconPoolTest.pendingPool, beaconBlock3Forked.Header.Height)
-//	// push next valid block to pending pool => current block should get in valid pool
-//	beaconPoolTest.pendingPool[beaconBlock3.Header.Height] = beaconBlock3
-//	isOk = beaconPoolTest.insertNewBeaconBlockToPool(beaconBlock2)
-//	if !isOk {
-//		t.Fatalf("Block %+v should be able to get in valid pool", beaconBlock3.Header.Height)
-//	} else {
-//		if len(beaconPoolTest.validPool) != 1 {
-//			t.Fatalf("Expect length pool to be 1 but get %+v", len(beaconPoolTest.validPool))
-//		}
-//		tempBlock := beaconPoolTest.validPool[0]
-//		tempHash := tempBlock.Header.Hash()
-//		beaconBlock2Hash := beaconBlock2.Header.Hash()
-//		if !tempHash.IsEqual(&beaconBlock2Hash) && tempBlock.Header.Height != beaconBlock2.Header.Height {
-//			t.Fatalf("Block %+v with hash %+v expected but get %+v with hash %+v", beaconBlock2.Header.Height, beaconBlock2Hash, tempHash, tempBlock.Header.Height)
-//		}
-//	}
-//	// check lastest valid height
-//	if beaconPoolTest.latestValidHeight != 2 {
-//		t.Fatalf("Latest valid height should update to %+v but get %+v", 2, beaconPoolTest.latestValidHeight)
-//	}
-//}
+
+func TestShardPoolInsertNewShardBlockToPool(t *testing.T) {
+	InitShardPoolTest(pbShardPool)
+	// Condition 1: beacon best state has shard height is greater than block height
+	isOk := shardPoolTest.insertNewShardBlockToPool(shardBlock2)
+	if isOk {
+		t.Fatalf("Block %+v is invalid with state %+v", shardBlock2.Header.Height, shardPoolTest.latestValidHeight)
+	} else {
+		if _, ok := shardPoolTest.pendingPool[shardBlock2.Header.Height]; !ok {
+			t.Fatalf("Block %+v should be in pending pool", shardBlock2.Header.Height)
+		}
+	}
+	// set higher best shard state
+	blockchain.GetBestStateBeacon().SetBestShardHeight(0,4)
+	// Condition 2: check height
+	// Test Height is not equal to latestvalidheight + 1 (not expected block)
+	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock3)
+	if isOk {
+		t.Fatalf("Block %+v is invalid with state %+v", shardBlock3.Header.Height, shardPoolTest.latestValidHeight)
+	} else {
+		if _, ok := shardPoolTest.pendingPool[shardBlock3.Header.Height]; !ok {
+			t.Fatalf("Block %+v should be in pending pool", shardBlock3.Header.Height)
+		}
+	}
+	delete(shardPoolTest.pendingPool, shardBlock3.Header.Height)
+	for index, shardBlock := range pendingShardBlocks {
+		if index < len(pendingShardBlocks) - 1 {
+			shardPoolTest.pendingPool[shardBlock.Header.Height] = shardBlock
+		}
+	}
+	// if pending list is full then block with invalid height will not get into pool (pending and valid)
+	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock3)
+	if isOk {
+		t.Fatalf("Block %+v is invalid with state %+v", shardBlock3.Header.Height, shardPoolTest.latestValidHeight)
+	} else {
+		if _, ok := shardPoolTest.pendingPool[shardBlock3.Header.Height]; ok {
+			t.Fatalf("Block %+v should NOT be in pending pool", shardBlock3.Header.Height)
+		}
+	}
+	// reset valid pool and pending pool
+	InitShardPoolTest(pbShardPool)
+	// Test Height equal to latestvalidheight + 1 and best shard height is greater than each valid block height
+	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks) - 1].Header.Height+1)
+	// Condition 3: Pool is full capacity -> push to pending pool
+	for index, shardBlock := range validShardBlocks {
+		if index < len(validShardBlocks) - 1 {
+			shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock)
+			shardPoolTest.latestValidHeight = shardBlock.Header.Height
+		} else {
+			isOk := shardPoolTest.insertNewShardBlockToPool(shardBlock)
+			if isOk {
+				t.Fatalf("Block %+v is valid with state %+v but pool cappacity reach max %+v", shardBlock.Header.Height, beaconPoolTest.latestValidHeight, len(beaconPoolTest.validPool))
+			} else {
+				if _, ok := shardPoolTest.pendingPool[shardBlock.Header.Height]; !ok {
+					t.Fatalf("Block %+v should be in pending pool", shardBlock.Header.Height)
+				}
+			}
+		}
+	}
+	delete(shardPoolTest.pendingPool, validShardBlocks[len(validShardBlocks)-1].Header.Height)
+	for index, shardBlock := range pendingShardBlocks {
+		if index < len(pendingShardBlocks) - 1 {
+			shardPoolTest.pendingPool[shardBlock.Header.Height] = shardBlock
+		}
+	}
+	// if pending list is full then block with invalid height will not get into pool (pending and valid)
+	isOk = shardPoolTest.insertNewShardBlockToPool(validShardBlocks[len(validShardBlocks)-1])
+	if isOk {
+		t.Fatalf("Block %+v is invalid with state %+v", validShardBlocks[len(validShardBlocks)-1].Header.Height, shardPoolTest.latestValidHeight)
+	} else {
+		if _, ok := shardPoolTest.pendingPool[validShardBlocks[len(validShardBlocks)-1].Header.Height]; ok {
+			t.Fatalf("Block %+v should NOT be in pending pool", validShardBlocks[len(validShardBlocks)-1].Header.Height)
+		}
+	}
+	// reset valid pool and pending pool
+	InitShardPoolTest(pbShardPool)
+	// Condition 4: check how many block in valid pool
+	// if no block in valid pool then block will be push to valid pool
+	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock2)
+	if !isOk {
+		t.Fatalf("Block %+v is valid because no block in valid pool and it next valid state %+v", shardBlock2.Header.Height, shardPoolTest.latestValidHeight)
+	} else {
+		if len(shardPoolTest.validPool) != 1 {
+			t.Fatalf("Valid pool should have one block")
+		}
+		if shardPoolTest.validPool[0].Header.Height != 2 {
+			t.Fatalf("Block %+v should be in valid pool ", shardBlock2.Header.Height)
+		}
+	}
+	// If valid pool is not empty then
+	// Condition 5: current block does not point to latest block in valid pool
+	// => latest block in valid pool is FORKED => discard
+	// validpool has shardblock2 and latestvalidheight is 2
+	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock3Forked)
+	if isOk {
+		t.Fatalf("Block %+v is invalid because previous block is not latest block in validpool nor in conflicted pool", shardBlock2.Header.Height)
+	} else {
+		if len(shardPoolTest.pendingPool) != 1 {
+			t.Fatalf("Valid pool should have one block but get %+v", len(shardPoolTest.pendingPool))
+		}
+		if len(shardPoolTest.validPool) != 0 {
+			t.Fatalf("Valid pool should have no block but get %+v", len(shardPoolTest.validPool))
+		}
+		if shardPoolTest.latestValidHeight != 1 {
+			t.Fatalf("Latest valid height should be 1 but get %+v", shardPoolTest.latestValidHeight)
+		}
+		if _, isOk := shardPoolTest.pendingPool[shardBlock3Forked.Header.Height]; !isOk {
+			t.Fatalf("Block %+v should be in pending pool ", shardBlock2Forked.Header.Height)
+		}
+	}
+	// reset valid pool and pending pool
+	InitShardPoolTest(pbShardPool)
+	// If next block point to latest block in valid pool then accept it
+	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock2Forked)
+	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock3Forked)
+	if !isOk {
+		t.Fatalf("Block %+v should be push into valid pool", shardBlock3Forked)
+	} else {
+		if len(shardPoolTest.pendingPool) != 0 {
+			t.Fatalf("Valid pool should have zero block but get %+v", len(shardPoolTest.pendingPool))
+		}
+		if len(shardPoolTest.validPool) != 2 {
+			t.Fatalf("Valid pool should have 2 block but get %+v", len(shardPoolTest.validPool))
+		}
+		if shardPoolTest.latestValidHeight != 3 {
+			t.Fatalf("Latest valid height should be 3 but get %+v", shardPoolTest.latestValidHeight)
+		}
+		if shardPoolTest.validPool[0].Header.Height != 2 && shardPoolTest.validPool[1].Header.Height != 3 {
+			t.Fatalf("Block %+v and %+v should be in valid pool but get %+v, %+v", shardBlock2Forked.Header.Height, shardBlock3Forked.Header.Height, shardPoolTest.validPool[0].Header.Height,shardPoolTest.validPool[1].Header.Height)
+		}
+	}
+	// reset valid pool and pending pool
+	InitShardPoolTest(pbShardPool)
+	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock2)
+	err = shardPoolTest.validateShardBlock(shardBlock2Forked, false)
+	if err == nil {
+		t.Fatal("Should receive old block error but got no err")
+	} else {
+		if len(shardPoolTest.conflictedPool) != 1 {
+			t.Fatalf("Valid pool should have 1 block but get %+v", len(shardPoolTest.conflictedPool))
+		}
+		if _, isOk := shardPoolTest.conflictedPool[shardBlock2Forked.Header.Hash()]; !isOk {
+			t.Fatalf("Block %+v, %+v should be push into conflict pool", shardBlock2Forked.Header.Height, shardBlock2Forked.Header.Hash())
+		}
+	}
+	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock3Forked)
+	if !isOk {
+		t.Fatalf("Block %+v should be push into valid pool", shardBlock3Forked.Header.Height)
+	} else {
+		if len(shardPoolTest.pendingPool) != 0 {
+			t.Fatalf("Valid pool should have zero block but get %+v", len(shardPoolTest.pendingPool))
+		}
+		if len(shardPoolTest.conflictedPool) != 0 {
+			t.Fatalf("Valid pool should have 0 block but get %+v", len(shardPoolTest.conflictedPool))
+		}
+		if len(shardPoolTest.validPool) != 2 {
+			t.Fatalf("Valid pool should have 1 block but get %+v", len(shardPoolTest.validPool))
+		}
+		if shardPoolTest.latestValidHeight != 3 {
+			t.Fatalf("Latest valid height should be 3 but get %+v", shardPoolTest.latestValidHeight)
+		}
+		if shardPoolTest.validPool[0].Header.Height != 2 && shardPoolTest.validPool[1].Header.Height != 3 {
+			t.Fatalf("Block %+v and %+v should be in valid pool but get %+v, %+v", shardBlock2Forked.Header.Height, shardBlock3Forked.Header.Height, shardPoolTest.validPool[0].Header.Height,shardPoolTest.validPool[1].Header.Height)
+		}
+	}
+}
 //
 //func TestShardPoolPromotePendingPool(t *testing.T) {
 //	InitShardPoolTest(pb)
