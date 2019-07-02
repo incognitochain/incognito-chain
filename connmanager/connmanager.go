@@ -503,11 +503,11 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	return c
 }
 
-func (connManager *ConnManager) checkPeerConnOfPbk(pbk string) bool {
+func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool {
 	listener := connManager.Config.ListenerPeer
 	pcs := listener.GetPeerConnOfAll()
 	for _, peerConn := range pcs {
-		if peerConn.RemotePeer.PublicKey == pbk {
+		if peerConn.RemotePeer.PublicKey == publicKey {
 			return true
 		}
 	}
@@ -556,7 +556,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 		if ok {
 			cPbk := connManager.Config.ConsensusState.UserPublicKey
 			// if existed conn then not append to array
-			if cPbk != pbk && !connManager.checkPeerConnOfPbk(pbk) {
+			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, nil)
 				countPeerShard++
 			}
@@ -601,7 +601,7 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 		if ok {
 			cPbk := connManager.Config.ConsensusState.UserPublicKey
 			// if existed conn then not append to array
-			if cPbk != pbk && !connManager.checkPeerConnOfPbk(pbk) {
+			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, nil)
 			}
 			countPeerShard++
@@ -618,7 +618,7 @@ func (connManager *ConnManager) handleRandPeersOfNoShard(maxPeers int, mPeers ma
 	shardByCommittee := connManager.Config.ConsensusState.getShardByCommittee()
 	for _, peer := range mPeers {
 		publicKey := peer.PublicKey
-		if !connManager.checkPeerConnOfPbk(publicKey) {
+		if !connManager.checkPeerConnOfPublicKey(publicKey) {
 			pBKs := connManager.Config.ConsensusState.getBeaconCommittee()
 			if common.IndexOfStr(publicKey, pBKs) >= 0 {
 				continue

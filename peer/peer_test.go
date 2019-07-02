@@ -3,6 +3,7 @@ package peer
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	swarm "github.com/libp2p/go-libp2p-swarm"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"strconv"
@@ -66,6 +67,20 @@ func TestPeer_Start(t *testing.T) {
 	peerObj.Start()
 }
 
+func TestPeer_Stop(t *testing.T) {
+	seed, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
+	netAddr, err := common.ParseListener("127.0.0.1:9333", "ip")
+	if err != nil {
+		t.Error(err)
+	}
+	peerObj, err := Peer{
+		Seed:             seed,
+		ListeningAddress: *netAddr,
+	}.NewPeer()
+	go peerObj.Start()
+	peerObj.Stop()
+}
+
 func TestPeer_PushConn(t *testing.T) {
 	seed, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
 	netAddr, err := common.ParseListener("127.0.0.1:9333", "ip")
@@ -99,4 +114,57 @@ func TestPeer_PushConn(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestPeer_PushStream(t *testing.T) {
+	seed, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
+	netAddr, err := common.ParseListener("127.0.0.1:9333", "ip")
+	if err != nil {
+		t.Error(err)
+	}
+	peerObj, err := Peer{
+		Seed:             seed,
+		ListeningAddress: *netAddr,
+	}.NewPeer()
+
+	stream := &swarm.Stream{}
+	peerObj.PushStream(stream)
+	for {
+		fmt.Print(111)
+		select {
+		case newStream := <-peerObj.cNewStream:
+			{
+				assert.Equal(t, newStream.Stream, stream)
+				return
+			}
+		}
+	}
+}
+
+func TestPeer_RemovePeerConn(t *testing.T) {
+	seed, _ := strconv.ParseInt(os.Getenv("LISTENER_PEER_SEED"), 10, 64)
+	netAddr, err := common.ParseListener("127.0.0.1:9333", "ip")
+	if err != nil {
+		t.Error(err)
+	}
+	peerObj, err := Peer{
+		Seed:             seed,
+		ListeningAddress: *netAddr,
+		PeerConns:        make(map[string]*PeerConn),
+	}.NewPeer()
+
+	peerConn := &PeerConn{
+		cMsgHash:   make(map[string]chan bool),
+		isUnitTest: true,
+		ListenerPeer: &Peer{
+			PublicKey: "abc1",
+		},
+		RemotePeer: &Peer{
+			PublicKey: "abc1",
+		},
+	}
+	peerObj.setPeerConn(peerConn)
+	assert.Equal(t, len(peerObj.PeerConns), 1)
+	peerObj.removePeerConn(peerConn)
+	assert.Equal(t, len(peerObj.PeerConns), 0)
 }
