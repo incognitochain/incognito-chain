@@ -34,8 +34,8 @@ type Peer struct {
 	// channel
 	cStop           chan struct{}
 	cDisconnectPeer chan *PeerConn
-	cNewConn        chan *NewPeerMsg
-	cNewStream      chan *NewStreamMsg
+	cNewConn        chan *newPeerMsg
+	cNewStream      chan *newStreamMsg
 	cStopConn       chan struct{}
 
 	Host host.Host
@@ -193,8 +193,8 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	peerObj.PeerID = peerID
 	peerObj.cStop = make(chan struct{}, 1)
 	peerObj.cDisconnectPeer = make(chan *PeerConn)
-	peerObj.cNewConn = make(chan *NewPeerMsg)
-	peerObj.cNewStream = make(chan *NewStreamMsg)
+	peerObj.cNewConn = make(chan *newPeerMsg)
+	peerObj.cNewStream = make(chan *newStreamMsg)
 	peerObj.cStopConn = make(chan struct{})
 
 	peerObj.PeerConnsMtx = sync.Mutex{}
@@ -222,7 +222,7 @@ func (peerObj *Peer) Start() {
 
 func (peerObj *Peer) PushStream(stream net.Stream) {
 	go func(stream net.Stream) {
-		newStreamMsg := NewStreamMsg{
+		newStreamMsg := newStreamMsg{
 			Stream: stream,
 			CConn:  nil,
 		}
@@ -232,7 +232,7 @@ func (peerObj *Peer) PushStream(stream net.Stream) {
 
 func (peerObj *Peer) PushConn(peer *Peer, cConn chan *PeerConn) {
 	go func(peer *Peer, cConn chan *PeerConn) {
-		newPeerMsg := NewPeerMsg{
+		newPeerMsg := newPeerMsg{
 			Peer:  peer,
 			CConn: cConn,
 		}
