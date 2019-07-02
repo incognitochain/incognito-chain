@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
+	"github.com/stretchr/testify/assert"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 )
@@ -166,4 +168,20 @@ func TestPeerConn_HandleMsgCheck(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestPeerConn_UpdateConnectionState(t *testing.T) {
+	peerConn := PeerConn{
+		stateMtx: sync.RWMutex{},
+	}
+	peerConn.SetConnState(1)
+	assert.Equal(t, uint8(1), uint8(peerConn.connState))
+}
+
+func TestPeerConn_ConnState(t *testing.T) {
+	peerConn := PeerConn{
+		stateMtx: sync.RWMutex{},
+	}
+	peerConn.SetConnState(1)
+	assert.Equal(t, uint8(peerConn.GetConnState()), uint8(peerConn.connState))
 }
