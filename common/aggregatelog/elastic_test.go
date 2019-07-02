@@ -9,7 +9,7 @@ import (
 	"github.com/olivere/elastic"
 )
 
-type Message struct {
+type MessageDataTest struct {
 	Time     time.Time `json:"time"`
 	LogLevel string    `json:"level"`
 	Message  string    `json:"message"`
@@ -64,7 +64,7 @@ func main() {
 		log.Println("Index Exists")
 	}
 
-	message1 := Message{Time: time.Now(), Message: "Take Five", LogLevel: "WARN"}
+	message1 := MessageDataTest{Time: time.Now(), Message: "Take Five", LogLevel: "WARN"}
 	put1, err := client.Index().
 		Index("log_aggregation").
 		Type("log").

@@ -11,7 +11,8 @@ func TestPoolDataSendTimeSeriesMetricDataGrafana(T *testing.T) {
 		Measurement:      PoolSize,
 		MeasurementValue: float64(10),
 	}
-	SendTimeSeriesMetricDataGrafana(data)
+	grafana := NewGrafana(os.Getenv("GRAFANAURL"))
+	grafana.SendTimeSeriesMetricData(data)
 }
 
 func TestBlockDataSendTimeSeriesMetricDataGrafana(T *testing.T) {
@@ -22,5 +23,6 @@ func TestBlockDataSendTimeSeriesMetricDataGrafana(T *testing.T) {
 		Tag:              BlockHeightTag,
 		TagValue:         "1000",
 	}
-	SendTimeSeriesMetricDataGrafana(data)
+	grafana := NewGrafana(os.Getenv("GRAFANAURL"))
+	grafana.SendTimeSeriesMetricData(data)
 }
