@@ -149,8 +149,14 @@ func (self *ShardPool) validateShardBlock(block *blockchain.ShardBlock, isPendin
 	}
 	// if next valid block then check max valid pool
 	if self.latestValidHeight+1 == block.Header.Height {
-		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
+		if isPending {
+			if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock + 1 {
+				return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
+			}
+		} else {
+			if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
+				return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
+			}
 		}
 	}
 	if !isPending {
