@@ -16,12 +16,12 @@ type outMsg struct {
 	doneChan     chan<- struct{}
 }
 
-type NewPeerMsg struct {
+type newPeerMsg struct {
 	Peer  *Peer
 	CConn chan *PeerConn
 }
 
-type NewStreamMsg struct {
+type newStreamMsg struct {
 	Stream net.Stream
 	CConn  chan *PeerConn
 }
