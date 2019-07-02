@@ -212,7 +212,7 @@ func (db *db) StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight
 	// csh-ShardID-CrossShardID-CrossShardBlockHash : ShardBlockHeight
 	key := append(crossShardKeyPrefix, prefix...)
 	if ok, _ := db.HasValue(key); ok {
-		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %s already exists"))
+		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %d already exists", blkHeight))
 	}
 	if err := db.lvdb.Put(key, buf, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
