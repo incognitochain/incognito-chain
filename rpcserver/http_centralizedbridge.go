@@ -72,7 +72,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])

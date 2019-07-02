@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/libp2p/go-libp2p-peer"
 )
@@ -47,7 +47,7 @@ func (msg *MessageBlockBeacon) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageBlockBeacon) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageBlockBeacon) SignMsg(_ *incognitokey.KeySet) error {
 	return nil
 }
 

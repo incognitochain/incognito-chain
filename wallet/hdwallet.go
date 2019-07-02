@@ -5,7 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
@@ -15,7 +15,7 @@ type KeyWallet struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
 	ChainCode   []byte // 32 bytes
-	KeySet      cashec.KeySet
+	KeySet      incognitokey.KeySet
 }
 
 // NewMasterKey creates a new master extended PubKey from a Seed
@@ -34,7 +34,7 @@ func NewMasterKey(seed []byte) (*KeyWallet, error) {
 	keyBytes := intermediary[:32]  // use to create master private/public keypair
 	chainCode := intermediary[32:] // be used with public PubKey (in keypair) for new Child keys
 
-	keySet := (&cashec.KeySet{}).GenerateKey(keyBytes)
+	keySet := (&incognitokey.KeySet{}).GenerateKey(keyBytes)
 
 	// Create the PubKey struct
 	key := &KeyWallet{
@@ -57,7 +57,7 @@ func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 
 	newSeed := []byte{}
 	newSeed = append(newSeed[:], intermediary[:32]...)
-	newKeyset := (&cashec.KeySet{}).GenerateKey(newSeed)
+	newKeyset := (&incognitokey.KeySet{}).GenerateKey(newSeed)
 	// Create Child KeySet with data common to all both scenarios
 	childKey := &KeyWallet{
 		ChildNumber: common.Uint32ToBytes(childIdx),

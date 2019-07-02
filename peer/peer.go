@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p"
@@ -65,7 +65,7 @@ type Peer struct {
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	UserKeySet       *cashec.KeySet
+	UserKeySet       *incognitokey.KeySet
 	MaxOutPeers      int
 	MaxInPeers       int
 	MaxPeers         int
