@@ -55,6 +55,7 @@ type PeerConn struct {
 	isUnitTest bool // default = false, use for unit test
 }
 
+// Start GET/SET func
 func (peerConn *PeerConn) GetIsOutbound() bool {
 	peerConn.isOutboundMtx.Lock()
 	defer peerConn.isOutboundMtx.Unlock()
@@ -91,19 +92,28 @@ func (peerConn *PeerConn) SetIsConnected(v bool) {
 	peerConn.isConnected = v
 }
 
+func (p *PeerConn) VerAckReceived() bool {
+	return p.verAckReceived
+}
+
+// end GET/SET func
+
 // readString - read data from received message on stream
 // and convert to string format
 func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBytes int) (string, error) {
 	buf := make([]byte, 0)
 	bufL := 0
+	// Loop to read byte to byte
 	for {
 		b, err := rw.ReadByte()
 		if err != nil {
 			return "", err
 		}
+		// break byte buf after get a delim
 		if b == delim {
 			break
 		}
+		// continue add read byte to buf if not find a delim
 		buf = append(buf, b)
 		bufL++
 		if bufL > maxReadBytes {
@@ -111,9 +121,13 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 		}
 	}
 
+	// convert byte buf to string format
 	return string(buf), nil
 }
 
+// processInMessageString - this is sub-function of InMessageHandler
+// after receiving a good message from stream,
+// we need analyze it and process with corresponding message type
 func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	// Parse Message header from last 24 bytes header message
 	jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
@@ -537,12 +551,12 @@ func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<
 	}()
 }
 
-func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
+func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) error {
 	Logger.log.Infof("handleMsgCheck %s", msg.HashStr)
 	msgResp, err := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
 	if err != nil {
 		Logger.log.Error("handleMsgCheck error", err)
-		return
+		return err
 	}
 	if p.ListenerPeer.CheckHashPool(msg.HashStr) {
 		msgResp.(*wire.MessageMsgCheckResp).HashStr = msg.HashStr
@@ -552,18 +566,20 @@ func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) {
 		msgResp.(*wire.MessageMsgCheckResp).Accept = true
 	}
 	p.QueueMessageWithEncoding(msgResp, nil, MessageToPeer, nil)
+	return nil
 }
 
-func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) {
+func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
 	Logger.log.Infof("handleMsgCheckResp %s", msg.HashStr)
 	m, ok := p.cMsgHash[msg.HashStr]
 	if ok {
-		m <- msg.Accept
+		if !p.isUnitTest {
+			m <- msg.Accept
+		}
+		return nil
+	} else {
+		return errors.New("not ok")
 	}
-}
-
-func (p *PeerConn) VerAckReceived() bool {
-	return p.verAckReceived
 }
 
 // updateState updates the state of the connection request.
@@ -581,10 +597,12 @@ func (p *PeerConn) ConnState() ConnState {
 	return connState
 }
 
+// Close - close peer connection by close channel
 func (p *PeerConn) Close() {
 	close(p.cClose)
 }
 
+// ForceClose - set flag and close channel
 func (p *PeerConn) ForceClose() {
 	p.SetIsForceClose(true)
 	close(p.cClose)
