@@ -36,7 +36,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 	isSent := arrayParams[2].(bool)
 	interval := int64(arrayParams[3].(float64))
 	Logger.log.Criticalf("Interval between transactions %+v \n", interval)
-	datadir := "./utility/"
+	datadir := "./bin/"
 	filename := ""
 	success := 0
 	fail := 0
