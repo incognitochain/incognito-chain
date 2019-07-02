@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/pkg/errors"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 )
 
 type ETHHeaderRelayingReward struct {
@@ -70,7 +69,7 @@ func (e *ETHHeaderRelayingReward) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	ethTxHashUsed []rCommon.Hash,
+	uniqETHTxsUsed [][]byte,
 ) (bool, error) {
 	idx := -1
 	for i, txInBlock := range txsInBlock {

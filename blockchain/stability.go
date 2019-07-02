@@ -8,7 +8,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -262,7 +261,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
-	ethTxHashUsed := []rCommon.Hash{}
+	uniqETHTxsUsed := [][]byte{}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -312,7 +311,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
 				fmt.Println("haha isntruction: ", l)
-				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, ethTxHashUsed)
+				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, uniqETHTxsUsed)
 
 			default:
 				continue
