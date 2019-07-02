@@ -95,13 +95,14 @@ var _ = func() (_ struct{}) {
 	for i:=0; i < 255; i++ {
 		shardID := byte(i)
 		bestShardHeight[shardID] = 1
+		blockchain.SetBestStateShard(shardID, &blockchain.BestStateShard{
+			ShardHeight:1,
+		} )
 	}
 	blockchain.SetBestStateBeacon(&blockchain.BestStateBeacon{
 		BestShardHeight: bestShardHeight,
 	})
-	blockchain.SetBestStateShard(0,&blockchain.BestStateShard{
-		ShardHeight:1,
-	} )
+
 	InitShardPool(shardPoolMapInterface, pbShardPool)
 	InitShardPoolTest(pbShardPool)
 	go pbShardPool.Start()
@@ -143,6 +144,7 @@ func ResetShardPool(){
 		}
 		shardPoolMap[shardID] = new(ShardPool)
 		shardPoolMap[shardID].shardID = shardID
+		shardPoolMap[shardID].mtx = new(sync.RWMutex)
 		shardPoolMap[shardID].latestValidHeight = 1
 		shardPoolMap[shardID].RoleInCommittees = -1
 		shardPoolMap[shardID].validPool = []*blockchain.ShardBlock{}
@@ -214,6 +216,7 @@ func TestShardPoolStart(t *testing.T) {
 		t.Fatal("Fail to set default Role In committees when beacon pool is stop")
 	}
 	shardPoolTest.mtx.RUnlock()
+	ResetShardPool()
 }
 func TestShardPoolSetShardState(t *testing.T) {
 	for i:= 0; i < 255; i++ {
@@ -232,16 +235,28 @@ func TestShardPoolSetShardState(t *testing.T) {
 func TestShardPoolGetShardState(t *testing.T) {
 	for i:= 0; i < 255; i++ {
 		shardID := byte(i)
-		shardPoolMap[shardID].SetShardState(0)
-		if shardPoolMap[shardID].GetShardState() != uint64(1) {
+		if shardPoolMap[shardID].GetShardState() != shardPoolMap[shardID].latestValidHeight {
 			t.Fatal("Invalid Latest Valid Height")
-		}
-		shardPoolMap[shardID].SetShardState(testLatestValidHeight)
-		if shardPoolMap[shardID].GetShardState() != testLatestValidHeight {
-			t.Fatalf("Height Should be set %+v but get %+v \n", testLatestValidHeight, shardPoolMap[shardID].latestValidHeight)
 		}
 	}
 	ResetShardPool()
+}
+func TestShardPoolUpdateLatestShardState(t *testing.T) {
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock2)
+	shardPoolTest.updateLatestShardState()
+	if shardPoolTest.latestValidHeight != 2 {
+		t.Fatalf("Latest valid height should be 2 but get %+v", shardPoolTest.latestValidHeight)
+	}
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock3)
+	shardPoolTest.updateLatestShardState()
+	if shardPoolTest.latestValidHeight != 3 {
+		t.Fatalf("Latest valid height should be 3 but get %+v", shardPoolTest.latestValidHeight)
+	}
+	shardPoolTest.validPool = []*blockchain.ShardBlock{}
+	shardPoolTest.updateLatestShardState()
+	if shardPoolTest.latestValidHeight != 1 {
+		t.Fatalf("Latest valid height should be 1 but get %+v", shardPoolTest.latestValidHeight)
+	}
 }
 func TestShardPoolValidateShardBlock(t *testing.T) {
 	// skip old block
@@ -275,7 +290,7 @@ func TestShardPoolValidateShardBlock(t *testing.T) {
 		t.Fatalf("Block %+v should be discard with state %+v", shardBlock2.Header.Height, shardPoolTest.latestValidHeight)
 	} else {
 		if err.(*BlockPoolError).Code != ErrCodeMessage[OldBlockError].Code {
-			t.Fatalf("Block %+v should be discard with state %+v, error should be %+v but get %+v", beaconBlock2.Header.Height, beaconPoolTest.latestValidHeight, ErrCodeMessage[OldBlockError].Code, err.(*BlockPoolError).Code)
+			t.Fatalf("Block %+v should be discard with state %+v, error should be %+v but get %+v", shardBlock2.Header.Height, shardPoolTest.latestValidHeight, ErrCodeMessage[OldBlockError].Code, err.(*BlockPoolError).Code)
 		}
 		if block, ok := shardPoolTest.conflictedPool[shardBlock2.Header.Hash()]; ok {
 			t.Fatalf("Block %+v should NOT be in conflict pool but get %+v", shardBlock2.Header.Height, block.Header.Height)
@@ -284,7 +299,7 @@ func TestShardPoolValidateShardBlock(t *testing.T) {
 	//test duplicate and pending
 	err = shardPoolTest.validateShardBlock(shardBlock6, false)
 	if err != nil {
-		t.Fatalf("Block %+v should be able to get in pending pool, state %+v", beaconBlock6.Header.Height, beaconPoolTest.latestValidHeight)
+		t.Fatalf("Block %+v should be able to get in pending pool, state %+v", shardBlock6.Header.Height, shardPoolTest.latestValidHeight)
 	}
 	shardPoolTest.pendingPool[shardBlock6.Header.Height] = shardBlock6
 	if _, ok := shardPoolTest.pendingPool[shardBlock6.Header.Height]; !ok {
@@ -310,7 +325,7 @@ func TestShardPoolValidateShardBlock(t *testing.T) {
 		}  else {
 			err = shardPoolTest.validateShardBlock(shardBlock, false)
 			if err == nil {
-				t.Fatalf("Block %+v exceed pending pool capacity %+v \n", shardBlock.Header.Height, len(beaconPoolTest.pendingPool))
+				t.Fatalf("Block %+v exceed pending pool capacity %+v \n", shardBlock.Header.Height, len(shardPoolTest.pendingPool))
 			} else {
 				if err.(*BlockPoolError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
 					t.Fatalf("Block %+v should return error %+v but get %+v", shardBlock.Header.Height, ErrCodeMessage[MaxPoolSizeError].Code, err.(*BlockPoolError).Code)
@@ -318,7 +333,7 @@ func TestShardPoolValidateShardBlock(t *testing.T) {
 			}
 			err = shardPoolTest.validateShardBlock(shardBlock, true)
 			if err != nil {
-				t.Fatalf("Block %+v exceed pending pool capacity %+v BUT SHOULD BE Ignore \n", shardBlock.Header.Height, len(beaconPoolTest.pendingPool))
+				t.Fatalf("Block %+v exceed pending pool capacity %+v BUT SHOULD BE Ignore \n", shardBlock.Header.Height, len(shardPoolTest.pendingPool))
 			}
 		}
 	}
@@ -389,7 +404,7 @@ func TestShardPoolInsertNewShardBlockToPool(t *testing.T) {
 		} else {
 			isOk := shardPoolTest.insertNewShardBlockToPool(shardBlock)
 			if isOk {
-				t.Fatalf("Block %+v is valid with state %+v but pool cappacity reach max %+v", shardBlock.Header.Height, beaconPoolTest.latestValidHeight, len(beaconPoolTest.validPool))
+				t.Fatalf("Block %+v is valid with state %+v but pool cappacity reach max %+v", shardBlock.Header.Height, shardPoolTest.latestValidHeight, len(shardPoolTest.validPool))
 			} else {
 				if _, ok := shardPoolTest.pendingPool[shardBlock.Header.Height]; !ok {
 					t.Fatalf("Block %+v should be in pending pool", shardBlock.Header.Height)
@@ -504,252 +519,273 @@ func TestShardPoolInsertNewShardBlockToPool(t *testing.T) {
 		}
 	}
 }
-//
-//func TestShardPoolPromotePendingPool(t *testing.T) {
-//	InitShardPoolTest(pb)
-//	beaconPoolTest.pendingPool[beaconBlock2.Header.Height] = beaconBlock2
-//	beaconPoolTest.pendingPool[beaconBlock3.Header.Height] = beaconBlock3
-//	beaconPoolTest.pendingPool[beaconBlock4.Header.Height] = beaconBlock4
-//	beaconPoolTest.pendingPool[beaconBlock5.Header.Height] = beaconBlock5
-//	beaconPoolTest.pendingPool[beaconBlock6.Header.Height] = beaconBlock6
-//	beaconPoolTest.promotePendingPool()
-//	if len(beaconPoolTest.validPool) != 4 {
-//		t.Fatalf("Shoud have 4 block in valid pool but get %+v ", len(beaconPoolTest.validPool))
-//	}
-//	for index, block := range beaconPoolTest.validPool {
-//		switch index {
-//		case 0:
-//			if block.Header.Height != 2 {
-//				t.Fatalf("Expect block 2 but get %+v ", block.Header.Height)
-//			}
-//		case 1:
-//			if block.Header.Height != 3 {
-//				t.Fatalf("Expect block 3 but get %+v ", block.Header.Height)
-//			}
-//		case 2:
-//			if block.Header.Height != 4 {
-//				t.Fatalf("Expect block 4 but get %+v ", block.Header.Height)
-//			}
-//		case 3:
-//			if block.Header.Height != 5 {
-//				t.Fatalf("Expect block 5 but get %+v ", block.Header.Height)
-//			}
-//		}
-//	}
-//	if len(beaconPoolTest.pendingPool) != 1 {
-//		t.Fatalf("Shoud have 1 block in valid pool but get %+v ", len(beaconPoolTest.pendingPool))
-//	}
-//	if _, ok := beaconPoolTest.pendingPool[beaconBlock6.Header.Height]; !ok {
-//		t.Fatalf("Expect Block %+v in pending pool", beaconBlock6.Header.Height)
-//	}
-//}
-//
-//func TestShardPoolAddBeaconBlock(t *testing.T) {
-//	InitShardPoolTest(pb)
-//	beaconPoolTest.SetBeaconState(testLatestValidHeight)
-//	for _, block := range validShardBlocks {
-//		err := beaconPoolTest.AddBeaconBlock(block)
-//		if err != nil {
-//			t.Fatalf("Block %+v should be added into pool but get %+v", block.Header.Height, err )
-//		}
-//	}
-//	if len(beaconPoolTest.validPool) != MAX_VALID_BEACON_BLK_IN_POOL {
-//		t.Fatalf("Expected number of block %+v in valid pool but get %+v", MAX_VALID_BEACON_BLK_IN_POOL, len(beaconPoolTest.validPool))
-//	}
-//	if len(beaconPoolTest.pendingPool) != 1 {
-//		t.Fatalf("Expected number of block %+v in pending pool but get %+v", 1, len(beaconPoolTest.pendingPool))
-//	}
-//	if _, isOk := beaconPoolTest.pendingPool[validShardBlocks[len(validShardBlocks)-1].Header.Height]; !isOk {
-//		t.Fatalf("Expect block %+v to be in pending pool", validShardBlocks[len(validShardBlocks)-1].Header.Height)
-//	}
-//	delete(beaconPoolTest.pendingPool, validShardBlocks[len(validShardBlocks)-1].Header.Height)
-//	for index, block := range pendingShardBlocks {
-//		if index < len(pendingShardBlocks) - 1 {
-//			err := beaconPoolTest.AddBeaconBlock(block)
-//			if err != nil {
-//				t.Fatalf("Block %+v should be added into pool but get %+v", block.Header.Height, err)
-//			}
-//		} else {
-//			err := beaconPoolTest.AddBeaconBlock(block)
-//			if err == nil {
-//				t.Fatalf("Block %+v should NOT be added into pool but get no error", block.Header.Height)
-//			} else {
-//				if err.(*BlockPoolError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
-//					t.Fatalf("Expect err %+v but get %+v", ErrCodeMessage[MaxPoolSizeError], err)
-//				}
-//			}
-//		}
-//	}
-//	if len(beaconPoolTest.pendingPool) != MAX_PENDING_BEACON_BLK_IN_POOL {
-//		t.Fatalf("Expected number of block %+v in pending pool but get %+v", MAX_PENDING_BEACON_BLK_IN_POOL, len(beaconPoolTest.pendingPool))
-//	}
-//}
-//func TestShardPoolUpdateLatestBeaconState(t *testing.T) {
-//	InitShardPoolTest(pb)
-//	// init state of latestvalidheight
-//	if beaconPoolTest.latestValidHeight != 1 {
-//		t.Fatalf("Expect to latestvalidheight is 1 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//	// with no block and no blockchain state => latestvalidheight is 0
-//	beaconPoolTest.updateLatestBeaconState()
-//	if beaconPoolTest.latestValidHeight != 0 {
-//		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//	// if valid block list is not empty then each time update latest state
-//	// it will set to the height of last block in valid block list
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock2)
-//	beaconPoolTest.updateLatestBeaconState()
-//	if beaconPoolTest.latestValidHeight != 2 {
-//		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock3)
-//	beaconPoolTest.updateLatestBeaconState()
-//	if beaconPoolTest.latestValidHeight != 3 {
-//		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock4)
-//	beaconPoolTest.updateLatestBeaconState()
-//	if beaconPoolTest.latestValidHeight != 4 {
-//		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock5)
-//	beaconPoolTest.updateLatestBeaconState()
-//	if beaconPoolTest.latestValidHeight != 5 {
-//		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock6)
-//	beaconPoolTest.updateLatestBeaconState()
-//	if beaconPoolTest.latestValidHeight != 6 {
-//		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//	beaconPoolTest.validPool = []*blockchain.BeaconBlock{}
-//	beaconPoolTest.updateLatestBeaconState()
-//	if beaconPoolTest.latestValidHeight != 0 {
-//		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//}
-//func TestShardPoolRemoveBlock(t *testing.T) {
-//	InitShardPoolTest(pb)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock2)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock3)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock4)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock5)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock6)
-//	// remove VALID block according to latestblockheight input
-//	// also update latest valid height after call this function
-//	beaconPoolTest.removeBlock(4)
-//	if len(beaconPoolTest.validPool) != 2 {
-//		t.Fatalf("Expect to get only 2 block left but got %+v", len(beaconPoolTest.validPool))
-//	}
-//	if beaconPoolTest.latestValidHeight != 6 {
-//		t.Fatalf("Expect to latestvalidheight is 6 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//	beaconPoolTest.removeBlock(6)
-//	if len(beaconPoolTest.validPool) != 0 {
-//		t.Fatalf("Expect to have NO block left but got %+v", len(beaconPoolTest.validPool))
-//	}
-//	// because no block left in valid pool and blockchain state is 0 so latest valid state should be 0
-//	if beaconPoolTest.latestValidHeight != 0 {
-//		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", beaconPoolTest.latestValidHeight)
-//	}
-//}
-//func TestShardPoolCleanOldBlock(t *testing.T) {
-//	InitShardPoolTest(pb)
-//	if len(beaconPoolTest.pendingPool) != 0 {
-//		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
-//	}
-//	if len(beaconPoolTest.conflictedPool) != 0 {
-//		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
-//	}
-//	// clean OLD block in Pending and Conflict pool
-//	// old block in pending pool has height < latestvalidheight
-//	// old block in conflicted pool has height < latestvalidheight - 2
-//	beaconPoolTest.pendingPool[beaconBlock2.Header.Height] = beaconBlock2
-//	beaconPoolTest.pendingPool[beaconBlock3.Header.Height] = beaconBlock3
-//	beaconPoolTest.conflictedPool[beaconBlock3Forked.Header.Hash()] = beaconBlock3Forked
-//	beaconPoolTest.pendingPool[beaconBlock4.Header.Height] = beaconBlock4
-//	beaconPoolTest.pendingPool[beaconBlock5.Header.Height] = beaconBlock5
-//	beaconPoolTest.pendingPool[beaconBlock6.Header.Height] = beaconBlock6
-//	if len(beaconPoolTest.pendingPool) != 5 {
-//		t.Fatalf("Expected number of block 5 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
-//	}
-//	if len(beaconPoolTest.conflictedPool) != 1 {
-//		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
-//	}
-//	beaconPoolTest.CleanOldBlock(2)
-//	if len(beaconPoolTest.pendingPool) != 4 {
-//		t.Fatalf("Expected number of block 4 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
-//	}
-//	if len(beaconPoolTest.conflictedPool) != 1 {
-//		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
-//	}
-//	beaconPoolTest.CleanOldBlock(3)
-//	if len(beaconPoolTest.pendingPool) != 3 {
-//		t.Fatalf("Expected number of block 3 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
-//	}
-//	if len(beaconPoolTest.conflictedPool) != 1 {
-//		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
-//	}
-//	beaconPoolTest.CleanOldBlock(5)
-//	if len(beaconPoolTest.conflictedPool) != 1 {
-//		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
-//	}
-//	beaconPoolTest.CleanOldBlock(6)
-//	if len(beaconPoolTest.pendingPool) != 0 {
-//		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
-//	}
-//	if len(beaconPoolTest.conflictedPool) != 0 {
-//		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
-//	}
-//}
-//func TestShardPoolGetValidBlock(t *testing.T) {
-//	InitShardPoolTest(pb)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock2)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock3)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock4)
-//	beaconPoolTest.validPool = append(beaconPoolTest.validPool, beaconBlock5)
-//	beaconPoolTest.updateLatestBeaconState()
-//	beaconPoolTest.pendingPool[beaconBlock6.Header.Height] = beaconBlock6
-//	beaconPoolTest.pendingPool[beaconBlock7.Header.Height] = beaconBlock7
-//	// no role in committee then return only valid pool
-//	beaconPoolTest.RoleInCommittees = false
-//	validShardBlocks := beaconPoolTest.GetValidBlock()
-//	if len(validShardBlocks) != 4 {
-//		t.Fatalf("Expect return 4 blocks but get %+v", len(validShardBlocks))
-//	}
-//	for _, block := range validShardBlocks {
-//		if block.Header.Height == beaconBlock6.Header.Height {
-//			t.Fatal("Return block height 6 should not have block in pending pool")
-//		}
-//	}
-//	// if has role in beacon committee then return valid pool
-//	// IF VALID POOL IS EMPTY ONLY return one block from pending pool if condition is match
-//	// - Condition: block with height = latestvalidheight + 1 (if present) in pending poool
-//	beaconPoolTest.RoleInCommittees = true
-//	// if beacon pool in committee but valid block list not empty then return NO block from pending pool
-//	validAnd0PendingBlocks := beaconPoolTest.GetValidBlock()
-//	if len(validAnd0PendingBlocks) != 4 {
-//		t.Fatalf("Expect return 4 blocks but get %+v", len(validAnd0PendingBlocks))
-//	}
-//	for _, block := range validAnd0PendingBlocks {
-//		if block.Header.Height == beaconBlock6.Header.Height {
-//			t.Fatal("Return block height 6 should not have block in pending pool")
-//		}
-//		if block.Header.Height == beaconBlock7.Header.Height {
-//			t.Fatal("Return block height 7 should not have block in pending pool")
-//		}
-//	}
-//	// if beacon pool in committee but valid block list IS EMPTY
-//	// then return ONLY 1 block from pending pool that match condition (see above)
-//	beaconPoolTest.validPool = []*blockchain.BeaconBlock{}
-//	oneValidFromPendingBlocks := beaconPoolTest.GetValidBlock()
-//	if len(oneValidFromPendingBlocks) != 1 {
-//		t.Fatalf("Expect return 1 blocks but get %+v", len(oneValidFromPendingBlocks))
-//	}
-//	if oneValidFromPendingBlocks[0].Header.Height != beaconBlock6.Header.Height {
-//		t.Fatalf("Expect return block height 6 but get %+v", oneValidFromPendingBlocks[0].Header.Height)
-//	}
-//	if oneValidFromPendingBlocks[0].Header.Height == beaconBlock7.Header.Height {
-//		t.Fatalf("DONT expect return block height 7 but get %+v", oneValidFromPendingBlocks[0].Header.Height)
-//	}
-//}
+
+func TestShardPoolPromotePendingPool(t *testing.T) {
+	InitShardPoolTest(pbShardPool)
+	shardPoolTest.pendingPool[shardBlock2.Header.Height] = shardBlock2
+	shardPoolTest.pendingPool[shardBlock3.Header.Height] = shardBlock3
+	shardPoolTest.pendingPool[shardBlock4.Header.Height] = shardBlock4
+	blockchain.GetBestStateBeacon().SetBestShardHeight(0,5)
+	shardPoolTest.promotePendingPool()
+	if len(shardPoolTest.validPool) != 3 {
+		t.Fatalf("Shoud have 3 block in valid pool but get %+v ", len(shardPoolTest.validPool))
+	}
+	for index, block := range shardPoolTest.validPool {
+		switch index {
+		case 0:
+			if block.Header.Height != 2 {
+				t.Fatalf("Expect block 2 but get %+v ", block.Header.Height)
+			}
+		case 1:
+			if block.Header.Height != 3 {
+				t.Fatalf("Expect block 3 but get %+v ", block.Header.Height)
+			}
+		case 2:
+			if block.Header.Height != 4 {
+				t.Fatalf("Expect block 4 but get %+v ", block.Header.Height)
+			}
+		}
+	}
+	InitShardPoolTest(pbShardPool)
+	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks) - 1].Header.Height+1)
+	for index, shardBlock := range validShardBlocks {
+		if index < len(validShardBlocks) - 1 {
+			shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock)
+			shardPoolTest.latestValidHeight = shardBlock.Header.Height
+		}
+	}
+	shardPoolTest.pendingPool[validShardBlocks[len(validShardBlocks)-1].Header.Height] = validShardBlocks[len(validShardBlocks)-1]
+	shardPoolTest.promotePendingPool()
+	if len(shardPoolTest.validPool) != MAX_VALID_SHARD_BLK_IN_POOL {
+		t.Fatalf("Shoud have %+v block in valid pool but get %+v ",MAX_VALID_SHARD_BLK_IN_POOL, len(shardPoolTest.validPool))
+	}
+	InitShardPoolTest(pbShardPool)
+	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks) - 1].Header.Height+1)
+	for index, shardBlock := range pendingShardBlocks {
+		if index < len(pendingShardBlocks) - 2 {
+			shardPoolTest.pendingPool[shardBlock.Header.Height] = shardBlock
+		}
+	}
+	for index, shardBlock := range validShardBlocks {
+		if index < len(validShardBlocks) - 1 {
+			shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock)
+			shardPoolTest.latestValidHeight = shardBlock.Header.Height
+		}
+	}
+	validShardBlocks[len(validShardBlocks)-1].Header.PrevBlockHash = common.HashH([]byte{0})
+	shardPoolTest.pendingPool[validShardBlocks[len(validShardBlocks)-1].Header.Height] = validShardBlocks[len(validShardBlocks)-2]
+	shardPoolTest.promotePendingPool()
+	if len(shardPoolTest.validPool) != len(validShardBlocks) - 1 {
+		t.Fatalf("Shoud have %+v block in valid pool but get %+v ", len(validShardBlocks) - 2, len(shardPoolTest.validPool))
+	}
+	if len(shardPoolTest.pendingPool) != len(pendingShardBlocks) - 1 {
+		t.Fatalf("Shoud have %+v block in valid pool but get %+v ", len(pendingShardBlocks) - 1, len(shardPoolTest.pendingPool))
+	}
+	InitShardPoolTest(pbShardPool)
+	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks) - 1].Header.Height+1)
+	shardPoolTest.pendingPool[shardBlock2.Header.Height] = shardBlock2
+	shardPoolTest.pendingPool[shardBlock3.Header.Height] = shardBlock3
+	shardPoolTest.pendingPool[shardBlock4.Header.Height] = shardBlock4
+	shardPoolTest.pendingPool[shardBlock5.Header.Height] = shardBlock5
+	shardPoolTest.pendingPool[shardBlock6.Header.Height] = shardBlock6
+	blockchain.GetBestStateBeacon().SetBestShardHeight(0,7)
+	shardPoolTest.promotePendingPool()
+	if len(shardPoolTest.validPool) != 5 {
+		t.Fatalf("Shoud have 5 block in valid pool but get %+v ", len(shardPoolTest.validPool))
+	}
+	for index, block := range shardPoolTest.validPool {
+		switch index {
+		case 0:
+			if block.Header.Height != 2 {
+				t.Fatalf("Expect block 2 but get %+v ", block.Header.Height)
+			}
+		case 1:
+			if block.Header.Height != 3 {
+				t.Fatalf("Expect block 3 but get %+v ", block.Header.Height)
+			}
+		case 2:
+			if block.Header.Height != 4 {
+				t.Fatalf("Expect block 4 but get %+v ", block.Header.Height)
+			}
+		case 3:
+			if block.Header.Height != 5 {
+				t.Fatalf("Expect block 5 but get %+v ", block.Header.Height)
+			}
+		case 4:
+			if block.Header.Height != 6 {
+				t.Fatalf("Expect block 6 but get %+v ", block.Header.Height)
+			}
+		}
+	}
+	if len(shardPoolTest.pendingPool) != 0 {
+		t.Fatalf("Shoud have 0 block in valid pool but get %+v ", len(shardPoolTest.pendingPool))
+	}
+}
+
+func TestShardPoolAddBeaconBlock(t *testing.T) {
+	InitShardPoolTest(pbShardPool)
+	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks) - 1].Header.Height+1)
+	shardPoolTest.SetShardState(testLatestValidHeight)
+	for _, block := range validShardBlocks {
+		err := shardPoolTest.AddShardBlock(block)
+		if err != nil {
+			t.Fatalf("Block %+v should be added into pool but get %+v", block.Header.Height, err )
+		}
+	}
+	if len(shardPoolTest.validPool) != MAX_VALID_SHARD_BLK_IN_POOL {
+		t.Fatalf("Expected number of block %+v in valid pool but get %+v", MAX_VALID_SHARD_BLK_IN_POOL, len(shardPoolTest.validPool))
+	}
+	if len(shardPoolTest.pendingPool) != 1 {
+		t.Fatalf("Expected number of block %+v in pending pool but get %+v", 1, len(shardPoolTest.pendingPool))
+	}
+	if _, isOk := shardPoolTest.pendingPool[validShardBlocks[len(validShardBlocks)-1].Header.Height]; !isOk {
+		t.Fatalf("Expect block %+v to be in pending pool", validShardBlocks[len(validShardBlocks)-1].Header.Height)
+	}
+	delete(shardPoolTest.pendingPool, validShardBlocks[len(validShardBlocks)-1].Header.Height)
+	for index, block := range pendingShardBlocks {
+		if index < len(pendingShardBlocks) - 1 {
+			err := shardPoolTest.AddShardBlock(block)
+			if err != nil {
+				t.Fatalf("Block %+v should be added into pool but get %+v", block.Header.Height, err)
+			}
+		} else {
+			err := shardPoolTest.AddShardBlock(block)
+			if err == nil {
+				t.Fatalf("Block %+v should NOT be added into pool but get no error", block.Header.Height)
+			} else {
+				if err.(*BlockPoolError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
+					t.Fatalf("Expect err %+v but get %+v", ErrCodeMessage[MaxPoolSizeError], err)
+				}
+			}
+		}
+	}
+	if len(shardPoolTest.pendingPool) != MAX_PENDING_BEACON_BLK_IN_POOL {
+		t.Fatalf("Expected number of block %+v in pending pool but get %+v", MAX_PENDING_BEACON_BLK_IN_POOL, len(shardPoolTest.pendingPool))
+	}
+}
+
+func TestShardPoolRemoveBlock(t *testing.T) {
+	InitShardPoolTest(pbShardPool)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock2)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock3)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock4)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock5)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock6)
+	// remove VALID block according to latestblockheight input
+	// also update latest valid height after call this function
+	shardPoolTest.removeBlock(4)
+	if len(shardPoolTest.validPool) != 2 {
+		t.Fatalf("Expect to get only 2 block left but got %+v", len(shardPoolTest.validPool))
+	}
+	if shardPoolTest.latestValidHeight != 6 {
+		t.Fatalf("Expect to latestvalidheight is 6 but get %+v", shardPoolTest.latestValidHeight)
+	}
+	shardPoolTest.removeBlock(6)
+	if len(shardPoolTest.validPool) != 0 {
+		t.Fatalf("Expect to have NO block left but got %+v", len(shardPoolTest.validPool))
+	}
+	// because no block left in valid pool and blockchain state is 1 so latest valid state should be 1
+	if shardPoolTest.latestValidHeight != 1 {
+		t.Fatalf("Expect to latestvalidheight is 0 but get %+v", shardPoolTest.latestValidHeight)
+	}
+}
+func TestShardPoolCleanOldBlock(t *testing.T) {
+	InitShardPoolTest(pbShardPool)
+	if len(shardPoolTest.pendingPool) != 0 {
+		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(shardPoolTest.pendingPool))
+	}
+	if len(shardPoolTest.conflictedPool) != 0 {
+		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(shardPoolTest.conflictedPool))
+	}
+	// clean OLD block in Pending and Conflict pool
+	// old block in pending pool has height < latestvalidheight
+	// old block in conflicted pool has height < latestvalidheight - 2
+	shardPoolTest.pendingPool[shardBlock2.Header.Height] = shardBlock2
+	shardPoolTest.pendingPool[shardBlock3.Header.Height] = shardBlock3
+	shardPoolTest.conflictedPool[shardBlock3Forked.Header.Hash()] = shardBlock3Forked
+	shardPoolTest.pendingPool[shardBlock4.Header.Height] = shardBlock4
+	shardPoolTest.pendingPool[shardBlock5.Header.Height] = shardBlock5
+	shardPoolTest.pendingPool[shardBlock6.Header.Height] = shardBlock6
+	if len(shardPoolTest.pendingPool) != 5 {
+		t.Fatalf("Expected number of block 5 in pending pool but get %+v", len(shardPoolTest.pendingPool))
+	}
+	if len(shardPoolTest.conflictedPool) != 1 {
+		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(shardPoolTest.conflictedPool))
+	}
+	shardPoolTest.CleanOldBlock(2)
+	if len(shardPoolTest.pendingPool) != 4 {
+		t.Fatalf("Expected number of block 4 in pending pool but get %+v", len(shardPoolTest.pendingPool))
+	}
+	if len(shardPoolTest.conflictedPool) != 1 {
+		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(shardPoolTest.conflictedPool))
+	}
+	shardPoolTest.CleanOldBlock(3)
+	if len(shardPoolTest.pendingPool) != 3 {
+		t.Fatalf("Expected number of block 3 in pending pool but get %+v", len(shardPoolTest.pendingPool))
+	}
+	if len(shardPoolTest.conflictedPool) != 1 {
+		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(shardPoolTest.conflictedPool))
+	}
+	shardPoolTest.CleanOldBlock(5)
+	if len(shardPoolTest.conflictedPool) != 1 {
+		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(shardPoolTest.conflictedPool))
+	}
+	shardPoolTest.CleanOldBlock(6)
+	if len(shardPoolTest.pendingPool) != 0 {
+		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(shardPoolTest.pendingPool))
+	}
+	if len(shardPoolTest.conflictedPool) != 0 {
+		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(shardPoolTest.conflictedPool))
+	}
+}
+func TestShardPoolGetValidBlock(t *testing.T) {
+	InitShardPoolTest(pbShardPool)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock2)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock3)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock4)
+	shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock5)
+	shardPoolTest.updateLatestShardState()
+	shardPoolTest.pendingPool[shardBlock6.Header.Height] = shardBlock6
+	shardPoolTest.pendingPool[shardBlock7.Header.Height] = shardBlock7
+	// no role in committee then return only valid pool
+	shardPoolTest.RoleInCommittees = -1
+	validShardBlocks := shardPoolTest.GetValidBlock()
+	if len(validShardBlocks) != 4 {
+		t.Fatalf("Expect return 4 blocks but get %+v", len(validShardBlocks))
+	}
+	for _, block := range validShardBlocks {
+		if block.Header.Height == shardBlock6.Header.Height {
+			t.Fatal("Return block height 6 should not have block in pending pool")
+		}
+	}
+	// if has role in beacon committee then return valid pool
+	// IF VALID POOL IS EMPTY ONLY return one block from pending pool if condition is match
+	// - Condition: block with height = latestvalidheight + 1 (if present) in pending poool
+	shardPoolTest.RoleInCommittees = 0
+	// if beacon pool in committee but valid block list not empty then return NO block from pending pool
+	validAnd0PendingBlocks := shardPoolTest.GetValidBlock()
+	if len(validAnd0PendingBlocks) != 4 {
+		t.Fatalf("Expect return 4 blocks but get %+v", len(validAnd0PendingBlocks))
+	}
+	for _, block := range validAnd0PendingBlocks {
+		if block.Header.Height == shardBlock6.Header.Height {
+			t.Fatal("Return block height 6 should not have block in pending pool")
+		}
+		if block.Header.Height == shardBlock7.Header.Height {
+			t.Fatal("Return block height 7 should not have block in pending pool")
+		}
+	}
+	// if beacon pool in committee but valid block list IS EMPTY
+	// then return ONLY 1 block from pending pool that match condition (see above)
+	shardPoolTest.validPool = []*blockchain.ShardBlock{}
+	oneValidFromPendingBlocks := shardPoolTest.GetValidBlock()
+	if len(oneValidFromPendingBlocks) != 1 {
+		t.Fatalf("Expect return 1 blocks but get %+v", len(oneValidFromPendingBlocks))
+	}
+	if oneValidFromPendingBlocks[0].Header.Height != shardBlock6.Header.Height {
+		t.Fatalf("Expect return block height 6 but get %+v", oneValidFromPendingBlocks[0].Header.Height)
+	}
+	if oneValidFromPendingBlocks[0].Header.Height == shardBlock7.Header.Height {
+		t.Fatalf("DONT expect return block height 7 but get %+v", oneValidFromPendingBlocks[0].Header.Height)
+	}
+}
