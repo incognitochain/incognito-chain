@@ -62,8 +62,8 @@ func init() {
 func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.PubSubManager) {
 	for i := 0; i < 255; i++ {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
-		//update last shard height
 		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
+		//update last shard height
 		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
 		pool[byte(i)] = shardPoolMap[byte(i)]
 		shardPoolMap[byte(i)].PubSubManager = pubsubManager
@@ -126,7 +126,7 @@ func (self *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
 	var err error
-	err = self.ValidateShardBlock(block, false)
+	err = self.validateShardBlock(block, false)
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (self *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 	return nil
 }
 
-func (self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPending bool) error {
+func (self *ShardPool) validateShardBlock(block *blockchain.ShardBlock, isPending bool) error {
 	//If receive old block, it will ignore
 	if _, ok := self.cache.Get(block.Header.Hash()); ok {
 		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork"))
@@ -146,6 +146,12 @@ func (self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPendin
 			self.conflictedPool[block.Header.Hash()] = block
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive old block"))
+	}
+	// if next valid block then check max valid pool
+	if self.latestValidHeight+1 == block.Header.Height {
+		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
+			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
+		}
 	}
 	if !isPending {
 		//If block already in pool, it will ignore
@@ -160,12 +166,7 @@ func (self *ShardPool) ValidateShardBlock(block *blockchain.ShardBlock, isPendin
 			}
 		}
 	}
-	// if next valid block then check max valid pool
-	if self.latestValidHeight+1 == block.Header.Height {
-		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
-			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
-		}
-	}
+
 	return nil
 }
 
@@ -184,7 +185,7 @@ func (self *ShardPool) promotePendingPool() {
 		if !ok {
 			break
 		} else {
-			err := self.ValidateShardBlock(block, true)
+			err := self.validateShardBlock(block, true)
 			if err != nil {
 				break
 			} else {
