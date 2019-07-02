@@ -96,6 +96,21 @@ func (p *PeerConn) VerAckReceived() bool {
 	return p.verAckReceived
 }
 
+// updateState updates the state of the connection request.
+func (p *PeerConn) SetConnState(connState ConnState) {
+	p.stateMtx.Lock()
+	defer p.stateMtx.Unlock()
+	p.connState = connState
+}
+
+// State is the connection state of the requested connection.
+func (p *PeerConn) GetConnState() ConnState {
+	p.stateMtx.RLock()
+	defer p.stateMtx.RUnlock()
+	connState := p.connState
+	return connState
+}
+
 // end GET/SET func
 
 // readString - read data from received message on stream
@@ -580,21 +595,6 @@ func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
 	} else {
 		return errors.New("not ok")
 	}
-}
-
-// updateState updates the state of the connection request.
-func (p *PeerConn) updateConnState(connState ConnState) {
-	p.stateMtx.Lock()
-	defer p.stateMtx.Unlock()
-	p.connState = connState
-}
-
-// State is the connection state of the requested connection.
-func (p *PeerConn) ConnState() ConnState {
-	p.stateMtx.RLock()
-	defer p.stateMtx.RUnlock()
-	connState := p.connState
-	return connState
 }
 
 // Close - close peer connection by close channel
