@@ -81,7 +81,6 @@ var InitShardPoolTest = func(pubsubManager *pubsub.PubSubManager) {
 	shardPoolTest.RoleInCommitteesEvent = subChanRole
 }
 var _ = func() (_ struct{}) {
-	GetShardPool(0)
 	InitShardPool(shardPoolMapTest, pbShardPool)
 	InitShardPoolTest(pbShardPool)
 	go pbShardPool.Start()
