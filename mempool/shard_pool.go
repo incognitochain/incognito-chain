@@ -91,18 +91,19 @@ func (self *ShardPool) Start(cQuit chan struct{}) {
 	}
 }
 
-// get singleton instance of ShardToBeacon pool
+// get singleton instance of Shard Pool
 func GetShardPool(shardID byte) *ShardPool {
 	if shardPoolMap[shardID] == nil {
 		shardPool := new(ShardPool)
 		shardPool.shardID = shardID
 		shardPool.latestValidHeight = 1
-		shardPoolMap[shardID] = shardPool
+		shardPool.RoleInCommittees = -1
 		shardPool.validPool = []*blockchain.ShardBlock{}
 		shardPool.conflictedPool = make(map[common.Hash]*blockchain.ShardBlock)
 		shardPool.config = defaultConfig
 		shardPool.pendingPool = make(map[uint64]*blockchain.ShardBlock)
 		shardPool.cache, _ = lru.New(shardPool.config.CacheSize)
+		shardPoolMap[shardID] = shardPool
 	}
 	return shardPoolMap[shardID]
 }
