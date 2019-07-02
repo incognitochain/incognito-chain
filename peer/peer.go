@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -366,7 +367,7 @@ func (peerObj *Peer) SetPeerConn(peerConn *PeerConn) {
 	peerObj.PeerConns[peerIDStr] = peerConn
 }
 
-func (peerObj *Peer) RemovePeerConn(peerConn *PeerConn) {
+func (peerObj *Peer) RemovePeerConn(peerConn *PeerConn) error {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
@@ -377,6 +378,9 @@ func (peerObj *Peer) RemovePeerConn(peerConn *PeerConn) {
 		}
 		delete(peerObj.PeerConns, peerIDStr)
 		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.RawAddress)
+		return nil
+	} else {
+		return NewPeerError(UnexpectedErr, errors.New(fmt.Sprintf("Can not find %+v", peerIDStr)), nil)
 	}
 }
 
@@ -455,7 +459,8 @@ func (peerObj *Peer) handleConn(peer *Peer, cConn chan *PeerConn) (*PeerConn, er
 	peerObj.SetPeerConn(&peerConn)
 	defer func() {
 		stream.Close()
-		peerObj.RemovePeerConn(&peerConn)
+		err := peerObj.RemovePeerConn(&peerConn)
+		Logger.log.Error(err)
 	}()
 
 	peerConn.RetryCount = 0
@@ -553,7 +558,8 @@ func (peerObj *Peer) handleStream(stream net.Stream, cDone chan *PeerConn) {
 
 	defer func() {
 		stream.Close()
-		peerObj.RemovePeerConn(&peerConn)
+		err := peerObj.RemovePeerConn(&peerConn)
+		Logger.log.Error(err)
 	}()
 
 	for {
