@@ -49,7 +49,7 @@ type DatabaseInterface interface {
 	GetIndexOfBlock(common.Hash) (uint64, byte, error)
 	GetBlockByIndex(uint64, byte) (common.Hash, error)
 
-	// Block index
+	// Block index for beacon
 	StoreBeaconBlockIndex(common.Hash, uint64) error
 	GetIndexOfBeaconBlock(common.Hash) (uint64, error)
 	GetBeaconBlockHashByIndex(uint64) (common.Hash, error)
