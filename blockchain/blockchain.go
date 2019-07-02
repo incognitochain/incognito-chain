@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -82,7 +82,7 @@ type Config struct {
 		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	}
-	UserKeySet *cashec.KeySet
+	UserKeySet *incognitokey.KeySet
 }
 
 /*
@@ -833,7 +833,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 }
 
 // DecryptTxByKey - process outputcoin to get outputcoin data which relate to keyset
-func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *cashec.KeySet, shardID byte, tokenID *common.Hash) *privacy.OutputCoin {
+func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.OutputCoin, keySet *incognitokey.KeySet, shardID byte, tokenID *common.Hash) *privacy.OutputCoin {
 	/*
 		- Param keyset - (priv-key, payment-address, readonlykey)
 		in case priv-key: return unspent outputcoin tx
@@ -878,7 +878,7 @@ in case readonly-key: return all outputcoin tx with amount value
 in case payment-address: return all outputcoin tx with no amount value
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
+func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
 	// lock chain
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
@@ -917,7 +917,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *cashec.KeySet, 
 }
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
-func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset cashec.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
+func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset incognitokey.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	data, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressUTXO(*tokenID, receiverKeyset.PaymentAddress.Bytes())
 	fmt.Println(data)
 	if err != nil {

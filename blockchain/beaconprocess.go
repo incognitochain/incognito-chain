@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
@@ -262,7 +262,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	//verify producer sig
 	blkHash := block.Header.Hash()
 	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	err := cashec.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
+	err := incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
 	if err != nil {
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
@@ -515,7 +515,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	//=============Verify producer signature
 	producerPubkey := snapShotBeaconCommittee[bestStateBeacon.BeaconProposerIdx]
 	blockHash := block.Header.Hash()
-	if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
+	if err := incognitokey.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	//=============End Verify producer signature

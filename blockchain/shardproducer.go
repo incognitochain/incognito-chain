@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -16,7 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
+func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
 	var txsToAdd = make([]metadata.Transaction, 0)
 	totalTxsFee := map[common.Hash]uint64{}
 	//============Build body=============
@@ -194,7 +194,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	return block, nil
 }
 
-func (blockgen *BlkTmplGenerator) FinalizeShardBlock(blk *ShardBlock, producerKeyset *cashec.KeySet) error {
+func (blockgen *BlkTmplGenerator) FinalizeShardBlock(blk *ShardBlock, producerKeyset *incognitokey.KeySet) error {
 	// Signature of producer, sign on hash of header
 	blk.Header.Timestamp = time.Now().Unix()
 	blockHash := blk.Header.Hash()
