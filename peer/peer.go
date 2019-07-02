@@ -61,16 +61,6 @@ type Peer struct {
 	HandleFailed       func(peerConn *PeerConn)
 }
 
-type NewPeerMsg struct {
-	Peer  *Peer
-	CConn chan *PeerConn
-}
-
-type NewStreamMsg struct {
-	Stream net.Stream
-	CConn  chan *PeerConn
-}
-
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners

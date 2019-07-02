@@ -2,6 +2,7 @@ package peer
 
 import (
 	"github.com/incognitochain/incognito-chain/wire"
+	net "github.com/libp2p/go-libp2p-net"
 )
 
 // outMsg is used to house a message to be sent along with a channel to signal
@@ -13,4 +14,14 @@ type outMsg struct {
 	rawBytes     *[]byte
 	message      wire.Message
 	doneChan     chan<- struct{}
+}
+
+type NewPeerMsg struct {
+	Peer  *Peer
+	CConn chan *PeerConn
+}
+
+type NewStreamMsg struct {
+	Stream net.Stream
+	CConn  chan *PeerConn
 }
