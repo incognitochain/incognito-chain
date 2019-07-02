@@ -589,6 +589,7 @@ func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
 	m, ok := p.cMsgHash[msg.HashStr]
 	if ok {
 		if !p.isUnitTest {
+			// if not unit test -> send channel to process
 			m <- msg.Accept
 		}
 		return nil
