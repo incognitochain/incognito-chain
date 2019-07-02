@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -14,9 +13,9 @@ func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	instUsed := make([]int, len(insts))
 	txsUsed := make([]int, len(txs))
 	invalidTxs := []metadata.Transaction{}
-	ethTxHashUsed := []rCommon.Hash{}
+	uniqETHTxsUsed := [][]byte{}
 	for _, tx := range txs {
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, bc, ethTxHashUsed)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, bc, uniqETHTxsUsed)
 		if err != nil {
 			return nil, err
 		}
