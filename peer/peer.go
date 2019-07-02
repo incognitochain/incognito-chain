@@ -202,9 +202,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	return &peerObj, nil
 }
 
-/*
-Start - start peer to begin waiting for connections from other peers
-*/
+// Start - start peer to begin waiting for connections from other peers
 func (peerObj *Peer) Start() {
 	Logger.log.Info("RemotePeer start")
 	// ping to bootnode for test env
