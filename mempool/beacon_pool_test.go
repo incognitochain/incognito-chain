@@ -316,7 +316,7 @@ func TestBeaconPoolValidateBeaconBlock(t *testing.T) {
 		} else {
 			err = beaconPoolTest.validateBeaconBlock(beaconBlock, false)
 			if err == nil {
-				t.Fatalf("Block %+v exceed valid pool capacity %+v plus pending pool capacity %+v \n", beaconBlock.Header.Height, len(beaconPool.validPool), len(beaconPool.pendingPool))
+				t.Fatalf("Block %+v exceed valid pool capacity %+v plus pending pool capacity %+v \n", beaconBlock.Header.Height, len(beaconPoolTest.validPool), len(beaconPoolTest.pendingPool))
 			} else {
 				if err.(*BlockPoolError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
 					t.Fatalf("Block %+v should return error %+v but get %+v", beaconBlock.Header.Height, ErrCodeMessage[MaxPoolSizeError].Code, err.(*BlockPoolError).Code)
