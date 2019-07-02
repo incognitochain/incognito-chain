@@ -18,11 +18,15 @@ var ErrChecksum = errors.New("checksum error")
 // ErrInvalidFormat indicates that the check-encoded string has an invalid format.
 var ErrInvalidFormat = errors.New("invalid format: version and/or checksum bytes missing")
 
-// checksum: first four bytes of sha256^2
-func ChecksumFirst4Bytes(input []byte) (cksum []byte) {
-	cksum = make([]byte, 4)
-	h2 := common.HashB(input)
-	copy(cksum[:], h2[:4])
+// ChecksumFirst4Bytes receives data in bytes array
+// and returns a checksum which is 4 first bytes of hashing of data
+func ChecksumFirst4Bytes(data []byte) (ckSum []byte) {
+	if len(data) == 0 {
+		return []byte{}
+	}
+	ckSum = make([]byte, common.CheckSumLen)
+	h2 := common.HashB(data)
+	copy(ckSum[:], h2[:4])
 	return
 }
 
@@ -31,7 +35,10 @@ type Base58Check struct {
 
 // Encode prepends a version byte and appends a four byte checksum.
 func (self Base58Check) Encode(input []byte, version byte) string {
-	b := make([]byte, 0, 1+len(input)+4)
+	if len(input) == 0 {
+		return ""
+	}
+	b := make([]byte, 0, 1+len(input)+common.CheckSumLen)
 	b = append(b, version)
 	b = append(b, input[:]...)
 	cksum := ChecksumFirst4Bytes(b)
@@ -41,18 +48,22 @@ func (self Base58Check) Encode(input []byte, version byte) string {
 
 // Decode decodes a string that was encoded with Encode and verifies the checksum.
 func (self Base58Check) Decode(input string) (result []byte, version byte, err error) {
+	if len(input) == 0{
+		return []byte{}, 0, errors.New("Input to decode is empty")
+	}
+
 	decoded := Base58{}.Decode(input)
 	if len(decoded) < 5 {
 		return nil, 0, ErrInvalidFormat
 	}
 	version = decoded[0]
 	// var cksum []byte
-	cksum := make([]byte, 4)
-	copy(cksum[:], decoded[len(decoded)-4:])
-	if bytes.Compare(ChecksumFirst4Bytes(decoded[:len(decoded)-4]), cksum) != 0 {
+	cksum := make([]byte, common.CheckSumLen)
+	copy(cksum[:], decoded[len(decoded)-common.CheckSumLen:])
+	if bytes.Compare(ChecksumFirst4Bytes(decoded[:len(decoded)-common.CheckSumLen]), cksum) != 0 {
 		return nil, 0, ErrChecksum
 	}
-	payload := decoded[1 : len(decoded)-4]
+	payload := decoded[1 : len(decoded)-common.CheckSumLen]
 	result = append(result, payload...)
 	return
 }
