@@ -291,7 +291,7 @@ func (blockchain *BlockChain) insertETHTxHashIssued(
 	tx metadata.Transaction,
 ) error {
 	issuingETHResdMeta := tx.GetMetadata().(*metadata.IssuingETHResponse)
-	err := blockchain.GetDatabase().InsertETHTxHashIssued(issuingETHResdMeta.ETHTxHash)
+	err := blockchain.GetDatabase().InsertETHTxHashIssued(issuingETHResdMeta.UniqETHTx)
 	fmt.Println("haha finally")
 	return err
 }

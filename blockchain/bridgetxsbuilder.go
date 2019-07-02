@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/ethrelaying/core/types"
 	"github.com/incognitochain/incognito-chain/ethrelaying/light"
 	"github.com/incognitochain/incognito-chain/ethrelaying/rlp"
@@ -144,7 +143,7 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-	ethTxHashUsed []rCommon.Hash,
+	uniqETHTxsUsed [][]byte,
 ) (metadata.Transaction, error) {
 	if shardID != common.BRIDGE_SHARD_ID {
 		return nil, nil
@@ -164,6 +163,10 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 
 	md := issuingETHReqAction.Meta
 	ethHeader := blockgen.chain.LightEthereum.GetLightChain().GetHeaderByHash(md.BlockHash)
+	if ethHeader == nil {
+		fmt.Println("WARNING: Could not find out the ETH block header with the hash: ", md.BlockHash)
+		return nil, nil
+	}
 	keybuf := new(bytes.Buffer)
 	keybuf.Reset()
 	rlp.Encode(keybuf, md.TxIndex)
@@ -188,18 +191,24 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	if err != nil {
 		return nil, err
 	}
-	ethTxHash := constructedReceipt.TxHash
-	isUsedInBlock := metadata.IsETHHashUsedInBlock(ethTxHash, ethTxHashUsed)
+
+	bb, _ := json.MarshalIndent(constructedReceipt, "", "    ")
+	fmt.Println("haha constructedReceipt: ", string(bb))
+
+	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
+	// so must build unique eth tx as combination of block hash and tx index.
+	uniqETHTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
+	isUsedInBlock := metadata.IsETHHashUsedInBlock(uniqETHTx, uniqETHTxsUsed)
 	if isUsedInBlock {
-		fmt.Println("WARNING: already issued for the hash in current block: ", ethTxHash)
+		fmt.Println("WARNING: already issued for the hash in current block: ", uniqETHTx)
 		return nil, nil
 	}
-	isIssued, err := blockgen.chain.GetDatabase().IsETHTxHashIssued(ethTxHash)
+	isIssued, err := blockgen.chain.GetDatabase().IsETHTxHashIssued(uniqETHTx)
 	if err != nil {
 		return nil, err
 	}
 	if isIssued {
-		fmt.Println("WARNING: already issued for the hash in previous blocks: ", ethTxHash)
+		fmt.Println("WARNING: already issued for the hash in previous blocks: ", uniqETHTx)
 		return nil, nil
 	}
 
@@ -249,7 +258,7 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 
 	issuingETHRes := metadata.NewIssuingETHResponse(
 		issuingETHReqAction.TxReqID,
-		ethTxHash,
+		uniqETHTx,
 		metadata.IssuingETHResponseMeta,
 	)
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -269,7 +278,7 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	if initErr != nil {
 		return nil, initErr
 	}
-	ethTxHashUsed = append(ethTxHashUsed, ethTxHash)
+	uniqETHTxsUsed = append(uniqETHTxsUsed, uniqETHTx)
 	fmt.Println("haha create res tx ok")
 	return resTx, nil
 }

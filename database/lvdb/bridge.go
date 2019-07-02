@@ -5,7 +5,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/pkg/errors"
 	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -108,10 +107,10 @@ func (db *db) UpdateAmtByTokenID(
 }
 
 func (db *db) InsertETHTxHashIssued(
-	ethTxHash rCommon.Hash,
+	uniqETHTx []byte,
 ) error {
-	key := append(decentralizedBridgePrefix, ethTxHash[:]...)
-	dbErr := db.Put(key, []byte{0})
+	key := append(decentralizedBridgePrefix, uniqETHTx...)
+	dbErr := db.Put(key, []byte{1})
 	if dbErr != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
@@ -119,9 +118,9 @@ func (db *db) InsertETHTxHashIssued(
 }
 
 func (db *db) IsETHTxHashIssued(
-	ethTxHash rCommon.Hash,
+	uniqETHTx []byte,
 ) (bool, error) {
-	key := append(decentralizedBridgePrefix, ethTxHash[:]...)
+	key := append(decentralizedBridgePrefix, uniqETHTx...)
 	contentBytes, dbErr := db.lvdb.Get(key, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))

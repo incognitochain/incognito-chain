@@ -96,7 +96,7 @@ func Deposit() error {
 
 	// Deposit
 	auth := bind.NewKeyedTransactor(privKey)
-	auth.Value = big.NewInt(0.2 * params.Ether)
+	auth.Value = big.NewInt(0.1 * params.Ether)
 	incAddr := "1Uv2wgU5FR5jjeN3uY3UJ4SYYyjqj97spYBEDa6cTLGiP3w6BCY7mqmASKwXz8hXfLr6mpDjhWDJ8TiM5v5U5f2cxxqCn5kwy5JM9wBgi"
 	tx, err := c.Deposit(auth, incAddr)
 	if err != nil {
