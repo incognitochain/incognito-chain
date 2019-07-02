@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -16,7 +16,7 @@ import (
 )
 
 func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo,
-	estimateFeeCoinPerKb int64, numBlock uint64, keyset *cashec.KeySet, shardIDSender byte,
+	estimateFeeCoinPerKb int64, numBlock uint64, keyset *incognitokey.KeySet, shardIDSender byte,
 	hasPrivacy bool,
 	metadataParam metadata.Metadata,
 	customTokenParams *transaction.CustomTokenParamTx,
@@ -168,7 +168,7 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	return &tx, nil
 }
 
-func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
+func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -319,7 +319,7 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 	return tx, nil
 }
 
-func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -588,7 +588,7 @@ func (rpcServer HttpServer) GetPaymentAddressFromPrivateKeyParams(senderKeyParam
 
 // GetKeySetFromKeyParams - deserialize a key string(wallet serialized)
 // into keyWallet - this keywallet may contain
-func (rpcServer HttpServer) GetKeySetFromKeyParams(keyParam string) (*cashec.KeySet, error) {
+func (rpcServer HttpServer) GetKeySetFromKeyParams(keyParam string) (*incognitokey.KeySet, error) {
 	keyWallet, err := wallet.Base58CheckDeserialize(keyParam)
 	if err != nil {
 		return nil, err
@@ -598,13 +598,16 @@ func (rpcServer HttpServer) GetKeySetFromKeyParams(keyParam string) (*cashec.Key
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string
 // into keyWallet object and fill all keyset in keywallet with private key
-func (rpcServer HttpServer) GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*cashec.KeySet, error) {
+func (rpcServer HttpServer) GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.KeySet, error) {
 	// deserialize to crate keywallet object which contain private key
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKeyWalletStr)
 	if err != nil {
 		return nil, err
 	}
 	// fill paymentaddress and readonly key with privatekey
-	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
 	return &keyWallet.KeySet, nil
 }

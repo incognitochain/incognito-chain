@@ -1,16 +1,12 @@
 package lvdb_test
 
 import (
-	"bytes"
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/database"
 	_ "github.com/incognitochain/incognito-chain/database/lvdb"
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 func setup(t *testing.T) (database.DatabaseInterface, func()) {
@@ -28,37 +24,5 @@ func setup(t *testing.T) (database.DatabaseInterface, func()) {
 			t.Fatalf("db.close %+v", err)
 		}
 		os.RemoveAll(dbPath)
-	}
-}
-
-func TestBlock(t *testing.T) {
-	db, teardown := setup(t)
-	defer teardown()
-
-	block := &blockchain.Block{
-		Header:       blockchain.BlockHeader{},
-		Transactions: []metadata.Transaction{},
-	}
-
-	err := db.StoreShardBlock(block)
-	if err != nil {
-		t.Errorf("db.StoreShardBlock returns err: %+v", err)
-	}
-
-	exists, err := db.HasBlock(block.Hash())
-	if err != nil {
-		t.Errorf("db.HasBlock returns err: %+v", err)
-	}
-	if !exists {
-		t.Errorf("block should exists")
-	}
-
-	fetched, err := db.FetchBlock(block.Hash())
-	if err != nil {
-		t.Errorf("db.FetchBlock returns err: %+v", err)
-	}
-	blockJSON, _ := json.Marshal(block)
-	if !bytes.Equal(blockJSON, fetched) {
-		t.Logf("should equal")
 	}
 }
