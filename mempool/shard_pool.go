@@ -11,12 +11,7 @@ import (
 	"time"
 )
 
-const (
-	MAX_VALID_SHARD_BLK_IN_POOL   = 10000
-	MAX_PENDING_SHARD_BLK_IN_POOL = 10000
-	SHARD_CACHE_SIZE              = 2000
-	SHARD_POOL_MAIN_LOOP_TIME     = 500 // count in milisecond
-)
+
 
 type ShardPoolConfig struct {
 	MaxValidBlock   int
