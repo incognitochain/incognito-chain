@@ -533,3 +533,73 @@ func TestDb_StoreFeeEstimator(t *testing.T) {
 		t.Error("DB is not open")
 	}
 }
+
+// Custom token
+func TestDb_StoreCustomToken(t *testing.T) {
+	tokenID := common.Hash{}
+	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
+
+	err := db.StoreCustomToken(tokenID, data)
+	assert.Equal(t, err, nil)
+
+	err = db.StorePrivacyCustomToken(tokenID, data)
+	assert.Equal(t, err, nil)
+
+	dataTemp, err := db.ListCustomToken()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(dataTemp), 1)
+
+	dataTemp, err = db.ListPrivacyCustomToken()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(dataTemp), 1)
+
+	err = db.DeleteCustomToken(tokenID)
+	assert.Equal(t, err, nil)
+
+	err = db.DeletePrivacyCustomToken(tokenID)
+	assert.Equal(t, err, nil)
+
+	dataTemp, err = db.ListCustomToken()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(dataTemp), 0)
+
+	dataTemp, err = db.ListPrivacyCustomToken()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(dataTemp), 0)
+
+	err = db.StoreCustomToken(tokenID, data)
+	assert.Equal(t, err, nil)
+
+	err = db.StorePrivacyCustomToken(tokenID, data)
+	assert.Equal(t, err, nil)
+
+	has := db.CustomTokenIDExisted(tokenID)
+	assert.Equal(t, true, has)
+
+	has = db.PrivacyCustomTokenIDExisted(tokenID)
+	assert.Equal(t, true, has)
+
+	err = db.StoreCustomTokenTx(tokenID, 0, 1, 0, data)
+	assert.Equal(t, err, nil)
+
+	temp, err := db.CustomTokenTxs(tokenID)
+	assert.Equal(t, 1, len(temp))
+
+	err = db.DeleteCustomTokenTx(tokenID, 0, 0, 1)
+	assert.Equal(t, err, nil)
+
+	temp, err = db.CustomTokenTxs(tokenID)
+	assert.Equal(t, 0, len(temp))
+
+	err = db.StorePrivacyCustomTokenTx(tokenID, 0, 1, 0, data)
+	assert.Equal(t, err, nil)
+
+	temp, err = db.PrivacyCustomTokenTxs(tokenID)
+	assert.Equal(t, 1, len(temp))
+
+	err = db.DeletePrivacyCustomTokenTx(tokenID, 0, 0, 1)
+	assert.Equal(t, err, nil)
+
+	temp, err = db.PrivacyCustomTokenTxs(tokenID)
+	assert.Equal(t, 0, len(temp))
+}
