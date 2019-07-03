@@ -17,7 +17,7 @@ func deriveKey(passPhrase string, salt []byte) ([]byte, []byte) {
 		salt = make([]byte, 8)
 		rand.Read(salt)
 	}
-	return pbkdf2.Key([]byte(passPhrase), salt, 1000, AESKeySize, sha256.New), salt
+	return pbkdf2.Key([]byte(passPhrase), salt, 1000, common.AESKeySize, sha256.New), salt
 }
 
 // EncryptByPassPhrase receives passphrase and plaintext
