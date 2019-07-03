@@ -249,3 +249,29 @@ func TestDb_StoreTxIndex(t *testing.T) {
 		t.Error("DB is not open")
 	}
 }
+
+// Best state of Prev
+func TestDb_StorePrevBestState(t *testing.T) {
+	if db != nil {
+		bestState := blockchain.BestState{
+			Beacon: &blockchain.BestStateBeacon{
+				Epoch: 100,
+			},
+		}
+		tempMarshal, err := json.Marshal(bestState.Beacon)
+		assert.Equal(t, err, nil)
+		err = db.StorePrevBestState(tempMarshal, true, 0)
+		assert.Equal(t, err, nil)
+
+		beaconInBytes, err := db.FetchPrevBestState(true, 0)
+		assert.Equal(t, err, nil)
+		temp := blockchain.BestStateBeacon{}
+		json.Unmarshal(beaconInBytes, &temp)
+		assert.Equal(t, bestState.Beacon.Epoch, temp.Epoch)
+		err = db.CleanBackup(true, 0)
+		_, err = db.FetchPrevBestState(true, 0)
+		assert.NotEqual(t, err, nil)
+	} else {
+		t.Error("DB is not open")
+	}
+}
