@@ -59,10 +59,12 @@ type DatabaseInterface interface {
 	GetTransactionIndexById(txId common.Hash) (common.Hash, int, *DatabaseError)
 	DeleteTransactionIndex(txId common.Hash) error
 
-	// Best state of shard chain
+	// Best state of Prev
 	StorePrevBestState([]byte, bool, byte) error
 	FetchPrevBestState(bool, byte) ([]byte, error)
 	CleanBackup(bool, byte) error
+
+	// Best state of shard chain
 	StoreShardBestState(interface{}, byte) error
 	FetchShardBestState(byte) ([]byte, error)
 	CleanShardBestState() error

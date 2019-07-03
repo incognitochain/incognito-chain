@@ -249,3 +249,58 @@ func TestDb_StoreTxIndex(t *testing.T) {
 		t.Error("DB is not open")
 	}
 }
+
+// Best state of Prev
+func TestDb_StorePrevBestState(t *testing.T) {
+	if db != nil {
+		bestState := blockchain.BestState{
+			Beacon: &blockchain.BestStateBeacon{
+				Epoch: 100,
+			},
+		}
+		tempMarshal, err := json.Marshal(bestState.Beacon)
+		assert.Equal(t, err, nil)
+		err = db.StorePrevBestState(tempMarshal, true, 0)
+		assert.Equal(t, err, nil)
+
+		beaconInBytes, err := db.FetchPrevBestState(true, 0)
+		assert.Equal(t, err, nil)
+		temp := blockchain.BestStateBeacon{}
+		json.Unmarshal(beaconInBytes, &temp)
+		assert.Equal(t, bestState.Beacon.Epoch, temp.Epoch)
+		err = db.CleanBackup(true, 0)
+		_, err = db.FetchPrevBestState(true, 0)
+		assert.NotEqual(t, err, nil)
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+// Best state of shard chain
+func TestDb_StoreShardBestState(t *testing.T) {
+	if db != nil {
+		besState := blockchain.BestState{
+			Shard: make(map[byte]*blockchain.BestStateShard),
+		}
+		bestStateShard := blockchain.BestStateShard{
+			Epoch: 100,
+		}
+		besState.Shard[0] = &bestStateShard
+		err := db.StoreShardBestState(bestStateShard, 0)
+		assert.Equal(t, err, nil)
+
+		temp, err := db.FetchShardBestState(0)
+		assert.Equal(t, err, nil)
+		tempObject := blockchain.BestStateShard{}
+		err = json.Unmarshal(temp, &tempObject)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, tempObject.Epoch, bestStateShard.Epoch)
+
+		err = db.CleanShardBestState()
+		assert.Equal(t, err, nil)
+		_, err = db.FetchShardBestState(0)
+		assert.NotEqual(t, err, nil)
+	} else {
+		t.Error("DB is not open")
+	}
+}
