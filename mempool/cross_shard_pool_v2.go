@@ -13,15 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-const (
-	MAX_VALID_CROSS_SHARD_IN_POOL   = 1000
-	MAX_PENDING_CROSS_SHARD_IN_POOL = 2000 //per shardID
-
-	VALID_CROSS_SHARD_BLOCK   = 0
-	INVALID_CROSS_SHARD_BLOCK = -1
-	PENDING_CROSS_SHARD_BLOCK = -2
-)
-
 // Cross shard pool only receive cross shard block when
 // - we can validate block using beacon state (committee member)
 // - we cannot validate block using beacon state (committee member), and beacon height is not too far from best state
