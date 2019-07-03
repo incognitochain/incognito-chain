@@ -6,11 +6,13 @@ import (
 )
 
 func TestPoolDataSendTimeSeriesMetricDataGrafana(T *testing.T) {
-	os.Setenv("GRAFANAURL", GrafanaURL)
 	data := map[string]interface{}{
 		Measurement:      PoolSize,
 		MeasurementValue: float64(10),
 	}
+	grafanaEmptyUrl := NewGrafana("")
+	grafanaEmptyUrl.SendTimeSeriesMetricData(data)
+	os.Setenv("GRAFANAURL", GrafanaURL)
 	grafana := NewGrafana(os.Getenv("GRAFANAURL"))
 	grafana.SendTimeSeriesMetricData(data)
 }
