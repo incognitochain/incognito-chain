@@ -113,16 +113,16 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBe
 	defer self.mtx.Unlock()
 	self.latestValidHeightMutex.Lock()
 	defer self.latestValidHeightMutex.Unlock()
-	
+
 	self.checkLatestValidHeightValidity(shardID)
 	//If receive old block, it will ignore
 	if blockHeight <= self.latestValidHeight[shardID] {
-		return 0, 0, NewBlockPoolError(OldBlockError, errors.New("Receive block " + strconv.Itoa(int(blockHeight))+ " but expect greater than "+ strconv.Itoa(int(self.latestValidHeight[shardID]))))
+		return 0, 0, NewBlockPoolError(OldBlockError, errors.New("Receive block "+strconv.Itoa(int(blockHeight))+" but expect greater than "+strconv.Itoa(int(self.latestValidHeight[shardID]))))
 	}
 	//If block already in pool, it will ignore
 	for _, blkItem := range self.pool[shardID] {
 		if blkItem.Header.Height == blockHeight {
-			return 0, 0, NewBlockPoolError(DuplicateBlockError, errors.New("Receive Duplicate block " + strconv.Itoa(int(blockHeight))))
+			return 0, 0, NewBlockPoolError(DuplicateBlockError, errors.New("Receive Duplicate block "+strconv.Itoa(int(blockHeight))))
 		}
 	}
 	//Check if satisfy pool capacity (for valid and invalid)
@@ -142,7 +142,7 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBe
 				//remove latest block and add better invalid to pool
 				self.pool[shardID] = self.pool[shardID][:len(self.pool[shardID])-1]
 			} else {
-				return 0, 0,  NewBlockPoolError(MaxPoolSizeError,errors.New("exceed invalid pending block"))
+				return 0, 0, NewBlockPoolError(MaxPoolSizeError, errors.New("exceed invalid pending block"))
 			}
 		}
 	}
