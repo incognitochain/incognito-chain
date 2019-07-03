@@ -10,10 +10,24 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-const (
-	MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL   = 1000
-	MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL = 2000
-)
+/*
+	ShardToBeaconPool contains block from all shard which is sent to beacon
+	Whenever any shard block from any shard is created, shard node will create a corresponding block called shard to beacon block
+	This block contains new state of shard, beacon use this block to update shard state globally
+	ShardToBeacon block must be inserted to beacon chain as increased order by block height
+	ShardToBeaconPool maintains block from all shard in this order, ex:
+		- Shard 0: blockHeight 2, blockHeight 3, blockHeight 5
+	ShardToBeaconPool has LatestValidHeight for each shard, this will be used as the pointer to
+	record how many valid blocks (which can be inserted into beacon chain) can be get from this pool, ex:
+		- Shard 0:
+			+ Pool: blockHeight 2, blockHeight 3, blockHeight 5
+			+ LatestvalidHeight: 3
+			=> only get block with height equal or less than 3 (blockHeight 2 and 3) from pool,
+			blockHeight 5 will be remained in pool until LatestvalidHeight is equal or greater than 5
+*/
+// Using Singleton object pattern
+// shardToBeaconPool object will be used globally in this application
+var shardToBeaconPool *ShardToBeaconPool = nil
 
 type ShardToBeaconPool struct {
 	pool                   map[byte][]*blockchain.ShardToBeaconBlock // shardID -> height -> block
@@ -21,8 +35,6 @@ type ShardToBeaconPool struct {
 	latestValidHeight      map[byte]uint64
 	latestValidHeightMutex *sync.RWMutex
 }
-
-var shardToBeaconPool *ShardToBeaconPool = nil
 
 func InitShardToBeaconPool() {
 	GetShardToBeaconPool().SetShardState(blockchain.GetBestStateBeacon().GetBestShardHeight())
