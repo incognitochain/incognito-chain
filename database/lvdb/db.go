@@ -136,32 +136,3 @@ func (db db) GetKey(keyType string, key common.Hash) []byte {
 	}
 	return dbkey
 }
-
-func (db db) GetKeyOldVersion(keyType string, key interface{}) []byte {
-	var dbkey []byte
-	switch keyType {
-	case string(blockKeyPrefix):
-		dbkey = append(blockKeyPrefix, key.(*common.Hash)[:]...)
-	case string(blockKeyIdxPrefix):
-		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
-	case string(serialNumbersPrefix):
-		dbkey = append(serialNumbersPrefix, []byte(key.(*common.Hash).String())...)
-	case string(commitmentsPrefix):
-		dbkey = append(commitmentsPrefix, []byte(key.(*common.Hash).String())...)
-	case string(outcoinsPrefix):
-		dbkey = append(outcoinsPrefix, []byte(key.(*common.Hash).String())...)
-	case string(snderivatorsPrefix):
-		dbkey = append(snderivatorsPrefix, []byte(key.(*common.Hash).String())...)
-	case string(TokenPrefix):
-		dbkey = append(TokenPrefix, []byte(key.(*common.Hash).String())...)
-	case string(PrivacyTokenPrefix):
-		dbkey = append(PrivacyTokenPrefix, []byte(key.(*common.Hash).String())...)
-	case string(PrivacyTokenCrossShardPrefix):
-		dbkey = append(PrivacyTokenCrossShardPrefix, []byte(key.(*common.Hash).String())...)
-	case string(tokenInitPrefix):
-		dbkey = append(tokenInitPrefix, []byte(key.(*common.Hash).String())...)
-	case string(privacyTokenInitPrefix):
-		dbkey = append(privacyTokenInitPrefix, []byte(key.(*common.Hash).String())...)
-	}
-	return dbkey
-}
