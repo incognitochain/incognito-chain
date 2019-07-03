@@ -3,6 +3,7 @@ package lvdb_test
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/stretchr/testify/assert"
@@ -234,14 +235,14 @@ func TestDb_StoreTxIndex(t *testing.T) {
 		})
 		block.Body.Transactions = append(block.Body.Transactions, &transaction.Tx{
 			Version: 1,
-			Info:    []byte("Test "),
+			Info:    []byte("Test 2"),
 		})
 		err := db.StoreTransactionIndex(*block.Body.Transactions[1].Hash(), *block.Hash(), 1)
 		assert.Equal(t, err, nil)
 
 		blockHash, index, err := db.GetTransactionIndexById(*block.Body.Transactions[1].Hash())
-		if err != nil {
-
+		if err.(*database.DatabaseError) != nil {
+			t.Error(err)
 		}
 		assert.Equal(t, blockHash, *block.Hash())
 		assert.Equal(t, index, 1)
@@ -303,4 +304,302 @@ func TestDb_StoreShardBestState(t *testing.T) {
 	} else {
 		t.Error("DB is not open")
 	}
+}
+
+// Best state of beacon chain
+func TestDb_StoreBeaconBestState(t *testing.T) {
+	if db != nil {
+		bestState := blockchain.BestState{
+			Beacon: &blockchain.BestStateBeacon{
+				Epoch: 100,
+			},
+		}
+		err := db.StoreBeaconBestState(bestState)
+		assert.Equal(t, err, nil)
+		temp, err := db.FetchBeaconBestState()
+		assert.Equal(t, err, nil)
+		tempObject := blockchain.BestState{}
+		err = json.Unmarshal(temp, &tempObject)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, tempObject.Beacon.Epoch, bestState.Beacon.Epoch)
+
+		err = db.CleanBeaconBestState()
+		assert.Equal(t, err, nil)
+		_, err = db.FetchBeaconBestState()
+		assert.NotEqual(t, err, nil)
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+// Commitee with epoch
+func TestDb_StoreCommitteeByHeight(t *testing.T) {
+	if db != nil {
+		block := blockchain.ShardBlock{
+			Header: blockchain.ShardHeader{
+				Height: 100,
+			},
+		}
+		bestState := blockchain.BestState{
+			Beacon: &blockchain.BestStateBeacon{
+				Epoch:          100,
+				ShardCommittee: make(map[byte][]string),
+			},
+		}
+		bestState.Beacon.ShardCommittee[0] = make([]string, 0)
+		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], "committee1")
+		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], "committee2")
+		err := db.StoreCommitteeByEpoch(block.Header.Height, bestState.Beacon.GetShardCommittee())
+		assert.Equal(t, err, nil)
+
+		shardCommittee := make(map[byte][]string)
+		data, err := db.FetchCommitteeByEpoch(100)
+		assert.Equal(t, err, nil)
+		err = json.Unmarshal(data, &shardCommittee)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, shardCommittee[0][0], "committee1")
+		assert.Equal(t, shardCommittee[0][1], "committee2")
+
+		has, err := db.HasCommitteeByEpoch(100)
+		assert.Equal(t, has, true)
+		assert.Equal(t, err, nil)
+
+		err = db.DeleteCommitteeByEpoch(100)
+		assert.Equal(t, err, nil)
+
+		has, err = db.HasCommitteeByEpoch(100)
+		assert.Equal(t, has, false)
+		assert.Equal(t, err, nil)
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+func TestDb_StoreSerialNumbers(t *testing.T) {
+	if db != nil {
+		serialNumber := make([][]byte, 0)
+		ser1 := []byte{0, 1}
+		ser2 := []byte{0, 2}
+		serialNumber = append(serialNumber, ser1)
+		serialNumber = append(serialNumber, ser2)
+		tokenID := common.Hash{}
+		err := db.StoreSerialNumbers(tokenID, serialNumber, 0)
+		assert.Equal(t, err, nil)
+
+		has, err := db.HasSerialNumber(tokenID, ser1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, true)
+
+		err = db.BackupSerialNumbersLen(tokenID, 0)
+		assert.Equal(t, err, nil)
+
+		err = db.RestoreSerialNumber(tokenID, 0, serialNumber)
+		assert.Equal(t, err, nil)
+		has, err = db.HasSerialNumber(tokenID, ser1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, false)
+
+		err = db.StoreSerialNumbers(tokenID, serialNumber, 0)
+		assert.Equal(t, err, nil)
+		has, err = db.HasSerialNumber(tokenID, ser1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, true)
+
+		err = db.CleanSerialNumbers()
+		assert.Equal(t, err, nil)
+		has, err = db.HasSerialNumber(tokenID, ser1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, false)
+
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+func TestDb_StoreCommitments(t *testing.T) {
+	if db != nil {
+		committments := make([][]byte, 0)
+		cm1 := []byte{0, 1}
+		cm2 := []byte{0, 2}
+		committments = append(committments, cm1)
+		committments = append(committments, cm2)
+		tokenID := common.Hash{}
+		publicKey := common.Hash{}
+
+		err := db.StoreCommitments(tokenID, publicKey.GetBytes(), committments, 0)
+		assert.Equal(t, err, nil)
+
+		has, err := db.HasCommitment(tokenID, cm1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, true)
+
+		has, err = db.HasCommitmentIndex(tokenID, 0, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, true)
+
+		len, err := db.GetCommitmentLength(tokenID, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, len.Int64(), int64(2))
+
+		temp, err := db.GetCommitmentByIndex(tokenID, 1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, temp, cm2)
+
+		index, err := db.GetCommitmentIndex(tokenID, cm1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, index.Uint64(), uint64(0))
+
+		err = db.BackupCommitmentsOfPubkey(tokenID, 0, publicKey.GetBytes())
+		assert.Equal(t, err, nil)
+
+		err = db.RestoreCommitmentsOfPubkey(tokenID, 0, publicKey.GetBytes(), committments)
+		assert.Equal(t, err, nil)
+		has, err = db.HasSerialNumber(tokenID, cm1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, false)
+
+		err = db.CleanCommitments()
+		assert.Equal(t, err, nil)
+		has, err = db.HasCommitment(tokenID, cm1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, false)
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+// output
+func TestDb_StoreOutputCoins(t *testing.T) {
+	if db != nil {
+		outputCoins := make([][]byte, 0)
+		cm1 := []byte{0, 1}
+		cm2 := []byte{0, 2}
+		outputCoins = append(outputCoins, cm1)
+		outputCoins = append(outputCoins, cm2)
+		tokenID := common.Hash{}
+		publicKey := common.Hash{}
+		err := db.StoreOutputCoins(tokenID, publicKey.GetBytes(), outputCoins, 1)
+		assert.Equal(t, err, nil)
+
+		data, err := db.GetOutcoinsByPubkey(tokenID, publicKey.GetBytes(), 1)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, len(data), 2)
+
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+// SNDerivator
+func TestDb_StoreSNDerivators(t *testing.T) {
+	if db != nil {
+		snd := make([][]byte, 0)
+		snd1 := []byte{0, 1}
+		snd2 := []byte{0, 2}
+		snd = append(snd, snd1)
+		snd = append(snd, snd2)
+		tokenID := common.Hash{}
+
+		err := db.StoreSNDerivators(tokenID, snd, 0)
+		assert.Equal(t, err, nil)
+
+		has, err := db.HasSNDerivator(tokenID, snd1, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, true)
+
+		err = db.CleanSNDerivator()
+		assert.Equal(t, err, nil)
+		has, err = db.HasSerialNumber(tokenID, snd2, 0)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, has, false)
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+// Fee estimator
+func TestDb_StoreFeeEstimator(t *testing.T) {
+	if db != nil {
+		feeEstimatorData := []byte{1, 2, 3, 4, 5}
+		err := db.StoreFeeEstimator(feeEstimatorData, 1)
+		assert.Equal(t, err, nil)
+		data, err := db.GetFeeEstimator(1)
+		assert.Equal(t, data, feeEstimatorData)
+		assert.Equal(t, err, nil)
+		db.CleanFeeEstimator()
+		_, err = db.GetFeeEstimator(1)
+		assert.NotEqual(t, err, nil)
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+// Custom token
+func TestDb_StoreCustomToken(t *testing.T) {
+	tokenID := common.Hash{}
+	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
+
+	err := db.StoreCustomToken(tokenID, data)
+	assert.Equal(t, err, nil)
+
+	err = db.StorePrivacyCustomToken(tokenID, data)
+	assert.Equal(t, err, nil)
+
+	dataTemp, err := db.ListCustomToken()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(dataTemp), 1)
+
+	dataTemp, err = db.ListPrivacyCustomToken()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(dataTemp), 1)
+
+	err = db.DeleteCustomToken(tokenID)
+	assert.Equal(t, err, nil)
+
+	err = db.DeletePrivacyCustomToken(tokenID)
+	assert.Equal(t, err, nil)
+
+	dataTemp, err = db.ListCustomToken()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(dataTemp), 0)
+
+	dataTemp, err = db.ListPrivacyCustomToken()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(dataTemp), 0)
+
+	err = db.StoreCustomToken(tokenID, data)
+	assert.Equal(t, err, nil)
+
+	err = db.StorePrivacyCustomToken(tokenID, data)
+	assert.Equal(t, err, nil)
+
+	has := db.CustomTokenIDExisted(tokenID)
+	assert.Equal(t, true, has)
+
+	has = db.PrivacyCustomTokenIDExisted(tokenID)
+	assert.Equal(t, true, has)
+
+	err = db.StoreCustomTokenTx(tokenID, 0, 1, 0, data)
+	assert.Equal(t, err, nil)
+
+	temp, err := db.CustomTokenTxs(tokenID)
+	assert.Equal(t, 1, len(temp))
+
+	err = db.DeleteCustomTokenTx(tokenID, 0, 0, 1)
+	assert.Equal(t, err, nil)
+
+	temp, err = db.CustomTokenTxs(tokenID)
+	assert.Equal(t, 0, len(temp))
+
+	err = db.StorePrivacyCustomTokenTx(tokenID, 0, 1, 0, data)
+	assert.Equal(t, err, nil)
+
+	temp, err = db.PrivacyCustomTokenTxs(tokenID)
+	assert.Equal(t, 1, len(temp))
+
+	err = db.DeletePrivacyCustomTokenTx(tokenID, 0, 0, 1)
+	assert.Equal(t, err, nil)
+
+	temp, err = db.PrivacyCustomTokenTxs(tokenID)
+	assert.Equal(t, 0, len(temp))
 }

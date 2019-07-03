@@ -262,7 +262,7 @@ func (db *db) GetAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) (
 	return idx, nil
 }
 
-func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
+/*func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
 	//key: bea-s-com-{height}
 	//value: all shard committee
 	key := append(beaconPrefix, shardIDPrefix...)
@@ -278,7 +278,7 @@ func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
-}
+}*/
 
 func (db *db) StoreCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
 	//key: bea-s-com-ep-{epoch}
