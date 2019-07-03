@@ -12,13 +12,6 @@ import (
 	"time"
 )
 
-const (
-	MAX_VALID_BEACON_BLK_IN_POOL   = 10000
-	MAX_PENDING_BEACON_BLK_IN_POOL = 10000
-	BEACON_CACHE_SIZE              = 2000
-	BEACON_POOL_MAIN_LOOP_TIME     = 500 // count in milisecond
-)
-
 type BeaconPoolConfig struct {
 	MaxValidBlock   int
 	MaxPendingBlock int
