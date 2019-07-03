@@ -11,63 +11,63 @@ import (
 
 var (
 	shardToBeaconPoolTest *ShardToBeaconPool
-	shardToBeaconBlock2           = &blockchain.ShardToBeaconBlock{
+	shardToBeaconBlock2   = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID: 0,
-			Height: 2,
-			Timestamp: time.Now().Unix()-100,
+			ShardID:   0,
+			Height:    2,
+			Timestamp: time.Now().Unix() - 100,
 		},
 	}
-	shardToBeaconBlock2Forked           = &blockchain.ShardToBeaconBlock{
+	shardToBeaconBlock2Forked = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID: 0,
-			Height: 2,
+			ShardID:   0,
+			Height:    2,
 			Timestamp: time.Now().Unix(),
 		},
 	}
 	shardToBeaconBlock3 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID: 0,
-			Height: 3,
+			ShardID:       0,
+			Height:        3,
 			PrevBlockHash: shardToBeaconBlock2.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock3Forked = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID: 0,
-			Height: 3,
+			ShardID:       0,
+			Height:        3,
 			PrevBlockHash: shardToBeaconBlock2Forked.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock4 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID: 0,
-			Height: 4,
+			ShardID:       0,
+			Height:        4,
 			PrevBlockHash: shardToBeaconBlock3.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock5 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID: 0,
-			Height: 5,
+			ShardID:       0,
+			Height:        5,
 			PrevBlockHash: shardToBeaconBlock4.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock6 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID: 0,
-			Height: 6,
+			ShardID:       0,
+			Height:        6,
 			PrevBlockHash: shardToBeaconBlock5.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock7 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID: 0,
-			Height: 7,
+			ShardID:       0,
+			Height:        7,
 			PrevBlockHash: shardToBeaconBlock6.Header.Hash(),
 		},
 	}
-	validShardToBeaconBlocks = []*blockchain.ShardToBeaconBlock{}
+	validShardToBeaconBlocks   = []*blockchain.ShardToBeaconBlock{}
 	pendingShardToBeaconBlocks = []*blockchain.ShardToBeaconBlock{}
 )
 var InitShardToBeaconPoolTest = func() {
@@ -92,12 +92,12 @@ var ResetShardToBeaconPool = func() {
 	shardToBeaconPool.latestValidHeightMutex = new(sync.RWMutex)
 }
 var _ = func() (_ struct{}) {
-	for i:=0; i < 255; i++ {
+	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		bestShardHeight[shardID] = 1
 		blockchain.SetBestStateShard(shardID, &blockchain.BestStateShard{
-			ShardHeight:1,
-		} )
+			ShardHeight: 1,
+		})
 	}
 	blockchain.SetBestStateBeacon(&blockchain.BestStateBeacon{
 		BestShardHeight: bestShardHeight,
@@ -105,11 +105,11 @@ var _ = func() (_ struct{}) {
 	InitShardToBeaconPool()
 	InitShardToBeaconPoolTest()
 	oldBlockHash := common.Hash{}
-	for i := 1; i < MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL + 2; i++ {
+	for i := 1; i < MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL+2; i++ {
 		shardToBeaconBlock := &blockchain.ShardToBeaconBlock{
 			Header: blockchain.ShardHeader{
 				ShardID: 0,
-				Height: uint64(i),
+				Height:  uint64(i),
 			},
 		}
 		if i != 0 {
@@ -118,11 +118,11 @@ var _ = func() (_ struct{}) {
 		oldBlockHash = shardToBeaconBlock.Header.Hash()
 		validShardToBeaconBlocks = append(validShardToBeaconBlocks, shardToBeaconBlock)
 	}
-	for i := MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL + 2; i < MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL + MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL + 3; i++ {
+	for i := MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL + 2; i < MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL+MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL+3; i++ {
 		shardToBeaconBlock := &blockchain.ShardToBeaconBlock{
 			Header: blockchain.ShardHeader{
 				ShardID: 0,
-				Height: uint64(i),
+				Height:  uint64(i),
 			},
 		}
 		if i != 0 {
@@ -134,6 +134,7 @@ var _ = func() (_ struct{}) {
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
+
 func TestShardToBeaconPoolUpdateLatestShardState(t *testing.T) {
 	InitShardToBeaconPoolTest()
 	shardToBeaconPoolTest.latestValidHeight = make(map[byte]uint64)
@@ -251,7 +252,7 @@ func TestShardToBeaconPoolAddShardToBeaconBlock(t *testing.T) {
 	InitShardToBeaconPoolTest()
 	// check old block
 	shardToBeaconPoolTest.latestValidHeight[0] = 2
-	_,_,err = shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock2)
+	_, _, err = shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock2)
 	if err == nil {
 		t.Fatalf("Expect old block error but no error")
 	} else {
@@ -260,7 +261,7 @@ func TestShardToBeaconPoolAddShardToBeaconBlock(t *testing.T) {
 		}
 	}
 	shardToBeaconPoolTest.latestValidHeight[0] = 3
-	_,_, err = shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock2)
+	_, _, err = shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock2)
 	if err == nil {
 		t.Fatal("Expect old block error but no error")
 	} else {
@@ -279,7 +280,7 @@ func TestShardToBeaconPoolAddShardToBeaconBlock(t *testing.T) {
 	InitShardToBeaconPoolTest()
 	// check duplicate block
 	shardToBeaconPoolTest.pool[0] = append(shardToBeaconPoolTest.pool[0], shardToBeaconBlock2)
-	_,_,err = shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock2Forked)
+	_, _, err = shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock2Forked)
 	if err == nil {
 		t.Fatal("Expect duplicate block error but no error")
 	} else {
@@ -290,7 +291,7 @@ func TestShardToBeaconPoolAddShardToBeaconBlock(t *testing.T) {
 	InitShardToBeaconPoolTest()
 	// check valid pool capacity
 	for index, block := range validShardToBeaconBlocks {
-		if index < len(validShardToBeaconBlocks) - 1 {
+		if index < len(validShardToBeaconBlocks)-1 {
 			shardToBeaconPoolTest.pool[0] = append(shardToBeaconPoolTest.pool[0], block)
 			shardToBeaconPoolTest.latestValidHeight[0] = block.Header.Height
 		} else {
@@ -328,7 +329,7 @@ func TestShardToBeaconPoolAddShardToBeaconBlock(t *testing.T) {
 	InitShardToBeaconPoolTest()
 	// although 2 valid and pending == invalid pool is max, but if better is found then replace it
 	for index, block := range validShardToBeaconBlocks {
-		if index < len(validShardToBeaconBlocks) - 2 {
+		if index < len(validShardToBeaconBlocks)-2 {
 			shardToBeaconPoolTest.pool[0] = append(shardToBeaconPoolTest.pool[0], block)
 			shardToBeaconPoolTest.latestValidHeight[0] = block.Header.Height
 		}
@@ -381,7 +382,7 @@ func TestShardToBeaconPoolGetValidBlock(t *testing.T) {
 	shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock3)
 	shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock4)
 	shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock5)
-	
+
 	shardToBeaconPoolTest.AddShardToBeaconBlock(shardToBeaconBlock7)
 	limit := make(map[byte]uint64)
 	limit[0] = 7
