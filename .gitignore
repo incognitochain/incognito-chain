@@ -55,5 +55,6 @@ go.sum
 priv.json
 bin/keylist.json
 bin/incognito
+bin/bootnode
 incognito
 config
