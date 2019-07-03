@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-
-
 type ShardPoolConfig struct {
 	MaxValidBlock   int
 	MaxPendingBlock int
@@ -145,7 +143,7 @@ func (self *ShardPool) validateShardBlock(block *blockchain.ShardBlock, isPendin
 	// if next valid block then check max valid pool
 	if self.latestValidHeight+1 == block.Header.Height {
 		if isPending {
-			if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock + 1 {
+			if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock+1 {
 				return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
 			}
 		} else {
