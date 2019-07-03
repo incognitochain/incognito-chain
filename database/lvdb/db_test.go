@@ -304,3 +304,34 @@ func TestDb_StoreShardBestState(t *testing.T) {
 		t.Error("DB is not open")
 	}
 }
+
+// Best state of beacon chain
+func TestDb_StoreBeaconBestState(t *testing.T) {
+	if db != nil {
+		bestState := blockchain.BestState{
+			Beacon: &blockchain.BestStateBeacon{
+				Epoch: 100,
+			},
+		}
+		err := db.StoreBeaconBestState(bestState)
+		assert.Equal(t, err, nil)
+		temp, err := db.FetchBeaconBestState()
+		assert.Equal(t, err, nil)
+		tempObject := blockchain.BestStateShard{}
+		err = json.Unmarshal(temp, &tempObject)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, tempObject.Epoch, bestState.Beacon.Epoch)
+
+		err = db.CleanBeaconBestState()
+		assert.Equal(t, err, nil)
+		_, err = db.FetchBeaconBestState()
+		assert.NotEqual(t, err, nil)
+	} else {
+		t.Error("DB is not open")
+	}
+}
+
+// Commitee with epoch
+func TestDb_StoreCommitteeByHeight(t *testing.T) {
+
+}
