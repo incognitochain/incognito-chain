@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -28,10 +29,10 @@ import (
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
@@ -350,7 +351,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	// Init consensus engine
-	serverObj.consensusEngine = &consensus.ConsensusEngine
+	serverObj.consensusEngine = &consensus.ConsensusManager
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
@@ -358,7 +359,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ChainParam:        chainParams,
 		TxMemPool:         serverObj.memPool,
 		Server:            serverObj,
-		Consensus:         serverObj.consensusEngine,
+		Consensus:         serverObj.consensusEngine, // for onBFTMsg
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		PubSubManager:     serverObj.pusubManager,
@@ -603,7 +604,7 @@ func (serverObj Server) Start() {
 	go serverObj.blockChain.Synker.Start()
 
 	if cfg.NodeMode != common.NODEMODE_RELAY {
-		serverObj.consensusEngine.Start("beacon", blockchain.GetBestStateBeacon())
+		serverObj.consensusEngine.Start(&serverObj, serverObj.blockChain, serverObj.blockgen)
 		serverObj.memPool.IsBlockGenStarted = true
 		serverObj.blockChain.SetIsBlockGenStarted(true)
 		for _, shardPool := range serverObj.shardPool {
@@ -618,6 +619,18 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.Start(serverObj.cQuit)
 	}
 	go serverObj.pusubManager.Start()
+}
+
+func (serverObj *Server) GetActiveShardNumber() int {
+	return serverObj.chainParams.ActiveShards
+}
+
+func (serverObj *Server) GetNodePubKey() string {
+	return serverObj.userKeySet.GetPublicKeyB58()
+}
+
+func (serverObj *Server) GetUserKeySet() *incognitokey.KeySet {
+	return serverObj.userKeySet
 }
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
