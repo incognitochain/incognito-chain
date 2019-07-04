@@ -15,11 +15,6 @@ type TokenWithAmount struct {
 	Amount  uint64       `json:"amount"`
 }
 
-func buildBridgedTokensAmounts(item []byte, results [][]byte) [][]byte {
-	results = append(results, item)
-	return results
-}
-
 func (db *db) GetBridgeTokensAmounts() ([][]byte, error) {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(centralizedBridgePrefix), nil)
 	results := [][]byte{}
