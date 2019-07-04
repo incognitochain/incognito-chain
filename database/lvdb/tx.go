@@ -90,7 +90,7 @@ func (db *db) GetSerialNumbersLength(tokenID common.Hash, shardID byte) (*big.In
 func (db *db) CleanSerialNumbers() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(serialNumbersPrefix), nil)
 	for iter.Next() {
-		err := db.lvdb.Delete(iter.Key(), nil)
+		err := db.Delete(iter.Key())
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
@@ -279,7 +279,7 @@ func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID by
 func (db *db) CleanCommitments() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(commitmentsPrefix), nil)
 	for iter.Next() {
-		err := db.lvdb.Delete(iter.Key(), nil)
+		err := db.Delete(iter.Key())
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
@@ -323,7 +323,7 @@ func (db *db) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bo
 func (db *db) CleanSNDerivator() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(snderivatorsPrefix), nil)
 	for iter.Next() {
-		err := db.lvdb.Delete(iter.Key(), nil)
+		err := db.Delete(iter.Key())
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
@@ -356,7 +356,7 @@ func (db *db) GetFeeEstimator(shardID byte) ([]byte, error) {
 func (db *db) CleanFeeEstimator() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(feeEstimator), nil)
 	for iter.Next() {
-		err := db.lvdb.Delete(iter.Key(), nil)
+		err := db.Delete(iter.Key())
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 		}

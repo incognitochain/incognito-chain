@@ -154,11 +154,11 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 		// b-{hash}
 		keyBlockHash = db.GetKey(string(blockKeyPrefix), hash)
 	)
-	err := db.lvdb.Delete(keyBeaconBlock, nil)
+	err := db.Delete(keyBeaconBlock)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
-	err = db.lvdb.Delete(keyBlockHash, nil)
+	err = db.Delete(keyBlockHash)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
@@ -166,7 +166,7 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 	// delete by index
 	// bea-i-{hash} -> index
 	keyIndex := append(append(beaconPrefix, blockKeyIdxPrefix...), hash[:]...)
-	err = db.lvdb.Delete(keyIndex, nil)
+	err = db.Delete(keyIndex)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
@@ -174,7 +174,7 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 	// index -> {hash}
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, idx)
-	err = db.lvdb.Delete(buf, nil)
+	err = db.Delete(buf)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
@@ -204,7 +204,7 @@ func (db *db) FetchBeaconBestState() ([]byte, error) {
 
 func (db *db) CleanBeaconBestState() error {
 	key := beaconBestBlockkey
-	err := db.lvdb.Delete(key, nil)
+	err := db.Delete(key)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.delete"))
 	}
@@ -274,7 +274,7 @@ func (db *db) GetAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) (
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
-	if err := db.Put(key, val, nil); err != nil {
+	if err := db.Put(key, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
@@ -323,7 +323,7 @@ func (db *db) HasCommitteeByEpoch(blkEpoch uint64) (bool, error) {
 	binary.LittleEndian.PutUint64(buf, blkEpoch)
 	key = append(key, buf[:]...)
 
-	exist, err := db.lvdb.Has(key, nil)
+	exist, err := db.HasValue(key)
 	if err != nil {
 		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
 	}
