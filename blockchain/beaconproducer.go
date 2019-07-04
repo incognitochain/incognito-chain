@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/incognitochain/incognito-chain/cashec"
+	
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -159,7 +159,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	return beaconBlock, nil
 }
 
-func (blkTmplGenerator *BlkTmplGenerator) FinalizeBeaconBlock(blk *BeaconBlock, producerKeyset *cashec.KeySet) error {
+func (blkTmplGenerator *BlkTmplGenerator) FinalizeBeaconBlock(blk *BeaconBlock, producerKeyset *incognitokey.KeySet) error {
 	// Signature of producer, sign on hash of header
 	blk.Header.Timestamp = time.Now().Unix()
 	blockHash := blk.Header.Hash()
@@ -192,7 +192,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(
 	validStakers := [][]string{}
 	validSwappers := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	allShardBlocks := blkTmplGenerator.shardToBeaconPool.GetValidPendingBlock(shardsToBeacon)
+	allShardBlocks := blkTmplGenerator.shardToBeaconPool.GetValidBlock(shardsToBeacon)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}

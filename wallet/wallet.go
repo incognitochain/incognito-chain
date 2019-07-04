@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/pkg/errors"
 	"io/ioutil"
 )
 
@@ -34,15 +33,26 @@ type WalletConfig struct {
 	ShardID        *byte //default is nil -> create account for any shard
 }
 
+// GetConfig returns configuration of wallet
 func (wallet Wallet) GetConfig() *WalletConfig {
 	return wallet.config
 }
 
+// SetConfig sets config to configuration of wallet
 func (wallet *Wallet) SetConfig(config *WalletConfig) {
 	wallet.config = config
 }
 
+// Init initializes new wallet with pass phrase, number of accounts and wallet name
+// It returns error if there are any errors when initializing wallet. Otherwise, it returns nil
+// passPhrase can be empty string, it is used to generate seed and master key
+// If numOfAccount equals zero, wallet is initialized with one account
+// If name is empty string, it returns error
 func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) error {
+	if name == "" {
+		return NewWalletError(EmptyWalletNameErr, nil)
+	}
+
 	mnemonicGen := MnemonicGenerator{}
 	wallet.Name = name
 	wallet.Entropy, _ = mnemonicGen.NewEntropy(128)
@@ -77,7 +87,20 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 	return nil
 }
 
-func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *AccountWallet {
+
+// CreateNewAccount create new account with accountName
+// it returns that new account and returns errors if accountName is existed
+// If shardID is nil, new account will belong to any shards
+// Otherwise, new account will belong to specific shard
+func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*AccountWallet, error) {
+	if accountName != "" {
+		for _, acc := range wallet.MasterAccount.Child {
+			if acc.Name == accountName{
+				return nil, NewWalletError(ExistedAccountNameErr, nil)
+			}
+		}
+	}
+
 	if shardID != nil {
 		// only create account for specific Shard
 		newIndex := uint64(0)
@@ -86,7 +109,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 			temp := wallet.MasterAccount.Child[j]
 			if !temp.IsImported {
 				childNumber := temp.Key.ChildNumber
-				newIndex = common.BytesToUint64(childNumber) + uint64(1)
+				newIndex = uint64(common.BytesToInt32(childNumber) + 1)
 				break
 			}
 		}
@@ -94,7 +117,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 		// loop to get create a new child which can be equal shardID param
 		var childKey *KeyWallet
 		for true {
-			childKey, _ := wallet.MasterAccount.Key.NewChildKey(uint32(newIndex))
+			childKey, _ = wallet.MasterAccount.Key.NewChildKey(uint32(newIndex))
 			lastByte := childKey.KeySet.PaymentAddress.Pk[len(childKey.KeySet.PaymentAddress.Pk)-1]
 			if common.GetShardIDFromLastByte(lastByte) == *shardID {
 				break
@@ -105,6 +128,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 		if accountName == "" {
 			accountName = fmt.Sprintf("AccountWallet %d", len(wallet.MasterAccount.Child))
 		}
+
 		account := AccountWallet{
 			Key:   *childKey,
 			Child: make([]AccountWallet, 0),
@@ -112,7 +136,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 		}
 		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
 		wallet.Save(wallet.PassPhrase)
-		return &account
+		return &account, nil
 
 	} else {
 		newIndex := uint32(len(wallet.MasterAccount.Child))
@@ -127,15 +151,20 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) *Accou
 		}
 		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
 		wallet.Save(wallet.PassPhrase)
-		return &account
+		return &account, nil
 	}
 }
 
+// ExportAccount returns a private key string of account at childIndex in wallet
+// It is base58 check serialized
 func (wallet *Wallet) ExportAccount(childIndex uint32) string {
+	if int(childIndex) >= len(wallet.MasterAccount.Child) {
+		return ""
+	}
 	return wallet.MasterAccount.Child[childIndex].Key.Base58CheckSerialize(PriKeyType)
 }
 
-func (wallet *Wallet) RemoveAccount(privateKeyStr string, accountName string, passPhrase string) error {
+func (wallet *Wallet) RemoveAccount(privateKeyStr string, passPhrase string) error {
 	if passPhrase != wallet.PassPhrase {
 		return NewWalletError(WrongPassphraseErr, nil)
 	}
@@ -146,9 +175,11 @@ func (wallet *Wallet) RemoveAccount(privateKeyStr string, accountName string, pa
 			return nil
 		}
 	}
-	return NewWalletError(UnexpectedErr, errors.New("Not found"))
+	return NewWalletError(NotFoundAccountErr, nil)
 }
 
+// ImportAccount adds account into wallet with privateKeyStr, accountName, and passPhrase which is used to init wallet
+// It returns AccountWallet which is imported and errors (if any)
 func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, passPhrase string) (*AccountWallet, error) {
 	if passPhrase != wallet.PassPhrase {
 		return nil, NewWalletError(WrongPassphraseErr, nil)
@@ -167,7 +198,11 @@ func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, pa
 	if err != nil {
 		return nil, err
 	}
-	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+
+	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
 
 	Logger.log.Infof("Pub-key : %s", keyWallet.Base58CheckSerialize(PaymentAddressType))
 	Logger.log.Infof("Readonly-key : %s", keyWallet.Base58CheckSerialize(ReadonlyKeyType))
@@ -186,20 +221,26 @@ func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, pa
 	return &account, nil
 }
 
+// Save saves encrypted wallet (using AES encryption scheme) in config data file of wallet
+// It returns error if any
 func (wallet *Wallet) Save(password string) error {
 	if password == "" {
 		password = wallet.PassPhrase
+	}
+
+	if password != wallet.PassPhrase {
+		return NewWalletError(WrongPassphraseErr, nil)
 	}
 
 	// parse to byte[]
 	data, err := json.Marshal(*wallet)
 	if err != nil {
 		Logger.log.Error(err)
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(JsonMarshalErr, err)
 	}
 
-	// encrypt
-	cipherText, err := AES{}.Encrypt(password, data)
+	// encrypt data
+	cipherText, err := EncryptByPassPhrase(password, data)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewWalletError(UnexpectedErr, err)
@@ -209,34 +250,40 @@ func (wallet *Wallet) Save(password string) error {
 	cipherTexInBytes := []byte(cipherText)
 	err = ioutil.WriteFile(wallet.config.DataPath, cipherTexInBytes, 0644)
 	if err != nil {
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(WriteFileErr, err)
 	}
 	return nil
 }
 
+// LoadWallet loads encrypted wallet from file and then decrypts it to wallet struct
+// It returns error if any
 func (wallet *Wallet) LoadWallet(password string) error {
 	// read file and decrypt
 	bytesData, err := ioutil.ReadFile(wallet.config.DataPath)
 	if err != nil {
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(ReadFileErr, err)
 	}
-	bufBytes, err := AES{}.Decrypt(password, string(bytesData))
+	bufBytes, err := DecryptByPassPhrase(password, string(bytesData))
 	if err != nil {
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(AESDecryptErr, err)
 	}
 
 	// read to struct
 	err = json.Unmarshal(bufBytes, &wallet)
 	if err != nil {
-		return NewWalletError(UnexpectedErr, err)
+		return NewWalletError(JsonUnmarshalErr, err)
 	}
 	return nil
 }
 
-func (wallet *Wallet) DumpPrivkey(addressP string) KeySerializedData {
+// DumpPrivkey receives base58 check serialized payment address (paymentAddrSerialized)
+// and returns KeySerializedData object contains PrivateKey
+// which is corresponding to paymentAddrSerialized in all wallet accounts
+// If there is not any wallet account corresponding to paymentAddrSerialized, it returns empty KeySerializedData object
+func (wallet *Wallet) DumpPrivkey(paymentAddrSerialized string) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(PaymentAddressType)
-		if address == addressP {
+		if address == paymentAddrSerialized {
 			key := KeySerializedData{
 				PrivateKey: account.Key.Base58CheckSerialize(PriKeyType),
 			}
@@ -246,9 +293,13 @@ func (wallet *Wallet) DumpPrivkey(addressP string) KeySerializedData {
 	return KeySerializedData{}
 }
 
-func (wallet *Wallet) GetAccountAddress(accountParam string, shardID *byte) KeySerializedData {
+// GetAddressByAccName receives accountName and shardID
+// and returns corresponding account's KeySerializedData object contains base58 check serialized PaymentAddress,
+// hex encoding Pubkey and base58 check serialized ReadonlyKey
+// If there is not any account corresponding to accountName, we will create new account
+func (wallet *Wallet) GetAddressByAccName(accountName string, shardID *byte) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
-		if account.Name == accountParam {
+		if account.Name == accountName {
 			key := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
 				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
@@ -257,7 +308,7 @@ func (wallet *Wallet) GetAccountAddress(accountParam string, shardID *byte) KeyS
 			return key
 		}
 	}
-	newAccount := wallet.CreateNewAccount(accountParam, shardID)
+	newAccount, _ := wallet.CreateNewAccount(accountName, shardID)
 	key := KeySerializedData{
 		PaymentAddress: newAccount.Key.Base58CheckSerialize(PaymentAddressType),
 		Pubkey:         hex.EncodeToString(newAccount.Key.KeySet.PaymentAddress.Pk),
@@ -266,10 +317,12 @@ func (wallet *Wallet) GetAccountAddress(accountParam string, shardID *byte) KeyS
 	return key
 }
 
-func (wallet *Wallet) GetAddressesByAccount(accountParam string) []KeySerializedData {
+// GetAddressesByAccName receives accountName
+// and returns list of KeySerializedData of accounts which has accountName
+func (wallet *Wallet) GetAddressesByAccName(accountName string) []KeySerializedData {
 	result := make([]KeySerializedData, 0)
 	for _, account := range wallet.MasterAccount.Child {
-		if account.Name == accountParam {
+		if account.Name == accountName {
 			item := KeySerializedData{
 				PaymentAddress: account.Key.Base58CheckSerialize(PaymentAddressType),
 				Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
@@ -281,6 +334,7 @@ func (wallet *Wallet) GetAddressesByAccount(accountParam string) []KeySerialized
 	return result
 }
 
+// ListAccounts returns a map with key is account name and value is account wallet
 func (wallet *Wallet) ListAccounts() map[string]AccountWallet {
 	result := make(map[string]AccountWallet)
 	for _, account := range wallet.MasterAccount.Child {
@@ -289,6 +343,7 @@ func (wallet *Wallet) ListAccounts() map[string]AccountWallet {
 	return result
 }
 
+// ContainPubKey checks whether the wallet contains any account with pubKey or not
 func (wallet *Wallet) ContainPubKey(pubKey []byte) bool {
 	for _, account := range wallet.MasterAccount.Child {
 		if bytes.Equal(account.Key.KeySet.PaymentAddress.Pk[:], pubKey) {

@@ -14,7 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
@@ -79,6 +79,11 @@ func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
 		Logger.log.Error(err)
 	}
 	return b, err
+}
+func (bestStateBeacon *BestStateBeacon) SetBestShardHeight(shardID byte, height uint64) {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	bestStateBeacon.BestShardHeight[shardID] = height
 }
 
 func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
@@ -361,7 +366,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 
 	blkHash := block.Header.Hash()
 	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	err = cashec.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
+	err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
 	if err != nil {
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
