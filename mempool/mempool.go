@@ -232,7 +232,8 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 5. Validate with other txs in mempool
 6. Validate data in tx: privacy proof, metadata,...
 7. Validate tx with blockchain: douple spend, ...
-8. Check Duplicate stake public key in pool ONLY with staking transaction
+8. CustomInitToken: Check Custom Init Token try to init exist token ID
+9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 
 */
 func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
@@ -347,7 +348,9 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	now = time.Now()
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.DataBase)
 	if err != nil {
-		return err
+		tempErr := MempoolTxError{}
+		tempErr.Init(RejectDoubleSpendWithBlockchainTx,err)
+		return tempErr
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
