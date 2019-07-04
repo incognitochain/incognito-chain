@@ -2,15 +2,14 @@ package bft
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/cashec"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wire"
+	"github.com/incognitochain/incognito-chain/consensus/chain"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"time"
 )
 
 type ProposeMsg struct {
 	ChainKey   string
-	Block      BlockInterface
+	Block      chain.BlockInterface
 	ContentSig string
 	Pubkey     string
 	Timestamp  int64
@@ -27,45 +26,23 @@ type PrepareMsg struct {
 	Timestamp  int64
 }
 
-type BlockInterface interface {
-	GetHeight() uint64
-	GetProducerPubKey() string
-	Hash() *common.Hash
-}
-
-type ChainInterface interface {
-	PushMessageToValidator(wire.Message) error
-	GetLastBlockTimeStamp() uint64
-	GetBlkMinTime() time.Duration
-	IsReady() bool
-	GetHeight() uint64
-	GetCommitteeSize() int
-	GetNodePubKeyIndex() int
-	GetLastProposerIndex() int
-	GetNodePubKey() string
-	CreateNewBlock(round int) BlockInterface
-	ValidateBlock(interface{}) bool
-	ValidateSignature(interface{}, string) bool
-	InsertBlk(interface{}, bool)
-}
-
 type BFTCore struct {
-	Name       string
-	Chain      ChainInterface
+	ChainKey   string
+	Chain      chain.ChainInterface
 	PeerID     string
 	Round      uint64
 	NextHeight uint64
 
-	UserKeySet *cashec.KeySet
+	UserKeySet *incognitokey.KeySet
 	State      string
-	Block      BlockInterface
+	Block      chain.BlockInterface
 
 	ProposeMsgCh chan ProposeMsg
 	PrepareMsgCh chan PrepareMsg
 	StopCh       chan int
 
 	PrepareMsgs map[string]map[string]bool
-	Blocks      map[string]BlockInterface
+	Blocks      map[string]chain.BlockInterface
 
 	IsRunning bool
 }
@@ -97,7 +74,7 @@ func (e *BFTCore) Start() {
 	e.IsRunning = true
 	e.StopCh = make(chan int)
 	e.PrepareMsgs = map[string]map[string]bool{}
-	e.Blocks = map[string]BlockInterface{}
+	e.Blocks = map[string]chain.BlockInterface{}
 
 	e.ProposeMsgCh = make(chan ProposeMsg)
 	e.PrepareMsgCh = make(chan PrepareMsg)

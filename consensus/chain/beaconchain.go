@@ -1,26 +1,22 @@
-package consensus
+package chain
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus/bft"
 	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
 
-type Node interface {
-	PushMessageToShard(byte, wire.Message) error
-	PushMessageToBeacon(wire.Message) error
-	GetNodePubKey() string
-	GetUserKeySet() cashec.KeySet
+type BeaconChain struct {
+	Node            Node
+	BlockGen        *blockchain.BlkTmplGenerator
+	Blockchain      *blockchain.BlockChain
+	ConsensusEngine ConsensusInterface
 }
 
-type BeaconChain struct {
-	Node       Node
-	BlockGen   blockchain.BlkTmplGenerator
-	Blockchain blockchain.BlockChain
+func (s *BeaconChain) GetConsensusEngine() ConsensusInterface {
+	return s.ConsensusEngine
 }
 
 func (s *BeaconChain) PushMessageToValidator(msg wire.Message) error {
@@ -61,14 +57,14 @@ func (s *BeaconChain) GetLastProposerIndex() int {
 	return common.IndexOfStr(base58.Base58Check{}.Encode(s.Blockchain.BestState.Beacon.BestBlock.Header.ProducerAddress.Pk, common.ZeroByte), s.Blockchain.BestState.Beacon.BeaconCommittee)
 }
 
-func (s *BeaconChain) CreateNewBlock(round int) bft.BlockInterface {
+func (s *BeaconChain) CreateNewBlock(round int) BlockInterface {
 	userKeyset := s.Node.GetUserKeySet()
 	paymentAddress := userKeyset.PaymentAddress
 	newBlock, err := s.BlockGen.NewBlockBeacon(&paymentAddress, round, s.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil
 	} else {
-		err = s.BlockGen.FinalizeBeaconBlock(newBlock, &userKeyset)
+		err = s.BlockGen.FinalizeBeaconBlock(newBlock, userKeyset)
 		if err != nil {
 			return nil
 		}
