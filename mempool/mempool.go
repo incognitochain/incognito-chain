@@ -391,7 +391,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			if found > 0 {
 				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
 				err := MempoolTxError{}
-				err.Init(RejectDuplicateStakeTx, errors.New(str))
+				err.Init(RejectDuplicateStakePubkey, errors.New(str))
 				return err
 			}
 		}
