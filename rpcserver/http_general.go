@@ -439,7 +439,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	// param #3: tokenId
 	var tokenId *common.Hash
 	if len(arrayParams) >= 4 && arrayParams[3] != nil {
-		tokenId, err = common.NewHashFromStr(arrayParams[3].(string))
+		tokenId, err = common.Hash{}.NewHashFromStr(arrayParams[3].(string))
 	}
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
