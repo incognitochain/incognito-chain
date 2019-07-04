@@ -1,13 +1,13 @@
 package privacy
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"sort"
 	"testing"
 	"time"
-	"math/rand"
-	"errors"
 )
 
 func createRandomTx(seed int) (outCoins []*OutputCoin, amount uint64) {
@@ -152,8 +152,8 @@ func TestAlgorithms(t *testing.T) {
 		res1, rem1, _, err1 := oldBestCoinAlgorithm(outCoins, amount)
 		res2, rem2, _, err2 := newBestCoinAlgorithm(outCoins, amount)
 
-		if err1 == nil && err2 == nil && len(res1) + len(rem1) != len(res2) + len(rem2) {
-			t.Errorf("Incorrect length: %v %v", len(res1) + len(rem1), len(res2) + len(rem2))
+		if err1 == nil && err2 == nil && len(res1)+len(rem1) != len(res2)+len(rem2) {
+			t.Errorf("Incorrect length: %v %v", len(res1)+len(rem1), len(res2)+len(rem2))
 		}
 
 		if err1 != nil && err2 == nil || err1 == nil && err2 != nil {
@@ -163,7 +163,7 @@ func TestAlgorithms(t *testing.T) {
 		tot1 += len(res1)
 		tot2 += len(res2)
 	}
-	fmt.Printf("%v %v\n", tot1, tot2)
+	Logger.Log.Infof("%v %v\n", tot1, tot2)
 }
 
 func TestKnapSack(t *testing.T) {
@@ -208,8 +208,7 @@ func TestKnapSack(t *testing.T) {
 	// target
 	target := int64(sumValueKnapsack - amount)
 
-	fmt.Printf("Target: %v\n", target)
-
+	Logger.Log.Infof("Target: %v\n", target)
 
 	if target > 1000 {
 		choices := Greedy(outCoins, amount)
@@ -238,7 +237,7 @@ func TestKnapSack(t *testing.T) {
 		remainOutputCoins = outCoinUnknapsack
 	} else {
 		if len(outCoinUnknapsack) == 0 {
-			fmt.Printf("Not enough coin")
+			Logger.Log.Infof("Not enough coin")
 		} else {
 			sort.Slice(outCoinUnknapsack, func(i, j int) bool {
 				return outCoinUnknapsack[i].CoinDetails.Value < outCoinUnknapsack[j].CoinDetails.Value
@@ -252,19 +251,19 @@ func TestKnapSack(t *testing.T) {
 		}
 	}
 	_ = totalResultOutputCoinAmount
-	fmt.Printf("output all : \n")
+	Logger.Log.Infof("output all : \n")
 	for _, coin := range outCoins {
-		fmt.Printf("%v, ", coin.CoinDetails.Value)
+		Logger.Log.Infof("%v, ", coin.CoinDetails.Value)
 	}
-	fmt.Printf("\n res: \n")
+	Logger.Log.Infof("\n res: \n")
 	for _, coin := range resultOutputCoins {
-		fmt.Printf("%v, ", coin.CoinDetails.Value)
+		Logger.Log.Infof("%v, ", coin.CoinDetails.Value)
 	}
-	fmt.Printf("\n remain output coin: \n")
+	Logger.Log.Infof("\n remain output coin: \n")
 	for _, coin := range remainOutputCoins {
-		fmt.Printf("%v, ", coin.CoinDetails.Value)
+		Logger.Log.Infof("%v, ", coin.CoinDetails.Value)
 	}
-	fmt.Printf("\n \n")
+	Logger.Log.Infof("\n \n")
 }
 
 func TestGreedy(t *testing.T) {
@@ -278,7 +277,7 @@ func TestGreedy(t *testing.T) {
 		//outCoins[i].CoinDetails.Value = new(big.Int).SetBytes(RandBytes(1)).Uint64()
 		outCoins[i].CoinDetails.Value = new(big.Int).Add(new(big.Int).SetBytes(RandBytes(2)), big.NewInt(1)).Uint64()
 		values = append(values, outCoins[i].CoinDetails.Value)
-		fmt.Printf("%v ", outCoins[i].CoinDetails.Value)
+		Logger.Log.Infof("%v ", outCoins[i].CoinDetails.Value)
 	}
 	fmt.Println()
 
@@ -287,11 +286,11 @@ func TestGreedy(t *testing.T) {
 	start := time.Now()
 	choices := Greedy(outCoins, amount)
 	end := time.Since(start)
-	fmt.Printf("Greedy time: %v\n", end)
+	Logger.Log.Infof("Greedy time: %v\n", end)
 
 	for i, choice := range choices {
 		if choice {
-			fmt.Printf("%v ", outCoins[i].CoinDetails.Value)
+			Logger.Log.Infof("%v ", outCoins[i].CoinDetails.Value)
 		} else {
 			break
 		}
