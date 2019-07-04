@@ -85,6 +85,25 @@ type Config struct {
 	UserKeySet *incognitokey.KeySet
 }
 
+func (blockchain *BlockChain) InitForTest(config *Config) error {
+	blockchain.config = *config
+	blockchain.config.IsBlockGenStarted = false
+	blockchain.IsTest = true
+	blockchain.cQuitSync = make(chan struct{})
+	blockchain.BestState = &BestState{
+		Beacon: &BestStateBeacon{},
+		Shard:  make(map[byte]*BestStateShard),
+	}
+	for i:=0; i< 255 ; i++ {
+		shardID := byte(i)
+		blockchain.BestState.Shard[shardID] = &BestStateShard{}
+	}
+	blockchain.Synker = synker{
+		blockchain: blockchain,
+		cQuit:      blockchain.cQuitSync,
+	}
+	return nil
+}
 /*
 Init - init a blockchain view from config
 */
@@ -108,9 +127,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 
 	blockchain.cQuitSync = make(chan struct{})
-	// blockchain.syncStatus.Shards = make(map[byte]struct{})
-	// blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
-	// blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
 	blockchain.Synker = synker{
 		blockchain: blockchain,
 		cQuit:      blockchain.cQuitSync,
