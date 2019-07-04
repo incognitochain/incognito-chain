@@ -94,6 +94,10 @@ func (blockchain *BlockChain) InitForTest(config *Config) error {
 		Beacon: &BestStateBeacon{},
 		Shard:  make(map[byte]*BestStateShard),
 	}
+	for i:=0; i< 255 ; i++ {
+		shardID := byte(i)
+		blockchain.BestState.Shard[shardID] = &BestStateShard{}
+	}
 	blockchain.Synker = synker{
 		blockchain: blockchain,
 		cQuit:      blockchain.cQuitSync,
