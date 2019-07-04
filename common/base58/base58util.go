@@ -22,12 +22,6 @@ func Encode(bin []byte) string {
 	return FastBase58Encoding(bin)
 }
 
-// EncodeAlphabet encodes the passed bytes into a base58 encoded string with the
-// passed alphabet.
-func EncodeAlphabet(bin []byte, alphabet *Alphabet) string {
-	return FastBase58EncodingAlphabet(bin, alphabet)
-}
-
 // FastBase58Encoding encodes the passed bytes into a base58 encoded string.
 func FastBase58Encoding(bin []byte) string {
 	return FastBase58EncodingAlphabet(bin, BTCAlphabet)
@@ -79,43 +73,9 @@ func FastBase58EncodingAlphabet(bin []byte, alphabet *Alphabet) string {
 	return string(b58)
 }
 
-// TrivialBase58Encoding encodes the passed bytes into a base58 encoded string
-// (inefficiently).
-func TrivialBase58Encoding(a []byte) string {
-	return TrivialBase58EncodingAlphabet(a, BTCAlphabet)
-}
-
-// TrivialBase58EncodingAlphabet encodes the passed bytes into a base58 encoded
-// string (inefficiently) with the passed alphabet.
-func TrivialBase58EncodingAlphabet(a []byte, alphabet *Alphabet) string {
-	zero := alphabet.encode[0]
-	idx := len(a)*138/100 + 1
-	buf := make([]byte, idx)
-	bn := new(big.Int).SetBytes(a)
-	var mo *big.Int
-	for bn.Cmp(bn0) != 0 {
-		bn, mo = bn.DivMod(bn, bn58, new(big.Int))
-		idx--
-		buf[idx] = alphabet.encode[mo.Int64()]
-	}
-	for i := range a {
-		if a[i] != 0 {
-			break
-		}
-		idx--
-		buf[idx] = zero
-	}
-	return string(buf[idx:])
-}
-
 // Decode decodes the base58 encoded bytes.
 func Decode(str string) ([]byte, error) {
 	return FastBase58Decoding(str)
-}
-
-// DecodeAlphabet decodes the base58 encoded bytes using the given b58 alphabet.
-func DecodeAlphabet(str string, alphabet *Alphabet) ([]byte, error) {
-	return FastBase58DecodingAlphabet(str, alphabet)
 }
 
 // FastBase58Decoding decodes the base58 encoded bytes.
@@ -225,38 +185,4 @@ func FastBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) 
 		}
 	}
 	return binu[:cnt], nil
-}
-
-// TrivialBase58Decoding decodes the base58 encoded bytes (inefficiently).
-func TrivialBase58Decoding(str string) ([]byte, error) {
-	return TrivialBase58DecodingAlphabet(str, BTCAlphabet)
-}
-
-// TrivialBase58DecodingAlphabet decodes the base58 encoded bytes
-// (inefficiently) using the given b58 alphabet.
-func TrivialBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) {
-	zero := alphabet.encode[0]
-
-	var zcount int
-	for i := 0; i < len(str) && str[i] == zero; i++ {
-		zcount++
-	}
-	leading := make([]byte, zcount)
-
-	var padChar rune = -1
-	src := []byte(str)
-	j := 0
-	for ; j < len(src) && src[j] == byte(padChar); j++ {
-	}
-
-	n := new(big.Int)
-	for i := range src[j:] {
-		c := alphabet.decode[src[i]]
-		if c == -1 {
-			return nil, fmt.Errorf("illegal base58 data at input index: %d", i)
-		}
-		n.Mul(n, bn58)
-		n.Add(n, big.NewInt(int64(c)))
-	}
-	return append(leading, n.Bytes()...), nil
 }

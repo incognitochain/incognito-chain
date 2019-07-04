@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -15,7 +16,7 @@ func TestAESDeriveKey(t *testing.T){
 
 	newKey, newSalt := deriveKey(passPhrase, salt)
 
-	assert.Equal(t, AESKeySize, len(newKey))
+	assert.Equal(t, common.AESKeySize, len(newKey))
 	assert.Equal(t, salt, newSalt)
 }
 
@@ -25,7 +26,7 @@ func TestAESDeriveKeyWithEmptyPassPhrase(t *testing.T) {
 
 	newKey, newSalt := deriveKey(passPhrase, salt)
 
-	assert.Equal(t, AESKeySize, len(newKey))
+	assert.Equal(t, common.AESKeySize, len(newKey))
 	assert.Equal(t, salt, newSalt)
 }
 
@@ -35,7 +36,7 @@ func TestAESDeriveKeyWithEmptySalt(t *testing.T) {
 
 	newKey, newSalt := deriveKey(passPhrase, salt)
 
-	assert.Equal(t, AESKeySize, len(newKey))
+	assert.Equal(t, common.AESKeySize, len(newKey))
 	assert.Equal(t, 8, len(newSalt))
 }
 
