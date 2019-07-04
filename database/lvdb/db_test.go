@@ -92,6 +92,9 @@ func TestDb_StoreShardBlock(t *testing.T) {
 		assert.Equal(t, err, nil)
 
 		// test Fetch block
+		fail, err := db.FetchBlock(common.Hash{})
+		assert.NotEqual(t, nil, err)
+		assert.Equal(t, 0, len(fail))
 		blockInBytes, err := db.FetchBlock(*block.Hash())
 		assert.Equal(t, err, nil)
 		blockNew := blockchain.ShardBlock{}
@@ -649,4 +652,16 @@ func TestDb_StorePrivacyCustomTokenCrossShard(t *testing.T) {
 
 	has := db.PrivacyCustomTokenIDCrossShardExisted(tokenID)
 	assert.Equal(t, true, has)
+}
+
+func TestDb_StoreIncomingCrossShard(t *testing.T) {
+	err := db.StoreIncomingCrossShard(0, 1, 1000, common.Hash{})
+	assert.Equal(t, nil, err)
+
+	err = db.HasIncomingCrossShard(0, 1, common.Hash{})
+	assert.Equal(t, nil, err)
+
+	height, err := db.GetIncomingCrossShard(0, 1, common.Hash{})
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 1000, height)
 }
