@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/database"
@@ -28,6 +31,7 @@ var _ = func() (_ struct{}) {
 	if err != nil {
 		log.Fatalf("could not open db path: %s, %+v", dbPath, err)
 	}
+	database.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 
@@ -62,9 +66,9 @@ func TestDb_Base(t *testing.T) {
 		assert.Equal(t, has, true)
 
 		err = db.Delete([]byte("a"))
-		if err != nil {
-			t.Error(err)
-		}
+		assert.Equal(t, nil, err)
+		err = db.Delete([]byte("b"))
+		assert.Equal(t, nil, err)
 		has, err = db.HasValue([]byte("a"))
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
@@ -602,4 +606,47 @@ func TestDb_StoreCustomToken(t *testing.T) {
 
 	temp, err = db.PrivacyCustomTokenTxs(tokenID)
 	assert.Equal(t, 0, len(temp))
+
+	// custom token payment address
+	tokenKey := lvdb.TokenPaymentAddressPrefix
+	tokenKey = append(tokenKey, lvdb.Splitter...)
+	tokenKey = append(tokenKey, tokenID.String()...)
+	utxoHash := []byte{0, 0, 1}
+	voutIndex := 0
+	value := 10
+	paymentAddressKey := tokenKey
+	paymentAddressKey = append(paymentAddressKey, lvdb.Splitter...)
+	paymentAddressKey = append(paymentAddressKey, []byte("1Uv2gqs6nSLdkwrhTGZmFZJBTLSUqjWHiqLjddzuqNRbtT1dYQbtmo29B7ceJsZRQNS1rrT8eRSRAkFuMWpxpnm8JXaZmnfky3pS6rCxL")...)
+	paymentAddressKey = append(paymentAddressKey, lvdb.Splitter...)
+	paymentAddressKey = append(paymentAddressKey, utxoHash[:]...)
+	paymentAddressKey = append(paymentAddressKey, lvdb.Splitter...)
+	paymentAddressKey = append(paymentAddressKey, common.Int32ToBytes(int32(voutIndex))...)
+	paymentAddressValue := strconv.Itoa(int(value)) + string(lvdb.Splitter) + string(lvdb.Unspent) + string(lvdb.Splitter)
+	err = db.Put(paymentAddressKey, []byte(paymentAddressValue))
+	assert.Equal(t, nil, err)
+	dataBalance, err := db.GetCustomTokenPaymentAddressesBalance(tokenID)
+	assert.Equal(t, nil, err)
+	balance, ok := dataBalance["1Uv2gqs6nSLdkwrhTGZmFZJBTLSUqjWHiqLjddzuqNRbtT1dYQbtmo29B7ceJsZRQNS1rrT8eRSRAkFuMWpxpnm8JXaZmnfky3pS6rCxL"]
+	assert.Equal(t, true, ok)
+	assert.Equal(t, uint64(10), uint64(balance))
+
+	p, _, _ := base58.Base58Check{}.Decode("1Uv2gqs6nSLdkwrhTGZmFZJBTLSUqjWHiqLjddzuqNRbtT1dYQbtmo29B7ceJsZRQNS1rrT8eRSRAkFuMWpxpnm8JXaZmnfky3pS6rCxL")
+	dataUTXO, err := db.GetCustomTokenPaymentAddressUTXO(tokenID, p)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 1, len(dataUTXO))
+}
+
+func TestDb_StorePrivacyCustomTokenCrossShard(t *testing.T) {
+	tokenID := common.Hash{}
+	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
+	err := db.StorePrivacyCustomTokenCrossShard(tokenID, data)
+	assert.Equal(t, nil, err)
+
+	result, err := db.ListPrivacyCustomTokenCrossShard()
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 1, len(result))
+	assert.Equal(t, data, result[0])
+
+	has := db.PrivacyCustomTokenIDCrossShardExisted(tokenID)
+	assert.Equal(t, true, has)
 }
