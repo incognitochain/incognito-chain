@@ -133,22 +133,22 @@ func (db *db) DeleteBlock(hash common.Hash, idx uint64, shardID byte) error {
 	binary.LittleEndian.PutUint64(buf, idx)
 	buf[8] = shardID
 	// Delete block
-	err = db.lvdb.Delete(keyBlockHash, nil)
+	err = db.Delete(keyBlockHash)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
-	err = db.lvdb.Delete(keyShardBlock, nil)
+	err = db.Delete(keyShardBlock)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
 
 	// Delete block index
-	err = db.lvdb.Delete(keyBlockIndex, nil)
+	err = db.Delete(keyBlockIndex)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	err = db.lvdb.Delete(buf, nil)
+	err = db.Delete(buf)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
@@ -179,7 +179,7 @@ func (db *db) FetchShardBestState(shardID byte) ([]byte, error) {
 func (db *db) CleanShardBestState() error {
 	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		key := append(bestBlockKey, shardID)
-		err := db.lvdb.Delete(key, nil)
+		err := db.Delete(key)
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.delete"))
 		}

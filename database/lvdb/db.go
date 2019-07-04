@@ -86,7 +86,7 @@ func (db *db) HasValue(key []byte) (bool, error) {
 }
 
 func (db *db) Put(key, value []byte) error {
-	if err := db.Put(key, value); err != nil {
+	if err := db.lvdb.Put(key, value, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
 	}
 	return nil
@@ -101,7 +101,7 @@ func (db *db) Delete(key []byte) error {
 }
 
 func (db *db) Get(key []byte) ([]byte, error) {
-	value, err := db.Get(key)
+	value, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		return nil, database.NewDatabaseError(database.LvDbNotFound, errors.Wrap(err, "db.lvdb.Get"))
 	}
