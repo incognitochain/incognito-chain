@@ -940,7 +940,10 @@ func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset incogni
 			}
 			vout.SetTxCustomTokenID(*txHash)
 			voutIndexByte := []byte(keys[4])
-			voutIndex := common.BytesToInt32(voutIndexByte)
+			voutIndex, err := common.BytesToInt32(voutIndexByte)
+			if err != nil {
+				return nil, err
+			}
 			vout.SetIndex(int(voutIndex))
 			value, err := strconv.Atoi(values[0])
 			if err != nil {
