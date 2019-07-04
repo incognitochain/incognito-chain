@@ -56,6 +56,7 @@ var _ = func() (_ struct{}) {
 		PubSubManager: pbMempool,
 		IsLoadFromMempool: false,
 		PersistMempool: false,
+		FeeEstimator: feeEstimator,
 	})
 	var transactions []metadata.Transaction
 	for _, privateKey := range privateKeyShard0 {
@@ -83,9 +84,19 @@ var _ = func() (_ struct{}) {
 	transaction.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
-
-
-
+func ResetMempoolTest()  {
+	tp.pool = make(map[common.Hash]*TxDesc)
+	tp.poolSerialNumbersHashH = make(map[common.Hash][]common.Hash)
+	tp.TokenIDPool = make(map[common.Hash]string)
+	tp.CandidatePool = make(map[common.Hash]string)
+	tp.DuplicateTxs = make(map[common.Hash]uint64)
+	tp.config.RoleInCommittees = -1
+	tp.IsBlockGenStarted = false
+	tp.IsUnlockMempool = true
+	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	tp.config.RoleInCommitteesEvent = subChanRole
+	tp.IsTest = false
+}
 func initTx(amount string, privateKey string, db database.DatabaseInterface) []metadata.Transaction {
 	var initTxs []metadata.Transaction
 	var initAmount, _ = strconv.Atoi(amount) // amount init
@@ -103,19 +114,6 @@ func initTx(amount string, privateKey string, db database.DatabaseInterface) []m
 		initTxs = append(initTxs, &testSalaryTX)
 	}
 	return initTxs
-}
-func ResetMempoolTest()  {
-	tp.pool = make(map[common.Hash]*TxDesc)
-	tp.poolSerialNumbersHashH = make(map[common.Hash][]common.Hash)
-	tp.TokenIDPool = make(map[common.Hash]string)
-	tp.CandidatePool = make(map[common.Hash]string)
-	tp.DuplicateTxs = make(map[common.Hash]uint64)
-	tp.config.RoleInCommittees = -1
-	tp.IsBlockGenStarted = false
-	tp.IsUnlockMempool = true
-	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
-	tp.config.RoleInCommitteesEvent = subChanRole
-	tp.IsTest = false
 }
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
 func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resultOutputCoins []*privacy.OutputCoin, remainOutputCoins []*privacy.OutputCoin, totalResultOutputCoinAmount uint64, err error) {
@@ -247,6 +245,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	return &tx
 }
 func TestTxPoolGetTxsInMem(t *testing.T) {
+	ResetMempoolTest()
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10,false)
 	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10,false)
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10,false)
@@ -274,6 +273,7 @@ func TestTxPoolGetSerialNumbersHashH(t *testing.T) {
 	}
 }
 func TestTxPoolIsTxInPool(t *testing.T) {
+	ResetMempoolTest()
 	tx := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10,false)
 	if tp.isTxInPool(tx.Hash()) {
 		t.Fatalf("Expect %+v to be NOT in pool", *tx.Hash())
@@ -283,5 +283,123 @@ func TestTxPoolIsTxInPool(t *testing.T) {
 	tp.poolSerialNumbersHashH[*tx.Hash()] = tx.ListSerialNumbersHashH()
 	if !tp.isTxInPool(tx.Hash()) {
 		t.Fatalf("Expect %+v to be in pool", *tx.Hash())
+	}
+}
+func TestTxPoolAddTx(t *testing.T) {
+	ResetMempoolTest()
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10,false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10,false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10,false)
+	txDesc1 := createTxDescMempool(tx1, 1, 10, 0)
+	txDesc2 := createTxDescMempool(tx2, 1, 10, 0)
+	txDesc3 := createTxDescMempool(tx3, 1, 10, 0)
+	tp.addTx(txDesc1, false)
+	tp.addTx(txDesc2, false)
+	tp.addTx(txDesc3, false)
+	if len(tp.pool) != 3 {
+		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.pool))
+	}
+	if len(tp.poolSerialNumbersHashH) != 3 {
+		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	}
+}
+func TestTxPoolValidateTransaction(t *testing.T) {
+	ResetMempoolTest()
+	salaryTx := initTx("100", privateKeyShard0[0], db)
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10,false)
+	tx1DS := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 15,false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10,false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10,false)
+	tx4 := CreateAndSaveTestNormalTransaction(privateKeyShard0[3], 0,false)
+	tx5 := CreateAndSaveTestNormalTransaction(privateKeyShard0[4], 0,false)
+	txDesc1 := createTxDescMempool(tx1, 1, 10, 0)
+	// Check condition 1: tx exist in pool
+	tp.pool[*tx1.Hash()] = txDesc1
+	tp.poolSerialNumbersHashH[*tx1.Hash()] = tx1.ListSerialNumbersHashH()
+	err1 := tp.validateTransaction(tx1)
+	if err1 == nil {
+		t.Fatal("Expect reject duplicate error but no error")
+	} else {
+		if err1.(*BlockPoolError).Code != ErrCodeMessage[RejectDuplicateTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateTx], err)
+		}
+	}
+	// Check condition 2: Max version error
+	ResetMempoolTest()
+	tx2.(*transaction.Tx).Version = 2
+	err2 := tp.validateTransaction(tx2)
+	if err2 == nil {
+		t.Fatal("Expect max version error error but no error")
+	} else {
+		if err2.(*BlockPoolError).Code != ErrCodeMessage[MaxVersion].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[MaxVersion], err)
+		}
+	}
+	// Check condition 3: Invalid size error
+	ResetMempoolTest()
+	common.MaxTxSize = 0
+	common.MaxBlockSize = 2000
+	err3 := tp.validateTransaction(tx3)
+	if err3 == nil {
+		t.Fatal("Expect max version error error but no error")
+	} else {
+		if err3.(*BlockPoolError).Code != ErrCodeMessage[RejectInvalidSize].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectInvalidSize], err)
+		}
+	}
+	common.MaxTxSize    = 100
+	common.MaxBlockSize = 0
+	err3_2 := tp.validateTransaction(tx3)
+	if err3_2 == nil {
+		t.Fatal("Expect max version error error but no error")
+	} else {
+		if err3_2.(*BlockPoolError).Code != ErrCodeMessage[RejectInvalidSize].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectInvalidSize], err)
+		}
+	}
+	// Check Condition 4: Salary Transaction
+	ResetMempoolTest()
+	common.MaxTxSize = 100
+	common.MaxBlockSize = 2000
+	err4 := tp.validateTransaction(salaryTx[0])
+	if err4 == nil {
+		t.Fatal("Expect max version error error but no error")
+	} else {
+		if err4.(*BlockPoolError).Code != ErrCodeMessage[RejectSalaryTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSalaryTx], err)
+		}
+	}
+	// Check Condition 5: Validate fee
+	ResetMempoolTest()
+	err5 := tp.validateTransaction(tx4)
+	if err5 == nil {
+		t.Fatal("Expect max version error error but no error")
+	} else {
+		if err5.(*BlockPoolError).Code != ErrCodeMessage[RejectInvalidFee].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectInvalidFee], err)
+		}
+	}
+	// Check Condition 6: Validate type
+	ResetMempoolTest()
+	tx5.(*transaction.Tx).Type = "abc"
+	err6 := tp.validateTransaction(tx5)
+	if err6 == nil {
+		t.Fatal("Expect max version error error but no error")
+	} else {
+		if err6.(*BlockPoolError).Code != ErrCodeMessage[RejectInvalidTxType].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectInvalidTxType], err)
+		}
+	}
+	tx5.(*transaction.Tx).Type = common.TxNormalType
+	// Check Condition 7: Double spend
+	ResetMempoolTest()
+	tp.addTx(txDesc1, false)
+	err7 := tp.validateTransaction(tx1DS)
+	if err7 == nil {
+		t.Fatal("Expect max version error error but no error")
+	} else {
+		if err7.(*BlockPoolError).Code != ErrCodeMessage[RejectDoubleSpendWithMempoolTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDoubleSpendWithMempoolTx], err)
+		}
 	}
 }
