@@ -76,7 +76,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 		for i := 0; i < cpRandNum; i++ {
 			for {
 				lenCommitment, _ = db.GetCommitmentLength(*tokenID, shardID)
-				index, _ := common.RandBigIntN(lenCommitment)
+				index, _ := common.RandBigIntMaxRange(lenCommitment)
 				ok, err := db.HasCommitmentIndex(*tokenID, index.Uint64(), shardID)
 				if ok && err == nil {
 					temp, _ := db.GetCommitmentByIndex(*tokenID, index.Uint64(), shardID)

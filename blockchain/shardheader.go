@@ -62,7 +62,8 @@ func (shardHeader *ShardHeader) String() string {
 		tokenIDs = append(tokenIDs, tokenID)
 	}
 	sort.Slice(tokenIDs, func(i int, j int) bool {
-		return tokenIDs[i].Cmp(&tokenIDs[j]) == -1
+		res, _ := tokenIDs[i].Cmp(&tokenIDs[j])
+		return res == -1
 	})
 
 	for _, tokenID := range tokenIDs {
