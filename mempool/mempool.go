@@ -117,7 +117,19 @@ func (tp *TxPool) LoadOrResetDatabaseMP() {
 	}
 	//return []TxDesc{}
 }
-
+func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
+	txDesc := &TxDesc{
+		Desc: metadata.TxDesc{
+			Tx:       tx,
+			Height:   height,
+			Fee:      fee,
+			FeeToken: feeToken,
+		},
+		StartTime:       time.Now(),
+		IsFowardMessage: false,
+	}
+	return txDesc
+}
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp *TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
 	return tp.poolSerialNumbersHashH
@@ -140,21 +152,6 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	}
 	return false
 }
-
-func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
-	txDesc := &TxDesc{
-		Desc: metadata.TxDesc{
-			Tx:       tx,
-			Height:   height,
-			Fee:      fee,
-			FeeToken: feeToken,
-		},
-		StartTime:       time.Now(),
-		IsFowardMessage: false,
-	}
-	return txDesc
-}
-
 /*
 // add transaction into pool
 // #1: tx
