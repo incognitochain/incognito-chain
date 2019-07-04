@@ -6,36 +6,24 @@ to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
 type Params struct {
-	// Name defines a human-readable identifier for the network.
-	Name string
-
-	// Net defines the magic bytes used to identify the network.
-	Net uint32
-
-	// DefaultPort defines the default peer-to-peer port for the network.
-	DefaultPort         string
+	Name string  // Name defines a human-readable identifier for the network.
+	Net uint32 // Net defines the magic bytes used to identify the network.
+	DefaultPort         string // DefaultPort defines the default peer-to-peer port for the network.
 	ShardCommitteeSize  int
 	BeaconCommitteeSize int
 	StakingAmountShard  uint64
 	ActiveShards        int
-	// GenesisBlock defines the first block of the chain.
-	GenesisBeaconBlock *BeaconBlock
-
-	// GenesisBlock defines the first block of the chain.
-	GenesisShardBlock *ShardBlock
+	GenesisBeaconBlock *BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock *ShardBlock // GenesisBlock defines the first block of the chain.
 	BasicReward       uint64
 	RewardHalflife    uint64
 }
 
 type GenesisParams struct {
 	InitialPaymentAddress string
-
 	InitialIncognito []string
-
 	FeePerTxKb uint64
-
 	RandomNumber uint64
-
 	PreSelectBeaconNodeSerializedPubkey []string
 	PreSelectBeaconNode                 []string
 	PreSelectShardNodeSerializedPubkey  []string
