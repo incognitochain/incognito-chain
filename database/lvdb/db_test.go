@@ -663,5 +663,28 @@ func TestDb_StoreIncomingCrossShard(t *testing.T) {
 
 	height, err := db.GetIncomingCrossShard(0, 1, common.Hash{})
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 1000, height)
+	assert.Equal(t, uint64(1000), uint64(height))
+}
+
+func TestDb_StoreAcceptedShardToBeacon(t *testing.T) {
+	err := db.StoreAcceptedShardToBeacon(0, 1000, common.Hash{})
+	assert.Equal(t, nil, err)
+
+	err = db.HasAcceptedShardToBeacon(0, common.Hash{})
+	assert.Equal(t, nil, err)
+
+	err = db.HasAcceptedShardToBeacon(1, common.Hash{})
+	assert.NotEqual(t, nil, err)
+
+	height, err := db.GetAcceptedShardToBeacon(0, common.Hash{})
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint64(1000), uint64(height))
+
+	height, err = db.GetAcceptedShardToBeacon(1, common.Hash{})
+	assert.NotEqual(t, nil, err)
+
+	err = db.DeleteAcceptedShardToBeacon(0, common.Hash{})
+	assert.Equal(t, nil, err)
+	err = db.HasAcceptedShardToBeacon(0, common.Hash{})
+	assert.NotEqual(t, nil, err)
 }
