@@ -1,7 +1,6 @@
 package zkp
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"math/big"
@@ -56,9 +55,9 @@ func TestEncodeVectors(t *testing.T) {
 	start := time.Now()
 	actualRes, err := EncodeVectors(a, b, G, H)
 	end := time.Since(start)
-	fmt.Printf("Time encode vector: %v\n", end)
+	privacy.Logger.Log.Info("Time encode vector: %v\n", end)
 	if err != nil {
-		fmt.Printf("Err: %v\n", err)
+		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 	start = time.Now()
 	expectedRes := new(privacy.EllipticPoint).Zero()
@@ -68,7 +67,7 @@ func TestEncodeVectors(t *testing.T) {
 	}
 
 	end = time.Since(start)
-	fmt.Printf("Time normal encode vector: %v\n", end)
+	privacy.Logger.Log.Info("Time normal encode vector: %v\n", end)
 
 	assert.Equal(t, expectedRes, actualRes)
 }
@@ -92,7 +91,7 @@ func TestInnerProductProve(t *testing.T) {
 	wit.p = new(privacy.EllipticPoint).Zero()
 	c, err := innerProduct(wit.a, wit.b)
 	if err != nil {
-		fmt.Printf("Err: %v\n", err)
+		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 
 	for i := range wit.a {
@@ -103,7 +102,7 @@ func TestInnerProductProve(t *testing.T) {
 
 	proof, err := wit.Prove(AggParam)
 	if err != nil {
-		fmt.Printf("Err: %v\n", err)
+		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 
 	bytes := proof.Bytes()
@@ -119,7 +118,7 @@ func TestInnerProductProve(t *testing.T) {
 func TestAggregatedRangeProve(t *testing.T) {
 
 	point := new(privacy.EllipticPoint).Zero()
-	fmt.Printf("testt: %v\n", point.Compress())
+	privacy.Logger.Log.Info("testt: %v\n", point.Compress())
 	wit := new(AggregatedRangeWitness)
 	numValue := 3
 	wit.values = make([]*big.Int, numValue)
@@ -133,13 +132,13 @@ func TestAggregatedRangeProve(t *testing.T) {
 	start := time.Now()
 	proof, err := wit.Prove()
 	if err != nil {
-		fmt.Printf("Err: %v\n", err)
+		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 	end := time.Since(start)
-	fmt.Printf("Aggregated range proving time: %v\n", end)
+	privacy.Logger.Log.Info("Aggregated range proving time: %v\n", end)
 
 	bytes := proof.Bytes()
-	fmt.Printf("Aggregated range proof size: %v\n", len(bytes))
+	privacy.Logger.Log.Info("Aggregated range proof size: %v\n", len(bytes))
 
 	proof2 := new(AggregatedRangeProof)
 	proof2.SetBytes(bytes)
@@ -147,7 +146,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 	start = time.Now()
 	res := proof2.Verify()
 	end = time.Since(start)
-	fmt.Printf("Aggregated range verification time: %v\n", end)
+	privacy.Logger.Log.Info("Aggregated range verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
 }
@@ -167,13 +166,13 @@ func BenchmarkAggregatedRangeProve(b *testing.B) {
 		start := time.Now()
 		proof, err := wit.Prove()
 		if err != nil {
-			fmt.Printf("Err: %v\n", err)
+			privacy.Logger.Log.Info("Err: %v\n", err)
 		}
 		end := time.Since(start)
-		fmt.Printf("Aggregated range proving time: %v\n", end)
+		privacy.Logger.Log.Info("Aggregated range proving time: %v\n", end)
 
 		bytes := proof.Bytes()
-		fmt.Printf("Len byte proof: %v\n", len(bytes))
+		privacy.Logger.Log.Info("Len byte proof: %v\n", len(bytes))
 
 		proof2 := new(AggregatedRangeProof)
 		proof2.SetBytes(bytes)
@@ -181,7 +180,7 @@ func BenchmarkAggregatedRangeProve(b *testing.B) {
 		start = time.Now()
 		res := proof.Verify()
 		end = time.Since(start)
-		fmt.Printf("Aggregated range verification time: %v\n", end)
+		privacy.Logger.Log.Info("Aggregated range verification time: %v\n", end)
 
 		assert.Equal(b, true, res)
 	}
@@ -196,7 +195,7 @@ func TestMultiExponentiation(t *testing.T) {
 	}
 
 	bases := newBulletproofParams(1)
-	//fmt.Printf("Values: %v\n", exponents[0])
+	//privacy.Logger.Log.Info("Values: %v\n", exponents[0])
 
 	start1 := time.Now()
 	expectedRes := new(privacy.EllipticPoint).Zero()
@@ -204,26 +203,26 @@ func TestMultiExponentiation(t *testing.T) {
 		expectedRes = expectedRes.Add(bases.G[i].ScalarMult(exponents[i]))
 	}
 	end1 := time.Since(start1)
-	fmt.Printf("normal calculation time: %v\n", end1)
-	fmt.Printf("Res from normal calculation: %+v\n", expectedRes)
+	privacy.Logger.Log.Info("normal calculation time: %v\n", end1)
+	privacy.Logger.Log.Info("Res from normal calculation: %+v\n", expectedRes)
 
 	start2 := time.Now()
 	testcase4, err := privacy.MultiScalarmult(bases.G, exponents)
 	if err != nil {
-		fmt.Printf("Error of multi-exponentiation algorithm")
+		privacy.Logger.Log.Info("Error of multi-exponentiation algorithm")
 	}
 	end2 := time.Since(start2)
-	fmt.Printf("multi scalarmult time: %v\n", end2)
-	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase4)
+	privacy.Logger.Log.Info("multi scalarmult time: %v\n", end2)
+	privacy.Logger.Log.Info("Res from multi exponentiation alg: %+v\n", testcase4)
 
 	start3 := time.Now()
 	testcase5, err := privacy.MultiScalar2(bases.G, exponents)
 	if err != nil {
-		fmt.Printf("Error of multi-exponentiation algorithm")
+		privacy.Logger.Log.Info("Error of multi-exponentiation algorithm")
 	}
 	end3 := time.Since(start3)
-	fmt.Printf("multi scalarmult 2 time: %v\n", end3)
-	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase5)
+	privacy.Logger.Log.Info("multi scalarmult 2 time: %v\n", end3)
+	privacy.Logger.Log.Info("Res from multi exponentiation alg: %+v\n", testcase5)
 
 	assert.Equal(t, expectedRes, testcase4)
 }
@@ -235,12 +234,12 @@ func TestPad(t *testing.T) {
 	start := time.Now()
 	padNum := pad(num)
 	end := time.Since(start)
-	fmt.Printf("Pad 1: %v\n", end)
+	privacy.Logger.Log.Info("Pad 1: %v\n", end)
 
 	assert.Equal(t, testcase1, padNum)
 }
 
 func TestPowerVector(t *testing.T) {
 	twoVector := powerVector(big.NewInt(2), 5)
-	fmt.Printf("two vector : %v\n", twoVector)
+	privacy.Logger.Log.Info("two vector : %v\n", twoVector)
 }

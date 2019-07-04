@@ -1,7 +1,11 @@
 #!/bin/sh
 mkdir -p /data
 if [ "$1" == "y" ]; then
-    rm -rf /data/*
+    find /data -maxdepth 1 -mindepth 1 -type d | xargs -L 1 rm -rf
+fi
+
+if [ -z $NAME ]; then
+    NAME="miner";
 fi
 
 if [ -z $BOOTNODE_IP ]; then
