@@ -49,7 +49,7 @@ type DatabaseInterface interface {
 	GetIndexOfBlock(common.Hash) (uint64, byte, error)
 	GetBlockByIndex(uint64, byte) (common.Hash, error)
 
-	// Block index
+	// Block index for beacon
 	StoreBeaconBlockIndex(common.Hash, uint64) error
 	GetIndexOfBeaconBlock(common.Hash) (uint64, error)
 	GetBeaconBlockHashByIndex(uint64) (common.Hash, error)
@@ -59,25 +59,27 @@ type DatabaseInterface interface {
 	GetTransactionIndexById(txId common.Hash) (common.Hash, int, *DatabaseError)
 	DeleteTransactionIndex(txId common.Hash) error
 
-	// Best state of shard chain
+	// Best state of Prev
 	StorePrevBestState([]byte, bool, byte) error
 	FetchPrevBestState(bool, byte) ([]byte, error)
 	CleanBackup(bool, byte) error
+
+	// Best state of shard chain
 	StoreShardBestState(interface{}, byte) error
 	FetchShardBestState(byte) ([]byte, error)
 	CleanShardBestState() error
 
 	// Best state of beacon chain
 	StoreBeaconBestState(interface{}) error
-	StoreCommitteeByHeight(uint64, interface{}) error
-	StoreCommitteeByEpoch(uint64, interface{}) error
-	DeleteCommitteeByEpoch(uint64) error
-
-	//
-	FetchCommitteeByEpoch(uint64) ([]byte, error)
-	HasCommitteeByEpoch(uint64) (bool, error)
 	FetchBeaconBestState() ([]byte, error)
 	CleanBeaconBestState() error
+
+	// Commitee with epoch
+	//StoreCommitteeByHeight(uint64, interface{}) error
+	StoreCommitteeByEpoch(uint64, interface{}) error
+	DeleteCommitteeByEpoch(uint64) error
+	FetchCommitteeByEpoch(uint64) ([]byte, error)
+	HasCommitteeByEpoch(uint64) (bool, error)
 
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error

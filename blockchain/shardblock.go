@@ -147,6 +147,9 @@ func (shardBlock *ShardBlock) GetProducerPubKey() string {
 // }
 
 func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBlock {
+	if bc.IsTest {
+		return &ShardToBeaconBlock{}
+	}
 	block := ShardToBeaconBlock{}
 	block.AggregatedSig = blk.AggregatedSig
 

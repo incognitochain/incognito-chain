@@ -6,7 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	peer "github.com/libp2p/go-libp2p-peer"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -54,7 +54,7 @@ func (msg *MessagePeerState) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessagePeerState) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessagePeerState) SignMsg(_ *incognitokey.KeySet) error {
 	return nil
 }
 

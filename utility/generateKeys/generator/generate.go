@@ -6,7 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -14,7 +14,7 @@ import (
 func GenerateAddress(seeds []string) ([]string, error) {
 	var pubAddresses []string
 	for _, seed := range seeds {
-		keySet := (&cashec.KeySet{}).GenerateKey([]byte(seed))
+		keySet := (&incognitokey.KeySet{}).GenerateKey([]byte(seed))
 		pubAddress := base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, common.ZeroByte)
 		pubAddresses = append(pubAddresses, pubAddress)
 	}
@@ -54,7 +54,7 @@ func GenerateAddressByte(seeds [][]byte) ([]string, []string, error) {
 	for _, seed := range seeds {
 		privateKey := base58.Base58Check{}.Encode(seed, common.ZeroByte)
 		privateKeys = append(privateKeys, privateKey)
-		keySet := (&cashec.KeySet{}).GenerateKey(seed)
+		keySet := (&incognitokey.KeySet{}).GenerateKey(seed)
 		pubAddress := base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, common.ZeroByte)
 		pubAddresses = append(pubAddresses, pubAddress)
 	}
