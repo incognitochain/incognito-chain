@@ -16,6 +16,7 @@ const (
 	RejectVersion
 	RejectInvalidTxType
 	RejectDoubleSpendWithMempoolTx
+	RejectDoubleSpendWithBlockchainTx
 	RejectInvalidFee
 	RejectInvalidSize
 	CanNotCheckDoubleSpend
@@ -51,6 +52,7 @@ var ErrCodeMessage = map[int]struct {
 	RejectTestTransactionError: {-1014, "Reject Test Transaction Error"},
 	RejectInvalidTxType: {-1015, "Reject Invalid Tx Type"},
 	RejectDoubleSpendWithMempoolTx: {-1016, "Reject Double Spend With Other Tx in mempool"},
+	RejectDoubleSpendWithBlockchainTx: {-1017, "Reject Double Spend With Current Blockchain"},
 }
 
 type MempoolTxError struct {
