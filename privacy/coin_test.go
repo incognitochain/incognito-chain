@@ -83,7 +83,7 @@ func TestEncryptCoin(t *testing.T) {
 	paymentAddress := GeneratePaymentAddress(privateKey)
 	viewingKey := GenerateViewingKey(privateKey)
 
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < 100; i++ {
 		fmt.Printf("\n\n i: %v\n", i)
 		// new output coin with value and randomness
 		coin := new(OutputCoin)
