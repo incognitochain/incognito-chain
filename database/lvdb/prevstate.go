@@ -42,7 +42,7 @@ func (db *db) FetchPrevBestState(isBeacon bool, shardID byte) ([]byte, error) {
 func (db *db) CleanBackup(isBeacon bool, shardID byte) error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(getPrevPrefix(isBeacon, shardID)), nil)
 	for iter.Next() {
-		err := db.lvdb.Delete(iter.Key(), nil)
+		err := db.Delete(iter.Key())
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 		}
@@ -109,10 +109,10 @@ func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubk
 			newIndex = []byte{0}
 		}
 		keySpec1 := append(key, newIndex...)
-		db.lvdb.Delete(keySpec1, nil)
+		db.Delete(keySpec1)
 
 		keySpec2 := append(key, c...)
-		db.lvdb.Delete(keySpec2, nil)
+		db.Delete(keySpec2)
 		lenData++
 	}
 
@@ -124,7 +124,7 @@ func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubk
 		if err != lvdberr.ErrNotFound {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
-		if err := db.lvdb.Delete(keySpec3, nil); err != nil {
+		if err := db.Delete(keySpec3); err != nil {
 			return err
 		}
 	}
@@ -137,14 +137,14 @@ func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubk
 	// prevKeySpec4 := append(key, pubkey...)
 	// prevKeySpec4 = append(prevkey, prevKeySpec4...)
 
-	// resByPubkey, err := db.Get(prevKeySpec4, nil)
+	// resByPubkey, err := db.Get(prevKeySpec4)
 	// if err != nil {
 	// 	if err != lvdberr.ErrNotFound {
 	// 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	// 	}
 	// }
 
-	// if err := db.Put(keySpec4, resByPubkey, nil); err != nil {
+	// if err := db.Put(keySpec4, resByPubkey); err != nil {
 	// 	return err
 	// }
 	return nil
@@ -157,7 +157,7 @@ func (db *db) DeleteOutputCoin(tokenID common.Hash, publicKey []byte, outputCoin
 	key = append(key, publicKey...)
 	for _, outputCoin := range outputCoinArr {
 		keyTemp := append(key, common.HashB(outputCoin)...)
-		if err := db.lvdb.Delete(keyTemp, nil); err != nil {
+		if err := db.Delete(keyTemp); err != nil {
 			return err
 		}
 	}
