@@ -22,7 +22,7 @@ func (db *db) AddTransaction(txHash *common.Hash, txType string, valueTx []byte,
 }
 func (db *db) RemoveTransaction(txHash *common.Hash) error {
 	key := db.GetKey(txHash)
-	if err := db.lvdb.Delete(key, nil); err != nil {
+	if err := db.Delete(key); err != nil {
 		return databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
 	return nil
@@ -49,7 +49,7 @@ func (db *db) HasTransaction(txHash *common.Hash) (bool, error) {
 func (db *db) Reset() error {
 	iter := db.lvdb.NewIterator(util.BytesPrefix(txKeyPrefix), nil)
 	for iter.Next() {
-		err := db.lvdb.Delete(iter.Key(), nil)
+		err := db.Delete(iter.Key())
 		if err != nil {
 			return databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 		}
