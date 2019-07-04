@@ -1,11 +1,9 @@
 package common
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/binary"
-	"encoding/gob"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -19,7 +17,6 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"errors"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -197,7 +194,6 @@ func ParseListener(addr string, netType string) (*SimpleAddr, error) {
 	return netAddr, nil
 }
 
-
 // SliceExists receives a slice and a item in interface type
 // checks whether the slice contain the item or not
 func SliceExists(slice interface{}, item interface{}) (bool, error) {
@@ -217,20 +213,16 @@ func SliceExists(slice interface{}, item interface{}) (bool, error) {
 	return false, nil
 }
 
-/*
-SliceBytesExists - Check slice []byte contain item
-*/
-func GetBytes(key interface{}) []byte {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	enc.Encode(key)
-	return buf.Bytes()
-}
-
+// GetShardIDFromLastByte receives a last byte of public key and
+// returns a corresponding shardID
 func GetShardIDFromLastByte(b byte) byte {
 	return byte(int(b) % MAX_SHARD_NUMBER)
 }
 
+// IndexOfStr receives a list of strings and a item string
+// It checks whether a item is contained in list or not
+// and returns the first index of the item in the list
+// It returns -1 if the item is not in the list
 func IndexOfStr(item string, list []string) int {
 	for k, v := range list {
 		if strings.Compare(item, v) == 0 {
@@ -239,6 +231,23 @@ func IndexOfStr(item string, list []string) int {
 	}
 	return -1
 }
+
+// IndexOfByte receives a array of bytes and a item byte
+// It checks whether a item is contained in array or not
+// and returns the first index of the item in the array
+// It returns -1 if the item is not in the array
+func IndexOfByte(item byte, array []byte) int {
+	for k, v := range array {
+		if v == item {
+			return k
+		}
+	}
+	return -1
+}
+
+// IndexOfStrInHashMap receives a map[Hash]string and a value string
+// It checks whether a value is contained in map or not
+// It returns -1 if the item is not in the list and return 1 otherwise
 func IndexOfStrInHashMap(v string, m map[Hash]string) int {
 	for _, value := range m {
 		if strings.Compare(value, v) == 0 {
@@ -262,20 +271,7 @@ func CleanAndExpandPath(path string, defaultHomeDir string) string {
 	return filepath.Clean(os.ExpandEnv(path))
 }
 
-func Max(x, y int) int {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func ToBytes(obj interface{}) []byte {
-	buff := new(bytes.Buffer)
-	json.NewEncoder(buff).Encode(obj)
-	return buff.Bytes()
-}
-
-// CheckDuplicate returns true if there are at least 2 elements in an array have same values
+// CheckDuplicate returns true if there are at least 2 elements have the same value in the array
 func CheckDuplicateBigIntArray(arr []*big.Int) bool {
 	sort.Slice(arr, func(i, j int) bool {
 		return arr[i].Cmp(arr[j]) == -1
@@ -290,10 +286,13 @@ func CheckDuplicateBigIntArray(arr []*big.Int) bool {
 	return false
 }
 
-func RandBigIntN(max *big.Int) (*big.Int, error) {
+// RandBigIntMaxRange generates a big int with maximum value
+func RandBigIntMaxRange(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
 }
 
+// CompareStringArray receives 2 arrays of string
+// and check whether 2 arrays is the same or not
 func CompareStringArray(src []string, dst []string) bool {
 	if len(src) != len(dst) {
 		return false
@@ -306,42 +305,59 @@ func CompareStringArray(src []string, dst []string) bool {
 	return true
 }
 
-func BytesToInt32(b []byte) int32 {
-	return int32(binary.LittleEndian.Uint32(b))
+// BytesToInt32 converts little endian 4-byte array to int32 number
+func BytesToInt32(b []byte) (int32, error) {
+	if len(b) != Int32Size {
+		return 0, errors.New("invalid length of input BytesToInt32")
+	}
+
+	return int32(binary.LittleEndian.Uint32(b)), nil
 }
 
+// Int32ToBytes converts int32 number to little endian 4-byte array
 func Int32ToBytes(value int32) []byte {
-	b := make([]byte, 4)
+	b := make([]byte, Int32Size)
 	binary.LittleEndian.PutUint32(b, uint32(value))
 	return b
 }
 
-func BytesToUint32(b []byte) uint32 {
-	return binary.LittleEndian.Uint32(b)
+// BytesToUint32 converts big endian 4-byte array to uint32 number
+func BytesToUint32(b []byte) (uint32, error) {
+	if len(b) != Uint32Size {
+		return 0, errors.New("invalid length of input BytesToUint32")
+	}
+	return binary.BigEndian.Uint32(b), nil
 }
 
+// Uint32ToBytes converts uint32 number to big endian 4-byte array
 func Uint32ToBytes(value uint32) []byte {
-	b := make([]byte, 4)
+	b := make([]byte, Uint32Size)
 	binary.BigEndian.PutUint32(b, value)
 	return b
 }
 
-
-func BytesToUint64(b []byte) uint64 {
-	fmt.Printf("BytesToUint64 b: %v\n", b)
-	return binary.LittleEndian.Uint64(b)
+// BytesToUint64 converts little endian 8-byte array to uint64 number
+func BytesToUint64(b []byte) (uint64, error) {
+	if len(b) != Uint64Size {
+		return 0, errors.New("invalid length of input BytesToUint64")
+	}
+	return binary.LittleEndian.Uint64(b), nil
 }
 
+// Uint64ToBytes converts uint64 number to little endian 8-byte array
 func Uint64ToBytes(value uint64) []byte {
-	b := make([]byte, 8)
+	b := make([]byte, Uint64Size)
 	binary.LittleEndian.PutUint64(b, value)
 	return b
 }
 
+// Int64ToBytes converts int64 number to little endian 8-byte array
 func Int64ToBytes(value int64) []byte {
 	return Uint64ToBytes(uint64(value))
 }
 
+// BoolToByte receives a value in bool
+// and returns a value in byte
 func BoolToByte(value bool) byte {
 	var bitSetVar byte
 	if value {
@@ -350,14 +366,17 @@ func BoolToByte(value bool) byte {
 	return bitSetVar
 }
 
-func IndexOfByte(item byte, arrays []byte) int {
-	for k, v := range arrays {
-		if v == item {
-			return k
-		}
+// AppendSliceString is a variadic function,
+// receives some lists of array of strings
+// and appends them to one list of array of strings
+func AppendSliceString(arrayStrings ...[][]string) [][]string {
+	res := [][]string{}
+	for _, arrayString := range arrayStrings {
+		res = append(res, arrayString...)
 	}
-	return -1
+	return res
 }
+
 
 type ErrorSaver struct {
 	err error
@@ -380,15 +399,10 @@ func (s *ErrorSaver) Get() error {
 	return s.err
 }
 
+// CheckError receives a list of errors
+// returns the first error which is not nil
 func CheckError(errs ...error) error {
 	errSaver := &ErrorSaver{}
 	return errSaver.Save(errs...)
 }
 
-func AppendSliceString(arrayStrings ...[][]string) [][]string {
-	res := [][]string{}
-	for _, arrayString := range arrayStrings {
-		res = append(res, arrayString...)
-	}
-	return res
-}

@@ -156,7 +156,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 		}
 	}
 	// unzip data before process
-	jsonDecodeBytes, err := common.GZipFromBytes(jsonDecodeBytesRaw)
+	jsonDecodeBytes, err := common.GZipToBytes(jsonDecodeBytesRaw)
 	if err != nil {
 		Logger.log.Error("Can not unzip from message")
 		Logger.log.Error(err)
@@ -407,7 +407,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					Logger.log.Infof("OutMessageHandler TYPE %s CONTENT %s", cmdType, string(messageBytes))
 
 					// zip data before send
-					messageBytes, err = common.GZipToBytes(messageBytes)
+					messageBytes, err = common.GZipFromBytes(messageBytes)
 					if err != nil {
 						Logger.log.Error("Can not gzip for messageHex:" + outMsg.message.MessageType())
 						Logger.log.Error(err)
