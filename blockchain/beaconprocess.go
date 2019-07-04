@@ -347,7 +347,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		if reflect.DeepEqual(beaconBestState, BestStateBeacon{}) {
 			panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
 		}
-		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidPendingBlock(nil)
+		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidBlock(nil)
 		var keys []int
 		for k := range allShardBlocks {
 			keys = append(keys, int(k))
