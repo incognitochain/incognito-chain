@@ -5,11 +5,18 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	swarm "github.com/libp2p/go-libp2p-swarm"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 )
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	m.Run()
+}
 
 var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
