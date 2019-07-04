@@ -19,7 +19,7 @@ var Topics = []string{
 	NewShardblockTopic,
 	NewBeaconBlockTopic,
 	MempoolInfoTopic,
-	//TestTopic,
+	TestTopic,
 	TransactionHashEnterNodeTopic,
 	ShardRoleTopic,
 	BeaconRoleTopic,
