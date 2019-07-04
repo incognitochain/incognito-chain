@@ -36,12 +36,12 @@ func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, sh
 		}
 		// keySpec1 store serialNumber and index
 		keySpec1 := append(key, s...)
-		if err := db.lvdb.Put(keySpec1, newIndex, nil); err != nil {
+		if err := db.Put(keySpec1, newIndex); err != nil {
 			return err
 		}
 		// keyStoreLen store last index of array serialNumber
 		keyStoreLen := append(key, []byte("len")...)
-		if err := db.lvdb.Put(keyStoreLen, newIndex, nil); err != nil {
+		if err := db.Put(keyStoreLen, newIndex); err != nil {
 			return err
 		}
 		lenData++
@@ -112,7 +112,7 @@ func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoin
 	key = append(key, publicKey...)
 	for _, outputCoin := range outputCoinArr {
 		keyTemp := append(key, common.HashB(outputCoin)...)
-		if err := db.lvdb.Put(keyTemp, outputCoin, nil); err != nil {
+		if err := db.Put(keyTemp, outputCoin); err != nil {
 			return err
 		}
 	}
@@ -147,16 +147,16 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 		}
 		// keySpec1 use for create proof random
 		keySpec1 := append(key, newIndex...)
-		if err := db.lvdb.Put(keySpec1, c, nil); err != nil {
+		if err := db.Put(keySpec1, c); err != nil {
 			return err
 		}
 		// keySpec2 use for validate
 		keySpec2 := append(key, c...)
-		if err := db.lvdb.Put(keySpec2, newIndex, nil); err != nil {
+		if err := db.Put(keySpec2, newIndex); err != nil {
 			return err
 		}
 
-		if err := db.lvdb.Put(keySpec3, newIndex, nil); err != nil {
+		if err := db.Put(keySpec3, newIndex); err != nil {
 			return err
 		}
 		lenData++
@@ -299,7 +299,7 @@ func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID 
 	// "snderivator-data:nil"
 	for _, snd := range sndArray {
 		keySpec := append(key, snd...)
-		if err := db.lvdb.Put(keySpec, []byte{}, nil); err != nil {
+		if err := db.Put(keySpec, []byte{}); err != nil {
 			return err
 		}
 	}
@@ -345,7 +345,7 @@ func (db *db) StoreFeeEstimator(val []byte, shardID byte) error {
 
 // GetFeeEstimator - Get data for FeeEstimator object as a json in byte format
 func (db *db) GetFeeEstimator(shardID byte) ([]byte, error) {
-	b, err := db.lvdb.Get(append(feeEstimator, shardID), nil)
+	b, err := db.Get(append(feeEstimator, shardID))
 	if err != nil {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
@@ -377,7 +377,7 @@ func (db *db) CleanFeeEstimator() error {
 func (db *db) StoreTransactionIndex(txId common.Hash, blockHash common.Hash, index int) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
-	if err := db.lvdb.Put([]byte(key), []byte(value), nil); err != nil {
+	if err := db.Put([]byte(key), []byte(value)); err != nil {
 		return err
 	}
 

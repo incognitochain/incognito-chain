@@ -15,7 +15,7 @@ func (db *db) AddTransaction(txHash *common.Hash, txType string, valueTx []byte,
 	value = append(value, valueTx...)
 	value = append(value, Splitter...)
 	value = append(value, valueDesc...)
-	if err := db.lvdb.Put(key, value, nil); err != nil {
+	if err := db.Put(key, value); err != nil {
 		return databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
 	}
 	return nil
@@ -30,7 +30,7 @@ func (db *db) RemoveTransaction(txHash *common.Hash) error {
 
 func (db *db) GetTransaction(txHash *common.Hash) ([]byte, error) {
 	key := db.GetKey(txHash)
-	value, err := db.lvdb.Get(key, nil)
+	value, err := db.Get(key)
 	if err != nil {
 		return []byte{}, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
