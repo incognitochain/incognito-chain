@@ -71,7 +71,7 @@ func TestPeerConn_ProcessInMessageStr(t *testing.T) {
 		copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 	}
 	messageBytes = append(messageBytes, headerBytes...)
-	messageBytes, err = common.GZipToBytes(messageBytes)
+	messageBytes, err = common.GZipFromBytes(messageBytes)
 	if err != nil {
 		t.Error(err)
 	}
@@ -117,7 +117,7 @@ func TestPeerConn_InMessageHandler(t *testing.T) {
 		copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 	}
 	messageBytes = append(messageBytes, headerBytes...)
-	messageBytes, err = common.GZipToBytes(messageBytes)
+	messageBytes, err = common.GZipFromBytes(messageBytes)
 	if err != nil {
 		t.Error(err)
 	}
