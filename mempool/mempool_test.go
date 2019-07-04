@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"testing"
@@ -258,6 +259,18 @@ func TestTxPoolGetTxsInMem(t *testing.T) {
 	txs := tp.GetTxsInMem()
 	if len(txs) != 3 {
 		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(txs))
+	}
+}
+func TestTxPoolGetSerialNumbersHashH(t *testing.T) {
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10,false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10,false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10,false)
+	tp.poolSerialNumbersHashH[*tx1.Hash()] = tx1.ListSerialNumbersHashH()
+	tp.poolSerialNumbersHashH[*tx2.Hash()] = tx2.ListSerialNumbersHashH()
+	tp.poolSerialNumbersHashH[*tx3.Hash()] = tx3.ListSerialNumbersHashH()
+	serialNumberList := tp.GetSerialNumbersHashH()
+	if !reflect.DeepEqual(serialNumberList, tp.poolSerialNumbersHashH) {
+		t.Fatalf("Something wrong with return serial list")
 	}
 }
 func TestTxPoolIsTxInPool(t *testing.T) {
