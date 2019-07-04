@@ -499,7 +499,7 @@ func (rpcServer HttpServer) estimateFee(
 
 	tokenId := &common.Hash{}
 	if privacyCustomTokenParams != nil {
-		tokenId, _ = common.NewHashFromStr(privacyCustomTokenParams.PropertyID)
+		tokenId, _ = common.Hash{}.NewHashFromStr(privacyCustomTokenParams.PropertyID)
 	}
 
 	estimateFeeCoinPerKb = rpcServer.estimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId)

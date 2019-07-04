@@ -103,3 +103,12 @@
 14:37:49.938071 version@stat F·[] S·0B[] Sc·[]
 14:37:49.940956 db@janitor F·2 G·0
 14:37:49.940996 db@open done T·7.617846ms
+=============== Jul 4, 2019 (+07) ===============
+17:22:12.097906 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+17:22:12.098919 version@stat F·[] S·0B[] Sc·[]
+17:22:12.098967 db@open opening
+17:22:12.099128 journal@recovery F·1
+17:22:12.102890 journal@recovery recovering @22
+17:22:12.107082 version@stat F·[] S·0B[] Sc·[]
+17:22:12.180480 db@janitor F·2 G·0
+17:22:12.180556 db@open done T·81.546557ms
