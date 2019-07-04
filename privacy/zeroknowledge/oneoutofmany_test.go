@@ -2,11 +2,25 @@ package zkp
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"log"
 	"math/big"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	m.Run()
+}
+
+var _ = func() (_ struct{}) {
+	fmt.Println("This runs before init()!")
+	privacy.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	return
+}()
 
 //TestPKOneOfMany test protocol for one of many Commitment is Commitment to zero
 func TestPKOneOfMany(t *testing.T) {
@@ -33,7 +47,7 @@ func TestPKOneOfMany(t *testing.T) {
 	//start := time.Now()
 	//proof, err := witness.Prove()
 	//end := time.Since(start)
-	//fmt.Printf("One out of many proving time: %v\n", end)
+	//privacy.Logger.Log.Infof("One out of many proving time: %v\n", end)
 	//if err != nil {
 	//	privacy.Logger.Log.Error(err)
 	//}
@@ -41,7 +55,7 @@ func TestPKOneOfMany(t *testing.T) {
 	////Convert proof to bytes array
 	//proofBytes := proof.Bytes()
 	//
-	//fmt.Printf("One out of many proof size: %v\n", len(proofBytes))
+	//privacy.Logger.Log.Infof("One out of many proof size: %v\n", len(proofBytes))
 	//
 	////revert bytes array to proof
 	//proof2 := new(OneOutOfManyProof).Init()
@@ -52,7 +66,7 @@ func TestPKOneOfMany(t *testing.T) {
 	//
 	//res := proof.Verify()
 	//end = time.Since(start)
-	//fmt.Printf("One out of many verification time: %v\n", end)
+	//privacy.Logger.Log.Infof("One out of many verification time: %v\n", end)
 	//
 	//assert.Equal(t, true, res)
 
@@ -123,21 +137,21 @@ func TestPKOneOfMany(t *testing.T) {
 	hProof.stmt.Set(commitments)
 
 	for i := 0; i < 3; i++ {
-		fmt.Printf("cl: %v: %v\n", i, hProof.cl[i].Compress())
-		fmt.Printf("ca: %v: %v\n", i, hProof.ca[i].Compress())
-		fmt.Printf("cb: %v: %v\n", i, hProof.cb[i].Compress())
+		privacy.Logger.Log.Infof("cl: %v: %v\n", i, hProof.cl[i].Compress())
+		privacy.Logger.Log.Infof("ca: %v: %v\n", i, hProof.ca[i].Compress())
+		privacy.Logger.Log.Infof("cb: %v: %v\n", i, hProof.cb[i].Compress())
 
-		fmt.Printf("cd point: %v: %+v\n", i, hProof.cd[i].X.Bytes())
-		fmt.Printf("cd: %v: %v\n", i, hProof.cd[i].Compress())
+		privacy.Logger.Log.Infof("cd point: %v: %+v\n", i, hProof.cd[i].X.Bytes())
+		privacy.Logger.Log.Infof("cd: %v: %v\n", i, hProof.cd[i].Compress())
 
-		fmt.Printf("f: %v: %v\n", i, hProof.f[i].Bytes())
-		fmt.Printf("za: %v: %v\n", i, hProof.za[i].Bytes())
-		fmt.Printf("zb: %v: %v\n", i, hProof.zb[i].Bytes())
+		privacy.Logger.Log.Infof("f: %v: %v\n", i, hProof.f[i].Bytes())
+		privacy.Logger.Log.Infof("za: %v: %v\n", i, hProof.za[i].Bytes())
+		privacy.Logger.Log.Infof("zb: %v: %v\n", i, hProof.zb[i].Bytes())
 
-		fmt.Printf("commitment: %v: %v\n\n", i, hProof.stmt.commitments[i].Compress())
+		privacy.Logger.Log.Infof("commitment: %v: %v\n\n", i, hProof.stmt.commitments[i].Compress())
 
 	}
-	fmt.Printf("zd: %v\n", hProof.zd.Bytes())
+	privacy.Logger.Log.Infof("zd: %v\n", hProof.zd.Bytes())
 
 	res2 := hProof.Verify()
 	assert.Equal(t, true, res2)
@@ -155,7 +169,7 @@ func TestGetCoefficient(t *testing.T) {
 
 	//expectedRes := big.NewInt(-6)
 	//expectedRes.Mod(expectedRes, privacy.Curve.Params().N)
-	fmt.Printf("res: %v\n", res.Bytes())
+	privacy.Logger.Log.Infof("res: %v\n", res.Bytes())
 
 	//assert.Equal(t, expectedRes, res)
 }
@@ -208,29 +222,29 @@ func TestCd(t *testing.T) {
 		cd[k] = new(privacy.EllipticPoint).Zero()
 
 		for i := 0; i < 8; i++ {
-			fmt.Printf("k : %v\n", k)
-			fmt.Printf("i : %v\n", i)
+			privacy.Logger.Log.Infof("k : %v\n", k)
+			privacy.Logger.Log.Infof("i : %v\n", i)
 
 			iBinary := privacy.ConvertIntToBinary(i, 3)
-			fmt.Printf("iBinary : %v\n", iBinary)
-			//fmt.Printf("n : %v\n", n)
-			fmt.Printf("a0 : %v\n", a[0].Bytes())
-			fmt.Printf("a1 : %v\n", a[1].Bytes())
-			fmt.Printf("a2 : %v\n", a[2].Bytes())
-			fmt.Printf("indexIsZeroBinary : %v\n", indexIsZeroBinary)
+			privacy.Logger.Log.Infof("iBinary : %v\n", iBinary)
+			//privacy.Logger.Log.Infof("n : %v\n", n)
+			privacy.Logger.Log.Infof("a0 : %v\n", a[0].Bytes())
+			privacy.Logger.Log.Infof("a1 : %v\n", a[1].Bytes())
+			privacy.Logger.Log.Infof("a2 : %v\n", a[2].Bytes())
+			privacy.Logger.Log.Infof("indexIsZeroBinary : %v\n", indexIsZeroBinary)
 
 			pik := GetCoefficient(iBinary, k, 3, a, indexIsZeroBinary)
-			fmt.Printf("pik: %v: %v\n", i, pik.Bytes())
+			privacy.Logger.Log.Infof("pik: %v: %v\n", i, pik.Bytes())
 
 			cd[k] = cd[k].Add(commitments[i].ScalarMult(pik))
 			fmt.Println()
-			//fmt.Printf("cd %v: %v\n", i, cd[k].Compress())
+			//privacy.Logger.Log.Infof("cd %v: %v\n", i, cd[k].Compress())
 		}
 
 		//fmt.Println()
 
 		cd[k] = cd[k].Add(privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], privacy.SK))
 
-		fmt.Printf("cd %v: %v\n", k, cd[k].Compress())
+		privacy.Logger.Log.Infof("cd %v: %v\n", k, cd[k].Compress())
 	}
 }
