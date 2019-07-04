@@ -3,38 +3,39 @@ package common
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
-const HashSize = 32
-
-const MaxHashStringSize = HashSize * 2
-
-var ErrHashStrSize = fmt.Errorf("max hash string length is %v bytes", MaxHashStringSize)
+var InvalidMaxHashSizeErr = errors.New("invalid max hash size")
+var InvalidHashSizeErr = errors.New("invalid hash size")
+var NilHashErr = errors.New("input hash is nil")
 
 type Hash [HashSize]byte
 
-// MarshalText to use Hash as map's key
-func (hash Hash) MarshalText() ([]byte, error) {
-	return []byte(hash.String()), nil
+// MarshalText converts hashObj string to bytes array
+func (hashObj Hash) MarshalText() ([]byte, error) {
+	return []byte(hashObj.String()), nil
 }
 
-func (hash Hash) UnmarshalText(text []byte) error {
-	copy(hash[:], text)
+// UnmarshalText reverts bytes array to hashObj
+func (hashObj Hash) UnmarshalText(text []byte) error {
+	copy(hashObj[:], text)
 	return nil
 }
 
-func (hash *Hash) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON unmarshal json data to hashObj
+func (hashObj *Hash) UnmarshalJSON(data []byte) error {
 	hashString := ""
 	_ = json.Unmarshal(data, &hashString)
-	hash.Decode(hash, hashString)
+	hashObj.Decode(hashObj, hashString)
 	return nil
 }
 
 // Format writes first few bytes of hash for debugging
-func (hash *Hash) Format(f fmt.State, c rune) {
+func (hashObj *Hash) Format(f fmt.State, c rune) {
 	if c == 'h' {
-		t := hash.String()
+		t := hashObj.String()
 		f.Write([]byte(t[:8]))
 	} else {
 		m := "%"
@@ -44,96 +45,60 @@ func (hash *Hash) Format(f fmt.State, c rune) {
 			}
 		}
 		m += string(c)
-		fmt.Fprintf(f, m, hash[:])
+		fmt.Fprintf(f, m, hashObj[:])
 	}
 }
 
-/*
-String returns the Hash as the hexadecimal string of the byte-reversed
- hash.
-*/
-func (hash Hash) String() string {
-	for i := 0; i < HashSize/2; i++ {
-		hash[i], hash[HashSize-1-i] = hash[HashSize-1-i], hash[i]
-	}
-	return hex.EncodeToString(hash[:])
-}
-
-func (hash Hash) StringNotReverse() string {
-	return hex.EncodeToString(hash[:])
-}
-
-/*
-CloneBytes returns a copy of the bytes which represent the hash as a byte
-slice.
-NOTE: It is generally cheaper to just slice the hash directly thereby reusing the same bytes rather than calling this method.
-*/
-func (hash *Hash) CloneBytes() []byte {
-	newHash := make([]byte, HashSize)
-	copy(newHash, hash[:])
-
-	return newHash
-}
-
-/*
-SetBytes sets the bytes which represent the hash.  An error is returned if the number of bytes passed in is not HashSize.
-*/
-func (hash *Hash) SetBytes(newHash []byte) error {
+// SetBytes sets the bytes array which represent the hash.
+func (hashObj *Hash) SetBytes(newHash []byte) error {
 	nhlen := len(newHash)
 	if nhlen != HashSize {
-		return fmt.Errorf("invalid hash length of %v, want %v", nhlen,
-			HashSize)
+		return InvalidHashSizeErr
 	}
-	copy(hash[:], newHash)
+	copy(hashObj[:], newHash)
 
 	return nil
 }
-func (hash *Hash) GetBytes() []byte {
+
+// GetBytes returns bytes array of hashObj
+func (hashObj *Hash) GetBytes() []byte {
 	newBytes := []byte{}
-	newBytes = make([]byte, len(hash))
-	copy(newBytes, hash[:])
+	newBytes = make([]byte, len(hashObj))
+	copy(newBytes, hashObj[:])
 	return newBytes
 }
 
-// BytesToHash sets b to hash If b is larger than len(h), b will be cropped from the left.
-func NewHash(b []byte) (*Hash, error) {
-	var h Hash
-	err := h.SetBytes(b)
+// NewHash receives a bytes array and returns a corresponding object Hash
+func (hashObj Hash) NewHash(newHash []byte) (*Hash, error) {
+	err := hashObj.SetBytes(newHash)
 	if err != nil {
 		return nil, err
 	}
-	return &h, nil
+	return &hashObj, err
 }
 
-/*
-IsEqual returns true if target is the same as hash.
-*/
-func (hash *Hash) IsEqual(target *Hash) bool {
-	if hash == nil && target == nil {
+// String returns the Hash as the hexadecimal string of the byte-reversed hash.
+func (hashObj Hash) String() string {
+	for i := 0; i < HashSize/2; i++ {
+		hashObj[i], hashObj[HashSize-1-i] = hashObj[HashSize-1-i], hashObj[i]
+	}
+	return hex.EncodeToString(hashObj[:])
+}
+
+// IsEqual returns true if target is the same as hashObj.
+func (hashObj *Hash) IsEqual(target *Hash) bool {
+	if hashObj == nil && target == nil {
 		return true
 	}
-	if hash == nil || target == nil {
+	if hashObj == nil || target == nil {
 		return false
 	}
-	return *hash == *target
+	return *hashObj == *target
 }
 
-/*
-NewHash returns a new Hash from a byte slice.  An error is returned if the number of bytes passed in is not HashSize.
-*/
-func (hash Hash) NewHash(newHash []byte) (*Hash, error) {
-	err := hash.SetBytes(newHash)
-	if err != nil {
-		return nil, err
-	}
-	return &hash, err
-}
-
-/*
 // NewHashFromStr creates a Hash from a hash string.  The string should be
 // the hexadecimal string of a byte-reversed hash, but any missing characters
 // result in zero padding at the end of the Hash.
-*/
 func (hashObj Hash) NewHashFromStr(hash string) (*Hash, error) {
 	err := hashObj.Decode(&hashObj, hash)
 	if err != nil {
@@ -142,23 +107,12 @@ func (hashObj Hash) NewHashFromStr(hash string) (*Hash, error) {
 	return &hashObj, nil
 }
 
-func NewHashFromStr(s string) (*Hash, error) {
-	var h Hash
-	err := h.Decode(&h, s)
-	if err != nil {
-		return nil, err
-	}
-	return &h, err
-}
-
-/*
 // Decode decodes the byte-reversed hexadecimal string encoding of a Hash to a
 // destination.
-*/
 func (hashObj *Hash) Decode(dst *Hash, src string) error {
 	// Return error if hash string is too long.
 	if len(src) > MaxHashStringSize {
-		return ErrHashStrSize
+		return InvalidMaxHashSizeErr
 	}
 
 	// Hex decoder expects the hash to be a multiple of two.  When not, pad
@@ -188,37 +142,33 @@ func (hashObj *Hash) Decode(dst *Hash, src string) error {
 	return nil
 }
 
-// Cmp compare two hash
+// Cmp compare two hashes
 // hash = target : return 0
 // hash > target : return 1
 // hash < target : return -1
-func (hash *Hash) Cmp(target *Hash) int {
+func (hashObj *Hash) Cmp(target *Hash) (int, error) {
+	if hashObj == nil || target == nil {
+		return 0, NilHashErr
+	}
 	for i := 0; i < HashSize; i++ {
-		if hash[i] > target[i] {
-			return 1
+		if hashObj[i] > target[i] {
+			return 1, nil
 		}
-		if hash[i] < target[i] {
-			return -1
+		if hashObj[i] < target[i] {
+			return -1, nil
 		}
 	}
-	return 0
+	return 0, nil
 }
 
-func ConvertArrayStringToArrayHash(strs []string) ([]*Hash, error) {
-	hashes := []*Hash{}
-	for _, str := range strs {
-		temp := Hash{}
-		hash, err := temp.NewHashFromStr(str)
-		if err != nil {
-			return nil, err
-		}
-		hashes = append(hashes, hash)
-	}
-	return hashes, nil
-}
-
+// HashArrayInterface receives a interface,
+// converts it to bytes array
+// and returns a SHA3-256 hashing of that bytes array
 func HashArrayInterface(target interface{}) (Hash, error) {
 	arr := InterfaceSlice(target)
+	if len(arr) == 0 {
+		return Hash{}, errors.New("interface input is not an array")
+	}
 	temp := []byte{0}
 	for value := range arr {
 		valueBytes, err := json.Marshal(&value)

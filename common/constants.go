@@ -4,11 +4,16 @@ import "time"
 
 // for common
 const (
-	EmptyString      = ""
-	ZeroByte         = byte(0x00)
-	DateOutputFormat = "2006-01-02T15:04:05.999999"
-	CheckSumLen      = 4 // bytes
-	AESKeySize = 32 // bytes
+	EmptyString       = ""
+	ZeroByte          = byte(0x00)
+	DateOutputFormat  = "2006-01-02T15:04:05.999999"
+	CheckSumLen       = 4  // bytes
+	AESKeySize        = 32 // bytes
+	Int32Size         = 4  // bytes
+	Uint32Size        = 4  // bytes
+	Uint64Size        = 8  // bytes
+	HashSize          = 32 // bytes
+	MaxHashStringSize = HashSize * 2
 )
 
 // for exit code
@@ -26,12 +31,13 @@ const (
 	TxReturnStakingType      = "rs" //
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
-	MaxTxSize                = 100  // unit KB = 100KB
 )
-
+var (
+	MaxTxSize                = uint64(100)  // unit KB = 100KB
+	MaxBlockSize             = uint64(2000) //unit kilobytes = 2 Megabyte
+)
 // for mining consensus
 const (
-	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock        = 1000
 	MinBeaconBlkInterval = 5 * time.Second //second
 	MinShardBlkInterval  = 5 * time.Second //second => process block in
