@@ -37,7 +37,7 @@ func (db *db) IsBridgeTokenExisted(
 	tokenID common.Hash,
 ) (bool, error) {
 	key := append(centralizedBridgePrefix, tokenID[:]...)
-	tokenWithAmtBytes, dbErr := db.lvdb.Get(key, nil)
+	tokenWithAmtBytes, dbErr := db.Get(key)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
 	}
@@ -55,7 +55,7 @@ func (db *db) UpdateAmtByTokenID(
 	// don't need to have atomic operation here since instructions on beacon would be processed one by one, not in parallel
 	key := append(centralizedBridgePrefix, tokenID[:]...)
 
-	tokenWithAmtBytes, dbErr := db.lvdb.Get(key, nil)
+	tokenWithAmtBytes, dbErr := db.Get(key)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
 	}
