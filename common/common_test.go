@@ -1,11 +1,11 @@
 package common
 
 import (
+	"errors"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
-	"fmt"
-	"errors"
 )
 
 /*
@@ -338,4 +338,265 @@ func TestCommonCompareStringArray(t *testing.T){
 		isEqual := CompareStringArray(item.src, item.dst)
 		assert.Equal(t, item.isEqual, isEqual)
 	}
+}
+
+/*
+	Unit test for BytesToInt32 function
+ */
+
+func TestCommonBytesToInt32(t *testing.T){
+	data := []struct{
+		bytes []byte
+		number int32
+	}{
+		{[]byte{1,2,3,4}, 67305985},
+		{[]byte{1,2,3, 0}, 197121},
+		{[]byte{1,2,3,10}, 167969281},
+		{[]byte{1,7,8,9}, 151521025},
+		{[]byte{1,2,10,4}, 67764737},
+	}
+
+	for _, item := range data{
+		number, err := BytesToInt32(item.bytes)
+
+		assert.Equal(t, nil, err)
+		assert.Equal(t, item.number, number)
+	}
+}
+
+func TestCommonBytesToInt32WithInvalidInput(t *testing.T){
+	data := [][]byte{
+		{1,2,3,4,5},
+		{1,2,3},
+	}
+
+	for _, item := range data{
+		_, err := BytesToInt32(item)
+		assert.Equal(t, errors.New("invalid length of input BytesToInt32"), err)
+	}
+}
+
+/*
+	Unit test for Int32ToBytes function
+ */
+
+func TestCommonInt32ToBytes(t *testing.T){
+	data := []struct{
+		bytes []byte
+		number int32
+	}{
+		{[]byte{1,2,3,4}, 67305985},
+		{[]byte{1,2,3, 0}, 197121},
+		{[]byte{1,2,3,10}, 167969281},
+		{[]byte{1,7,8,9}, 151521025},
+		{[]byte{1,2,10,4}, 67764737},
+	}
+
+	for _, item := range data{
+		bytes := Int32ToBytes(item.number)
+		assert.Equal(t, item.bytes, bytes)
+	}
+}
+
+
+/*
+	Unit test for BytesToUint32 function
+ */
+
+func TestCommonBytesToUint32(t *testing.T){
+	data := []struct{
+		bytes []byte
+		number uint32
+	}{
+		{[]byte{1,2,3,4}, 16909060},
+		{[]byte{1,2,3,0}, 16909056},
+		{[]byte{1,2,3,10}, 16909066},
+		{[]byte{1,7,8,9}, 17238025},
+		{[]byte{1,2,10,4}, 16910852},
+	}
+
+	for _, item := range data{
+		number, err := BytesToUint32(item.bytes)
+		fmt.Printf("number: %v\n", number)
+
+		assert.Equal(t, nil, err)
+		assert.Equal(t, item.number, number)
+	}
+}
+
+func TestCommonBytesToUint32WithInvalidInput(t *testing.T){
+	data := [][]byte{
+		{1,2,3,4,5},
+		{1,2,3},
+	}
+
+	for _, item := range data{
+		_, err := BytesToUint32(item)
+		assert.Equal(t, errors.New("invalid length of input BytesToUint32"), err)
+	}
+}
+
+/*
+	Unit test for Uint32ToBytes function
+ */
+
+func TestCommonUint32ToBytes(t *testing.T){
+	data := []struct{
+		bytes []byte
+		number uint32
+	}{
+		{[]byte{1,2,3,4}, 16909060},
+		{[]byte{1,2,3,0}, 16909056},
+		{[]byte{1,2,3,10}, 16909066},
+		{[]byte{1,7,8,9}, 17238025},
+		{[]byte{1,2,10,4}, 16910852},
+	}
+
+	for _, item := range data{
+		bytes := Uint32ToBytes(item.number)
+		assert.Equal(t, item.bytes, bytes)
+	}
+}
+
+/*
+	Unit test for BytesToUint64 function
+ */
+
+func TestCommonBytesToUint64(t *testing.T){
+	data := []struct{
+		bytes []byte
+		number uint64
+	}{
+		{[]byte{1,2,3,4,5,6,7,8}, 578437695752307201},
+		{[]byte{1,2,3,0, 0, 0, 0, 0}, 197121},
+		{[]byte{1,2,3,10, 1,2,3,10}, 721422568795603457},
+		{[]byte{1,7,8,9, 1,7,8,9}, 650777847182919425},
+		{[]byte{1,2,10,4, 1,2,10,4}, 291047329304805889},
+	}
+
+	for _, item := range data{
+		number, err := BytesToUint64(item.bytes)
+		fmt.Printf("number: %v\n", number)
+
+		assert.Equal(t, nil, err)
+		assert.Equal(t, item.number, number)
+	}
+}
+
+func TestCommonBytesToUint64WithInvalidInput(t *testing.T){
+	data := [][]byte{
+		{1,2,3,4,5},
+		{1,2,3},
+	}
+
+	for _, item := range data{
+		_, err := BytesToUint64(item)
+		assert.Equal(t, errors.New("invalid length of input BytesToUint64"), err)
+	}
+}
+
+/*
+	Unit test for Uint64ToBytes function
+ */
+
+func TestCommonUint64ToBytes(t *testing.T){
+	data := []struct{
+		bytes []byte
+		number uint64
+	}{
+		{[]byte{1,2,3,4,5,6,7,8}, 578437695752307201},
+		{[]byte{1,2,3,0, 0, 0, 0, 0}, 197121},
+		{[]byte{1,2,3,10, 1,2,3,10}, 721422568795603457},
+		{[]byte{1,7,8,9, 1,7,8,9}, 650777847182919425},
+		{[]byte{1,2,10,4, 1,2,10,4}, 291047329304805889},
+	}
+
+	for _, item := range data{
+		bytes := Uint64ToBytes(item.number)
+		assert.Equal(t, item.bytes, bytes)
+	}
+}
+
+/*
+	Unit test for Int64ToBytes function
+ */
+
+func TestCommonInt64ToBytes(t *testing.T){
+	data := []struct{
+		bytes []byte
+		number int64
+	}{
+		{[]byte{1,2,3,4,5,6,7,8}, 578437695752307201},
+		{[]byte{1,2,3,0, 0, 0, 0, 0}, 197121},
+		{[]byte{1,2,3,10, 1,2,3,10}, 721422568795603457},
+		{[]byte{1,7,8,9, 1,7,8,9}, 650777847182919425},
+		{[]byte{1,2,10,4, 1,2,10,4}, 291047329304805889},
+	}
+
+	for _, item := range data{
+		bytes := Int64ToBytes(item.number)
+		assert.Equal(t, item.bytes, bytes)
+	}
+}
+
+/*
+	Unit test for BoolToByte function
+ */
+
+func TestCommonBoolToByte(t *testing.T){
+	data := []struct{
+		boolValue bool
+		byteValue byte
+	}{
+		{true, 1},
+		{false, 0},
+	}
+
+	for _, item := range data{
+		byteValue := BoolToByte(item.boolValue)
+		assert.Equal(t, item.byteValue, byteValue)
+	}
+}
+
+/*
+	Unit test for IndexOfByte function
+ */
+
+func TestCommonIndexOfByte(t *testing.T){
+	data := []struct{
+		list []byte
+		item byte
+		index int
+	}{
+		{[]byte{1,2,3,4,5,6,7,8,5}, byte(5), 4},
+		{[]byte{145,23,3,44,52,6,47,28}, byte(23), 1},
+		{[]byte{145,23,3,44,52,6,47,28}, byte(5), -1},
+	}
+
+	for _, dataItem := range data {
+		index := IndexOfByte(dataItem.item, dataItem.list)
+		assert.Equal(t, dataItem.index, index)
+	}
+}
+
+/*
+	Unit test for AppendSliceString function
+ */
+
+func TestCommonAppendSliceString(t *testing.T){
+	arr1 :=[][]string{
+		{"a", "b", "c"},
+		{"1", "2", "3"},
+	}
+	arr2 :=[][]string{
+		{"d", "e", "f"},
+		{"4", "5", "6"},
+	}
+	arr3 :=[][]string{
+		{"g", "h", "k"},
+		{"7", "8", "9"},
+	}
+
+	finalArr := AppendSliceString(arr1, arr2, arr3)
+	assert.Equal(t, 6, len(finalArr))
 }

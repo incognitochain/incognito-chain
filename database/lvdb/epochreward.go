@@ -20,7 +20,10 @@ func (db *db) AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uin
 			return err1
 		}
 	} else {
-		newValue := common.BytesToUint64(oldValue)
+		newValue, err := common.BytesToUint64(oldValue)
+		if err != nil {
+			return err
+		}
 		newValue += rewardAmount
 		err = db.Put(key, common.Uint64ToBytes(newValue))
 		//fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 2- - - %+v\n", err)
@@ -37,7 +40,7 @@ func (db *db) GetRewardOfShardByEpoch(epoch uint64, shardID byte, tokenID common
 		return 0, nil
 	}
 	//fmt.Printf("[ndh] - - - %+v\n", rewardAmount)
-	return common.BytesToUint64(rewardAmount), nil
+	return common.BytesToUint64(rewardAmount)
 }
 
 func (db *db) AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error {
@@ -52,9 +55,12 @@ func (db *db) AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID
 			return err
 		}
 	} else {
-		newValue := common.BytesToUint64(oldValue)
+		newValue, err := common.BytesToUint64(oldValue)
+		if err != nil {
+			return err
+		}
 		newValue += amount
-		err := db.Put(key, common.Uint64ToBytes(newValue))
+		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
 			return err
 		}
@@ -71,7 +77,8 @@ func (db *db) GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (
 	if isExist != nil {
 		return 0, nil
 	}
-	return common.BytesToUint64(value), nil
+
+	return common.BytesToUint64(value)
 }
 
 func (db *db) RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error {
@@ -81,13 +88,16 @@ func (db *db) RemoveCommitteeReward(committeeAddress []byte, amount uint64, toke
 	}
 	oldValue, isExist := db.Get(key)
 	if isExist == nil {
-		newValue := common.BytesToUint64(oldValue)
+		newValue, err := common.BytesToUint64(oldValue)
+		if err != nil {
+			return err
+		}
 		if amount < newValue {
 			newValue -= amount
 		} else {
 			newValue = 0
 		}
-		err := db.Put(key, common.Uint64ToBytes(newValue))
+		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
 			return err
 		}
