@@ -54,8 +54,8 @@ var (
 			PrevBlockHash: beaconBlock6.Header.Hash(),
 		},
 	}
-	pendingBeaconBlocks = []*blockchain.BeaconBlock{}
-	validBeaconBlocks = []*blockchain.BeaconBlock{}
+	pendingBeaconBlocks      = []*blockchain.BeaconBlock{}
+	validBeaconBlocks        = []*blockchain.BeaconBlock{}
 	defaultLatestValidHeight = uint64(1)
 	testLatestValidHeight    = uint64(4)
 )
