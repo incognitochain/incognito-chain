@@ -3,7 +3,7 @@ package mubft
 import (
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
 
@@ -18,7 +18,7 @@ func (engine *Engine) OnBFTMsg(msg wire.Message) {
 	}
 }
 
-func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *incognitokey.KeySet) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReq)
 	if err != nil {
 		Logger.log.Error(err)
@@ -34,7 +34,7 @@ func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *cashec.KeyS
 	return msg, nil
 }
 
-func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]uint64, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]uint64, userKeySet *incognitokey.KeySet) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTReady)
 	if err != nil {
 		Logger.log.Error(err)
@@ -51,7 +51,7 @@ func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]ui
 	return msg, nil
 }
 
-func MakeMsgBFTPropose(block json.RawMessage, layer string, shardID byte, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeMsgBFTPropose(block json.RawMessage, layer string, shardID byte, userKeySet *incognitokey.KeySet) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTPropose)
 	if err != nil {
 		Logger.log.Error(err)
@@ -68,7 +68,7 @@ func MakeMsgBFTPropose(block json.RawMessage, layer string, shardID byte, userKe
 	return msg, nil
 }
 
-func MakeMsgBFTAgree(Ri []byte, userKeySet *cashec.KeySet, blkHash common.Hash) (wire.Message, error) {
+func MakeMsgBFTAgree(Ri []byte, userKeySet *incognitokey.KeySet, blkHash common.Hash) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTAgree)
 	if err != nil {
 		Logger.log.Error(err)
@@ -85,7 +85,7 @@ func MakeMsgBFTAgree(Ri []byte, userKeySet *cashec.KeySet, blkHash common.Hash) 
 	return msg, nil
 }
 
-func MakeMsgBFTCommit(commitSig string, R string, validatorsIdx []int, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeMsgBFTCommit(commitSig string, R string, validatorsIdx []int, userKeySet *incognitokey.KeySet) (wire.Message, error) {
 	msg, err := wire.MakeEmptyMessage(wire.CmdBFTCommit)
 	if err != nil {
 		Logger.log.Error(err)
@@ -108,7 +108,7 @@ func MakeMsgBeaconBlock(block *blockchain.BeaconBlock) (wire.Message, error) {
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBlockBeacon).Block = *block
+	msg.(*wire.MessageBlockBeacon).Block = block
 	return msg, nil
 }
 
@@ -118,7 +118,7 @@ func MakeMsgShardBlock(block *blockchain.ShardBlock) (wire.Message, error) {
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageBlockShard).Block = *block
+	msg.(*wire.MessageBlockShard).Block = block
 	return msg, nil
 }
 
@@ -128,7 +128,7 @@ func MakeMsgShardToBeaconBlock(block *blockchain.ShardToBeaconBlock) (wire.Messa
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageShardToBeacon).Block = *block
+	msg.(*wire.MessageShardToBeacon).Block = block
 	return msg, nil
 }
 
@@ -138,6 +138,6 @@ func MakeMsgCrossShardBlock(block *blockchain.CrossShardBlock) (wire.Message, er
 		Logger.log.Error(err)
 		return msg, err
 	}
-	msg.(*wire.MessageCrossShard).Block = *block
+	msg.(*wire.MessageCrossShard).Block = block
 	return msg, nil
 }

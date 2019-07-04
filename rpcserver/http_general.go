@@ -125,7 +125,10 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 			continue
 		}
 
-		keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
 		shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)

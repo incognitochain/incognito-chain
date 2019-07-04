@@ -51,7 +51,10 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 
 	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -608,7 +608,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	if strings.Compare(tempProducer, producerPubkey) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
-	if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
+	if err := incognitokey.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	//=============End Verify producer signature

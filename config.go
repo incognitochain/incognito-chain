@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jessevdk/go-flags"
@@ -547,7 +547,7 @@ func loadConfig() (*config, []string, error) {
 		//Logger.log.Info(externalAddress, addrs)
 		cfg.RPCWSListeners = make([]string, 0, len(addrs))
 		for _, addr := range addrs {
-			addr = net.JoinHostPort(addr, activeNetParams.rpcPort)
+			addr = net.JoinHostPort(addr, activeNetParams.wsPort)
 			cfg.RPCWSListeners = append(cfg.RPCWSListeners, addr)
 		}
 	}
@@ -563,7 +563,7 @@ func loadConfig() (*config, []string, error) {
 	// Add default port to all rpc listener addresses if needed and remove
 	// duplicate addresses.
 	cfg.RPCWSListeners = normalizeAddresses(cfg.RPCWSListeners,
-		activeNetParams.rpcPort)
+		activeNetParams.wsPort)
 
 	// Only allow TLS to be disabled if the RPC is bound to localhost
 	// addresses.
@@ -710,15 +710,18 @@ func parseAndSetDebugLevels(debugLevel string) error {
 	return nil
 }
 
-func (conf *config) GetUserKeySet() (*cashec.KeySet, error) {
+func (conf *config) GetUserKeySet() (*incognitokey.KeySet, error) {
 	if conf.PrivateKey == common.EmptyString {
 		return nil, errors.New("user key set cant be empty")
 	}
-	KeySetUser := &cashec.KeySet{}
+	KeySetUser := &incognitokey.KeySet{}
 	temp, err := wallet.Base58CheckDeserialize(conf.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
-	KeySetUser.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
+	err = KeySetUser.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
 	return KeySetUser, nil
 }

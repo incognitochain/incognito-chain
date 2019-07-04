@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
 )
@@ -54,7 +55,7 @@ func TestConnManager_GetPeerConnOfAll(t *testing.T) {
 	}
 }
 
-func TestConnManager_GetPeerConnOfPbk(t *testing.T) {
+func TestConnManager_GetPeerConnOfPublicKey(t *testing.T) {
 	peer1 := peer.Peer{
 		PeerConnsMtx: sync.Mutex{},
 	}
@@ -74,9 +75,93 @@ func TestConnManager_GetPeerConnOfPbk(t *testing.T) {
 		ListenerPeer: &peer1,
 	})
 	result := make([]*peer.PeerConn, 0)
-	pbk := "abc"
-	result = connManager.GetPeerConnOfPbk(pbk)
+	pbk := "abc1"
+	result = connManager.GetPeerConnOfPublicKey(pbk)
+	if len(result) != 1 {
+		t.Error("Error GetPeerConnOfPbk")
+	}
+}
+
+func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
+	consensusState := &ConsensusState{}
+	beaconCommittee := []string{"abc1", "abc2"}
+
+	consensusState.BeaconCommittee = make([]string, len(beaconCommittee))
+	copy(consensusState.BeaconCommittee, beaconCommittee)
+
+	peer1 := peer.Peer{
+		PeerConnsMtx: sync.Mutex{},
+	}
+	mapPeerConnection := make(map[string]*peer.PeerConn)
+	peerConn1 := peer.PeerConn{RemotePeer: &peer.Peer{
+		PublicKey: "abc1",
+	},
+		RemotePeerID: "a"}
+	peerConn2 := peer.PeerConn{RemotePeer: &peer.Peer{
+		PublicKey: "abc2",
+	},
+		RemotePeerID: "b"}
+	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
+	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
+	peer1.PeerConns = mapPeerConnection
+	connManager := ConnManager{}.New(&Config{
+		ListenerPeer: &peer1,
+	})
+	connManager.Config.ConsensusState = consensusState
+	result := make([]*peer.PeerConn, 0)
+	result = connManager.GetPeerConnOfBeacon()
 	if len(result) != 2 {
 		t.Error("Error GetPeerConnOfPbk")
+	} else {
+		assert.Equal(t, 1, 1)
+	}
+}
+
+func TestConnManager_GetPeerConnOfShard(t *testing.T) {
+	consensusState := &ConsensusState{
+		ShardByCommittee: make(map[string]byte),
+		CommitteeByShard: make(map[byte][]string),
+	}
+
+	shardCommittee := make(map[byte][]string)
+	shardCommittee[0] = []string{"abc1", "b"}
+	shardCommittee[2] = []string{"c", "abc2"}
+	for shardID, committee := range shardCommittee {
+		consensusState.CommitteeByShard[shardID] = make([]string, len(committee))
+		copy(consensusState.CommitteeByShard[shardID], committee)
+	}
+	consensusState.rebuild()
+
+	peer1 := peer.Peer{
+		PeerConnsMtx: sync.Mutex{},
+	}
+	mapPeerConnection := make(map[string]*peer.PeerConn)
+	peerConn1 := peer.PeerConn{RemotePeer: &peer.Peer{
+		PublicKey: "abc1",
+	},
+		RemotePeerID: "a"}
+	peerConn2 := peer.PeerConn{RemotePeer: &peer.Peer{
+		PublicKey: "abc2",
+	},
+		RemotePeerID: "b"}
+	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
+	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
+	peer1.PeerConns = mapPeerConnection
+	connManager := ConnManager{}.New(&Config{
+		ListenerPeer: &peer1,
+	})
+	connManager.Config.ConsensusState = consensusState
+	result := make([]*peer.PeerConn, 0)
+	result = connManager.GetPeerConnOfShard(0)
+	if len(result) != 1 {
+		t.Error("Error GetPeerConnOfPbk")
+	} else {
+		assert.Equal(t, 1, 1)
+	}
+	result = connManager.GetPeerConnOfShard(2)
+	if len(result) != 1 {
+		t.Error("Error GetPeerConnOfPbk")
+	} else {
+		assert.Equal(t, 1, 1)
 	}
 }
