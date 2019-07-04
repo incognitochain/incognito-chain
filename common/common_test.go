@@ -173,7 +173,6 @@ func TestCommonParseListenersWithInvalidPort(t *testing.T){
 /*
 	Unit test for SliceExists function
  */
-
 func TestCommonSliceExists(t *testing.T){
 	data := []struct{
 		slice interface{}
@@ -191,5 +190,152 @@ func TestCommonSliceExists(t *testing.T){
 		isContain, err := SliceExists(dataItem.slice, dataItem.item)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, dataItem.isContain, isContain)
+	}
+}
+
+func TestCommonSliceExistsWithInvalidSlice(t *testing.T){
+	data := []struct{
+		slice interface{}
+		item interface{}
+	}{
+		{"abc", "a"},
+		{123456, 4},
+	}
+
+	for _, dataItem := range data {
+		isContain, err := SliceExists(dataItem.slice, dataItem.item)
+		assert.Equal(t, errors.New("SliceExists() given a non-slice type"), err)
+		assert.Equal(t, false, isContain)
+	}
+}
+
+/*
+	Unit test for GetShardIDFromLastByte function
+ */
+
+func TestCommonGetShardIDFromLastByte(t *testing.T){
+	data := []byte{
+		1,
+		2,
+		108,
+		203,
+		255,
+	}
+
+	for _, item := range data{
+		shardID := GetShardIDFromLastByte(item)
+		assert.Equal(t, item % MAX_SHARD_NUMBER, shardID)
+	}
+}
+
+/*
+	Unit test for IndexOfStr function
+ */
+
+func TestCommonIndexOfStr(t *testing.T){
+	data := []struct{
+		list []string
+		item string
+		index int
+	}{
+		{[]string{"a", "b", "c", "d", "e"}, "E", -1},
+		{[]string{"Incognito", "Constant", "Decentralized", "Privacy", "Incognito", "Stable"}, "Incognito", 0},
+		{[]string{"Constant", "Decentralized", "Privacy", "Incognito", "Stable"}, "Incognito", 3},
+	}
+
+	for _, dataItem := range data {
+		index := IndexOfStr(dataItem.item, dataItem.list)
+		assert.Equal(t, dataItem.index, index)
+	}
+}
+
+
+/*
+	Unit test for IndexOfStrInHashMap function
+ */
+
+func TestCommonIndexOfStrInHashMap(t *testing.T){
+	bytes := []byte{1,2,3}
+	hash1 := HashH(bytes)
+
+	bytes2 := []byte{1,2,3, 4}
+	hash2 := HashH(bytes2)
+
+	bytes3 := []byte{1,2,3, 4,5}
+	hash3 := HashH(bytes3)
+
+	data := []struct{
+		m map[Hash]string
+		v string
+		result int
+	}{
+		{map[Hash]string{hash1: "abc", hash2: "abcd", hash3: "lala"}, "lala", 1},
+		{map[Hash]string{hash1: "Incognito", hash2: "Constant", hash3: "Decentralized"}, "Privacy", -1},
+	}
+
+	for _, dataItem := range data {
+		index := IndexOfStrInHashMap(dataItem.v, dataItem.m)
+		assert.Equal(t, dataItem.result, index)
+	}
+}
+
+/*
+	Unit test for CheckDuplicateBigIntArray function
+ */
+
+func TestCommonCheckDuplicateBigIntArray(t *testing.T) {
+	data := []struct{
+		arr []*big.Int
+		isDuplicate bool
+	}{
+		{[]*big.Int{big.NewInt(int64(100)), big.NewInt(int64(1000)), big.NewInt(int64(10000)), big.NewInt(int64(100000)), big.NewInt(int64(10000000))}, false},
+		{[]*big.Int{big.NewInt(int64(10000)), big.NewInt(int64(100)), big.NewInt(int64(1000)), big.NewInt(int64(1000)), big.NewInt(int64(100000)), big.NewInt(int64(10000000))}, true},
+	}
+
+	for _, dataItem := range data {
+		isDuplicate := CheckDuplicateBigIntArray(dataItem.arr)
+		assert.Equal(t, dataItem.isDuplicate, isDuplicate)
+	}
+}
+
+/*
+	Unit test for RandBigIntMaxRange function
+ */
+
+func TestCommonRandBigIntMaxRange(t *testing.T) {
+	data := []*big.Int{
+		big.NewInt(int64(1234567890)),
+		big.NewInt(int64(100000000)),
+		big.NewInt(int64(1)),
+	}
+
+	for _, item := range data {
+		number, err := RandBigIntMaxRange(item)
+		fmt.Printf("number: %v\n", number)
+		cmp := number.Cmp(item)
+
+		assert.Equal(t, nil, err)
+		assert.Equal(t, -1, cmp)
+	}
+}
+
+/*
+	Unit test for CompareStringArray function
+ */
+
+func TestCommonCompareStringArray(t *testing.T){
+	data := []struct{
+		src []string
+		dst []string
+		isEqual bool
+	}{
+		{[]string{"a", "b", "c", "d", "e"}, []string{"a", "b", "c", "d", "e"}, true},
+		{[]string{"a", "b", "c", "d", "e"}, []string{"a", "b", "c", "d", "f"}, false},
+		{[]string{"a", "b", "c", "d", "e", "a", "b", "c", "d", "e"}, []string{"a", "b", "c", "d", "e"}, false},
+	}
+
+	for _, item := range data {
+		isEqual := CompareStringArray(item.src, item.dst)
+		assert.Equal(t, item.isEqual, isEqual)
 	}
 }
