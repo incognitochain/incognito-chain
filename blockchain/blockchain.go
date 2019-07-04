@@ -1275,7 +1275,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 				return errors.New("This response dont match with any request")
 			}
 			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
-			if coinID.Cmp(&requestMeta.TokenID) != 0 {
+			if res, err := coinID.Cmp(&requestMeta.TokenID); err == nil && res != 0{
 				return errors.New("Invalid token ID")
 			}
 			amount, err := db.GetCommitteeReward(requesterRes, requestMeta.TokenID)
@@ -1288,7 +1288,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 				return errors.New("Wrong amount")
 			}
 
-			if txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()) != 0 {
+			if res, err := txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()); err == nil && res != 0 {
 				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amountRes)
 				return errors.New("This response dont match with any request")
 			}
@@ -1314,7 +1314,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	shardID byte,
 ) (metadata.Transaction, error) {
 	txType := -1
-	if coinID.Cmp(&common.PRVCoinID) == 0 {
+	if res, err := coinID.Cmp(&common.PRVCoinID); err == nil && res == 0 {
 		txType = transaction.NormalCoinType
 	}
 	if txType == -1 {
@@ -1329,7 +1329,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 				return nil, err
 			}
 
-			if coinID.Cmp(tokenWithAmount.TokenID) == 0 {
+			if res, err := coinID.Cmp(tokenWithAmount.TokenID); err == nil && res == 0 {
 				txType = transaction.CustomTokenPrivacyType
 				fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", tokenWithAmount.TokenID)
 				break
