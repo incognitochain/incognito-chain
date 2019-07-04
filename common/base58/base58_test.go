@@ -1,41 +1,57 @@
 package base58
 
 import (
-	"encoding/base64"
-	"fmt"
-	rand2 "math/rand"
+	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
-func RandBytes(length int) []byte {
-	seed := time.Now().UnixNano()
-	b := make([]byte, length)
-	reader := rand2.New(rand2.NewSource(int64(seed)))
-
-	for n := 0; n < length; {
-		read, err := reader.Read(b[n:])
-		if err != nil {
-			fmt.Printf("[PRIVACY LOG] Rand byte error : %v\n", err)
-			return nil
-		}
-		n += read
+/*
+		Unit test for Encode function
+ */
+func TestBase58Encode(t *testing.T){
+	data := [][]byte{
+		{1},
+		{1,2,3},
+		{1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5},	// 25 bytes
+		{1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5},	// 30 bytes
 	}
-	return b
+
+	base58 := new(Base58)
+	for _, item := range data {
+		encodedData := base58.Encode(item)
+		assert.Greater(t, len(encodedData), 0)
+	}
 }
 
-var data = RandBytes(100000)
-
-func TestFastEndcode(t *testing.T) {
-	fmt.Println(base64.StdEncoding.EncodeToString(data))
-	r := Encode(data)
-	fmt.Println(r)
+func TestBase58EncodeWithEmptyData(t *testing.T){
+	base58 := new(Base58)
+	encodedData := base58.Encode([]byte{})
+	assert.Equal(t,0,  len(encodedData))
 }
 
-func TestFastDecode(t *testing.T) {
-	fmt.Println(base64.StdEncoding.EncodeToString(data))
-	r := Encode(data)
-	fmt.Println(r)
-	d, _ := Decode(r)
-	fmt.Println(base64.StdEncoding.EncodeToString(d))
+/*
+		Unit test for Decode function
+ */
+
+func TestBase58Decode(t *testing.T){
+	data := [][]byte{
+		{1},
+		{1,2,3},
+		{1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5},	// 25 bytes
+		{1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5,1,2,3,4,5},	// 30 bytes
+	}
+
+	base58 := new(Base58)
+	for _, item := range data {
+		encodedData := base58.Encode(item)
+
+		decodedData := base58.Decode(encodedData)
+		assert.Equal(t, item, decodedData)
+	}
+}
+
+func TestBase58DecodeWithEmptyData(t *testing.T){
+	base58 := new(Base58)
+	decodedData := base58.Decode("")
+	assert.Equal(t,0, len(decodedData))
 }
