@@ -1,5 +1,7 @@
 FROM alpine:3.9
 
+RUN apk add bind-tools
+
 ARG commit=commit
 ENV commit=$commit
 
@@ -45,4 +47,5 @@ RUN mkdir /utility
 #COPY ./txs-shard1-privacy-3000.1.json /utility/
 #COPY ./txs-shard1-privacy-3000.2.json /utility/
 #COPY ./txs-shard1-privacy-3000.3.json /utility/
-CMD ["/bin/sh"]
+ENTRYPOINT /run_incognito.sh
+
