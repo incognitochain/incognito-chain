@@ -63,6 +63,8 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	remoteAddr, _ := decodeRemoteAddr(inst[3])
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
 	txID, _ := common.NewHashFromStr(inst[5])
+	fmt.Printf("[db] decoded BurningConfirm inst\n")
+	fmt.Printf("[db]\tamount: %x\n[db]\tremoteAddr: %x\n[db]\ttokenID: %x\n", amount, remoteAddr, tokenID)
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)

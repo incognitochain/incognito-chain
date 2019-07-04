@@ -174,10 +174,13 @@ func buildBurningConfirmInst(inst []string) ([]string, error) {
 	// TODO(@0xbunyip): replace with bridge's shardID
 	shardID := byte(1)
 
+	// TODO(@0xbunyip): use mapping from tokenID to eth id
+	tokenID := md.TokenID.String()
+
 	return []string{
 		strconv.Itoa(metadata.BurningConfirmMeta),
 		strconv.Itoa(int(shardID)),
-		md.TokenID.String(),
+		tokenID,
 		md.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
