@@ -79,7 +79,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	tokenID, err := common.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

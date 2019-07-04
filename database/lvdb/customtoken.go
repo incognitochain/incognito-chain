@@ -142,7 +142,7 @@ func (db *db) CustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
 	log.Println(string(key))
 	for iter.Next() {
 		value := iter.Value()
-		hash, _ := common.NewHash(value)
+		hash, _ := common.Hash{}.NewHash(value)
 		result = append(result, *hash)
 	}
 	iter.Release()
@@ -157,7 +157,7 @@ func (db *db) PrivacyCustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) 
 	log.Println(string(key))
 	for iter.Next() {
 		value := iter.Value()
-		hash, _ := common.NewHash(value)
+		hash, _ := common.Hash{}.NewHash(value)
 		result = append(result, *hash)
 	}
 	iter.Release()
