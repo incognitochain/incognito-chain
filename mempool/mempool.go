@@ -224,19 +224,16 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 // maybeAcceptTransaction is the internal function which implements the public
 // See the comment for MaybeAcceptTransaction for more details.
 // This function MUST be called with the mempool lock held (for writes).
-1. Validate tx version
-2.1 Validate size of transaction (can't greater than max size of block)
-2.2 Not accept a salary tx
-2.3 Validate fee with tx size
-3. Validate type of tx
-4. Validate with other txs in mempool
-5. Validate sanity data of tx
+In Param#2: isStore: store transaction to persistence storage only work for transaction come from user (not for validation process)
+1. Validate sanity data of tx
+2. Validate duplicate tx
+3. Do not accept a salary tx
+4. Validate fee with tx size
+5. Validate with other txs in mempool
 6. Validate data in tx: privacy proof, metadata,...
 7. Validate tx with blockchain: douple spend, ...
-8. Check tx existed in mempool
-10. Check Duplicate stake public key in pool ONLY with staking transaction
+8. Check Duplicate stake public key in pool ONLY with staking transaction
 
-Param#2: isStore: store transaction to persistence storage only work for transaction come from user (not for validation process)
 */
 func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	var shardID byte
@@ -251,8 +248,22 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			txType = metrics.TxNormalNoPrivacy
 		}
 	}
+	// Condition 1: sanity data
 	now = time.Now()
-	// Don't accept the transaction if it already exists in the pool.
+	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
+		err := MempoolTxError{}
+		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
+		return err
+	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition1,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
+	
+	// Condition 2: Don't accept the transaction if it already exists in the pool.
+	now = time.Now()
 	if tp.isTxInPool(txHash) {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -266,39 +277,10 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition1,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
-	// check version
-	now = time.Now()
-	ok := tx.CheckTxVersion(MaxVersion)
-	if !ok {
-		err := MempoolTxError{}
-		err.Init(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
-		return err
-	}
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition2,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
-	// check actual size
-	now = time.Now()
-	actualSize := tx.GetTxActualSize()
-	Logger.log.Debugf("Transaction %+v 's size %+v \n", *txHash, actualSize)
-	if actualSize >= common.MaxBlockSize || actualSize >= common.MaxTxSize {
-		err := MempoolTxError{}
-		err.Init(RejectInvalidSize, fmt.Errorf("transaction %+v's size is invalid, more than %+v Kilobyte", txHash.String(), common.MaxBlockSize))
-		return err
-	}
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition3,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
-	// A standalone transaction must not be a salary transaction.
+	// Condition 3: A standalone transaction must not be a salary transaction.
 	now = time.Now()
 	if tx.IsSalaryTx() {
 		err := MempoolTxError{}
@@ -308,14 +290,14 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition4,
+		metrics.TagValue:         metrics.Condition3,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
-	// check fee of tx
+	// Condition 4: check fee of tx
 	now = time.Now()
 	limitFee := tp.config.FeeEstimator[shardID].limitFee
 	txFee := tx.GetTxFee()
-	ok = tx.CheckTransactionFee(limitFee)
+	ok := tx.CheckTransactionFee(limitFee)
 	if !ok {
 		err := MempoolTxError{}
 		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
@@ -324,47 +306,24 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition5,
+		metrics.TagValue:         metrics.Condition4,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
-	// end check with policy
-	now = time.Now()
-	ok = tx.ValidateType()
-	if !ok {
-		return err
-	}
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition6,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
-	// check tx with all txs in current mempool
+	// Condition 5: check tx with all txs in current mempool
 	now = time.Now()
 	err = tx.ValidateTxWithCurrentMempool(tp)
 	if err != nil {
-		return err
+		tempErr := MempoolTxError{}
+		tempErr.Init(RejectDoubleSpendWithMempoolTx, err)
+		return tempErr
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition7,
+		metrics.TagValue:         metrics.Condition5,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
-	// sanity data
-	now = time.Now()
-	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
-		err := MempoolTxError{}
-		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
-		return err
-	}
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition8,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
-	// ValidateTransaction tx by it self
+	// Condition 6: ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	now = time.Now()
 	validated, errValidateTxByItself := tx.ValidateTxByItself(tx.IsPrivacy(), tp.config.DataBase, tp.config.BlockChain, shardID)
@@ -384,7 +343,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		return err
 	}
 
-	// validate tx with data of blockchain
+	// Condition 7: validate tx with data of blockchain
 	now = time.Now()
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.DataBase)
 	if err != nil {
@@ -393,7 +352,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition9,
+		metrics.TagValue:         metrics.Condition6,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	now = time.Now()
@@ -415,7 +374,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition10,
+		metrics.TagValue:         metrics.Condition7,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	// check duplicate stake public key ONLY with staking transaction
@@ -437,7 +396,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition11,
+		metrics.TagValue:         metrics.Condition8,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	return nil

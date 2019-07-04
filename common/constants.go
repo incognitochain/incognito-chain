@@ -31,12 +31,13 @@ const (
 	TxReturnStakingType      = "rs" //
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
-	MaxTxSize                = 100  // unit KB = 100KB
 )
-
+var (
+	MaxTxSize                = uint64(100)  // unit KB = 100KB
+	MaxBlockSize             = uint64(2000) //unit kilobytes = 2 Megabyte
+)
 // for mining consensus
 const (
-	MaxBlockSize         = 2000 //unit kilobytes = 2 Megabyte
 	MaxTxsInBlock        = 1000
 	MinBeaconBlkInterval = 5 * time.Second //second
 	MinShardBlkInterval  = 5 * time.Second //second => process block in
