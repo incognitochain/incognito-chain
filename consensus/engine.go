@@ -5,66 +5,64 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/consensus/bft"
+	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/wire"
+	"strconv"
 	"strings"
 	"time"
 )
 
-type ProtocolInterface interface {
-	GetInfo() string
-
-	Start()
-	Stop()
-	IsRun() bool
-
-	ReceiveProposeMsg(interface{})
-	ReceivePrepareMsg(interface{})
-}
+const (
+	BEACON_CHAINKEY = "beacon"
+	SHARD_CHAINKEY  = "shard"
+)
 
 type Engine struct {
-	ChainList        map[string]ProtocolInterface
+	ChainList        map[string]chain.ChainInterface
 	Blockchain       *blockchain.BlockChain
 	ConsensusOnGoing bool
 }
 
-var ConsensusEngine = Engine{
-	ChainList: make(map[string]ProtocolInterface),
+var ConsensusManager = Engine{
+	ChainList: make(map[string]chain.ChainInterface),
 }
 
 func init() {
 	go func() {
 		ticker := time.Tick(time.Millisecond * 1000)
 		for _ = range ticker {
-			if ConsensusEngine.Blockchain != nil && ConsensusEngine.Blockchain.Synker.IsLatest(false, 0) { //beacon synced
-
+			if ConsensusManager.Blockchain != nil && ConsensusManager.Blockchain.Synker.IsLatest(false, 0) { //beacon synced
+				//TODO: start chain if node is in committee
 			}
 		}
 	}()
 }
 
-func (s *Engine) Start(server Node, blockchain blockchain.BlockChain) ProtocolInterface {
-
-	//start beacon
-
-	//start shard
-	consensusModule, ok := s.ChainList[name]
-	if ok {
-		if !consensusModule.IsRun() {
-			consensusModule.Start()
-		}
-		return consensusModule
+func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlkTmplGenerator) {
+	//start beacon and run consensus engine
+	beaconChain, ok := s.ChainList[BEACON_CHAINKEY]
+	if !ok {
+		bftcore := &bft.BFTCore{ChainKey: BEACON_CHAINKEY, IsRunning: false, Chain: beaconChain}
+		beaconChain = &chain.BeaconChain{Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
+		s.ChainList[BEACON_CHAINKEY] = beaconChain
+		bftcore.Start()
 	}
 
-	bftcore := &bft.BFTCore{Name: name, IsRunning: false}
-	s.ChainList[name] = bftcore
-	bftcore.Start()
-	return bftcore
+	//start all active beacon, but not run
+	for i := 0; i < node.GetActiveShardNumber(); i++ {
+		shardChain, ok := s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)]
+		if !ok {
+			bftcore := &bft.BFTCore{ChainKey: SHARD_CHAINKEY + "" + strconv.Itoa(i), IsRunning: false, Chain: shardChain}
+			shardChain = &chain.ShardChain{ShardID: byte(i), Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
+			s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)] = shardChain
+		}
+	}
 }
 
 func (s *Engine) Stop(name string) error {
 	consensusModule, ok := s.ChainList[name]
-	if ok && consensusModule.IsRun() {
-		consensusModule.Stop()
+	if ok && consensusModule.GetConsensusEngine().IsRun() {
+		consensusModule.GetConsensusEngine().Stop()
 	}
 	return nil
 }
@@ -73,16 +71,15 @@ func (s *Engine) OnBFTMsg(msg wire.Message) {
 	switch msg.MessageType() {
 	case wire.CmdBFTPropose:
 		rawProposeMsg := msg.(*wire.MessageBFTProposeV2)
-		if ConsensusEngine.ChainList[rawProposeMsg.ChainKey].IsRun() {
-			ConsensusEngine.ChainList[rawProposeMsg.ChainKey].ReceiveProposeMsg(convertProposeMsg(rawProposeMsg))
+		if ConsensusManager.ChainList[rawProposeMsg.ChainKey].GetConsensusEngine().IsRun() {
+			ConsensusManager.ChainList[rawProposeMsg.ChainKey].GetConsensusEngine().ReceiveProposeMsg(convertProposeMsg(rawProposeMsg))
 		}
 	case wire.CmdBFTPrepare:
 		rawPrepareMsg := msg.(*wire.MessageBFTPrepareV2)
-		if ConsensusEngine.ChainList[rawPrepareMsg.ChainKey].IsRun() {
-			ConsensusEngine.ChainList[rawPrepareMsg.ChainKey].ReceivePrepareMsg(convertPrepareMsg(rawPrepareMsg))
+		if ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().IsRun() {
+			ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().ReceivePrepareMsg(convertPrepareMsg(rawPrepareMsg))
 		}
 	}
-
 }
 
 func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
@@ -93,7 +90,7 @@ func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
 		Timestamp:  msg.Timestamp,
 		RoundKey:   msg.RoundKey,
 	}
-	if strings.Index(msg.ChainKey, "beacon") > -1 { //beacon
+	if strings.Index(msg.ChainKey, BEACON_CHAINKEY) > -1 { //beacon
 		blk := &blockchain.BeaconBlock{}
 		err := json.Unmarshal([]byte(msg.Block), &blk)
 		if err != nil {

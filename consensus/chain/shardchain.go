@@ -1,23 +1,27 @@
-package consensus
+package chain
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus/bft"
 	"github.com/incognitochain/incognito-chain/wire"
 	"time"
 )
 
 type ShardChain struct {
-	ShardID    byte
-	Node       Node
-	BlockGen   blockchain.BlkTmplGenerator
-	Blockchain blockchain.BlockChain
+	ShardID         byte
+	Node            Node
+	BlockGen        *blockchain.BlkTmplGenerator
+	Blockchain      *blockchain.BlockChain
+	ConsensusEngine ConsensusInterface
+}
+
+func (s *ShardChain) GetConsensusEngine() ConsensusInterface {
+	return s.ConsensusEngine
 }
 
 func (s *ShardChain) PushMessageToValidator(msg wire.Message) error {
-	return s.Node.PushMessageToShard(s.ShardID, msg)
+	return s.Node.PushMessageToShard(msg, s.ShardID)
 }
 
 func (s *ShardChain) GetNodePubKey() string {
@@ -54,13 +58,13 @@ func (s *ShardChain) GetLastProposerIndex() int {
 	return common.IndexOfStr(base58.Base58Check{}.Encode(s.Blockchain.BestState.Shard[s.ShardID].BestBlock.Header.ProducerAddress.Pk, common.ZeroByte), s.Blockchain.BestState.Shard[s.ShardID].ShardCommittee)
 }
 
-func (s *ShardChain) CreateNewBlock(round int) bft.BlockInterface {
+func (s *ShardChain) CreateNewBlock(round int) BlockInterface {
 	userKeyset := s.Node.GetUserKeySet()
-	newBlock, err := s.BlockGen.NewBlockShard(&userKeyset, s.ShardID, round, s.Blockchain.Synker.GetClosestShardToBeaconPoolState(), s.Blockchain.BestState.Beacon.BeaconHeight, time.Now())
+	newBlock, err := s.BlockGen.NewBlockShard(userKeyset, s.ShardID, round, s.Blockchain.Synker.GetClosestShardToBeaconPoolState(), s.Blockchain.BestState.Beacon.BeaconHeight, time.Now())
 	if err != nil {
 		return nil
 	} else {
-		err = s.BlockGen.FinalizeShardBlock(newBlock, &userKeyset)
+		err = s.BlockGen.FinalizeShardBlock(newBlock, userKeyset)
 		if err != nil {
 			return nil
 		}

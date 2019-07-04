@@ -17,7 +17,7 @@ func (e *BFTCore) enterProposePhase() {
 	e.debug("start propose block", block)
 
 	blockData, _ := json.Marshal(e.Block)
-	msg, _ := MakeBFTProposeMsg(string(blockData), e.Name, fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
+	msg, _ := MakeBFTProposeMsg(string(blockData), e.ChainKey, fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
 	go e.Chain.PushMessageToValidator(msg)
 	e.enterPreparePhase()
 
@@ -42,7 +42,7 @@ func (e *BFTCore) enterPreparePhase() {
 	//e.debug("start prepare phase")
 	//TODO: validate block isOK???
 
-	msg, _ := MakeBFTPrepareMsg(true, e.Name, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
+	msg, _ := MakeBFTPrepareMsg(true, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
 	go e.Chain.PushMessageToValidator(msg)
 }
 

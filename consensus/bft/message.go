@@ -1,11 +1,11 @@
 package bft
 
 import (
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
-func MakeBFTProposeMsg(block, chainkey, roundkey string, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeBFTProposeMsg(block, chainkey, roundkey string, userKeySet *incognitokey.KeySet) (wire.Message, error) {
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFTPropose)
 	msg.(*wire.MessageBFTProposeV2).Block = block
 	msg.(*wire.MessageBFTProposeV2).ChainKey = chainkey
@@ -18,7 +18,7 @@ func MakeBFTProposeMsg(block, chainkey, roundkey string, userKeySet *cashec.KeyS
 	return msg, nil
 }
 
-func MakeBFTPrepareMsg(isOK bool, chainKey, blkHash, roundKey string, userKeySet *cashec.KeySet) (wire.Message, error) {
+func MakeBFTPrepareMsg(isOK bool, chainKey, blkHash, roundKey string, userKeySet *incognitokey.KeySet) (wire.Message, error) {
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFTPrepare)
 	msg.(*wire.MessageBFTPrepareV2).IsOk = isOK
 	msg.(*wire.MessageBFTPrepareV2).ChainKey = chainKey
