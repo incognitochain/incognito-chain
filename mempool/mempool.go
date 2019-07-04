@@ -164,7 +164,6 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
-
 	if isStore {
 		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
 		if err != nil {
@@ -177,7 +176,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	//==================================================
 	tp.poolSerialNumbersHashH[*txHash] = txD.Desc.Tx.ListSerialNumbersHashH()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
 	if tp.config.FeeEstimator != nil {
 		var shardID byte
@@ -200,7 +198,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 			}
 		}
 	}
-
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		metadataType := tx.GetMetadata().GetType()
