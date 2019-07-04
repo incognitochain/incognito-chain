@@ -105,7 +105,7 @@ func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
 		values := strings.Split(string(tx), string(lvdb.Splitter))
 		txDesc, err := UmmarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
 		if err != nil {
-			txHash, err := common.NewHash(allTxHashes[index][3:])
+			txHash, err := common.Hash{}.NewHash(allTxHashes[index][3:])
 			if err != nil {
 				continue
 			}
