@@ -70,8 +70,10 @@ func (e *BFTCore) enterNewRound() {
 	e.Block = nil
 
 	if e.Chain.GetNodePubKeyIndex() == (e.Chain.GetLastProposerIndex()+1+int(e.Round))%e.Chain.GetCommitteeSize() {
+		fmt.Println("BFT: new round propose")
 		e.enterProposePhase()
 	} else {
+		fmt.Println("BFT: new round propose")
 		e.enterListenPhase()
 	}
 

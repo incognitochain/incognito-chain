@@ -37,7 +37,8 @@ func (s *BeaconChain) GetBlkMinTime() time.Duration {
 }
 
 func (s *BeaconChain) IsReady() bool {
-	return s.Blockchain.Synker.IsLatest(false, 0)
+	return true
+	//return s.Blockchain.Synker.IsLatest(false, 0)
 }
 
 func (s *BeaconChain) GetHeight() uint64 {
