@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -32,6 +33,7 @@ var (
 		"112t8rqHziexNp48PRHtnqASEAchfRaWM2QTtk9eBbaqCZdUMZ4LHgAesBW7AfPKAc97mn7smoGr8SKiiXKmuvaHDKNJYK2zT7oAHDVvpXmc",
 		"112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC",
 	}
+	stakingPublicKey = "151vzKx6AaQs8Jw5Q8PefGSPu3E16w2E2tSRXd1tEyM1qUA4H1r" // public key of 112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC
 	receiverPaymentAddress1 = "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi"
 	receiverPaymentAddress2 = "1Uv2wgU5FR5jjeN3uY3UJ4SYYyjqj97spYBEDa6cTLGiP3w6BCY7mqmASKwXz8hXfLr6mpDjhWDJ8TiM5v5U5f2cxxqCn5kwy5JM9wBgi"
 	commonFee = int64(10)
@@ -67,10 +69,11 @@ var _ = func() (_ struct{}) {
 		IsLoadFromMempool: false,
 		PersistMempool: false,
 		FeeEstimator: feeEstimator,
+		ChainParams: &blockchain.ChainTestParam,
 	})
 	var transactions []metadata.Transaction
 	for _, privateKey := range privateKeyShard0 {
-		txs := initTx("1000", privateKey, db)
+		txs := initTx("3000000", privateKey, db)
 		transactions = append(transactions, txs[0])
 	}
 	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
@@ -90,6 +93,7 @@ var _ = func() (_ struct{}) {
 	defaultTokenParams["TokenTxType"] = float64(0)
 	defaultTokenReceiver[receiverPaymentAddress1] = float64(1000)
 	defaultTokenParams["TokenReceivers"] = defaultTokenReceiver
+	// token id: 6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	privacy.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	transaction.Logger.Init(common.NewBackend(nil).Logger("test", true))
@@ -255,6 +259,96 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	}
 	return &tx
 }
+
+func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon bool) metadata.Transaction{
+	// get sender key set from private key
+	hasPrivacyCoin := false
+	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
+	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
+	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	
+	receiversPaymentAddressStrParam := make(map[string]interface{})
+	if isBeacon {
+		receiversPaymentAddressStrParam[common.BurningAddress] = tp.config.ChainParams.StakingAmountShard * 3
+	} else {
+		receiversPaymentAddressStrParam[common.BurningAddress] = tp.config.ChainParams.StakingAmountShard
+	}
+	paymentInfos := make([]*privacy.PaymentInfo, 0)
+	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
+		keyWalletReceiver, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+		paymentInfo := &privacy.PaymentInfo{
+			Amount:         amount.(uint64),
+			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
+		}
+		paymentInfos = append(paymentInfos, paymentInfo)
+	}
+	estimateFeeCoinPerKb := fee
+	totalAmmount := uint64(0)
+	for _, receiver := range paymentInfos {
+		totalAmmount += receiver.Amount
+	}
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
+	if err != nil {
+		fmt.Println("Can't create transaction", err)
+		return nil
+	}
+	remainOutputCoins := make([]*privacy.OutputCoin, 0)
+	for _, outCoin := range outCoins {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.SerialNumber.Compress()) == nil {
+			remainOutputCoins = append(remainOutputCoins, outCoin)
+		}
+	}
+	if len(outCoins) == 0 && totalAmmount > 0 {
+		fmt.Println("Can't create transaction")
+		return nil
+	}
+	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
+	if err != nil {
+		fmt.Println("Can't create transaction", err)
+		return nil
+	}
+	paymentAddress, _ := senderKeySet.Serialize(wallet.PaymentAddressType)
+	var stakingMetadata *metadata.StakingMetadata
+	if isBeacon {
+		stakingMetadata, _ = metadata.NewStakingMetadata(64, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard)
+	} else {
+		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard)
+	}
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, stakingMetadata, nil, nil, 1)
+	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
+	// if not enough to pay fee
+	if needToPayFee > 0 {
+		if len(outCoins) > 0 {
+			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
+			if err != nil {
+				fmt.Println("Can't create transaction", err)
+				return nil
+			}
+			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
+		}
+	}
+	// convert to inputcoins
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
+	tx := transaction.Tx{}
+	err1 := tx.Init(
+		&senderKeySet.KeySet.PrivateKey,
+		paymentInfos,
+		inputCoins,
+		realFee,
+		hasPrivacyCoin,
+		db,
+		nil, // use for prv coin -> nil is valid
+		stakingMetadata,
+	)
+	if err1 != nil {
+		panic("no tx found")
+	}
+	return &tx
+}
 func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, tokenParamsRaw map[string]interface{}) metadata.Transaction{
 	var hasPrivacyCoin = false
 	// get sender key set from private key
@@ -411,10 +505,11 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee,false)
 	tx4 := CreateAndSaveTestNormalTransaction(privateKeyShard0[3], noFee,false)
 	tx5 := CreateAndSaveTestNormalTransaction(privateKeyShard0[4], commonFee,false)
-	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
+	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams)
+	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	txDesc1 := createTxDescMempool(tx1, 1, uint64(commonFee), 0)
-	txInitCustomTokenDesc := createTxDescMempool(txInitCustomToken, 1, uint64(commonFee), 0)
-	
 	// Check condition 1: Sanity - Max version error
 	ResetMempoolTest()
 	tx1.(*transaction.Tx).Version = 2
@@ -557,13 +652,46 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	}
 	// check Condition 8: Check Init Custom Token
 	ResetMempoolTest()
-	tp.addTx(txInitCustomTokenDesc , false)
-	err12 := tp.validateTransaction(txInitCustomToken)
+	tp.TokenIDPool[*txInitCustomToken.Hash()] = "6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89"
+	err12 := tp.validateTransaction(txInitCustomTokenFailed)
 	if err12 == nil {
-		t.Fatal("Expect double spend with blockchain error error but no error")
+		t.Fatal("Expect duplicate init token error error but no error")
 	} else {
 		if err12.(MempoolTxError).Code != ErrCodeMessage[RejectDuplicateInitTokenTx].Code {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateInitTokenTx], err)
 		}
+	}
+	// check Condition 9: Check Init Custom Token
+	ResetMempoolTest()
+	tp.CandidatePool[*txStakingShard.Hash()] = stakingPublicKey
+	err13 := tp.validateTransaction(txStakingShard)
+	if err13 == nil {
+		t.Fatal("Expect duplicate staking pubkey error error but no error")
+	} else {
+		if err13.(MempoolTxError).Code != ErrCodeMessage[RejectDuplicateStakePubkey].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateStakePubkey], err)
+		}
+	}
+	err13 = tp.validateTransaction(txStakingBeacon)
+	if err13 == nil {
+		t.Fatal("Expect duplicate staking pubkey error error but no error")
+	} else {
+		if err13.(MempoolTxError).Code != ErrCodeMessage[RejectDuplicateStakePubkey].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateStakePubkey], err)
+		}
+	}
+	ResetMempoolTest()
+	// Pass all case
+	err14 := tp.validateTransaction(txStakingShard)
+	if err14 != nil {
+		t.Fatal("Expect no err but get ", err14)
+	}
+	err14 = tp.validateTransaction(tx3)
+	if err14 != nil {
+		t.Fatal("Expect no err but get ", err14)
+	}
+	err14 = tp.validateTransaction(txInitCustomToken)
+	if err14 != nil {
+		t.Fatal("Expect no err but get ", err14)
 	}
 }
