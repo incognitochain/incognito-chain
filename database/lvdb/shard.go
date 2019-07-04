@@ -60,7 +60,7 @@ func (db *db) HasBlock(hash common.Hash) (bool, error) {
 	Query a block by hash. Return block if existence
 */
 func (db *db) FetchBlock(hash common.Hash) ([]byte, error) {
-	block, err := db.lvdb.Get(db.GetKey(string(blockKeyPrefix), hash), nil)
+	block, err := db.Get(db.GetKey(string(blockKeyPrefix), hash))
 	if err != nil {
 		if err == lvdberr.ErrNotFound {
 			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -86,11 +86,11 @@ func (db *db) StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte) e
 	binary.LittleEndian.PutUint64(buf, idx)
 	buf[8] = shardID
 	//{i-[hash]}:index-shardID
-	if err := db.lvdb.Put(db.GetKey(string(blockKeyIdxPrefix), hash), buf, nil); err != nil {
+	if err := db.Put(db.GetKey(string(blockKeyIdxPrefix), hash), buf); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	//{index-shardID}:[hash]
-	if err := db.lvdb.Put(buf, hash[:], nil); err != nil {
+	if err := db.Put(buf, hash[:]); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil
@@ -99,7 +99,7 @@ func (db *db) StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte) e
 func (db *db) GetIndexOfBlock(hash common.Hash) (uint64, byte, error) {
 	var idx uint64
 	var shardID byte
-	b, err := db.lvdb.Get(db.GetKey(string(blockKeyIdxPrefix), hash), nil)
+	b, err := db.Get(db.GetKey(string(blockKeyIdxPrefix), hash))
 	//{i-[hash]}:index-shardID
 	if err != nil {
 		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
@@ -133,22 +133,22 @@ func (db *db) DeleteBlock(hash common.Hash, idx uint64, shardID byte) error {
 	binary.LittleEndian.PutUint64(buf, idx)
 	buf[8] = shardID
 	// Delete block
-	err = db.lvdb.Delete(keyBlockHash, nil)
+	err = db.Delete(keyBlockHash)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
-	err = db.lvdb.Delete(keyShardBlock, nil)
+	err = db.Delete(keyShardBlock)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
 
 	// Delete block index
-	err = db.lvdb.Delete(keyBlockIndex, nil)
+	err = db.Delete(keyBlockIndex)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 
-	err = db.lvdb.Delete(buf, nil)
+	err = db.Delete(buf)
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
@@ -179,7 +179,7 @@ func (db *db) FetchShardBestState(shardID byte) ([]byte, error) {
 func (db *db) CleanShardBestState() error {
 	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 		key := append(bestBlockKey, shardID)
-		err := db.lvdb.Delete(key, nil)
+		err := db.Delete(key)
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.delete"))
 		}
@@ -192,7 +192,7 @@ func (db *db) GetBlockByIndex(idx uint64, shardID byte) (common.Hash, error) {
 	binary.LittleEndian.PutUint64(buf, idx)
 	buf[8] = shardID
 	// {index-shardID}: {blockhash}
-	b, err := db.lvdb.Get(buf, nil)
+	b, err := db.Get(buf)
 	if err != nil {
 		return common.Hash{}, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.GetBlockByIndex"))
 	}
@@ -214,7 +214,7 @@ func (db *db) StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight
 	if ok, _ := db.HasValue(key); ok {
 		return database.NewDatabaseError(database.BlockExisted, errors.Errorf("block %d already exists", blkHeight))
 	}
-	if err := db.lvdb.Put(key, buf, nil); err != nil {
+	if err := db.Put(key, buf); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	return nil

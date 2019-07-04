@@ -22,8 +22,9 @@ func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Payme
 	customTokenParams *transaction.CustomTokenParamTx,
 	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx,
 ) ([]*privacy.InputCoin, uint64, *RPCError) {
+	// estimate fee according to 8 recent block
 	if numBlock == 0 {
-		numBlock = 8
+		numBlock = 1000
 	}
 	// calculate total amount to send
 	totalAmmount := uint64(0)
@@ -480,14 +481,16 @@ func (rpcServer HttpServer) estimateFeeWithEstimator(defaultFee int64, shardID b
 }
 
 // estimateFee - estimate fee from tx data and return real full fee, fee per kb and real tx size
-func (rpcServer HttpServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin,
+func (rpcServer HttpServer) estimateFee(
+	defaultFee int64,
+	candidateOutputCoins []*privacy.OutputCoin,
 	paymentInfos []*privacy.PaymentInfo, shardID byte,
 	numBlock uint64, hasPrivacy bool,
 	metadata metadata.Metadata,
 	customTokenParams *transaction.CustomTokenParamTx,
 	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx) (uint64, uint64, uint64) {
 	if numBlock == 0 {
-		numBlock = 10
+		numBlock = 1000
 	}
 	// check real fee(nano PRV) per tx
 	var realFee uint64
@@ -496,7 +499,7 @@ func (rpcServer HttpServer) estimateFee(defaultFee int64, candidateOutputCoins [
 
 	tokenId := &common.Hash{}
 	if privacyCustomTokenParams != nil {
-		tokenId, _ = common.NewHashFromStr(privacyCustomTokenParams.PropertyID)
+		tokenId, _ = common.Hash{}.NewHashFromStr(privacyCustomTokenParams.PropertyID)
 	}
 
 	estimateFeeCoinPerKb = rpcServer.estimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId)

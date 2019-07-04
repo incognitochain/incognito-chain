@@ -1061,7 +1061,7 @@ out2:
 		}
 	}
 	go func() {
-		hash, _ := common.NewHashFromStr("dfa89f9a1d93bef29935b79c4f480da1d0bbe7f81713d338c774051bef3aa240")
+		hash, _ := common.Hash{}.NewHashFromStr("dfa89f9a1d93bef29935b79c4f480da1d0bbe7f81713d338c774051bef3aa240")
 		msgBFTAgree.BlkHash = *hash
 		netSync.cMessage <- msgBFTAgree
 	}()
@@ -1105,7 +1105,7 @@ out4:
 		}
 	}
 	go func() {
-		hash, _ := common.NewHashFromStr("8289d23a4d2b7bd9df1821f9074901f252fda8cae44b53a8ec91cf5863400078")
+		hash, _ := common.Hash{}.NewHashFromStr("8289d23a4d2b7bd9df1821f9074901f252fda8cae44b53a8ec91cf5863400078")
 		msgBFTReady.BestStateHash = *hash
 		netSync.cMessage <- msgBFTReady
 	}()
@@ -1128,7 +1128,7 @@ out5:
 		}
 	}
 	go func() {
-		hash, _ := common.NewHashFromStr("8289d23a4d2b7bd9df1821f9074901f252fda8cae44b53a8ec91cf5863400078")
+		hash, _ := common.Hash{}.NewHashFromStr("8289d23a4d2b7bd9df1821f9074901f252fda8cae44b53a8ec91cf5863400078")
 		msgBFTReq.BestStateHash = *hash
 		netSync.cMessage <- msgBFTReq
 	}()
