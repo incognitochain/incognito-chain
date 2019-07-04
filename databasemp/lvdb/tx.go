@@ -39,7 +39,7 @@ func (db *db) GetTransaction(txHash *common.Hash) ([]byte, error) {
 
 func (db *db) HasTransaction(txHash *common.Hash) (bool, error) {
 	key := db.GetKey(txHash)
-	ret, err := db.lvdb.Has(key, nil)
+	ret, err := db.HasValue(key)
 	if err != nil {
 		return false, databasemp.NewDatabaseMempoolError(databasemp.NotExistValue, err)
 	}
