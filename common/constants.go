@@ -7,6 +7,8 @@ const (
 	EmptyString      = ""
 	ZeroByte         = byte(0x00)
 	DateOutputFormat = "2006-01-02T15:04:05.999999"
+	CheckSumLen      = 4 // bytes
+	AESKeySize = 32 // bytes
 )
 
 // for exit code

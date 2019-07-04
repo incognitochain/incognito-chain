@@ -15,7 +15,7 @@ type MessageDataTest struct {
 	Message  string    `json:"message"`
 }
 
-func main() {
+func ElasticTest() {
 	// Starting with elastic.v5, you must pass a context to execute each service
 	ctx := context.Background()
 
