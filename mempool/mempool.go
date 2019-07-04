@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/databasemp"
 
@@ -34,7 +34,7 @@ type Config struct {
 	IsLoadFromMempool     bool                   //Reset mempool database when run node
 	PersistMempool        bool
 	RelayShards           []byte
-	UserKeyset            *cashec.KeySet
+	UserKeyset            *incognitokey.KeySet
 	PubSubManager         *pubsub.PubSubManager
 	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.EventChannel
@@ -164,7 +164,6 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
-
 	if isStore {
 		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
 		if err != nil {
@@ -177,7 +176,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	//==================================================
 	tp.poolSerialNumbersHashH[*txHash] = txD.Desc.Tx.ListSerialNumbersHashH()
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
 	if tp.config.FeeEstimator != nil {
 		var shardID byte
@@ -200,7 +198,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 			}
 		}
 	}
-
 	// add candidate into candidate list ONLY with staking transaction
 	if tx.GetMetadata() != nil {
 		metadataType := tx.GetMetadata().GetType()
@@ -549,7 +546,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	if tp.IsTest {
 		err := MempoolTxError{}
 		err.Init(UnexpectedTransactionError, errors.New("Not allowed test tx"))
-		return &common.Hash{}, &TxDesc{}, err
+		return &common.Hash{}, &TxDesc{}, nil
 	}
 	go func(txHash common.Hash) {
 		tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
@@ -640,6 +637,9 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 }
 
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
+	if tp.IsTest {
+		return
+	}
 	tp.pool[txHash].IsFowardMessage = true
 }
 

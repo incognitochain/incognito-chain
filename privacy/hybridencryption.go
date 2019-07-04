@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 )
 
@@ -48,11 +49,11 @@ func HybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext
 	aesKeyByte := AddPaddingBigInt(aesKeyPoint.X, BigIntSize)
 
 	// Encrypt msg using aesKeyByte
-	aesScheme := &AES{
+	aesScheme := &common.AES{
 		Key: aesKeyByte,
 	}
 
-	ciphertext.MsgEncrypted, err = aesScheme.encrypt(msg)
+	ciphertext.MsgEncrypted, err = aesScheme.Encrypt(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -91,12 +92,12 @@ func HybridDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err
 	}
 
 	// Get AES key
-	aesScheme := &AES{
+	aesScheme := &common.AES{
 		Key: AddPaddingBigInt(aesKeyPoint.X, BigIntSize),
 	}
 
 	// Decrypt encrypted coin randomness using AES key
-	msg, err = aesScheme.decrypt(ciphertext.MsgEncrypted)
+	msg, err = aesScheme.Decrypt(ciphertext.MsgEncrypted)
 	if err != nil {
 		return []byte{}, err
 	}

@@ -1,6 +1,6 @@
 package common
 
-// onionAddr implements the net.Addr interface with two struct fields
+// SimpleAddr implements the net.Addr interface with two fields struct
 type SimpleAddr struct {
 	Net, Addr string
 }

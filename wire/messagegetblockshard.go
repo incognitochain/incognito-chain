@@ -3,7 +3,7 @@ package wire
 import (
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -12,7 +12,7 @@ type MessageGetBlockShard struct {
 	FromPool         bool
 	ByHash           bool
 	BySpecificHeight bool
-	BlksHash         []common.Hash
+	BlkHashes        []common.Hash
 	BlkHeights       []uint64
 	ShardID          byte
 	SenderID         string
@@ -50,7 +50,7 @@ func (msg *MessageGetBlockShard) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageGetBlockShard) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageGetBlockShard) SignMsg(_ *incognitokey.KeySet) error {
 	return nil
 }
 
