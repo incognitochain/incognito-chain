@@ -41,7 +41,7 @@ var _ = func() (_ struct{}) {
 		fmt.Println("Could not open database connection")
 		return
 	}
-	err = bc.Init(&blockchain.Config{
+	err = bc.InitForTest(&blockchain.Config{
 		DataBase: db,
 		PubSubManager: pbMempool,
 		ChainParams: &blockchain.ChainTestParam,
@@ -78,6 +78,8 @@ var _ = func() (_ struct{}) {
 			1)
 	}
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	privacy.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	transaction.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 
@@ -171,7 +173,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
 	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	//
+	
 	receiversPaymentAddressStrParam := make(map[string]interface{})
 	receiversPaymentAddressStrParam[receiverPaymentAddress2] = 50
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
@@ -210,14 +212,6 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 		fmt.Println("Can't create transaction", err)
 		return nil
 	}
-	overBalanceAmount := candidateOutputCoinAmount - totalAmmount
-	if overBalanceAmount > 0 {
-		// add more into output for estimate fee
-		paymentInfos = append(paymentInfos, &privacy.PaymentInfo{
-			PaymentAddress: senderKeySet.KeySet.PaymentAddress,
-			Amount:         overBalanceAmount,
-		})
-	}
 	
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, nil, 1)
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
@@ -236,7 +230,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	// convert to inputcoins
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := transaction.Tx{}
-	err = tx.Init(
+	err1 := tx.Init(
 		&senderKeySet.KeySet.PrivateKey,
 		paymentInfos,
 		inputCoins,
@@ -246,11 +240,35 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 		nil, // use for prv coin -> nil is valid
 		nil,
 	)
+	if err1 != nil {
+		panic("no tx found")
+	}
 	return &tx
+}
+func TestTxPoolGetTxsInMem(t *testing.T) {
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10,false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10,false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10,false)
+	txDesc1 := createTxDescMempool(tx1, 1, 10, 0)
+	txDesc2 := createTxDescMempool(tx2, 1, 10, 0)
+	txDesc3 := createTxDescMempool(tx3, 1, 10, 0)
+	tp.pool[*tx1.Hash()] = txDesc1
+	tp.pool[*tx2.Hash()] = txDesc2
+	tp.pool[*tx3.Hash()] = txDesc3
+	txs := tp.GetTxsInMem()
+	if len(txs) != 3 {
+		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(txs))
+	}
 }
 func TestTxPoolIsTxInPool(t *testing.T) {
 	tx := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10,false)
-	fmt.Println(tx)
-	t.Log("abc")
-	
+	if tp.isTxInPool(tx.Hash()) {
+		t.Fatalf("Expect %+v to be NOT in pool", *tx.Hash())
+	}
+	txDesc := createTxDescMempool(tx, 1, 10, 0)
+	tp.pool[*tx.Hash()] = txDesc
+	tp.poolSerialNumbersHashH[*tx.Hash()] = tx.ListSerialNumbersHashH()
+	if !tp.isTxInPool(tx.Hash()) {
+		t.Fatalf("Expect %+v to be in pool", *tx.Hash())
+	}
 }
