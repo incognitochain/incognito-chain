@@ -42,8 +42,9 @@ func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, block
 	//start beacon and run consensus engine
 	beaconChain, ok := s.ChainList[BEACON_CHAINKEY]
 	if !ok {
-		bftcore := &bft.BFTCore{ChainKey: BEACON_CHAINKEY, IsRunning: false, Chain: beaconChain}
+		bftcore := &bft.BFTCore{ChainKey: BEACON_CHAINKEY, IsRunning: false, UserKeySet: node.GetUserKeySet()}
 		beaconChain = &chain.BeaconChain{Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
+		bftcore.Chain = beaconChain
 		s.ChainList[BEACON_CHAINKEY] = beaconChain
 		bftcore.Start()
 	}
@@ -52,8 +53,10 @@ func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, block
 	for i := 0; i < node.GetActiveShardNumber(); i++ {
 		shardChain, ok := s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)]
 		if !ok {
-			bftcore := &bft.BFTCore{ChainKey: SHARD_CHAINKEY + "" + strconv.Itoa(i), IsRunning: false, Chain: shardChain}
+			bftcore := &bft.BFTCore{ChainKey: SHARD_CHAINKEY + "" + strconv.Itoa(i), IsRunning: false, UserKeySet: node.GetUserKeySet()}
 			shardChain = &chain.ShardChain{ShardID: byte(i), Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
+			bftcore.Chain = shardChain
+
 			s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)] = shardChain
 		}
 	}
