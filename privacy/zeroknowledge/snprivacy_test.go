@@ -1,7 +1,6 @@
 package zkp
 
 import (
-	"fmt"
 	"math/big"
 	"testing"
 	"time"
@@ -34,11 +33,11 @@ func TestPKSNPrivacy(t *testing.T) {
 		return
 	}
 	end := time.Since(start)
-	fmt.Printf("Serial number proving time: %v\n", end)
+	privacy.Logger.Log.Info("Serial number proving time: %v\n", end)
 
 	proofBytes := proof.Bytes()
 
-	fmt.Printf("Serial number proof size: %v\n", len(proofBytes))
+	privacy.Logger.Log.Info("Serial number proof size: %v\n", len(proofBytes))
 
 	proof2 := new(SNPrivacyProof).Init()
 	proof2.SetBytes(proofBytes)
@@ -46,7 +45,7 @@ func TestPKSNPrivacy(t *testing.T) {
 	start = time.Now()
 	res := proof2.Verify(nil)
 	end = time.Since(start)
-	fmt.Printf("Serial number verification time: %v\n", end)
+	privacy.Logger.Log.Info("Serial number verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
 }
