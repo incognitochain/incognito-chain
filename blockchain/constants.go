@@ -89,10 +89,10 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{
 	// Committee of shard 0
 	"183GBqPhSfcEFZP7MQFTnuLVuX2PRkd5HFA3qkqkLN4STghvxpw", //shard 0
 	"15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi", //shard 0
-	"16VVUEPJR3uwbkgyVXcwiifsJLcqqR95onn7sZ3jzfs1QofLv11", //shard 1
+	"15s3gAPBWfWshH4uZLwL1W4wWYamFqRs2GUMKY8Qmdhet3a6s7Z", //shard 0
 
 	// Committee of shard 1
-	"14zf4SMg7Jfmmaq64jkjcfRBY8NB9xkg9adSBkXisoEiXUWxxs3", //shard 1
+	"18BxVp5W9LwXMzeKxauAA6BC1HvUCsC6XAij2Ng1K99ghb9G6hX", //shard 1
 	"16H5t5ezMF16S5j5ZEyHP3N4nBBcsppg5bRfU5Ft8N1VZYBQu38", //shard 1
 	"156qsnqcYWPUb8PLbdowV4TtUhS8kuEboABfHgVeh4MguoPwqVj", //shard 1
 }
