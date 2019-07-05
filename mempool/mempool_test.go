@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -21,11 +20,11 @@ import (
 )
 
 var (
-	db     database.DatabaseInterface
-	bc     = &blockchain.BlockChain{}
-	pbMempool     = pubsub.NewPubSubManager()
-	tp = &TxPool{}
-	feeEstimator = make(map[byte]*FeeEstimator)
+	db               database.DatabaseInterface
+	bc               = &blockchain.BlockChain{}
+	pbMempool        = pubsub.NewPubSubManager()
+	tp               = &TxPool{}
+	feeEstimator     = make(map[byte]*FeeEstimator)
 	privateKeyShard0 = []string{
 		"112t8rqdy2bgV3kf9qb8eso8jJkgEw1RKSTqtxRNoGobZtK7YeJfzE4rPX1uYZynzP6Ym5EMjEUMGGdgeGH1pxryCU22QmtgxoMPLyaaP1J8",
 		"112t8rrGixbjxd7Fh8NoECAqX6mfgjkMRDygcejkXt8NCqZVU7BjFNRaDMjdGao5KRiRg7Dn7gQdsYrXLzz5yxsryTUNLWkq9GaSyMGYKxtT",
@@ -33,16 +32,16 @@ var (
 		"112t8rqHziexNp48PRHtnqASEAchfRaWM2QTtk9eBbaqCZdUMZ4LHgAesBW7AfPKAc97mn7smoGr8SKiiXKmuvaHDKNJYK2zT7oAHDVvpXmc",
 		"112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC",
 	}
-	stakingPublicKey = "151vzKx6AaQs8Jw5Q8PefGSPu3E16w2E2tSRXd1tEyM1qUA4H1r" // public key of 112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC
+	stakingPublicKey        = "151vzKx6AaQs8Jw5Q8PefGSPu3E16w2E2tSRXd1tEyM1qUA4H1r" // public key of 112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC
 	receiverPaymentAddress1 = "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi"
 	receiverPaymentAddress2 = "1Uv2wgU5FR5jjeN3uY3UJ4SYYyjqj97spYBEDa6cTLGiP3w6BCY7mqmASKwXz8hXfLr6mpDjhWDJ8TiM5v5U5f2cxxqCn5kwy5JM9wBgi"
-	commonFee = int64(10)
-	noFee = int64(0)
-	defaultTokenParams = make(map[string]interface{})
-	defaultTokenReceiver = make(map[string]interface{})
+	commonFee               = int64(10)
+	noFee                   = int64(0)
+	defaultTokenParams      = make(map[string]interface{})
+	defaultTokenReceiver    = make(map[string]interface{})
 )
 var _ = func() (_ struct{}) {
-	for i:=0; i< 255; i++ {
+	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		feeEstimator[shardID] = NewFeeEstimator(
 			DefaultEstimateFeeMaxRollback,
@@ -51,25 +50,25 @@ var _ = func() (_ struct{}) {
 	}
 	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/"))
 	if err != nil {
-		fmt.Println("Could not open database connection")
+		Logger.log.Info("Could not open database connection")
 		return
 	}
 	err = bc.InitForTest(&blockchain.Config{
-		DataBase: db,
+		DataBase:      db,
 		PubSubManager: pbMempool,
-		ChainParams: &blockchain.ChainTestParam,
+		ChainParams:   &blockchain.ChainTestParam,
 	})
 	if err != nil {
 		panic("Could not init blockchain")
 	}
 	tp.Init(&Config{
-		DataBase: db,
-		BlockChain: bc,
-		PubSubManager: pbMempool,
+		DataBase:          db,
+		BlockChain:        bc,
+		PubSubManager:     pbMempool,
 		IsLoadFromMempool: false,
-		PersistMempool: false,
-		FeeEstimator: feeEstimator,
-		ChainParams: &blockchain.ChainTestParam,
+		PersistMempool:    false,
+		FeeEstimator:      feeEstimator,
+		ChainParams:       &blockchain.ChainTestParam,
 	})
 	var transactions []metadata.Transaction
 	for _, privateKey := range privateKeyShard0 {
@@ -77,13 +76,13 @@ var _ = func() (_ struct{}) {
 		transactions = append(transactions, txs[0])
 	}
 	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
-		Header: blockchain.ShardHeader{ ShardID: 0},
+		Header: blockchain.ShardHeader{ShardID: 0},
 		Body: blockchain.ShardBody{
 			Transactions: transactions,
 		},
 	})
 	if err != nil {
-		fmt.Println("Can not fetch transaction")
+		Logger.log.Info("Can not fetch transaction")
 		return
 	}
 	defaultTokenParams["TokenID"] = ""
@@ -99,7 +98,8 @@ var _ = func() (_ struct{}) {
 	transaction.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
-func ResetMempoolTest()  {
+
+func ResetMempoolTest() {
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbersHashH = make(map[common.Hash][]common.Hash)
 	tp.TokenIDPool = make(map[common.Hash]string)
@@ -130,16 +130,17 @@ func initTx(amount string, privateKey string, db database.DatabaseInterface) []m
 	}
 	return initTxs
 }
+
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
 func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resultOutputCoins []*privacy.OutputCoin, remainOutputCoins []*privacy.OutputCoin, totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]*privacy.OutputCoin, 0)
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	totalResultOutputCoinAmount = uint64(0)
-	
+
 	// either take the smallest coins, or a single largest one
 	var outCoinOverLimit *privacy.OutputCoin
 	outCoinsUnderLimit := make([]*privacy.OutputCoin, 0)
-	
+
 	for _, outCoin := range outCoins {
 		if outCoin.CoinDetails.Value < amount {
 			outCoinsUnderLimit = append(outCoinsUnderLimit, outCoin)
@@ -152,11 +153,11 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 			outCoinOverLimit = outCoin
 		}
 	}
-	
+
 	sort.Slice(outCoinsUnderLimit, func(i, j int) bool {
 		return outCoinsUnderLimit[i].CoinDetails.Value < outCoinsUnderLimit[j].CoinDetails.Value
 	})
-	
+
 	for _, outCoin := range outCoinsUnderLimit {
 		if totalResultOutputCoinAmount < amount {
 			totalResultOutputCoinAmount += outCoin.CoinDetails.Value
@@ -165,7 +166,7 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
-	
+
 	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.Value > 2*amount || totalResultOutputCoinAmount < amount) {
 		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
 		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
@@ -173,7 +174,7 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 	} else if outCoinOverLimit != nil {
 		remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
 	}
-	
+
 	if totalResultOutputCoinAmount < amount {
 		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, errors.New("Not enough coin")
 	} else {
@@ -181,13 +182,13 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 	}
 }
 
-func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacyCoin bool) metadata.Transaction{
+func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacyCoin bool) metadata.Transaction {
 	// get sender key set from private key
 	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
 	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
 	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	
+
 	receiversPaymentAddressStrParam := make(map[string]interface{})
 	receiversPaymentAddressStrParam[receiverPaymentAddress2] = 50
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
@@ -208,7 +209,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	if err != nil {
-		fmt.Println("Can't create transaction", err)
+		Logger.log.Info("Can't create transaction", err)
 		return nil
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
@@ -218,15 +219,15 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 		}
 	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
-		fmt.Println("Can't create transaction")
+		Logger.log.Info("Can't create transaction")
 		return nil
 	}
 	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
 	if err != nil {
-		fmt.Println("Can't create transaction", err)
+		Logger.log.Info("Can't create transaction", err)
 		return nil
 	}
-	
+
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, nil, 1)
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
@@ -235,7 +236,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
 			if err != nil {
-				fmt.Println("Can't create transaction", err)
+				Logger.log.Info("Can't create transaction", err)
 				return nil
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
@@ -260,14 +261,14 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	return &tx
 }
 
-func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon bool) metadata.Transaction{
+func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon bool) metadata.Transaction {
 	// get sender key set from private key
 	hasPrivacyCoin := false
 	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
 	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
 	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	
+
 	receiversPaymentAddressStrParam := make(map[string]interface{})
 	if isBeacon {
 		receiversPaymentAddressStrParam[common.BurningAddress] = tp.config.ChainParams.StakingAmountShard * 3
@@ -292,7 +293,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	if err != nil {
-		fmt.Println("Can't create transaction", err)
+		Logger.log.Info("Can't create transaction", err)
 		return nil
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
@@ -302,12 +303,12 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 		}
 	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
-		fmt.Println("Can't create transaction")
+		Logger.log.Info("Can't create transaction")
 		return nil
 	}
 	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
 	if err != nil {
-		fmt.Println("Can't create transaction", err)
+		Logger.log.Info("Can't create transaction", err)
 		return nil
 	}
 	paymentAddress, _ := senderKeySet.Serialize(wallet.PaymentAddressType)
@@ -325,7 +326,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
 			if err != nil {
-				fmt.Println("Can't create transaction", err)
+				Logger.log.Info("Can't create transaction", err)
 				return nil
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
@@ -349,14 +350,14 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	}
 	return &tx
 }
-func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, tokenParamsRaw map[string]interface{}) metadata.Transaction{
+func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, tokenParamsRaw map[string]interface{}) metadata.Transaction {
 	var hasPrivacyCoin = false
 	// get sender key set from private key
 	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
 	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
 	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	
+
 	receiversPaymentAddressStrParam := make(map[string]interface{})
 	receiversPaymentAddressStrParam[receiverPaymentAddress2] = 50
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
@@ -377,7 +378,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	if err != nil {
-		fmt.Println("Can't create transaction", err)
+		Logger.log.Info("Can't create transaction", err)
 		return nil
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
@@ -387,12 +388,12 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 		}
 	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
-		fmt.Println("Can't create transaction")
+		Logger.log.Info("Can't create transaction")
 		return nil
 	}
 	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
 	if err != nil {
-		fmt.Println("Can't create transaction", err)
+		Logger.log.Info("Can't create transaction", err)
 		return nil
 	}
 	tokenParams := &transaction.CustomTokenParamTx{
@@ -403,7 +404,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 	}
 	tokenParams.Receiver, _ = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	
+
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, tokenParams, nil, 1)
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
@@ -412,7 +413,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
 			if err != nil {
-				fmt.Println("Can't create transaction", err)
+				Logger.log.Info("Can't create transaction", err)
 				return nil
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
@@ -439,9 +440,9 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 }
 func TestTxPoolGetTxsInMem(t *testing.T) {
 	ResetMempoolTest()
-	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee,false)
-	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee,false)
-	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee,false)
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee, false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee, false)
 	txDesc1 := createTxDescMempool(tx1, 1, uint64(commonFee), 0)
 	txDesc2 := createTxDescMempool(tx2, 1, uint64(commonFee), 0)
 	txDesc3 := createTxDescMempool(tx3, 1, uint64(commonFee), 0)
@@ -454,9 +455,9 @@ func TestTxPoolGetTxsInMem(t *testing.T) {
 	}
 }
 func TestTxPoolGetSerialNumbersHashH(t *testing.T) {
-	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee,false)
-	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee,false)
-	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee,false)
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee, false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee, false)
 	tp.poolSerialNumbersHashH[*tx1.Hash()] = tx1.ListSerialNumbersHashH()
 	tp.poolSerialNumbersHashH[*tx2.Hash()] = tx2.ListSerialNumbersHashH()
 	tp.poolSerialNumbersHashH[*tx3.Hash()] = tx3.ListSerialNumbersHashH()
@@ -467,7 +468,7 @@ func TestTxPoolGetSerialNumbersHashH(t *testing.T) {
 }
 func TestTxPoolIsTxInPool(t *testing.T) {
 	ResetMempoolTest()
-	tx := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee,false)
+	tx := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false)
 	if tp.isTxInPool(tx.Hash()) {
 		t.Fatalf("Expect %+v to be NOT in pool", *tx.Hash())
 	}
@@ -480,9 +481,9 @@ func TestTxPoolIsTxInPool(t *testing.T) {
 }
 func TestTxPoolAddTx(t *testing.T) {
 	ResetMempoolTest()
-	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10,false)
-	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10,false)
-	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10,false)
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false)
 	txDesc1 := createTxDescMempool(tx1, 1, 10, 0)
 	txDesc2 := createTxDescMempool(tx2, 1, 10, 0)
 	txDesc3 := createTxDescMempool(tx3, 1, 10, 0)
@@ -499,12 +500,12 @@ func TestTxPoolAddTx(t *testing.T) {
 func TestTxPoolValidateTransaction(t *testing.T) {
 	ResetMempoolTest()
 	salaryTx := initTx("100", privateKeyShard0[0], db)
-	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee,false)
-	tx1DS := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee + 5,false)
-	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee,false)
-	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee,false)
-	tx4 := CreateAndSaveTestNormalTransaction(privateKeyShard0[3], noFee,false)
-	tx5 := CreateAndSaveTestNormalTransaction(privateKeyShard0[4], commonFee,false)
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false)
+	tx1DS := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee+5, false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee, false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee, false)
+	tx4 := CreateAndSaveTestNormalTransaction(privateKeyShard0[3], noFee, false)
+	tx5 := CreateAndSaveTestNormalTransaction(privateKeyShard0[4], commonFee, false)
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
 	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams)
 	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
@@ -564,7 +565,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	// Check Condition 1: Sanity Validate Info Length
 	ResetMempoolTest()
 	tempByte := []byte{}
-	for i:=0;i<514;i++{
+	for i := 0; i < 514; i++ {
 		tempByte = append(tempByte, byte(i))
 	}
 	tx4.(*transaction.Tx).Info = tempByte
@@ -634,7 +635,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	// check Condition 7: Check double spend with blockchain
 	ResetMempoolTest()
 	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
-		Header: blockchain.ShardHeader{ ShardID: 0},
+		Header: blockchain.ShardHeader{ShardID: 0},
 		Body: blockchain.ShardBody{
 			Transactions: []metadata.Transaction{tx1},
 		},
