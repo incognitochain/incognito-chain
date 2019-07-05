@@ -112,7 +112,9 @@ func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoin
 	key = append(key, publicKey...)
 	batchData := []database.BatchData{}
 	for _, outputCoin := range outputCoinArr {
-		keyTemp := append(key, common.HashB(outputCoin)...)
+		keyTemp := make([]byte, len(key))
+		copy(keyTemp, key)
+		keyTemp = append(keyTemp, common.HashB(outputCoin)...)
 		/* deprecated
 		if err := db.Put(keyTemp, outputCoin); err != nil {
 			return err
@@ -169,6 +171,7 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 			return err
 		}
 
+		// len of commitment array
 		if err := db.Put(keySpec3, newIndex); err != nil {
 			return err
 		}
@@ -310,9 +313,23 @@ func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID 
 	key = append(key, shardID)
 
 	// "snderivator-data:nil"
+	batchData := []database.BatchData{}
 	for _, snd := range sndArray {
-		keySpec := append(key, snd...)
-		if err := db.Put(keySpec, []byte{}); err != nil {
+		keySpec := make([]byte, len(key))
+		copy(keySpec, key)
+		keySpec = append(keySpec, snd...)
+		// deprecated
+		/*if err := db.Put(keySpec, []byte{}); err != nil {
+			return err
+		}*/
+		batchData = append(batchData, database.BatchData{
+			Key:   keySpec,
+			Value: []byte{},
+		})
+	}
+	if len(batchData) > 0 {
+		err := db.PutBatch(batchData)
+		if err != nil {
 			return err
 		}
 	}
