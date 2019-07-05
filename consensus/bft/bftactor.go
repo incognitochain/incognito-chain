@@ -27,6 +27,12 @@ type PrepareMsg struct {
 	Timestamp  int64
 }
 
+type SigStatus struct {
+	IsOk       bool
+	Verified   bool
+	SigContent string
+}
+
 type BFTCore struct {
 	ChainKey   string
 	Chain      chain.ChainInterface
@@ -44,8 +50,9 @@ type BFTCore struct {
 	PrepareMsgCh chan PrepareMsg
 	StopCh       chan int
 
-	PrepareMsgs map[string]map[string]bool
-	Blocks      map[string]chain.BlockInterface
+	PrepareMsgs map[string]map[string]SigStatus
+
+	Blocks map[string]chain.BlockInterface
 
 	IsRunning bool
 }
@@ -76,7 +83,7 @@ func (e *BFTCore) Stop() {
 func (e *BFTCore) Start() {
 	e.IsRunning = true
 	e.StopCh = make(chan int)
-	e.PrepareMsgs = map[string]map[string]bool{}
+	e.PrepareMsgs = map[string]map[string]SigStatus{}
 	e.Blocks = map[string]chain.BlockInterface{}
 
 	e.ProposeMsgCh = make(chan ProposeMsg)
@@ -84,6 +91,7 @@ func (e *BFTCore) Start() {
 
 	ticker := time.Tick(100 * time.Millisecond)
 
+	//TODO: clean up buffer msgs
 	go func() {
 		for {
 			select {
@@ -91,21 +99,22 @@ func (e *BFTCore) Start() {
 				return
 			case b := <-e.ProposeMsgCh:
 				e.Blocks[b.RoundKey] = b.Block
+
 			case sig := <-e.PrepareMsgCh:
-				if e.Chain.ValidateSignature(e.Block, sig.ContentSig) {
-					if e.PrepareMsgs[sig.RoundKey] == nil {
-						e.PrepareMsgs[sig.RoundKey] = map[string]bool{}
-					}
-					e.PrepareMsgs[sig.RoundKey][sig.Pubkey] = sig.IsOk
+				if e.PrepareMsgs[sig.RoundKey] == nil {
+					e.PrepareMsgs[sig.RoundKey] = map[string]SigStatus{}
 				}
+				e.PrepareMsgs[sig.RoundKey][sig.Pubkey] = SigStatus{sig.IsOk, false, sig.ContentSig}
+
 			case <-ticker:
+				if e.Chain.GetNodePubKeyCommitteeIndex() == -1 {
+					return
+				}
+
 				if e.Chain.IsReady() {
-					if !e.isInTimeFrame() {
+					if !e.isInTimeFrame() || e.State == "" {
 						e.enterNewRound()
 					}
-				} else {
-					//if not ready, stay in new round phase
-					e.enterNewRound()
 				}
 
 				switch e.State {
@@ -116,6 +125,7 @@ func (e *BFTCore) Start() {
 						e.Block = e.Blocks[roundKey]
 						e.enterPreparePhase()
 					}
+
 				case PREPARE:
 					//retrieve all block with next height and check for majority vote
 					if e.NotYetSendPrepare {
@@ -124,10 +134,12 @@ func (e *BFTCore) Start() {
 
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
 					if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == 1 {
+						//TODO: aggregate signature
 						e.Chain.InsertBlk(e.Block, true)
 						e.enterNewRound()
 					}
 					if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == -1 {
+						//TODO: aggregate signature
 						e.Chain.InsertBlk(e.Block, false)
 						e.enterNewRound()
 					}
@@ -138,10 +150,9 @@ func (e *BFTCore) Start() {
 	}()
 }
 
-// create new block (sequence number)
 func (e *BFTCore) enterProposePhase() {
 	if !e.isInTimeFrame() || e.State == PROPOSE {
-		return //not in right time frame or already in propose phase
+		return
 	}
 	e.setState(PROPOSE)
 
@@ -155,41 +166,23 @@ func (e *BFTCore) enterProposePhase() {
 
 }
 
-//listen for block
 func (e *BFTCore) enterListenPhase() {
 	if !e.isInTimeFrame() || e.State == LISTEN {
-		return //not in right time frame or already in listen phase
+		return
 	}
 	e.setState(LISTEN)
-	//e.debug("start listen block")
 }
 
-//send prepare message (signature of that message & sequence number) and wait for > 2/3 signature of nodes
-//block for the message and sequence number
 func (e *BFTCore) enterPreparePhase() {
 	if !e.isInTimeFrame() || e.State == PREPARE {
-		return //not in right time frame or already in prepare phase
+		return
 	}
 	e.setState(PREPARE)
 	e.validateAndSendVote()
-
-}
-
-func (e *BFTCore) validateAndSendVote() {
-	if e.Chain.ValidateBlock(e.Block) == 1 {
-		e.NotYetSendPrepare = false
-		msg, _ := MakeBFTPrepareMsg(true, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
-		go e.Chain.PushMessageToValidator(msg)
-	} else if e.Chain.ValidateBlock(e.Block) == -1 {
-		//TODO: could send vote nil to this block
-		e.NotYetSendPrepare = false
-	} else {
-		e.NotYetSendPrepare = true
-	}
 }
 
 func (e *BFTCore) enterNewRound() {
-	//if chain is not ready, return
+	//if chain is not ready,  return
 	if !e.Chain.IsReady() {
 		return
 	}
@@ -198,20 +191,14 @@ func (e *BFTCore) enterNewRound() {
 	if e.isInTimeFrame() && e.State != NEWROUND {
 		return
 	}
-
 	e.setState(NEWROUND)
-
-	//wait for min blk time
 	e.waitForNextRound()
 
-	//move to next phase
-
-	//create new round
 	e.Round = e.getCurrentRound()
 	e.NextHeight = e.Chain.GetHeight() + 1
 	e.Block = nil
 
-	if e.Chain.GetNodePubKeyIndex() == (e.Chain.GetLastProposerIndex()+1+int(e.Round))%e.Chain.GetCommitteeSize() {
+	if e.Chain.GetNodePubKeyCommitteeIndex() == (e.Chain.GetLastProposerIndex()+1+int(e.Round))%e.Chain.GetCommitteeSize() {
 		fmt.Println("BFT: new round propose")
 		e.enterProposePhase()
 	} else {

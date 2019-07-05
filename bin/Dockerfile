@@ -2,8 +2,8 @@ FROM alpine:3.9
 
 RUN apk add bind-tools
 
-ARG commit=commit
-ENV commit=$commit
+
+
 
 
 COPY ./bootnode /
@@ -48,6 +48,9 @@ RUN mkdir /utility
 #COPY ./txs-shard1-privacy-3000.2.json /utility/
 #COPY ./txs-shard1-privacy-3000.3.json /utility/
 CMD ["/run_incognito.sh"]
+
+ARG commit=commit
+ENV commit=$commit
 
 COPY ./incognito /
 RUN chmod +x /incognito
