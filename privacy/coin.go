@@ -20,7 +20,7 @@ type Coin struct {
 	Info           []byte //256 bytes
 }
 
-// Init initializes a coin
+// Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.PublicKey = new(EllipticPoint).Zero()
 	coin.CoinCommitment = new(EllipticPoint).Zero()
@@ -208,6 +208,7 @@ type InputCoin struct {
 	CoinDetails *Coin
 }
 
+// Init (InputCoin) initializes a input coin
 func (inputCoin *InputCoin) Init() *InputCoin {
 	if inputCoin.CoinDetails == nil {
 		inputCoin.CoinDetails = new(Coin).Init()
@@ -215,18 +216,19 @@ func (inputCoin *InputCoin) Init() *InputCoin {
 	return inputCoin
 }
 
+// Bytes (InputCoin) converts a input coin's details to a bytes array
+// Each fields in coin is saved in len - body format
 func (inputCoin *InputCoin) Bytes() []byte {
 	return inputCoin.CoinDetails.Bytes()
 }
 
+// SetBytes (InputCoin) receives a coinBytes (in bytes array), and
+// reverts coinBytes to a InputCoin object
 func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
-	if len(bytes) == 0 {
-		return errors.New("bytes array is empty")
-	}
-
 	inputCoin.CoinDetails = new(Coin)
 	return inputCoin.CoinDetails.SetBytes(bytes)
 }
+
 
 type OutputCoin struct {
 	CoinDetails          *Coin
