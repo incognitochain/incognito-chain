@@ -37,12 +37,19 @@ func (coin *Coin) GetPubKeyLastByte() byte {
 	return pubKeyBytes[len(pubKeyBytes)-1]
 }
 
+// MarshalJSON (Coin) converts coin to bytes array,
+// base58 check encode that bytes array into string
+// json.Marshal the string
 func (coin Coin) MarshalJSON() ([]byte, error) {
 	data := coin.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
+// UnmarshalJSON (Coin) receives bytes array of coin (it was be MarshalJSON before),
+// json.Unmarshal the bytes array to string
+// base58 check decode that string to bytes array
+// and set bytes array to coin
 func (coin *Coin) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
@@ -58,6 +65,15 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 func (coin *Coin) HashH() *common.Hash {
 	hash := common.HashH(coin.Bytes())
 	return &hash
+}
+
+//CommitAll commits a coin with 5 attributes include:
+// public key, value, serial number derivator, shardID form last byte public key, randomness
+func (coin *Coin) CommitAll() {
+	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
+	coin.CoinCommitment = PedCom.CommitAll(values)
+	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }
 
 // Bytes converts a coin's details to a bytes array
@@ -229,18 +245,23 @@ func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 	return inputCoin.CoinDetails.SetBytes(bytes)
 }
 
-
+// OutputCoin represents a output coin of transaction
+// It contains CoinDetails and CoinDetailsEncrypted (encrypted value and randomness)
+// CoinDetailsEncrypted is nil when you send tx without privacy
 type OutputCoin struct {
 	CoinDetails          *Coin
 	CoinDetailsEncrypted *Ciphertext
 }
 
+// Init (OutputCoin) initializes a output coin
 func (outputCoin *OutputCoin) Init() *OutputCoin {
 	outputCoin.CoinDetails = new(Coin).Init()
 	outputCoin.CoinDetailsEncrypted = new(Ciphertext)
 	return outputCoin
 }
 
+// Bytes (OutputCoin) converts a output coin's details to a bytes array
+// Each fields in coin is saved in len - body format
 func (outputCoin *OutputCoin) Bytes() []byte {
 	var outCoinBytes []byte
 
@@ -258,9 +279,11 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 	return outCoinBytes
 }
 
+// SetBytes (OutputCoin) receives a coinBytes (in bytes array), and
+// reverts coinBytes to a OutputCoin object
 func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return errors.New("bytes array is empty")
+		return errors.New("coinBytes is empty")
 	}
 
 	offset := 0
@@ -294,13 +317,13 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // in which AES encryption scheme is used as a data encapsulation scheme,
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
 func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
-	// 32 byte first: Randomness
+	// 32-byte first: Randomness, the rest of msg is value of coin
 	msg := append(AddPaddingBigInt(outputCoin.CoinDetails.Randomness, BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
 
 	pubKeyPoint := new(EllipticPoint)
 	err := pubKeyPoint.Decompress(recipientTK)
 	if err != nil {
-		return NewPrivacyErr(EncryptOutputCoinErr, err)
+		return NewPrivacyErr(DecompressTransmissionKeyErr, err)
 	}
 
 	outputCoin.CoinDetailsEncrypted, err = HybridEncrypt(msg, pubKeyPoint)
@@ -323,12 +346,4 @@ func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
 	outputCoin.CoinDetails.Value = new(big.Int).SetBytes(msg[BigIntSize:]).Uint64()
 
 	return nil
-}
-
-//CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
-func (coin *Coin) CommitAll() {
-	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
-	coin.CoinCommitment = PedCom.CommitAll(values)
-	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }
