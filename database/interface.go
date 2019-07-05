@@ -6,10 +6,16 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+type BatchData struct {
+	Key   []byte
+	Value []byte
+}
+
 // DatabaseInterface provides the interface that is used to store blocks, txs, or any data of Incognito network.
 type DatabaseInterface interface {
 	// basic function
 	Put(key, value []byte) error
+	PutBatch(data []BatchData) error
 	Get(key []byte) ([]byte, error)
 	Delete(key []byte) error
 	HasValue(key []byte) (bool, error)

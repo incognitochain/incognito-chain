@@ -165,3 +165,10 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 		assert.Equal(t, 1, 1)
 	}
 }
+
+func TestConnManager_Start(t *testing.T) {
+	connManager := ConnManager{}
+	connManager.New(&Config{})
+	connManager.Start("")
+	connManager.Stop()
+}

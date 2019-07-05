@@ -109,7 +109,11 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*Acco
 			temp := wallet.MasterAccount.Child[j]
 			if !temp.IsImported {
 				childNumber := temp.Key.ChildNumber
-				newIndex = uint64(common.BytesToInt32(childNumber) + 1)
+				childNumberInt32, err := common.BytesToInt32(childNumber)
+				if err != nil{
+					return nil, NewWalletError(UnexpectedErr, err)
+				}
+				newIndex = uint64(childNumberInt32 + 1)
 				break
 			}
 		}
