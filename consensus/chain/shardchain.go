@@ -49,7 +49,7 @@ func (s *ShardChain) GetCommitteeSize() int {
 	return len(s.Blockchain.BestState.Shard[s.ShardID].ShardCommittee)
 }
 
-func (s *ShardChain) GetNodePubKeyIndex() int {
+func (s *ShardChain) GetNodePubKeyCommitteeIndex() int {
 	pubkey := s.Node.GetNodePubKey()
 	return common.IndexOfStr(pubkey, s.Blockchain.BestState.Shard[s.ShardID].ShardCommittee)
 }

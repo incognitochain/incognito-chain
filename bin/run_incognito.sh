@@ -1,7 +1,7 @@
 #!/bin/sh
 mkdir -p /data
 if [ "$1" == "y" ]; then
-    find /data -maxdepth 1 -mindepth 1 -type d | xargs -L 1 rm -rf
+    find /data -maxdepth 1 -mindepth 1 -type d | xargs rm -rf
 fi
 
 if [ -z $NAME ]; then

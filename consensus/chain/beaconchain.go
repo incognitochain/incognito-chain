@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -38,8 +37,7 @@ func (s *BeaconChain) GetBlkMinTime() time.Duration {
 }
 
 func (s *BeaconChain) IsReady() bool {
-	return true
-	//return s.Blockchain.Synker.IsLatest(false, 0)
+	return s.Blockchain.Synker.IsLatest(false, 0)
 }
 
 func (s *BeaconChain) GetHeight() uint64 {
@@ -50,7 +48,7 @@ func (s *BeaconChain) GetCommitteeSize() int {
 	return len(s.Blockchain.BestState.Beacon.BeaconCommittee)
 }
 
-func (s *BeaconChain) GetNodePubKeyIndex() int {
+func (s *BeaconChain) GetNodePubKeyCommitteeIndex() int {
 	pubkey := s.Node.GetNodePubKey()
 	return common.IndexOfStr(pubkey, s.Blockchain.BestState.Beacon.BeaconCommittee)
 }
@@ -71,15 +69,16 @@ func (s *BeaconChain) CreateNewBlock(round int) BlockInterface {
 			return nil
 		}
 	}
-	fmt.Println("Create new beacon block")
 	return newBlock
 }
 
-func (s *BeaconChain) ValidateBlock(interface{}) int {
+func (s *BeaconChain) ValidateBlock(block interface{}) int {
+	_ = block.(*blockchain.BeaconBlock)
 	return 1
 }
 
-func (s *BeaconChain) ValidateSignature(interface{}, string) bool {
+func (s *BeaconChain) ValidateSignature(block interface{}, sigs string) bool {
+	_ = block.(*blockchain.BeaconBlock)
 	return true
 }
 

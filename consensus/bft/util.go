@@ -1,6 +1,7 @@
 package bft
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -35,12 +36,18 @@ func (e *BFTCore) isInTimeFrame() bool {
 	return true
 }
 
-func (e *BFTCore) getMajorityVote(s map[string]bool) int {
+func (e *BFTCore) getMajorityVote(votes map[string]SigStatus) int {
 	size := e.Chain.GetCommitteeSize()
 	approve := 0
 	reject := 0
-	for _, v := range s {
-		if v {
+	for k, v := range votes {
+		if !v.Verified && !e.Chain.ValidateSignature(e.Block, v.SigContent) {
+			delete(votes, k)
+			continue
+		}
+		v.Verified = true
+
+		if v.IsOk {
 			approve++
 		} else {
 			reject++
@@ -53,4 +60,17 @@ func (e *BFTCore) getMajorityVote(s map[string]bool) int {
 		return -1
 	}
 	return 0
+}
+
+func (e *BFTCore) validateAndSendVote() {
+	if e.Chain.ValidateBlock(e.Block) == 1 {
+		msg, _ := MakeBFTPrepareMsg(true, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
+		go e.Chain.PushMessageToValidator(msg)
+		e.NotYetSendPrepare = false
+	} else if e.Chain.ValidateBlock(e.Block) == -1 {
+		//TODO: could send vote nil for this block
+		e.NotYetSendPrepare = false
+	} else {
+		e.NotYetSendPrepare = true // wait for necessary data and then send prepare in actor loop
+	}
 }

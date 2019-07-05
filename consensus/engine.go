@@ -94,7 +94,6 @@ func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
 		RoundKey:   msg.RoundKey,
 	}
 	if strings.Index(msg.ChainKey, BEACON_CHAINKEY) > -1 { //beacon
-		fmt.Println("BFT: unmarshal beacon propose msg success")
 		blk := &blockchain.BeaconBlock{}
 		err := json.Unmarshal([]byte(msg.Block), &blk)
 		if err != nil {
@@ -102,7 +101,6 @@ func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
 		}
 		proposeMsg.Block = blk
 	} else { //shard
-		fmt.Println("BFT: unmarshal shard propose msg success")
 		blk := &blockchain.ShardBlock{}
 		err := json.Unmarshal([]byte(msg.Block), &blk)
 		if err != nil {
