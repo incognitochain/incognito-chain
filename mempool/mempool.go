@@ -89,9 +89,6 @@ func (tp *TxPool) Init(cfg *Config) {
 func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
 }
-func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
-	tp.config.DataBaseMempool = db
-}
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
