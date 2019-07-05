@@ -32,7 +32,7 @@ type ChainInterface interface {
 	IsReady() bool
 	GetHeight() uint64
 	GetCommitteeSize() int
-	GetNodePubKeyIndex() int
+	GetNodePubKeyCommitteeIndex() int
 	GetLastProposerIndex() int
 	GetNodePubKey() string
 	CreateNewBlock(round int) BlockInterface
