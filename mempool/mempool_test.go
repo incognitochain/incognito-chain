@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -22,10 +23,12 @@ import (
 
 var (
 	db               database.DatabaseInterface
+	dbp              databasemp.DatabaseInterface
 	bc               = &blockchain.BlockChain{}
 	pbMempool        = pubsub.NewPubSubManager()
 	tp               = &TxPool{}
 	feeEstimator     = make(map[byte]*FeeEstimator)
+	cPendingTxs      = make(chan metadata.Transaction, 1000)
 	privateKeyShard0 = []string{
 		"112t8rqdy2bgV3kf9qb8eso8jJkgEw1RKSTqtxRNoGobZtK7YeJfzE4rPX1uYZynzP6Ym5EMjEUMGGdgeGH1pxryCU22QmtgxoMPLyaaP1J8",
 		"112t8rrGixbjxd7Fh8NoECAqX6mfgjkMRDygcejkXt8NCqZVU7BjFNRaDMjdGao5KRiRg7Dn7gQdsYrXLzz5yxsryTUNLWkq9GaSyMGYKxtT",
@@ -36,12 +39,14 @@ var (
 	stakingPublicKey        = "151vzKx6AaQs8Jw5Q8PefGSPu3E16w2E2tSRXd1tEyM1qUA4H1r" // public key of 112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC
 	receiverPaymentAddress1 = "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi"
 	receiverPaymentAddress2 = "1Uv2wgU5FR5jjeN3uY3UJ4SYYyjqj97spYBEDa6cTLGiP3w6BCY7mqmASKwXz8hXfLr6mpDjhWDJ8TiM5v5U5f2cxxqCn5kwy5JM9wBgi"
+	tokenID                 = "6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89"
 	commonFee               = int64(10)
 	noFee                   = int64(0)
 	defaultTokenParams      = make(map[string]interface{})
 	defaultTokenReceiver    = make(map[string]interface{})
 )
 var _ = func() (_ struct{}) {
+	go pbMempool.Start()
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		feeEstimator[shardID] = NewFeeEstimator(
@@ -49,9 +54,14 @@ var _ = func() (_ struct{}) {
 			DefaultEstimateFeeMinRegisteredBlocks,
 			1)
 	}
-	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/"))
+	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/mempool"))
 	if err != nil {
-		fmt.Println("Could not open database connection")
+		fmt.Println("Could not open database connection", err)
+		return
+	}
+	dbp, err = databasemp.Open("leveldbmempool", filepath.Join("./", "./testdatabase/persistmempool"))
+	if err != nil {
+		fmt.Println("Could not open persist database connection", err)
 		return
 	}
 	err = bc.InitForTest(&blockchain.Config{
@@ -64,6 +74,7 @@ var _ = func() (_ struct{}) {
 	}
 	tp.Init(&Config{
 		DataBase:          db,
+		DataBaseMempool:   dbp,
 		BlockChain:        bc,
 		PubSubManager:     pbMempool,
 		IsLoadFromMempool: false,
@@ -71,6 +82,7 @@ var _ = func() (_ struct{}) {
 		FeeEstimator:      feeEstimator,
 		ChainParams:       &blockchain.ChainTestParam,
 	})
+	tp.CPendingTxs = nil
 	var transactions []metadata.Transaction
 	for _, privateKey := range privateKeyShard0 {
 		txs := initTx("3000000", privateKey, db)
@@ -112,6 +124,8 @@ func ResetMempoolTest() {
 	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
 	tp.IsTest = false
+	tp.CPendingTxs = cPendingTxs
+	tp.config.DataBaseMempool.Reset()
 }
 func initTx(amount string, privateKey string, db database.DatabaseInterface) []metadata.Transaction {
 	var initTxs []metadata.Transaction
@@ -439,6 +453,16 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	}
 	return tx
 }
+func TestTxPoolInitChannelMempool(t *testing.T) {
+	if tp.CPendingTxs != nil {
+		t.Fatal("Expect nil channel but get", tp.CPendingTxs)
+	} else {
+		tp.InitChannelMempool(cPendingTxs)
+		if tp.CPendingTxs == nil {
+			t.Fatalf("Expect %+v channel but get nil", tp.CPendingTxs)
+		}
+	}
+}
 func TestTxPoolGetTxsInMem(t *testing.T) {
 	ResetMempoolTest()
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false)
@@ -488,6 +512,9 @@ func TestTxPoolAddTx(t *testing.T) {
 	txDesc1 := createTxDescMempool(tx1, 1, 10, 0)
 	txDesc2 := createTxDescMempool(tx2, 1, 10, 0)
 	txDesc3 := createTxDescMempool(tx3, 1, 10, 0)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
+	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	tp.addTx(txDesc1, false)
 	tp.addTx(txDesc2, false)
 	tp.addTx(txDesc3, false)
@@ -496,6 +523,74 @@ func TestTxPoolAddTx(t *testing.T) {
 	}
 	if len(tp.poolSerialNumbersHashH) != 3 {
 		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	}
+	tp.addTx(createTxDescMempool(txInitCustomToken, 1 ,10, 10),false)
+	tp.addTx(createTxDescMempool(txStakingShard, 1 ,10, 10),false)
+	if len(tp.pool) != 5 {
+		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.pool))
+	}
+	if len(tp.poolSerialNumbersHashH) != 5 {
+		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	}
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.CandidatePool) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.CandidatePool)
+	}
+	if len(tp.CandidatePool) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.CandidatePool))
+	}
+	if common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.CandidatePool)
+	}
+	if len(tp.TokenIDPool) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.TokenIDPool))
+	}
+	ResetMempoolTest()
+	tp.addTx(txDesc1, true)
+	tp.addTx(txDesc2, true)
+	tp.addTx(txDesc3, true)
+	if len(tp.pool) != 3 {
+		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.pool))
+	}
+	if len(tp.poolSerialNumbersHashH) != 3 {
+		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	}
+	tp.addTx(createTxDescMempool(txInitCustomToken, 1 ,10, 10),true)
+	tp.addTx(createTxDescMempool(txStakingBeacon, 1 ,10, 10),true)
+	if len(tp.pool) != 5 {
+		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.pool))
+	}
+	if len(tp.poolSerialNumbersHashH) != 5 {
+		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	}
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.CandidatePool) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.CandidatePool)
+	}
+	if len(tp.CandidatePool) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.CandidatePool))
+	}
+	if common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.CandidatePool)
+	}
+	if len(tp.TokenIDPool) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.TokenIDPool))
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx1.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx2.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx3.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txInitCustomToken.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingShard.Hash()); isOk && err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx1.Hash())
 	}
 }
 func TestTxPoolValidateTransaction(t *testing.T) {
