@@ -22,11 +22,10 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 	Logger.log.Infof("handleGetAllPeers params: %+v", params)
 	result := jsonresult.GetAllPeersResult{}
 	peersMap := []string{}
+
 	peers := httpServer.config.AddrMgr.AddressCache()
 	for _, peer := range peers {
-		for _, peerConn := range peer.PeerConns {
-			peersMap = append(peersMap, peerConn.RemoteRawAddress)
-		}
+		peersMap = append(peersMap, peer.RawAddress)
 	}
 	result.Peers = peersMap
 	Logger.log.Infof("handleGetAllPeers result: %+v", result)
