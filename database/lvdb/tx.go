@@ -110,9 +110,22 @@ func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoin
 	key = append(key, shardID)
 
 	key = append(key, publicKey...)
+	batchData := []database.BatchData{}
 	for _, outputCoin := range outputCoinArr {
 		keyTemp := append(key, common.HashB(outputCoin)...)
+		/* deprecated
 		if err := db.Put(keyTemp, outputCoin); err != nil {
+			return err
+		}*/
+		// Put to batch
+		batchData = append(batchData, database.BatchData{
+			Key:   keyTemp,
+			Value: outputCoin,
+		})
+	}
+	if len(batchData) > 0 {
+		err := db.PutBatch(batchData)
+		if err != nil {
 			return err
 		}
 	}
