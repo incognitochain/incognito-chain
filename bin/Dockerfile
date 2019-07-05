@@ -5,11 +5,11 @@ RUN apk add bind-tools
 ARG commit=commit
 ENV commit=$commit
 
-COPY ./incognito /
+
 COPY ./bootnode /
 COPY ./keylist.json /
 
-RUN chmod +x /incognito
+
 RUN chmod +x /bootnode
 
 COPY ./run_bootnode.sh /
@@ -47,5 +47,7 @@ RUN mkdir /utility
 #COPY ./txs-shard1-privacy-3000.1.json /utility/
 #COPY ./txs-shard1-privacy-3000.2.json /utility/
 #COPY ./txs-shard1-privacy-3000.3.json /utility/
-ENTRYPOINT /run_incognito.sh
+CMD ["/run_incognito.sh"]
 
+COPY ./incognito /
+RUN chmod +x /incognito
