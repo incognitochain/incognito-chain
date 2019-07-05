@@ -11,10 +11,6 @@ type db struct {
 	lvdb *leveldb.DB
 }
 
-type hasher interface {
-	Hash() *common.Hash
-}
-
 var (
 	prevShardPrefix         = []byte("prevShd-")
 	prevBeaconPrefix        = []byte("prevBea-")
@@ -90,6 +86,20 @@ func (db *db) Put(key, value []byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
 	}
 	return nil
+}
+
+func (db *db) Batch(data []database.BatchData) leveldb.Batch {
+	batch := new(leveldb.Batch)
+	for _, v := range data {
+		batch.Put(v.Key, v.Value)
+	}
+	return *batch
+}
+
+func (db *db) PutBatch(data []database.BatchData) error {
+	batch := db.Batch(data)
+	err := db.lvdb.Write(&batch, nil)
+	return err
 }
 
 func (db *db) Delete(key []byte) error {

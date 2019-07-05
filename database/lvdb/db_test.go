@@ -72,6 +72,21 @@ func TestDb_Base(t *testing.T) {
 		has, err = db.HasValue([]byte("a"))
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
+
+		batchData := []database.BatchData{}
+		batchData = append(batchData, database.BatchData{
+			Key:   []byte("abc1"),
+			Value: []byte("abc1"),
+		})
+		batchData = append(batchData, database.BatchData{
+			Key:   []byte("abc2"),
+			Value: []byte("abc2"),
+		})
+		err = db.PutBatch(batchData)
+		assert.Equal(t, err, nil)
+		v, err := db.Get([]byte("abc2"))
+		assert.Equal(t, err, nil)
+		assert.Equal(t, "abc2", string(v))
 	} else {
 		t.Error("DB is not open")
 	}
@@ -93,7 +108,7 @@ func TestDb_StoreShardBlock(t *testing.T) {
 
 		// test Fetch block
 		fail, err := db.FetchBlock(common.Hash{})
-		assert.NotEqual(t, nil, err)
+		assert.Equal(t, nil, err)
 		assert.Equal(t, 0, len(fail))
 		blockInBytes, err := db.FetchBlock(*block.Hash())
 		assert.Equal(t, err, nil)
@@ -481,8 +496,10 @@ func TestDb_StoreOutputCoins(t *testing.T) {
 		outputCoins := make([][]byte, 0)
 		cm1 := []byte{0, 1}
 		cm2 := []byte{0, 2}
+		cm3 := []byte{0, 3}
 		outputCoins = append(outputCoins, cm1)
 		outputCoins = append(outputCoins, cm2)
+		outputCoins = append(outputCoins, cm3)
 		tokenID := common.Hash{}
 		publicKey := common.Hash{}
 		err := db.StoreOutputCoins(tokenID, publicKey.GetBytes(), outputCoins, 1)
@@ -490,7 +507,8 @@ func TestDb_StoreOutputCoins(t *testing.T) {
 
 		data, err := db.GetOutcoinsByPubkey(tokenID, publicKey.GetBytes(), 1)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, len(data), 2)
+		assert.NotEqual(t, 2, len(data))
+		assert.Equal(t, 3, len(data))
 
 	} else {
 		t.Error("DB is not open")
@@ -507,16 +525,16 @@ func TestDb_StoreSNDerivators(t *testing.T) {
 		snd = append(snd, snd2)
 		tokenID := common.Hash{}
 
-		err := db.StoreSNDerivators(tokenID, snd, 0)
+		err := db.StoreSNDerivators(tokenID, snd, 1)
 		assert.Equal(t, err, nil)
 
-		has, err := db.HasSNDerivator(tokenID, snd1, 0)
-		assert.Equal(t, err, nil)
-		assert.Equal(t, has, true)
+		has, err := db.HasSNDerivator(tokenID, snd1, 1)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, true, has)
 
 		err = db.CleanSNDerivator()
 		assert.Equal(t, err, nil)
-		has, err = db.HasSerialNumber(tokenID, snd2, 0)
+		has, err = db.HasSerialNumber(tokenID, snd2, 1)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 	} else {
