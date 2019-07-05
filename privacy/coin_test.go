@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 }
 
 /*
-	Unit test for Bytes Coin function
+	Unit test for Bytes/SetBytes Coin function
  */
 
 func TestCoinBytesSetBytes(t *testing.T) {
@@ -125,6 +125,10 @@ func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 	assert.Equal(t, errors.New("coinBytes is empty"), err)
 }
 
+/*
+	Unit test for HashH Coin function
+ */
+
 func TestCoinHashH(t *testing.T) {
 	// init coin with fully fields
 	// init public key
@@ -145,6 +149,111 @@ func TestCoinHashH(t *testing.T) {
 	hash := coin.HashH()
 	assert.Equal(t, common.HashSize, len(hash[:]))
 }
+
+/*
+	Unit test for Bytes/SetBytes InputCoin function
+ */
+
+func TestInputCoinBytesSetBytes(t *testing.T) {
+	// init coin with fully fields
+	// init public key
+	coin := new(InputCoin).Init()
+	seedKey := []byte{1,2,3}
+	privateKey := GeneratePrivateKey(seedKey)
+	publicKey := GeneratePublicKey(privateKey)
+
+	// init other fields for coin
+	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.SNDerivator = RandScalar()
+	coin.CoinDetails.Randomness = RandScalar()
+	coin.CoinDetails.Value = uint64(100)
+	coin.CoinDetails.SerialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.SNDerivator)
+	coin.CoinDetails.CommitAll()
+	coin.CoinDetails.Info = []byte("Incognito chain")
+
+	// convert coin object to bytes array
+	coinBytes := coin.Bytes()
+
+	assert.Greater(t, len(coinBytes), 0)
+
+	// new coin object and set bytes from bytes array
+	coin2 := new(InputCoin)
+	err := coin2.SetBytes(coinBytes)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, coin, coin2)
+}
+
+func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
+	// init coin with fully fields
+	// init public key
+	coin := new(InputCoin).Init()
+	seedKey := []byte{1,2,3}
+	privateKey := GeneratePrivateKey(seedKey)
+	publicKey := GeneratePublicKey(privateKey)
+
+	// init other fields for coin (exclude serial number, coin commitment)
+	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.SNDerivator = RandScalar()
+	coin.CoinDetails.Randomness = RandScalar()
+	coin.CoinDetails.Value = uint64(100)
+	coin.CoinDetails.Info = []byte("Incognito chain")
+	coin.CoinDetails.SerialNumber = nil
+	coin.CoinDetails.CoinCommitment = nil
+
+	// convert coin object to bytes array
+	coinBytes := coin.Bytes()
+	assert.Greater(t, len(coinBytes), 0)
+
+	// new coin object and set bytes from bytes array
+	coin2 := new(InputCoin).Init()
+	err := coin2.SetBytes(coinBytes)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, coin, coin2)
+}
+
+func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
+	// init coin with fully fields
+	// init public key
+	coin := new(InputCoin).Init()
+	seedKey := []byte{1,2,3}
+	privateKey := GeneratePrivateKey(seedKey)
+	publicKey := GeneratePublicKey(privateKey)
+
+	// init other fields for coin (exclude serial number)
+	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.SNDerivator = RandScalar()
+	coin.CoinDetails.Randomness = RandScalar()
+	coin.CoinDetails.Value = uint64(100)
+	coin.CoinDetails.SerialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.SNDerivator)
+	coin.CoinDetails.CommitAll()
+	coin.CoinDetails.Info = []byte("Incognito chain")
+
+	// convert coin object to bytes array
+	coinBytes := coin.Bytes()
+	assert.Greater(t, len(coinBytes), 0)
+
+	// edit coinBytes
+	coinBytes[len(coinBytes) - 1] = byte(123)
+
+	// new coin object and set bytes from bytes array
+	coin2 := new(InputCoin).Init()
+	err := coin2.SetBytes(coinBytes)
+
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, coin, coin2)
+}
+
+func TestInputCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
+	// new coin object and set bytes from bytes array
+	coin2 := new(InputCoin).Init()
+	err := coin2.SetBytes([]byte{})
+
+	assert.Equal(t, errors.New("coinBytes is empty"), err)
+}
+
+
 
 func TestCoin(t *testing.T) {
 	privateKey := GeneratePrivateKey(new(big.Int).SetInt64(123).Bytes())
