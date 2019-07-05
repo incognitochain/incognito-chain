@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -70,11 +71,12 @@ func (s *BeaconChain) CreateNewBlock(round int) BlockInterface {
 			return nil
 		}
 	}
+	fmt.Println("Create new beacon block")
 	return newBlock
 }
 
-func (s *BeaconChain) ValidateBlock(interface{}) bool {
-	return true
+func (s *BeaconChain) ValidateBlock(interface{}) int {
+	return 1
 }
 
 func (s *BeaconChain) ValidateSignature(interface{}, string) bool {
@@ -83,6 +85,6 @@ func (s *BeaconChain) ValidateSignature(interface{}, string) bool {
 
 func (s *BeaconChain) InsertBlk(block interface{}, isValid bool) {
 	if isValid {
-		s.Blockchain.InsertShardBlock(block.(*blockchain.ShardBlock), true)
+		s.Blockchain.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
 	}
 }
