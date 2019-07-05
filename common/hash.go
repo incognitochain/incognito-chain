@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 var InvalidMaxHashSizeErr = errors.New("invalid max hash size")
@@ -12,12 +13,40 @@ var NilHashErr = errors.New("input hash is nil")
 
 type Hash [HashSize]byte
 
+// MarshalText converts hashObj string to bytes array
+func (hashObj Hash) MarshalText() ([]byte, error) {
+	return []byte(hashObj.String()), nil
+}
+
+// UnmarshalText reverts bytes array to hashObj
+func (hashObj Hash) UnmarshalText(text []byte) error {
+	copy(hashObj[:], text)
+	return nil
+}
+
 // UnmarshalJSON unmarshal json data to hashObj
 func (hashObj *Hash) UnmarshalJSON(data []byte) error {
 	hashString := ""
 	_ = json.Unmarshal(data, &hashString)
 	hashObj.Decode(hashObj, hashString)
 	return nil
+}
+
+// Format writes first few bytes of hash for debugging
+func (hashObj *Hash) Format(f fmt.State, c rune) {
+	if c == 'h' {
+		t := hashObj.String()
+		f.Write([]byte(t[:8]))
+	} else {
+		m := "%"
+		for i := 0; i < 128; i++ {
+			if f.Flag(i) {
+				m += string(i)
+			}
+		}
+		m += string(c)
+		fmt.Fprintf(f, m, hashObj[:])
+	}
 }
 
 // SetBytes sets the bytes array which represent the hash.
