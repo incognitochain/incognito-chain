@@ -14,6 +14,7 @@ func (e *BFTCore) waitForNextRound() {
 	if timeSinceLastBlk > e.Chain.GetBlkMinTime() {
 		return
 	}
+	//TODO: chunk time sleep into small time chunk -> if change view during sleep => break it
 	time.Sleep(e.Chain.GetBlkMinTime() - timeSinceLastBlk)
 }
 
