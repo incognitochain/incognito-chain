@@ -49,7 +49,7 @@ func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, block
 		bftcore.Start()
 	}
 
-	//start all active beacon, but not run
+	//start all active shard, but not run
 	for i := 0; i < node.GetActiveShardNumber(); i++ {
 		shardChain, ok := s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)]
 		if !ok {
