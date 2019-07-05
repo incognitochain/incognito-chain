@@ -389,14 +389,14 @@ func (db *db) BackupShardRewardRequest(epoch uint64, shardID byte, tokenID commo
 	backupKey = append(backupKey, key...)
 	curValue, err := db.Get(key)
 	if err != nil {
-		err1 := db.Put(backupKey, common.Uint64ToBytes(0))
-		if err1 != nil {
-			return err1
+		err := db.Put(backupKey, common.Uint64ToBytes(0))
+		if err != nil {
+			return err
 		}
 	} else {
-		err1 := db.Put(backupKey, curValue)
-		if err1 != nil {
-			return err1
+		err := db.Put(backupKey, curValue)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -416,9 +416,9 @@ func (db *db) BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash
 			return err
 		}
 	} else {
-		err1 := db.Put(backupKey, curValue)
-		if err1 != nil {
-			return err1
+		err := db.Put(backupKey, curValue)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -435,9 +435,9 @@ func (db *db) RestoreShardRewardRequest(epoch uint64, shardID byte, tokenID comm
 	if err != nil {
 		return err
 	}
-	err1 := db.Put(key, bakValue)
-	if err1 != nil {
-		return err1
+	err = db.Put(key, bakValue)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -453,9 +453,9 @@ func (db *db) RestoreCommitteeReward(committeeAddress []byte, tokenID common.Has
 	if err != nil {
 		return err
 	}
-	err1 := db.Put(key, bakValue)
-	if err1 != nil {
-		return err1
+	err = db.Put(key, bakValue)
+	if err != nil {
+		return err
 	}
 
 	return nil
