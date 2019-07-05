@@ -36,7 +36,7 @@ type ChainInterface interface {
 	GetLastProposerIndex() int
 	GetNodePubKey() string
 	CreateNewBlock(round int) BlockInterface
-	ValidateBlock(interface{}) bool
+	ValidateBlock(interface{}) int
 	ValidateSignature(interface{}, string) bool
 	InsertBlk(interface{}, bool)
 }

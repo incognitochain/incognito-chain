@@ -3,8 +3,8 @@
 #host="127.0.0.1:9334"
 host="172.105.115.134:20000"
 
-if [[ -n "$2" ]]; then
-	host="$2"
+if [[ -n "$1" ]]; then
+	host="$1"
 fi
 
 getbeaconbeststate=`cat << EOS

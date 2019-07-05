@@ -25,7 +25,7 @@ func MakeBFTPrepareMsg(isOK bool, chainKey, blkHash, roundKey string, userKeySet
 	msg.(*wire.MessageBFTPrepareV2).BlkHash = blkHash
 	msg.(*wire.MessageBFTPrepareV2).Pubkey = userKeySet.GetPublicKeyB58()
 	msg.(*wire.MessageBFTPrepareV2).RoundKey = roundKey
-	err := msg.(*wire.MessageBFTProposeV2).SignMsg(userKeySet)
+	err := msg.(*wire.MessageBFTPrepareV2).SignMsg(userKeySet)
 	if err != nil {
 		return msg, err
 	}
