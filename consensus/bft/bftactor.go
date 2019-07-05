@@ -123,7 +123,7 @@ func (e *BFTCore) Start() {
 				case LISTEN:
 					// timeout or vote nil?
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
-					if e.Blocks[roundKey] != nil && e.Chain.ValidateBlock(e.Blocks[roundKey]) >= 0 {
+					if e.Blocks[roundKey] != nil && e.Chain.ValidateBlock(e.Blocks[roundKey]) == 1 {
 						e.Block = e.Blocks[roundKey]
 						e.enterPreparePhase()
 					}
