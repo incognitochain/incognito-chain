@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -50,7 +51,7 @@ var _ = func() (_ struct{}) {
 	}
 	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/"))
 	if err != nil {
-		Logger.log.Info("Could not open database connection")
+		fmt.Println("Could not open database connection")
 		return
 	}
 	err = bc.InitForTest(&blockchain.Config{
@@ -82,7 +83,7 @@ var _ = func() (_ struct{}) {
 		},
 	})
 	if err != nil {
-		Logger.log.Info("Can not fetch transaction")
+		fmt.Println("Can not fetch transaction")
 		return
 	}
 	defaultTokenParams["TokenID"] = ""
@@ -209,7 +210,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	if err != nil {
-		Logger.log.Info("Can't create transaction", err)
+		fmt.Println("Can't create transaction", err)
 		return nil
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
@@ -219,12 +220,12 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 		}
 	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
-		Logger.log.Info("Can't create transaction")
+		fmt.Println("Can't create transaction")
 		return nil
 	}
 	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
 	if err != nil {
-		Logger.log.Info("Can't create transaction", err)
+		fmt.Println("Can't create transaction", err)
 		return nil
 	}
 
@@ -236,7 +237,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
 			if err != nil {
-				Logger.log.Info("Can't create transaction", err)
+				fmt.Println("Can't create transaction", err)
 				return nil
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
@@ -293,7 +294,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	if err != nil {
-		Logger.log.Info("Can't create transaction", err)
+		fmt.Println("Can't create transaction", err)
 		return nil
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
@@ -303,12 +304,12 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 		}
 	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
-		Logger.log.Info("Can't create transaction")
+		fmt.Println("Can't create transaction")
 		return nil
 	}
 	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
 	if err != nil {
-		Logger.log.Info("Can't create transaction", err)
+		fmt.Println("Can't create transaction", err)
 		return nil
 	}
 	paymentAddress, _ := senderKeySet.Serialize(wallet.PaymentAddressType)
@@ -326,7 +327,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
 			if err != nil {
-				Logger.log.Info("Can't create transaction", err)
+				fmt.Println("Can't create transaction", err)
 				return nil
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
@@ -378,7 +379,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	if err != nil {
-		Logger.log.Info("Can't create transaction", err)
+		fmt.Println("Can't create transaction", err)
 		return nil
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
@@ -388,12 +389,12 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 		}
 	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
-		Logger.log.Info("Can't create transaction")
+		fmt.Println("Can't create transaction")
 		return nil
 	}
 	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
 	if err != nil {
-		Logger.log.Info("Can't create transaction", err)
+		fmt.Println("Can't create transaction", err)
 		return nil
 	}
 	tokenParams := &transaction.CustomTokenParamTx{
@@ -413,7 +414,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
 			if err != nil {
-				Logger.log.Info("Can't create transaction", err)
+				fmt.Println("Can't create transaction", err)
 				return nil
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
