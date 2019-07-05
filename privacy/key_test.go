@@ -2,7 +2,6 @@ package privacy
 
 import (
 	"encoding/hex"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/stretchr/testify/assert"
 	"math/big"
@@ -64,13 +63,10 @@ func TestGenerateKey(t *testing.T) {
 	assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
 
 	sk := GeneratePrivateKey([]byte{123})
-	fmt.Printf("Spending key byte : %v\n", sk)
-	skStr := base58.Base58Check.Encode(base58.Base58Check{}, sk, 0x01)
-	fmt.Printf("Spending key string after encode : %v\n", skStr)
+	base58.Base58Check.Encode(base58.Base58Check{}, sk, 0x01)
 }
 
 func TestDecodePubKey(t *testing.T) {
 	// shard 0
-	res, _ := hex.DecodeString("023db7a5efdc3c948d9882458e74568edf42ac0f7eaa1527beb457075d57028bfe")
-	fmt.Printf("Res: %v\n", res)
+	hex.DecodeString("023db7a5efdc3c948d9882458e74568edf42ac0f7eaa1527beb457075d57028bfe")
 }

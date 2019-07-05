@@ -95,7 +95,7 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 				startHeight = waitHeight
 				continue
 			} else {
-				fmt.Println("crossshard next expectedHeight", waitHeight)
+				Logger.log.Info("crossshard next expectedHeight", waitHeight)
 				expectedHeight[blkShardID] = waitHeight
 				break
 			}
@@ -123,9 +123,9 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 			pendingPoolHeight[shardID] = append(pendingPoolHeight[shardID], block.Header.Height)
 		}
 	}
-	//fmt.Println("CrossShardPool/getNextCrossShardHeight, NEXT Height", expectedHeight)
-	//fmt.Println("CrossShardPool/Current VALID Cross Shard Pool", validPoolHeight)
-	//fmt.Println("CrossShardPool/Current PENDING Cross Shard Pool", pendingPoolHeight)
+	//Logger.log.Info("CrossShardPool/getNextCrossShardHeight, NEXT Height", expectedHeight)
+	//Logger.log.Info("CrossShardPool/Current VALID Cross Shard Pool", validPoolHeight)
+	//Logger.log.Info("CrossShardPool/Current PENDING Cross Shard Pool", pendingPoolHeight)
 	return expectedHeight, nil
 }
 

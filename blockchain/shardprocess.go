@@ -407,7 +407,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		tokenIDsfromTxs = append(tokenIDsfromTxs, tokenID)
 	}
 	sort.Slice(tokenIDsfromTxs, func(i int, j int) bool {
-		return tokenIDsfromTxs[i].Cmp(&tokenIDsfromTxs[j]) == -1
+		res, _ := tokenIDsfromTxs[i].Cmp(&tokenIDsfromTxs[j])
+		return res == -1
 	})
 
 	tokenIDsfromBlock := make([]common.Hash, 0)
@@ -415,7 +416,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		tokenIDsfromBlock = append(tokenIDsfromBlock, tokenID)
 	}
 	sort.Slice(tokenIDsfromBlock, func(i int, j int) bool {
-		return tokenIDsfromBlock[i].Cmp(&tokenIDsfromBlock[j]) == -1
+		res, _ := tokenIDsfromBlock[i].Cmp(&tokenIDsfromBlock[j])
+		return res == -1
 	})
 
 	if len(tokenIDsfromTxs) != len(tokenIDsfromBlock) {
