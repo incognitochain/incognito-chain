@@ -155,13 +155,14 @@ type FeeEstimator struct {
 	dropped []*registeredBlock
 
 	// min fee which be needed for payment on tx(per Kb data)
-	limitFee uint64
+	limitFee      uint64
+	limitFeeToken uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
-func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *FeeEstimator {
+func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64, limitFeeToken uint64) *FeeEstimator {
 	return &FeeEstimator{
 		maxRollback:         maxRollback,
 		minRegisteredBlocks: minRegisteredBlocks,
@@ -171,6 +172,7 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *
 		observed:            make(map[common.Hash]*observedTransaction),
 		dropped:             make([]*registeredBlock, 0, maxRollback),
 		limitFee:            limitFee,
+		limitFeeToken:       limitFeeToken,
 	}
 }
 
