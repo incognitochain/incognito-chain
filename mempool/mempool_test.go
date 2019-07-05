@@ -35,6 +35,11 @@ var (
 		"112t8rxr9EZUQtW2q5om7CfDZyJNF9bNWKyjYAxbsk6SrKRi4QzXLX1SabamCZ1TBJCJNvB98CNQuPLxo7fQvVVctmsBF282FBwZWtfsuRU5",
 		"112t8rqHziexNp48PRHtnqASEAchfRaWM2QTtk9eBbaqCZdUMZ4LHgAesBW7AfPKAc97mn7smoGr8SKiiXKmuvaHDKNJYK2zT7oAHDVvpXmc",
 		"112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC",
+		"112t8rrMMtHmRCH1Jw5WmvXa8k9mmaXr8jjnZ1kVJ4GrWv1Gp7ERViKSxxDkKV8MWashLon66kFRcj7wQgRCuP6wz9JPrFx4LwHoL7gYxwRR",
+		"112t8ruKHN8x7kBibEFfS9FVkSagLBdYTZBdu2S6TT8Yd149kFtQTT9yJTZjUnpgyDdkkafKm81f4zq7Sv5XjtrptUoiyBctpnx3aMRNxEgB",
+		"112t8rnweTzK3bw7UerxifPovemH8WKpBcNMeHDBcvTmAvXohwMDo3Dmm7MPV1Ci1cS9toHwBFEkBk4daaj4aST3RVJyRszefbBi3KyPtQ2k",
+		"112t8rsTnwLyHZyivAGbayRD9ASzBTju2w2gzF57JkikxEToDSf5ZY5qcn1io7MZGqMpPKHZivQnPVp3UKt7W8FeMAGuW7aAh8CMECWWrGp8",
+		"112t8rsc13sf2hep7MN4j2tfmEQJkXX9PVTervzXBig88h1Ntijq1bkM5tUiaKWBVcuoYBsr3Qsf8nRneTm3AGUuQPu4ajEWosRHx7YomUo5",
 	}
 	stakingPublicKey        = "151vzKx6AaQs8Jw5Q8PefGSPu3E16w2E2tSRXd1tEyM1qUA4H1r" // public key of 112t8rsCuDdsPecRrinj5n23onjKaCanM4JTUUyiU2rgjAL3nhEJH7VX1TYazxdWnvBudQvCvEjfhJ4hVjrdAqVK1s3a8fecmYXd8HWNHitC
 	receiverPaymentAddress1 = "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi"
@@ -145,7 +150,6 @@ func initTx(amount string, privateKey string, db database.DatabaseInterface) []m
 	}
 	return initTxs
 }
-
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
 func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resultOutputCoins []*privacy.OutputCoin, remainOutputCoins []*privacy.OutputCoin, totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]*privacy.OutputCoin, 0)
@@ -196,7 +200,6 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 		return resultOutputCoins, remainOutputCoins, totalResultOutputCoinAmount, nil
 	}
 }
-
 func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacyCoin bool) metadata.Transaction {
 	// get sender key set from private key
 	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
@@ -275,7 +278,6 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	}
 	return &tx
 }
-
 func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon bool) metadata.Transaction {
 	// get sender key set from private key
 	hasPrivacyCoin := false
@@ -515,6 +517,7 @@ func TestTxPoolAddTx(t *testing.T) {
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
 	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
+	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true)
 	tp.addTx(txDesc1, false)
 	tp.addTx(txDesc2, false)
 	tp.addTx(txDesc3, false)
@@ -524,13 +527,14 @@ func TestTxPoolAddTx(t *testing.T) {
 	if len(tp.poolSerialNumbersHashH) != 3 {
 		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
 	}
+	tp.addTx(createTxDescMempool(tx6, 1 ,10, 10),true)
 	tp.addTx(createTxDescMempool(txInitCustomToken, 1 ,10, 10),false)
 	tp.addTx(createTxDescMempool(txStakingShard, 1 ,10, 10),false)
-	if len(tp.pool) != 5 {
-		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.pool))
+	if len(tp.pool) != 6 {
+		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
 	}
-	if len(tp.poolSerialNumbersHashH) != 5 {
-		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	if len(tp.poolSerialNumbersHashH) != 6 {
+		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
 	}
 	if common.IndexOfStrInHashMap(stakingPublicKey, tp.CandidatePool) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.CandidatePool)
@@ -554,13 +558,14 @@ func TestTxPoolAddTx(t *testing.T) {
 	if len(tp.poolSerialNumbersHashH) != 3 {
 		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
 	}
+	tp.addTx(createTxDescMempool(tx6, 1 ,10, 10),true)
 	tp.addTx(createTxDescMempool(txInitCustomToken, 1 ,10, 10),true)
 	tp.addTx(createTxDescMempool(txStakingBeacon, 1 ,10, 10),true)
-	if len(tp.pool) != 5 {
-		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.pool))
+	if len(tp.pool) != 6 {
+		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
 	}
-	if len(tp.poolSerialNumbersHashH) != 5 {
-		t.Fatalf("Expect 5 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	if len(tp.poolSerialNumbersHashH) != 6 {
+		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
 	}
 	if common.IndexOfStrInHashMap(stakingPublicKey, tp.CandidatePool) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.CandidatePool)
@@ -578,19 +583,22 @@ func TestTxPoolAddTx(t *testing.T) {
 		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
 	}
 	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx2.Hash()); !isOk || err != nil {
-		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx2.Hash())
 	}
 	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx3.Hash()); !isOk || err != nil {
-		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx3.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx6.Hash()); !isOk && err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx6.Hash())
 	}
 	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txInitCustomToken.Hash()); !isOk || err != nil {
-		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txInitCustomToken.Hash())
 	}
 	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); !isOk || err != nil {
-		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txStakingBeacon.Hash())
 	}
 	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingShard.Hash()); isOk && err == nil {
-		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx1.Hash())
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", txStakingShard.Hash())
 	}
 }
 func TestTxPoolValidateTransaction(t *testing.T) {
@@ -790,5 +798,74 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	err14 = tp.validateTransaction(txInitCustomToken)
 	if err14 != nil {
 		t.Fatal("Expect no err but get ", err14)
+	}
+}
+func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
+	ResetMempoolTest()
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
+	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true)
+	_, _, err1 := tp.maybeAcceptTransaction(tx1, false, true)
+	if err1 != nil {
+		t.Fatal("Expect no error but get ", err1)
+	}
+	_, _, err2 := tp.maybeAcceptTransaction(tx2, false, true)
+	if err2 != nil {
+		t.Fatal("Expect no error but get ", err2)
+	}
+	_, _, err3 := tp.maybeAcceptTransaction(tx3, false, true)
+	if err3 != nil {
+		t.Fatal("Expect no error but get ", err3)
+	}
+	_, _, err4 := tp.maybeAcceptTransaction(txInitCustomToken, false, true)
+	if err4 != nil {
+		t.Fatal("Expect no error but get ", err4)
+	}
+	_, _, err5 := tp.maybeAcceptTransaction(txStakingBeacon, false, true)
+	if err5 != nil {
+		t.Fatal("Expect no error but get ", err5)
+	}
+	_, _, err6 := tp.maybeAcceptTransaction(tx6, false, true)
+	if err6 != nil {
+		t.Fatal("Expect no error but get ", err6)
+	}
+	if len(tp.pool) != 6 {
+		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
+	}
+	if len(tp.poolSerialNumbersHashH) != 6 {
+		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	}
+	if common.IndexOfStrInHashMap(stakingPublicKey, tp.CandidatePool) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.CandidatePool)
+	}
+	if len(tp.CandidatePool) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.CandidatePool))
+	}
+	if common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool) < 0 {
+		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.CandidatePool)
+	}
+	if len(tp.TokenIDPool) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.TokenIDPool))
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx1.Hash()); isOk || err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx1.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx2.Hash()); isOk || err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx2.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx3.Hash()); isOk || err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx3.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx6.Hash()); isOk && err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx6.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txInitCustomToken.Hash()); isOk || err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", txInitCustomToken.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); isOk || err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", txStakingBeacon.Hash())
 	}
 }
