@@ -43,7 +43,7 @@ func NewIssuingRequest(
 }
 
 func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
-	tokenID, err := common.NewHashFromStr(data["TokenID"].(string))
+	tokenID, err := common.Hash{}.NewHashFromStr(data["TokenID"].(string))
 	if err != nil {
 		return nil, errors.Errorf("TokenID incorrect")
 	}

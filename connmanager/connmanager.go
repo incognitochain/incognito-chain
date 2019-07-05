@@ -146,13 +146,17 @@ func (connManager *ConnManager) Stop() {
 	// Stop all the listeners.  There will not be any listeners if
 	// listening is disabled.
 	listener := connManager.Config.ListenerPeer
-	listener.Stop()
+	if listener != nil {
+		listener.Stop()
+	}
 
 	if connManager.cDiscoveredPeers != nil {
 		close(connManager.cDiscoveredPeers)
 	}
 
-	close(connManager.cQuit)
+	if connManager.cQuit != nil {
+		close(connManager.cQuit)
+	}
 	Logger.log.Warn("Connection manager stopped")
 }
 
