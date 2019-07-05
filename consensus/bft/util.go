@@ -1,7 +1,6 @@
 package bft
 
 import (
-	"log"
 	"time"
 )
 
@@ -22,9 +21,6 @@ func (e *BFTCore) setState(state string) {
 	e.State = state
 }
 
-/*
-Return the round is calculated since the latest block time
-*/
 func (e *BFTCore) getCurrentRound() uint64 {
 	return uint64(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
 }
@@ -57,12 +53,4 @@ func (e *BFTCore) getMajorityVote(s map[string]bool) int {
 		return -1
 	}
 	return 0
-}
-
-func (e *BFTCore) debug(s ...interface{}) {
-	//if e.PeerID == "1" {
-	s = append([]interface{}{"Peer " + e.PeerID + ": "}, s...)
-	log.Println(s...)
-	//}
-
 }

@@ -72,8 +72,8 @@ func (s *ShardChain) CreateNewBlock(round int) BlockInterface {
 	return newBlock
 }
 
-func (s *ShardChain) ValidateBlock(interface{}) bool {
-	return true
+func (s *ShardChain) ValidateBlock(interface{}) int {
+	return 1
 }
 
 func (s *ShardChain) ValidateSignature(interface{}, string) bool {
