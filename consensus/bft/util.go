@@ -41,6 +41,7 @@ func (e *BFTCore) getMajorityVote(votes map[string]SigStatus) int {
 	approve := 0
 	reject := 0
 	for k, v := range votes {
+
 		if !v.Verified && !e.Chain.ValidateSignature(e.Block, v.SigContent) {
 			delete(votes, k)
 			continue
