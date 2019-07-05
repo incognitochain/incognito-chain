@@ -20,6 +20,17 @@ type Coin struct {
 	Info           []byte //256 bytes
 }
 
+// Init initializes a coin
+func (coin *Coin) Init() *Coin {
+	coin.PublicKey = new(EllipticPoint).Zero()
+	coin.CoinCommitment = new(EllipticPoint).Zero()
+	coin.SNDerivator = new(big.Int)
+	coin.SerialNumber = new(EllipticPoint).Zero()
+	coin.Randomness = new(big.Int)
+	coin.Value = 0
+	return coin
+}
+
 // GetPubKeyLastByte returns the last byte of public key
 func (coin *Coin) GetPubKeyLastByte() byte {
 	pubKeyBytes := coin.PublicKey.Compress()
@@ -43,24 +54,14 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// return hash of coin data
+// HashH returns the SHA3-256 hashing of coin bytes array
 func (coin *Coin) HashH() *common.Hash {
 	hash := common.HashH(coin.Bytes())
 	return &hash
 }
 
-// Init initializes a coin
-func (coin *Coin) Init() *Coin {
-	coin.PublicKey = new(EllipticPoint).Zero()
-	coin.CoinCommitment = new(EllipticPoint).Zero()
-	coin.SNDerivator = new(big.Int)
-	coin.SerialNumber = new(EllipticPoint).Zero()
-	coin.Randomness = new(big.Int)
-	coin.Value = 0
-	return coin
-}
-
 // Bytes converts a coin's details to a bytes array
+// Each fields in coin is saved in len - body format
 func (coin *Coin) Bytes() []byte {
 	var coinBytes []byte
 
@@ -120,10 +121,11 @@ func (coin *Coin) Bytes() []byte {
 	return coinBytes
 }
 
-// SetBytes reverts a byte array to a Coin-type
+// SetBytes receives a coinBytes (in bytes array), and
+// reverts coinBytes to a Coin object
 func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if len(coinBytes) == 0 {
-		return nil
+		return errors.New("coinBytes is empty")
 	}
 
 	var err error
@@ -195,9 +197,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		lenField = coinBytes[offset]
+		coin.Info = make([]byte, lenField)
 		copy(coin.Info, coinBytes[offset:offset+int(lenField)])
-		offset += int(lenField)
 	}
 	return nil
 }
