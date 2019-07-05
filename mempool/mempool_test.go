@@ -139,7 +139,7 @@ func ResetMempoolTest() {
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
 	tp.config.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
-	tp.IsUnlockMempool = true
+	tp.IsUnlockMempool = false
 	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
 	tp.IsTest = false
@@ -469,7 +469,66 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	}
 	return tx
 }
+func TestTxPoolStart(t *testing.T) {
+	ResetMempoolTest()
+	cQuit := make(chan struct{})
+	go tp.Start(cQuit)
+	if tp.config.RoleInCommittees != -1 {
+		t.Fatal("Expect role is -1 but get ", tp.config.RoleInCommittees)
+	}
+	go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, int(0)))
+	now := time.Now()
+	for {
+		if tp.config.RoleInCommittees == 0 {
+			close(cQuit)
+			return
+		}
+		<-time.Tick(100*time.Millisecond)
+		if time.Since(now).Seconds() > time.Duration(10*time.Second).Seconds(){
+			t.Fatal("Fail to get role from pubsub")
+		}
+	}
+	
+}
+func TestTxPoolCheckRelayShard (t *testing.T) {
+	ResetMempoolTest()
+	tp.config.RelayShards = []byte{}
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
+	if isOK := tp.checkRelayShard(tx1); isOK {
+		t.Fatalf("Expect false but get true")
+	}
+	tp.config.RelayShards = []byte{0,1}
+	if isOK := tp.checkRelayShard(tx1); !isOK {
+		t.Fatalf("Expect true but get false")
+	}
+	tp.config.RelayShards = []byte{1,0}
+	if isOK := tp.checkRelayShard(tx1); !isOK {
+		t.Fatalf("Expect true but get false")
+	}
+	tp.config.RelayShards = []byte{0}
+	if isOK := tp.checkRelayShard(tx1); !isOK {
+		t.Fatalf("Expect true but get false")
+	}
+}
+func TestTxPoolCheckPublicKeyRole(t *testing.T) {
+	ResetMempoolTest()
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
+	tp.config.RoleInCommittees = -1
+	if isOK := tp.checkPublicKeyRole(tx1); isOK {
+		t.Fatalf("Expect false but get true")
+	}
+	tp.config.RoleInCommittees = 1
+	if isOK := tp.checkPublicKeyRole(tx1); isOK {
+		t.Fatalf("Expect false but get true")
+	}
+	tp.config.RoleInCommittees = 0
+	if isOK := tp.checkPublicKeyRole(tx1); !isOK {
+		t.Fatalf("Expect true but get false")
+	}
+	
+}
 func TestTxPoolInitChannelMempool(t *testing.T) {
+	tp.CPendingTxs = nil
 	if tp.CPendingTxs != nil {
 		t.Fatal("Expect nil channel but get", tp.CPendingTxs)
 	} else {
@@ -887,8 +946,35 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); isOk && err == nil {
 		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", txStakingBeacon.Hash())
 	}
+	// persist mempool
+	ResetMempoolTest()
+	tp.maybeAcceptTransaction(tx1, true, true)
+	tp.maybeAcceptTransaction(tx2, true, true)
+	tp.maybeAcceptTransaction(tx3, true, true)
+	tp.maybeAcceptTransaction(txInitCustomToken, true, true)
+	tp.maybeAcceptTransaction(txStakingBeacon, true, true)
+	tp.maybeAcceptTransaction(tx6, true, true)
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx1.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx1.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx2.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx2.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx3.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx3.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx6.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", tx6.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txInitCustomToken.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txInitCustomToken.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); !isOk || err != nil {
+		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txStakingBeacon.Hash())
+	}
 }
 func TestTxPoolRemoveTx(t *testing.T) {
+	// no persist mempool
 	ResetMempoolTest()
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
 	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false)
@@ -896,6 +982,7 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true)
+	txs := []metadata.Transaction{tx1, tx2, tx3, txInitCustomToken, txStakingBeacon, tx6}
 	tp.maybeAcceptTransaction(tx1, false, true)
 	tp.maybeAcceptTransaction(tx2, false, true)
 	tp.maybeAcceptTransaction(tx3, false, true)
@@ -920,7 +1007,6 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	if len(tp.TokenIDPool) != 1 {
 		t.Fatalf("Expect 1 but get %+v", len(tp.TokenIDPool))
 	}
-	txs := []metadata.Transaction{tx1, tx2, tx3, txInitCustomToken, txStakingBeacon, tx6}
 	tp.RemoveTx(txs, true)
 	if len(tp.pool) != 0 {
 		t.Fatalf("Expect 0 transaction from mempool but get %+v", len(tp.pool))
@@ -954,5 +1040,141 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	if common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool) > 0 {
 		t.Fatalf("Expect %+v NOT in pool but get %+v", stakingPublicKey, tp.CandidatePool)
 	}
-
+	// no persist mempool
+	ResetMempoolTest()
+	tp.config.PersistMempool = true
+	tp.maybeAcceptTransaction(tx1, true, true)
+	tp.maybeAcceptTransaction(tx2, true, true)
+	tp.maybeAcceptTransaction(tx3, true, true)
+	tp.maybeAcceptTransaction(txInitCustomToken, true, true)
+	tp.maybeAcceptTransaction(txStakingBeacon, true, true)
+	tp.maybeAcceptTransaction(tx6, true, true)
+	tp.RemoveTx(txs, true)
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx1.Hash()); isOk && err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx1.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx2.Hash()); isOk && err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx2.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx3.Hash()); isOk && err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx3.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(tx6.Hash()); isOk && err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", tx6.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txInitCustomToken.Hash()); isOk && err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", txInitCustomToken.Hash())
+	}
+	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); isOk && err == nil {
+		t.Fatalf("Expect tx hash %+v NOT in database mempool but counter err", txStakingBeacon.Hash())
+	}
+}
+func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
+	ResetMempoolTest()
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
+	// test relay shard and role in committeess
+	tp.config.RelayShards = []byte{}
+	tp.config.RoleInCommittees = -1
+	_,_,err1 := tp.MaybeAcceptTransaction(tx1)
+	if err1 == nil {
+		t.Fatal("Expect unexpected transaction error error but no error")
+	} else {
+		if err1.(MempoolTxError).Code != ErrCodeMessage[UnexpectedTransactionError].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+		}
+	}
+	// test size of mempool
+	tp.config.RelayShards = []byte{0}
+	_,_,err2 := tp.MaybeAcceptTransaction(tx1)
+	if err2 == nil {
+		t.Fatal("Expect max pool size error error but no error")
+	} else {
+		if err2.(MempoolTxError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+		}
+	}
+	tp.config.RoleInCommittees = 0
+	_,_,err3 := tp.MaybeAcceptTransaction(tx1)
+	if err3 == nil {
+		t.Fatal("Expect max pool size error error but no error")
+	} else {
+		if err3.(MempoolTxError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+		}
+	}
+	tp.config.MaxTx = 1
+	_,_,err4 := tp.MaybeAcceptTransaction(tx1)
+	if err4 != nil {
+		t.Fatal("Expect no error but get ", err4)
+	}
+	ResetMempoolTest()
+	tp.config.MaxTx = 1
+	tp.IsBlockGenStarted = true
+	tp.IsUnlockMempool = true
+	tp.config.RelayShards = []byte{0}
+	tp.config.RoleInCommittees = 0
+	// test push transaction to block gen
+	_,_,err5 := tp.MaybeAcceptTransaction(tx1)
+	if err5 != nil {
+		t.Fatal("Expect no error but get ", err5)
+	}
+	go func () {
+		tx := <-cPendingTxs
+		if !tx.Hash().IsEqual(tx1.Hash()) {
+			t.Fatalf("Expect get %+v but get %+v ", tx1.Hash(), tx.Hash())
+		}
+	}()
+}
+func TestTxPoolMarkForwardedTransaction(t *testing.T) {
+	ResetMempoolTest()
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
+	txHash1, txDesc1, err := tp.maybeAcceptTransaction(tx1, false, true)
+	if err != nil {
+		t.Fatal("Expect no error but get ", err)
+	}
+		tp.MarkForwardedTransaction(*txHash1)
+		if !txDesc1.IsFowardMessage {
+			t.Fatal("Tx Should be marked as forwarded already")
+		}
+}
+func TestTxPoolEmptyPool(t *testing.T) {
+	ResetMempoolTest()
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
+	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
+	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true)
+	tp.maybeAcceptTransaction(tx1, true, true)
+	tp.maybeAcceptTransaction(tx2, true, true)
+	tp.maybeAcceptTransaction(tx3, true, true)
+	tp.maybeAcceptTransaction(txInitCustomToken, true, true)
+	tp.maybeAcceptTransaction(txStakingBeacon, true, true)
+	tp.maybeAcceptTransaction(tx6, true, true)
+	if len(tp.pool) != 6 {
+		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
+	}
+	if len(tp.poolSerialNumbersHashH) != 6 {
+		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
+	}
+	if len(tp.CandidatePool) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.CandidatePool))
+	}
+	if len(tp.TokenIDPool) != 1 {
+		t.Fatalf("Expect 1 but get %+v", len(tp.TokenIDPool))
+	}
+	tp.EmptyPool()
+	
+	if len(tp.pool) != 0 {
+		t.Fatal("Can't empty pool")
+	}
+	if len(tp.poolSerialNumbersHashH) != 0 {
+		t.Fatal("Can't empty pool serial number")
+	}
+	if len(tp.CandidatePool) != 0 {
+		t.Fatal("Can't empty candidate pool")
+	}
+	if len(tp.TokenIDPool) != 0 {
+		t.Fatal("Can't empty token id pool")
+	}
 }
