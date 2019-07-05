@@ -496,8 +496,10 @@ func TestDb_StoreOutputCoins(t *testing.T) {
 		outputCoins := make([][]byte, 0)
 		cm1 := []byte{0, 1}
 		cm2 := []byte{0, 2}
+		cm3 := []byte{0, 3}
 		outputCoins = append(outputCoins, cm1)
 		outputCoins = append(outputCoins, cm2)
+		outputCoins = append(outputCoins, cm3)
 		tokenID := common.Hash{}
 		publicKey := common.Hash{}
 		err := db.StoreOutputCoins(tokenID, publicKey.GetBytes(), outputCoins, 1)
@@ -505,7 +507,8 @@ func TestDb_StoreOutputCoins(t *testing.T) {
 
 		data, err := db.GetOutcoinsByPubkey(tokenID, publicKey.GetBytes(), 1)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, len(data), 2)
+		assert.NotEqual(t, 2, len(data))
+		assert.Equal(t, 3, len(data))
 
 	} else {
 		t.Error("DB is not open")
