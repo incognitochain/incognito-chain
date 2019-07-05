@@ -127,6 +127,7 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 	}
 	return txDesc
 }
+
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp *TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
 	return tp.poolSerialNumbersHashH
@@ -149,6 +150,7 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	}
 	return false
 }
+
 /*
 // add transaction into pool
 // #1: tx
@@ -259,7 +261,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition1,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
-	
+
 	// Condition 2: Don't accept the transaction if it already exists in the pool.
 	now = time.Now()
 	if tp.isTxInPool(txHash) {
@@ -291,15 +293,28 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition3,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
-	// Condition 4: check fee of tx
+	// Condition 4: check fee PRV of tx
 	now = time.Now()
 	limitFee := tp.config.FeeEstimator[shardID].limitFee
-	txFee := tx.GetTxFee()
-	ok := tx.CheckTransactionFee(limitFee)
-	if !ok {
-		err := MempoolTxError{}
-		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
-		return err
+	if limitFee > 0 {
+		txFee := tx.GetTxFee()
+		ok := tx.CheckTransactionFee(limitFee)
+		if !ok {
+			err := MempoolTxError{}
+			err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
+			return err
+		}
+	}
+
+	limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
+	if limitFeeToken > 0 && tx.GetType() == common.TxCustomTokenPrivacyType {
+		txFee := tx.(*transaction.TxCustomTokenPrivacy).GetTxFeeToken()
+		ok := tx.(*transaction.TxCustomTokenPrivacy).TxTokenPrivacyData.TxNormal.CheckTransactionFee(limitFeeToken)
+		if !ok {
+			err := MempoolTxError{}
+			err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
+			return err
+		}
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
@@ -346,7 +361,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.DataBase)
 	if err != nil {
 		tempErr := MempoolTxError{}
-		tempErr.Init(RejectDoubleSpendWithBlockchainTx,err)
+		tempErr.Init(RejectDoubleSpendWithBlockchainTx, err)
 		return tempErr
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
