@@ -93,9 +93,9 @@ func (e *BFTCore) Start() {
 
 	//TODO: clean up buffer msgs
 	go func() {
-		for {
+		for { //actor loop
 			select {
-			case <-e.StopCh: //stop protocol -> break actor loop
+			case <-e.StopCh:
 				return
 			case b := <-e.ProposeMsgCh:
 				e.Blocks[b.RoundKey] = b.Block
@@ -108,18 +108,20 @@ func (e *BFTCore) Start() {
 
 			case <-ticker:
 				if e.Chain.GetNodePubKeyCommitteeIndex() == -1 {
-					return
+					continue
 				}
 
-				if e.Chain.IsReady() {
-					if !e.isInTimeFrame() || e.State == "" {
-						e.enterNewRound()
-					}
+				if !e.Chain.IsReady() {
+					continue
+				}
+
+				if !e.isInTimeFrame() || e.State == "" {
+					e.enterNewRound()
 				}
 
 				switch e.State {
 				case LISTEN:
-					//TODO: timeout or vote nil?
+					// timeout or vote nil?
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
 					if e.Blocks[roundKey] != nil && e.Chain.ValidateBlock(e.Blocks[roundKey]) >= 0 {
 						e.Block = e.Blocks[roundKey]
@@ -127,22 +129,21 @@ func (e *BFTCore) Start() {
 					}
 
 				case PREPARE:
-					//retrieve all block with next height and check for majority vote
+
 					if e.NotYetSendPrepare {
 						e.validateAndSendVote()
 					}
 
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
 					if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == 1 {
-						//TODO: aggregate signature
+						//TODO: aggregate sigs
 						e.Chain.InsertBlk(e.Block, true)
 						e.enterNewRound()
 					}
-					if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == -1 {
-						//TODO: aggregate signature
-						e.Chain.InsertBlk(e.Block, false)
-						e.enterNewRound()
-					}
+					//if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == -1 {
+					//	e.Chain.InsertBlk(e.Block, false)
+					//	e.enterNewRound()
+					//}
 				}
 
 			}
@@ -184,6 +185,7 @@ func (e *BFTCore) enterPreparePhase() {
 func (e *BFTCore) enterNewRound() {
 	//if chain is not ready,  return
 	if !e.Chain.IsReady() {
+		e.State = ""
 		return
 	}
 
