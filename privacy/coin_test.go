@@ -7,17 +7,143 @@ import (
 	"log"
 	"math/big"
 	"testing"
+	"errors"
 )
 
 var _ = func() (_ struct{}) {
-	Logger.Log.Info("This runs before init()!")
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	Logger.Log.Info("This runs before init()!")
 	return
 }()
 
 func TestMain(m *testing.M) {
 	log.SetOutput(ioutil.Discard)
 	m.Run()
+}
+
+/*
+	Unit test for Bytes Coin function
+ */
+
+func TestCoinBytesSetBytes(t *testing.T) {
+	// init coin with fully fields
+	// init public key
+	coin := new(Coin).Init()
+	seedKey := []byte{1,2,3}
+	privateKey := GeneratePrivateKey(seedKey)
+	publicKey := GeneratePublicKey(privateKey)
+
+	// init other fields for coin
+	coin.PublicKey.Decompress(publicKey)
+	coin.SNDerivator = RandScalar()
+	coin.Randomness = RandScalar()
+	coin.Value = uint64(100)
+	coin.SerialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.SNDerivator)
+	coin.CommitAll()
+	coin.Info = []byte("Incognito chain")
+
+	// convert coin object to bytes array
+	coinBytes := coin.Bytes()
+
+	assert.Greater(t, len(coinBytes), 0)
+
+	// new coin object and set bytes from bytes array
+	coin2 := new(Coin)
+	err := coin2.SetBytes(coinBytes)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, coin, coin2)
+}
+
+func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
+	// init coin with fully fields
+	// init public key
+	coin := new(Coin).Init()
+	seedKey := []byte{1,2,3}
+	privateKey := GeneratePrivateKey(seedKey)
+	publicKey := GeneratePublicKey(privateKey)
+
+	// init other fields for coin (exclude serial number, coin commitment)
+	coin.PublicKey.Decompress(publicKey)
+	coin.SNDerivator = RandScalar()
+	coin.Randomness = RandScalar()
+	coin.Value = uint64(100)
+	//coin.SerialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.SNDerivator)
+	//coin.CommitAll()
+	coin.Info = []byte("Incognito chain")
+
+	// convert coin object to bytes array
+	coinBytes := coin.Bytes()
+
+	assert.Greater(t, len(coinBytes), 0)
+
+	// new coin object and set bytes from bytes array
+	coin2 := new(Coin).Init()
+	err := coin2.SetBytes(coinBytes)
+
+	assert.Equal(t, nil, err)
+	assert.Equal(t, coin, coin2)
+}
+
+func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
+	// init coin with fully fields
+	// init public key
+	coin := new(Coin).Init()
+	seedKey := []byte{1,2,3}
+	privateKey := GeneratePrivateKey(seedKey)
+	publicKey := GeneratePublicKey(privateKey)
+
+	// init other fields for coin (exclude serial number)
+	coin.PublicKey.Decompress(publicKey)
+	coin.SNDerivator = RandScalar()
+	coin.Randomness = RandScalar()
+	coin.Value = uint64(100)
+	coin.SerialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.SNDerivator)
+	coin.CommitAll()
+	coin.Info = []byte("Incognito chain")
+
+	// convert coin object to bytes array
+	coinBytes := coin.Bytes()
+	assert.Greater(t, len(coinBytes), 0)
+
+	// edit coinBytes
+	coinBytes[len(coinBytes) - 1] = byte(123)
+
+	// new coin object and set bytes from bytes array
+	coin2 := new(Coin).Init()
+	err := coin2.SetBytes(coinBytes)
+
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, coin, coin2)
+}
+
+func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
+	// new coin object and set bytes from bytes array
+	coin2 := new(Coin).Init()
+	err := coin2.SetBytes([]byte{})
+
+	assert.Equal(t, errors.New("coinBytes is empty"), err)
+}
+
+func TestCoinHashH(t *testing.T) {
+	// init coin with fully fields
+	// init public key
+	coin := new(Coin).Init()
+	seedKey := []byte{1,2,3}
+	privateKey := GeneratePrivateKey(seedKey)
+	publicKey := GeneratePublicKey(privateKey)
+
+	// init other fields for coin (exclude serial number)
+	coin.PublicKey.Decompress(publicKey)
+	coin.SNDerivator = RandScalar()
+	coin.Randomness = RandScalar()
+	coin.Value = uint64(100)
+	coin.SerialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.SNDerivator)
+	coin.CommitAll()
+	coin.Info = []byte("Incognito chain")
+
+	hash := coin.HashH()
+	assert.Equal(t, common.HashSize, len(hash[:]))
 }
 
 func TestCoin(t *testing.T) {
