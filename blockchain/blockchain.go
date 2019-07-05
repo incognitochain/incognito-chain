@@ -12,11 +12,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -94,7 +94,7 @@ func (blockchain *BlockChain) InitForTest(config *Config) error {
 		Beacon: &BestStateBeacon{},
 		Shard:  make(map[byte]*BestStateShard),
 	}
-	for i:=0; i< 255 ; i++ {
+	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		blockchain.BestState.Shard[shardID] = &BestStateShard{}
 	}
@@ -104,6 +104,7 @@ func (blockchain *BlockChain) InitForTest(config *Config) error {
 	}
 	return nil
 }
+
 /*
 Init - init a blockchain view from config
 */
@@ -915,14 +916,11 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	// loop on all outputcoin to decrypt data
 	results := make([]*privacy.OutputCoin, 0)
 	for _, out := range outCoints {
-		pubkeyCompress := out.CoinDetails.PublicKey.Compress()
-		if bytes.Equal(pubkeyCompress, keyset.PaymentAddress.Pk[:]) {
-			out = blockchain.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
-			if out == nil {
-				continue
-			} else {
-				results = append(results, out)
-			}
+		out = blockchain.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
+		if out == nil {
+			continue
+		} else {
+			results = append(results, out)
 		}
 	}
 	if err != nil {
@@ -1291,7 +1289,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 				return errors.New("This response dont match with any request")
 			}
 			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
-			if res, err := coinID.Cmp(&requestMeta.TokenID); err == nil && res != 0{
+			if res, err := coinID.Cmp(&requestMeta.TokenID); err == nil && res != 0 {
 				return errors.New("Invalid token ID")
 			}
 			amount, err := db.GetCommitteeReward(requesterRes, requestMeta.TokenID)
