@@ -57,7 +57,7 @@ var _ = func() (_ struct{}) {
 		feeEstimator[shardID] = NewFeeEstimator(
 			DefaultEstimateFeeMaxRollback,
 			DefaultEstimateFeeMinRegisteredBlocks,
-			1)
+			1,1)
 	}
 	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/mempool"))
 	if err != nil {

@@ -159,7 +159,7 @@ func TestCrossShardPoolv2UpdatePool(t *testing.T) {
 	removeSinceBlockHeight := make(map[byte]uint64)
 	fromShardID := byte(0)
 	toShardID := byte(1)
-	removeSinceBlockHeight[toShardID] = 4
+	removeSinceBlockHeight[fromShardID] = 4
 	crossShardPoolMapTest[toShardID].validPool[fromShardID] = append(crossShardPoolMapTest[toShardID].validPool[fromShardID], crossShardBlock2)
 	crossShardPoolMapTest[toShardID].validPool[fromShardID] = append(crossShardPoolMapTest[toShardID].validPool[fromShardID], crossShardBlock5)
 	crossShardPoolMapTest[toShardID].pendingPool[fromShardID] = append(crossShardPoolMapTest[toShardID].pendingPool[fromShardID], crossShardBlock3)
@@ -168,8 +168,19 @@ func TestCrossShardPoolv2UpdatePool(t *testing.T) {
 		t.Fatalf("expect pending pool has two block but get %+v", len(crossShardPoolMapTest[toShardID].pendingPool[fromShardID]))
 	}
 	if len(crossShardPoolMapTest[toShardID].validPool[fromShardID]) != 2 {
-		t.Fatalf("expect pending pool has two block but get %+v", len(crossShardPoolMapTest[toShardID].validPool[fromShardID]))
+		t.Fatalf("expect valid pool has two block but get %+v", len(crossShardPoolMapTest[toShardID].validPool[fromShardID]))
 	}
 	crossShardPoolMapTest[toShardID].removeBlockByHeight(removeSinceBlockHeight)
-	
+	if len(crossShardPoolMapTest[toShardID].pendingPool[fromShardID]) != 1 {
+		t.Fatalf("expect pending pool has two block but get %+v", len(crossShardPoolMapTest[toShardID].pendingPool[fromShardID]))
+	}
+	if len(crossShardPoolMapTest[toShardID].validPool[fromShardID]) != 1 {
+		t.Fatalf("expect valid pool has two block but get %+v", len(crossShardPoolMapTest[toShardID].validPool[fromShardID]))
+	}
+	if crossShardPoolMapTest[toShardID].pendingPool[fromShardID][0].Header.Height != 6 {
+		t.Fatalf("expect pending pool has block 6 but get %+v", crossShardPoolMapTest[toShardID].pendingPool[fromShardID][0].Header.Height)
+	}
+	if crossShardPoolMapTest[toShardID].validPool[fromShardID][0].Header.Height != 5 {
+		t.Fatalf("expect valid pool has block 5 but get %+v", crossShardPoolMapTest[toShardID].validPool[fromShardID][0].Header.Height)
+	}
 }
