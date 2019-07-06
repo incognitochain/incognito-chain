@@ -123,9 +123,6 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 			pendingPoolHeight[shardID] = append(pendingPoolHeight[shardID], block.Header.Height)
 		}
 	}
-	//Logger.log.Info("CrossShardPool/getNextCrossShardHeight, NEXT Height", expectedHeight)
-	//Logger.log.Info("CrossShardPool/Current VALID Cross Shard Pool", validPoolHeight)
-	//Logger.log.Info("CrossShardPool/Current PENDING Cross Shard Pool", pendingPoolHeight)
 	return expectedHeight, nil
 }
 
@@ -194,13 +191,13 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(blk *blockchain.CrossShardBloc
 	return expectedHeight, pool.shardID, nil
 }
 
-func (self *CrossShardPool_v2) RemoveBlockByHeight(removeSinceBlkHeight map[byte]uint64) error {
+func (self *CrossShardPool_v2) RemoveBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
-	return self.removeBlockByHeight(removeSinceBlkHeight)
+	self.removeBlockByHeight(removeSinceBlkHeight)
 }
 
-func (self *CrossShardPool_v2) removeBlockByHeight(removeSinceBlkHeight map[byte]uint64) error {
+func (self *CrossShardPool_v2) removeBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
 	for shardID, blks := range self.validPool {
 		removeIndex := 0
 		for _, blk := range blks {
@@ -226,7 +223,6 @@ func (self *CrossShardPool_v2) removeBlockByHeight(removeSinceBlkHeight map[byte
 		}
 		self.pendingPool[shardID] = self.pendingPool[shardID][removeIndex:]
 	}
-	return nil
 }
 
 func (self *CrossShardPool_v2) GetValidBlock(limit map[byte]uint64) map[byte][]*blockchain.CrossShardBlock {
