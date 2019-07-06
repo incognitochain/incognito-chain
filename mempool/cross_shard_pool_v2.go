@@ -13,23 +13,37 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-// Cross shard pool only receive cross shard block when
-// - we can validate block using beacon state (committee member)
-// - we cannot validate block using beacon state (committee member), and beacon height is not too far from best state
+/*
+	Cross Shard pool served as pool for cross shard block from other shard
+	Each node has 256 cross shard pool, each cross shard pool has an id (shardID) (each pool responsible for one particular shard corresponding with its shardID)
+	Cross Shard pool only receive cross shard block when
+	- Block contain valid signature along with some condition below (AddCrossShardBlock)
+	Cross Shard Pool Contains:
+	- Valid pool: ordered cross shard block for each shard
+	- Pending pool: un-ordered cross shard block for each shard
+	- CrossShardState: highest cross shard block height confirmed by beacon committee
+	Whenever new beacon best state is updated, we should validate pending pool (check order)
+	Whenever new cross shard block receive, validate it, and also validate pending pool (check order)
 
-// Valid pool: in-ordered cross shard block for each shard
-// Pending pool: un-ordered cross shard block for each shard
-
-// Whenever new beacon best state is updated, we should validate pending pool (check order)
-// Whenever new cross shard block receive, validate it, and also validate pending pool (check order)
-
+	Ex: Cross Shard Pool with Shard ID 0
+	Valid Pool:
+	- contain cross shard block sent to shard 0 (any shard except shard 0 can send cross shard block to shard 0)
+	- valid cross shard block map contains 256 ordered list, each list is available to be processed
+	Pending Pool:
+	- contain cross shard block sent to shard 0 (any shard except shard 0 can send cross shard block to shard 0)
+	- pending cross shard block map contain 256 un-ordered list, each list still not available yet to be processed
+	- pending cross shard block will enter valid pool until
+	 + Beacon state confirm the next valid cross shard block height
+*/
 type CrossShardPool_v2 struct {
-	shardID         byte
-	validPool       map[byte][]*blockchain.CrossShardBlock
-	pendingPool     map[byte][]*blockchain.CrossShardBlock
-	crossShardState map[byte]uint64
+	shardID         byte // pool shard ID
+	validPool       map[byte][]*blockchain.CrossShardBlock // cross shard block from all other shard to this shard
+	pendingPool     map[byte][]*blockchain.CrossShardBlock // cross shard block from all other shard to this shard
+	crossShardState map[byte]uint64 // cross shard state (marked the current state of cross shard block from all shard)
 	mtx             *sync.RWMutex
 	db              database.DatabaseInterface
+	// When beacon chain confirm new cross shard block, it will store these block height in database
+	// Cross Shard Pool using database to detect either is valid or pending
 }
 
 var crossShardPoolMap = make(map[byte]*CrossShardPool_v2)
