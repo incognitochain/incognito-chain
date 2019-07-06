@@ -3,12 +3,12 @@ package mempool
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
+	"strconv"
 	"sync"
-
+	
 	"github.com/incognitochain/incognito-chain/database"
-
+	
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -71,11 +71,11 @@ func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 
 // Validate pending pool again, to move pending block to valid block
 // When receive new cross shard block or new beacon state arrive
-func (pool *CrossShardPool_v2) UpdatePool() (map[byte]uint64, error) {
+func (pool *CrossShardPool_v2) UpdatePool() map[byte]uint64 {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
-	expectedHeight, err := pool.updatePool()
-	return expectedHeight, err
+	expectedHeight := pool.updatePool()
+	return expectedHeight
 }
 
 func (pool *CrossShardPool_v2) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
@@ -86,7 +86,7 @@ func (pool *CrossShardPool_v2) GetNextCrossShardHeight(fromShard, toShard byte, 
 	return nextHeight
 
 }
-func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
+func (pool *CrossShardPool_v2) updatePool() map[byte]uint64 {
 	pool.crossShardState = blockchain.GetBestStateShard(pool.shardID).BestCrossShard
 	pool.removeBlockByHeight(pool.crossShardState)
 	expectedHeight := make(map[byte]uint64)
@@ -114,7 +114,6 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 				break
 			}
 		}
-
 		if index > 0 || removeIndex > 0 {
 			var valid []*blockchain.CrossShardBlock
 			valid, pool.pendingPool[blkShardID] = pool.pendingPool[blkShardID][removeIndex:index], pool.pendingPool[blkShardID][index:]
@@ -137,7 +136,7 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 			pendingPoolHeight[shardID] = append(pendingPoolHeight[shardID], block.Header.Height)
 		}
 	}
-	return expectedHeight, nil
+	return expectedHeight
 }
 
 /*
@@ -147,61 +146,61 @@ func (pool *CrossShardPool_v2) updatePool() (map[byte]uint64, error) {
 	3. Duplicate block in pending or valid
 	4. Signature
 */
-func (pool *CrossShardPool_v2) AddCrossShardBlock(blk *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
+func (pool *CrossShardPool_v2) AddCrossShardBlock(block *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
-	shardID := blk.Header.ShardID
-	blkHeight := blk.Header.Height
+	shardID := block.Header.ShardID
+	blockHeight := block.Header.Height
 
-	Logger.log.Criticalf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blkHeight, shardID)
-	if blk.ToShardID != pool.shardID {
-		return nil, pool.shardID, errors.New("This pool cannot receive this cross shard block, this block for another shard")
+	Logger.log.Criticalf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blockHeight, shardID)
+	if block.ToShardID != pool.shardID {
+		return nil, pool.shardID, NewBlockPoolError(WrongShardIDError, errors.New("This pool cannot receive this cross shard block, this block for another shard "+strconv.Itoa(int(block.Header.Height))))
 	}
 
 	//If receive old block, it will ignore
 	startHeight := pool.crossShardState[shardID]
-	if blkHeight <= startHeight {
-		return nil, pool.shardID, errors.New("receive old block")
+	if blockHeight <= startHeight {
+		return nil, pool.shardID, NewBlockPoolError(OldBlockError, errors.New("receive old block"))
 	}
 
 	//If block already in pool, it will ignore
 	for _, blkItem := range pool.validPool[shardID] {
-		if blkItem.Header.Height == blkHeight {
-			return nil, pool.shardID, errors.New("receive duplicate block")
+		if blkItem.Header.Height == blockHeight {
+			return nil, pool.shardID, NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
 		}
 	}
 	for _, blkItem := range pool.pendingPool[shardID] {
-		if blkItem.Header.Height == blkHeight {
-			return nil, pool.shardID, errors.New("receive duplicate block")
+		if blkItem.Header.Height == blockHeight {
+			return nil, pool.shardID, NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
 		}
 	}
-	shardCommitteeByte, err := pool.db.FetchCommitteeByEpoch(blk.Header.BeaconHeight)
+	shardCommitteeByte, err := pool.db.FetchCommitteeByEpoch(block.Header.BeaconHeight)
 	if err != nil {
-		return nil, pool.shardID, errors.New("No committee for this epoch")
+		return nil, pool.shardID, NewBlockPoolError(DatabaseError, errors.New("No committee for this epoch"))
 	}
 	shardCommittee := make(map[byte][]string)
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
-		return nil, pool.shardID, errors.New("Fail to unmarshal shard committee")
+		return nil, pool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
 	}
-	if err := blockchain.ValidateAggSignature(blk.ValidatorsIdx, shardCommittee[shardID], blk.AggregatedSig, blk.R, blk.Hash()); err != nil {
+	if err := blockchain.ValidateAggSignature(block.ValidatorsIdx, shardCommittee[shardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
 		return nil, pool.shardID, err
 	}
 
 	if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
-		if pool.pendingPool[shardID][len(pool.pendingPool[shardID])-1].Header.Height > blk.Header.Height {
+		if pool.pendingPool[shardID][len(pool.pendingPool[shardID])-1].Header.Height > block.Header.Height {
 			pool.pendingPool[shardID] = pool.pendingPool[shardID][:len(pool.pendingPool[shardID])-1]
 		} else {
-			return nil, pool.shardID, errors.New("Reach max pending cross shard block")
+			return nil, pool.shardID, NewBlockPoolError(MaxPoolSizeError, errors.New("Reach max pending cross shard block"))
 		}
 	}
 
-	pool.pendingPool[shardID] = append(pool.pendingPool[shardID], blk)
+	pool.pendingPool[shardID] = append(pool.pendingPool[shardID], block)
 	sort.Slice(pool.pendingPool[shardID], func(i, j int) bool {
 		return pool.pendingPool[shardID][i].Header.Height < pool.pendingPool[shardID][j].Header.Height
 	})
-	fmt.Printf("Finish Verify Cross Shard Block %+v from shard %+v \n", blkHeight, shardID)
-	expectedHeight, _ := pool.updatePool()
+	Logger.log.Infof("Finish Verify Cross Shard Block %+v from shard %+v \n", blockHeight, shardID)
+	expectedHeight := pool.updatePool()
 	return expectedHeight, pool.shardID, nil
 }
 
