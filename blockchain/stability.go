@@ -67,6 +67,7 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	remoteAddr, _ := decodeRemoteAddr(inst[3])
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
 	txID, _ := common.NewHashFromStr(inst[5])
+	height, _, _ := base58.Base58Check{}.Decode(inst[6])
 	fmt.Printf("[db] decoded BurningConfirm inst\n")
 	fmt.Printf("[db]\tamount: %x\n[db]\tremoteAddr: %x\n[db]\ttokenID: %x\n", amount, remoteAddr, tokenID)
 	flatten := []byte{}
@@ -76,6 +77,7 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	flatten = append(flatten, remoteAddr...)
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
 	flatten = append(flatten, txID[:]...)
+	flatten = append(flatten, toBytes32BigEndian(height)...)
 	return flatten
 }
 
@@ -157,9 +159,18 @@ func pickBeaconPubkeyRootInstruction(
 // pickBurningConfirmInstruction finds all BurningConfirmMeta instructions
 func pickBurningConfirmInstruction(
 	beaconBlocks []*BeaconBlock,
+	height uint64,
 ) [][]string {
+	// Pick
 	instType := strconv.Itoa(metadata.BurningConfirmMeta)
-	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
+	insts := pickInstructionFromBeaconBlocks(beaconBlocks, instType)
+
+	// Replace beacon block height with shard's
+	h := big.NewInt(0).SetUint64(height)
+	for _, inst := range insts {
+		inst[len(inst)-1] = base58.Base58Check{}.Encode(h.Bytes(), 0x00)
+	}
+	return insts
 }
 
 // pickBridgePubkeyRootInstruction finds all BridgePubkeyRootMeta instructions
@@ -219,7 +230,7 @@ func buildBridgePubkeyRootInstruction(currentValidators []string, startHeight ui
 }
 
 // buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
-func buildBurningConfirmInst(inst []string) ([]string, error) {
+func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
 	fmt.Printf("[db] build BurningConfirmInst: %s\n", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
@@ -239,6 +250,9 @@ func buildBurningConfirmInst(inst []string) ([]string, error) {
 	// TODO(@0xbunyip): use mapping from tokenID to eth id
 	tokenID := md.TokenID.String()
 
+	// Convert height to big.Int to get bytes later
+	h := big.NewInt(0).SetUint64(height)
+
 	return []string{
 		strconv.Itoa(metadata.BurningConfirmMeta),
 		strconv.Itoa(int(shardID)),
@@ -246,6 +260,7 @@ func buildBurningConfirmInst(inst []string) ([]string, error) {
 		md.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
+		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 	}, nil
 }
 
@@ -256,6 +271,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	beaconBestState *BestStateBeacon,
 ) ([][]string, error) {
 	instructions := [][]string{}
+	beaconHeight := beaconBestState.BeaconHeight
 	for _, inst := range shardBlockInstructions {
 		if inst[0] == strconv.Itoa(metadata.BurningRequestMeta) {
 			fmt.Printf("[db] shardBlockInst: %s\n", inst)
@@ -282,7 +298,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 
 		case metadata.BurningRequestMeta:
 			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
-			burningConfirm, err := buildBurningConfirmInst(inst)
+			burningConfirm, err := buildBurningConfirmInst(inst, beaconHeight+1)
 			if err != nil {
 				return [][]string{}, err
 			}
