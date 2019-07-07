@@ -43,7 +43,7 @@ type HijackerResponse struct {
 }
 type FakeReader struct {}
 func (h *HijackerResponse) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	conn, err := net.Dial("tcp", "127.0.0.1:9334")
+	conn, err := net.Dial("tcp", "127.0.0.1:9335")
 	return conn, bufio.NewReadWriter(&bufio.Reader{},writeBuf), err
 }
 func (w *HijackerResponse) Write(data []byte) (n int, err error) {
@@ -80,7 +80,7 @@ var _ = func() (_ struct{}) {
 			continue
 		}
 		listeners = append(listeners, listener)
-	}
+}
 	rpcConfig.HttpListenters = listeners
 	rpcConfig.PubSubManager = pb
 	rpcConfig.BlockChain = bc
@@ -94,6 +94,21 @@ var _ = func() (_ struct{}) {
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
+func SetNewListenerAddress(){
+	rpcListener = []string{"127.0.0.1:9335"}
+	netAddrs, _ = common.ParseListeners(rpcListener, "tcp")
+	listeners := make([]net.Listener, 0, len(netAddrs))
+	listenFunc := net.Listen
+	for _, addr := range netAddrs {
+		listener, err := listenFunc(addr.Network(), addr.String())
+		if err != nil {
+			log.Printf("Can't listen on %s: %v", addr, err)
+			continue
+		}
+		listeners = append(listeners, listener)
+	}
+	rpcConfig.HttpListenters = listeners
+}
 func ResetHttpServer(){
 	httpServer.numClients = 0
 	httpServer.shutdown = 0
@@ -226,8 +241,9 @@ func TestHttpServerCheckAuth(t *testing.T) {
 }
 func TestHttpServerProcessRpcRequest(t *testing.T) {
 	ResetHttpServer()
+	SetNewListenerAddress()
 	httpServer.Init(rpcConfig)
-	//httpServer.Stop()
+	httpServer.Start()
 	w := httptest.NewRecorder()
 	r := &http.Request{
 		Method: "POST",

@@ -65,7 +65,12 @@ func (httpServer *HttpServer) Start() error {
 	for _, listen := range httpServer.config.HttpListenters {
 		go func(listen net.Listener) {
 			Logger.log.Infof("RPC Http server listening on %s", listen.Addr())
-			go httpServer.server.Serve(listen)
+			go func() {
+				err := httpServer.server.Serve(listen)
+				if err != nil {
+					Logger.log.Errorf("Close Http Listener %+v", err)
+				}
+			}()
 			Logger.log.Infof("RPC Http listener done for %s", listen.Addr())
 		}(listen)
 	}
