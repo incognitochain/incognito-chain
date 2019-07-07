@@ -15,7 +15,9 @@ import (
 type txs struct {
 	Txs []string `json:"Txs"`
 }
-
+func (httpServer *HttpServer) handleTestHttpServer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return nil, nil
+}
 /*
 For testing and benchmark only
 */
