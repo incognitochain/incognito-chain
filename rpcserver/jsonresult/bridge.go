@@ -1,7 +1,9 @@
 package jsonresult
 
 type GetInstructionProof struct {
-	Instruction string // Hex encoded of the swap inst
+	Instruction  string // Hex-encoded swap inst
+	BeaconHeight string // Hex encoded beacon height of the block contains the inst
+	BridgeHeight string
 
 	BeaconInstPath         []string   // Hex encoded path of the inst in inst merkle tree
 	BeaconInstPathIsLeft   []bool     // Indicate whether each path is left or right node
