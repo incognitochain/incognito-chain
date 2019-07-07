@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -26,7 +27,7 @@ func DecodeInstruction(inst []string) []byte {
 	flatten := []byte{}
 	switch inst[0] {
 	case strconv.Itoa(metadata.BeaconPubkeyRootMeta), strconv.Itoa(metadata.BridgePubkeyRootMeta):
-		flatten = decodeLastFieldOnly(inst)
+		flatten = decodeSwapConfirmInst(inst)
 
 	case strconv.Itoa(metadata.BurningConfirmMeta):
 		flatten = decodeBurningConfirmInst(inst)
@@ -39,19 +40,22 @@ func DecodeInstruction(inst []string) []byte {
 	return flatten
 }
 
-// decodeLastFieldOnly flattens all parts of an instruction, decode the last and concats them
-func decodeLastFieldOnly(inst []string) []byte {
-	flatten := []byte{}
-	for _, part := range inst[:len(inst)-1] {
-		flatten = append(flatten, []byte(part)...)
-	}
+// decodeSwapConfirmInst flattens all parts of a swap confirm instruction, decodes and concats it
+func decodeSwapConfirmInst(inst []string) []byte {
+	metaType := []byte(inst[0])
+	shardID := []byte(inst[1])
+	height, _, _ := base58.Base58Check{}.Decode(inst[2])
 	// Special case: instruction storing merkle root of beacon/bridge's committee => decode the merkle root and sign on that instead
 	// We need to decode and submit the raw merkle root to Ethereum because we can't decode it on smart contract
-	if pk, _, err := (base58.Base58Check{}).Decode(inst[2]); err == nil {
-		flatten = append(flatten, pk...)
-	} else {
-		flatten = append(flatten, []byte(inst[len(inst)-1])...)
+	pk := []byte(inst[3])
+	if d, _, err := (base58.Base58Check{}).Decode(inst[3]); err == nil {
+		pk = d
 	}
+	flatten := []byte{}
+	flatten = append(flatten, metaType...)
+	flatten = append(flatten, shardID...)
+	flatten = append(flatten, toBytes32BigEndian(height)...)
+	flatten = append(flatten, pk...)
 	return flatten
 }
 
@@ -178,30 +182,71 @@ func parsePubkeysAndBuildMerkleRoot(vals []string) []byte {
 	return GetKeccak256MerkleRoot(pks)
 }
 
-// build instructions at beacon chain before syncing to shards
-func buildBeaconPubkeyRootInstruction(currentValidators []string) []string {
+// buildBeaconPubkeyRootInstruction stores in an instruction the list of new beacon validators and the block that they start signing on
+func buildBeaconPubkeyRootInstruction(currentValidators []string, startHeight uint64) []string {
 	beaconCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
-	fmt.Printf("[db] added beaconCommRoot: %x\n", beaconCommRoot)
+	fmt.Printf("[db] added beaconCommRoot: %d %x\n", startHeight, beaconCommRoot)
+
+	// Convert startHeight to big.Int to get bytes later
+	height := big.NewInt(0).SetUint64(startHeight)
 
 	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
 	instContent := base58.Base58Check{}.Encode(beaconCommRoot, 0x00)
 	return []string{
 		strconv.Itoa(metadata.BeaconPubkeyRootMeta),
 		strconv.Itoa(int(shardID)),
+		base58.Base58Check{}.Encode(height.Bytes(), 0x00),
 		instContent,
 	}
 }
 
-func buildBridgePubkeyRootInstruction(currentValidators []string) []string {
+// buildBridgePubkeyRootInstruction stores in an instruction the list of new bridge validators and the block that they start signing on
+func buildBridgePubkeyRootInstruction(currentValidators []string, startHeight uint64) []string {
 	bridgeCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
+	fmt.Printf("[db] added bridgeCommRoot: %d %x\n", startHeight, bridgeCommRoot)
+
+	// Convert startHeight to big.Int to get bytes later
+	height := big.NewInt(0).SetUint64(startHeight)
 
 	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
 	instContent := base58.Base58Check{}.Encode(bridgeCommRoot, 0x00)
 	return []string{
 		strconv.Itoa(metadata.BridgePubkeyRootMeta),
 		strconv.Itoa(int(shardID)),
+		base58.Base58Check{}.Encode(height.Bytes(), 0x00),
 		instContent,
 	}
+}
+
+// buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
+func buildBurningConfirmInst(inst []string) ([]string, error) {
+	fmt.Printf("[db] build BurningConfirmInst: %s\n", inst)
+	// Parse action and get metadata
+	var burningReqAction BurningReqAction
+	err := decodeContent(inst[1], &burningReqAction)
+	if err != nil {
+		return nil, err
+	}
+	md := burningReqAction.Meta
+	txID := burningReqAction.RequestedTxID // to prevent double-release token
+
+	// Convert amount to big.Int to get bytes later
+	amount := big.NewInt(0).SetUint64(md.BurningAmount)
+
+	// TODO(@0xbunyip): replace with bridge's shardID
+	shardID := byte(1)
+
+	// TODO(@0xbunyip): use mapping from tokenID to eth id
+	tokenID := md.TokenID.String()
+
+	return []string{
+		strconv.Itoa(metadata.BurningConfirmMeta),
+		strconv.Itoa(int(shardID)),
+		tokenID,
+		md.RemoteAddress,
+		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
+		txID.String(),
+	}, nil
 }
 
 // build instructions at beacon chain before syncing to shards
