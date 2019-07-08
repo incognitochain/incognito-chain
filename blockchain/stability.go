@@ -261,7 +261,11 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
-	uniqETHTxsUsed := [][]byte{}
+	accumulatedValues := &metadata.AccumulatedValues{
+		UniqETHTxsUsed:   [][]byte{},
+		DBridgeTokenPair: map[string][]byte{},
+		CBridgeTokens:    []*common.Hash{},
+	}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -311,7 +315,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
 				fmt.Println("haha isntruction: ", l)
-				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, uniqETHTxsUsed)
+				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, accumulatedValues)
 
 			default:
 				continue

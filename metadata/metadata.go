@@ -87,7 +87,7 @@ func (mb *MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	txr Transaction,
 	bcr BlockchainRetriever,
-	uniqETHTxsUsed [][]byte,
+	accumulatedValues *AccumulatedValues,
 ) (bool, error) {
 	return true, nil
 }
@@ -145,7 +145,7 @@ type Metadata interface {
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, [][]byte) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, *AccumulatedValues) (bool, error)
 	IsMinerCreatedMetaType() bool
 }
 
@@ -192,5 +192,5 @@ type Transaction interface {
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, [][]byte) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
 }
