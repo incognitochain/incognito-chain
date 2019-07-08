@@ -7,8 +7,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-// Key: tx-{type}-{txHash}
-// Value: transaction(byte value)-Splitter-otherDescValue(byte Value)
+// Key: tx-{txHash}
+// Value: {type}-transaction(byte value)-Splitter-otherDescValue(byte Value)
 func (db *db) AddTransaction(txHash *common.Hash, txType string, valueTx []byte, valueDesc []byte) error {
 	key := db.GetKey(txHash)
 	value := append([]byte(txType), Splitter...)

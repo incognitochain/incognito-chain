@@ -968,6 +968,7 @@ func (tp *TxPool) monitorPool() {
 				metrics.Measurement:      metrics.PoolSize,
 				metrics.MeasurementValue: float64(size)})
 		}
+		//TODO: delete in persist db
 		tp.mtx.Unlock()
 	}
 }
