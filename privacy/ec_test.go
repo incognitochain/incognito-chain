@@ -147,9 +147,6 @@ func TestECCompressDecompress(t *testing.T){
 		err := point2.Decompress(pointBytes)
 		assert.Equal(t, point, point2)
 		assert.Equal(t, nil, err)
-
-
-
 	}
 }
 
