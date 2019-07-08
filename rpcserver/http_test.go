@@ -23,7 +23,7 @@ var (
 	errHttp     error
 	httpServer  = &HttpServer{}
 	rpcListener = []string{"127.0.0.1:9334"}
-	bc          = &blockchain.BlockChain{}
+	bc          *blockchain.BlockChain
 	pb          = pubsub.NewPubSubManager()
 	rpcConfig           = &RpcServerConfig{}
 	user                = "admin"
@@ -68,7 +68,7 @@ func (r *FakeReader) Read(p []byte) (n int, err error) {
 }
 var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
-	bc.InitForTest(&blockchain.Config{})
+	bc = blockchain.NewBlockChain(&blockchain.Config{},true)
 	bc.IsTest = true
 	netAddrs, _ = common.ParseListeners(rpcListener, "tcp")
 	listeners := make([]net.Listener, 0, len(netAddrs))

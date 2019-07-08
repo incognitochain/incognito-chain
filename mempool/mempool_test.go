@@ -25,7 +25,7 @@ import (
 var (
 	db               database.DatabaseInterface
 	dbp              databasemp.DatabaseInterface
-	bc               = &blockchain.BlockChain{}
+	bc               *blockchain.BlockChain
 	pbMempool        = pubsub.NewPubSubManager()
 	tp               = &TxPool{}
 	feeEstimator     = make(map[byte]*FeeEstimator)
@@ -70,11 +70,11 @@ var _ = func() (_ struct{}) {
 		fmt.Println("Could not open persist database connection", err)
 		return
 	}
-	err = bc.InitForTest(&blockchain.Config{
+	bc = blockchain.NewBlockChain(&blockchain.Config{
 		DataBase:      db,
 		PubSubManager: pbMempool,
 		ChainParams:   &blockchain.ChainTestParam,
-	})
+	}, true)
 	bc.BestState = &blockchain.BestState{
 		Beacon: &blockchain.BestStateBeacon{},
 		Shard:  make(map[byte]*blockchain.BestStateShard),
