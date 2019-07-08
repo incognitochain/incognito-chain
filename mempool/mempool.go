@@ -24,9 +24,9 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	BlockChain            *blockchain.BlockChain // Block chain of node
-	DataBase              database.DatabaseInterface
-	DataBaseMempool       databasemp.DatabaseInterface
+	BlockChain            *blockchain.BlockChain       // Block chain of node
+	DataBase              database.DatabaseInterface   // main database of blockchain
+	DataBaseMempool       databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
 	ChainParams           *blockchain.Params
 	FeeEstimator          map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
 	TxLifeTime            uint                   // Transaction life time in pool
@@ -86,9 +86,12 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config.RoleInCommitteesEvent = subChanRole
 	tp.IsTest = false
 }
+
+// InitChannelMempool - init channel
 func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
 }
+
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
@@ -96,11 +99,14 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
-func (tp *TxPool) LoadOrResetDatabaseMP() {
+
+// LoadOrResetDatabaseMempool - Load and reset database of mempool when start node
+func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	if !tp.config.IsLoadFromMempool {
-		err := tp.ResetDatabaseMP()
+		err := tp.ResetDatabaseMempool()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
+			return err
 		} else {
 			Logger.log.Critical("Successfully Reset from database")
 		}
@@ -108,12 +114,15 @@ func (tp *TxPool) LoadOrResetDatabaseMP() {
 		txDescs, err := tp.LoadDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
+			return err
 		} else {
 			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
 		}
 	}
-	//return []TxDesc{}
+	return nil
 }
+
+// createTxDescMempool - return an object TxDesc for mempool from original Tx
 func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
 	txDesc := &TxDesc{
 		Desc: metadata.TxDesc{
@@ -161,7 +170,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	if isStore {
-		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
+		err := tp.AddTransactionToDatabaseMempool(txHash, *txD)
 		if err != nil {
 			Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
 		} else {
@@ -598,6 +607,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	return hash, txDesc, err
 }
+
+// SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
 func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
@@ -607,6 +618,7 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.IsUnlockMempool = true
 }
 
+// MarkForwardedTransaction - mart a transaction is forward message
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
 	if tp.IsTest {
 		return

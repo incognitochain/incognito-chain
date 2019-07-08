@@ -632,7 +632,7 @@ func (serverObj Server) Start() {
 	}
 
 	if serverObj.memPool != nil {
-		serverObj.memPool.LoadOrResetDatabaseMP()
+		serverObj.memPool.LoadOrResetDatabaseMempool()
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
 	}

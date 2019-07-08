@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -57,7 +58,7 @@ var _ = func() (_ struct{}) {
 		feeEstimator[shardID] = NewFeeEstimator(
 			DefaultEstimateFeeMaxRollback,
 			DefaultEstimateFeeMinRegisteredBlocks,
-			1,1)
+			1, 1)
 	}
 	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/mempool"))
 	if err != nil {
@@ -76,9 +77,9 @@ var _ = func() (_ struct{}) {
 	})
 	bc.BestState = &blockchain.BestState{
 		Beacon: &blockchain.BestStateBeacon{},
-		Shard: make(map[byte]*blockchain.BestStateShard),
+		Shard:  make(map[byte]*blockchain.BestStateShard),
 	}
-	for i:=0; i<255;i++ {
+	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		bc.BestState.Shard[shardID] = &blockchain.BestStateShard{
 			BestBlock: &blockchain.ShardBlock{
@@ -164,6 +165,7 @@ func initTx(amount string, privateKey string, db database.DatabaseInterface) []m
 	}
 	return initTxs
 }
+
 // chooseBestOutCoinsToSpent returns list of unspent coins for spending with amount
 func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (resultOutputCoins []*privacy.OutputCoin, remainOutputCoins []*privacy.OutputCoin, totalResultOutputCoinAmount uint64, err error) {
 	resultOutputCoins = make([]*privacy.OutputCoin, 0)
@@ -483,25 +485,25 @@ func TestTxPoolStart(t *testing.T) {
 			close(cQuit)
 			return
 		}
-		<-time.Tick(100*time.Millisecond)
-		if time.Since(now).Seconds() > time.Duration(10*time.Second).Seconds(){
+		<-time.Tick(100 * time.Millisecond)
+		if time.Since(now).Seconds() > time.Duration(10*time.Second).Seconds() {
 			t.Fatal("Fail to get role from pubsub")
 		}
 	}
-	
+
 }
-func TestTxPoolCheckRelayShard (t *testing.T) {
+func TestTxPoolCheckRelayShard(t *testing.T) {
 	ResetMempoolTest()
 	tp.config.RelayShards = []byte{}
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
 	if isOK := tp.checkRelayShard(tx1); isOK {
 		t.Fatalf("Expect false but get true")
 	}
-	tp.config.RelayShards = []byte{0,1}
+	tp.config.RelayShards = []byte{0, 1}
 	if isOK := tp.checkRelayShard(tx1); !isOK {
 		t.Fatalf("Expect true but get false")
 	}
-	tp.config.RelayShards = []byte{1,0}
+	tp.config.RelayShards = []byte{1, 0}
 	if isOK := tp.checkRelayShard(tx1); !isOK {
 		t.Fatalf("Expect true but get false")
 	}
@@ -525,7 +527,7 @@ func TestTxPoolCheckPublicKeyRole(t *testing.T) {
 	if isOK := tp.checkPublicKeyRole(tx1); !isOK {
 		t.Fatalf("Expect true but get false")
 	}
-	
+
 }
 func TestTxPoolInitChannelMempool(t *testing.T) {
 	tp.CPendingTxs = nil
@@ -600,9 +602,9 @@ func TestTxPoolAddTx(t *testing.T) {
 	if len(tp.poolSerialNumbersHashH) != 3 {
 		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
 	}
-	tp.addTx(createTxDescMempool(tx6, 1 ,10, 10),true)
-	tp.addTx(createTxDescMempool(txInitCustomToken, 1 ,10, 10),false)
-	tp.addTx(createTxDescMempool(txStakingShard, 1 ,10, 10),false)
+	tp.addTx(createTxDescMempool(tx6, 1, 10, 10), true)
+	tp.addTx(createTxDescMempool(txInitCustomToken, 1, 10, 10), false)
+	tp.addTx(createTxDescMempool(txStakingShard, 1, 10, 10), false)
 	if len(tp.pool) != 6 {
 		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
 	}
@@ -631,9 +633,9 @@ func TestTxPoolAddTx(t *testing.T) {
 	if len(tp.poolSerialNumbersHashH) != 3 {
 		t.Fatalf("Expect 3 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashH))
 	}
-	tp.addTx(createTxDescMempool(tx6, 1 ,10, 10),true)
-	tp.addTx(createTxDescMempool(txInitCustomToken, 1 ,10, 10),true)
-	tp.addTx(createTxDescMempool(txStakingBeacon, 1 ,10, 10),true)
+	tp.addTx(createTxDescMempool(tx6, 1, 10, 10), true)
+	tp.addTx(createTxDescMempool(txInitCustomToken, 1, 10, 10), true)
+	tp.addTx(createTxDescMempool(txStakingBeacon, 1, 10, 10), true)
 	if len(tp.pool) != 6 {
 		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
 	}
@@ -972,6 +974,66 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	if isOk, err := tp.config.DataBaseMempool.HasTransaction(txStakingBeacon.Hash()); !isOk || err != nil {
 		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txStakingBeacon.Hash())
 	}
+
+	tx1Data, err := tp.GetTransactionFromDatabaseMempool(tx1.Hash())
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, nil, tx1Data)
+	assert.Equal(t, tx1.Hash(), tx1Data.Desc.Tx.Hash())
+
+	tx1Data, err = tp.GetTransactionFromDatabaseMempool(&common.Hash{})
+	assert.NotEqual(t, nil, err)
+
+	err = tp.RemoveTransactionFromDatabaseMP(tx1.Hash())
+	assert.Equal(t, nil, err)
+	isOk, err := tp.config.DataBaseMempool.HasTransaction(tx1.Hash())
+	assert.Equal(t, nil, err)
+	assert.Equal(t, false, isOk)
+
+	tp.config.TxLifeTime = 100000000000
+	listTx, err := tp.LoadDatabaseMP()
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 0, len(listTx))
+
+	tp.config.IsLoadFromMempool = false
+	err = tp.LoadOrResetDatabaseMempool()
+	assert.Equal(t, nil, err)
+
+	tp.config.IsLoadFromMempool = true
+	err = tp.LoadOrResetDatabaseMempool()
+	assert.Equal(t, nil, err)
+
+	list := tp.ListTxs()
+	assert.Equal(t, 6, len(list))
+
+	c := tp.Count()
+	assert.Equal(t, 6, c)
+
+	has := tp.HaveTransaction(tx1.Hash())
+	assert.Equal(t, true, has)
+
+	max := tp.Size()
+	assert.NotEqual(t, 0, max)
+
+	fee := tp.MaxFee()
+	assert.Equal(t, uint64(30), uint64(fee))
+
+	tp.LockPool()
+	tp.UnlockPool()
+
+	pool := tp.GetPool()
+	assert.NotEqual(t, nil, pool)
+
+	mining := tp.MiningDescs()
+	assert.NotEqual(t, nil, mining)
+	assert.Equal(t, 6, len(mining))
+
+	tx1Temp, err := tp.GetTx(tx1.Hash())
+	assert.Equal(t, nil, err)
+	assert.Equal(t, tx1.Hash(), tx1Temp.Hash())
+
+	tp.removeTx(&tx1)
+	_, err = tp.GetTx(tx1.Hash())
+	assert.NotEqual(t, nil, err)
 }
 func TestTxPoolRemoveTx(t *testing.T) {
 	// no persist mempool
@@ -1075,7 +1137,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 	// test relay shard and role in committeess
 	tp.config.RelayShards = []byte{}
 	tp.config.RoleInCommittees = -1
-	_,_,err1 := tp.MaybeAcceptTransaction(tx1)
+	_, _, err1 := tp.MaybeAcceptTransaction(tx1)
 	if err1 == nil {
 		t.Fatal("Expect unexpected transaction error error but no error")
 	} else {
@@ -1085,7 +1147,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 	}
 	// test size of mempool
 	tp.config.RelayShards = []byte{0}
-	_,_,err2 := tp.MaybeAcceptTransaction(tx1)
+	_, _, err2 := tp.MaybeAcceptTransaction(tx1)
 	if err2 == nil {
 		t.Fatal("Expect max pool size error error but no error")
 	} else {
@@ -1094,7 +1156,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 		}
 	}
 	tp.config.RoleInCommittees = 0
-	_,_,err3 := tp.MaybeAcceptTransaction(tx1)
+	_, _, err3 := tp.MaybeAcceptTransaction(tx1)
 	if err3 == nil {
 		t.Fatal("Expect max pool size error error but no error")
 	} else {
@@ -1103,7 +1165,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 		}
 	}
 	tp.config.MaxTx = 1
-	_,_,err4 := tp.MaybeAcceptTransaction(tx1)
+	_, _, err4 := tp.MaybeAcceptTransaction(tx1)
 	if err4 != nil {
 		t.Fatal("Expect no error but get ", err4)
 	}
@@ -1114,11 +1176,11 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 	tp.config.RelayShards = []byte{0}
 	tp.config.RoleInCommittees = 0
 	// test push transaction to block gen
-	_,_,err5 := tp.MaybeAcceptTransaction(tx1)
+	_, _, err5 := tp.MaybeAcceptTransaction(tx1)
 	if err5 != nil {
 		t.Fatal("Expect no error but get ", err5)
 	}
-	go func () {
+	go func() {
 		tx := <-cPendingTxs
 		if !tx.Hash().IsEqual(tx1.Hash()) {
 			t.Fatalf("Expect get %+v but get %+v ", tx1.Hash(), tx.Hash())
@@ -1132,10 +1194,10 @@ func TestTxPoolMarkForwardedTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal("Expect no error but get ", err)
 	}
-		tp.MarkForwardedTransaction(*txHash1)
-		if !txDesc1.IsFowardMessage {
-			t.Fatal("Tx Should be marked as forwarded already")
-		}
+	tp.MarkForwardedTransaction(*txHash1)
+	if !txDesc1.IsFowardMessage {
+		t.Fatal("Tx Should be marked as forwarded already")
+	}
 }
 func TestTxPoolEmptyPool(t *testing.T) {
 	ResetMempoolTest()
@@ -1164,7 +1226,7 @@ func TestTxPoolEmptyPool(t *testing.T) {
 		t.Fatalf("Expect 1 but get %+v", len(tp.TokenIDPool))
 	}
 	tp.EmptyPool()
-	
+
 	if len(tp.pool) != 0 {
 		t.Fatal("Can't empty pool")
 	}
