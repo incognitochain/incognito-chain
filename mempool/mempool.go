@@ -24,9 +24,9 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	BlockChain            *blockchain.BlockChain // Block chain of node
-	DataBase              database.DatabaseInterface
-	DataBaseMempool       databasemp.DatabaseInterface
+	BlockChain            *blockchain.BlockChain       // Block chain of node
+	DataBase              database.DatabaseInterface   // main database of blockchain
+	DataBaseMempool       databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
 	ChainParams           *blockchain.Params
 	FeeEstimator          map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
 	TxLifeTime            uint                   // Transaction life time in pool
@@ -98,7 +98,7 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 }
 func (tp *TxPool) LoadOrResetDatabaseMP() {
 	if !tp.config.IsLoadFromMempool {
-		err := tp.ResetDatabaseMP()
+		err := tp.ResetDatabaseMempool()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
 		} else {
@@ -161,7 +161,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	if isStore {
-		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
+		err := tp.AddTransactionToDatabaseMempool(txHash, *txD)
 		if err != nil {
 			Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
 		} else {
