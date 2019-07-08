@@ -52,8 +52,9 @@ var (
 	multisigsPrefix = []byte("multisigs")
 
 	// centralized bridge
-	centralizedBridgePrefix = []byte("centralizedbridge-")
+	centralizedBridgePrefix   = []byte("centralizedbridge-")
 	decentralizedBridgePrefix = []byte("decentralizedbridge-")
+	bridgePrefix              = []byte("bridge-")
 
 	// Incognito -> Ethereum relayer
 	burnConfirmPrefix = []byte("burnConfirm-")
