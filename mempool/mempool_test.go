@@ -993,6 +993,39 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	listTx, err := tp.LoadDatabaseMP()
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 0, len(listTx))
+
+	tp.config.IsLoadFromMempool = false
+	err = tp.LoadOrResetDatabaseMempool()
+	assert.Equal(t, nil, err)
+
+	tp.config.IsLoadFromMempool = true
+	err = tp.LoadOrResetDatabaseMempool()
+	assert.Equal(t, nil, err)
+
+	list := tp.ListTxs()
+	assert.Equal(t, 6, len(list))
+
+	c := tp.Count()
+	assert.Equal(t, 6, c)
+
+	has := tp.HaveTransaction(tx1.Hash())
+	assert.Equal(t, true, has)
+
+	max := tp.Size()
+	assert.NotEqual(t, 0, max)
+
+	fee := tp.MaxFee()
+	assert.Equal(t, uint64(30), uint64(fee))
+
+	tp.LockPool()
+	tp.UnlockPool()
+
+	pool := tp.GetPool()
+	assert.NotEqual(t, nil, pool)
+
+	mining := tp.MiningDescs()
+	assert.NotEqual(t, nil, mining)
+	assert.Equal(t, 6, len(mining))
 }
 func TestTxPoolRemoveTx(t *testing.T) {
 	// no persist mempool
