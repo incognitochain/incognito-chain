@@ -607,6 +607,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	return hash, txDesc, err
 }
+
+// SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
 func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
@@ -616,6 +618,7 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.IsUnlockMempool = true
 }
 
+// MarkForwardedTransaction - mart a transaction is forward message
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
 	if tp.IsTest {
 		return
