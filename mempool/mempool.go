@@ -86,9 +86,12 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config.RoleInCommitteesEvent = subChanRole
 	tp.IsTest = false
 }
+
+// InitChannelMempool - init channel
 func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
 }
+
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
@@ -96,11 +99,14 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
-func (tp *TxPool) LoadOrResetDatabaseMP() {
+
+// LoadOrResetDatabaseMempool - Load and reset database of mempool when start node
+func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	if !tp.config.IsLoadFromMempool {
 		err := tp.ResetDatabaseMempool()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
+			return err
 		} else {
 			Logger.log.Critical("Successfully Reset from database")
 		}
@@ -108,12 +114,15 @@ func (tp *TxPool) LoadOrResetDatabaseMP() {
 		txDescs, err := tp.LoadDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
+			return err
 		} else {
 			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
 		}
 	}
-	//return []TxDesc{}
+	return nil
 }
+
+// createTxDescMempool - return an object TxDesc for mempool from original Tx
 func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
 	txDesc := &TxDesc{
 		Desc: metadata.TxDesc{
