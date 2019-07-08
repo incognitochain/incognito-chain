@@ -133,20 +133,6 @@ func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubk
 		return err
 	}
 
-	// keySpec4 := append(key, pubkey...)
-	// prevKeySpec4 := append(key, pubkey...)
-	// prevKeySpec4 = append(prevkey, prevKeySpec4...)
-
-	// resByPubkey, err := db.Get(prevKeySpec4)
-	// if err != nil {
-	// 	if err != lvdberr.ErrNotFound {
-	// 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	// 	}
-	// }
-
-	// if err := db.Put(keySpec4, resByPubkey); err != nil {
-	// 	return err
-	// }
 	return nil
 }
 
@@ -288,7 +274,7 @@ func (db *db) RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeig
 	binary.LittleEndian.PutUint64(curHeightBytes, curHeight)
 	heightKey := append(key, curHeightBytes...)
 	for {
-		nextHeightBytes, err := db.Get(heightKey)
+		nextHeightBytes, err := db.lvdb.Get(heightKey, nil)
 		if err != nil && err != lvdberr.ErrNotFound {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
@@ -350,14 +336,15 @@ func (db *db) BackupBridgedTokenByTokenID(tokenID common.Hash) error {
 	key := append(centralizedBridgePrefix, tokenID[:]...)
 	backupKey := getPrevPrefix(true, 0)
 	backupKey = append(backupKey, key...)
-
 	tokenWithAmtBytes, dbErr := db.Get(key)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
-	}
-
-	if err := db.Put(backupKey, tokenWithAmtBytes); err != nil {
-		return err
+	if dbErr != nil {
+		if err := db.Put(backupKey, []byte{}); err != nil {
+			return err
+		}
+	} else {
+		if err := db.Put(backupKey, tokenWithAmtBytes); err != nil {
+			return err
+		}
 	}
 	return nil
 }
