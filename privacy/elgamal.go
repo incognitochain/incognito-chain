@@ -5,18 +5,6 @@ import (
 	"math/big"
 )
 
-// ElGamalPublicKeyEncryption
-// PrivateKey sk <-- Zn
-// PublicKey  pk <-- G*sk
-// Plaintext M is a EllipticPoint
-// Ciphertext contains 2 EllipticPoint C1, C2
-// C1 = G*k
-// C2 = pk*k + M
-// k <-- Zn is a secret random number
-
-// ElGamalPubKey ...
-// H = G^X
-
 // ElGamalPubKey represents to public key in ElGamal encryption
 // H = G^X, X is private key
 type ElGamalPubKey struct {
