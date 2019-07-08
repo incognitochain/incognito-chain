@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	
+
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -283,7 +283,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 	// Beacon normal swap
 	if block.Header.Height%common.EPOCH == 0 {
 		swapBeaconInstructions := []string{}
-		_, _, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
+		_, currentValidators, swappedValidator, beaconNextCommittee, _ := SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
@@ -292,9 +292,10 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 			instructions = append(instructions, swapBeaconInstructions)
 		}
 
+		// TODO(@0xbunyip): move inside previous if: only generate instruction when there's a new committee
 		// Generate instruction storing merkle root of validators pubkey and send to bridge
-		// beaconRootInst := buildBeaconPubkeyRootInstruction(currentValidators)
-		// instructions = append(instructions, beaconRootInst)
+		beaconRootInst := buildBeaconPubkeyRootInstruction(currentValidators, block.Header.Height+1)
+		instructions = append(instructions, beaconRootInst)
 	}
 	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
@@ -537,7 +538,7 @@ func (bestStateBeacon *BestStateBeacon) generateRandomInstruction(timestamp int6
 	//strs = append(strs, strconv.Itoa(int(timestamp)))
 	//strs = append(strs, strconv.Itoa(int(chainTimestamp)))
 	//@NOTICE: Hard Code for testing
-	var	strs []string
+	var strs []string
 	reses := []string{"1000", strconv.Itoa(int(timestamp)), strconv.Itoa(int(timestamp) + 1)}
 	strs = append(strs, RandomAction)
 	strs = append(strs, reses...)
