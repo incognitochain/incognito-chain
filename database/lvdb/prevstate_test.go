@@ -615,12 +615,28 @@ func Test_db_RestoreBridgedTokenByTokenID(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.RestoreBridgedTokenByTokenID() error = %v, wantErr %v", errDB, tt.wantErr)
+			}
 			db := &db{
-				lvdb: tt.fields.lvdb,
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
+				err := db.BackupBridgedTokenByTokenID(common.Hash{})
+				if err != nil {
+					t.Fatalf("db.BackupBridgedTokenByTokenID() error = %v, wantErr %v", err, tt.wantErr)
+				}
 			}
 			if err := db.RestoreBridgedTokenByTokenID(tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.RestoreBridgedTokenByTokenID() error = %v, wantErr %v", err, tt.wantErr)
@@ -644,12 +660,24 @@ func Test_db_BackupShardRewardRequest(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{1, 0, common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{1, 0, common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.BackupShardRewardRequest() error = %v, wantErr %v", errDB, tt.wantErr)
+			}
 			db := &db{
-				lvdb: tt.fields.lvdb,
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
 			}
 			if err := db.BackupShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.BackupShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
@@ -672,12 +700,24 @@ func Test_db_BackupCommitteeReward(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{[]byte{}, common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{[]byte{}, common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.BackupCommitteeReward() error = %v, wantErr %v", errDB, tt.wantErr)
+			}
 			db := &db{
-				lvdb: tt.fields.lvdb,
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
 			}
 			if err := db.BackupCommitteeReward(tt.args.committeeAddress, tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.BackupCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
@@ -701,12 +741,28 @@ func Test_db_RestoreShardRewardRequest(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{1, 0, common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{1, 0, common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.RestoreShardRewardRequest() error = %v, wantErr %v", errDB, tt.wantErr)
+			}
 			db := &db{
-				lvdb: tt.fields.lvdb,
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
+				err := db.BackupShardRewardRequest(1, 0, common.Hash{})
+				if err != nil {
+					t.Errorf("db.BackupShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
+				}
 			}
 			if err := db.RestoreShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.RestoreShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
@@ -747,9 +803,9 @@ func Test_db_RestoreCommitteeReward(t *testing.T) {
 				if tt.name != "NotScenarioTest" {
 					t.Skipf("%v", tt.name)
 				}
-				err := PrepareDB(db)
+				err := db.BackupCommitteeReward([]byte{}, common.Hash{})
 				if err != nil {
-					t.Errorf("db.RestoreCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
+					t.Errorf("db.BackupCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
 				}
 			}
 
@@ -761,9 +817,4 @@ func Test_db_RestoreCommitteeReward(t *testing.T) {
 
 		})
 	}
-}
-
-func PrepareDB(db *db) error {
-	db.BackupCommitteeReward([]byte{}, common.Hash{})
-	return nil
 }
