@@ -4,11 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -155,33 +153,6 @@ func (bc *BlockChain) processBurningReq(
 	updatingInfoByTokenID[md.TokenID] = updatingInfo
 
 	return updatingInfoByTokenID, nil
-}
-
-func buildBurningConfirmInst(inst []string) ([]string, error) {
-	fmt.Printf("[db] build BurningConfirmInst: %s\n", inst)
-	// Parse action and get metadata
-	var burningReqAction BurningReqAction
-	err := decodeContent(inst[1], &burningReqAction)
-	if err != nil {
-		return nil, err
-	}
-	md := burningReqAction.Meta
-	txID := burningReqAction.RequestedTxID // to prevent double-release token
-
-	// Convert amount to big.Int to get bytes later
-	amount := big.NewInt(0).SetUint64(md.BurningAmount)
-
-	// TODO(@0xbunyip): replace with bridge's shardID
-	shardID := byte(1)
-
-	return []string{
-		strconv.Itoa(metadata.BurningConfirmMeta),
-		strconv.Itoa(int(shardID)),
-		md.TokenID.String(),
-		md.RemoteAddress,
-		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
-		txID.String(),
-	}, nil
 }
 
 func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
