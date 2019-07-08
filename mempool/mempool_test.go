@@ -1026,6 +1026,14 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	mining := tp.MiningDescs()
 	assert.NotEqual(t, nil, mining)
 	assert.Equal(t, 6, len(mining))
+
+	tx1Temp, err := tp.GetTx(tx1.Hash())
+	assert.Equal(t, nil, err)
+	assert.Equal(t, tx1.Hash(), tx1Temp.Hash())
+
+	tp.removeTx(&tx1)
+	_, err = tp.GetTx(tx1.Hash())
+	assert.NotEqual(t, nil, err)
 }
 func TestTxPoolRemoveTx(t *testing.T) {
 	// no persist mempool
