@@ -85,24 +85,25 @@ type Config struct {
 	UserKeySet *incognitokey.KeySet
 }
 
-func (blockchain *BlockChain) InitForTest(config *Config) error {
-	blockchain.config = *config
-	blockchain.config.IsBlockGenStarted = false
-	blockchain.IsTest = true
-	blockchain.cQuitSync = make(chan struct{})
-	blockchain.BestState = &BestState{
+func NewBlockChain(config *Config, isTest bool) *BlockChain {
+	bc := &BlockChain{}
+	bc.config = *config
+	bc.config.IsBlockGenStarted = false
+	bc.IsTest = isTest
+	bc.cQuitSync = make(chan struct{})
+	bc.BestState = &BestState{
 		Beacon: &BestStateBeacon{},
 		Shard:  make(map[byte]*BestStateShard),
 	}
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
-		blockchain.BestState.Shard[shardID] = &BestStateShard{}
+		bc.BestState.Shard[shardID] = &BestStateShard{}
 	}
-	blockchain.Synker = synker{
-		blockchain: blockchain,
-		cQuit:      blockchain.cQuitSync,
+	bc.Synker = synker{
+		blockchain: bc,
+		cQuit:      bc.cQuitSync,
 	}
-	return nil
+	return bc
 }
 
 /*
