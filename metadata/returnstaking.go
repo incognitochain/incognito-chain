@@ -79,7 +79,7 @@ func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	uniqETHTxsUsed [][]byte,
+	accumulatedValues *AccumulatedValues,
 ) (bool, error) {
 
 	if len(insts) == 0 {

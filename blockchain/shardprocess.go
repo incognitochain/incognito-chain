@@ -287,11 +287,20 @@ func (blockchain *BlockChain) insertETHHeaders(
 	return nil
 }
 
-func (blockchain *BlockChain) insertETHTxHashIssued(
+func (blockchain *BlockChain) insertStuffForIssuingETHRes(
 	tx metadata.Transaction,
 ) error {
+	db := blockchain.GetDatabase()
 	issuingETHResdMeta := tx.GetMetadata().(*metadata.IssuingETHResponse)
-	err := blockchain.GetDatabase().InsertETHTxHashIssued(issuingETHResdMeta.UniqETHTx)
+	err := db.InsertETHTxHashIssued(issuingETHResdMeta.UniqETHTx)
+	if err != nil {
+		return err
+	}
+	err = db.UpdateBridgeTokenPairInfo(
+		*tx.GetTokenID(),
+		issuingETHResdMeta.ExternalTokenID,
+		false,
+	)
 	fmt.Println("haha finally")
 	return err
 }
@@ -309,7 +318,7 @@ func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 		} else if metaType == metadata.ETHHeaderRelayingRewardMeta {
 			err = blockchain.insertETHHeaders(shardBlock, tx)
 		} else if metaType == metadata.IssuingETHResponseMeta {
-			err = blockchain.insertETHTxHashIssued(tx)
+			err = blockchain.insertStuffForIssuingETHRes(tx)
 		}
 		if err != nil {
 			return err

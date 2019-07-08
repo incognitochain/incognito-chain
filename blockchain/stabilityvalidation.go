@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -13,9 +14,13 @@ func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	instUsed := make([]int, len(insts))
 	txsUsed := make([]int, len(txs))
 	invalidTxs := []metadata.Transaction{}
-	uniqETHTxsUsed := [][]byte{}
+	accumulatedValues := &metadata.AccumulatedValues{
+		UniqETHTxsUsed:   [][]byte{},
+		DBridgeTokenPair: map[string][]byte{},
+		CBridgeTokens:    []*common.Hash{},
+	}
 	for _, tx := range txs {
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, bc, uniqETHTxsUsed)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, bc, accumulatedValues)
 		if err != nil {
 			return nil, err
 		}

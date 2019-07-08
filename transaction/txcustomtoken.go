@@ -662,7 +662,7 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
-	uniqETHTxsUsed [][]byte,
+	accumulatedValues *metadata.AccumulatedValues,
 ) (bool, error) {
 	if !tx.TxTokenData.Mintable {
 		return true, nil
@@ -676,5 +676,5 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr, uniqETHTxsUsed)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr, accumulatedValues)
 }
