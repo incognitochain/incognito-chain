@@ -7,8 +7,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"syscall"
 )
 func BackupShardChain(shardID byte, chainDataDir string, outDatadir string) error {
 	fileName := "export-incognito-shard-"+strconv.Itoa(int(shardID))+".gz"
@@ -41,4 +44,80 @@ func makeBlockChain (databaseDir string) (*blockchain.BlockChain, error) {
 		DataBase: db,
 	}, false)
 	return bc, nil
+}
+func RestoreShardChain(shardID byte, chainDataDir string, filename string) error {
+	// Watch for Ctrl-C while the import is running.
+	// If a signal is received, the import will stop at the next batch.
+	interrupt := make(chan os.Signal, 1)
+	stop := make(chan struct{})
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(interrupt)
+	defer close(interrupt)
+	go func() {
+		if _, ok := <-interrupt; ok {
+			log.Println("Interrupted during import, stopping at next block")
+		}
+		close(stop)
+	}()
+	checkInterrupt := func() bool {
+		select {
+		case <-stop:
+			return true
+		default:
+			return false
+		}
+	}
+	log.Println("Importing blockchain", "file", filename)
+	// Open the file handle and potentially unwrap the gzip stream
+	fh, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+	var reader io.Reader
+	if strings.HasSuffix(filename, ".gz") {
+		if reader, err = gzip.NewReader(reader); err != nil {
+			return err
+		}
+	}
+	bc, err := makeBlockChain(chainDataDir)
+	if err != nil {
+		return err
+	}
+	for {
+		numberOfByteToRead := make([]byte,8)
+		_, err := reader.Read(numberOfByteToRead)
+		if err == io.EOF {
+			break
+		} else {
+			if err != nil {
+				return err
+			}
+		}
+		blockLength, err := blockchain.GetNumberOfByteToRead(numberOfByteToRead)
+		if err != nil {
+			return err
+		}
+		blockBytes := make([]byte, blockLength)
+		_, err = reader.Read(blockBytes)
+		if err == io.EOF {
+			break
+		} else {
+			if err != nil {
+				return err
+			}
+		}
+		block := &blockchain.ShardBlock{}
+		err = block.UnmarshalJSON(blockBytes)
+		if err != nil {
+			return err
+		}
+		err = bc.ProcessStoreShardBlock(block)
+		if err != nil {
+			return err
+		}
+		// check interupt whenever finish insert 1 block
+		checkInterrupt()
+	}
+	return nil
 }
