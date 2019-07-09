@@ -58,12 +58,31 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	key, _ := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
 	_ = key.KeySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
 	paymentAddress := key.KeySet.PaymentAddress
-	tx, _ := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
-	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
+	tx1, _ := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
 
-	in := ConvertOutputCoinToInputCoin(tx.Proof.OutputCoins)
-	cmmIndexs, myCommIndex, cmm := RandomCommitmentsProcess(in, 0, db, 0, &common.Hash{})
+	in1 := ConvertOutputCoinToInputCoin(tx1.Proof.OutputCoins)
+
+	cmmIndexs, myIndexs, cmm := RandomCommitmentsProcess(in1, 0, db, 0, &common.Hash{})
 	assert.Equal(t, 8, len(cmmIndexs))
-	assert.Equal(t, 1, len(myCommIndex))
+	assert.Equal(t, 1, len(myIndexs))
 	assert.Equal(t, 8, len(cmm))
+
+	tx2, _ := BuildCoinbaseTx(&paymentAddress, 5, &key.KeySet.PrivateKey, db, nil)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx2.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
+	tx3, _ := BuildCoinbaseTx(&paymentAddress, 5, &key.KeySet.PrivateKey, db, nil)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx3.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
+	in2 := ConvertOutputCoinToInputCoin(tx2.Proof.OutputCoins)
+	in := append(in1, in2...)
+
+	cmmIndexs, myIndexs, cmm = RandomCommitmentsProcess(in, 0, db, 0, &common.Hash{})
+	assert.Equal(t, 16, len(cmmIndexs))
+	assert.Equal(t, 16, len(cmm))
+	assert.Equal(t, 2, len(myIndexs))
+
+	db.CleanCommitments()
+	cmmIndexs1, myCommIndex1, cmm1 := RandomCommitmentsProcess(in, 0, db, 0, &common.Hash{})
+	assert.Equal(t, 0, len(cmmIndexs1))
+	assert.Equal(t, 0, len(myCommIndex1))
+	assert.Equal(t, 0, len(cmm1))
 }
