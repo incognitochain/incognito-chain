@@ -1,7 +1,6 @@
 package main
 
 import (
-	"compress/gzip"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -17,16 +16,14 @@ import (
 )
 
 func BackupShardChain(shardID byte, chainDataDir string, outDatadir string) error {
-	fileName := "export-incognito-shard-" + strconv.Itoa(int(shardID)) + ".gz"
+	fileName := "export-incognito-shard-" + strconv.Itoa(int(shardID))
 	file := fileName
 	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	defer fileHandler.Close()
-	var writer io.Writer
-	writer = gzip.NewWriter(fileHandler)
-	defer writer.(*gzip.Writer).Close()
+	var writer io.Writer = fileHandler
 	bc, err := makeBlockChain(chainDataDir)
 	if err != nil {
 		return err
@@ -57,6 +54,8 @@ func BackupBeaconChain(chainDataDir string, outDatadir string) error {
 	return nil
 }
 func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
+	blockchain.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
+	mempool.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
 	db, err := database.Open("leveldb", filepath.Join(databaseDir))
 	if err != nil {
 		return nil, err
@@ -66,20 +65,33 @@ func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
 	
 	}, false)
 	crossShardPoolMap := make(map[byte]blockchain.CrossShardPool)
+	shardPoolMap := make(map[byte]blockchain.ShardPool)
 	for i := 0; i< 255; i++ {
 		shardID := byte(i)
 		crossShardPoolMap[shardID] = mempool.GetCrossShardPool(shardID)
+		shardPoolMap[shardID] = mempool.GetShardPool(shardID)
 	}
-	bc.Init(&blockchain.Config{
+	pb := pubsub.NewPubSubManager()
+	txPool := &mempool.TxPool{}
+	txPool.Init(&mempool.Config{
+		PubSubManager: pb,
+		DataBase: db,
+		BlockChain: bc,
+		ChainParams: &blockchain.ChainTestParam,
+	})
+	err = bc.Init(&blockchain.Config{
 		ChainParams: &blockchain.ChainTestParam,
 		DataBase:          db,
 		BeaconPool:        mempool.GetBeaconPool(),
 		ShardToBeaconPool: mempool.GetShardToBeaconPool(),
-		PubSubManager:     pubsub.NewPubSubManager(),
+		PubSubManager:     pb,
 		CrossShardPool:  crossShardPoolMap,
+		ShardPool: shardPoolMap,
+		TxPool: txPool,
 	})
-	blockchain.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
-	mempool.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
+	if err != nil {
+		return nil, err
+	}
 	return bc, nil
 }
 func RestoreShardChain(shardID byte, chainDataDir string, filename string) error {
@@ -106,13 +118,13 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 	}
 	log.Println("Importing blockchain", "file", filename)
 	// Open the file handle and potentially unwrap the gzip stream
-	fh, err := os.Open(filename)
+	fileHanlder, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
-	log.Println(fh.Name())
-	defer fh.Close()
-	reader, err := gzip.NewReader(fh)
+	log.Println(fileHanlder.Name())
+	defer fileHanlder.Close()
+	var reader io.Reader = fileHanlder
 	if err != nil {
 		return err
 	}
@@ -152,7 +164,12 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 		}
 		log.Printf("Block %+v length %+v", block.Header.Height, len(blockBytes))
 		log.Println(block)
-		err = bc.ProcessStoreShardBlock(block)
+		err = bc.InsertShardBlock(block, true)
+		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
+			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockErr].Code {
+				continue
+			}
+		}
 		if err != nil {
 			return err
 		}
