@@ -159,7 +159,47 @@ func main() {
 						}
 					}
 				}
+				//TODO: backup beacon
 			}
+		case restoreChain:
+			{
+				if cfg.Beacon == false && cfg.ShardIDs == "" {
+					log.Println("No Expected Params")
+					return
+				}
+				var shardIDs = []byte{}
+				if cfg.ShardIDs != "" {
+					strs := strings.Split(cfg.ShardIDs,",")
+					if len(strs) > 256 {
+						log.Println("Number of shard id to process exceed limit")
+						return
+					}
+					for _, value := range strs {
+						temp, err := strconv.Atoi(value)
+						if err != nil {
+							log.Println("ShardID Params MUST contain number only in range 0-255")
+							return
+						}
+						if temp > 256 {
+							log.Println("ShardID exceed MAX value (> 255)")
+							return
+						}
+						shardID := byte(temp)
+						if common.IndexOfByte(shardID, shardIDs) > 0 {
+							continue
+						}
+						shardIDs = append(shardIDs, shardID)
+					}
+					//backup shard
+					for _, shardID := range shardIDs {
+						err := RestoreShardChain(shardID, cfg.ChainDataDir, cfg.OutDataDir)
+						if err != nil {
+							log.Printf("Shard %+v back up failed, err %+v", shardID, err)
+						}
+					}
+				}
+			}
+			//TODO: restore beacon
 		}
 	} else {
 		log.Println("Parse component error", err.Error())
