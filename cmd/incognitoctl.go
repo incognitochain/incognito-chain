@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"log"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -119,6 +121,44 @@ func main() {
 					return
 				}
 				log.Println(string(result))
+			}
+		case backupChain:
+			{
+				if cfg.Beacon == false && cfg.ShardIDs == "" {
+					log.Println("No Expected Params")
+					return
+				}
+				var shardIDs = []byte{}
+				if cfg.ShardIDs != "" {
+					strs := strings.Split(cfg.ShardIDs,",")
+					if len(strs) > 256 {
+						log.Println("Number of shard id to process exceed limit")
+						return
+					}
+					for _, value := range strs {
+						temp, err := strconv.Atoi(value)
+						if err != nil {
+							log.Println("ShardID Params MUST contain number only in range 0-255")
+							return
+						}
+						if temp > 256 {
+							log.Println("ShardID exceed MAX value (> 255)")
+							return
+						}
+						shardID := byte(temp)
+						if common.IndexOfByte(shardID, shardIDs) > 0 {
+							continue
+						}
+						shardIDs = append(shardIDs, shardID)
+					}
+				//backup shard
+					for _, shardID := range shardIDs {
+						err := BackupShardChain(shardID, cfg.ChainDataDir, cfg.OutDataDir)
+						if err != nil {
+							log.Printf("Shard %+v back up failed, err %+v", shardID, err)
+						}
+					}
+				}
 			}
 		}
 	} else {
