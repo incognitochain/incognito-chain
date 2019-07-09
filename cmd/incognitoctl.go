@@ -128,9 +128,15 @@ func main() {
 					log.Println("No Expected Params")
 					return
 				}
+				if cfg.Beacon {
+					err := BackupBeaconChain(cfg.ChainDataDir, cfg.FileName)
+					if err != nil {
+						log.Printf("Beacon Beackup failed, err %+v", err)
+					}
+				}
 				var shardIDs = []byte{}
 				if cfg.ShardIDs != "" {
-					strs := strings.Split(cfg.ShardIDs,",")
+					strs := strings.Split(cfg.ShardIDs, ",")
 					if len(strs) > 256 {
 						log.Println("Number of shard id to process exceed limit")
 						return
@@ -151,18 +157,12 @@ func main() {
 						}
 						shardIDs = append(shardIDs, shardID)
 					}
-				//backup shard
+					//backup shard
 					for _, shardID := range shardIDs {
 						err := BackupShardChain(shardID, cfg.ChainDataDir, cfg.OutDataDir)
 						if err != nil {
 							log.Printf("Shard %+v back up failed, err %+v", shardID, err)
 						}
-					}
-				}
-				if cfg.Beacon {
-					err := BackupBeaconChain(cfg.ChainDataDir, cfg.FileName)
-					if err != nil {
-						log.Printf("Beacon Beackup failed, err %+v", err)
 					}
 				}
 			}
@@ -172,13 +172,19 @@ func main() {
 					log.Println("No Expected Params")
 					return
 				}
-				if cfg.FileName == "" || !strings.HasSuffix(cfg.FileName, ".gz"){
+				if cfg.FileName == "" {
 					log.Println("No Expected Filename or filename format should end with .gz")
 					return
 				}
+				if cfg.Beacon {
+					err := RestoreBeaconChain(cfg.ChainDataDir, cfg.FileName)
+					if err != nil {
+						log.Printf("Beacon Restore failed, err %+v", err)
+					}
+				}
 				var shardIDs = []byte{}
 				if cfg.ShardIDs != "" {
-					strs := strings.Split(cfg.ShardIDs,",")
+					strs := strings.Split(cfg.ShardIDs, ",")
 					if len(strs) > 256 {
 						log.Println("Number of shard id to process exceed limit")
 						return
@@ -205,12 +211,6 @@ func main() {
 						if err != nil {
 							log.Printf("Shard %+v back up failed, err %+v", shardID, err)
 						}
-					}
-				}
-				if cfg.Beacon {
-					err := RestoreBeaconChain(cfg.ChainDataDir, cfg.FileName)
-					if err != nil {
-						log.Printf("Beacon Restore failed, err %+v", err)
 					}
 				}
 			}
