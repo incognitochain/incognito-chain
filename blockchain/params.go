@@ -45,7 +45,6 @@ func init() {
 		//InitialIncognito: benchmark.GetInitTransaction(),
 		InitialIncognito: TestnetInitPRV,
 	}
-
 	ChainTestParam = Params{
 		Name:                TestnetName,
 		Net:                 Testnet,
@@ -60,9 +59,7 @@ func init() {
 		BasicReward:        TestnetBasicReward,
 		RewardHalflife:     TestnetRewardHalflife,
 	}
-
 	// END TESTNET
-
 	// FOR MAINNET
 	var genesisParamsMainnetNew = GenesisParams{
 		InitialPaymentAddress:               MainnetGenesisblockPaymentAddress,
@@ -72,7 +69,6 @@ func init() {
 
 		InitialIncognito: MainnetInitPRV,
 	}
-
 	ChainMainParam = Params{
 		Name:                MainetName,
 		Net:                 Mainnet,
