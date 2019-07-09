@@ -32,10 +32,12 @@ const (
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )
+
 var (
-	MaxTxSize                = uint64(100)  // unit KB = 100KB
-	MaxBlockSize             = uint64(2000) //unit kilobytes = 2 Megabyte
+	MaxTxSize    = uint64(100)  // unit KB = 100KB
+	MaxBlockSize = uint64(2000) //unit kilobytes = 2 Megabyte
 )
+
 // for mining consensus
 const (
 	MaxTxsInBlock        = 1000
@@ -57,8 +59,6 @@ var (
 
 // board addresses
 const (
-	// DCBAddress     = "1NHpWKZYCLQeGKSSsJewsA8p3nsPoAZbmEmtsuBqd6yU7KJnzJZVt39b7AgP"
-	// GOVAddress     = "1NHoFQ3Nr8fQm3ZLk2ACSgZXjVH6JobpuV65RD3QAEEGe76KknMQhGbc4g8P"
 	DevAddress     = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
 	BurningAddress = "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c"
 )
