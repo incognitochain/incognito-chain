@@ -4,6 +4,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	_ "github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -13,6 +15,7 @@ import (
 )
 
 var db database.DatabaseInterface
+var bc *metadata.BlockchainRetriever
 var _ = func() (_ struct{}) {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "test_")
 	if err != nil {
@@ -25,6 +28,7 @@ var _ = func() (_ struct{}) {
 	}
 	database.Logger.Init(common.NewBackend(nil).Logger("db", true))
 	Logger.Init(common.NewBackend(nil).Logger("tx", true))
+	privacy.Logger.Init(common.NewBackend(nil).Logger("privacy", true))
 	return
 }()
 
