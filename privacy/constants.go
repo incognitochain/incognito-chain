@@ -35,5 +35,6 @@ const (
 	PaymentAddressSize = 66 // bytes
 
 	ElGamalCiphertextSize = 66 // bytes
+	SchnMultiSigSize = 65 // bytes
 
 )

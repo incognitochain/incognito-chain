@@ -206,26 +206,6 @@ func TestMultiExponentiation(t *testing.T) {
 	end1 := time.Since(start1)
 	fmt.Printf("normal calculation time: %v\n", end1)
 	fmt.Printf("Res from normal calculation: %+v\n", expectedRes)
-
-	start2 := time.Now()
-	testcase4, err := privacy.MultiScalarmult(bases.G, exponents)
-	if err != nil {
-		fmt.Printf("Error of multi-exponentiation algorithm")
-	}
-	end2 := time.Since(start2)
-	fmt.Printf("multi scalarmult time: %v\n", end2)
-	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase4)
-
-	start3 := time.Now()
-	testcase5, err := privacy.MultiScalar2(bases.G, exponents)
-	if err != nil {
-		fmt.Printf("Error of multi-exponentiation algorithm")
-	}
-	end3 := time.Since(start3)
-	fmt.Printf("multi scalarmult 2 time: %v\n", end3)
-	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase5)
-
-	assert.Equal(t, expectedRes, testcase4)
 }
 
 func TestPad(t *testing.T) {
