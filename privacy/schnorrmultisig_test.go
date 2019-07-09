@@ -36,10 +36,10 @@ func TestSchnorrMultiSignature(t *testing.T) {
 	}
 
 	// each members sign on data
-	sigs := make([]*SchnMultiSig, n - 10)
+	sigs := make([]*SchnMultiSig, n )
 	var err error
 	start1 := time.Now()
-	for i := 0; i<n-10; i++{
+	for i := 0; i<n; i++{
 		sigs[i], err = keySets[i].SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
 
 		assert.Equal(t, nil, err)
@@ -58,7 +58,7 @@ func TestSchnorrMultiSignature(t *testing.T) {
 
 	// verify combined signature
 	start3 := time.Now()
-	listCombinedPKs := listPKs[:n-10]
+	listCombinedPKs := listPKs[:n]
 	isValid := combinedSig.VerifyMultiSig(data, listPKs, listCombinedPKs, combinedPublicRandomness)
 	end3 := time.Since(start3)
 	fmt.Printf("Time3: %v\n", end3)
