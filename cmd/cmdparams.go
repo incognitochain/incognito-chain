@@ -37,14 +37,14 @@ type params struct {
 	// 1,2,3,4: shard 1, shard 2, shard 3, shard 4
 	ShardIDs     string `long:"shardids" description:"Process one or many Shard Chain with ShardID"`
 	ChainDataDir string `long:"chaindatadir" description:"Directory of Stored Blockchain Database"`
-	OutDataDir string `long:"outdatadir" description:"Directory of Export Blockchain Data"`
-	FileName  string `long:"filename" description:"Filename of Backup Blockchin Data"`
+	OutDataDir   string `long:"outdatadir" description:"Directory of Export Blockchain Data"`
+	FileName     string `long:"filename" description:"Filename of Backup Blockchin Data"`
 	// wallet
 	WalletName        string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase  string `long:"walletpassphrase" description:"Wallet passphrase"`
 	WalletAccountName string `long:"walletaccountname" description:"Wallet account name"`
 	ShardID           int8   `long:"shardid" description:"Process Shard Chain with ShardID"`
-	
+
 	// pToken
 	PNetwork string `long:"pNetwork" description:"Bridge network"`
 	PToken   string `long:"pToken" description:"Bridge token"`

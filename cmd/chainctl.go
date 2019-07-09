@@ -14,8 +14,9 @@ import (
 	"strconv"
 	"syscall"
 )
+
 func BackupShardChain(shardID byte, chainDataDir string, outDatadir string) error {
-	fileName := "export-incognito-shard-"+strconv.Itoa(int(shardID))+".gz"
+	fileName := "export-incognito-shard-" + strconv.Itoa(int(shardID)) + ".gz"
 	file := fileName
 	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
@@ -36,16 +37,14 @@ func BackupShardChain(shardID byte, chainDataDir string, outDatadir string) erro
 	return nil
 }
 func BackupBeaconChain(chainDataDir string, outDatadir string) error {
-	fileName := "export-incognito-beacon.gz"
+	fileName := "export-incognito-beacon"
 	file := fileName
 	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	defer fileHandler.Close()
-	var writer io.Writer
-	writer = gzip.NewWriter(fileHandler)
-	defer writer.(*gzip.Writer).Close()
+	var writer io.Writer = fileHandler
 	bc, err := makeBlockChain(chainDataDir)
 	if err != nil {
 		return err
@@ -56,18 +55,19 @@ func BackupBeaconChain(chainDataDir string, outDatadir string) error {
 	log.Printf("Backup Beacon Chain, file %+v", file)
 	return nil
 }
-func makeBlockChain (databaseDir string) (*blockchain.BlockChain, error) {
+func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
 	db, err := database.Open("leveldb", filepath.Join(databaseDir))
 	if err != nil {
 		return nil, err
 	}
 	log.Printf("Open leveldb at %+v successfully", filepath.Join(databaseDir))
 	bc := blockchain.NewBlockChain(&blockchain.Config{
-		DataBase: db,
-		BeaconPool: mempool.GetBeaconPool(),
+		DataBase:          db,
+		BeaconPool:        mempool.GetBeaconPool(),
 		ShardToBeaconPool: mempool.GetShardToBeaconPool(),
 	}, false)
 	blockchain.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
+	mempool.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
 	return bc, nil
 }
 func RestoreShardChain(shardID byte, chainDataDir string, filename string) error {
@@ -109,7 +109,7 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 		return err
 	}
 	for {
-		numberOfByteToRead := make([]byte,8)
+		numberOfByteToRead := make([]byte, 8)
 		_, err := reader.Read(numberOfByteToRead)
 		if err == io.EOF {
 			break
@@ -132,6 +132,7 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 			}
 		}
 		log.Printf("Block length %+v", len(blockBytes))
+		log.Printf("Block bytes", blockBytes)
 		block := &blockchain.ShardBlock{}
 		err = block.UnmarshalJSON(blockBytes)
 		if err != nil {
@@ -179,7 +180,7 @@ func RestoreBeaconChain(chainDataDir string, filename string) error {
 	}
 	log.Println(fh.Name())
 	defer fh.Close()
-	reader, err := gzip.NewReader(fh)
+	var reader io.Reader = fh
 	if err != nil {
 		return err
 	}
@@ -188,7 +189,7 @@ func RestoreBeaconChain(chainDataDir string, filename string) error {
 		return err
 	}
 	for {
-		numberOfByteToRead := make([]byte,8)
+		numberOfByteToRead := make([]byte, 8)
 		_, err := reader.Read(numberOfByteToRead)
 		if err == io.EOF {
 			break
@@ -202,7 +203,7 @@ func RestoreBeaconChain(chainDataDir string, filename string) error {
 			return err
 		}
 		blockBytes := make([]byte, blockLength)
-		_, err = reader.Read(blockBytes)
+		counter, err := reader.Read(blockBytes)
 		if err == io.EOF {
 			break
 		} else {
@@ -210,7 +211,11 @@ func RestoreBeaconChain(chainDataDir string, filename string) error {
 				return err
 			}
 		}
+		log.Printf("numberOfByteToRead: %+v \n", numberOfByteToRead)
+		log.Printf("blockLength: %+v \n", blockLength)
+		log.Printf("counter of block: %+v \n", counter)
 		log.Printf("Block length %+v", len(blockBytes))
+		log.Printf("Block bytes", blockBytes)
 		block := &blockchain.BeaconBlock{}
 		err = block.UnmarshalJSON(blockBytes)
 		if err != nil {
@@ -218,7 +223,7 @@ func RestoreBeaconChain(chainDataDir string, filename string) error {
 		}
 		log.Printf("Block %+v length %+v", block.Header.Height, len(blockBytes))
 		log.Println(block)
-		err = bc.InsertBeaconBlock(block, true)
+		err = bc.InsertBeaconBlock(block, false)
 		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
 			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockErr].Code {
 				continue
