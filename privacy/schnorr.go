@@ -7,18 +7,19 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-//SchnPubKey denoted Schnorr Publickey
+//SchnPubKey represents Schnorr Publickey
+// PK = G^SK + H^R
 type SchnPubKey struct {
-	PK, G, H *EllipticPoint // PK = G^SK + H^R
+	PK, G, H *EllipticPoint
 }
 
-//SchnPrivKey denoted Schnorr Privatekey
+//SchnPrivKey represents Schnorr Privatekey
 type SchnPrivKey struct {
 	SK, R  *big.Int
 	PubKey *SchnPubKey
 }
 
-//SchnSignature denoted Schnorr Signature
+//SchnSignature represents Schnorr Signature
 type SchnSignature struct {
 	E, Z1, Z2 *big.Int
 }
@@ -48,7 +49,7 @@ func (pubKey *SchnPubKey) Set(pk *EllipticPoint) {
 	pubKey.H.Set(PedCom.G[RAND].X, PedCom.G[RAND].Y)
 }
 
-//Sign is function which using for sign on hash array by private key
+//Sign is function which using for signing on hash array by private key
 func (priKey SchnPrivKey) Sign(data []byte) (*SchnSignature, error) {
 	if len(data) != common.HashSize {
 		return nil, NewPrivacyErr(UnexpectedErr, errors.New("hash length must be 32 bytes"))
