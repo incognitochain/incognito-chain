@@ -54,6 +54,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 
 	db, err := database.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
+	log.Println("?>>?>?>>?>?>", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
 	// Create db and use it.
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb")
