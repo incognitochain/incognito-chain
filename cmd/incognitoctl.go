@@ -159,7 +159,12 @@ func main() {
 						}
 					}
 				}
-				//TODO: backup beacon
+				if cfg.Beacon {
+					err := BackupBeaconChain(cfg.ChainDataDir, cfg.FileName)
+					if err != nil {
+						log.Printf("Beacon Beackup failed, err %+v", err)
+					}
+				}
 			}
 		case restoreChain:
 			{
@@ -202,8 +207,13 @@ func main() {
 						}
 					}
 				}
+				if cfg.Beacon {
+					err := RestoreBeaconChain(cfg.ChainDataDir, cfg.FileName)
+					if err != nil {
+						log.Printf("Beacon Restore failed, err %+v", err)
+					}
+				}
 			}
-			//TODO: restore beacon
 		}
 	} else {
 		log.Println("Parse component error", err.Error())
