@@ -167,6 +167,10 @@ func main() {
 					log.Println("No Expected Params")
 					return
 				}
+				if cfg.FileName == "" || !strings.HasSuffix(cfg.FileName, ".gz"){
+					log.Println("No Expected Filename or filename format should end with .gz")
+					return
+				}
 				var shardIDs = []byte{}
 				if cfg.ShardIDs != "" {
 					strs := strings.Split(cfg.ShardIDs,",")
@@ -192,7 +196,7 @@ func main() {
 					}
 					//backup shard
 					for _, shardID := range shardIDs {
-						err := RestoreShardChain(shardID, cfg.ChainDataDir, cfg.OutDataDir)
+						err := RestoreShardChain(shardID, cfg.ChainDataDir, cfg.FileName)
 						if err != nil {
 							log.Printf("Shard %+v back up failed, err %+v", shardID, err)
 						}
