@@ -16,15 +16,12 @@ import (
 type swapProof struct {
 	inst []string
 
-	instPath         []string
-	instPathIsLeft   []bool
-	instRoot         string
-	blkData          string
-	blkHash          string
-	signerPubkeys    []string
-	signerSig        string
-	signerPaths      [][]string
-	signerPathIsLeft [][]bool
+	instPath       []string
+	instPathIsLeft []bool
+	instRoot       string
+	blkData        string
+	blkHash        string
+	signerSig      string
 }
 
 // handleGetBeaconSwapProof returns a proof of a new beacon committee (for a given bridge block height)
@@ -59,25 +56,19 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	return jsonresult.GetInstructionProof{
 		Instruction: decodedInst,
 
-		BeaconInstPath:         beaconInstProof.instPath,
-		BeaconInstPathIsLeft:   beaconInstProof.instPathIsLeft,
-		BeaconInstRoot:         beaconInstProof.instRoot,
-		BeaconBlkData:          beaconInstProof.blkData,
-		BeaconBlkHash:          beaconInstProof.blkHash,
-		BeaconSignerPubkeys:    beaconInstProof.signerPubkeys,
-		BeaconSignerSig:        beaconInstProof.signerSig,
-		BeaconSignerPaths:      beaconInstProof.signerPaths,
-		BeaconSignerPathIsLeft: beaconInstProof.signerPathIsLeft,
+		BeaconInstPath:       beaconInstProof.instPath,
+		BeaconInstPathIsLeft: beaconInstProof.instPathIsLeft,
+		BeaconInstRoot:       beaconInstProof.instRoot,
+		BeaconBlkData:        beaconInstProof.blkData,
+		BeaconBlkHash:        beaconInstProof.blkHash,
+		BeaconSignerSig:      beaconInstProof.signerSig,
 
-		BridgeInstPath:         bridgeInstProof.instPath,
-		BridgeInstPathIsLeft:   bridgeInstProof.instPathIsLeft,
-		BridgeInstRoot:         bridgeInstProof.instRoot,
-		BridgeBlkData:          bridgeInstProof.blkData,
-		BridgeBlkHash:          bridgeInstProof.blkHash,
-		BridgeSignerPubkeys:    bridgeInstProof.signerPubkeys,
-		BridgeSignerSig:        bridgeInstProof.signerSig,
-		BridgeSignerPaths:      bridgeInstProof.signerPaths,
-		BridgeSignerPathIsLeft: bridgeInstProof.signerPathIsLeft,
+		BridgeInstPath:       bridgeInstProof.instPath,
+		BridgeInstPathIsLeft: bridgeInstProof.instPathIsLeft,
+		BridgeInstRoot:       bridgeInstProof.instRoot,
+		BridgeBlkData:        bridgeInstProof.blkData,
+		BridgeBlkHash:        bridgeInstProof.blkHash,
+		BridgeSignerSig:      bridgeInstProof.signerSig,
 	}, nil
 }
 
@@ -117,7 +108,7 @@ func getBeaconSwapProofOnBridge(
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
-	_, instID := findCommSwapInst(insts, metadata.BeaconPubkeyRootMeta)
+	_, instID := findCommSwapInst(insts, metadata.BeaconSwapConfirmMeta)
 	if instID < 0 {
 		return nil, fmt.Errorf("cannot find beacon swap instruction in brinstIDge block")
 	}
@@ -136,24 +127,11 @@ func buildProofOnBridge(
 	id int,
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
-	// Get committee pubkey and signature
-	pubkeys, signerIdxs, err := getBridgeSignerPubkeys(bridgeBlock, db)
-	if err != nil {
-		return nil, err
-	}
-	signerPubkeys := make([]string, len(pubkeys))
-	for i, pk := range pubkeys {
-		signerPubkeys[i] = hex.EncodeToString(pk)
-	}
-
-	// Build merkle proof for signer pubkeys
-	signerProof := buildSignersProof(pubkeys, signerIdxs)
-	signerPaths := make([][]string, len(pubkeys))
-	signerPathIsLeft := make([][]bool, len(pubkeys))
-	for i, p := range signerProof {
-		signerPaths[i] = p.getPath()
-		signerPathIsLeft[i] = p.left
-	}
+	// // Get committee pubkey and signature
+	// pubkeys, signerIdxs, err := getBridgeSignerPubkeys(bridgeBlock, db)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Build merkle proof for instruction in bridge block
 	instProof := buildInstProof(insts, id)
@@ -164,16 +142,13 @@ func buildProofOnBridge(
 	blkHash := bridgeBlock.Header.Hash()
 
 	return &swapProof{
-		inst:             insts[id],
-		instPath:         instProof.getPath(),
-		instPathIsLeft:   instProof.left,
-		instRoot:         instRoot,
-		blkData:          hex.EncodeToString(metaHash[:]),
-		blkHash:          hex.EncodeToString(blkHash[:]),
-		signerPubkeys:    signerPubkeys,
-		signerSig:        bridgeBlock.AggregatedSig,
-		signerPaths:      signerPaths,
-		signerPathIsLeft: signerPathIsLeft,
+		inst:           insts[id],
+		instPath:       instProof.getPath(),
+		instPathIsLeft: instProof.left,
+		instRoot:       instRoot,
+		blkData:        hex.EncodeToString(metaHash[:]),
+		blkHash:        hex.EncodeToString(blkHash[:]),
+		signerSig:      bridgeBlock.AggregatedSig,
 	}, nil
 }
 
@@ -184,24 +159,11 @@ func buildProofOnBeacon(
 	id int,
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
-	// Get committee pubkey and signature
-	pubkeys, signerIdxs, err := getBeaconSignerPubkeys(beaconBlock, db)
-	if err != nil {
-		return nil, err
-	}
-	signerPubkeys := make([]string, len(pubkeys))
-	for i, pk := range pubkeys {
-		signerPubkeys[i] = hex.EncodeToString(pk)
-	}
-
-	// Build merkle proof for signer pubkeys
-	signerProof := buildSignersProof(pubkeys, signerIdxs)
-	signerPaths := make([][]string, len(pubkeys))
-	signerPathIsLeft := make([][]bool, len(pubkeys))
-	for i, p := range signerProof {
-		signerPaths[i] = p.getPath()
-		signerPathIsLeft[i] = p.left
-	}
+	// // Get committee pubkey and signature
+	// pubkeys, signerIdxs, err := getBeaconSignerPubkeys(beaconBlock, db)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Build merkle proof for instruction in beacon block
 	instProof := buildInstProof(insts, id)
@@ -212,16 +174,13 @@ func buildProofOnBeacon(
 	blkHash := beaconBlock.Header.Hash()
 
 	return &swapProof{
-		inst:             insts[id],
-		instPath:         instProof.getPath(),
-		instPathIsLeft:   instProof.left,
-		instRoot:         instRoot,
-		blkData:          hex.EncodeToString(metaHash[:]),
-		blkHash:          hex.EncodeToString(blkHash[:]),
-		signerPubkeys:    signerPubkeys,
-		signerSig:        beaconBlock.AggregatedSig,
-		signerPaths:      signerPaths,
-		signerPathIsLeft: signerPathIsLeft,
+		inst:           insts[id],
+		instPath:       instProof.getPath(),
+		instPathIsLeft: instProof.left,
+		instRoot:       instRoot,
+		blkData:        hex.EncodeToString(metaHash[:]),
+		blkHash:        hex.EncodeToString(blkHash[:]),
+		signerSig:      beaconBlock.AggregatedSig,
 	}, nil
 }
 
@@ -327,7 +286,7 @@ func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
 	flattenInsts := blockchain.FlattenAndConvertStringInst(insts)
 	fmt.Printf("[db] insts: %v\n", insts)
-	fmt.Printf("[db] flattenInsts: %x\n", flattenInsts)
+	// fmt.Printf("[db] flattenInsts: %x\n", flattenInsts)
 	return buildProof(flattenInsts, id)
 }
 

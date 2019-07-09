@@ -29,9 +29,9 @@ const (
 	BeaconStakingMeta = 64
 
 	// Incognito -> Ethereum bridge
-	BeaconPubkeyRootMeta = 70
-	BridgePubkeyRootMeta = 71
-	BurningConfirmMeta   = 72
+	BeaconSwapConfirmMeta = 70
+	BridgeSwapConfirmMeta = 71
+	BurningConfirmMeta    = 72
 )
 
 var minerCreatedMetaTypes = []int{

@@ -87,7 +87,7 @@ func getBridgeSwapProofOnBeacon(
 
 	// Find bridge swap instruction in beacon block
 	insts := beaconBlock.Body.Instructions
-	_, instID := findCommSwapInst(insts, metadata.BridgePubkeyRootMeta)
+	_, instID := findCommSwapInst(insts, metadata.BridgeSwapConfirmMeta)
 	if instID < 0 {
 		return nil, nil, fmt.Errorf("cannot find bridge swap instruction in beacon block")
 	}
@@ -111,7 +111,7 @@ func findBridgeBlockWithInst(
 			return nil, 0, err
 		}
 
-		_, bridgeInstID := findCommSwapInst(bridgeBlock.Body.Instructions, metadata.BridgePubkeyRootMeta)
+		_, bridgeInstID := findCommSwapInst(bridgeBlock.Body.Instructions, metadata.BridgeSwapConfirmMeta)
 		fmt.Printf("[db] finding swap bridge inst in bridge block %d %d\n", state.Height, bridgeInstID)
 		if bridgeInstID >= 0 {
 			return bridgeBlock, bridgeInstID, nil

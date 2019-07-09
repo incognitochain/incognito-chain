@@ -49,7 +49,7 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst, beaconHeight, bridgeHeight := splitAndDecodeInst(bridgeInstProof.inst, beaconInstProof.inst)
+	decodedInst, bridgeHeight, beaconHeight := splitAndDecodeInst(bridgeInstProof.inst, beaconInstProof.inst)
 	//decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(bridgeInstProof.inst))
 
 	return jsonresult.GetInstructionProof{
@@ -57,25 +57,19 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 		BeaconHeight: beaconHeight,
 		BridgeHeight: bridgeHeight,
 
-		BeaconInstPath:         beaconInstProof.instPath,
-		BeaconInstPathIsLeft:   beaconInstProof.instPathIsLeft,
-		BeaconInstRoot:         beaconInstProof.instRoot,
-		BeaconBlkData:          beaconInstProof.blkData,
-		BeaconBlkHash:          beaconInstProof.blkHash,
-		BeaconSignerPubkeys:    beaconInstProof.signerPubkeys,
-		BeaconSignerSig:        beaconInstProof.signerSig,
-		BeaconSignerPaths:      beaconInstProof.signerPaths,
-		BeaconSignerPathIsLeft: beaconInstProof.signerPathIsLeft,
+		BeaconInstPath:       beaconInstProof.instPath,
+		BeaconInstPathIsLeft: beaconInstProof.instPathIsLeft,
+		BeaconInstRoot:       beaconInstProof.instRoot,
+		BeaconBlkData:        beaconInstProof.blkData,
+		BeaconBlkHash:        beaconInstProof.blkHash,
+		BeaconSignerSig:      beaconInstProof.signerSig,
 
-		BridgeInstPath:         bridgeInstProof.instPath,
-		BridgeInstPathIsLeft:   bridgeInstProof.instPathIsLeft,
-		BridgeInstRoot:         bridgeInstProof.instRoot,
-		BridgeBlkData:          bridgeInstProof.blkData,
-		BridgeBlkHash:          bridgeInstProof.blkHash,
-		BridgeSignerPubkeys:    bridgeInstProof.signerPubkeys,
-		BridgeSignerSig:        bridgeInstProof.signerSig,
-		BridgeSignerPaths:      bridgeInstProof.signerPaths,
-		BridgeSignerPathIsLeft: bridgeInstProof.signerPathIsLeft,
+		BridgeInstPath:       bridgeInstProof.instPath,
+		BridgeInstPathIsLeft: bridgeInstProof.instPathIsLeft,
+		BridgeInstRoot:       bridgeInstProof.instRoot,
+		BridgeBlkData:        bridgeInstProof.blkData,
+		BridgeBlkHash:        bridgeInstProof.blkHash,
+		BridgeSignerSig:      bridgeInstProof.signerSig,
 	}, nil
 }
 
