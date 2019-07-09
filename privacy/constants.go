@@ -32,6 +32,7 @@ const (
 	PublicKeySize       = 33 // bytes
 	TransmissionKeySize = 33 //bytes
 	ReceivingKeySize    = 32 // bytes
+	PaymentAddressSize = 66 // bytes
 
 	ElGamalCiphertextSize = 66 // bytes
 
