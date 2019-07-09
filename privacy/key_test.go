@@ -2,71 +2,65 @@ package privacy
 
 import (
 	"encoding/hex"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 )
 
-func TestGeneratePrivateKey(t *testing.T) {
-	privateKey := GeneratePrivateKey(new(big.Int).SetInt64(123).Bytes())
-	expectedResult := []byte{2, 31, 181, 150, 219, 129, 230, 208, 43, 243, 210, 88, 110, 227, 152, 31, 229, 25, 242, 117, 192, 172, 156, 167, 107, 188, 242, 235, 180, 9, 125, 150}
-
-	privateKeyArray := make([]uint8, PrivateKeySize)
-	copy(privateKeyArray, privateKey)
-	assert.Equal(t, expectedResult, privateKeyArray)
-}
-
-func TestPAdd1Div4(t *testing.T) {
-	res := PAdd1Div4(new(big.Int).SetInt64(123))
-	expectedResult := new(big.Int).SetInt64(31)
-	assert.Equal(t, expectedResult, res)
-}
-
 func TestGenerateKey(t *testing.T) {
-	privateKey := GeneratePrivateKey(new(big.Int).SetInt64(123).Bytes())
+	// random seed
+	seed := RandBytes(10)
 
-	//publicKey is compressed
+	// generate private key from seed
+	privateKey := GeneratePrivateKey(seed)
+	assert.Equal(t, PrivateKeySize, len(privateKey))
+
+	// generate public key from private key
 	publicKey := GeneratePublicKey(privateKey)
-	publicKeyBytes := make([]byte, CompressedPointSize)
-	copy(publicKeyBytes, publicKey[:])
+	assert.Equal(t, PublicKeySize, len(publicKey))
 
-	// decompress public key
+	// decompress public key to publicKeyPoint
 	publicKeyPoint := new(EllipticPoint)
 	err := publicKeyPoint.Decompress(publicKey)
-	if err != nil {
-		return
-	}
+	assert.Equal(t, nil, err)
 
-	assert.Equal(t, publicKeyBytes, publicKeyPoint.Compress())
+	publicKeyExpected := PedCom.G[0].ScalarMult(new(big.Int).SetBytes(privateKey))
+	assert.Equal(t, publicKeyExpected, publicKeyPoint)
 
+	// generate receiving key from private key
 	receivingKey := GenerateReceivingKey(privateKey)
+	assert.Equal(t, ReceivingKeySize, len(receivingKey))
 
+	// generate transmission key from receiving key
 	transmissionKey := GenerateTransmissionKey(receivingKey)
-	transmissionKeyBytes := make([]byte, CompressedPointSize)
-	copy(transmissionKeyBytes, transmissionKey[:])
+	assert.Equal(t, TransmissionKeySize, len(transmissionKey))
 
+	// decompress transmission key to transmissionKeyPoint
 	transmissionKeyPoint := new(EllipticPoint)
 	err = transmissionKeyPoint.Decompress(transmissionKey)
-	if err != nil {
-		return
-	}
-	assert.Equal(t, transmissionKeyBytes, transmissionKeyPoint.Compress())
+	assert.Equal(t, nil, err)
 
+	transmissionKeyExpected := PedCom.G[0].ScalarMult(new(big.Int).SetBytes(receivingKey))
+	assert.Equal(t, transmissionKeyExpected, transmissionKeyPoint)
+
+	// generate payment address from private key
 	paymentAddress := GeneratePaymentAddress(privateKey)
-	paymentAddrBytes := paymentAddress.Bytes()
+	assert.Equal(t, publicKey, paymentAddress.Pk)
+	assert.Equal(t, transmissionKey, paymentAddress.Tk)
 
+	// convert payment address to bytes array
+	paymentAddrBytes := paymentAddress.Bytes()
+	assert.Equal(t, PaymentAddressSize, len(paymentAddrBytes))
+
+	// new payment address to set bytes
 	paymentAddress2 := new(PaymentAddress)
 	paymentAddress2.SetBytes(paymentAddrBytes)
 
 	assert.Equal(t, paymentAddress.Pk, paymentAddress2.Pk)
 	assert.Equal(t, paymentAddress.Tk, paymentAddress2.Tk)
 
-	sk := GeneratePrivateKey([]byte{123})
-	base58.Base58Check.Encode(base58.Base58Check{}, sk, 0x01)
-}
+	// convert payment address to hex encode string
+	paymentAddrStr := paymentAddress2.String()
+	assert.Equal(t, hex.EncodedLen(PaymentAddressSize), len(paymentAddrStr))
 
-func TestDecodePubKey(t *testing.T) {
-	// shard 0
-	hex.DecodeString("023db7a5efdc3c948d9882458e74568edf42ac0f7eaa1527beb457075d57028bfe")
 }
