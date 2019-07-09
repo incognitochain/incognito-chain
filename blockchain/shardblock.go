@@ -16,8 +16,11 @@ type ShardBlock struct {
 	R             string  `json:"R"`
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
-	Body          ShardBody
-	Header        ShardHeader
+
+	ValidationData string `json:"ValidationData"`
+
+	Body   ShardBody
+	Header ShardHeader
 }
 
 type ShardToBeaconBlock struct {
@@ -246,3 +249,11 @@ func (block *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBlock, 
 // 	inst, err := blkRewardInfo.GetStringFormat()
 // 	return inst, err
 // }
+
+func (block *ShardBlock) AddValidationField(validateData string) error {
+	block.ValidationData = validateData
+	return nil
+}
+func (block *ShardBlock) GetValidationField() string {
+	return block.ValidationData
+}
