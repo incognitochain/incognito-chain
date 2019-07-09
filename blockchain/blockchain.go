@@ -2,17 +2,19 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"io"
+	"log"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-
+	
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -1390,6 +1392,19 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	)
 }
 
+func CalculateNumberOfByteToRead(amountBytes int) []byte {
+	var result = make([]byte,8)
+	binary.LittleEndian.PutUint32(result, uint32(amountBytes))
+	return result
+}
+func GetNumberOfByteToRead(value []byte) (int,error) {
+	var result uint32
+	err := binary.Read(bytes.NewBuffer(value), binary.LittleEndian, &result)
+	if err != nil {
+		return -1, err
+	}
+	return int(result), nil
+}
 func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) error {
 	bestStateBytes, err := blockchain.config.DataBase.FetchShardBestState(shardID)
 	if err != nil {
@@ -1408,10 +1423,19 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 			if err != nil {
 				return err
 			}
+			log.Printf("Byte len block %+v: %+v \n", i, len(data))
+			_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
+			if err != nil {
+				return err
+			}
 			_, err = writer.Write(data)
 			if err != nil {
 				return err
 			}
 		}
+	return nil
+}
+func (blockchain *BlockChain) RestoreShardChain(reader io.Reader, shardID byte) error {
+	
 	return nil
 }
