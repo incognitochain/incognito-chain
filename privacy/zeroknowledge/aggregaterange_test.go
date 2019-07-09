@@ -117,33 +117,40 @@ func TestInnerProductProve(t *testing.T) {
 }
 
 func TestAggregatedRangeProve(t *testing.T) {
-
-	point := new(privacy.EllipticPoint).Zero()
-	fmt.Printf("testt: %v\n", point.Compress())
+	// prepare witness for Aggregated range protocol
 	wit := new(AggregatedRangeWitness)
 	numValue := 3
-	wit.values = make([]*big.Int, numValue)
-	wit.rands = make([]*big.Int, numValue)
+	values := make([]*big.Int, numValue)
+	rands := make([]*big.Int, numValue)
 
-	for i := range wit.values {
-		wit.values[i] = big.NewInt(10)
-		wit.rands[i] = privacy.RandScalar()
+	for i := range values {
+		values[i] = new(big.Int).SetBytes(privacy.RandBytes(2))
+		rands[i] = privacy.RandScalar()
 	}
+	wit.Set(values, rands)
 
+	// proving
 	start := time.Now()
 	proof, err := wit.Prove()
-	if err != nil {
-		fmt.Printf("Err: %v\n", err)
-	}
+	assert.Equal(t, nil, err)
 	end := time.Since(start)
 	fmt.Printf("Aggregated range proving time: %v\n", end)
 
+	// validate sanity for proof
+	isValidSanity := proof.ValidateSanity()
+	assert.Equal(t, true, isValidSanity)
+
+	// convert proof to bytes array
 	bytes := proof.Bytes()
+	expectProofSize := estimateMultiRangeProofSize(numValue)
+	assert.Equal(t, int(expectProofSize), len(bytes))
 	fmt.Printf("Aggregated range proof size: %v\n", len(bytes))
 
+	// new AggregatedRangeProof from bytes array
 	proof2 := new(AggregatedRangeProof)
 	proof2.SetBytes(bytes)
 
+	// verify the proof
 	start = time.Now()
 	res := proof2.Verify()
 	end = time.Since(start)
@@ -152,75 +159,23 @@ func TestAggregatedRangeProve(t *testing.T) {
 	assert.Equal(t, true, res)
 }
 
-func BenchmarkAggregatedRangeProve(b *testing.B) {
-	wit := new(AggregatedRangeWitness)
-	numValue := 1
-	wit.values = make([]*big.Int, numValue)
-	wit.rands = make([]*big.Int, numValue)
-
-	for i := range wit.values {
-		wit.values[i] = big.NewInt(10)
-		wit.rands[i] = privacy.RandScalar()
-	}
-
-	for i := 0; i < b.N; i++ {
-		start := time.Now()
-		proof, err := wit.Prove()
-		if err != nil {
-			fmt.Printf("Err: %v\n", err)
-		}
-		end := time.Since(start)
-		fmt.Printf("Aggregated range proving time: %v\n", end)
-
-		bytes := proof.Bytes()
-		fmt.Printf("Len byte proof: %v\n", len(bytes))
-
-		proof2 := new(AggregatedRangeProof)
-		proof2.SetBytes(bytes)
-
-		start = time.Now()
-		res := proof.Verify()
-		end = time.Since(start)
-		fmt.Printf("Aggregated range verification time: %v\n", end)
-
-		assert.Equal(b, true, res)
-	}
-}
-
-func TestMultiExponentiation(t *testing.T) {
-	//exponents := []*big.Int{big.NewInt(5), big.NewInt(10),big.NewInt(5),big.NewInt(7), big.NewInt(5)}
-
-	exponents := make([]*big.Int, 64)
-	for i := range exponents {
-		exponents[i] = new(big.Int).SetBytes(privacy.RandBytes(2))
-	}
-
-	bases := newBulletproofParams(1)
-	//fmt.Printf("Values: %v\n", exponents[0])
-
-	start1 := time.Now()
-	expectedRes := new(privacy.EllipticPoint).Zero()
-	for i := range exponents {
-		expectedRes = expectedRes.Add(bases.G[i].ScalarMult(exponents[i]))
-	}
-	end1 := time.Since(start1)
-	fmt.Printf("normal calculation time: %v\n", end1)
-	fmt.Printf("Res from normal calculation: %+v\n", expectedRes)
-}
-
 func TestPad(t *testing.T) {
-	num := 1000
-	testcase1 := 1024
+	data := []struct{
+		number int
+		paddedNumber int
+	}{
+		{1000, 1024},
+		{3, 4},
+		{5, 8},
+	}
 
-	start := time.Now()
-	padNum := pad(num)
-	end := time.Since(start)
-	fmt.Printf("Pad 1: %v\n", end)
-
-	assert.Equal(t, testcase1, padNum)
+	for _, item := range data{
+		num := pad(item.number)
+		assert.Equal(t, item.paddedNumber, num)
+	}
 }
 
 func TestPowerVector(t *testing.T) {
 	twoVector := powerVector(big.NewInt(2), 5)
-	fmt.Printf("two vector : %v\n", twoVector)
+	assert.Equal(t, 5, len(twoVector))
 }
