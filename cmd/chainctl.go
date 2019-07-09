@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"io"
 	"log"
 	"os"
@@ -62,10 +63,21 @@ func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
 	}
 	log.Printf("Open leveldb at %+v successfully", filepath.Join(databaseDir))
 	bc := blockchain.NewBlockChain(&blockchain.Config{
+	
+	}, false)
+	crossShardPoolMap := make(map[byte]blockchain.CrossShardPool)
+	for i := 0; i< 255; i++ {
+		shardID := byte(i)
+		crossShardPoolMap[shardID] = mempool.GetCrossShardPool(shardID)
+	}
+	bc.Init(&blockchain.Config{
+		ChainParams: &blockchain.ChainTestParam,
 		DataBase:          db,
 		BeaconPool:        mempool.GetBeaconPool(),
 		ShardToBeaconPool: mempool.GetShardToBeaconPool(),
-	}, false)
+		PubSubManager:     pubsub.NewPubSubManager(),
+		CrossShardPool:  crossShardPoolMap,
+	})
 	blockchain.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
 	mempool.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
 	return bc, nil
@@ -223,7 +235,10 @@ func RestoreBeaconChain(chainDataDir string, filename string) error {
 		}
 		log.Printf("Block %+v length %+v", block.Header.Height, len(blockBytes))
 		log.Println(block)
-		err = bc.InsertBeaconBlock(block, false)
+		if block.Header.Height == 1 {
+			continue
+		}
+		err = bc.InsertBeaconBlock(block, true)
 		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
 			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockErr].Code {
 				continue
