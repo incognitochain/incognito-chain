@@ -102,6 +102,9 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 		shardID := byte(i)
 		bc.BestState.Shard[shardID] = &BestStateShard{}
 	}
+	bc.BestState.Beacon.Params = make(map[string]string)
+	bc.BestState.Beacon.ShardCommittee = make(map[byte][]string)
+	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]string)
 	bc.Synker = synker{
 		blockchain: bc,
 		cQuit:      bc.cQuitSync,
@@ -262,6 +265,9 @@ func (blockchain *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) initShardState(shardID byte) error {
+	log.Println(blockchain)
+	log.Println(blockchain.BestState)
+	log.Println(blockchain.BestState.Shard[0])
 	blockchain.BestState.Shard[shardID] = InitBestStateShard(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initBlock := ShardBlock{}
@@ -1435,7 +1441,33 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 		}
 	return nil
 }
-func (blockchain *BlockChain) RestoreShardChain(reader io.Reader, shardID byte) error {
-	
+func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
+	bestStateBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
+	if err != nil {
+		return err
+	}
+	beaconBestState := &BestStateBeacon{}
+	err = json.Unmarshal(bestStateBytes, beaconBestState)
+	bestBeaconHeight := beaconBestState.BeaconHeight
+	var i uint64
+	for i = 1;i < bestBeaconHeight; i++{
+		block, err := blockchain.GetBeaconBlockByHeight(i)
+		if err != nil {
+			return err
+		}
+		data, err := json.Marshal(block)
+		if err != nil {
+			return err
+		}
+		log.Printf("Byte len block %+v: %+v \n", i, len(data))
+		_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(data)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
