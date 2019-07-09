@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"errors"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"math/big"
 )
@@ -14,10 +15,6 @@ type SNNoPrivacyStatement struct {
 // SNNoPrivacyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
 // include Witness: CommitedValue, r []byte
 type SNNoPrivacyWitness struct {
-	// general info
-	// output *privacy.EllipticPoint
-	// vKey   *privacy.EllipticPoint
-	// input  *big.Int
 	stmt SNNoPrivacyStatement
 	seed *big.Int
 }
@@ -150,7 +147,7 @@ func (pro *SNNoPrivacyProof) Bytes() []byte {
 
 func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return nil
+		return errors.New("Bytes array is empty")
 	}
 
 	offset := 0
