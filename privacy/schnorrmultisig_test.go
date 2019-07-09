@@ -4,10 +4,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+	"time"
+	"fmt"
 )
 
 func TestSchnorrMultiSignature(t *testing.T) {
-	n := 10
+	n := 100
 	// generate key sets for n members(s)
 	keySets := make([]*MultiSigKeyset, n)
 	listPKs := make([]*PublicKey, n)
@@ -34,20 +36,32 @@ func TestSchnorrMultiSignature(t *testing.T) {
 	}
 
 	// each members sign on data
-	sigs := make([]*SchnMultiSig, n)
+	sigs := make([]*SchnMultiSig, n - 10)
 	var err error
-	for i, key := range keySets {
-		sigs[i], err = key.SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
+	start1 := time.Now()
+	for i := 0; i<n-10; i++{
+		sigs[i], err = keySets[i].SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
 
 		assert.Equal(t, nil, err)
 		assert.Equal(t, SchnMultiSigSize, len(sigs[i].Bytes()))
 	}
 
+	end1 := time.Since(start1)
+	fmt.Printf("Time1: %v\n", end1)
+
+
 	// combine all of signatures
+	start2 := time.Now()
 	combinedSig := multiSigScheme.CombineMultiSig(sigs)
+	end2 := time.Since(start2)
+	fmt.Printf("Time2: %v\n", end2)
 
 	// verify combined signature
-	isValid := combinedSig.VerifyMultiSig(data, listPKs, listPKs, combinedPublicRandomness)
+	start3 := time.Now()
+	listCombinedPKs := listPKs[:n-10]
+	isValid := combinedSig.VerifyMultiSig(data, listPKs, listCombinedPKs, combinedPublicRandomness)
+	end3 := time.Since(start3)
+	fmt.Printf("Time3: %v\n", end3)
 	assert.Equal(t, true, isValid)
 
 }

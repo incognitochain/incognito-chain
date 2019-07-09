@@ -29,14 +29,16 @@ type SchnMultiSig struct {
 
 // SetBytes (SchnMultiSig) reverts multi sig from bytes array
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
-	if len(sigByte) < CompressedPointSize+BigIntSize {
+	if len(sigByte) < SchnMultiSigSize {
 		return errors.New("Invalid sig length")
 	}
+
 	multiSig.R = new(EllipticPoint)
 	err := multiSig.R.Decompress(sigByte[0:CompressedPointSize])
 	if err != nil {
 		return err
 	}
+
 	multiSig.S = big.NewInt(0)
 	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
 	return nil
@@ -56,19 +58,11 @@ func (multiSigKeyset *MultiSigKeyset) Set(priKey *PrivateKey, pubKey *PublicKey)
 
 // Bytes (SchnMultiSig) converts SchnorrMultiSig to bytes array
 func (multiSig *SchnMultiSig) Bytes() []byte {
-	if !Curve.IsOnCurve(multiSig.R.X, multiSig.R.Y) {
-		panic("Throw Error from Byte() method")
+	if !Curve.IsOnCurve(multiSig.R.X, multiSig.R.Y) || multiSig.S == nil{
+		return []byte{}
 	}
-	res := multiSig.R.Compress()
-	if multiSig.S == nil {
-		panic("Throw Error from Byte() method")
-	}
-	temp := multiSig.S.Bytes()
-	diff := BigIntSize - len(temp)
-	for j := 0; j < diff; j++ {
-		temp = append([]byte{0}, temp...)
-	}
-	res = append(res, temp...)
+
+	res := append(multiSig.R.Compress(), AddPaddingBigInt(multiSig.S, BigIntSize)...)
 	return res
 }
 
@@ -77,10 +71,9 @@ func (multisigScheme *MultiSigScheme) Init() {
 	multisigScheme.Keyset = new(MultiSigKeyset)
 	multisigScheme.Keyset.priKey = new(PrivateKey)
 	multisigScheme.Keyset.pubKey = new(PublicKey)
+
 	multisigScheme.Signature = new(SchnMultiSig)
-	multisigScheme.Signature.R = new(EllipticPoint)
-	multisigScheme.Signature.R.X = big.NewInt(0)
-	multisigScheme.Signature.R.Y = big.NewInt(0)
+	multisigScheme.Signature.R = new(EllipticPoint).Zero()
 	multisigScheme.Signature.S = big.NewInt(0)
 }
 
@@ -107,13 +100,17 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	//	X = (PK0*a0) + (PK1*a1) + ... + (PKn*an)
 	//	C = Hash(X||r||data)
 	aggKey, C, _ := generateCommonParams(listPK, listPK, R, data)
+
 	//recalculate a0
 	selfPK := new(EllipticPoint)
-	selfPK.Decompress(*multiSigKeyset.pubKey)
+	err := selfPK.Decompress(*multiSigKeyset.pubKey)
+	if err != nil{
+		return nil, err
+	}
+
 	temp := aggKey.Add(selfPK)
 	a := common.HashB(temp.Compress())
-	aInt := big.NewInt(0)
-	aInt.SetBytes(a)
+	aInt := new(big.Int).SetBytes(a)
 	aInt.Mod(aInt, Curve.Params().N)
 
 	//sig = r + C*a0*privKey
@@ -127,13 +124,12 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	sig.Mod(sig, Curve.Params().N)
 
 	selfR := new(EllipticPoint)
-	selfR.X, selfR.Y = big.NewInt(0), big.NewInt(0)
-	selfR.X.Set(Curve.Params().Gx)
-	selfR.Y.Set(Curve.Params().Gy)
+	selfR.Set(Curve.Params().Gx, Curve.Params().Gy)
 	selfR = selfR.ScalarMult(r)
+
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
-	if len(res.Bytes()) != (BigIntSize + CompressedPointSize) {
+	if len(res.Bytes()) != (SchnMultiSigSize) {
 		return nil, errors.New("can not sign multi sig")
 	}
 
@@ -190,46 +186,41 @@ func (multisigScheme *MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int
 }
 
 func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey, R *EllipticPoint, data []byte) (*EllipticPoint, *big.Int, *EllipticPoint) {
-	aggPubkey := new(EllipticPoint)
-	aggPubkey.X = big.NewInt(0)
-	aggPubkey.Y = big.NewInt(0)
+	aggPubkey := new(EllipticPoint).Zero()
 
+	mapCommonPKPoints := make(map[*PublicKey]*EllipticPoint, len(listCommonPK))
 	for i := 0; i < len(listCommonPK); i++ {
-		temp := new(EllipticPoint)
-		temp.Decompress(*listCommonPK[i])
-		aggPubkey = aggPubkey.Add(temp)
+		tmp := new(EllipticPoint)
+		tmp.Decompress(*listCommonPK[i])
+		mapCommonPKPoints[listCommonPK[i]] = tmp
+		aggPubkey = aggPubkey.Add(tmp)
 	}
 
 	X := new(EllipticPoint).Zero()
-
+	mapCommonPKaInt := make(map[*PublicKey]*big.Int, len(listCommonPK))
 	for i := 0; i < len(listCommonPK); i++ {
-		temp := new(EllipticPoint)
-		temp.Decompress(*listCommonPK[i])
-		temp1 := aggPubkey.Add(temp)
-		a := common.HashB(temp1.Compress())
-		aInt := big.NewInt(0)
-		aInt.SetBytes(a)
+		temp := aggPubkey.Add(mapCommonPKPoints[listCommonPK[i]])
+
+		a := common.HashB(temp.Compress())
+		aInt := new(big.Int).SetBytes(a)
 		aInt.Mod(aInt, Curve.Params().N)
-		X = X.Add(temp.ScalarMult(aInt))
+		mapCommonPKaInt[listCommonPK[i]] = new(big.Int).Set(aInt)
+		X = X.Add(mapCommonPKPoints[listCommonPK[i]].ScalarMult(aInt))
 	}
 
-	Cbyte := X.Compress()
-	Cbyte = append(Cbyte, R.Compress()...)
-	Cbyte = append(Cbyte, data...)
-	C := big.NewInt(0)
-	C.SetBytes(Cbyte)
+	Cbytes := append(X.Compress(), R.Compress()...)
+	Cbytes = append(Cbytes, data...)
+	C := new(big.Int).SetBytes(Cbytes)
 	C.Mod(C, Curve.Params().N)
 
 	if len(listCommonPK) > len(listCombinePK) {
 		X.Set(big.NewInt(0), big.NewInt(0))
+
 		for i := 0; i < len(listCombinePK); i++ {
-			temp := new(EllipticPoint)
-			temp.Decompress(*listCombinePK[i])
-			temp1 := aggPubkey.Add(temp)
-			a := common.HashB(temp1.Compress())
-			aInt := big.NewInt(0)
-			aInt.SetBytes(a)
-			X = X.Add(temp.ScalarMult(aInt))
+			publicKeyPoint, _:= mapCommonPKPoints[listCombinePK[i]]
+			aInt, _ := mapCommonPKaInt[listCombinePK[i]]
+
+			X = X.Add(publicKeyPoint.ScalarMult(aInt))
 		}
 	}
 	return aggPubkey, C, X
