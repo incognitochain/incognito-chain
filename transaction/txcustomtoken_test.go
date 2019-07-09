@@ -104,4 +104,6 @@ func TestTxCustomToken(t *testing.T) {
 	_, amount := tx.GetTokenReceivers()
 	assert.Equal(t, uint64(10), amount[0])
 
+	unique, _, _ := tx.GetTokenUniqueReceiver()
+	assert.Equal(t, true, unique)
 }
