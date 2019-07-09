@@ -7,25 +7,27 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-// MultiSigScheme ...
+// MultiSigScheme represents to Schnorr multi signature
+// include key set (signing key and verification key) and signature
 type MultiSigScheme struct {
 	Keyset    *MultiSigKeyset
 	Signature *SchnMultiSig
 }
 
-// MultiSigKeyset contains keyset for EC Schnorr MultiSig Scheme
+// MultiSigKeyset represents a key set for Schnorr MultiSig Scheme
+// key set contains priKey and pubKey
 type MultiSigKeyset struct {
 	priKey *PrivateKey
 	pubKey *PublicKey
 }
 
-// SchnMultiSig is struct of EC Schnorr Signature which is combinable
+// SchnMultiSig represents a EC Schnorr Signature which is combined
 type SchnMultiSig struct {
 	R *EllipticPoint
 	S *big.Int
 }
 
-// SetBytes - Constructing multiSig from byte array
+// SetBytes (SchnMultiSig) reverts multi sig from bytes array
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
 	if len(sigByte) < CompressedPointSize+BigIntSize {
 		return errors.New("Invalid sig length")
@@ -40,19 +42,19 @@ func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
 	return nil
 }
 
-// Set - Constructing multiSig
+// Set (SchnMultiSig) sets values to multi sig
 func (multiSig *SchnMultiSig) Set(R *EllipticPoint, S *big.Int) {
 	multiSig.R = R
 	multiSig.S = S
 }
 
-// Set - Constructing MultiSigKeyset
+// Set (MultiSigKeyset) sets values to multi key set
 func (multiSigKeyset *MultiSigKeyset) Set(priKey *PrivateKey, pubKey *PublicKey) {
 	multiSigKeyset.priKey = priKey
 	multiSigKeyset.pubKey = pubKey
 }
 
-// Bytes - Converting SchnorrMultiSig to byte array
+// Bytes (SchnMultiSig) converts SchnorrMultiSig to bytes array
 func (multiSig *SchnMultiSig) Bytes() []byte {
 	if !Curve.IsOnCurve(multiSig.R.X, multiSig.R.Y) {
 		panic("Throw Error from Byte() method")
@@ -70,6 +72,7 @@ func (multiSig *SchnMultiSig) Bytes() []byte {
 	return res
 }
 
+// Init (MultiSigScheme) initializes multi sig scheme
 func (multisigScheme *MultiSigScheme) Init() {
 	multisigScheme.Keyset = new(MultiSigKeyset)
 	multisigScheme.Keyset.priKey = new(PrivateKey)
@@ -89,12 +92,12 @@ func (multisigScheme *MultiSigScheme) Init() {
 	#3 g^r
 	#4 r: random number of signer
 */
-// SignMultiSig ...
-func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
+// SignMultiSig receives a data in bytes array,
+// list of public keys, list of randomness and a secret random
+// it returns a Schnorr multi signature
+func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) (*SchnMultiSig, error) {
 	//r = R0+R1+R2+R3+...+Rn
-	R := new(EllipticPoint)
-	R.X = big.NewInt(0)
-	R.Y = big.NewInt(0)
+	R := new(EllipticPoint).Zero()
 	for i := 0; i < len(listR); i++ {
 		R = R.Add(listR[i])
 	}
@@ -131,10 +134,10 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
 	if len(res.Bytes()) != (BigIntSize + CompressedPointSize) {
-		panic("aaaaaaaaaaaaaaaaaaaa")
+		return nil, errors.New("can not sign multi sig")
 	}
 
-	return res
+	return res, nil
 }
 
 // VerifyMultiSig ...
@@ -147,6 +150,11 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 		#4: r combine in phase 1
 	return: true or false
 */
+
+// VerifyMultiSig receives a data in bytes array
+// list of common public keys, list of combined public key
+// and combined randomness
+// It verifies the multi sig is valid or not
 func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
 	if len(multiSig.Bytes()) != (BigIntSize + CompressedPointSize) {
 		panic("Wrong length")
@@ -158,19 +166,11 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 	//for verify signature of a Signer, which wasn't combined, |listPK| = 1 and contain publickey of the Signer
 	var C *big.Int
 	var X *EllipticPoint
-	// if RCombine == nil {
 	_, C, X = generateCommonParams(listCommonPK, listCombinePK, RCombine, data)
-	// } else {
-	// _, C, X = generateCommonParams(pubKey, listPK, RCombine, data)
-	// }
 
 	//GSPoint = G*S
 	GSPoint := new(EllipticPoint)
-	GSPoint.X, GSPoint.Y = big.NewInt(0), big.NewInt(0)
-	GSPoint.X.Set(Curve.Params().Gx)
-	GSPoint.Y.Set(Curve.Params().Gy)
-	// fmt.Println("GSPoint: \n", GSPoint)
-	// fmt.Println("multisig.S: \n", multiSig.S)
+	GSPoint.Set(Curve.Params().Gx, Curve.Params().Gy)
 	GSPoint = GSPoint.ScalarMult(multiSig.S)
 
 	//RXCPoint is r.X^C
@@ -179,12 +179,12 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 	return GSPoint.IsEqual(RXCPoint)
 }
 
+// GenerateRandom generates a secret randomness r
+// ands returns G^r in which G is base generator of Curve
 func (multisigScheme *MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int) {
 	r := RandScalar()
 	GPoint := new(EllipticPoint)
-	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
-	GPoint.X.Set(Curve.Params().Gx)
-	GPoint.Y.Set(Curve.Params().Gy)
+	GPoint.Set(Curve.Params().Gx, Curve.Params().Gy)
 	R := GPoint.ScalarMult(r)
 	return R, r
 }
@@ -200,9 +200,7 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 		aggPubkey = aggPubkey.Add(temp)
 	}
 
-	X := new(EllipticPoint)
-	X.X = big.NewInt(0)
-	X.Y = big.NewInt(0)
+	X := new(EllipticPoint).Zero()
 
 	for i := 0; i < len(listCommonPK); i++ {
 		temp := new(EllipticPoint)
@@ -223,8 +221,7 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 	C.Mod(C, Curve.Params().N)
 
 	if len(listCommonPK) > len(listCombinePK) {
-		X.X.Set(big.NewInt(0))
-		X.Y.Set(big.NewInt(0))
+		X.Set(big.NewInt(0), big.NewInt(0))
 		for i := 0; i < len(listCombinePK); i++ {
 			temp := new(EllipticPoint)
 			temp.Decompress(*listCombinePK[i])
@@ -246,8 +243,7 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 // CombineMultiSig Combining all EC Schnorr MultiSig in given list
 func (multisigScheme *MultiSigScheme) CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig {
 	res := new(SchnMultiSig)
-	res.R = new(EllipticPoint)
-	res.R.X, res.R.Y = big.NewInt(0), big.NewInt(0)
+	res.R = new(EllipticPoint).Zero()
 	res.S = big.NewInt(0)
 
 	for i := 0; i < len(listSignatures); i++ {
