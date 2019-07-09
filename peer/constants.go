@@ -38,3 +38,9 @@ const (
 	MessageToPeer   = byte('p')
 	MessageToBeacon = byte('b')
 )
+
+var (
+	RelayNode = []string{
+		"",
+	}
+)
