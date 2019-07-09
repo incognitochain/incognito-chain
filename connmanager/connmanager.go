@@ -448,6 +448,8 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 			p := rawPeer
 			responsePeers[rawPeer.PublicKey] = &p
 		}
+		// connect to relay nodes
+		connManager.handleRelayNode(responsePeers)
 		// connect to beacon peers
 		connManager.handleRandPeersOfBeacon(connManager.Config.MaxPeersBeacon, responsePeers)
 		// connect to same shard peers
@@ -757,4 +759,32 @@ func (connManager *ConnManager) GetPeerConnOfAll() []*peer.PeerConn {
 		peerConns = append(peerConns, listener.GetPeerConnOfAll()...)
 	}
 	return peerConns
+}
+
+// GetConnOfRelayNode - return connection of relay nodes
+func (connManager *ConnManager) GetConnOfRelayNode() []*peer.PeerConn {
+	peerConns := make([]*peer.PeerConn, 0)
+	listener := connManager.Config.ListenerPeer
+	if listener != nil {
+		allPeers := listener.GetPeerConnOfAll()
+		for _, peerConn := range allPeers {
+			pbk := peerConn.RemotePeer.PublicKey
+			if pbk != "" && common.IndexOfStr(pbk, peer.RelayNode) != -1 {
+				peerConns = append(peerConns, peerConn)
+			}
+		}
+	}
+	return peerConns
+}
+
+// handle connect to relay node
+func (connManager *ConnManager) handleRelayNode(mPeers map[string]*wire.RawPeer) {
+	for _, p := range mPeers {
+		publicKey := p.PublicKey
+		if common.IndexOfStr(publicKey, peer.RelayNode) == -1 || connManager.checkPeerConnOfPublicKey(publicKey) || common.IndexOfStr(publicKey, protocol.RoundData.Committee) == -1 {
+			continue
+		}
+
+		go connManager.Connect(p.RawAddress, p.PublicKey, nil)
+	}
 }
