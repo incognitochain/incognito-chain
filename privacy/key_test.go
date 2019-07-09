@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestGenerateKey(t *testing.T) {
+func TestKey(t *testing.T) {
 	// random seed
 	seed := RandBytes(10)
 
