@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"syscall"
 )
 func BackupShardChain(shardID byte, chainDataDir string, outDatadir string) error {
@@ -73,12 +72,11 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 	if err != nil {
 		return err
 	}
+	log.Println(fh.Name())
 	defer fh.Close()
-	var reader io.Reader
-	if strings.HasSuffix(filename, ".gz") {
-		if reader, err = gzip.NewReader(reader); err != nil {
-			return err
-		}
+	reader, err := gzip.NewReader(fh)
+	if err != nil {
+		return err
 	}
 	bc, err := makeBlockChain(chainDataDir)
 	if err != nil {
@@ -112,6 +110,7 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 		if err != nil {
 			return err
 		}
+		log.Println(block)
 		err = bc.ProcessStoreShardBlock(block)
 		if err != nil {
 			return err
@@ -119,5 +118,6 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 		// check interupt whenever finish insert 1 block
 		checkInterrupt()
 	}
+	log.Printf("Restore Shard %+v Chain Successfully", shardID)
 	return nil
 }
