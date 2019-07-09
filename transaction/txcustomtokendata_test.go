@@ -21,11 +21,11 @@ func TestTxTokenData(t *testing.T) {
 	paymentAddress, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
 	data := TxTokenData{
 		PropertyID:     common.PRVCoinID,
+		PropertyName:   "PRV Coin",
+		PropertySymbol: "PRV",
 		Amount:         10,
 		Vouts:          []TxTokenVout{{PaymentAddress: paymentAddress.KeySet.PaymentAddress, Value: 10, index: 3}},
 		Mintable:       false,
-		PropertyName:   "PRV Coin",
-		PropertySymbol: "PRV",
 		Type:           0,
 		Vins:           []TxTokenVin{{PaymentAddress: paymentAddress.KeySet.PaymentAddress, TxCustomTokenID: common.PRVCoinID, VoutIndex: 1}},
 	}
