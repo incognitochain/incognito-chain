@@ -26,7 +26,7 @@ func FlattenAndConvertStringInst(insts [][]string) [][]byte {
 func DecodeInstruction(inst []string) []byte {
 	flatten := []byte{}
 	switch inst[0] {
-	case strconv.Itoa(metadata.BeaconPubkeyRootMeta), strconv.Itoa(metadata.BridgePubkeyRootMeta):
+	case strconv.Itoa(metadata.BeaconSwapConfirmMeta), strconv.Itoa(metadata.BridgeSwapConfirmMeta):
 		flatten = decodeSwapConfirmInst(inst)
 
 	case strconv.Itoa(metadata.BurningConfirmMeta):
@@ -45,17 +45,17 @@ func decodeSwapConfirmInst(inst []string) []byte {
 	metaType := []byte(inst[0])
 	shardID := []byte(inst[1])
 	height, _, _ := base58.Base58Check{}.Decode(inst[2])
-	// Special case: instruction storing merkle root of beacon/bridge's committee => decode the merkle root and sign on that instead
-	// We need to decode and submit the raw merkle root to Ethereum because we can't decode it on smart contract
-	pk := []byte(inst[3])
+	// Special case: instruction storing beacon/bridge's committee => decode and sign on that instead
+	// We need to decode and then submit the pubkeys to Ethereum because we can't decode it on smart contract
+	pks := []byte(inst[3])
 	if d, _, err := (base58.Base58Check{}).Decode(inst[3]); err == nil {
-		pk = d
+		pks = d
 	}
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
 	flatten = append(flatten, toBytes32BigEndian(height)...)
-	flatten = append(flatten, pk...)
+	flatten = append(flatten, pks...)
 	return flatten
 }
 
@@ -147,12 +147,12 @@ func pickInstructionFromBeaconBlocks(beaconBlocks []*BeaconBlock, instType strin
 	return insts
 }
 
-// pickBeaconPubkeyRootInstruction finds all BeaconPubkeyRootMeta instructions
+// pickBeaconPubkeyRootInstruction finds all BeaconSwapConfirmMeta instructions
 // These instructions contain merkle root of beacon committee's pubkey
 func pickBeaconPubkeyRootInstruction(
 	beaconBlocks []*BeaconBlock,
 ) [][]string {
-	instType := strconv.Itoa(metadata.BeaconPubkeyRootMeta)
+	instType := strconv.Itoa(metadata.BeaconSwapConfirmMeta)
 	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
 }
 
@@ -173,56 +173,56 @@ func pickBurningConfirmInstruction(
 	return insts
 }
 
-// pickBridgePubkeyRootInstruction finds all BridgePubkeyRootMeta instructions
+// pickBridgePubkeyRootInstruction finds all BridgeSwapConfirmMeta instructions
 // These instructions contain merkle root of bridge committee's pubkey
 func pickBridgePubkeyRootInstruction(
 	block *ShardToBeaconBlock,
 ) [][]string {
-	shardType := strconv.Itoa(metadata.BridgePubkeyRootMeta)
+	shardType := strconv.Itoa(metadata.BridgeSwapConfirmMeta)
 	return pickInstructionWithType(block.Instructions, shardType)
 }
 
-// parsePubkeysAndBuildMerkleRoot returns the merkle root of a list of validators'pubkey stored as string
-func parsePubkeysAndBuildMerkleRoot(vals []string) []byte {
-	pks := [][]byte{}
+// parseAndConcatPubkeys parse pubkeys of a commmittee stored as string and concat them
+func parseAndConcatPubkeys(vals []string) []byte {
+	pks := []byte{}
 	for _, val := range vals {
 		pk, _, _ := base58.Base58Check{}.Decode(val)
 		// TODO(@0xbunyip): handle error
-		pks = append(pks, pk)
+		pks = append(pks, pk...)
 	}
-	return GetKeccak256MerkleRoot(pks)
+	return pks
 }
 
-// buildBeaconPubkeyRootInstruction stores in an instruction the list of new beacon validators and the block that they start signing on
-func buildBeaconPubkeyRootInstruction(currentValidators []string, startHeight uint64) []string {
-	beaconCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
-	fmt.Printf("[db] added beaconCommRoot: %d %x\n", startHeight, beaconCommRoot)
+// buildBeaconSwapConfirmInstruction stores in an instruction the list of new beacon validators and the block that they start signing on
+func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
+	beaconComm := parseAndConcatPubkeys(currentValidators)
+	fmt.Printf("[db] added beaconComm: %d %x\n", startHeight, beaconComm)
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
 
 	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
-	instContent := base58.Base58Check{}.Encode(beaconCommRoot, 0x00)
+	instContent := base58.Base58Check{}.Encode(beaconComm, 0x00)
 	return []string{
-		strconv.Itoa(metadata.BeaconPubkeyRootMeta),
+		strconv.Itoa(metadata.BeaconSwapConfirmMeta),
 		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(height.Bytes(), 0x00),
 		instContent,
 	}
 }
 
-// buildBridgePubkeyRootInstruction stores in an instruction the list of new bridge validators and the block that they start signing on
-func buildBridgePubkeyRootInstruction(currentValidators []string, startHeight uint64) []string {
-	bridgeCommRoot := parsePubkeysAndBuildMerkleRoot(currentValidators)
-	fmt.Printf("[db] added bridgeCommRoot: %d %x\n", startHeight, bridgeCommRoot)
+// buildBridgeSwapConfirmInstruction stores in an instruction the list of new bridge validators and the block that they start signing on
+func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
+	bridgeComm := parseAndConcatPubkeys(currentValidators)
+	fmt.Printf("[db] added bridgeComm: %d %x\n", startHeight, bridgeComm)
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
 
 	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
-	instContent := base58.Base58Check{}.Encode(bridgeCommRoot, 0x00)
+	instContent := base58.Base58Check{}.Encode(bridgeComm, 0x00)
 	return []string{
-		strconv.Itoa(metadata.BridgePubkeyRootMeta),
+		strconv.Itoa(metadata.BridgeSwapConfirmMeta),
 		strconv.Itoa(int(shardID)),
 		base58.Base58Check{}.Encode(height.Bytes(), 0x00),
 		instContent,
