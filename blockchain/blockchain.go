@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"io"
 	"math/big"
 	"sort"
 	"strconv"
@@ -1387,4 +1388,30 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		coinID.String(),
 		shardID,
 	)
+}
+
+func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) error {
+	bestStateBytes, err := blockchain.config.DataBase.FetchShardBestState(shardID)
+	if err != nil {
+		return err
+	}
+		shardBestState := &BestStateShard{}
+		err = json.Unmarshal(bestStateBytes, shardBestState)
+		bestShardHeight := shardBestState.ShardHeight
+		var i uint64
+		for i = 1;i < bestShardHeight; i++{
+			block, err := blockchain.GetShardBlockByHeight(i, shardID)
+			if err != nil {
+				return err
+			}
+			data, err := json.Marshal(block)
+			if err != nil {
+				return err
+			}
+			_, err = writer.Write(data)
+			if err != nil {
+				return err
+			}
+		}
+	return nil
 }
