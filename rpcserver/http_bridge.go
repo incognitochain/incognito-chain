@@ -2,7 +2,9 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"strconv"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
@@ -257,4 +259,19 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
 	}
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	db := httpServer.config.BlockChain.GetDatabase()
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[4].(map[string]interface{})
+	blockHash := rCommon.HexToHash(data["BlockHash"].(string))
+	txIdx := uint(data["TxIndex"].(float64))
+	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
+
+	issued, err := db.IsETHTxHashIssued(uniqETHTx)
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	return issued, nil
 }
