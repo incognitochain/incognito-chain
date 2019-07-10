@@ -69,4 +69,5 @@ const (
 	Condition10                           = "condition10"
 	Condition11                           = "condition11"
 	VTBITxTypeMetic                       = "vtbitxtype"
+	ReplaceTxMetic                       = "replacetx"
 )
