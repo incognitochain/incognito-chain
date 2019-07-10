@@ -1,6 +1,7 @@
 # Client controller on command line for incognito-chain
 
 ## Backup and Restore Database
+### Command
 `$ go build -o [app-name]`
 
 Run from root directory of project (incognito-chain/)
@@ -22,5 +23,6 @@ Example:
     
     - Restore: `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/shard0-0/testnet/block" --filename data/export-incognito-shard-0 --shardids 0 --testnet`
 
-Note about blockchain database directory:
+### Notice
+- You SHOULD Restore Beacon Chain Database BEFORE Shard Chain Database
 - By default block will be stored in .../testnet/block or .../mainnet/block
