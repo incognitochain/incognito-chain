@@ -18,10 +18,21 @@ List of flags
 ```
 
 Example:
-
-    - Backup: `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/shard0-0/testnet/block" --outdatadir "data/" --shardids "0" --testnet`
+- Backup:
+    - Beacon: 
+    `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/fullnode/testnet/block" --outdatadir "data/" --beacon --testnet`
+    - Shard:
+    `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/fullnode/testnet/block" --outdatadir "data/" --shardids 0,1,2,3 --testnet`
+    - All:
+    `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/fullnode/testnet/block" --outdatadir "data/" --shardids all --beacon --testnet`
+  
+- Restore: 
+    - Beacon: Restore only Beacon Chain
     
-    - Restore: `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/shard0-0/testnet/block" --filename data/export-incognito-shard-0 --shardids 0 --testnet`
+    `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/fullnode/testnet/block" --filename data/export-incognito-beacon --beacon --testnet`
+    - Shard: Restore only Shard Chain (support multi shard at a time)
+    
+    `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/fullnode/testnet/block" --filename "data/export-incognito-shard-0,data/export-incognito-shard-1" --beacon --testnet`
 
 ### Notice
 - You SHOULD Restore Beacon Chain Database BEFORE Shard Chain Database
