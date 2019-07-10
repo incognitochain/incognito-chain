@@ -1429,10 +1429,6 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 			if err != nil {
 				return err
 			}
-			if i < 30 {
-				log.Printf("Byte len block %+v: %+v \n", i, data)
-			}
-			log.Printf("Byte len block %+v: %+v \n", i, len(data))
 			_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
 			if err != nil {
 				return err
@@ -1441,6 +1437,7 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 			if err != nil {
 				return err
 			}
+			log.Printf("Backup Shard Block %+v", i)
 		}
 	return nil
 }
@@ -1462,25 +1459,16 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 		if err != nil {
 			return err
 		}
-		if i < 30 {
-			log.Printf("Byte len block %+v: %+v \n", i, data)
-		}
-		log.Printf("Byte len block %+v: %+v \n", i, len(data))
 		numOfByteToRead := CalculateNumberOfByteToRead(len(data))
-		if i < 30 {
-			log.Printf("numOfByteToRead %+v: %+v \n", i, numOfByteToRead)
-		}
 		_, err = writer.Write(numOfByteToRead)
 		if err != nil {
 			return err
 		}
-		counter, err := writer.Write(data)
-		if i < 30 {
-			log.Printf("counter of block %+v: %+v \n", i, counter)
-		}
+		_, err = writer.Write(data)
 		if err != nil {
 			return err
 		}
+		log.Printf("Backup Beacon Block %+v", i)
 	}
 	return nil
 }
