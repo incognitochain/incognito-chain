@@ -351,13 +351,12 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 		tokenDataSize += uint64(len(vin.Signature))
 		tokenDataSize += uint64(len(vin.TxCustomTokenID))
 		tokenDataSize += 4 // for VoutIndex
-		tokenDataSize += uint64(vin.PaymentAddress.Size())
+		tokenDataSize += uint64(privacy.PaymentAddressSize)
 	}
 
-	for _, vout := range tx.TxTokenData.Vouts {
-		tokenDataSize += 8 // for value
-		tokenDataSize += uint64(vout.PaymentAddress.Size())
-	}
+	// size of Vouts (include value and payment address)
+	sizeVout := 8 + privacy.PaymentAddressSize
+	tokenDataSize += uint64(len(tx.TxTokenData.Vouts) * sizeVout)
 
 	// calculate metadata size if any
 	meta := tx.Metadata
