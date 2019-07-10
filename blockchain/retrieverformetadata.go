@@ -67,6 +67,11 @@ func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) []
 }
 
 func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string) {
+	if blockchain.IsTest {
+		SC := make(map[byte][]string)
+		SPV := make(map[byte][]string)
+		return SC,SPV,[]string{},[]string{},[]string{},[]string{},[]string{},[]string{}
+	}
 	beaconBestState := BestStateBeacon{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err != nil {

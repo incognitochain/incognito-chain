@@ -1,5 +1,5 @@
 // Copyright (c) 2014-2016 The thaibaoautonomous developers
-// Use of this source code is governed by an ISC
+// Use of this source Code is governed by an ISC
 // license that can be found in the LICENSE file.
 
 package blockchain
@@ -41,7 +41,7 @@ const (
 )
 
 var ErrCodeMessage = map[int]struct {
-	code    int
+	Code    int
 	message string
 }{
 	UnExpectedError:               {-1, "Unexpected error"},
@@ -84,7 +84,7 @@ func (e BlockChainError) Error() string {
 
 func NewBlockChainError(key int, err error) *BlockChainError {
 	return &BlockChainError{
-		Code:    ErrCodeMessage[key].code,
+		Code:    ErrCodeMessage[key].Code,
 		Message: ErrCodeMessage[key].message,
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
 	}

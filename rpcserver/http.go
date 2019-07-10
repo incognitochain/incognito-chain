@@ -47,12 +47,12 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
-func (HttpServer *HttpServer) Start() error {
-	if atomic.AddInt32(&HttpServer.started, 1) != 1 {
+func (httpServer *HttpServer) Start() error {
+	if atomic.LoadInt32(&httpServer.started) == 1 {
 		return NewRPCError(ErrAlreadyStarted, nil)
 	}
 	httpServeMux := http.NewServeMux()
-	HttpServer.server = &http.Server{
+	httpServer.server = &http.Server{
 		Handler: httpServeMux,
 		// Timeout connections which don't complete the initial
 		// handshake within the allowed timeframe.
@@ -60,16 +60,21 @@ func (HttpServer *HttpServer) Start() error {
 	}
 
 	httpServeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		HttpServer.handleRequest(w, r)
+		httpServer.handleRequest(w, r)
 	})
-	for _, listen := range HttpServer.config.HttpListenters {
+	for _, listen := range httpServer.config.HttpListenters {
 		go func(listen net.Listener) {
 			Logger.log.Infof("RPC Http server listening on %s", listen.Addr())
-			go HttpServer.server.Serve(listen)
+			go func() {
+				err := httpServer.server.Serve(listen)
+				if err != nil {
+					Logger.log.Errorf("Close Http Listener %+v", err)
+				}
+			}()
 			Logger.log.Infof("RPC Http listener done for %s", listen.Addr())
 		}(listen)
 	}
-	HttpServer.started = 1
+	atomic.StoreInt32(&httpServer.started, 1)
 	return nil
 }
 
@@ -80,14 +85,15 @@ func (httpServer *HttpServer) Stop() {
 	}
 	Logger.log.Info("RPC server shutting down")
 	if httpServer.started != 0 {
-		httpServer.server.Close()
+		err := httpServer.server.Close()
+		fmt.Println(err)
 	}
 	for _, listen := range httpServer.config.HttpListenters {
 		listen.Close()
 	}
 	Logger.log.Warn("RPC server shutdown complete")
-	httpServer.started = 0
-	httpServer.shutdown = 1
+	atomic.StoreInt32(&httpServer.started, 0)
+	atomic.StoreInt32(&httpServer.shutdown, 1)
 }
 
 /*
@@ -227,6 +233,8 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	}
 
 	// Write the response.
+	// for testing only
+	w.WriteHeader(http.StatusOK)
 	err = httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusOK, buf)
 	if err != nil {
 		Logger.log.Error(err)
@@ -264,7 +272,7 @@ func (httpServer *HttpServer) checkAuth(r *http.Request, require bool) (bool, bo
 		if require {
 			Logger.log.Warnf("RPC authentication failure from %s",
 				r.RemoteAddr)
-			return false, false, errors.New("auth failure")
+			return false, false, NewRPCError(ErrAuthFail, nil)
 		}
 
 		return false, false, nil

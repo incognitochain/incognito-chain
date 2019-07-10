@@ -34,7 +34,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 						return
 					}
 				}
-				err := tp.validateTxIndependProperties(tx)
+				err := tp.validateTxIndependentProperties(tx)
 				errCh <- err
 			}(tx)
 		}
@@ -92,7 +92,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 				if found > 0 {
 					str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
 					err := MempoolTxError{}
-					err.Init(RejectDuplicateStakeTx, errors.New(str))
+					err.Init(RejectDuplicateStakePubkey, errors.New(str))
 					return err
 				}
 			}
@@ -119,7 +119,7 @@ Verify Transaction with these condition:
 	5. Validate By it self (data in tx): privacy proof, metadata,...
 	6. Validate tx with blockchain: douple spend, ...
 */
-func (tp *TxPool) validateTxIndependProperties(tx metadata.Transaction) error {
+func (tp *TxPool) validateTxIndependentProperties(tx metadata.Transaction) error {
 	var shardID byte
 	var err error
 	txHash := tx.Hash()

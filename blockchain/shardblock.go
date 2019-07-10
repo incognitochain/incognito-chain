@@ -63,10 +63,10 @@ func (shardBlock *ShardBlock) Hash() *common.Hash {
 
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
-		AggregatedSig string
-		R             string `json:"R"`
-		ValidatorsIdx [][]int
-		ProducerSig   string
+		AggregatedSig string  `json:"AggregatedSig"`
+		R             string  `json:"R"`
+		ValidatorsIdx [][]int `json:"ValidatorsIdx"`
+		ProducerSig   string  `json:"ProducerSig"`
 		Header        ShardHeader
 		Body          *json.RawMessage
 	}{}
