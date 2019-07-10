@@ -65,6 +65,8 @@ type BeaconBlock struct {
 	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
 	ProducerSig   string  `json:"ProducerSig"`
 
+	ValidationData string `json:"ValidationData"`
+
 	Body   BeaconBody
 	Header BeaconHeader
 }
@@ -92,8 +94,11 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 		ValidatorsIdx [][]int `json:"ValidatorsIdx"`
 		ProducerSig   string  `json:"ProducerSig"`
 		R             string  `json:"R"`
-		Header        BeaconHeader
-		Body          BeaconBody
+
+		ValidationData string `json:"ValidationData"`
+
+		Header BeaconHeader
+		Body   BeaconBody
 	}{}
 	err := json.Unmarshal(data, &tempBlk)
 	if err != nil {
@@ -164,4 +169,12 @@ func (beaconHeader *BeaconHeader) toString() string {
 
 func (beaconBlock *BeaconHeader) Hash() common.Hash {
 	return common.HashH([]byte(beaconBlock.toString()))
+}
+
+func (beaconBlock *BeaconBlock) AddValidationField(validateData string) error {
+	beaconBlock.ValidationData = validateData
+	return nil
+}
+func (beaconBlock *BeaconBlock) GetValidationField() string {
+	return beaconBlock.ValidationData
 }
