@@ -170,15 +170,12 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string, testN
 				return err
 			}
 		}
-		log.Printf("Block length %+v", len(blockBytes))
-		log.Printf("Block bytes", blockBytes)
 		block := &blockchain.ShardBlock{}
 		err = block.UnmarshalJSON(blockBytes)
 		if err != nil {
 			return err
 		}
-		log.Printf("Block %+v length %+v", block.Header.Height, len(blockBytes))
-		log.Println(block)
+		log.Printf("Restore Shard %+v Block %+v \n", block.Header.ShardID, block.Header.Height)
 		err = bc.InsertShardBlock(block, true)
 		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
 			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockErr].Code {
@@ -247,7 +244,7 @@ func RestoreBeaconChain(chainDataDir string, filename string, testNet bool) erro
 			return err
 		}
 		blockBytes := make([]byte, blockLength)
-		counter, err := reader.Read(blockBytes)
+		_, err = reader.Read(blockBytes)
 		if err == io.EOF {
 			break
 		} else {
@@ -255,18 +252,12 @@ func RestoreBeaconChain(chainDataDir string, filename string, testNet bool) erro
 				return err
 			}
 		}
-		log.Printf("numberOfByteToRead: %+v \n", numberOfByteToRead)
-		log.Printf("blockLength: %+v \n", blockLength)
-		log.Printf("counter of block: %+v \n", counter)
-		log.Printf("Block length %+v", len(blockBytes))
-		log.Printf("Block bytes", blockBytes)
 		block := &blockchain.BeaconBlock{}
 		err = block.UnmarshalJSON(blockBytes)
 		if err != nil {
 			return err
 		}
-		log.Printf("Block %+v length %+v", block.Header.Height, len(blockBytes))
-		log.Println(block)
+		log.Printf("Restore Block %+v \n", block.Header.Height)
 		if block.Header.Height == 1 {
 			continue
 		}
