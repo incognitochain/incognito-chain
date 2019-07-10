@@ -171,14 +171,14 @@ func (txObj *CustomTokenParamTx) SetVinsAmount(vinsAmount uint64) {
 
 // CreateCustomTokenReceiverArray - parse data frm rpc request to create a list vout for preparing to create a custom token tx
 // data interface is a map[paymentt-address]{transferring-amount}
-func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, int64) {
+func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, int64, error) {
 	result := []TxTokenVout{}
 	voutsAmount := int64(0)
 	receivers := data.(map[string]interface{})
 	for key, value := range receivers {
 		keyWallet, err := wallet.Base58CheckDeserialize(key)
 		if err != nil {
-			panic(err)
+			return nil, 0, err
 		}
 		keySet := keyWallet.KeySet
 		temp := TxTokenVout{
@@ -188,5 +188,5 @@ func CreateCustomTokenReceiverArray(data interface{}) ([]TxTokenVout, int64) {
 		result = append(result, temp)
 		voutsAmount += int64(temp.Value)
 	}
-	return result, voutsAmount
+	return result, voutsAmount, nil
 }

@@ -171,7 +171,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}()
 
 	//=========Remove invalid shard block in pool
-	blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
+	go blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 
 	//Update Cross shard pool: remove invalid block
 	go func() {
@@ -206,8 +206,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 				blockchain.config.CRemovedTxs <- tx
 			}
 		}
-		blockchain.config.TxPool.RemoveCandidateList(candidates)
-		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
+		go blockchain.config.TxPool.RemoveCandidateList(candidates)
+		go blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(block.Body.Transactions, true)
