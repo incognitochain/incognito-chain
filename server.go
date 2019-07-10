@@ -639,7 +639,7 @@ func (serverObj Server) Start() {
 	go serverObj.pusubManager.Start()
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
-	<-time.Tick(serverObj.memPool.Scantime)
+	<-time.Tick(serverObj.memPool.ScanTime)
 	serverObj.memPool.LockPool()
 	txDescs := serverObj.memPool.GetPool()
 	for _, txDesc := range txDescs {
