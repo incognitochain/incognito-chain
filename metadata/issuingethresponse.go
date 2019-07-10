@@ -9,14 +9,14 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/light"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/ethrelaying/accounts/abi"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
-	"github.com/incognitochain/incognito-chain/ethrelaying/core/types"
-	"github.com/incognitochain/incognito-chain/ethrelaying/light"
-	"github.com/incognitochain/incognito-chain/ethrelaying/rlp"
-	"github.com/incognitochain/incognito-chain/ethrelaying/trie"
 	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
@@ -190,7 +190,6 @@ func VerifyProofAndParseReceipt(
 	bcr BlockchainRetriever,
 ) (*types.Receipt, error) {
 	md := issuingETHReqAction.Meta
-	// ethHeader := bcr.GetLightEthereum().GetLightChain().GetHeaderByHash(md.BlockHash)
 	ethHeader, err := GetETHHeader(bcr, md.BlockHash)
 	if err != nil {
 		return nil, err

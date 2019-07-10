@@ -402,8 +402,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
 	var relayingRewardTx metadata.Transaction
-	var maxHeaderLen int
-
 	for i, tx := range txs {
 		var respTx metadata.Transaction
 		var err error
@@ -411,8 +409,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(
 		switch tx.GetMetadataType() {
 		case metadata.IssuingRequestMeta:
 			respTx, err = blockgen.buildIssuanceTx(tx, producerPrivateKey, shardID)
-		case metadata.ETHHeaderRelayingMeta:
-			relayingRewardTx, maxHeaderLen, err = blockgen.buildETHHeaderRelayingRewardTx(tx, producerPrivateKey, relayingRewardTx, maxHeaderLen)
 		}
 
 		if err != nil {
