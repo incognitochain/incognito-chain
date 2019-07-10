@@ -2,6 +2,8 @@ package rpcserver
 
 // rpc cmd method
 const (
+	// test rpc server
+	testHttpServer = "testrpcserver"
 	startProfiling = "startprofiling"
 	stopProfiling  = "stopprofiling"
 
@@ -122,13 +124,13 @@ const (
 )
 
 const (
-	testSubcrice               = "testsubcribe"
-	subcribeNewShardBlock      = "subcribenewshardblock"
-	subcribeNewBeaconBlock     = "subcribenewbeaconblock"
-	subcribePendingTransaction = "subcribependingtransaction"
-	subcribeMempoolInfo = "subcribemempoolinfo"
-	subcribeShardBestState = "subcribeshardbeststate"
-	subcribeBeaconBestState = "subcribebeaconbeststate"
+	testSubcrice                = "testsubcribe"
+	subcribeNewShardBlock       = "subcribenewshardblock"
+	subcribeNewBeaconBlock      = "subcribenewbeaconblock"
+	subcribePendingTransaction  = "subcribependingtransaction"
+	subcribeMempoolInfo         = "subcribemempoolinfo"
+	subcribeShardBestState      = "subcribeshardbeststate"
+	subcribeBeaconBestState     = "subcribebeaconbeststate"
 	subcribeBeaconPoolBeststate = "subcribebeaconpoolbeststate"
-	subcribeShardPoolBeststate = "subcribeshardpoolbeststate"
+	subcribeShardPoolBeststate  = "subcribeshardpoolbeststate"
 )

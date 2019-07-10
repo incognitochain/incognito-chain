@@ -56,9 +56,9 @@ func TestEncodeVectors(t *testing.T) {
 	start := time.Now()
 	actualRes, err := EncodeVectors(a, b, G, H)
 	end := time.Since(start)
-	fmt.Printf("Time encode vector: %v\n", end)
+	privacy.Logger.Log.Info("Time encode vector: %v\n", end)
 	if err != nil {
-		fmt.Printf("Err: %v\n", err)
+		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 	start = time.Now()
 	expectedRes := new(privacy.EllipticPoint).Zero()
@@ -68,7 +68,7 @@ func TestEncodeVectors(t *testing.T) {
 	}
 
 	end = time.Since(start)
-	fmt.Printf("Time normal encode vector: %v\n", end)
+	privacy.Logger.Log.Info("Time normal encode vector: %v\n", end)
 
 	assert.Equal(t, expectedRes, actualRes)
 }
@@ -92,7 +92,7 @@ func TestInnerProductProve(t *testing.T) {
 	wit.p = new(privacy.EllipticPoint).Zero()
 	c, err := innerProduct(wit.a, wit.b)
 	if err != nil {
-		fmt.Printf("Err: %v\n", err)
+		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 
 	for i := range wit.a {
@@ -103,7 +103,7 @@ func TestInnerProductProve(t *testing.T) {
 
 	proof, err := wit.Prove(AggParam)
 	if err != nil {
-		fmt.Printf("Err: %v\n", err)
+		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 
 	bytes := proof.Bytes()
@@ -133,8 +133,9 @@ func TestAggregatedRangeProve(t *testing.T) {
 	start := time.Now()
 	proof, err := wit.Prove()
 	assert.Equal(t, nil, err)
+
 	end := time.Since(start)
-	fmt.Printf("Aggregated range proving time: %v\n", end)
+	privacy.Logger.Log.Info("Aggregated range proving time: %v\n", end)
 
 	// validate sanity for proof
 	isValidSanity := proof.ValidateSanity()
@@ -154,14 +155,14 @@ func TestAggregatedRangeProve(t *testing.T) {
 	start = time.Now()
 	res := proof2.Verify()
 	end = time.Since(start)
-	fmt.Printf("Aggregated range verification time: %v\n", end)
+	privacy.Logger.Log.Info("Aggregated range verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
 }
 
 func TestPad(t *testing.T) {
-	data := []struct{
-		number int
+	data := []struct {
+		number       int
 		paddedNumber int
 	}{
 		{1000, 1024},
@@ -169,7 +170,7 @@ func TestPad(t *testing.T) {
 		{5, 8},
 	}
 
-	for _, item := range data{
+	for _, item := range data {
 		num := pad(item.number)
 		assert.Equal(t, item.paddedNumber, num)
 	}

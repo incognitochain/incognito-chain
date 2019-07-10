@@ -2,21 +2,24 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"io"
+	"log"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -85,25 +88,30 @@ type Config struct {
 	UserKeySet *incognitokey.KeySet
 }
 
-func (blockchain *BlockChain) InitForTest(config *Config) error {
-	blockchain.config = *config
-	blockchain.config.IsBlockGenStarted = false
-	blockchain.IsTest = true
-	blockchain.cQuitSync = make(chan struct{})
-	blockchain.BestState = &BestState{
+func NewBlockChain(config *Config, isTest bool) *BlockChain {
+	bc := &BlockChain{}
+	bc.config = *config
+	bc.config.IsBlockGenStarted = false
+	bc.IsTest = isTest
+	bc.cQuitSync = make(chan struct{})
+	bc.BestState = &BestState{
 		Beacon: &BestStateBeacon{},
 		Shard:  make(map[byte]*BestStateShard),
 	}
-	for i:=0; i< 255 ; i++ {
+	for i := 0; i < 255; i++ {
 		shardID := byte(i)
-		blockchain.BestState.Shard[shardID] = &BestStateShard{}
+		bc.BestState.Shard[shardID] = &BestStateShard{}
 	}
-	blockchain.Synker = synker{
-		blockchain: blockchain,
-		cQuit:      blockchain.cQuitSync,
+	bc.BestState.Beacon.Params = make(map[string]string)
+	bc.BestState.Beacon.ShardCommittee = make(map[byte][]string)
+	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]string)
+	bc.Synker = synker{
+		blockchain: bc,
+		cQuit:      bc.cQuitSync,
 	}
-	return nil
+	return bc
 }
+
 /*
 Init - init a blockchain view from config
 */
@@ -257,6 +265,9 @@ func (blockchain *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) initShardState(shardID byte) error {
+	log.Println(blockchain)
+	log.Println(blockchain.BestState)
+	log.Println(blockchain.BestState.Shard[0])
 	blockchain.BestState.Shard[shardID] = InitBestStateShard(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initBlock := ShardBlock{}
@@ -915,14 +926,11 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	// loop on all outputcoin to decrypt data
 	results := make([]*privacy.OutputCoin, 0)
 	for _, out := range outCoints {
-		pubkeyCompress := out.CoinDetails.PublicKey.Compress()
-		if bytes.Equal(pubkeyCompress, keyset.PaymentAddress.Pk[:]) {
-			out = blockchain.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
-			if out == nil {
-				continue
-			} else {
-				results = append(results, out)
-			}
+		out = blockchain.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
+		if out == nil {
+			continue
+		} else {
+			results = append(results, out)
 		}
 	}
 	if err != nil {
@@ -1291,7 +1299,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 				return errors.New("This response dont match with any request")
 			}
 			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
-			if res, err := coinID.Cmp(&requestMeta.TokenID); err == nil && res != 0{
+			if res, err := coinID.Cmp(&requestMeta.TokenID); err == nil && res != 0 {
 				return errors.New("Invalid token ID")
 			}
 			amount, err := db.GetCommitteeReward(requesterRes, requestMeta.TokenID)
@@ -1388,4 +1396,91 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		coinID.String(),
 		shardID,
 	)
+}
+
+func CalculateNumberOfByteToRead(amountBytes int) []byte {
+	var result = make([]byte,8)
+	binary.LittleEndian.PutUint32(result, uint32(amountBytes))
+	return result
+}
+func GetNumberOfByteToRead(value []byte) (int,error) {
+	var result uint32
+	err := binary.Read(bytes.NewBuffer(value), binary.LittleEndian, &result)
+	if err != nil {
+		return -1, err
+	}
+	return int(result), nil
+}
+func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) error {
+	bestStateBytes, err := blockchain.config.DataBase.FetchShardBestState(shardID)
+	if err != nil {
+		return err
+	}
+		shardBestState := &BestStateShard{}
+		err = json.Unmarshal(bestStateBytes, shardBestState)
+		bestShardHeight := shardBestState.ShardHeight
+		var i uint64
+		for i = 1;i < bestShardHeight; i++{
+			block, err := blockchain.GetShardBlockByHeight(i, shardID)
+			if err != nil {
+				return err
+			}
+			data, err := json.Marshal(block)
+			if err != nil {
+				return err
+			}
+			if i < 30 {
+				log.Printf("Byte len block %+v: %+v \n", i, data)
+			}
+			log.Printf("Byte len block %+v: %+v \n", i, len(data))
+			_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
+			if err != nil {
+				return err
+			}
+			_, err = writer.Write(data)
+			if err != nil {
+				return err
+			}
+		}
+	return nil
+}
+func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
+	bestStateBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
+	if err != nil {
+		return err
+	}
+	beaconBestState := &BestStateBeacon{}
+	err = json.Unmarshal(bestStateBytes, beaconBestState)
+	bestBeaconHeight := beaconBestState.BeaconHeight
+	var i uint64
+	for i = 1;i < bestBeaconHeight; i++ {
+		block, err := blockchain.GetBeaconBlockByHeight(i)
+		if err != nil {
+			return err
+		}
+		data, err := json.Marshal(block)
+		if err != nil {
+			return err
+		}
+		if i < 30 {
+			log.Printf("Byte len block %+v: %+v \n", i, data)
+		}
+		log.Printf("Byte len block %+v: %+v \n", i, len(data))
+		numOfByteToRead := CalculateNumberOfByteToRead(len(data))
+		if i < 30 {
+			log.Printf("numOfByteToRead %+v: %+v \n", i, numOfByteToRead)
+		}
+		_, err = writer.Write(numOfByteToRead)
+		if err != nil {
+			return err
+		}
+		counter, err := writer.Write(data)
+		if i < 30 {
+			log.Printf("counter of block %+v: %+v \n", i, counter)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

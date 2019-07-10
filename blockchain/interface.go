@@ -31,8 +31,8 @@ type CrossShardPool interface {
 	GetLatestValidBlockHeight() map[byte]uint64
 	GetValidBlockHeight() map[byte][]uint64
 	GetBlockByHeight(_shardID byte, height uint64) *CrossShardBlock
-	RemoveBlockByHeight(map[byte]uint64) error
-	UpdatePool() (map[byte]uint64, error)
+	RemoveBlockByHeight(map[byte]uint64)
+	UpdatePool() (map[byte]uint64)
 	GetAllBlockHeight() map[byte][]uint64
 }
 

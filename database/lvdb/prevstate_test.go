@@ -1,12 +1,38 @@
 package lvdb
 
 import (
+	"flag"
+	"io/ioutil"
+	"log"
+	"os"
 	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/syndtr/goleveldb/leveldb"
 )
+
+var runScenarioTests = flag.Bool("scenario", false, "Run the integration tests (in addition to the unit tests)")
+
+var _ = func() (_ struct{}) {
+	database.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	return
+}()
+
+func openTestDB(testFnName string) (*leveldb.DB, error) {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_"+testFnName)
+	if err != nil {
+		log.Fatalf("failed to create temp dir: %+v", err)
+		return nil, err
+	}
+	testDB, err := leveldb.OpenFile(dbPath, nil)
+	if err != nil {
+		log.Fatalf("could not open db path: %s, %+v", dbPath, err)
+		return nil, err
+	}
+	return testDB, nil
+}
 
 func Test_getPrevPrefix(t *testing.T) {
 	type args struct {
@@ -18,7 +44,9 @@ func Test_getPrevPrefix(t *testing.T) {
 		args args
 		want []byte
 	}{
-		// TODO: Add test cases.
+		{"beacon", args{true, 0}, []byte{112, 114, 101, 118, 66, 101, 97, 45}},
+		{"shard255", args{false, 255}, []byte{112, 114, 101, 118, 83, 104, 100, 45, 255, 45}},
+		{"shard0", args{false, 0}, []byte{112, 114, 101, 118, 83, 104, 100, 45, 0, 45}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -587,12 +615,28 @@ func Test_db_RestoreBridgedTokenByTokenID(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.RestoreBridgedTokenByTokenID() error = %v, wantErr %v", errDB, tt.wantErr)
+			}
 			db := &db{
-				lvdb: tt.fields.lvdb,
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
+				err := db.BackupBridgedTokenByTokenID(common.Hash{})
+				if err != nil {
+					t.Fatalf("db.BackupBridgedTokenByTokenID() error = %v, wantErr %v", err, tt.wantErr)
+				}
 			}
 			if err := db.RestoreBridgedTokenByTokenID(tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.RestoreBridgedTokenByTokenID() error = %v, wantErr %v", err, tt.wantErr)
@@ -616,12 +660,24 @@ func Test_db_BackupShardRewardRequest(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{1, 0, common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{1, 0, common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.BackupShardRewardRequest() error = %v, wantErr %v", errDB, tt.wantErr)
+			}
 			db := &db{
-				lvdb: tt.fields.lvdb,
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
 			}
 			if err := db.BackupShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.BackupShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
@@ -644,12 +700,24 @@ func Test_db_BackupCommitteeReward(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{[]byte{}, common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{[]byte{}, common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.BackupCommitteeReward() error = %v, wantErr %v", errDB, tt.wantErr)
+			}
 			db := &db{
-				lvdb: tt.fields.lvdb,
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
 			}
 			if err := db.BackupCommitteeReward(tt.args.committeeAddress, tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.BackupCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
@@ -673,12 +741,28 @@ func Test_db_RestoreShardRewardRequest(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{1, 0, common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{1, 0, common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.RestoreShardRewardRequest() error = %v, wantErr %v", errDB, tt.wantErr)
+			}
 			db := &db{
-				lvdb: tt.fields.lvdb,
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
+				err := db.BackupShardRewardRequest(1, 0, common.Hash{})
+				if err != nil {
+					t.Errorf("db.BackupShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
+				}
 			}
 			if err := db.RestoreShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.RestoreShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
@@ -701,16 +785,36 @@ func Test_db_RestoreCommitteeReward(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"NotScenarioTest", fields{}, args{[]byte{}, common.Hash{}}, false},
+		{"ScenarioTest", fields{}, args{[]byte{}, common.Hash{}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := &db{
-				lvdb: tt.fields.lvdb,
+			testDB, errDB := openTestDB(tt.name)
+			if errDB != nil {
+				t.Errorf("db.RestoreCommitteeReward() error = %v, wantErr %v", errDB, tt.wantErr)
 			}
-			if err := db.RestoreCommitteeReward(tt.args.committeeAddress, tt.args.tokenID); (err != nil) != tt.wantErr {
+			db := &db{
+				lvdb: testDB,
+			}
+			if *runScenarioTests && (tt.name == "NotScenarioTest") {
+				t.Skip(tt.name)
+			} else {
+				if tt.name != "NotScenarioTest" {
+					t.Skipf("%v", tt.name)
+				}
+				err := db.BackupCommitteeReward([]byte{}, common.Hash{})
+				if err != nil {
+					t.Errorf("db.BackupCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
+				}
+			}
+
+			err := db.RestoreCommitteeReward(tt.args.committeeAddress, tt.args.tokenID)
+
+			if (err != nil) != tt.wantErr {
 				t.Errorf("db.RestoreCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
 		})
 	}
 }
