@@ -10,7 +10,7 @@ Run from root directory of project (incognito-chain/)
 List of flags
 ```$xslt
  --beacon: backup beacon chain
- --shardids [1,2,3,...] or --shardids all: backup shard chain
+ --shardids [1,2,3,...]
  --chaindatadir "[...]/block": blockchain database to be backup
  --outdatadir "...." : directory where backup file store
  --filename "....": name of backup file
