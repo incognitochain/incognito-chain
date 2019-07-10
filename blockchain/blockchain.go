@@ -22,6 +22,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/rpccaller"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
 )
@@ -41,6 +42,7 @@ type BlockChain struct {
 	Synker           synker
 	ConsensusOngoing bool
 	LightEthereum    *les.LightEthereum
+	RPCClient 			 *rpccaller.RPCClient
 	IsTest           bool
 }
 
@@ -1310,6 +1312,10 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 
 func (blockchain *BlockChain) GetLightEthereum() *les.LightEthereum {
 	return blockchain.LightEthereum
+}
+
+func (blockchain *BlockChain) GetRPCClient() *rpccaller.RPCClient {
+	return blockchain.RPCClient
 }
 
 func (blockchain *BlockChain) InitTxSalaryByCoinID(
