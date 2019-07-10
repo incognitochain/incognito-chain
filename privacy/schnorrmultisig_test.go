@@ -9,7 +9,7 @@ import (
 )
 
 func TestSchnorrMultiSignature(t *testing.T) {
-	n := 100
+	n := 256
 	// generate key sets for n members(s)
 	keySets := make([]*MultiSigKeyset, n)
 	listPKs := make([]*PublicKey, n)
@@ -40,7 +40,7 @@ func TestSchnorrMultiSignature(t *testing.T) {
 	var err error
 	start1 := time.Now()
 	for i := 0; i<n; i++{
-		sigs[i], err = keySets[i].SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
+		sigs[i] = keySets[i].SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
 
 		assert.Equal(t, nil, err)
 		assert.Equal(t, SchnMultiSigSize, len(sigs[i].Bytes()))
