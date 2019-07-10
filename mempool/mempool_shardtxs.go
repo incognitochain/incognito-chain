@@ -71,7 +71,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 			if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 				tokenID := customTokenTx.TxTokenData.PropertyID.String()
 				tp.tokenIDMtx.Lock()
-				found := common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool)
+				found := common.IndexOfStrInHashMap(tokenID, tp.poolTokenID)
 				tp.tokenIDMtx.Unlock()
 				if found > 0 {
 					str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
@@ -87,7 +87,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 				pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
 				tp.tokenIDMtx.Lock()
-				found := common.IndexOfStrInHashMap(pubkey, tp.CandidatePool)
+				found := common.IndexOfStrInHashMap(pubkey, tp.PoolCandidate)
 				tp.tokenIDMtx.Unlock()
 				if found > 0 {
 					str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)

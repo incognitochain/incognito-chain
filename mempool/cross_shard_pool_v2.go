@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-	
+
 	"github.com/incognitochain/incognito-chain/database"
-	
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -36,10 +36,10 @@ import (
 	 + Beacon state confirm the next valid cross shard block height
 */
 type CrossShardPool_v2 struct {
-	shardID         byte // pool shard ID
+	shardID         byte                                   // pool shard ID
 	validPool       map[byte][]*blockchain.CrossShardBlock // cross shard block from all other shard to this shard
 	pendingPool     map[byte][]*blockchain.CrossShardBlock // cross shard block from all other shard to this shard
-	crossShardState map[byte]uint64 // cross shard state (marked the current state of cross shard block from all shard)
+	crossShardState map[byte]uint64                        // cross shard state (marked the current state of cross shard block from all shard)
 	mtx             *sync.RWMutex
 	db              database.DatabaseInterface
 	// When beacon chain confirm new cross shard block, it will store these block height in database
