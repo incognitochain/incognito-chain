@@ -42,6 +42,7 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -491,6 +492,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 
 		serverObj.blockgen.SetLightETHToChain(leth)
+		serverObj.blockgen.SetRPCClientChain(rpccaller.NewRPCClient())
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {

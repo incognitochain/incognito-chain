@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/ethrelaying/light"
 	"github.com/incognitochain/incognito-chain/ethrelaying/rlp"
 	"github.com/incognitochain/incognito-chain/ethrelaying/trie"
+	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
@@ -154,12 +155,46 @@ func ParseInstContent(instContentStr string) (*IssuingETHReqAction, error) {
 	return &issuingETHReqAction, nil
 }
 
+type GetBlockByNumberRes struct {
+	rpccaller.RPCBaseRes
+	Result *types.Header `json:"result"`
+}
+
+func GetETHHeader(
+	bcr BlockchainRetriever,
+	ethBlockHash rCommon.Hash,
+) (*types.Header, error) {
+	rpcClient := bcr.GetRPCClient()
+	params := []interface{}{ethBlockHash, false}
+	var getBlockByNumberRes GetBlockByNumberRes
+	err := rpcClient.RPCCall(
+		common.ETHERERUM_LIGHT_NODE_PROTOCOL,
+		common.ETHERERUM_LIGHT_NODE_HOST,
+		common.ETHERERUM_LIGHT_NODE_PORT,
+		"eth_getBlockByHash",
+		params,
+		&getBlockByNumberRes,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if getBlockByNumberRes.RPCError != nil {
+		fmt.Printf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
+		return nil, nil
+	}
+	return getBlockByNumberRes.Result, nil
+}
+
 func VerifyProofAndParseReceipt(
 	issuingETHReqAction *IssuingETHReqAction,
 	bcr BlockchainRetriever,
 ) (*types.Receipt, error) {
 	md := issuingETHReqAction.Meta
-	ethHeader := bcr.GetLightEthereum().GetLightChain().GetHeaderByHash(md.BlockHash)
+	// ethHeader := bcr.GetLightEthereum().GetLightChain().GetHeaderByHash(md.BlockHash)
+	ethHeader, err := GetETHHeader(bcr, md.BlockHash)
+	if err != nil {
+		return nil, err
+	}
 	if ethHeader == nil {
 		fmt.Println("WARNING: Could not find out the ETH block header with the hash: ", md.BlockHash)
 		return nil, nil
