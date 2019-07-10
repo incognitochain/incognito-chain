@@ -1,7 +1,10 @@
 FROM alpine:3.9
 
 RUN apk add bind-tools
-
+RUN  apk update && \
+     apk add libc6-compat && \
+     apk add ca-certificates
+     
 ARG commit=commit
 ENV commit=$commit
 
