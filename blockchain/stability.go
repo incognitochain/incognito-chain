@@ -378,7 +378,9 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
 				fmt.Println("haha isntruction: ", l)
-				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, accumulatedValues)
+				if len(l) >= 4 {
+					newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, accumulatedValues)
+				}
 
 			default:
 				continue
