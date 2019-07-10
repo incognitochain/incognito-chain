@@ -19,7 +19,7 @@ List of flags
 
 Example:
 
-    - Backup: `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/shard0-0/testnet/block" --outdatadir "data/" --shardids "0" --testnetbackupchain`
+    - Backup: `$ ./cmd/incognito --cmd backupchain --chaindatadir "data/shard0-0/testnet/block" --outdatadir "data/" --shardids "0" --testnet`
     
     - Restore: `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/shard0-0/testnet/block" --filename data/export-incognito-shard-0 --shardids 0 --testnet`
 
