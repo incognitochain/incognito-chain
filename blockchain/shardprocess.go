@@ -260,33 +260,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	return nil
 }
 
-func (blockchain *BlockChain) insertETHHeaders(
-	shardBlock *ShardBlock,
-	tx metadata.Transaction,
-) error {
-	relayingRewardMeta := tx.GetMetadata().(*metadata.ETHHeaderRelayingReward)
-	reqID := relayingRewardMeta.RequestedTxID
-	txs := shardBlock.Body.Transactions
-	var relayingTx metadata.Transaction
-	for _, item := range txs {
-		metaType := item.GetMetadataType()
-		if metaType == metadata.ETHHeaderRelayingMeta &&
-			bytes.Equal(reqID[:], item.Hash()[:]) {
-			relayingTx = item
-			break
-		}
-	}
-	relayingMeta := relayingTx.GetMetadata().(*metadata.ETHHeaderRelaying)
-	lc := blockchain.LightEthereum.GetLightChain()
-	_, err := lc.InsertHeaderChain(relayingMeta.ETHHeaders, 0)
-	if err != nil {
-		fmt.Println("haha insert error: ", err)
-		return err
-	}
-	fmt.Println("haha insert header chain ok")
-	return nil
-}
-
 func (blockchain *BlockChain) insertStuffForIssuingETHRes(
 	tx metadata.Transaction,
 ) error {
@@ -315,8 +288,6 @@ func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 		if metaType == metadata.WithDrawRewardResponseMeta {
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			err = db.RemoveCommitteeReward(requesterRes, amountRes, *coinID)
-		} else if metaType == metadata.ETHHeaderRelayingRewardMeta {
-			err = blockchain.insertETHHeaders(shardBlock, tx)
 		} else if metaType == metadata.IssuingETHResponseMeta {
 			err = blockchain.insertStuffForIssuingETHRes(tx)
 		}

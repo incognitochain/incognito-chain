@@ -8,8 +8,8 @@ import (
 	"math/big"
 	"strconv"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -93,46 +93,6 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 		return nil, initErr
 	}
 	return resTx, nil
-}
-
-func (blockgen *BlkTmplGenerator) buildETHHeaderRelayingRewardTx(
-	tx metadata.Transaction,
-	producerPrivateKey *privacy.PrivateKey,
-	relayingRewardTx metadata.Transaction,
-	maxHeaderLen int,
-) (metadata.Transaction, int, error) {
-	ethHeaderRelaying := tx.GetMetadata().(*metadata.ETHHeaderRelaying)
-	ethHeaders := ethHeaderRelaying.ETHHeaders
-	insertedHeadersLen := len(ethHeaders)
-	if insertedHeadersLen <= maxHeaderLen {
-		return relayingRewardTx, maxHeaderLen, nil
-	}
-
-	lc := blockgen.chain.LightEthereum.GetLightChain()
-	_, err := lc.ValidateHeaderChain(ethHeaders, 0)
-	if err != nil {
-		fmt.Printf("ETH header relaying failed: %v", err)
-		return relayingRewardTx, maxHeaderLen, nil
-	}
-	// TODO: figure out relaying reward amt here
-	reward := tx.GetTxFee() + uint64(insertedHeadersLen*1)
-
-	ethHeaderRelayingReward := metadata.NewETHHeaderRelayingReward(
-		*tx.Hash(),
-		metadata.ETHHeaderRelayingRewardMeta,
-	)
-	resTx := &transaction.Tx{}
-	err = resTx.InitTxSalary(
-		reward,
-		&ethHeaderRelaying.RelayerAddress,
-		producerPrivateKey,
-		blockgen.chain.config.DataBase,
-		ethHeaderRelayingReward,
-	)
-	if err != nil {
-		return relayingRewardTx, maxHeaderLen, err
-	}
-	return resTx, insertedHeadersLen, nil
 }
 
 func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(

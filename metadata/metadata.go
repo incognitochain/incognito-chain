@@ -6,7 +6,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/ethrelaying/les"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/rpccaller"
 )
@@ -130,7 +129,6 @@ type BlockchainRetriever interface {
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
-	GetLightEthereum() *les.LightEthereum
 	GetRPCClient() *rpccaller.RPCClient
 }
 
