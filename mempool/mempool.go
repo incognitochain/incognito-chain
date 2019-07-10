@@ -22,6 +22,15 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
+// default value
+const (
+	defaultScanTime = 1 * time.Hour
+	defaultIsUnlockMempool = true
+	defaultIsBlockGenStarted = false
+	defaultRoleInCommittees = -1
+	defaultIsTest = false
+	defaultReplaceFeeRatio = 1.1
+)
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	BlockChain            *blockchain.BlockChain       // Block chain of node
@@ -36,7 +45,6 @@ type Config struct {
 	RelayShards           []byte
 	UserKeyset            *incognitokey.KeySet
 	PubSubManager         *pubsub.PubSubManager
-	RoleInCommittees      int //Current Role of Node
 	RoleInCommitteesEvent pubsub.EventChannel
 }
 
@@ -50,22 +58,26 @@ type TxDesc struct {
 // TxPool is transaction pool
 type TxPool struct {
 	// The following variables must only be used atomically.
-	lastUpdated            int64 // last time pool was updated
-	mtx                    sync.RWMutex
-	config                 Config
-	pool                   map[common.Hash]*TxDesc
-	poolSerialNumbersHashH map[common.Hash][]common.Hash // [txHash]:list hash serialNumbers of input coin
-	Scantime               time.Duration
-	CandidatePool          map[common.Hash]string //Candidate List in mempool
-	candidateMtx           sync.RWMutex
-	TokenIDPool            map[common.Hash]string //Token ID List in Mempool
-	tokenIDMtx             sync.RWMutex
-	DuplicateTxs           map[common.Hash]uint64 //For testing
-	roleMtx                sync.RWMutex
-	CPendingTxs            chan<- metadata.Transaction // channel to deliver txs to block gen
-	IsBlockGenStarted      bool
-	IsUnlockMempool        bool
-	IsTest                 bool
+	config                    Config
+	lastUpdated               int64 // last time pool was updated
+	pool                      map[common.Hash]*TxDesc
+	poolSerialNumbersHashList map[common.Hash][]common.Hash // [txHash] -> list hash serialNumbers of input coin
+	poolSerailNumberHash      map[common.Hash]common.Hash   // [hash from list of serialNumber] -> txHash
+	mtx                       sync.RWMutex
+	PoolCandidate             map[common.Hash]string //Candidate List in mempool
+	candidateMtx              sync.RWMutex
+	poolTokenID               map[common.Hash]string //Token ID List in Mempool
+	tokenIDMtx                sync.RWMutex
+	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
+	RoleInCommittees          int //Current Role of Node
+	roleMtx                   sync.RWMutex
+	ScanTime                  time.Duration
+	IsBlockGenStarted         bool
+	IsUnlockMempool           bool
+	ReplaceFeeRatio           float64
+	//for testing
+	IsTest                   bool
+	DuplicateTxs             map[common.Hash]uint64 //For testing
 }
 
 /*
@@ -73,18 +85,20 @@ Init Txpool from config
 */
 func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
-	tp.Scantime = 1 * time.Hour
 	tp.pool = make(map[common.Hash]*TxDesc)
-	tp.poolSerialNumbersHashH = make(map[common.Hash][]common.Hash)
-	tp.TokenIDPool = make(map[common.Hash]string)
-	tp.CandidatePool = make(map[common.Hash]string)
+	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
+	tp.poolSerailNumberHash = make(map[common.Hash]common.Hash)
+	tp.poolTokenID = make(map[common.Hash]string)
+	tp.PoolCandidate = make(map[common.Hash]string)
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
-	tp.config.RoleInCommittees = -1
-	tp.IsBlockGenStarted = false
-	tp.IsUnlockMempool = true
 	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
-	tp.IsTest = false
+	tp.ScanTime = defaultScanTime
+	tp.IsUnlockMempool = defaultIsUnlockMempool
+	tp.IsBlockGenStarted = defaultIsBlockGenStarted
+	tp.RoleInCommittees = defaultRoleInCommittees
+	tp.IsTest = defaultIsTest
+	tp.ReplaceFeeRatio = defaultReplaceFeeRatio
 }
 
 // InitChannelMempool - init channel
@@ -139,7 +153,7 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp *TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
-	return tp.poolSerialNumbersHashH
+	return tp.poolSerialNumbersHashList
 }
 
 func (tp *TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
@@ -152,82 +166,6 @@ func (tp *TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 
 // ----------- end of transaction.MempoolRetriever's implementation -----------------
 
-// check transaction in pool
-func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
-	if _, exists := tp.pool[*hash]; exists {
-		return true
-	}
-	return false
-}
-
-/*
-// add transaction into pool
-// #1: tx
-// #2: store into db
-// #3: default nil, contain input coins hash, which are used for creating this tx
-*/
-func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
-	tx := txD.Desc.Tx
-	txHash := tx.Hash()
-	if isStore {
-		err := tp.AddTransactionToDatabaseMempool(txHash, *txD)
-		if err != nil {
-			Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
-		} else {
-			Logger.log.Criticalf("Add tx %+v to mempool database success \n", *txHash)
-		}
-	}
-	tp.pool[*txHash] = txD
-	//==================================================
-	tp.poolSerialNumbersHashH[*txHash] = txD.Desc.Tx.ListSerialNumbersHashH()
-	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
-	if tp.config.FeeEstimator != nil {
-		var shardID byte
-		flag := false
-		switch tx.GetType() {
-		case common.TxNormalType:
-			{
-				shardID = common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
-				flag = true
-			}
-		case common.TxCustomTokenPrivacyType:
-			{
-				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxCustomTokenPrivacy).PubKeyLastByteSender)
-				flag = true
-			}
-		}
-		if flag {
-			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
-				temp.ObserveTransaction(txD)
-			}
-		}
-	}
-	// add candidate into candidate list ONLY with staking transaction
-	if tx.GetMetadata() != nil {
-		metadataType := tx.GetMetadata().GetType()
-		switch metadataType {
-		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
-			{
-				publicKey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-				tp.addCandidateToList(*txHash, publicKey)
-			}
-		default:
-			{
-				Logger.log.Debug("Metadata Type:", metadataType)
-			}
-		}
-	}
-	if tx.GetType() == common.TxCustomTokenType {
-		customTokenTx := tx.(*transaction.TxCustomToken)
-		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-			tokenID := customTokenTx.TxTokenData.PropertyID.String()
-			tp.addTokenIDToList(*txHash, tokenID)
-		}
-	}
-	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
-}
-
 /*
 // maybeAcceptTransaction is the internal function which implements the public
 // See the comment for MaybeAcceptTransaction for more details.
@@ -238,6 +176,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 3. Do not accept a salary tx
 4. Validate fee with tx size
 5. Validate with other txs in mempool
+5.1 Check for Replacement or Cancel transaction
 6. Validate data in tx: privacy proof, metadata,...
 7. Validate tx with blockchain: douple spend, ...
 8. CustomInitToken: Check Custom Init Token try to init exist token ID
@@ -259,21 +198,29 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	}
 	// Condition 1: sanity data
 	now = time.Now()
-	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
-		err := MempoolTxError{}
-		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
-		return err
-	}
+	validated, errS := tx.ValidateSanityData(tp.config.BlockChain)
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition1,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+	if !validated {
+		err := MempoolTxError{}
+		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
+		return err
+	}
 
 	// Condition 2: Don't accept the transaction if it already exists in the pool.
 	now = time.Now()
-	if tp.isTxInPool(txHash) {
+	isTxInPool := tp.isTxInPool(txHash)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition2,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
+	if isTxInPool {
 		str := fmt.Sprintf("already have transaction %+v", txHash.String())
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolDuplicateTxs,
@@ -283,28 +230,29 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectDuplicateTx, errors.New(str))
 		return err
 	}
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition2,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
 	// Condition 3: A standalone transaction must not be a salary transaction.
 	now = time.Now()
-	if tx.IsSalaryTx() {
-		err := MempoolTxError{}
-		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
-		return err
-	}
+	isSalaryTx := tx.IsSalaryTx()
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition3,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+	if isSalaryTx {
+		err := MempoolTxError{}
+		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
+		return err
+	}
 	// Condition 4: check fee PRV of tx
 	now = time.Now()
 	limitFee := tp.config.FeeEstimator[shardID].limitFee
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition4,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	if limitFee > 0 {
 		txFee := tx.GetTxFee()
 		ok := tx.CheckTransactionFee(limitFee)
@@ -314,8 +262,13 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			return err
 		}
 	}
-
 	limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidationDetails,
+		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+		metrics.TagValue:         metrics.Condition4,
+		metrics.Tag:              metrics.ValidateConditionTag,
+	})
 	if limitFeeToken > 0 && tx.GetType() == common.TxCustomTokenPrivacyType {
 		txFee := tx.(*transaction.TxCustomTokenPrivacy).GetTxFeeToken()
 		ok := tx.(*transaction.TxCustomTokenPrivacy).TxTokenPrivacyData.TxNormal.CheckTransactionFee(limitFeeToken)
@@ -325,26 +278,27 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			return err
 		}
 	}
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition4,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
 	// Condition 5: check tx with all txs in current mempool
 	now = time.Now()
 	err = tx.ValidateTxWithCurrentMempool(tp)
-	if err != nil {
-		tempErr := MempoolTxError{}
-		tempErr.Init(RejectDoubleSpendWithMempoolTx, err)
-		return tempErr
-	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition5,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+	if err != nil {
+		replaceErr, isReplacedTx := tp.validateTransactionReplacementOrCancel(tx)
+		if isReplacedTx {
+			if replaceErr != nil {
+				return replaceErr
+			}
+		} else {
+			tempErr := MempoolTxError{}
+			tempErr.Init(RejectDoubleSpendWithMempoolTx, err)
+			return tempErr
+		}
+	}
 	// Condition 6: ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	now = time.Now()
@@ -368,31 +322,27 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	// Condition 7: validate tx with data of blockchain
 	now = time.Now()
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.DataBase)
-	if err != nil {
-		tempErr := MempoolTxError{}
-		tempErr.Init(RejectDoubleSpendWithBlockchainTx, err)
-		return tempErr
-	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
 		metrics.TagValue:         metrics.Condition6,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+	if err != nil {
+		tempErr := MempoolTxError{}
+		tempErr.Init(RejectDoubleSpendWithBlockchainTx, err)
+		return tempErr
+	}
 	now = time.Now()
+	foundTokenID := -1
+	tokenID := ""
 	if tx.GetType() == common.TxCustomTokenType {
 		customTokenTx := tx.(*transaction.TxCustomToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
-			tokenID := customTokenTx.TxTokenData.PropertyID.String()
+			tokenID = customTokenTx.TxTokenData.PropertyID.String()
 			tp.tokenIDMtx.RLock()
-			found := common.IndexOfStrInHashMap(tokenID, tp.TokenIDPool)
+			foundTokenID = common.IndexOfStrInHashMap(tokenID, tp.poolTokenID)
 			tp.tokenIDMtx.RUnlock()
-			if found > 0 {
-				str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
-				err := MempoolTxError{}
-				err.Init(RejectDuplicateInitTokenTx, errors.New(str))
-				return err
-			}
 		}
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -401,20 +351,22 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition7,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+	if foundTokenID > 0 {
+		str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
+		err := MempoolTxError{}
+		err.Init(RejectDuplicateInitTokenTx, errors.New(str))
+		return err
+	}
 	// check duplicate stake public key ONLY with staking transaction
 	now = time.Now()
+	pubkey := ""
+	foundPubkey := -1
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-			pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
+			pubkey = base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
 			tp.candidateMtx.RLock()
-			found := common.IndexOfStrInHashMap(pubkey, tp.CandidatePool)
+			foundPubkey = common.IndexOfStrInHashMap(pubkey, tp.PoolCandidate)
 			tp.candidateMtx.RUnlock()
-			if found > 0 {
-				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
-				err := MempoolTxError{}
-				err.Init(RejectDuplicateStakePubkey, errors.New(str))
-				return err
-			}
 		}
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -423,6 +375,12 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition8,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+	if foundPubkey > 0 {
+		str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
+		err := MempoolTxError{}
+		err.Init(RejectDuplicateStakePubkey, errors.New(str))
+		return err
+	}
 	return nil
 }
 
@@ -477,12 +435,98 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	return tx.Hash(), txD, nil
 }
 
+// check transaction in pool
+func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
+	if _, exists := tp.pool[*hash]; exists {
+		return true
+	}
+	return false
+}
+
+/*
+// add transaction into pool
+// #1: tx
+// #2: store into db
+// #3: default nil, contain input coins hash, which are used for creating this tx
+*/
+func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
+	tx := txD.Desc.Tx
+	txHash := tx.Hash()
+	if isStore {
+		err := tp.AddTransactionToDatabaseMempool(txHash, *txD)
+		if err != nil {
+			Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
+		} else {
+			Logger.log.Criticalf("Add tx %+v to mempool database success \n", *txHash)
+		}
+	}
+	tp.pool[*txHash] = txD
+	//==================================================
+	tp.poolSerialNumbersHashList[*txHash] = txD.Desc.Tx.ListSerialNumbersHashH()
+	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
+	if tp.config.FeeEstimator != nil {
+		var shardID byte
+		flag := false
+		switch tx.GetType() {
+		case common.TxNormalType:
+			{
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
+				flag = true
+			}
+		case common.TxCustomTokenPrivacyType:
+			{
+				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxCustomTokenPrivacy).PubKeyLastByteSender)
+				flag = true
+			}
+		}
+		if flag {
+			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
+				temp.ObserveTransaction(txD)
+			}
+		}
+	}
+	// add candidate into candidate list ONLY with staking transaction
+	if tx.GetMetadata() != nil {
+		metadataType := tx.GetMetadata().GetType()
+		switch metadataType {
+		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
+			{
+				publicKey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
+				tp.addCandidateToList(*txHash, publicKey)
+			}
+		default:
+			{
+				Logger.log.Debug("Metadata Type:", metadataType)
+			}
+		}
+	}
+	if tx.GetType() == common.TxCustomTokenType {
+		customTokenTx := tx.(*transaction.TxCustomToken)
+		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
+			tokenID := customTokenTx.TxTokenData.PropertyID.String()
+			tp.addTokenIDToList(*txHash, tokenID)
+		}
+	}
+	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
+}
+
 // remove transaction for pool
-func (tp *TxPool) removeTx(tx *metadata.Transaction) {
+func (tp *TxPool) removeTx(tx metadata.Transaction) {
 	//Logger.log.Infof((*tx).Hash().String())
-	if _, exists := tp.pool[*(*tx).Hash()]; exists {
-		delete(tp.pool, *(*tx).Hash())
+	if _, exists := tp.pool[*tx.Hash()]; exists {
+		delete(tp.pool, *tx.Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+	}
+	if _, exists := tp.pool[*tx.Hash()]; exists {
+		delete(tp.poolSerialNumbersHashList, *tx.Hash())
+	}
+	serialNumberHashList := tx.ListSerialNumbersHashH()
+	hash, err := common.HashArrayInterface(serialNumberHashList)
+	if err == nil {
+		if _, exists := tp.poolSerailNumberHash[hash]; exists {
+			delete(tp.poolSerialNumbersHashList, hash)
+		}
 	}
 }
 
@@ -498,7 +542,7 @@ func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	tp.roleMtx.RLock()
-	if tp.config.RoleInCommittees > -1 && byte(tp.config.RoleInCommittees) == senderShardID {
+	if tp.RoleInCommittees > -1 && byte(tp.RoleInCommittees) == senderShardID {
 		tp.roleMtx.RUnlock()
 		return true
 	} else {
@@ -607,7 +651,32 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	return hash, txDesc, err
 }
-
+func (tp *TxPool) validateTransactionReplacementOrCancel(tx metadata.Transaction) (error,bool) {
+	serialNumberHashList := tx.ListSerialNumbersHashH()
+	hash, err := common.HashArrayInterface(serialNumberHashList)
+	if err != nil {
+		return NewMempoolTxError(ReplacementError, err), false
+	}
+	if txHashToBeReplaced, ok := tp.poolSerailNumberHash[hash]; ok {
+		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
+			baseReplaceFee := float64(txDescToBeReplaced.Desc.Fee) * tp.ReplaceFeeRatio
+			replaceFee := float64(tx.GetTxFee())
+			if baseReplaceFee > replaceFee {
+				return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+			} else {
+				txToBeReplaced := txDescToBeReplaced.Desc.Tx
+				tp.removeTx(txToBeReplaced)
+				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
+				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
+				return nil, true
+			}
+		} else {
+		 	return NewMempoolTxError(ReplacementError, errors.New("No Tx to be replace or cancel")), false
+		}
+	} else {
+		return NewMempoolTxError(ReplacementError, errors.New("No Tx to be replace or cancel")), false
+	}
+}
 // SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
 func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.mtx.RLock()
@@ -671,10 +740,9 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 			metrics.Tag:              metrics.ValidateConditionTag,
 			metrics.TagValue:         metrics.Condition1,
 		})
-		tp.removeTx(&tx)
-		// remove serialNumbersHashH
 		now = time.Now()
-		delete(tp.poolSerialNumbersHashH, *(tx.Hash()))
+		tp.removeTx(tx)
+		// remove serialNumbersHashH
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
@@ -851,7 +919,7 @@ func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
 // used by a tx in mempool
 func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
 	hash := common.HashH(serialNumber)
-	for txHash, serialNumbersHashH := range tp.poolSerialNumbersHashH {
+	for txHash, serialNumbersHashH := range tp.poolSerialNumbersHashList {
 		_ = txHash
 		for _, serialNumberHashH := range serialNumbersHashH {
 			if serialNumberHashH.IsEqual(&hash) {
@@ -865,15 +933,21 @@ func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
 func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
-	tp.CandidatePool[txHash] = candidate
+	tp.PoolCandidate[txHash] = candidate
 }
-
+func (tp *TxPool) removeCandidateByTxHash(txHash common.Hash) {
+	tp.candidateMtx.Lock()
+	defer tp.candidateMtx.Unlock()
+	if _, exist := tp.PoolCandidate[txHash]; exist {
+		delete(tp.PoolCandidate, txHash)
+	}
+}
 func (tp *TxPool) RemoveCandidateList(candidate []string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
 	candidateToBeRemoved := []common.Hash{}
 	for _, value := range candidate {
-		for txHash, currentCandidate := range tp.CandidatePool {
+		for txHash, currentCandidate := range tp.PoolCandidate {
 			if strings.Compare(value, currentCandidate) == 0 {
 				candidateToBeRemoved = append(candidateToBeRemoved, txHash)
 				break
@@ -881,14 +955,21 @@ func (tp *TxPool) RemoveCandidateList(candidate []string) {
 		}
 	}
 	for _, txHash := range candidateToBeRemoved {
-		delete(tp.CandidatePool, txHash)
+		delete(tp.PoolCandidate, txHash)
 	}
 }
 
 func (tp *TxPool) addTokenIDToList(txHash common.Hash, tokenID string) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
-	tp.TokenIDPool[txHash] = tokenID
+	tp.poolTokenID[txHash] = tokenID
+}
+func (tp *TxPool) removeTokenIDByTxHash(txHash common.Hash) {
+	tp.tokenIDMtx.Lock()
+	defer tp.tokenIDMtx.Unlock()
+	if _, exist := tp.poolTokenID[txHash]; exist {
+		delete(tp.poolTokenID, txHash)
+	}
 }
 
 func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
@@ -896,7 +977,7 @@ func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 	defer tp.tokenIDMtx.Unlock()
 	tokenToBeRemoved := []common.Hash{}
 	for _, value := range tokenID {
-		for txHash, currentToken := range tp.TokenIDPool {
+		for txHash, currentToken := range tp.poolTokenID {
 			if strings.Compare(value, currentToken) == 0 {
 				tokenToBeRemoved = append(tokenToBeRemoved, txHash)
 				break
@@ -904,7 +985,7 @@ func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 		}
 	}
 	for _, txHash := range tokenToBeRemoved {
-		delete(tp.TokenIDPool, txHash)
+		delete(tp.poolTokenID, txHash)
 	}
 }
 
@@ -913,14 +994,14 @@ func (tp *TxPool) EmptyPool() bool {
 	tp.tokenIDMtx.Lock()
 	defer tp.candidateMtx.Unlock()
 	defer tp.tokenIDMtx.Unlock()
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashH) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.PoolCandidate) == 0 && len(tp.poolTokenID) == 0 {
 		return true
 	}
 	tp.pool = make(map[common.Hash]*TxDesc)
-	tp.poolSerialNumbersHashH = make(map[common.Hash][]common.Hash)
-	tp.CandidatePool = make(map[common.Hash]string)
-	tp.TokenIDPool = make(map[common.Hash]string)
-	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashH) == 0 && len(tp.CandidatePool) == 0 && len(tp.TokenIDPool) == 0 {
+	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
+	tp.PoolCandidate = make(map[common.Hash]string)
+	tp.poolTokenID = make(map[common.Hash]string)
+	if len(tp.pool) == 0 && len(tp.poolSerialNumbersHashList) == 0 && len(tp.PoolCandidate) == 0 && len(tp.poolTokenID) == 0 {
 		return true
 	}
 	return false
@@ -940,7 +1021,7 @@ func (tp *TxPool) monitorPool() {
 		return
 	}
 	for {
-		<-time.Tick(tp.Scantime)
+		<-time.Tick(tp.ScanTime)
 		tp.mtx.Lock()
 		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
@@ -952,10 +1033,9 @@ func (tp *TxPool) monitorPool() {
 		for _, txDesc := range txsToBeRemoved {
 			txHash := *txDesc.Desc.Tx.Hash()
 			startTime := txDesc.StartTime
-			delete(tp.pool, txHash)
-			delete(tp.poolSerialNumbersHashH, txHash)
-			delete(tp.CandidatePool, txHash)
-			delete(tp.TokenIDPool, txHash)
+			tp.removeTx(txDesc.Desc.Tx)
+			delete(tp.PoolCandidate, txHash)
+			delete(tp.poolTokenID, txHash)
 			txSize := txDesc.Desc.Tx.GetTxActualSize()
 			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
@@ -988,7 +1068,7 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 				go func() {
 					tp.roleMtx.Lock()
 					defer tp.roleMtx.Unlock()
-					tp.config.RoleInCommittees = shardID
+					tp.RoleInCommittees = shardID
 				}()
 			}
 		}

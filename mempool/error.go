@@ -31,6 +31,8 @@ const (
 	TransactionNotFoundError
 	RejectTestTransactionError
 	WrongShardIDError
+	HashError
+	ReplacementError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -44,11 +46,11 @@ var ErrCodeMessage = map[int]struct {
 	RejectInvalidFee:                  {-1004, "Reject invalid fee"},
 	RejectVersion:                     {-1005, "Reject invalid version"},
 	CanNotCheckDoubleSpend:            {-1006, "Can not check double spend"},
-	DatabaseError:                  {-1007, "Database Error"},
-	ShardToBeaconBoolError:         {-1007, "ShardToBeaconBool Error"},
-	RejectDuplicateStakePubkey:     {-1008, "Reject Duplicate Stake Error"},
-	DuplicateBlockError:            {-1009, "Duplicate Block Error"},
-	OldBlockError:                  {-1010, "Old Block Error"},
+	DatabaseError:                     {-1007, "Database Error"},
+	ShardToBeaconBoolError:            {-1007, "ShardToBeaconBool Error"},
+	RejectDuplicateStakePubkey:        {-1008, "Reject Duplicate Stake Error"},
+	DuplicateBlockError:               {-1009, "Duplicate Block Error"},
+	OldBlockError:                     {-1010, "Old Block Error"},
 	MaxPoolSizeError:                  {-1011, "Max Pool Size Error"},
 	UnexpectedTransactionError:        {-1012, "Unexpected Transaction Error"},
 	TransactionNotFoundError:          {-1013, "Transaction Not Found Error"},
@@ -59,6 +61,8 @@ var ErrCodeMessage = map[int]struct {
 	WrongShardIDError:                 {-1018, "Reject Cross Shard Block With Same ShardID in Pool"},
 	MarshalError:                      {-1019, "Marshal Error"},
 	UnmarshalError:                    {-1020, "Unmarshal Error"},
+	HashError:                    {-1021, "Hash Error"},
+	ReplacementError:                    {-1022, "Replacement or Cancel Tx Error"},
 }
 
 type MempoolTxError struct {
@@ -79,7 +83,13 @@ func (e *MempoolTxError) Init(key int, err error) {
 	e.Message = ErrCodeMessage[key].Message
 	e.Err = errors.Wrap(err, e.Message)
 }
-
+func NewMempoolTxError(key int, err error) *MempoolTxError {
+	return &MempoolTxError{
+		Code:    ErrCodeMessage[key].Code,
+		Message: ErrCodeMessage[key].Message,
+		Err:     errors.Wrap(err, ErrCodeMessage[key].Message),
+	}
+}
 type BlockPoolError struct {
 	Code    int
 	Message string

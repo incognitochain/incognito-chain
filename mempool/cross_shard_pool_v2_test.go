@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	dbCrossShard database.DatabaseInterface
-	bestShardStateShard1 *blockchain.BestStateShard
+	dbCrossShard          database.DatabaseInterface
+	bestShardStateShard1  *blockchain.BestStateShard
 	crossShardPoolMapTest = make(map[byte]*CrossShardPool_v2)
-	crossShardBlock2           = &blockchain.CrossShardBlock{
+	crossShardBlock2      = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
 			ShardID:   0,
 			Height:    2,
@@ -90,7 +90,7 @@ var (
 	validCrossShardBlocks   = []*blockchain.CrossShardBlock{}
 )
 var _ = func() (_ struct{}) {
-	for i:=0; i < 255; i ++ {
+	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		pool := new(CrossShardPool_v2)
 		pool.shardID = shardID
@@ -104,19 +104,19 @@ var _ = func() (_ struct{}) {
 	if err != nil {
 		panic("Could not open db connection")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 1,3)
+	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 1, 3)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 3,4)
+	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 3, 4)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 4,5)
+	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 4, 5)
 	if err != nil {
 		panic("Could not store in db")
 	}
-	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 5,7)
+	err = dbCrossShard.StoreCrossShardNextHeight(byte(0), byte(1), 5, 7)
 	if err != nil {
 		panic("Could not store in db")
 	}
@@ -125,8 +125,9 @@ var _ = func() (_ struct{}) {
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
+
 func ResetCrossShardPoolTest() {
-	for i:=0; i<255; i++ {
+	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		pool := new(CrossShardPool_v2)
 		pool.shardID = shardID
