@@ -6,7 +6,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -209,66 +208,6 @@ func (httpServer *HttpServer) handleCreateAndSendBurningRequest(params interface
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithETHHeadersRelaying(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-
-	senderKeyParam := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	paymentAddr := senderKey.KeySet.PaymentAddress
-
-	data := arrayParams[4].(map[string]interface{})
-	data["RelayerAddress"] = paymentAddr
-	meta, err := metadata.NewETHHeaderRelayingFromMap(data)
-	if err != nil {
-		rpcErr := NewRPCError(ErrUnexpected, err)
-		Logger.log.Error(rpcErr)
-		return nil, rpcErr
-	}
-
-	tx, err1 := httpServer.buildRawTransaction(params, meta)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, NewRPCError(ErrUnexpected, err1)
-	}
-
-	byteArrays, err2 := json.Marshal(tx)
-	if err2 != nil {
-		Logger.log.Error(err1)
-		return nil, NewRPCError(ErrUnexpected, err2)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCreateAndSendTxWithETHHeadersRelaying(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	data, err := httpServer.handleCreateRawTxWithETHHeadersRelaying(params, closeChan)
-	if err != nil {
-		return nil, err
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
-	}
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
@@ -318,13 +257,4 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 		TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
 	}
 	return result, nil
-}
-
-func (httpServer *HttpServer) handleGetRelayedETHHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	// blockNum := uint64(arrayParams[0].(float64))
-	// header := httpServer.config.BlockChain.GetLightEthereum().GetLightChain().GetHeaderByNumber(blockNum)
-	headerHash := rCommon.HexToHash(arrayParams[0].(string))
-	header := httpServer.config.BlockChain.GetLightEthereum().GetLightChain().GetHeaderByHash(headerHash)
-	return header, nil
 }
