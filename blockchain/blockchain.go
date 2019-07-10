@@ -1437,7 +1437,12 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 			if err != nil {
 				return err
 			}
-			log.Printf("Backup Shard Block %+v", i)
+			if i % 100 == 0 {
+				log.Printf("Backup Shard %+v Block %+v", block.Header.ShardID, i)
+			}
+			if i == bestShardHeight - 1 {
+				log.Printf( "Finish Backup Shard %+v with Block %+v", block.Header.ShardID, i)
+			}
 		}
 	return nil
 }
@@ -1468,7 +1473,12 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("Backup Beacon Block %+v", i)
+		if i % 100 == 0 {
+			log.Printf( "Backup Beacon Block %+v", i)
+		}
+		if i == bestBeaconHeight - 1 {
+			log.Printf( "Finish Backup Beacon with Block %+v", i)
+		}
 	}
 	return nil
 }

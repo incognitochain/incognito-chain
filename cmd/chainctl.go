@@ -15,47 +15,6 @@ import (
 	"syscall"
 )
 
-//default chainDataDir is data/testnet/block
-func BackupShardChain(bc *blockchain.BlockChain, shardID byte, outDatadir string, fileName string) error {
-	if fileName == "" {
-		fileName = "export-incognito-shard-" + strconv.Itoa(int(shardID))
-	}
-	if outDatadir == "" {
-		outDatadir = "./"
-	}
-	file := filepath.Join(outDatadir,fileName)
-	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	defer fileHandler.Close()
-	var writer io.Writer = fileHandler
-	if err := bc.BackupShardChain(writer, shardID); err != nil {
-		return err
-	}
-	log.Printf("Backup Shard %+v Chain, file %+v", shardID, file)
-	return nil
-}
-func BackupBeaconChain(bc *blockchain.BlockChain, outDatadir string, fileName string) error {
-	if fileName == "" {
-		fileName = "export-incognito-beacon"
-	}
-	if outDatadir == "" {
-		outDatadir = "./"
-	}
-	file := filepath.Join(outDatadir,fileName)
-	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	defer fileHandler.Close()
-	var writer io.Writer = fileHandler
-	if err := bc.BackupBeaconChain(writer); err != nil {
-		return err
-	}
-	log.Printf("Backup Beacon Chain, file %+v", file)
-	return nil
-}
 func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, error) {
 	blockchain.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
 	mempool.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
@@ -101,7 +60,50 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 	}
 	return bc, nil
 }
-func RestoreShardChain(bc *blockchain.BlockChain, shardID byte, filename string) error {
+//default chainDataDir is data/testnet/block
+func BackupShardChain(bc *blockchain.BlockChain, shardID byte, outDatadir string, fileName string) error {
+	if fileName == "" {
+		fileName = "export-incognito-shard-" + strconv.Itoa(int(shardID))
+	}
+	if outDatadir == "" {
+		outDatadir = "./"
+	}
+	file := filepath.Join(outDatadir,fileName)
+	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer fileHandler.Close()
+	var writer io.Writer = fileHandler
+	if err := bc.BackupShardChain(writer, shardID); err != nil {
+		return err
+	}
+	log.Printf("Backup Shard %+v Chain, file %+v", shardID, file)
+	return nil
+}
+func BackupBeaconChain(bc *blockchain.BlockChain, outDatadir string, fileName string) error {
+	if fileName == "" {
+		fileName = "export-incognito-beacon"
+	}
+	if outDatadir == "" {
+		outDatadir = "./"
+	}
+	file := filepath.Join(outDatadir,fileName)
+	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer fileHandler.Close()
+	var writer io.Writer = fileHandler
+	if err := bc.BackupBeaconChain(writer); err != nil {
+		return err
+	}
+	log.Printf("Backup Beacon Chain, file %+v", file)
+	return nil
+}
+
+func RestoreShardChain(bc *blockchain.BlockChain, filename string) error {
+	var shardID byte
 	// Watch for Ctrl-C while the import is running.
 	// If a signal is received, the import will stop at the next batch.
 	interrupt := make(chan os.Signal, 1)
@@ -163,7 +165,12 @@ func RestoreShardChain(bc *blockchain.BlockChain, shardID byte, filename string)
 		if err != nil {
 			return err
 		}
-		log.Printf("Restore Shard %+v Block %+v \n", block.Header.ShardID, block.Header.Height)
+		if bc.BestState.Shard[block.Header.ShardID].ShardHeight >= block.Header.Height {
+			continue
+		}
+		if block.Header.Height % 100 == 0 {
+			log.Printf("Restore Shard %+v Block %+v \n", block.Header.ShardID, block.Header.Height)
+		}
 		err = bc.InsertShardBlock(block, true)
 		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
 			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockErr].Code {
@@ -174,6 +181,7 @@ func RestoreShardChain(bc *blockchain.BlockChain, shardID byte, filename string)
 			return err
 		}
 		// check interupt whenever finish insert 1 block
+		shardID = block.Header.ShardID
 		checkInterrupt()
 	}
 	log.Printf("Restore Shard %+v Chain Successfully", shardID)
@@ -241,7 +249,12 @@ func RestoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 		if err != nil {
 			return err
 		}
-		log.Printf("Restore Block %+v \n", block.Header.Height)
+		if bc.BestState.Beacon.BeaconHeight >= block.Header.Height {
+			continue
+		}
+		if block.Header.Height % 100 == 0 {
+			log.Printf("Restore Block %+v \n", block.Header.Height)
+		}
 		if block.Header.Height == 1 {
 			continue
 		}
