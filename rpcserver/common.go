@@ -178,7 +178,7 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 	}
 	voutsAmount := int64(0)
-	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	tokenParams.Receiver, voutsAmount, _ = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
