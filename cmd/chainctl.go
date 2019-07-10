@@ -15,9 +15,15 @@ import (
 	"syscall"
 )
 
-func BackupShardChain(shardID byte, chainDataDir string, outDatadir string) error {
-	fileName := "export-incognito-shard-" + strconv.Itoa(int(shardID))
-	file := fileName
+//default chainDataDir is data/testnet/block
+func BackupShardChain(shardID byte, chainDataDir string, outDatadir string, fileName string) error {
+	if fileName == "" {
+		fileName = "export-incognito-shard-" + strconv.Itoa(int(shardID))
+	}
+	if outDatadir == "" {
+		outDatadir = "./"
+	}
+	file := filepath.Join(outDatadir,fileName)
 	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
@@ -34,9 +40,14 @@ func BackupShardChain(shardID byte, chainDataDir string, outDatadir string) erro
 	log.Printf("Backup Shard %+v Chain, file %+v", shardID, file)
 	return nil
 }
-func BackupBeaconChain(chainDataDir string, outDatadir string) error {
-	fileName := "export-incognito-beacon"
-	file := fileName
+func BackupBeaconChain(chainDataDir string, outDatadir string, fileName string) error {
+	if fileName == "" {
+		fileName = "export-incognito-beacon"
+	}
+	if outDatadir == "" {
+		outDatadir = "./"
+	}
+	file := filepath.Join(outDatadir,fileName)
 	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
@@ -61,9 +72,7 @@ func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
 		return nil, err
 	}
 	log.Printf("Open leveldb at %+v successfully", filepath.Join(databaseDir))
-	bc := blockchain.NewBlockChain(&blockchain.Config{
-	
-	}, false)
+	bc := blockchain.NewBlockChain(&blockchain.Config{}, false)
 	crossShardPoolMap := make(map[byte]blockchain.CrossShardPool)
 	shardPoolMap := make(map[byte]blockchain.ShardPool)
 	for i := 0; i< 255; i++ {
