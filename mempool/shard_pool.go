@@ -96,6 +96,7 @@ func GetShardPool(shardID byte) *ShardPool {
 		shardPool.config = defaultConfig
 		shardPool.pendingPool = make(map[uint64]*blockchain.ShardBlock)
 		shardPool.cache, _ = lru.New(shardPool.config.CacheSize)
+		shardPool.mtx = new(sync.RWMutex)
 		shardPoolMap[shardID] = shardPool
 	}
 	return shardPoolMap[shardID]

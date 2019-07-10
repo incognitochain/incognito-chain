@@ -3,17 +3,15 @@ package transaction
 import (
 	"errors"
 	"fmt"
-	"math"
-	"math/big"
-	"math/rand"
-	"sort"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"math"
+	"math/big"
+	"math/rand"
 )
 
 // ConvertOutputCoinToInputCoin - convert output coin from old tx to input coin for new tx
@@ -212,7 +210,7 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 }
 
 // SortTxsByLockTime sorts txs by lock time
-func SortTxsByLockTime(txs []metadata.Transaction, isDesc bool) []metadata.Transaction {
+/*func SortTxsByLockTime(txs []metadata.Transaction, isDesc bool) []metadata.Transaction {
 	sort.Slice(txs, func(i, j int) bool {
 		if isDesc {
 			return txs[i].GetLockTime() > txs[j].GetLockTime()
@@ -220,4 +218,4 @@ func SortTxsByLockTime(txs []metadata.Transaction, isDesc bool) []metadata.Trans
 		return txs[i].GetLockTime() <= txs[j].GetLockTime()
 	})
 	return txs
-}
+}*/

@@ -28,11 +28,11 @@ import (
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/consensus/mubft"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
@@ -276,7 +276,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks,
-						cfg.LimitFee)
+						cfg.LimitFee, cfg.LimitFeeToken)
 				} else {
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
@@ -286,7 +286,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks,
-					cfg.LimitFee)
+					cfg.LimitFee, cfg.LimitFeeToken)
 			}
 		}
 	} else {
@@ -632,7 +632,7 @@ func (serverObj Server) Start() {
 	}
 
 	if serverObj.memPool != nil {
-		serverObj.memPool.LoadOrResetDatabaseMP()
+		serverObj.memPool.LoadOrResetDatabaseMempool()
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
 	}

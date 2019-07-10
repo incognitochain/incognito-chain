@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -61,7 +60,7 @@ func GetShardToBeaconPool() *ShardToBeaconPool {
 }
 
 func (self *ShardToBeaconPool) SetShardState(latestShardState map[byte]uint64) {
-	// fmt.Println("SetShardState")
+	// Logger.log.Info("SetShardState")
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
 
@@ -192,7 +191,7 @@ func (self *ShardToBeaconPool) RemoveBlock(blockItems map[byte]uint64) {
 func (self *ShardToBeaconPool) removeBlock(blockItems map[byte]uint64) {
 	for shardID, blockHeight := range blockItems {
 		for index, block := range self.pool[shardID] {
-			fmt.Println("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
+			Logger.log.Info("ShardToBeaconPool/Pool BEFORE Remove", block.Header.Height)
 			if block.Header.Height <= blockHeight {
 				if index == len(self.pool[shardID])-1 {
 					self.pool[shardID] = self.pool[shardID][index+1:]
@@ -230,12 +229,12 @@ func (self *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64) map[byte][]*
 		}
 	}
 	//UNCOMMENT FOR TESTING
-	// fmt.Println()
+	// Logger.log.Info()
 	// fmt.Print("ShardToBeaconPool/ValidPendingBlock ")
 	// for _, block := range finalBlocks[byte(0)] {
 	// 	fmt.Printf(" %+v ", block.Header.Height)
 	// }
-	// fmt.Println()
+	// Logger.log.Info()
 	//==============
 
 	return finalBlocks
