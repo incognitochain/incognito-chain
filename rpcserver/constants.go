@@ -106,15 +106,15 @@ const (
 	// utils
 	hashToIdenticon = "hashtoidenticon"
 
-	createIssuingRequest                  = "createissuingrequest"
-	sendIssuingRequest                    = "sendissuingrequest"
-	createAndSendIssuingRequest           = "createandsendissuingrequest"
-	createAndSendContractingRequest       = "createandsendcontractingrequest"
-	getBridgeTokensAmounts                = "getbridgetokensamounts"
-	createAndSendBurningRequest           = "createandsendburningrequest"
-	createAndSendTxWithETHHeadersRelaying = "createandsendtxwithethheadersrelaying"
-	createAndSendTxWithIssuingETHReq      = "createandsendtxwithissuingethreq"
-	getRelayedETHHeader                   = "getrelayedethheader"
+	createIssuingRequest             = "createissuingrequest"
+	sendIssuingRequest               = "sendissuingrequest"
+	createAndSendIssuingRequest      = "createandsendissuingrequest"
+	createAndSendContractingRequest  = "createandsendcontractingrequest"
+	getBridgeTokensAmounts           = "getbridgetokensamounts"
+	createAndSendBurningRequest      = "createandsendburningrequest"
+	createAndSendTxWithIssuingETHReq = "createandsendtxwithissuingethreq"
+	getRelayedETHHeader              = "getrelayedethheader"
+	checkETHHashIssued               = "checkethhashissued"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof = "getbeaconswapproof"
@@ -131,13 +131,13 @@ const (
 )
 
 const (
-	testSubcrice               = "testsubcribe"
-	subcribeNewShardBlock      = "subcribenewshardblock"
-	subcribeNewBeaconBlock     = "subcribenewbeaconblock"
-	subcribePendingTransaction = "subcribependingtransaction"
-	subcribeMempoolInfo = "subcribemempoolinfo"
-	subcribeShardBestState = "subcribeshardbeststate"
-	subcribeBeaconBestState = "subcribebeaconbeststate"
+	testSubcrice                = "testsubcribe"
+	subcribeNewShardBlock       = "subcribenewshardblock"
+	subcribeNewBeaconBlock      = "subcribenewbeaconblock"
+	subcribePendingTransaction  = "subcribependingtransaction"
+	subcribeMempoolInfo         = "subcribemempoolinfo"
+	subcribeShardBestState      = "subcribeshardbeststate"
+	subcribeBeaconBestState     = "subcribebeaconbeststate"
 	subcribeBeaconPoolBeststate = "subcribebeaconpoolbeststate"
-	subcribeShardPoolBeststate = "subcribeshardpoolbeststate"
+	subcribeShardPoolBeststate  = "subcribeshardpoolbeststate"
 )

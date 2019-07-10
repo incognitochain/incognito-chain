@@ -544,7 +544,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(TransactionError, err)
 	}
 	if len(invalidTxs) > 0 {
-		fmt.Println("haha failed: ", invalidTxs[0].GetMetadata())
 		return NewBlockChainError(TransactionError, fmt.Errorf("There are %d invalid txs", len(invalidTxs)))
 	}
 	err = blockchain.ValidateResponseTransactionFromTxsWithMetadata(&block.Body)
