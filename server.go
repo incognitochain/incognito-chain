@@ -699,7 +699,7 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 		for {
 			reader, err := myClient.Bucket("incognito").Object("version-chain.json").NewReader(ctx)
 			if err != nil {
-				//Logger.log.Error(err)
+				Logger.log.Error(err)
 				time.Sleep(10 * time.Second)
 				continue
 			}
