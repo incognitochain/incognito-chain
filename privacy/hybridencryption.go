@@ -6,11 +6,15 @@ import (
 	"math/big"
 )
 
+// Ciphertext represents to Ciphertext for Hybrid encryption
+// Hybrid encryption uses AES scheme to encrypt message with arbitrary size
+// and uses Elgamal encryption to encrypt AES key
 type Ciphertext struct {
 	MsgEncrypted    []byte
 	SymKeyEncrypted []byte
 }
 
+// IsNil check whether ciphertext is nil or not
 func (ciphertext *Ciphertext) IsNil() bool {
 	if len(ciphertext.MsgEncrypted) == 0 {
 		return true
@@ -19,6 +23,8 @@ func (ciphertext *Ciphertext) IsNil() bool {
 	return len(ciphertext.SymKeyEncrypted) == 0
 }
 
+// Bytes converts ciphertext to bytes array
+// if ciphertext is nil, return empty byte array
 func (ciphertext *Ciphertext) Bytes() []byte {
 	if ciphertext.IsNil() {
 		return []byte{}
@@ -31,16 +37,21 @@ func (ciphertext *Ciphertext) Bytes() []byte {
 	return res
 }
 
+
+// SetBytes reverts bytes array to Ciphertext
 func (ciphertext *Ciphertext) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return errors.New("SetBytes ciphertext encryption: invalid input")
 	}
-	ciphertext.SymKeyEncrypted = bytes[0:66]
-	ciphertext.MsgEncrypted = bytes[66:]
+	ciphertext.SymKeyEncrypted = bytes[0:ElGamalCiphertextSize]
+	ciphertext.MsgEncrypted = bytes[ElGamalCiphertextSize:]
 	return nil
 }
 
 // HybridEncrypt encrypts message with any size, using Publickey to encrypt
+// HybridEncrypt generates AES key by randomize an elliptic point aesKeyPoint and get X-coordinate
+// using AES key to encrypt message
+// After that, using ElGamal encryption encrypt aesKeyPoint using publicKey
 func HybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext, err error) {
 	ciphertext = new(Ciphertext)
 	// Generate a AES key as the abscissa of a random elliptic point
@@ -68,6 +79,9 @@ func HybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext
 	return ciphertext, nil
 }
 
+// HybridDecrypt receives a ciphertext and privateKey
+// it decrypts aesKeyPoint, using ElGamal encryption with privateKey
+// Using X-coordinate of aesKeyPoint to decrypts message
 func HybridDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err error) {
 	// Validate ciphertext
 	if ciphertext.IsNil() {
