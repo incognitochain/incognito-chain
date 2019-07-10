@@ -47,7 +47,6 @@ const (
 	DefaultTxPoolMaxTx            = uint64(100000)
 	DefaultLimitFee               = uint64(0)
 	DefaultLimitFeeToken          = uint64(0)
-
 	// For wallet
 	DefaultWalletName     = "wallet"
 	DefaultPersistMempool = false
