@@ -110,7 +110,7 @@ func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan
 		Logger.log.Infof("handleCanPubkeyStake result: %+v", result)
 		return result, nil
 	}
-	if common.IndexOfStrInHashMap(publicKey, httpServer.config.TxMemPool.CandidatePool) > 0 {
+	if common.IndexOfStrInHashMap(publicKey, httpServer.config.TxMemPool.PoolCandidate) > 0 {
 		result := jsonresult.StakeResult{PublicKey: publicKey, CanStake: false}
 		Logger.log.Infof("handleCanPubkeyStake result: %+v", result)
 		return result, nil
