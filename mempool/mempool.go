@@ -288,12 +288,21 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if err != nil {
-		replaceErr, isReplacedTx := tp.validateTransactionReplacementOrCancel(tx)
+		now := time.Now()
+		replaceErr, isReplacedTx := tp.validateTransactionReplacement(tx)
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolValidationDetails,
+			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
+			metrics.TagValue:         metrics.ReplaceTxMetic,
+			metrics.Tag:              metrics.ValidateConditionTag,
+		})
+		// if replace tx success (no replace error found) then continue with next validate condition
 		if isReplacedTx {
 			if replaceErr != nil {
 				return replaceErr
 			}
 		} else {
+			// replace fail
 			tempErr := MempoolTxError{}
 			tempErr.Init(RejectDoubleSpendWithMempoolTx, err)
 			return tempErr
@@ -325,7 +334,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition6,
+		metrics.TagValue:         metrics.Condition7,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if err != nil {
@@ -348,7 +357,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition7,
+		metrics.TagValue:         metrics.Condition8,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if foundTokenID > 0 {
@@ -372,7 +381,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition8,
+		metrics.TagValue:         metrics.Condition9,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if foundPubkey > 0 {
@@ -651,12 +660,14 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	return hash, txDesc, err
 }
-func (tp *TxPool) validateTransactionReplacementOrCancel(tx metadata.Transaction) (error,bool) {
+func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error,bool) {
+	// calculate match serial number list in pool for replaced tx
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash, err := common.HashArrayInterface(serialNumberHashList)
 	if err != nil {
 		return NewMempoolTxError(ReplacementError, err), false
 	}
+	// find replace tx in pool
 	if txHashToBeReplaced, ok := tp.poolSerailNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
 			baseReplaceFee := float64(txDescToBeReplaced.Desc.Fee) * tp.ReplaceFeeRatio
@@ -671,10 +682,13 @@ func (tp *TxPool) validateTransactionReplacementOrCancel(tx metadata.Transaction
 				return nil, true
 			}
 		} else {
-		 	return NewMempoolTxError(ReplacementError, errors.New("No Tx to be replace or cancel")), false
+			//found no tx to be replaced
+			//TODO: check again return value
+		 	return nil, false
 		}
 	} else {
-		return NewMempoolTxError(ReplacementError, errors.New("No Tx to be replace or cancel")), false
+		// no match serial number list to be replaced
+		return nil, false
 	}
 }
 // SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
@@ -1034,8 +1048,9 @@ func (tp *TxPool) monitorPool() {
 			txHash := *txDesc.Desc.Tx.Hash()
 			startTime := txDesc.StartTime
 			tp.removeTx(txDesc.Desc.Tx)
-			delete(tp.PoolCandidate, txHash)
-			delete(tp.poolTokenID, txHash)
+			tp.removeCandidateByTxHash(txHash)
+			tp.removeTokenIDByTxHash(txHash)
+			tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			txSize := txDesc.Desc.Tx.GetTxActualSize()
 			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
@@ -1048,7 +1063,6 @@ func (tp *TxPool) monitorPool() {
 				metrics.Measurement:      metrics.PoolSize,
 				metrics.MeasurementValue: float64(size)})
 		}
-		//TODO: delete in persist db
 		tp.mtx.Unlock()
 	}
 }
