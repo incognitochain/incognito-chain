@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
 

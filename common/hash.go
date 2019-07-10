@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/ethrelaying/crypto"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const HashSize = 32
