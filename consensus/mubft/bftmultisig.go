@@ -82,7 +82,10 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 	}
 	sort.Ints(multiSig.combine.ValidatorsIdxR)
 
-	commitSig := multiSig.scheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
+	commitSig, err := multiSig.scheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
+	if err != nil {
+		return err
+	}
 
 	multiSig.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), common.ZeroByte)
 	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), common.ZeroByte)
