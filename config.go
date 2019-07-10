@@ -15,8 +15,8 @@ import (
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jessevdk/go-flags"
 )
@@ -28,24 +28,25 @@ const (
 	DefaultDatabaseDirname        = "block"
 	DefaultDatabaseMempoolDirname = "mempool"
 	DefaultLogLevel               = "info"
-	DefaultLogDirname         = "logs"
-	DefaultLogFilename        = "log.log"
-	DefaultMaxPeers           = 125
-	DefaultMaxPeersSameShard  = 50
-	DefaultMaxPeersOtherShard = 50
-	DefaultMaxPeersOther      = 125
-	DefaultMaxPeersNoShard    = 125
-	DefaultMaxPeersBeacon     = 50
-	DefaultMaxRPCClients      = 20
-	DefaultMaxRPCWsClients    = 20
-	DefaultMetricUrl          = ""
-	SampleConfigFilename      = "sample-config.conf"
-	DefaultDisableRpcTLS      = true
-	DefaultFastStartup        = true
-	DefaultNodeMode           = common.NODEMODE_RELAY
-	DefaultTxPoolTTL          = uint(86400) * 10 // in second
-	DefaultTxPoolMaxTx        = uint64(100000)
-	DefaultLimitFee           = uint64(1)
+	DefaultLogDirname             = "logs"
+	DefaultLogFilename            = "log.log"
+	DefaultMaxPeers               = 125
+	DefaultMaxPeersSameShard      = 50
+	DefaultMaxPeersOtherShard     = 50
+	DefaultMaxPeersOther          = 125
+	DefaultMaxPeersNoShard        = 125
+	DefaultMaxPeersBeacon         = 50
+	DefaultMaxRPCClients          = 20
+	DefaultMaxRPCWsClients        = 20
+	DefaultMetricUrl              = ""
+	SampleConfigFilename          = "sample-config.conf"
+	DefaultDisableRpcTLS          = true
+	DefaultFastStartup            = true
+	DefaultNodeMode               = common.NODEMODE_RELAY
+	DefaultTxPoolTTL              = uint(86400) * 10 // in second
+	DefaultTxPoolMaxTx            = uint64(100000)
+	DefaultLimitFee               = uint64(0)
+	DefaultLimitFeeToken          = uint64(0)
 
 	// For wallet
 	DefaultWalletName     = "wallet"
@@ -130,16 +131,17 @@ type config struct {
 
 	FastStartup bool `long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 
-	TxPoolTTL   uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
-	TxPoolMaxTx uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
-	LimitFee    uint64 `long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.01 PRV"`
+	TxPoolTTL     uint   `long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
+	TxPoolMaxTx   uint64 `long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
+	LimitFee      uint64 `long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.00 PRV"`
+	LimitFeeToken uint64 `long:"limitfeetoken" description:"Limited fee for tx(per Kb data), default is 0 token"`
 
-	LoadMempool    bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
-	PersistMempool bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
-	MetricUrl      string `long:"metricurl" description:"Metric URL"`
-	BtcClient      uint `long:"btcclient" description:"Default 0: BlockCypherClient, 1: Self Host Bitcoin Client (Must pass in btcclientip, btcclientport, btcclientusername, btcclientpassword"`
-	BtcClientIP    string  `long:"btcclientip" description:"Bitcoin Client IP (Static IP)"`
-	BtcClientPort  string `long:"btcclientport" description:"Bitcoin Client Port (default 8332)"`
+	LoadMempool       bool   `long:"loadmempool" description:"Load transactions from Mempool database"`
+	PersistMempool    bool   `long:"persistmempool" description:"Persistence transaction in memepool database"`
+	MetricUrl         string `long:"metricurl" description:"Metric URL"`
+	BtcClient         uint   `long:"btcclient" description:"Default 0: BlockCypherClient, 1: Self Host Bitcoin Client (Must pass in btcclientip, btcclientport, btcclientusername, btcclientpassword"`
+	BtcClientIP       string `long:"btcclientip" description:"Bitcoin Client IP (Static IP)"`
+	BtcClientPort     string `long:"btcclientport" description:"Bitcoin Client Port (default 8332)"`
 	BtcClientUsername string `long:"btcclientusername" description:"Bitcoin Client Username for RPC"`
 	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
 }
@@ -319,6 +321,7 @@ func loadConfig() (*config, []string, error) {
 		TxPoolMaxTx:          DefaultTxPoolMaxTx,
 		PersistMempool:       DefaultPersistMempool,
 		LimitFee:             DefaultLimitFee,
+		LimitFeeToken:        DefaultLimitFeeToken,
 		MetricUrl:            DefaultMetricUrl,
 		BtcClient:            DefaultBtcClient,
 		BtcClientPort:        DefaultBtcClientPort,
