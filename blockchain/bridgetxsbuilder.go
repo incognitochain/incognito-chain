@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
 	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -134,13 +133,6 @@ func (blockgen *BlkTmplGenerator) buildETHHeaderRelayingRewardTx(
 		return relayingRewardTx, maxHeaderLen, err
 	}
 	return resTx, insertedHeadersLen, nil
-}
-
-func verifyIncTokenID(
-	db database.DatabaseInterface,
-	incTokenID common.Hash,
-) {
-
 }
 
 func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
