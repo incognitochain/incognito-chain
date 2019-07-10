@@ -1,10 +1,11 @@
 package chain
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type ConsensusInterface interface {
@@ -22,6 +23,8 @@ type BlockInterface interface {
 	GetHeight() uint64
 	GetProducerPubKey() string
 	Hash() *common.Hash
+	AddValidationField(validateData string) error
+	GetValidationField() string
 }
 
 type ChainInterface interface {
@@ -36,8 +39,6 @@ type ChainInterface interface {
 	GetLastProposerIndex() int
 	GetNodePubKey() string
 	CreateNewBlock(round int) BlockInterface
-	ValidateBlock(interface{}) int
-	ValidateSignature(interface{}, string) bool
 	InsertBlk(interface{}, bool)
 }
 
@@ -47,4 +48,12 @@ type Node interface {
 	GetNodePubKey() string
 	GetUserKeySet() *incognitokey.KeySet
 	GetActiveShardNumber() int
+}
+
+type MulSigsSchemeInterface interface {
+	Prepare(data interface{}) error
+	ValidateAggSig(dataHash []byte, validationField string, chain ChainInterface) error
+	ValidateSingleSig(dataHash []byte, sig string, pubkey string) error
+	SignData(privKey string, dataHash []byte) string
+	AggregateSig() string
 }
