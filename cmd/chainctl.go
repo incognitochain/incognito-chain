@@ -16,7 +16,7 @@ import (
 )
 
 //default chainDataDir is data/testnet/block
-func BackupShardChain(shardID byte, chainDataDir string, outDatadir string, fileName string) error {
+func BackupShardChain(shardID byte, chainDataDir string, outDatadir string, fileName string, testNet bool) error {
 	if fileName == "" {
 		fileName = "export-incognito-shard-" + strconv.Itoa(int(shardID))
 	}
@@ -30,7 +30,7 @@ func BackupShardChain(shardID byte, chainDataDir string, outDatadir string, file
 	}
 	defer fileHandler.Close()
 	var writer io.Writer = fileHandler
-	bc, err := makeBlockChain(chainDataDir)
+	bc, err := makeBlockChain(chainDataDir, testNet)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func BackupShardChain(shardID byte, chainDataDir string, outDatadir string, file
 	log.Printf("Backup Shard %+v Chain, file %+v", shardID, file)
 	return nil
 }
-func BackupBeaconChain(chainDataDir string, outDatadir string, fileName string) error {
+func BackupBeaconChain(chainDataDir string, outDatadir string, fileName string, testNet bool) error {
 	if fileName == "" {
 		fileName = "export-incognito-beacon"
 	}
@@ -54,7 +54,7 @@ func BackupBeaconChain(chainDataDir string, outDatadir string, fileName string) 
 	}
 	defer fileHandler.Close()
 	var writer io.Writer = fileHandler
-	bc, err := makeBlockChain(chainDataDir)
+	bc, err := makeBlockChain(chainDataDir, testNet)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func BackupBeaconChain(chainDataDir string, outDatadir string, fileName string) 
 	log.Printf("Backup Beacon Chain, file %+v", file)
 	return nil
 }
-func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
+func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, error) {
 	blockchain.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
 	mempool.Logger.Init(common.NewBackend(nil).Logger("ChainCMD", true))
 	db, err := database.Open("leveldb", filepath.Join(databaseDir))
@@ -73,6 +73,12 @@ func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
 	}
 	log.Printf("Open leveldb at %+v successfully", filepath.Join(databaseDir))
 	bc := blockchain.NewBlockChain(&blockchain.Config{}, false)
+	var bcParams *blockchain.Params
+	if testNet {
+		bcParams = &blockchain.ChainTestParam
+	} else {
+		bcParams = &blockchain.ChainMainParam
+	}
 	crossShardPoolMap := make(map[byte]blockchain.CrossShardPool)
 	shardPoolMap := make(map[byte]blockchain.ShardPool)
 	for i := 0; i< 255; i++ {
@@ -86,10 +92,10 @@ func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
 		PubSubManager: pb,
 		DataBase: db,
 		BlockChain: bc,
-		ChainParams: &blockchain.ChainTestParam,
+		ChainParams: bcParams,
 	})
 	err = bc.Init(&blockchain.Config{
-		ChainParams: &blockchain.ChainTestParam,
+		ChainParams: bcParams,
 		DataBase:          db,
 		BeaconPool:        mempool.GetBeaconPool(),
 		ShardToBeaconPool: mempool.GetShardToBeaconPool(),
@@ -103,7 +109,7 @@ func makeBlockChain(databaseDir string) (*blockchain.BlockChain, error) {
 	}
 	return bc, nil
 }
-func RestoreShardChain(shardID byte, chainDataDir string, filename string) error {
+func RestoreShardChain(shardID byte, chainDataDir string, filename string, testNet bool) error {
 	// Watch for Ctrl-C while the import is running.
 	// If a signal is received, the import will stop at the next batch.
 	interrupt := make(chan os.Signal, 1)
@@ -137,7 +143,7 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 	if err != nil {
 		return err
 	}
-	bc, err := makeBlockChain(chainDataDir)
+	bc, err := makeBlockChain(chainDataDir, testNet)
 	if err != nil {
 		return err
 	}
@@ -188,7 +194,7 @@ func RestoreShardChain(shardID byte, chainDataDir string, filename string) error
 	log.Printf("Restore Shard %+v Chain Successfully", shardID)
 	return nil
 }
-func RestoreBeaconChain(chainDataDir string, filename string) error {
+func RestoreBeaconChain(chainDataDir string, filename string, testNet bool) error {
 	// Watch for Ctrl-C while the import is running.
 	// If a signal is received, the import will stop at the next batch.
 	interrupt := make(chan os.Signal, 1)
@@ -222,7 +228,7 @@ func RestoreBeaconChain(chainDataDir string, filename string) error {
 	if err != nil {
 		return err
 	}
-	bc, err := makeBlockChain(chainDataDir)
+	bc, err := makeBlockChain(chainDataDir, testNet)
 	if err != nil {
 		return err
 	}

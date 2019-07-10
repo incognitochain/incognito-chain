@@ -129,7 +129,7 @@ func main() {
 					return
 				}
 				if cfg.Beacon {
-					err := BackupBeaconChain(cfg.ChainDataDir, cfg.OutDataDir, cfg.FileName)
+					err := BackupBeaconChain(cfg.ChainDataDir, cfg.OutDataDir, cfg.FileName, cfg.TestNet)
 					if err != nil {
 						log.Printf("Beacon Beackup failed, err %+v", err)
 					}
@@ -159,7 +159,7 @@ func main() {
 					}
 					//backup shard
 					for _, shardID := range shardIDs {
-						err := BackupShardChain(shardID, cfg.ChainDataDir, cfg.OutDataDir, cfg.FileName)
+						err := BackupShardChain(shardID, cfg.ChainDataDir, cfg.OutDataDir, cfg.FileName, cfg.TestNet)
 						if err != nil {
 							log.Printf("Shard %+v back up failed, err %+v", shardID, err)
 						}
@@ -177,7 +177,7 @@ func main() {
 					return
 				}
 				if cfg.Beacon {
-					err := RestoreBeaconChain(cfg.ChainDataDir, cfg.FileName)
+					err := RestoreBeaconChain(cfg.ChainDataDir, cfg.FileName, cfg.TestNet)
 					if err != nil {
 						log.Printf("Beacon Restore failed, err %+v", err)
 					}
@@ -207,7 +207,7 @@ func main() {
 					}
 					//backup shard
 					for _, shardID := range shardIDs {
-						err := RestoreShardChain(shardID, cfg.ChainDataDir, cfg.FileName)
+						err := RestoreShardChain(shardID, cfg.ChainDataDir, cfg.FileName, cfg.TestNet)
 						if err != nil {
 							log.Printf("Shard %+v back up failed, err %+v", shardID, err)
 						}
