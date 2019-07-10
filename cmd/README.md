@@ -32,7 +32,7 @@ Example:
     `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/fullnode/testnet/block" --filename data/export-incognito-beacon --beacon --testnet`
     - Shard: Restore only Shard Chain (support multi shard at a time)
     
-    `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/fullnode/testnet/block" --filename "data/export-incognito-shard-0,data/export-incognito-shard-1" --beacon --testnet`
+    `$ ./cmd/incognito --cmd restorechain --chaindatadir "data/fullnode/testnet/block" --filename "data/export-incognito-shard-0,data/export-incognito-shard-1" --testnet`
 
 ### Notice
 - You SHOULD Restore Beacon Chain Database BEFORE Shard Chain Database
