@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/pkg/errors"
-	lvdberr "github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -73,7 +72,7 @@ func (db *db) BackupCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubke
 	backupKeySpec3 := append(prevkey, keySpec3...)
 	res, err := db.Get(keySpec3)
 	if err != nil {
-		if err != lvdberr.ErrNotFound {
+		if err.(*database.DatabaseError).GetErrorCode() != database.LvDbNotFound {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
 		return nil
@@ -121,7 +120,7 @@ func (db *db) RestoreCommitmentsOfPubkey(tokenID common.Hash, shardID byte, pubk
 	backupKeySpec3 := append(prevkey, keySpec3...)
 	res, err := db.Get(backupKeySpec3)
 	if err != nil {
-		if err != lvdberr.ErrNotFound {
+		if err.(*database.DatabaseError).GetErrorCode() != database.LvDbNotFound {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
 		if err := db.Delete(keySpec3); err != nil {
@@ -157,7 +156,7 @@ func (db *db) BackupSerialNumbersLen(tokenID common.Hash, shardID byte) error {
 	current = append(current, []byte("len")...)
 	res, err := db.Get(current)
 	if err != nil {
-		if err != lvdberr.ErrNotFound {
+		if err.(*database.DatabaseError).GetErrorCode() != database.LvDbNotFound {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
 		return nil
@@ -178,7 +177,7 @@ func (db *db) RestoreSerialNumber(tokenID common.Hash, shardID byte, serialNumbe
 	prevLenKey = append(prevLenKey, currentLenKey...)
 
 	prevLen, err := db.Get(prevLenKey)
-	if err != nil && err != lvdberr.ErrNotFound {
+	if err != nil && err.(*database.DatabaseError).GetErrorCode() != database.LvDbNotFound {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 	}
 	if err := db.Put(currentLenKey, prevLen); err != nil {
@@ -275,7 +274,7 @@ func (db *db) RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeig
 	heightKey := append(key, curHeightBytes...)
 	for {
 		nextHeightBytes, err := db.lvdb.Get(heightKey, nil)
-		if err != nil && err != lvdberr.ErrNotFound {
+		if err != nil && err.(*database.DatabaseError).GetErrorCode() != database.LvDbNotFound {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
 		}
 		err = db.Delete(heightKey)
@@ -355,7 +354,7 @@ func (db *db) RestoreBridgedTokenByTokenID(tokenID common.Hash) error {
 	backupKey = append(backupKey, key...)
 
 	tokenWithAmtBytes, dbErr := db.Get(backupKey)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+	if dbErr != nil && dbErr.(*database.DatabaseError).GetErrorCode() != database.LvDbNotFound {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
 	}
 
