@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 // handleGetBridgeSwapProof returns a proof of a new bridge committee (for a given beacon block height)
@@ -33,29 +32,7 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	// Decode instruction to send to Ethereum without having to decode on client
 	decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(beaconInstProof.inst))
 
-	return jsonresult.GetInstructionProof{
-		Instruction: decodedInst,
-
-		BeaconInstPath:         beaconInstProof.instPath,
-		BeaconInstPathIsLeft:   beaconInstProof.instPathIsLeft,
-		BeaconInstRoot:         beaconInstProof.instRoot,
-		BeaconBlkData:          beaconInstProof.blkData,
-		BeaconBlkHash:          beaconInstProof.blkHash,
-		BeaconSignerPubkeys:    beaconInstProof.signerPubkeys,
-		BeaconSignerSig:        beaconInstProof.signerSig,
-		BeaconSignerPaths:      beaconInstProof.signerPaths,
-		BeaconSignerPathIsLeft: beaconInstProof.signerPathIsLeft,
-
-		BridgeInstPath:         bridgeInstProof.instPath,
-		BridgeInstPathIsLeft:   bridgeInstProof.instPathIsLeft,
-		BridgeInstRoot:         bridgeInstProof.instRoot,
-		BridgeBlkData:          bridgeInstProof.blkData,
-		BridgeBlkHash:          bridgeInstProof.blkHash,
-		BridgeSignerPubkeys:    bridgeInstProof.signerPubkeys,
-		BridgeSignerSig:        bridgeInstProof.signerSig,
-		BridgeSignerPaths:      bridgeInstProof.signerPaths,
-		BridgeSignerPathIsLeft: bridgeInstProof.signerPathIsLeft,
-	}, nil
+	return buildProofResult(decodedInst, beaconInstProof, bridgeInstProof, "", ""), nil
 }
 
 // getBridgeSwapProofOnBridge finds a bridge committee swap instruction in a bridge block and returns its proof; the bridge block must be included in a given beaconBlock
@@ -65,12 +42,13 @@ func getBridgeSwapProofOnBridge(
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
 	// Get bridge block and check if it contains bridge swap instruction
-	bridgeBlock, instID, err := findBridgeBlockWithInst(beaconBlock, bc, db)
+	b, instID, err := findBridgeBlockWithInst(beaconBlock, bc, db)
 	if err != nil {
 		return nil, err
 	}
-	insts := bridgeBlock.Body.Instructions
-	return buildProofOnBridge(bridgeBlock, insts, instID, db)
+	insts := b.Body.Instructions
+	block := &shardBlock{ShardBlock: b}
+	return buildProofForBlock(block, insts, instID, db)
 }
 
 // getBridgeSwapProofOnBeacon finds in a given beacon block a bridge committee swap instruction and returns its proof
@@ -83,19 +61,20 @@ func getBridgeSwapProofOnBeacon(
 	if len(beaconBlocks) == 0 {
 		return nil, nil, fmt.Errorf("cannot find beacon block with height %d", height)
 	}
-	beaconBlock := beaconBlocks[0]
+	b := beaconBlocks[0]
 
 	// Find bridge swap instruction in beacon block
-	insts := beaconBlock.Body.Instructions
+	insts := b.Body.Instructions
 	_, instID := findCommSwapInst(insts, metadata.BridgeSwapConfirmMeta)
 	if instID < 0 {
 		return nil, nil, fmt.Errorf("cannot find bridge swap instruction in beacon block")
 	}
-	proof, err := buildProofOnBeacon(beaconBlock, insts, instID, db)
+	block := &beaconBlock{BeaconBlock: b}
+	proof, err := buildProofForBlock(block, insts, instID, db)
 	if err != nil {
 		return nil, nil, err
 	}
-	return proof, beaconBlock, nil
+	return proof, b, nil
 }
 
 // findBridgeBlockWithInst traverses all shard blocks included in a beacon block and returns the one containing a bridge swap instruction
