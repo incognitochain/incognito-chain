@@ -12,6 +12,7 @@ type GetInstructionProof struct {
 	BeaconBlkHash        string   // Hex encoded block hash
 	BeaconSignerSig      string   // Hex encoded signature
 	BeaconPubkeys        []string // To decompress and send to contract
+	BeaconRIdxs          []int    // Idxs of R's aggregators
 	BeaconSigIdxs        []int    // Idxs of signer
 	BeaconR              string   // Random number (33 bytes)
 
@@ -22,6 +23,7 @@ type GetInstructionProof struct {
 	BridgeBlkHash        string
 	BridgeSignerSig      string
 	BridgePubkeys        []string
+	BridgeRIdxs          []int
 	BridgeSigIdxs        []int
 	BridgeR              string
 }
