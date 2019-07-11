@@ -28,11 +28,6 @@ import (
 	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/ethrelaying/core"
-	"github.com/incognitochain/incognito-chain/ethrelaying/eth"
-	"github.com/incognitochain/incognito-chain/ethrelaying/les"
-	"github.com/incognitochain/incognito-chain/ethrelaying/node"
-	ethParams "github.com/incognitochain/incognito-chain/ethrelaying/params"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 
@@ -42,6 +37,7 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -470,27 +466,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
 
-		// eth relaying
-		nodeConfig := &node.Config{
-			DataDir: "./ethrelaying",
-		}
-		genesis := &core.Genesis{
-			Config: &ethParams.ChainConfig{},
-		}
-		ethConfig := &eth.Config{
-			Genesis:         genesis,
-			DatabaseHandles: 512,
-			DatabaseCache:   512,
-		}
-		// stack, _ := mobile.NewNode("./ethrelaying", nodeConfig)
-		svcCtx := node.NewServiceContext(nodeConfig)
-		leth, err := les.NewLightETHForRelaying(svcCtx, ethConfig, cfg.DataDir)
-		if err != nil {
-			fmt.Println("hahaha: ", err)
-			return err
-		}
-
-		serverObj.blockgen.SetLightETHToChain(leth)
+		// init rpc client instance and stick to Blockchain object
+		// in order to communicate to external services (ex. eth light node)
+		serverObj.blockgen.SetRPCClientChain(rpccaller.NewRPCClient())
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
