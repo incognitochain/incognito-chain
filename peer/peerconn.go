@@ -600,7 +600,9 @@ func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
 
 // Close - close peer connection by close channel
 func (p *PeerConn) Close() {
-	close(p.cClose)
+	if _, ok := <-p.cClose; ok {
+		close(p.cClose)
+	}
 }
 
 // ForceClose - set flag and close channel
