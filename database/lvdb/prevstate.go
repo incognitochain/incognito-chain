@@ -200,7 +200,7 @@ func (db *db) DeleteTransactionIndex(txId common.Hash) error {
 	key := string(transactionKeyPrefix) + txId.String()
 	err := db.Delete([]byte(key))
 	if err != nil {
-		return database.NewDatabaseError(database.ErrUnexpected, err)
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return nil
 
