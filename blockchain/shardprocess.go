@@ -237,7 +237,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if feeEstimator, ok := blockchain.config.FeeEstimator[block.Header.ShardID]; ok {
 		blockBodyJson, _ := json.MarshalIndent(block, "", "  ")
 		Logger.log.Info("FeeEstimator RegisterBlock for ", shardID, block.Hash(), string(blockBodyJson))
-		go feeEstimator.RegisterBlock(block)
+		feeEstimator.RegisterBlock(block)
 	}
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
