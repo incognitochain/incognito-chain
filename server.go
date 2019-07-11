@@ -1,16 +1,10 @@
 package main
 
 import (
-	"cloud.google.com/go/storage"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
-	"golang.org/x/net/context"
-	"google.golang.org/api/option"
 	"io/ioutil"
 	"log"
 	"net"
@@ -21,6 +15,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"cloud.google.com/go/storage"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
 
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -391,6 +392,13 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			return err
 		}
 	}
+	if cfg.NodeMode == common.NODEMODE_RELAY {
+		cfg.MaxPeersSameShard = 9999
+		cfg.MaxPeersOtherShard = 9999
+		cfg.MaxPeersOther = 9999
+		cfg.MaxPeersNoShard = 0
+		cfg.MaxPeersBeacon = 9999
+	}
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      serverObj.InboundPeerConnected,
 		OnOutboundConnection: serverObj.OutboundPeerConnected,
@@ -406,6 +414,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxPeersBeacon:     cfg.MaxPeersBeacon,
 	})
 	serverObj.connManager = connManager
+	// init connManager for netSync
+	serverObj.netSync.ConnManager = connManager
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -1088,9 +1098,27 @@ func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) 
 	Logger.log.Debugf("Receive addr message %v", msg.RawPeers)
 }
 
-func (serverObj *Server) OnBFTMsg(_ *peer.PeerConn, msg wire.Message) {
+func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	Logger.log.Debug("Receive a BFTMsg START")
 	var txProcessed chan struct{}
+	if cfg.NodeMode == common.NODEMODE_RELAY {
+
+		senderPublicKey := p.RemotePeer.PublicKey
+		bestState := blockchain.GetBestStateBeacon()
+		beaconCommitteeList := bestState.BeaconCommittee
+		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
+		if isInBeaconCommittee {
+			serverObj.PushMessageToBeacon(msg)
+		}
+		shardCommitteeList := bestState.ShardCommittee
+		for shardID, committees := range shardCommitteeList {
+			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1
+			if isInShardCommitee {
+				serverObj.PushMessageToShard(msg, shardID)
+				break
+			}
+		}
+	}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Debug("Receive a BFTMsg END")
 }
@@ -1179,6 +1207,8 @@ PushMessageToPeer push msg to pbk
 func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	Logger.log.Debugf("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
+	relayConns := serverObj.connManager.GetConnOfRelayNode()
+	peerConns = append(relayConns, peerConns...)
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
@@ -1221,6 +1251,8 @@ PushMessageToPeer push msg to beacon node
 func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
 	Logger.log.Debugf("Push msg to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
+	relayConns := serverObj.connManager.GetConnOfRelayNode()
+	peerConns = append(relayConns, peerConns...)
 	if len(peerConns) > 0 {
 		fmt.Println("BFT:", len(peerConns))
 		for _, peerConn := range peerConns {
