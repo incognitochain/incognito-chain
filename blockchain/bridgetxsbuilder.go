@@ -8,16 +8,12 @@ import (
 	"math/big"
 	"strconv"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/ethrelaying/core/types"
-	"github.com/incognitochain/incognito-chain/ethrelaying/light"
-	"github.com/incognitochain/incognito-chain/ethrelaying/rlp"
-	"github.com/incognitochain/incognito-chain/ethrelaying/trie"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/pkg/errors"
 )
 
 func buildInstructionsForETHIssuingReq(
@@ -99,111 +95,42 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 	return resTx, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildETHHeaderRelayingRewardTx(
-	tx metadata.Transaction,
-	producerPrivateKey *privacy.PrivateKey,
-	relayingRewardTx metadata.Transaction,
-	maxHeaderLen int,
-) (metadata.Transaction, int, error) {
-	ethHeaderRelaying := tx.GetMetadata().(*metadata.ETHHeaderRelaying)
-	ethHeaders := ethHeaderRelaying.ETHHeaders
-	insertedHeadersLen := len(ethHeaders)
-	if insertedHeadersLen <= maxHeaderLen {
-		return relayingRewardTx, maxHeaderLen, nil
-	}
-
-	lc := blockgen.chain.LightEthereum.GetLightChain()
-	_, err := lc.ValidateHeaderChain(ethHeaders, 0)
-	if err != nil {
-		fmt.Printf("ETH header relaying failed: %v", err)
-		return relayingRewardTx, maxHeaderLen, nil
-	}
-	// TODO: figure out relaying reward amt here
-	reward := tx.GetTxFee() + uint64(insertedHeadersLen*1)
-
-	ethHeaderRelayingReward := metadata.NewETHHeaderRelayingReward(
-		*tx.Hash(),
-		metadata.ETHHeaderRelayingRewardMeta,
-	)
-	resTx := &transaction.Tx{}
-	err = resTx.InitTxSalary(
-		reward,
-		&ethHeaderRelaying.RelayerAddress,
-		producerPrivateKey,
-		blockgen.chain.config.DataBase,
-		ethHeaderRelayingReward,
-	)
-	if err != nil {
-		return relayingRewardTx, maxHeaderLen, err
-	}
-	return resTx, insertedHeadersLen, nil
-}
-
 func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-	uniqETHTxsUsed [][]byte,
+	ac *metadata.AccumulatedValues,
 ) (metadata.Transaction, error) {
 	if shardID != common.BRIDGE_SHARD_ID {
 		return nil, nil
 	}
 
+	db := blockgen.chain.GetDatabase()
 	fmt.Println("haha start buildETHIssuanceTx")
 
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		return nil, err
-	}
-	var issuingETHReqAction metadata.IssuingETHReqAction
-	err = json.Unmarshal(contentBytes, &issuingETHReqAction)
+	issuingETHReqAction, err := metadata.ParseInstContent(contentStr)
 	if err != nil {
 		return nil, err
 	}
 
 	md := issuingETHReqAction.Meta
-	ethHeader := blockgen.chain.LightEthereum.GetLightChain().GetHeaderByHash(md.BlockHash)
-	if ethHeader == nil {
-		fmt.Println("WARNING: Could not find out the ETH block header with the hash: ", md.BlockHash)
-		return nil, nil
-	}
-	keybuf := new(bytes.Buffer)
-	keybuf.Reset()
-	rlp.Encode(keybuf, md.TxIndex)
-
-	nodeList := new(light.NodeList)
-	for _, proofStr := range md.ProofStrs {
-		proofBytes, err := base64.StdEncoding.DecodeString(proofStr)
-		if err != nil {
-			return nil, err
-		}
-		nodeList.Put([]byte{}, proofBytes)
-	}
-	proof := nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(ethHeader.ReceiptHash, keybuf.Bytes(), proof)
+	constructedReceipt, err := metadata.VerifyProofAndParseReceipt(issuingETHReqAction, blockgen.chain)
 	if err != nil {
-		fmt.Printf("ETH issuance proof verification failed: %v", err)
-		return nil, nil
-	}
-	// Decode value from VerifyProof into Receipt
-	constructedReceipt := new(types.Receipt)
-	err = rlp.DecodeBytes(val, constructedReceipt)
-	if err != nil {
+		fmt.Println("WARNING: an error occured during verifying proof & parsing receipt: ", err)
 		return nil, err
 	}
-
 	bb, _ := json.MarshalIndent(constructedReceipt, "", "    ")
 	fmt.Println("haha constructedReceipt: ", string(bb))
 
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique eth tx as combination of block hash and tx index.
 	uniqETHTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
-	isUsedInBlock := metadata.IsETHHashUsedInBlock(uniqETHTx, uniqETHTxsUsed)
+	isUsedInBlock := metadata.IsETHHashUsedInBlock(uniqETHTx, ac.UniqETHTxsUsed)
 	if isUsedInBlock {
 		fmt.Println("WARNING: already issued for the hash in current block: ", uniqETHTx)
 		return nil, nil
 	}
-	isIssued, err := blockgen.chain.GetDatabase().IsETHTxHashIssued(uniqETHTx)
+	isIssued, err := db.IsETHTxHashIssued(uniqETHTx)
 	if err != nil {
 		return nil, err
 	}
@@ -212,24 +139,56 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		return nil, nil
 	}
 
-	fmt.Println("haha virgin request")
-
-	if len(constructedReceipt.Logs) == 0 {
+	logMap, err := metadata.PickNParseLogMapFromReceipt(constructedReceipt)
+	if err != nil {
+		fmt.Println("WARNING: an error occured during parsing log map from receipt: ", err)
+		return nil, err
+	}
+	if logMap == nil {
+		fmt.Println("WARNING: could not find log map out from receipt")
 		return nil, nil
 	}
-	logData := constructedReceipt.Logs[0].Data
-	logMap, err := metadata.ParseETHLogData(logData)
+
+	jj, _ := json.Marshal(logMap)
+	fmt.Println("haha logMap: ", string(jj))
+
+	// the token might be ETH/ERC20
+	ethereumAddr, ok := logMap["_token"].(rCommon.Address)
+	if !ok {
+		return nil, nil
+	}
+	ethereumToken := ethereumAddr.Bytes()
+	canProcess, err := ac.CanProcessTokenPair(ethereumToken, md.IncTokenID)
 	if err != nil {
 		return nil, err
 	}
+	if !canProcess {
+		fmt.Println("WARNING: pair of incognito token id & ethereum's id is invalid in current block")
+		return nil, nil
+	}
+
+	isValid, err := db.CanProcessTokenPair(ethereumToken, md.IncTokenID)
+	if err != nil {
+		return nil, err
+	}
+	if !isValid {
+		fmt.Println("WARNING: pair of incognito token id & ethereum's id is invalid with previous blocks")
+		return nil, nil
+	}
+
 	addressStr := logMap["_incognito_address"].(string)
 	key, err := wallet.Base58CheckDeserialize(addressStr)
 	if err != nil {
 		return nil, err
 	}
 	amt := logMap["_amount"].(*big.Int)
-	// convert amt from wei (10^18) to nano eth (10^9)
-	amount := big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
+	amount := uint64(0)
+	if bytes.Equal(rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes(), ethereumToken) {
+		// convert amt from wei (10^18) to nano eth (10^9)
+		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
+	} else { // ERC20
+		amount = amt.Uint64()
+	}
 
 	fmt.Println("haha addressStr: ", addressStr)
 	fmt.Println("haha amount: ", amount)
@@ -238,27 +197,24 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		Amount:         amount,
 		PaymentAddress: key.KeySet.PaymentAddress,
 	}
-	tokenID, err := common.NewHashFromStr(common.PETHTokenID)
-	if err != nil {
-		return nil, errors.Errorf("TokenID incorrect")
-	}
 	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
+	copy(propertyID[:], md.IncTokenID[:])
 	propID := common.Hash(propertyID)
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID:     propID.String(),
-		PropertyName:   common.PETHTokenName,
-		PropertySymbol: common.PETHTokenName,
-		Amount:         amount,
-		TokenTxType:    transaction.CustomTokenInit,
-		Receiver:       []*privacy.PaymentInfo{receiver},
-		TokenInput:     []*privacy.InputCoin{},
-		Mintable:       true,
+		PropertyID: propID.String(),
+		// PropertyName:   common.PETHTokenName,
+		// PropertySymbol: common.PETHTokenName,
+		Amount:      amount,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{receiver},
+		TokenInput:  []*privacy.InputCoin{},
+		Mintable:    true,
 	}
 
 	issuingETHRes := metadata.NewIssuingETHResponse(
 		issuingETHReqAction.TxReqID,
 		uniqETHTx,
+		ethereumToken,
 		metadata.IssuingETHResponseMeta,
 	)
 	resTx := &transaction.TxCustomTokenPrivacy{}
@@ -278,7 +234,8 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	if initErr != nil {
 		return nil, initErr
 	}
-	uniqETHTxsUsed = append(uniqETHTxsUsed, uniqETHTx)
+	ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqETHTx)
+	ac.DBridgeTokenPair[md.IncTokenID.String()] = ethereumToken
 	fmt.Println("haha create res tx ok")
 	return resTx, nil
 }
