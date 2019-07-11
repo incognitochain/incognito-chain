@@ -781,7 +781,7 @@ func (connManager *ConnManager) GetConnOfRelayNode() []*peer.PeerConn {
 func (connManager *ConnManager) handleRelayNode(mPeers map[string]*wire.RawPeer) {
 	for _, p := range mPeers {
 		publicKey := p.PublicKey
-		if common.IndexOfStr(publicKey, peer.RelayNode) == -1 || connManager.checkPeerConnOfPublicKey(publicKey) || common.IndexOfStr(publicKey, protocol.RoundData.Committee) == -1 {
+		if connManager.checkPeerConnOfPublicKey(publicKey) || common.IndexOfStr(publicKey, peer.RelayNode) == -1 {
 			continue
 		}
 
