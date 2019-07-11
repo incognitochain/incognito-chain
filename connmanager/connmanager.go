@@ -700,7 +700,7 @@ func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
 	// 	return &shard
 	// }
 	bestState := blockchain.GetBestStateBeacon()
-	shardCommitteeList := bestState.ShardCommittee
+	shardCommitteeList := bestState.GetShardCommittee()
 	for shardID, committees := range shardCommitteeList {
 		isInShardCommitee := common.IndexOfStr(publicKey, committees) != -1
 		if isInShardCommitee {
