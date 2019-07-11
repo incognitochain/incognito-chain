@@ -324,7 +324,11 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
-	uniqETHTxsUsed := [][]byte{}
+	accumulatedValues := &metadata.AccumulatedValues{
+		UniqETHTxsUsed:   [][]byte{},
+		DBridgeTokenPair: map[string][]byte{},
+		CBridgeTokens:    []*common.Hash{},
+	}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -374,7 +378,9 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
 				fmt.Println("haha isntruction: ", l)
-				newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, uniqETHTxsUsed)
+				if len(l) >= 4 {
+					newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, accumulatedValues)
+				}
 
 			default:
 				continue
@@ -398,8 +404,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
 	var relayingRewardTx metadata.Transaction
-	var maxHeaderLen int
-
 	for i, tx := range txs {
 		var respTx metadata.Transaction
 		var err error
@@ -407,8 +411,6 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(
 		switch tx.GetMetadataType() {
 		case metadata.IssuingRequestMeta:
 			respTx, err = blockgen.buildIssuanceTx(tx, producerPrivateKey, shardID)
-		case metadata.ETHHeaderRelayingMeta:
-			relayingRewardTx, maxHeaderLen, err = blockgen.buildETHHeaderRelayingRewardTx(tx, producerPrivateKey, relayingRewardTx, maxHeaderLen)
 		}
 
 		if err != nil {

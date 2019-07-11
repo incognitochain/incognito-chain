@@ -4,8 +4,14 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/incognitochain/incognito-chain/common"
+	"golang.org/x/crypto/sha3"
 )
+
+func internalHash(data []byte) []byte {
+	hashMachine := sha3.NewLegacyKeccak256()
+	hashMachine.Write(data)
+	return hashMachine.Sum(nil)
+}
 
 // MultiSigScheme ...
 type MultiSigScheme struct {
@@ -108,7 +114,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	selfPK := new(EllipticPoint)
 	selfPK.Decompress(*multiSigKeyset.pubKey)
 	temp := aggKey.Add(selfPK)
-	a := common.HashB(temp.Compress())
+	a := internalHash(temp.Compress())
 	aInt := big.NewInt(0)
 	aInt.SetBytes(a)
 	aInt.Mod(aInt, Curve.Params().N)
@@ -131,7 +137,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
 	if len(res.Bytes()) != (BigIntSize + CompressedPointSize) {
-		panic("aaaaaaaaaaaaaaaaaaaa")
+		panic("can not sign multi sig")
 	}
 
 	return res
@@ -160,9 +166,11 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 	var X *EllipticPoint
 	// if RCombine == nil {
 	_, C, X = generateCommonParams(listCommonPK, listCombinePK, RCombine, data)
-	// } else {
-	// _, C, X = generateCommonParams(pubKey, listPK, RCombine, data)
-	// }
+	// fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	// fmt.Println(C.Text(16))
+	// fmt.Println(X.X.Text(16))
+	// fmt.Println(X.Y.Text(16))
+	// fmt.Println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 
 	//GSPoint = G*S
 	GSPoint := new(EllipticPoint)
@@ -177,6 +185,17 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 	RXCPoint := X.ScalarMult(C)
 	RXCPoint = RXCPoint.Add(multiSig.R)
 	return GSPoint.IsEqual(RXCPoint)
+}
+
+//GenerateRandomFromSeed abc
+func (multisigScheme *MultiSigScheme) GenerateRandomFromSeed(i *big.Int) (*EllipticPoint, *big.Int) {
+	r := i
+	GPoint := new(EllipticPoint)
+	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
+	GPoint.X.Set(Curve.Params().Gx)
+	GPoint.Y.Set(Curve.Params().Gy)
+	R := GPoint.ScalarMult(r)
+	return R, r
 }
 
 func (multisigScheme *MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int) {
@@ -208,7 +227,7 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 		temp := new(EllipticPoint)
 		temp.Decompress(*listCommonPK[i])
 		temp1 := aggPubkey.Add(temp)
-		a := common.HashB(temp1.Compress())
+		a := internalHash(temp1.Compress())
 		aInt := big.NewInt(0)
 		aInt.SetBytes(a)
 		aInt.Mod(aInt, Curve.Params().N)
@@ -218,6 +237,7 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 	Cbyte := X.Compress()
 	Cbyte = append(Cbyte, R.Compress()...)
 	Cbyte = append(Cbyte, data...)
+	Cbyte = internalHash(Cbyte)
 	C := big.NewInt(0)
 	C.SetBytes(Cbyte)
 	C.Mod(C, Curve.Params().N)
@@ -229,7 +249,7 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 			temp := new(EllipticPoint)
 			temp.Decompress(*listCombinePK[i])
 			temp1 := aggPubkey.Add(temp)
-			a := common.HashB(temp1.Compress())
+			a := internalHash(temp1.Compress())
 			aInt := big.NewInt(0)
 			aInt.SetBytes(a)
 			X = X.Add(temp.ScalarMult(aInt))
