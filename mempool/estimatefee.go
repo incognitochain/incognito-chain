@@ -219,8 +219,8 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 
 	height := block.Header.Height
 	if height != ef.lastKnownHeight+1 && ef.lastKnownHeight != UnminedHeight {
-		Logger.log.Errorf("RegisterBlock: intermediate block not recorded; current height is %d; new height is %d",
-			ef.lastKnownHeight, height)
+		Logger.log.Errorf("RegisterBlock: intermediate block not recorded; current height is %d; new height is %d, shardID %d",
+			ef.lastKnownHeight, height, block.Header.ShardID)
 		return fmt.Errorf("RegisterBlock: intermediate block not recorded; current height is %d; new height is %d",
 			ef.lastKnownHeight, height)
 	}
