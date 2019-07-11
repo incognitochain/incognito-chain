@@ -113,7 +113,6 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
-
 // LoadOrResetDatabaseMempool - Load and reset database of mempool when start node
 func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	if !tp.config.IsLoadFromMempool {
@@ -136,6 +135,216 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	return nil
 }
 
+func (tp *TxPool) Start(cQuit chan struct{}) {
+	go tp.monitorPool()
+	for {
+		select {
+		case <-cQuit:
+			return
+		case msg := <-tp.config.RoleInCommitteesEvent:
+			{
+				shardID, ok := msg.Value.(int)
+				if !ok {
+					continue
+				}
+				go func() {
+					tp.roleMtx.Lock()
+					defer tp.roleMtx.Unlock()
+					tp.RoleInCommittees = shardID
+				}()
+			}
+		}
+	}
+}
+
+func (tp *TxPool) monitorPool() {
+	if tp.config.TxLifeTime == 0 {
+		return
+	}
+	for {
+		<-time.Tick(tp.ScanTime)
+		tp.mtx.Lock()
+		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
+		txsToBeRemoved := []*TxDesc{}
+		for _, txDesc := range tp.pool {
+			if time.Since(txDesc.StartTime) > ttl {
+				txsToBeRemoved = append(txsToBeRemoved, txDesc)
+			}
+		}
+		for _, txDesc := range txsToBeRemoved {
+			txHash := *txDesc.Desc.Tx.Hash()
+			startTime := txDesc.StartTime
+			tp.removeTx(txDesc.Desc.Tx)
+			tp.removeCandidateByTxHash(txHash)
+			tp.removeTokenIDByTxHash(txHash)
+			tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
+			txSize := txDesc.Desc.Tx.GetTxActualSize()
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
+				metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
+				metrics.Tag:              metrics.TxSizeTag,
+				metrics.TagValue:         txSize,
+			})
+			size := len(tp.pool)
+			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+				metrics.Measurement:      metrics.PoolSize,
+				metrics.MeasurementValue: float64(size)})
+		}
+		tp.mtx.Unlock()
+	}
+}
+
+// MaybeAcceptTransaction is the main workhorse for handling insertion of new
+// free-standing transactions into a memory pool.  It includes functionality
+// such as rejecting duplicate transactions, ensuring transactions follow all
+// rules, detecting orphan transactions, and insertion into the memory pool.
+//
+// If the transaction is an orphan (missing parent transactions), the
+// transaction is NOT added to the orphan pool, but each unknown referenced
+// parent is returned.  Use ProcessTransaction instead if new orphans should
+// be added to the orphan pool.
+//
+// This function is safe for concurrent access.
+// #1: tx
+// #2: default nil, contain input coins hash, which are used for creating this tx
+func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+	if tp.IsTest {
+		err := MempoolTxError{}
+		err.Init(UnexpectedTransactionError, errors.New("Not allowed test tx"))
+		return &common.Hash{}, &TxDesc{}, nil
+	}
+	go func(txHash common.Hash) {
+		tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
+	}(*tx.Hash())
+	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
+		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		err := MempoolTxError{}
+		err.Init(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
+		Logger.log.Error(err)
+		return &common.Hash{}, &TxDesc{}, err
+	}
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		if tx.IsPrivacy() {
+			txType = metrics.TxNormalPrivacy
+		} else {
+			txType = metrics.TxNormalNoPrivacy
+		}
+	}
+	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
+	txTypePrivacyOrNot := metrics.TxPrivacy
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolTxBeginEnter,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.TxTypeTag,
+		metrics.TagValue:         txType})
+	//==========
+	if uint64(len(tp.pool)) >= tp.config.MaxTx {
+		err := MempoolTxError{}
+		err.Init(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
+		return nil, nil, err
+	}
+	startAdd := time.Now()
+	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
+	elapsed := float64(time.Since(startAdd).Seconds())
+	//==========
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolEntered,
+		metrics.MeasurementValue: elapsed,
+		metrics.Tag:              metrics.TxSizeTag,
+		metrics.TagValue:         txSize})
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolEnteredWithType,
+		metrics.MeasurementValue: elapsed,
+		metrics.Tag:              metrics.TxSizeTag,
+		metrics.TagValue:         txSize})
+	size := len(tp.pool)
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.PoolSize,
+		metrics.MeasurementValue: float64(size)})
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxAddedIntoPoolType,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.TxTypeTag,
+		metrics.TagValue:         txType,
+	})
+	if !tx.IsPrivacy() {
+		txTypePrivacyOrNot = metrics.TxNoPrivacy
+	}
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolPrivacyOrNot,
+		metrics.MeasurementValue: float64(1),
+		metrics.Tag:              metrics.TxPrivacyOrNotTag,
+		metrics.TagValue:         txTypePrivacyOrNot,
+	})
+	if err != nil {
+		Logger.log.Error(err)
+	} else {
+		if tp.IsBlockGenStarted {
+			if tp.IsUnlockMempool {
+				go func(tx metadata.Transaction) {
+					tp.CPendingTxs <- tx
+				}(tx)
+			}
+		}
+		// Publish Message
+		go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
+	}
+	return hash, txDesc, err
+}
+/*
+// maybeAcceptTransaction into pool
+// #1: tx
+// #2: store into db
+// #3: default nil, contain input coins hash, which are used for creating this tx
+*/
+func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool) (*common.Hash, *TxDesc, error) {
+	txType := tx.GetType()
+	if txType == common.TxNormalType {
+		if tx.IsPrivacy() {
+			txType = metrics.TxNormalPrivacy
+		} else {
+			txType = metrics.TxNormalNoPrivacy
+		}
+	}
+	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
+	startValidate := time.Now()
+	err := tp.validateTransaction(tx)
+	if err != nil {
+		return nil, nil, err
+	}
+	elapsed := float64(time.Since(startValidate).Seconds())
+	
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidated,
+		metrics.MeasurementValue: elapsed,
+		metrics.Tag:              metrics.TxSizeTag,
+		metrics.TagValue:         txSize})
+	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		metrics.Measurement:      metrics.TxPoolValidatedWithType,
+		metrics.MeasurementValue: elapsed,
+		metrics.Tag:              metrics.TxSizeTag,
+		metrics.TagValue:         txSize})
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
+	txFee := tx.GetTxFee()
+	txFeeToken := tx.GetTxFeeToken()
+	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
+	startAdd := time.Now()
+	tp.addTx(txD, isStore)
+	if isNewTransaction {
+		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement:      metrics.TxPoolAddedAfterValidation,
+			metrics.MeasurementValue: float64(time.Since(startAdd).Seconds()),
+			metrics.Tag:              metrics.TxSizeTag,
+			metrics.TagValue:         txSize})
+	}
+	return tx.Hash(), txD, nil
+}
+
 // createTxDescMempool - return an object TxDesc for mempool from original Tx
 func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
 	txDesc := &TxDesc{
@@ -150,21 +359,6 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 	}
 	return txDesc
 }
-
-// ----------- transaction.MempoolRetriever's implementation -----------------
-func (tp *TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
-	return tp.poolSerialNumbersHashList
-}
-
-func (tp *TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
-	txsInMem := make(map[common.Hash]metadata.TxDesc)
-	for hash, txDesc := range tp.pool {
-		txsInMem[hash] = txDesc.Desc
-	}
-	return txsInMem
-}
-
-// ----------- end of transaction.MempoolRetriever's implementation -----------------
 
 /*
 // maybeAcceptTransaction is the internal function which implements the public
@@ -392,58 +586,6 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	}
 	return nil
 }
-
-/*
-// maybeAcceptTransaction into pool
-// #1: tx
-// #2: store into db
-// #3: default nil, contain input coins hash, which are used for creating this tx
-*/
-func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, isNewTransaction bool) (*common.Hash, *TxDesc, error) {
-	txType := tx.GetType()
-	if txType == common.TxNormalType {
-		if tx.IsPrivacy() {
-			txType = metrics.TxNormalPrivacy
-		} else {
-			txType = metrics.TxNormalNoPrivacy
-		}
-	}
-	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
-	startValidate := time.Now()
-	err := tp.validateTransaction(tx)
-	if err != nil {
-		return nil, nil, err
-	}
-	elapsed := float64(time.Since(startValidate).Seconds())
-
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidated,
-		metrics.MeasurementValue: elapsed,
-		metrics.Tag:              metrics.TxSizeTag,
-		metrics.TagValue:         txSize})
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidatedWithType,
-		metrics.MeasurementValue: elapsed,
-		metrics.Tag:              metrics.TxSizeTag,
-		metrics.TagValue:         txSize})
-	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	bestHeight := tp.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height
-	txFee := tx.GetTxFee()
-	txFeeToken := tx.GetTxFeeToken()
-	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
-	startAdd := time.Now()
-	tp.addTx(txD, isStore)
-	if isNewTransaction {
-		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
-		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-			metrics.Measurement:      metrics.TxPoolAddedAfterValidation,
-			metrics.MeasurementValue: float64(time.Since(startAdd).Seconds()),
-			metrics.Tag:              metrics.TxSizeTag,
-			metrics.TagValue:         txSize})
-	}
-	return tx.Hash(), txD, nil
-}
-
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	if _, exists := tp.pool[*hash]; exists {
@@ -451,7 +593,6 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	}
 	return false
 }
-
 /*
 // add transaction into pool
 // #1: tx
@@ -471,7 +612,12 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	tp.pool[*txHash] = txD
 	//==================================================
-	tp.poolSerialNumbersHashList[*txHash] = txD.Desc.Tx.ListSerialNumbersHashH()
+	serialNumberList := txD.Desc.Tx.ListSerialNumbersHashH()
+	serialNumberListHash, err := common.HashArrayInterface(serialNumberList)
+	if err != nil {
+		tp.poolSerailNumberHash[serialNumberListHash] = *txD.Desc.Tx.Hash()
+	}
+	tp.poolSerialNumbersHashList[*txHash] = serialNumberList
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
 	if tp.config.FeeEstimator != nil {
@@ -519,26 +665,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
 }
-
-// remove transaction for pool
-func (tp *TxPool) removeTx(tx metadata.Transaction) {
-	//Logger.log.Infof((*tx).Hash().String())
-	if _, exists := tp.pool[*tx.Hash()]; exists {
-		delete(tp.pool, *tx.Hash())
-		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
-	}
-	if _, exists := tp.pool[*tx.Hash()]; exists {
-		delete(tp.poolSerialNumbersHashList, *tx.Hash())
-	}
-	serialNumberHashList := tx.ListSerialNumbersHashH()
-	hash, err := common.HashArrayInterface(serialNumberHashList)
-	if err == nil {
-		if _, exists := tp.poolSerailNumberHash[hash]; exists {
-			delete(tp.poolSerialNumbersHashList, hash)
-		}
-	}
-}
-
 // Check relay shard and public key role before processing transaction
 func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -558,107 +684,6 @@ func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 		tp.roleMtx.RUnlock()
 		return false
 	}
-}
-
-// MaybeAcceptTransaction is the main workhorse for handling insertion of new
-// free-standing transactions into a memory pool.  It includes functionality
-// such as rejecting duplicate transactions, ensuring transactions follow all
-// rules, detecting orphan transactions, and insertion into the memory pool.
-//
-// If the transaction is an orphan (missing parent transactions), the
-// transaction is NOT added to the orphan pool, but each unknown referenced
-// parent is returned.  Use ProcessTransaction instead if new orphans should
-// be added to the orphan pool.
-//
-// This function is safe for concurrent access.
-// #1: tx
-// #2: default nil, contain input coins hash, which are used for creating this tx
-func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash, *TxDesc, error) {
-	tp.mtx.Lock()
-	defer tp.mtx.Unlock()
-	if tp.IsTest {
-		err := MempoolTxError{}
-		err.Init(UnexpectedTransactionError, errors.New("Not allowed test tx"))
-		return &common.Hash{}, &TxDesc{}, nil
-	}
-	go func(txHash common.Hash) {
-		tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, txHash))
-	}(*tx.Hash())
-	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
-		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		err := MempoolTxError{}
-		err.Init(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
-		Logger.log.Error(err)
-		return &common.Hash{}, &TxDesc{}, err
-	}
-	txType := tx.GetType()
-	if txType == common.TxNormalType {
-		if tx.IsPrivacy() {
-			txType = metrics.TxNormalPrivacy
-		} else {
-			txType = metrics.TxNormalNoPrivacy
-		}
-	}
-	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
-	txTypePrivacyOrNot := metrics.TxPrivacy
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolTxBeginEnter,
-		metrics.MeasurementValue: float64(1),
-		metrics.Tag:              metrics.TxTypeTag,
-		metrics.TagValue:         txType})
-	//==========
-	if uint64(len(tp.pool)) >= tp.config.MaxTx {
-		err := MempoolTxError{}
-		err.Init(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
-		return nil, nil, err
-	}
-	startAdd := time.Now()
-	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
-	elapsed := float64(time.Since(startAdd).Seconds())
-	//==========
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolEntered,
-		metrics.MeasurementValue: elapsed,
-		metrics.Tag:              metrics.TxSizeTag,
-		metrics.TagValue:         txSize})
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolEnteredWithType,
-		metrics.MeasurementValue: elapsed,
-		metrics.Tag:              metrics.TxSizeTag,
-		metrics.TagValue:         txSize})
-	size := len(tp.pool)
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.PoolSize,
-		metrics.MeasurementValue: float64(size)})
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxAddedIntoPoolType,
-		metrics.MeasurementValue: float64(1),
-		metrics.Tag:              metrics.TxTypeTag,
-		metrics.TagValue:         txType,
-	})
-	if !tx.IsPrivacy() {
-		txTypePrivacyOrNot = metrics.TxNoPrivacy
-	}
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolPrivacyOrNot,
-		metrics.MeasurementValue: float64(1),
-		metrics.Tag:              metrics.TxPrivacyOrNotTag,
-		metrics.TagValue:         txTypePrivacyOrNot,
-	})
-	if err != nil {
-		Logger.log.Error(err)
-	} else {
-		if tp.IsBlockGenStarted {
-			if tp.IsUnlockMempool {
-				go func(tx metadata.Transaction) {
-					tp.CPendingTxs <- tx
-				}(tx)
-			}
-		}
-		// Publish Message
-		go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.MempoolInfoTopic, tp.listTxs()))
-	}
-	return hash, txDesc, err
 }
 func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error,bool) {
 	// calculate match serial number list in pool for replaced tx
@@ -690,23 +715,6 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 		// no match serial number list to be replaced
 		return nil, false
 	}
-}
-// SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
-func (tp *TxPool) SendTransactionToBlockGen() {
-	tp.mtx.RLock()
-	defer tp.mtx.RUnlock()
-	for _, txdesc := range tp.pool {
-		tp.CPendingTxs <- txdesc.Desc.Tx
-	}
-	tp.IsUnlockMempool = true
-}
-
-// MarkForwardedTransaction - mart a transaction is forward message
-func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
-	if tp.IsTest {
-		return
-	}
-	tp.pool[txHash].IsFowardMessage = true
 }
 
 // This function is safe for concurrent access.
@@ -805,6 +813,101 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	return
 }
 
+// remove transaction for pool
+func (tp *TxPool) removeTx(tx metadata.Transaction) {
+	//Logger.log.Infof((*tx).Hash().String())
+	if _, exists := tp.pool[*tx.Hash()]; exists {
+		delete(tp.pool, *tx.Hash())
+		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+	}
+	if _, exists := tp.pool[*tx.Hash()]; exists {
+		delete(tp.poolSerialNumbersHashList, *tx.Hash())
+	}
+	serialNumberHashList := tx.ListSerialNumbersHashH()
+	hash, err := common.HashArrayInterface(serialNumberHashList)
+	if err == nil {
+		if _, exists := tp.poolSerailNumberHash[hash]; exists {
+			delete(tp.poolSerialNumbersHashList, hash)
+		}
+	}
+}
+
+func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {
+	tp.candidateMtx.Lock()
+	defer tp.candidateMtx.Unlock()
+	tp.PoolCandidate[txHash] = candidate
+}
+func (tp *TxPool) removeCandidateByTxHash(txHash common.Hash) {
+	tp.candidateMtx.Lock()
+	defer tp.candidateMtx.Unlock()
+	if _, exist := tp.PoolCandidate[txHash]; exist {
+		delete(tp.PoolCandidate, txHash)
+	}
+}
+func (tp *TxPool) RemoveCandidateList(candidate []string) {
+	tp.candidateMtx.Lock()
+	defer tp.candidateMtx.Unlock()
+	candidateToBeRemoved := []common.Hash{}
+	for _, value := range candidate {
+		for txHash, currentCandidate := range tp.PoolCandidate {
+			if strings.Compare(value, currentCandidate) == 0 {
+				candidateToBeRemoved = append(candidateToBeRemoved, txHash)
+				break
+			}
+		}
+	}
+	for _, txHash := range candidateToBeRemoved {
+		delete(tp.PoolCandidate, txHash)
+	}
+}
+
+func (tp *TxPool) addTokenIDToList(txHash common.Hash, tokenID string) {
+	tp.tokenIDMtx.Lock()
+	defer tp.tokenIDMtx.Unlock()
+	tp.poolTokenID[txHash] = tokenID
+}
+func (tp *TxPool) removeTokenIDByTxHash(txHash common.Hash) {
+	tp.tokenIDMtx.Lock()
+	defer tp.tokenIDMtx.Unlock()
+	if _, exist := tp.poolTokenID[txHash]; exist {
+		delete(tp.poolTokenID, txHash)
+	}
+}
+
+func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
+	tp.tokenIDMtx.Lock()
+	defer tp.tokenIDMtx.Unlock()
+	tokenToBeRemoved := []common.Hash{}
+	for _, value := range tokenID {
+		for txHash, currentToken := range tp.poolTokenID {
+			if strings.Compare(value, currentToken) == 0 {
+				tokenToBeRemoved = append(tokenToBeRemoved, txHash)
+				break
+			}
+		}
+	}
+	for _, txHash := range tokenToBeRemoved {
+		delete(tp.poolTokenID, txHash)
+	}
+}
+//=======================Service for other package
+// SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
+func (tp *TxPool) SendTransactionToBlockGen() {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+	for _, txdesc := range tp.pool {
+		tp.CPendingTxs <- txdesc.Desc.Tx
+	}
+	tp.IsUnlockMempool = true
+}
+
+// MarkForwardedTransaction - mart a transaction is forward message
+func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
+	if tp.IsTest {
+		return
+	}
+	tp.pool[txHash].IsFowardMessage = true
+}
 // GetTx get transaction info by hash
 func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 	tp.mtx.Lock()
@@ -944,64 +1047,6 @@ func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
 	return nil
 }
 
-func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {
-	tp.candidateMtx.Lock()
-	defer tp.candidateMtx.Unlock()
-	tp.PoolCandidate[txHash] = candidate
-}
-func (tp *TxPool) removeCandidateByTxHash(txHash common.Hash) {
-	tp.candidateMtx.Lock()
-	defer tp.candidateMtx.Unlock()
-	if _, exist := tp.PoolCandidate[txHash]; exist {
-		delete(tp.PoolCandidate, txHash)
-	}
-}
-func (tp *TxPool) RemoveCandidateList(candidate []string) {
-	tp.candidateMtx.Lock()
-	defer tp.candidateMtx.Unlock()
-	candidateToBeRemoved := []common.Hash{}
-	for _, value := range candidate {
-		for txHash, currentCandidate := range tp.PoolCandidate {
-			if strings.Compare(value, currentCandidate) == 0 {
-				candidateToBeRemoved = append(candidateToBeRemoved, txHash)
-				break
-			}
-		}
-	}
-	for _, txHash := range candidateToBeRemoved {
-		delete(tp.PoolCandidate, txHash)
-	}
-}
-
-func (tp *TxPool) addTokenIDToList(txHash common.Hash, tokenID string) {
-	tp.tokenIDMtx.Lock()
-	defer tp.tokenIDMtx.Unlock()
-	tp.poolTokenID[txHash] = tokenID
-}
-func (tp *TxPool) removeTokenIDByTxHash(txHash common.Hash) {
-	tp.tokenIDMtx.Lock()
-	defer tp.tokenIDMtx.Unlock()
-	if _, exist := tp.poolTokenID[txHash]; exist {
-		delete(tp.poolTokenID, txHash)
-	}
-}
-
-func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
-	tp.tokenIDMtx.Lock()
-	defer tp.tokenIDMtx.Unlock()
-	tokenToBeRemoved := []common.Hash{}
-	for _, value := range tokenID {
-		for txHash, currentToken := range tp.poolTokenID {
-			if strings.Compare(value, currentToken) == 0 {
-				tokenToBeRemoved = append(tokenToBeRemoved, txHash)
-				break
-			}
-		}
-	}
-	for _, txHash := range tokenToBeRemoved {
-		delete(tp.poolTokenID, txHash)
-	}
-}
 
 func (tp *TxPool) EmptyPool() bool {
 	tp.candidateMtx.Lock()
@@ -1030,61 +1075,17 @@ func (tp *TxPool) calPoolSize() uint64 {
 	return totalSize
 }
 
-func (tp *TxPool) monitorPool() {
-	if tp.config.TxLifeTime == 0 {
-		return
-	}
-	for {
-		<-time.Tick(tp.ScanTime)
-		tp.mtx.Lock()
-		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
-		txsToBeRemoved := []*TxDesc{}
-		for _, txDesc := range tp.pool {
-			if time.Since(txDesc.StartTime) > ttl {
-				txsToBeRemoved = append(txsToBeRemoved, txDesc)
-			}
-		}
-		for _, txDesc := range txsToBeRemoved {
-			txHash := *txDesc.Desc.Tx.Hash()
-			startTime := txDesc.StartTime
-			tp.removeTx(txDesc.Desc.Tx)
-			tp.removeCandidateByTxHash(txHash)
-			tp.removeTokenIDByTxHash(txHash)
-			tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
-			txSize := txDesc.Desc.Tx.GetTxActualSize()
-			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
-				metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
-				metrics.Tag:              metrics.TxSizeTag,
-				metrics.TagValue:         txSize,
-			})
-			size := len(tp.pool)
-			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-				metrics.Measurement:      metrics.PoolSize,
-				metrics.MeasurementValue: float64(size)})
-		}
-		tp.mtx.Unlock()
-	}
+// ----------- transaction.MempoolRetriever's implementation -----------------
+func (tp *TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
+	return tp.poolSerialNumbersHashList
 }
 
-func (tp *TxPool) Start(cQuit chan struct{}) {
-	go tp.monitorPool()
-	for {
-		select {
-		case <-cQuit:
-			return
-		case msg := <-tp.config.RoleInCommitteesEvent:
-			{
-				shardID, ok := msg.Value.(int)
-				if !ok {
-					continue
-				}
-				go func() {
-					tp.roleMtx.Lock()
-					defer tp.roleMtx.Unlock()
-					tp.RoleInCommittees = shardID
-				}()
-			}
-		}
+func (tp *TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
+	txsInMem := make(map[common.Hash]metadata.TxDesc)
+	for hash, txDesc := range tp.pool {
+		txsInMem[hash] = txDesc.Desc
 	}
+	return txsInMem
 }
+
+// ----------- end of transaction.MempoolRetriever's implementation -----------------
