@@ -414,8 +414,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxPeersBeacon:     cfg.MaxPeersBeacon,
 	})
 	serverObj.connManager = connManager
-	// init connManager for netSync
-	serverObj.netSync.ConnManager = connManager
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -1110,7 +1108,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 		if isInBeaconCommittee {
 			serverObj.PushMessageToBeacon(msg)
 		}
-		shardCommitteeList := bestState.ShardCommittee
+		shardCommitteeList := bestState.GetShardCommittee()
 		for shardID, committees := range shardCommitteeList {
 			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1
 			if isInShardCommitee {

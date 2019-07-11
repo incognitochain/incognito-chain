@@ -1,10 +1,12 @@
 package rpcserver
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -26,10 +28,27 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 	}
 	peersMap := []map[string]string{}
 	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
+
+	bestState := blockchain.GetBestStateBeacon()
+	beaconCommitteeList := bestState.BeaconCommittee
+	shardCommitteeList := bestState.GetShardCommittee()
+
 	for _, peerConn := range listeningPeer.PeerConns {
 		peerItem := map[string]string{
 			"RawAddress": peerConn.RemoteRawAddress,
 			"PublicKey":  peerConn.RemotePeer.PublicKey,
+			"NodeType":   "",
+		}
+		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, beaconCommitteeList) != -1
+		if isInBeaconCommittee {
+			peerItem["NodeType"] = "Beacon"
+		}
+		for shardID, committees := range shardCommitteeList {
+			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, committees) != -1
+			if isInShardCommitee {
+				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
+				break
+			}
 		}
 		peersMap = append(peersMap, peerItem)
 	}
