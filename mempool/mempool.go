@@ -199,6 +199,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 		if flag {
 			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
+				Logger.log.Info("Observe Transaction for ", shardID, txD.Desc.Tx.Hash().String())
 				temp.ObserveTransaction(txD)
 			}
 		}
