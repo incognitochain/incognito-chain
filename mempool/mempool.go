@@ -21,15 +21,14 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
-
 // default value
 const (
-	defaultScanTime = 1 * time.Hour
-	defaultIsUnlockMempool = true
+	defaultScanTime          = 1 * time.Hour
+	defaultIsUnlockMempool   = true
 	defaultIsBlockGenStarted = false
-	defaultRoleInCommittees = -1
-	defaultIsTest = false
-	defaultReplaceFeeRatio = 1.1
+	defaultRoleInCommittees  = -1
+	defaultIsTest            = false
+	defaultReplaceFeeRatio   = 1.1
 )
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
@@ -47,15 +46,12 @@ type Config struct {
 	PubSubManager         *pubsub.PubSubManager
 	RoleInCommitteesEvent pubsub.EventChannel
 }
-
 // TxDesc is transaction message in mempool
 type TxDesc struct {
 	Desc            metadata.TxDesc // transaction details
 	StartTime       time.Time       //Unix Time that transaction enter mempool
 	IsFowardMessage bool
 }
-
-// TxPool is transaction pool
 type TxPool struct {
 	// The following variables must only be used atomically.
 	config                    Config
@@ -69,15 +65,15 @@ type TxPool struct {
 	poolTokenID               map[common.Hash]string //Token ID List in Mempool
 	tokenIDMtx                sync.RWMutex
 	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
-	RoleInCommittees          int //Current Role of Node
+	RoleInCommittees          int                         //Current Role of Node
 	roleMtx                   sync.RWMutex
 	ScanTime                  time.Duration
 	IsBlockGenStarted         bool
 	IsUnlockMempool           bool
 	ReplaceFeeRatio           float64
 	//for testing
-	IsTest                   bool
-	DuplicateTxs             map[common.Hash]uint64 //For testing
+	IsTest       bool
+	DuplicateTxs map[common.Hash]uint64 //For testing
 }
 
 /*
@@ -105,7 +101,6 @@ func (tp *TxPool) Init(cfg *Config) {
 func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
 }
-
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
@@ -134,7 +129,8 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	}
 	return nil
 }
-
+// loop forever in mempool
+// receive data from other package
 func (tp *TxPool) Start(cQuit chan struct{}) {
 	go tp.monitorPool()
 	for {
@@ -156,7 +152,6 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 		}
 	}
 }
-
 func (tp *TxPool) monitorPool() {
 	if tp.config.TxLifeTime == 0 {
 		return
@@ -294,6 +289,19 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	return hash, txDesc, err
 }
+// This function is safe for concurrent access.
+func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
+	if err != nil {
+		Logger.log.Error(err)
+		fmt.Printf("[db] maybe err: %+v\n", tx.GetMetadataType())
+		return nil, err
+	}
+	tempTxDesc := &txDesc.Desc
+	return tempTxDesc, err
+}
 /*
 // maybeAcceptTransaction into pool
 // #1: tx
@@ -316,7 +324,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 		return nil, nil, err
 	}
 	elapsed := float64(time.Since(startValidate).Seconds())
-	
+
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidated,
 		metrics.MeasurementValue: elapsed,
@@ -586,6 +594,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	}
 	return nil
 }
+
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	if _, exists := tp.pool[*hash]; exists {
@@ -593,6 +602,7 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	}
 	return false
 }
+
 /*
 // add transaction into pool
 // #1: tx
@@ -685,7 +695,7 @@ func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 		return false
 	}
 }
-func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error,bool) {
+func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error, bool) {
 	// calculate match serial number list in pool for replaced tx
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash, err := common.HashArrayInterface(serialNumberHashList)
@@ -709,28 +719,13 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 		} else {
 			//found no tx to be replaced
 			//TODO: check again return value
-		 	return nil, false
+			return nil, false
 		}
 	} else {
 		// no match serial number list to be replaced
 		return nil, false
 	}
 }
-
-// This function is safe for concurrent access.
-func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
-	tp.mtx.Lock()
-	defer tp.mtx.Unlock()
-	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
-	if err != nil {
-		Logger.log.Error(err)
-		fmt.Printf("[db] maybe err: %+v\n", tx.GetMetadataType())
-		return nil, err
-	}
-	tempTxDesc := &txDesc.Desc
-	return tempTxDesc, err
-}
-
 // RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	tp.mtx.Lock()
@@ -890,6 +885,7 @@ func (tp *TxPool) RemoveTokenIDList(tokenID []string) {
 		delete(tp.poolTokenID, txHash)
 	}
 }
+
 //=======================Service for other package
 // SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
 func (tp *TxPool) SendTransactionToBlockGen() {
@@ -908,6 +904,7 @@ func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
 	}
 	tp.pool[txHash].IsFowardMessage = true
 }
+
 // GetTx get transaction info by hash
 func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 	tp.mtx.Lock()
@@ -1046,7 +1043,6 @@ func (tp *TxPool) ValidateSerialNumberHashH(serialNumber []byte) error {
 	}
 	return nil
 }
-
 
 func (tp *TxPool) EmptyPool() bool {
 	tp.candidateMtx.Lock()

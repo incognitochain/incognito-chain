@@ -6,7 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
-
+	"sort"
+	
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -303,7 +304,20 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	}
 	return true, nil
 }
-
+func (customTokenTx *TxCustomToken) ListSerialNumbersHashH() []common.Hash {
+	tx := customTokenTx.Tx
+	result := []common.Hash{}
+	if tx.Proof != nil {
+		for _, d := range tx.Proof.InputCoins {
+			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+			result = append(result, hash)
+		}
+	}
+	sort.SliceStable(result, func(i,j int) bool {
+		return result[i].String() < result[j].String()
+	})
+	return result
+}
 func (tx TxCustomToken) String() string {
 	// get hash of tx
 	record := tx.Tx.Hash().String()
