@@ -7,6 +7,7 @@ const (
 	startProfiling = "startprofiling"
 	stopProfiling  = "stopprofiling"
 
+	getNodeRole        = "getnoderole"
 	getNetworkInfo     = "getnetworkinfo"
 	getConnectionCount = "getconnectioncount"
 	getAllPeers        = "getallpeers"
