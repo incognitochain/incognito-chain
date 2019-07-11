@@ -24,6 +24,7 @@ type swapProof struct {
 	signerSig      string
 	pubkeys        []string
 	sigIdxs        []int
+	rIdxs          []int
 	r              string
 }
 
@@ -111,7 +112,7 @@ type block interface {
 	Hash() []byte
 	R() string
 	Sig() string
-	ValidatorsIdx() []int
+	ValidatorsIdx(int) []int
 }
 
 // buildProofForBlock builds a swapProof for an instruction in a block (beacon or shard)
@@ -148,6 +149,7 @@ func buildProofForBlock(
 	if err != nil {
 		return nil, err
 	}
+	rIdxs := blk.ValidatorsIdx(0)
 
 	return &swapProof{
 		inst:           insts[id],
@@ -158,6 +160,7 @@ func buildProofForBlock(
 		blkHash:        hex.EncodeToString(blkHash[:]),
 		signerSig:      hex.EncodeToString(sig),
 		pubkeys:        signerPubkeys,
+		rIdxs:          rIdxs,
 		sigIdxs:        signerIdxs,
 		r:              hex.EncodeToString(r),
 	}, nil
@@ -309,7 +312,7 @@ func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, [
 		return nil, nil, err
 	}
 
-	signerIdxs := bb.ValidatorsIdx() // List of signers
+	signerIdxs := bb.ValidatorsIdx(1) // List of signers
 	pubkeys := make([][]byte, len(signerIdxs))
 	for i, signerID := range signerIdxs {
 		pubkey, _, err := base58.Base58Check{}.Decode(comm[signerID])
@@ -321,8 +324,8 @@ func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, [
 	return pubkeys, signerIdxs, nil
 }
 
-func (bb *beaconBlock) ValidatorsIdx() []int {
-	return bb.BeaconBlock.ValidatorsIdx[1]
+func (bb *beaconBlock) ValidatorsIdx(idx int) []int {
+	return bb.BeaconBlock.ValidatorsIdx[idx]
 }
 
 type shardBlock struct {
@@ -351,8 +354,8 @@ func (sb *shardBlock) Sig() string {
 	return sb.ShardBlock.AggregatedSig
 }
 
-func (sb *shardBlock) ValidatorsIdx() []int {
-	return sb.ShardBlock.ValidatorsIdx[1]
+func (sb *shardBlock) ValidatorsIdx(idx int) []int {
+	return sb.ShardBlock.ValidatorsIdx[idx]
 }
 
 // SignerPubkeys finds the pubkeys of all signers of a shard block
@@ -373,7 +376,7 @@ func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []
 		return nil, nil, fmt.Errorf("no committee member found for shard block")
 	}
 
-	signerIdxs := sb.ValidatorsIdx() // List of signers
+	signerIdxs := sb.ValidatorsIdx(1) // List of signers
 	pubkeys := make([][]byte, len(signerIdxs))
 	for i, signerID := range signerIdxs {
 		pubkey, _, err := base58.Base58Check{}.Decode(comm[signerID])
@@ -435,6 +438,7 @@ func buildProofResult(
 		BeaconBlkHash:        beaconInstProof.blkHash,
 		BeaconSignerSig:      beaconInstProof.signerSig,
 		BeaconPubkeys:        beaconInstProof.pubkeys,
+		BeaconRIdxs:          beaconInstProof.rIdxs,
 		BeaconSigIdxs:        beaconInstProof.sigIdxs,
 		BeaconR:              beaconInstProof.r,
 
@@ -445,6 +449,7 @@ func buildProofResult(
 		BridgeBlkHash:        bridgeInstProof.blkHash,
 		BridgeSignerSig:      bridgeInstProof.signerSig,
 		BridgePubkeys:        bridgeInstProof.pubkeys,
+		BridgeRIdxs:          bridgeInstProof.rIdxs,
 		BridgeSigIdxs:        bridgeInstProof.sigIdxs,
 		BridgeR:              bridgeInstProof.r,
 	}
