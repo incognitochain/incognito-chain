@@ -60,7 +60,7 @@ func (db *db) HasBlock(hash common.Hash) (bool, error) {
 	Query a block by hash. Return block if existence
 */
 func (db *db) FetchBlock(hash common.Hash) ([]byte, error) {
-	block, err := db.Get(db.GetKey(string(blockKeyPrefix), hash))
+	block, err := db.lvdb.Get(db.GetKey(string(blockKeyPrefix), hash), nil)
 	if err != nil {
 		if err == lvdberr.ErrNotFound {
 			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
