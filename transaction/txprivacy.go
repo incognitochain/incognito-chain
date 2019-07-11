@@ -1165,7 +1165,7 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
-	uniqETHTxsUsed [][]byte,
+	accumulatedValues *metadata.AccumulatedValues,
 ) (bool, error) {
 	if tx.IsPrivacy() {
 		return true, nil
@@ -1182,7 +1182,7 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 	}
 	if meta != nil {
-		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr, uniqETHTxsUsed)
+		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr, accumulatedValues)
 	}
 	return true, nil
 }

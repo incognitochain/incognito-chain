@@ -63,7 +63,7 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	uniqETHTxsUsed [][]byte,
+	accumulatedValues *AccumulatedValues,
 ) (bool, error) {
 	idx := -1
 	for i, txInBlock := range txsInBlock {

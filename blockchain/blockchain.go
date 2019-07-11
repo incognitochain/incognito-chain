@@ -18,9 +18,9 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
-	"github.com/incognitochain/incognito-chain/ethrelaying/les"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
@@ -40,7 +40,7 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
-	LightEthereum    *les.LightEthereum
+	RPCClient        *rpccaller.RPCClient
 	IsTest           bool
 }
 
@@ -1308,8 +1308,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	return nil
 }
 
-func (blockchain *BlockChain) GetLightEthereum() *les.LightEthereum {
-	return blockchain.LightEthereum
+func (blockchain *BlockChain) GetRPCClient() *rpccaller.RPCClient {
+	return blockchain.RPCClient
 }
 
 func (blockchain *BlockChain) InitTxSalaryByCoinID(

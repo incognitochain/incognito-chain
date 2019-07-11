@@ -89,15 +89,14 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendIssuingRequest:     (*HttpServer).handleCreateAndSendIssuingRequest,
 	createAndSendContractingRequest: (*HttpServer).handleCreateAndSendContractingRequest,
 	getBridgeTokensAmounts:          (*HttpServer).handleGetBridgeTokensAmounts,
+	checkETHHashIssued:              (*HttpServer).handleCheckETHHashIssued,
 	// wallet
-	getPublicKeyFromPaymentAddress:        (*HttpServer).handleGetPublicKeyFromPaymentAddress,
-	defragmentAccount:                     (*HttpServer).handleDefragmentAccount,
-	getStackingAmount:                     (*HttpServer).handleGetStakingAmount,
-	hashToIdenticon:                       (*HttpServer).handleHashToIdenticon,
-	createAndSendBurningRequest:           (*HttpServer).handleCreateAndSendBurningRequest,
-	createAndSendTxWithETHHeadersRelaying: (*HttpServer).handleCreateAndSendTxWithETHHeadersRelaying,
-	createAndSendTxWithIssuingETHReq:      (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
-	getRelayedETHHeader:                   (*HttpServer).handleGetRelayedETHHeader,
+	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
+	defragmentAccount:                (*HttpServer).handleDefragmentAccount,
+	getStackingAmount:                (*HttpServer).handleGetStakingAmount,
+	hashToIdenticon:                  (*HttpServer).handleHashToIdenticon,
+	createAndSendBurningRequest:      (*HttpServer).handleCreateAndSendBurningRequest,
+	createAndSendTxWithIssuingETHReq: (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof: (*HttpServer).handleGetBeaconSwapProof,

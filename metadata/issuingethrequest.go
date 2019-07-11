@@ -7,15 +7,15 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	rCommon "github.com/incognitochain/incognito-chain/ethrelaying/common"
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
 
 type IssuingETHRequest struct {
-	BlockHash rCommon.Hash
-	TxIndex   uint
-	// Proof     *light.NodeList
-	ProofStrs []string
+	BlockHash  rCommon.Hash
+	TxIndex    uint
+	ProofStrs  []string
+	IncTokenID common.Hash
 	MetadataBase
 }
 
@@ -23,15 +23,17 @@ func NewIssuingETHRequest(
 	blockHash rCommon.Hash,
 	txIndex uint,
 	proofStrs []string,
+	incTokenID common.Hash,
 	metaType int,
 ) (*IssuingETHRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	issuingETHReq := &IssuingETHRequest{
-		BlockHash: blockHash,
-		TxIndex:   txIndex,
-		ProofStrs: proofStrs,
+		BlockHash:  blockHash,
+		TxIndex:    txIndex,
+		ProofStrs:  proofStrs,
+		IncTokenID: incTokenID,
 	}
 	issuingETHReq.MetadataBase = metadataBase
 	return issuingETHReq, nil
@@ -48,22 +50,16 @@ func NewIssuingETHRequestFromMap(
 		proofStrs = append(proofStrs, item.(string))
 	}
 
-	// nodeList := new(light.NodeList)
-	// for _, item := range proofsRaw {
-	// 	proofStr := item.(string)
-	// 	proofBytes, err := base64.StdEncoding.DecodeString(proofStr)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	nodeList.Put([]byte{}, proofBytes)
-	// }
-	// proof := nodeList.NodeSet()
-	// fmt.Println("proof str: ", proof.KeyCount())
+	incTokenID, err := common.NewHashFromStr(data["IncTokenID"].(string))
+	if err != nil {
+		return nil, errors.Errorf("TokenID incorrect")
+	}
 
 	req, _ := NewIssuingETHRequest(
 		blockHash,
 		txIdx,
 		proofStrs,
+		*incTokenID,
 		IssuingETHRequestMeta,
 	)
 	return req, nil
@@ -100,6 +96,7 @@ func (iReq *IssuingETHRequest) Hash() *common.Hash {
 		record += proofStr
 	}
 	record += iReq.MetadataBase.Hash().String()
+	record += iReq.IncTokenID.String()
 
 	// final hash
 	hash := common.HashH([]byte(record))
