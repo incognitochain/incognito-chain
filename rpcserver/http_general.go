@@ -16,6 +16,29 @@ import (
 )
 
 /*
+handleGetAllConnectedPeers - return all connnected peers which this node connected
+*/
+func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetAllConnectedPeers params: %+v", params)
+	// result := jsonresult.GetAllPeersResult{}
+	var result struct {
+		Peers []map[string]string `json:"Peers"`
+	}
+	peersMap := []map[string]string{}
+	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
+	for _, peerConn := range listeningPeer.PeerConns {
+		peerItem := map[string]string{
+			"RawAddress": peerConn.RemoteRawAddress,
+			"PublicKey":  peerConn.RemotePeer.PublicKey,
+		}
+		peersMap = append(peersMap, peerItem)
+	}
+	result.Peers = peersMap
+	Logger.log.Infof("handleGetAllPeers result: %+v", result)
+	return result, nil
+}
+
+/*
 handleGetAllPeers - return all peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
