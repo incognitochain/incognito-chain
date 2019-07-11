@@ -11,6 +11,7 @@ var HttpHandler = map[string]httpHandler{
 	startProfiling: (*HttpServer).handleStartProfiling,
 	stopProfiling:  (*HttpServer).handleStopProfiling,
 	// node
+	getNodeRole:              (*HttpServer).handleGetNodeRole,
 	getNetworkInfo:           (*HttpServer).handleGetNetWorkInfo,
 	getConnectionCount:       (*HttpServer).handleGetConnectionCount,
 	getAllPeers:              (*HttpServer).handleGetAllPeers,
