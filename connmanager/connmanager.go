@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/bootnode/server"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
@@ -522,11 +523,15 @@ func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool 
 
 // checkBeaconOfPbk - check a public key is beacon committee?
 func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
-	beaconCommittee := connManager.Config.ConsensusState.getBeaconCommittee()
-	if pbk != "" && common.IndexOfStr(pbk, beaconCommittee) >= 0 {
-		return true
-	}
-	return false
+	// beaconCommittee := connManager.Config.ConsensusState.getBeaconCommittee()
+	// if pbk != "" && common.IndexOfStr(pbk, beaconCommittee) >= 0 {
+	// 	return true
+	// }
+	// return false
+	bestState := blockchain.GetBestStateBeacon()
+	beaconCommitteeList := bestState.BeaconCommittee
+	isInBeaconCommittee := common.IndexOfStr(pbk, beaconCommitteeList) != -1
+	return isInBeaconCommittee
 }
 
 func (connManager *ConnManager) closePeerConnOfShard(shard byte) {
@@ -690,9 +695,17 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) bool
 
 //getShardOfPublicKey - return shardID of public key of peer connection
 func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
-	shard, ok := connManager.Config.ConsensusState.ShardByCommittee[publicKey]
-	if ok {
-		return &shard
+	// shard, ok := connManager.Config.ConsensusState.ShardByCommittee[publicKey]
+	// if ok {
+	// 	return &shard
+	// }
+	bestState := blockchain.GetBestStateBeacon()
+	shardCommitteeList := bestState.ShardCommittee
+	for shardID, committees := range shardCommitteeList {
+		isInShardCommitee := common.IndexOfStr(publicKey, committees) != -1
+		if isInShardCommitee {
+			return &shardID
+		}
 	}
 	return nil
 }
