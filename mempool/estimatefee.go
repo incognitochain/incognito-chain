@@ -205,6 +205,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 			observed:        t.Desc.Height,
 			mined:           UnminedHeight,
 		}
+		Logger.log.Info("Observe Transaction success", t.Desc.Tx.Hash())
 	}
 }
 
