@@ -1125,6 +1125,35 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	return result
 }
 
+func (serverObj *Server) GetNodeRole() string {
+	if serverObj.userKeySet == nil {
+		return ""
+	}
+	pubkey := serverObj.userKeySet.GetPublicKeyB58()
+	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconCommittee) > -1 {
+		return "BEACON_VALIDATOR"
+	}
+	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconPendingValidator) > -1 {
+		return "BEACON_WAITING"
+	}
+	shardCommittee := blockchain.GetBestStateBeacon().GetShardCommittee()
+	for _, s := range shardCommittee {
+		if common.IndexOfStr(pubkey, s) > -1 {
+			return "SHARD_VALIDATOR"
+		}
+	}
+	shardPendingCommittee := blockchain.GetBestStateBeacon().GetShardPendingValidator()
+	for _, s := range shardPendingCommittee {
+		if common.IndexOfStr(pubkey, s) > -1 {
+			return "SHARD_VALIDATOR"
+		}
+	}
+	if cfg.NodeMode == "relay" {
+		return "RELAY"
+	}
+	return ""
+}
+
 /*
 PushMessageToAll broadcast msg
 */
