@@ -31,6 +31,7 @@ var HttpHandler = map[string]httpHandler{
 	getShardToBeaconPoolState:   (*HttpServer).handleGetShardToBeaconPoolState,
 	getCrossShardPoolState:      (*HttpServer).handleGetCrossShardPoolState,
 	getNextCrossShard:           (*HttpServer).handleGetNextCrossShard,
+	getFeeEstimator:             (*HttpServer).handleGetFeeEstimator,
 	// block
 	getBestBlock:        (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:    (*HttpServer).handleGetBestBlockHash,
