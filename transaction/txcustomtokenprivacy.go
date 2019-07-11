@@ -6,7 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
-
+	"sort"
+	
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -447,7 +448,27 @@ func (tx *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 	}
 	return txValue
 }
-
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ListSerialNumbersHashH() []common.Hash {
+	tx := txCustomTokenPrivacy.Tx
+	result := []common.Hash{}
+	if tx.Proof != nil {
+		for _, d := range tx.Proof.InputCoins {
+			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+			result = append(result, hash)
+		}
+	}
+	customTokenPrivacy := txCustomTokenPrivacy.TxTokenPrivacyData
+	if customTokenPrivacy.TxNormal.Proof != nil {
+		for _, d := range tx.Proof.InputCoins {
+			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+			result = append(result, hash)
+		}
+	}
+	sort.SliceStable(result, func(i,j int) bool {
+		return result[i].String() < result[j].String()
+	})
+	return result
+}
 func (tx *TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return tx.TxTokenPrivacyData.TxNormal.SigPubKey
 }

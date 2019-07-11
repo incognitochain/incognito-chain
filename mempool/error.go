@@ -61,8 +61,8 @@ var ErrCodeMessage = map[int]struct {
 	WrongShardIDError:                 {-1018, "Reject Cross Shard Block With Same ShardID in Pool"},
 	MarshalError:                      {-1019, "Marshal Error"},
 	UnmarshalError:                    {-1020, "Unmarshal Error"},
-	HashError:                    {-1021, "Hash Error"},
-	ReplacementError:                    {-1022, "Replacement or Cancel Tx Error"},
+	HashError:                         {-1021, "Hash Error"},
+	ReplacementError:                  {-1022, "Replacement or Cancel Tx Error"},
 }
 
 type MempoolTxError struct {
@@ -90,6 +90,7 @@ func NewMempoolTxError(key int, err error) *MempoolTxError {
 		Err:     errors.Wrap(err, ErrCodeMessage[key].Message),
 	}
 }
+
 type BlockPoolError struct {
 	Code    int
 	Message string
