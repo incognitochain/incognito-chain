@@ -26,19 +26,15 @@ type Tx struct {
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
-
-	Fee  uint64 `json:"Fee"` // Fee applies: always consant
-	Info []byte // 512 bytes
-
+	Fee      uint64 `json:"Fee"` // Fee applies: always consant
+	Info     []byte // 512 bytes
 	// Sign and Privacy proof
-	SigPubKey []byte `json:"SigPubKey, omitempty"` // 33 bytes
-	Sig       []byte `json:"Sig, omitempty"`       //
-	Proof     *zkp.PaymentProof
-
+	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
+	Sig                  []byte `json:"Sig, omitempty"`       //
+	Proof                *zkp.PaymentProof
 	PubKeyLastByteSender byte
 	// Metadata
-	Metadata metadata.Metadata
-
+	Metadata         metadata.Metadata
 	sigPrivKey       []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 	cachedHash       *common.Hash // cached hash data of tx
 	cachedActualSize *uint64      // cached actualsize data for tx
@@ -548,7 +544,7 @@ func (tx *Tx) ListSerialNumbersHashH() []common.Hash {
 			result = append(result, hash)
 		}
 	}
-	sort.SliceStable(result, func(i,j int) bool {
+	sort.SliceStable(result, func(i, j int) bool {
 		return result[i].String() < result[j].String()
 	})
 	return result
