@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sort"
 	"strconv"
 	"time"
 
@@ -547,6 +548,9 @@ func (tx *Tx) ListSerialNumbersHashH() []common.Hash {
 			result = append(result, hash)
 		}
 	}
+	sort.SliceStable(result, func(i,j int) bool {
+		return result[i].String() < result[j].String()
+	})
 	return result
 }
 
