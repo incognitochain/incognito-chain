@@ -325,7 +325,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	} else {
 		ef.dropped = append(ef.dropped, dropped)
 	}
-	Logger.log.Info("RegisterBlock: success for", block.Header.ShardID, block.Hash())
+	Logger.log.Info("RegisterBlock: success for", block.Header.ShardID, block.Hash().String())
 	return nil
 }
 
