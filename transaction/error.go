@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	UnexpectedErr       = iota
+	UnexpectedErr = iota
 	WrongTokenTxType
 	CustomTokenExisted
 	WrongInput
