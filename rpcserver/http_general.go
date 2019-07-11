@@ -33,6 +33,10 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetNodeRole(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return httpServer.config.Server.GetNodeRole(), nil
+}
+
 func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetNetworkInfoResult{}
 
