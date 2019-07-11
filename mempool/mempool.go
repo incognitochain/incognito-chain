@@ -452,7 +452,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition4,
+		metrics.TagValue:         metrics.Condition41,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if limitFee > 0 {
@@ -468,7 +468,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition4,
+		metrics.TagValue:         metrics.Condition42,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if limitFeeToken > 0 && tx.GetType() == common.TxCustomTokenPrivacyType {
@@ -706,28 +706,51 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 	if txHashToBeReplaced, ok := tp.poolSerailNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
 			var baseReplaceFee float64
+			var baseReplaceFeeToken float64
 			var replaceFee float64
-			// paid by token fee
-			if txDescToBeReplaced.Desc.Fee == 0 {
-				baseReplaceFee = float64(txDescToBeReplaced.Desc.FeeToken)
-				replaceFee = float64(tx.GetTxFeeToken())
-			} else {
-				//paid by default fee (prv fee)
+			var replaceFeeToken float64
+			var isReplaced = false
+			if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken == 0 {
+				// paid by prv fee only
+				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
+				replaceFeeToken = float64(tx.GetTxFeeToken())
+				// not a higher enough fee than return error
+				if baseReplaceFeeToken * tp.ReplaceFeeRatio > replaceFeeToken {
+					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
+				}
+				isReplaced = true
+			} else if  txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
+				//paid by token fee only
 				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
 				replaceFee = float64(tx.GetTxFee())
+				// not a higher enough fee than return error
+				if baseReplaceFee * tp.ReplaceFeeRatio > replaceFee {
+					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+				}
+				isReplaced = true
+			} else if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
+				// paid by both prv fee and token fee
+				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
+				replaceFee = float64(tx.GetTxFee())
+				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
+				replaceFeeToken = float64(tx.GetTxFeeToken())
+				// not a higher enough fee than return error
+				if baseReplaceFee * tp.ReplaceFeeRatio > replaceFee || baseReplaceFeeToken * tp.ReplaceFeeRatio > replaceFeeToken {
+					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+				}
+				isReplaced = true
 			}
-			if baseReplaceFee * tp.ReplaceFeeRatio > replaceFee {
-				return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
-			} else {
+			if isReplaced {
 				txToBeReplaced := txDescToBeReplaced.Desc.Tx
 				tp.removeTx(txToBeReplaced)
 				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
 				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
 				return nil, true
+			} else {
+				return NewMempoolTxError(ReplacementError, errors.New("Unexpected error occur")), true
 			}
 		} else {
 			//found no tx to be replaced
-			//TODO: check again return value
 			return nil, false
 		}
 	} else {
