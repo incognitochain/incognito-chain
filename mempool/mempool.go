@@ -705,9 +705,18 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 	// find replace tx in pool
 	if txHashToBeReplaced, ok := tp.poolSerailNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
-			baseReplaceFee := float64(txDescToBeReplaced.Desc.Fee) * tp.ReplaceFeeRatio
-			replaceFee := float64(tx.GetTxFee())
-			if baseReplaceFee > replaceFee {
+			var baseReplaceFee float64
+			var replaceFee float64
+			// paid by token fee
+			if txDescToBeReplaced.Desc.Fee == 0 {
+				baseReplaceFee = float64(txDescToBeReplaced.Desc.FeeToken)
+				replaceFee = float64(tx.GetTxFeeToken())
+			} else {
+				//paid by default fee (prv fee)
+				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
+				replaceFee = float64(tx.GetTxFee())
+			}
+			if baseReplaceFee * tp.ReplaceFeeRatio > replaceFee {
 				return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 			} else {
 				txToBeReplaced := txDescToBeReplaced.Desc.Tx
