@@ -22,6 +22,24 @@ type IssuingRequest struct {
 	MetadataBase
 }
 
+type IssuingReqAction struct {
+	Meta    IssuingRequest `json:"meta"`
+	TxReqID common.Hash    `json:"txReqId"`
+}
+
+func ParseIssuingInstContent(instContentStr string) (*IssuingReqAction, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
+	if err != nil {
+		return nil, err
+	}
+	var issuingReqAction IssuingReqAction
+	err = json.Unmarshal(contentBytes, &issuingReqAction)
+	if err != nil {
+		return nil, err
+	}
+	return &issuingReqAction, nil
+}
+
 func NewIssuingRequest(
 	receiverAddress privacy.PaymentAddress,
 	depositedAmount uint64,
@@ -77,17 +95,6 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
 		return false, errors.New("the issuance request must be called by centralized website")
 	}
-
-	bridgeTokenExisted, err := db.IsBridgeTokenExisted(iReq.TokenID)
-	if err != nil {
-		return false, err
-	}
-
-	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(iReq.TokenID)
-	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(iReq.TokenID)
-	if !bridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
-		return false, errors.New("another custom token was already existed with the same token id")
-	}
 	return true, nil
 }
 
@@ -128,7 +135,8 @@ func (iReq *IssuingRequest) Hash() *common.Hash {
 
 func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	actionContent := map[string]interface{}{
-		"meta": *iReq,
+		"meta":    *iReq,
+		"txReqId": *(tx.Hash()),
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {

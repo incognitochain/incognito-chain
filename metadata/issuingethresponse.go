@@ -3,7 +3,6 @@ package metadata
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -27,18 +26,6 @@ type IssuingETHResponse struct {
 	RequestedTxID   common.Hash
 	UniqETHTx       []byte
 	ExternalTokenID []byte
-}
-
-type IssuingETHReqAction struct {
-	BridgeShardID byte              `json:"bridgeShardID"`
-	Meta          IssuingETHRequest `json:"meta"`
-	TxReqID       common.Hash       `json:"txReqId"`
-}
-
-type AccumulatedValues struct {
-	UniqETHTxsUsed   [][]byte
-	DBridgeTokenPair map[string][]byte
-	CBridgeTokens    []*common.Hash
 }
 
 func NewIssuingETHResponse(
@@ -92,39 +79,13 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func IsETHHashUsedInBlock(uniqETHTx []byte, uniqETHTxsUsed [][]byte) bool {
+func IsETHTxHashUsedInBlock(uniqETHTx []byte, uniqETHTxsUsed [][]byte) bool {
 	for _, item := range uniqETHTxsUsed {
 		if bytes.Equal(uniqETHTx, item) {
 			return true
 		}
 	}
 	return false
-}
-
-func (ac *AccumulatedValues) CanProcessTokenPair(
-	externalTokenID []byte,
-	incTokenID common.Hash,
-) (bool, error) {
-	incTokenIDStr := incTokenID.String()
-	for _, tokenID := range ac.CBridgeTokens {
-		if bytes.Equal(tokenID[:], incTokenID[:]) {
-			return false, nil
-		}
-	}
-	bridgeTokenPair := ac.DBridgeTokenPair
-	if existedExtTokenID, found := bridgeTokenPair[incTokenIDStr]; found {
-		if bytes.Equal(existedExtTokenID, externalTokenID) {
-			return true, nil
-		}
-		return false, nil
-	}
-	for _, existedExtTokenID := range bridgeTokenPair {
-		if !bytes.Equal(existedExtTokenID, externalTokenID) {
-			continue
-		}
-		return false, nil
-	}
-	return true, nil
 }
 
 func ParseETHLogData(data []byte) (map[string]interface{}, error) {
@@ -140,19 +101,6 @@ func ParseETHLogData(data []byte) (map[string]interface{}, error) {
 	}
 	fmt.Println("haha ngon lanh het")
 	return dataMap, nil
-}
-
-func ParseInstContent(instContentStr string) (*IssuingETHReqAction, error) {
-	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
-	if err != nil {
-		return nil, err
-	}
-	var issuingETHReqAction IssuingETHReqAction
-	err = json.Unmarshal(contentBytes, &issuingETHReqAction)
-	if err != nil {
-		return nil, err
-	}
-	return &issuingETHReqAction, nil
 }
 
 type GetBlockByNumberRes struct {
@@ -213,7 +161,7 @@ func VerifyProofAndParseReceipt(
 	proof := nodeList.NodeSet()
 	val, _, err := trie.VerifyProof(ethHeader.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
-		fmt.Printf("ETH issuance proof verification failed: %v", err)
+		fmt.Printf("WARNING: ETH issuance proof verification failed: %v", err)
 		return nil, err
 	}
 	// Decode value from VerifyProof into Receipt
@@ -261,7 +209,7 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instMetaType := inst[0]
-		issuingETHReqAction, err := ParseInstContent(inst[3])
+		issuingETHReqAction, err := ParseETHIssuingInstContent(inst[3])
 		if err != nil {
 			fmt.Println("WARNING: an error occured during parsing instruction content: ", err)
 			continue
@@ -284,8 +232,11 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			fmt.Println("WARNING: an error occured during verifying proof & parsing receipt: ", err)
 			continue
 		}
+		if constructedReceipt == nil {
+			continue
+		}
 
-		isUsedInBlock := IsETHHashUsedInBlock(uniqETHTx, ac.UniqETHTxsUsed)
+		isUsedInBlock := IsETHTxHashUsedInBlock(uniqETHTx, ac.UniqETHTxsUsed)
 		if isUsedInBlock {
 			fmt.Println("WARNING: already issued for the hash in current block: ", uniqETHTx)
 			continue
