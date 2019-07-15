@@ -235,9 +235,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
 	}
 	err = serverObj.blockChain.Init(&blockchain.Config{
-		ChainParams:       serverObj.chainParams,
-		DataBase:          serverObj.dataBase,
-		MemCache:          serverObj.memCache,
+		ChainParams: serverObj.chainParams,
+		DataBase:    serverObj.dataBase,
+		//MemCache:          serverObj.memCache,
+		MemCache:          nil,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,
