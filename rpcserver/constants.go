@@ -11,6 +11,7 @@ const (
 	getConnectionCount   = "getconnectioncount"
 	getAllConnectedPeers = "getallconnectedpeers"
 	getAllPeers          = "getallpeers"
+	getNodeRole          = "getnoderole"
 
 	estimateFee              = "estimatefee"
 	estimateFeeWithEstimator = "estimatefeewithestimator"
@@ -32,6 +33,7 @@ const (
 	getCrossShardPoolStateV2      = "getcrossshardpoolstatev2"
 	getShardPoolStateV2           = "getshardpoolstatev2"
 	getBeaconPoolStateV2          = "getbeaconpoolstatev2"
+	getFeeEstimator               = "getfeeestimator"
 
 	getBestBlock        = "getbestblock"
 	getBestBlockHash    = "getbestblockhash"
