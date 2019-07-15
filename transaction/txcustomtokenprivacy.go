@@ -99,6 +99,39 @@ func (tx *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
+func (tx *TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
+	tokenDataSize := uint64(0)
+	tokenDataSize += tx.TxTokenPrivacyData.TxNormal.GetTxActualSize()
+	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertyName))
+	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertySymbol))
+	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertyID))
+	tokenDataSize += 4 // for TxTokenPrivacyData.Type
+	tokenDataSize += 8 // for TxTokenPrivacyData.Amount
+
+	meta := tx.Metadata
+	if meta != nil {
+		tokenDataSize += meta.CalculateSize()
+	}
+
+	return uint64(math.Ceil(float64(tokenDataSize) / 1024))
+}
+
+func (tx *TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
+	if tx.IsSalaryTx() {
+		return true
+	}
+	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+	return tx.GetTxFeeToken() >= fullFee
+}
+
+func (tx *TxCustomTokenPrivacy) CheckTransactionFeePrivacyToken(minFeePerKbTx uint64) bool {
+	if tx.IsSalaryTx() {
+		return true
+	}
+	fullFee := minFeePerKbTx * tx.GetTxPrivacyTokenActualSize()
+	return tx.GetTxFeeToken() >= fullFee
+}
+
 // Init -  build normal tx component and privacy custom token data
 func (txCustomToken *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
@@ -452,10 +485,16 @@ func (tx *TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return tx.TxTokenPrivacyData.TxNormal.SigPubKey
 }
 
+// GetTxFeeToken - return Token Fee use to pay for privacy token Tx
 func (tx *TxCustomTokenPrivacy) GetTxFeeToken() uint64 {
 	return tx.TxTokenPrivacyData.TxNormal.Fee
 }
 
 func (tx *TxCustomTokenPrivacy) GetTokenID() *common.Hash {
 	return &tx.TxTokenPrivacyData.PropertyID
+}
+
+// GetTxFee - return fee PRV of Tx which contain privacy token Tx
+func (tx *TxCustomTokenPrivacy) GetTxFee() uint64 {
+	return tx.Tx.GetTxFee()
 }

@@ -16,6 +16,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/memcache"
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
+
 	"cloud.google.com/go/storage"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/metrics"
@@ -52,6 +59,7 @@ type Server struct {
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
 	dataBase          database.DatabaseInterface
+	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
 	tempMemPool       *mempool.TxPool
@@ -183,6 +191,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cQuit = make(chan struct{})
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
+	serverObj.memCache = memcache.New()
 
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
@@ -235,6 +244,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams:       serverObj.chainParams,
 		DataBase:          serverObj.dataBase,
+		MemCache:          serverObj.memCache,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,
@@ -1149,6 +1159,35 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	}
 
 	return result
+}
+
+func (serverObj *Server) GetNodeRole() string {
+	if serverObj.userKeySet == nil {
+		return ""
+	}
+	pubkey := serverObj.userKeySet.GetPublicKeyB58()
+	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconCommittee) > -1 {
+		return "BEACON_VALIDATOR"
+	}
+	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconPendingValidator) > -1 {
+		return "BEACON_WAITING"
+	}
+	shardCommittee := blockchain.GetBestStateBeacon().GetShardCommittee()
+	for _, s := range shardCommittee {
+		if common.IndexOfStr(pubkey, s) > -1 {
+			return "SHARD_VALIDATOR"
+		}
+	}
+	shardPendingCommittee := blockchain.GetBestStateBeacon().GetShardPendingValidator()
+	for _, s := range shardPendingCommittee {
+		if common.IndexOfStr(pubkey, s) > -1 {
+			return "SHARD_VALIDATOR"
+		}
+	}
+	if cfg.NodeMode == "relay" {
+		return "RELAY"
+	}
+	return ""
 }
 
 /*
