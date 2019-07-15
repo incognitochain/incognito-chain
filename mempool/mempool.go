@@ -21,6 +21,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
+
 // default value
 const (
 	defaultScanTime          = 1 * time.Hour
@@ -30,6 +31,7 @@ const (
 	defaultIsTest            = false
 	defaultReplaceFeeRatio   = 1.1
 )
+
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	BlockChain            *blockchain.BlockChain       // Block chain of node
@@ -46,6 +48,7 @@ type Config struct {
 	PubSubManager         *pubsub.PubSubManager
 	RoleInCommitteesEvent pubsub.EventChannel
 }
+
 // TxDesc is transaction message in mempool
 type TxDesc struct {
 	Desc            metadata.TxDesc // transaction details
@@ -108,6 +111,7 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
+
 // LoadOrResetDatabaseMempool - Load and reset database of mempool when start node
 func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	if !tp.config.IsLoadFromMempool {
@@ -129,6 +133,7 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	}
 	return nil
 }
+
 // loop forever in mempool
 // receive data from other package
 func (tp *TxPool) Start(cQuit chan struct{}) {
@@ -289,6 +294,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	return hash, txDesc, err
 }
+
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
@@ -302,6 +308,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	tempTxDesc := &txDesc.Desc
 	return tempTxDesc, err
 }
+
 /*
 // maybeAcceptTransaction into pool
 // #1: tx
@@ -626,6 +633,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		tempErr.Init(RejectDoubleSpendWithBlockchainTx, err)
 		return tempErr
 	}
+	// Condition 8: init exist custom token or not
 	now = time.Now()
 	foundTokenID := -1
 	tokenID := ""
@@ -650,7 +658,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		err.Init(RejectDuplicateInitTokenTx, errors.New(str))
 		return err
 	}
-	// check duplicate stake public key ONLY with staking transaction
+	// Condition 9: check duplicate stake public key ONLY with staking transaction
 	now = time.Now()
 	pubkey := ""
 	foundPubkey := -1
@@ -757,6 +765,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	}
 	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
 }
+
 // Check relay shard and public key role before processing transaction
 func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -797,16 +806,16 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
-				if baseReplaceFeeToken * tp.ReplaceFeeRatio > replaceFeeToken {
+				if baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
 					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
 				}
 				isReplaced = true
-			} else if  txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
+			} else if txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
 				//paid by token fee only
 				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
 				replaceFee = float64(tx.GetTxFee())
 				// not a higher enough fee than return error
-				if baseReplaceFee * tp.ReplaceFeeRatio > replaceFee {
+				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee {
 					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
@@ -817,7 +826,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
-				if baseReplaceFee * tp.ReplaceFeeRatio > replaceFee || baseReplaceFeeToken * tp.ReplaceFeeRatio > replaceFeeToken {
+				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
 					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
@@ -840,6 +849,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 		return nil, false
 	}
 }
+
 // RemoveTx safe remove transaction for pool
 func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	tp.mtx.Lock()
