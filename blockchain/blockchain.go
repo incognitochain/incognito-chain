@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -912,10 +913,30 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 
-	outCointsInBytes, err := blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
-	if err != nil {
-		return nil, err
+	var outCointsInBytes [][]byte
+	var err error
+	if blockchain.config.MemCache != nil {
+		key := make([]byte, 0)
+		key = append(key, base64.StdEncoding.e)
+		key = append(key, keyset.PaymentAddress.Pk[:]...)
+		cachedData, _ := blockchain.config.MemCache.Get(key)
+		if cachedData != nil {
+			err = json.Unmarshal(cachedData, &outCointsInBytes)
+		} else {
+			outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
+			cachedData, err = json.Marshal(outCointsInBytes)
+			if err == nil {
+				blockchain.config.MemCache.Put(key, cachedData)
+			}
+		}
 	}
+	if len(outCointsInBytes) == 0 {
+		outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// convert from []byte to object
 	outCoints := make([]*privacy.OutputCoin, 0)
 	for _, item := range outCointsInBytes {
