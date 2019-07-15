@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 // handleGetBurnProof returns a proof of a tx burning pETH
@@ -49,34 +48,10 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst, beaconHeight, bridgeHeight := splitAndDecodeInst(bridgeInstProof.inst, beaconInstProof.inst)
+	decodedInst, bridgeHeight, beaconHeight := splitAndDecodeInst(bridgeInstProof.inst, beaconInstProof.inst)
 	//decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(bridgeInstProof.inst))
 
-	return jsonresult.GetInstructionProof{
-		Instruction:  decodedInst,
-		BeaconHeight: beaconHeight,
-		BridgeHeight: bridgeHeight,
-
-		BeaconInstPath:         beaconInstProof.instPath,
-		BeaconInstPathIsLeft:   beaconInstProof.instPathIsLeft,
-		BeaconInstRoot:         beaconInstProof.instRoot,
-		BeaconBlkData:          beaconInstProof.blkData,
-		BeaconBlkHash:          beaconInstProof.blkHash,
-		BeaconSignerPubkeys:    beaconInstProof.signerPubkeys,
-		BeaconSignerSig:        beaconInstProof.signerSig,
-		BeaconSignerPaths:      beaconInstProof.signerPaths,
-		BeaconSignerPathIsLeft: beaconInstProof.signerPathIsLeft,
-
-		BridgeInstPath:         bridgeInstProof.instPath,
-		BridgeInstPathIsLeft:   bridgeInstProof.instPathIsLeft,
-		BridgeInstRoot:         bridgeInstProof.instRoot,
-		BridgeBlkData:          bridgeInstProof.blkData,
-		BridgeBlkHash:          bridgeInstProof.blkHash,
-		BridgeSignerPubkeys:    bridgeInstProof.signerPubkeys,
-		BridgeSignerSig:        bridgeInstProof.signerSig,
-		BridgeSignerPaths:      bridgeInstProof.signerPaths,
-		BridgeSignerPathIsLeft: bridgeInstProof.signerPathIsLeft,
-	}, nil
+	return buildProofResult(decodedInst, beaconInstProof, bridgeInstProof, beaconHeight, bridgeHeight), nil
 }
 
 // getBurnProofOnBridge finds a beacon committee swap instruction in a given bridge block and returns its proof
@@ -92,7 +67,8 @@ func getBurnProofOnBridge(
 		return nil, fmt.Errorf("cannot find burning instruction in bridge block")
 	}
 
-	proof, err := buildProofOnBridge(bridgeBlock, insts, instID, db)
+	block := &shardBlock{ShardBlock: bridgeBlock}
+	proof, err := buildProofForBlock(block, insts, instID, db)
 	if err != nil {
 		return nil, err
 	}
@@ -106,14 +82,15 @@ func getBurnProofOnBeacon(
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
-	beaconBlock, instID := findBeaconBlockWithBurnInst(beaconBlocks, inst)
-	if beaconBlock == nil {
+	b, instID := findBeaconBlockWithBurnInst(beaconBlocks, inst)
+	if b == nil {
 		return nil, fmt.Errorf("cannot find corresponding beacon block that includes burn instruction")
 	}
 
-	fmt.Printf("[db] found burn inst id %d in beaconBlock: %d\n", instID, beaconBlock.Header.Height)
-	insts := beaconBlock.Body.Instructions
-	return buildProofOnBeacon(beaconBlock, insts, instID, db)
+	fmt.Printf("[db] found burn inst id %d in beaconBlock: %d\n", instID, b.Header.Height)
+	insts := b.Body.Instructions
+	block := &beaconBlock{BeaconBlock: b}
+	return buildProofForBlock(block, insts, instID, db)
 }
 
 // findBeaconBlockWithBurnInst finds a beacon block with a specific burning instruction and the instruction's index; nil if not found

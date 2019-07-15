@@ -294,7 +294,7 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 
 		// TODO(@0xbunyip): move inside previous if: only generate instruction when there's a new committee
 		// Generate instruction storing merkle root of validators pubkey and send to bridge
-		beaconRootInst := buildBeaconPubkeyRootInstruction(currentValidators, block.Header.Height+1)
+		beaconRootInst := buildBeaconSwapConfirmInstruction(currentValidators, block.Header.Height+1)
 		instructions = append(instructions, beaconRootInst)
 	}
 	//=======Stake
