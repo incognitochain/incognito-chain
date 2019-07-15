@@ -24,11 +24,6 @@ import (
 	"google.golang.org/api/option"
 
 	"cloud.google.com/go/storage"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
-	"golang.org/x/net/context"
-	"google.golang.org/api/option"
 
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/metadata"
