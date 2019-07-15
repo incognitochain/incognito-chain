@@ -941,14 +941,14 @@ func (tp *TxPool) removeTx(tx metadata.Transaction) {
 		delete(tp.pool, *tx.Hash())
 		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	}
-	if _, exists := tp.pool[*tx.Hash()]; exists {
+	if _, exists := tp.poolSerialNumbersHashList[*tx.Hash()]; exists {
 		delete(tp.poolSerialNumbersHashList, *tx.Hash())
 	}
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash, err := common.HashArrayInterface(serialNumberHashList)
 	if err == nil {
 		if _, exists := tp.poolSerailNumberHash[hash]; exists {
-			delete(tp.poolSerialNumbersHashList, hash)
+			delete(tp.poolSerailNumberHash, hash)
 		}
 	}
 }
