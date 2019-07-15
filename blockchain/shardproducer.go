@@ -94,7 +94,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
 			startHeight := blockgen.chain.BestState.Shard[shardID].ShardHeight + 2
-			bridgePubkeyInst = buildBridgePubkeyRootInstruction(shardCommittee, startHeight)
+			bridgePubkeyInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
 			prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
 			fmt.Printf("[db] added bridgeCommRoot in shard block %d\n", prevBlock.Header.Height+1)
 		}
