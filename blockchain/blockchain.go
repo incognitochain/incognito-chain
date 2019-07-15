@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -917,7 +916,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	var err error
 	if blockchain.config.MemCache != nil {
 		key := make([]byte, 0)
-		key = append(key, base64.StdEncoding.e)
+		key = append(key, []byte("listoutputcoin_")...)
 		key = append(key, keyset.PaymentAddress.Pk[:]...)
 		cachedData, _ := blockchain.config.MemCache.Get(key)
 		if cachedData != nil {
