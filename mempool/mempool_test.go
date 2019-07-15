@@ -244,7 +244,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
-	outCoins, err = tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
+	outCoins, err = tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID) // test cached
 	if err != nil {
 		fmt.Println("Can't create transaction", err)
 		return nil
