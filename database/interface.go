@@ -154,7 +154,8 @@ type DatabaseInterface interface {
 	InsertETHTxHashIssued([]byte) error
 	IsETHTxHashIssued([]byte) (bool, error)
 	CanProcessTokenPair([]byte, common.Hash) (bool, error)
-	UpdateBridgeTokenPairInfo(common.Hash, []byte, bool) error
+	CanProcessCIncToken(common.Hash) (bool, error)
+	UpdateBridgeTokenInfo(common.Hash, []byte, bool) error
 
 	// Block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error

@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"bytes"
+	"fmt"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -63,33 +65,57 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	shardID byte,
 	tx Transaction,
 	bcr BlockchainRetriever,
-	accumulatedValues *AccumulatedValues,
+	ac *AccumulatedValues,
 ) (bool, error) {
+	db := bcr.GetDatabase()
 	idx := -1
-	for i, txInBlock := range txsInBlock {
-		if txsUsed[i] > 0 ||
-			txInBlock.GetMetadataType() != IssuingRequestMeta ||
-			!bytes.Equal(iRes.RequestedTxID[:], txInBlock.Hash()[:]) {
+	for i, inst := range insts {
+		if len(inst) < 4 { // this is not IssuingETHRequest instruction
 			continue
 		}
-		issuingReqRaw := txInBlock.GetMetadata()
-		issuingReq, ok := issuingReqRaw.(*IssuingRequest)
+		instMetaType := inst[0]
+		issuingReqAction, err := ParseIssuingInstContent(inst[3])
+		if err != nil {
+			fmt.Println("WARNING: an error occured during parsing instruction content: ", err)
+			continue
+		}
+
+		if instUsed[i] > 0 ||
+			instMetaType != strconv.Itoa(IssuingRequestMeta) ||
+			!bytes.Equal(iRes.RequestedTxID[:], issuingReqAction.TxReqID[:]) {
+			continue
+		}
+
+		issuingReq := issuingReqAction.Meta
+		issuingTokenID := issuingReq.TokenID
+		if !ac.CanProcessCIncToken(issuingTokenID) {
+			fmt.Printf("WARNING: The issuing token (%s) was already used in the current block.", issuingTokenID.String())
+			continue
+		}
+
+		ok, err := db.CanProcessCIncToken(issuingTokenID)
+		if err != nil {
+			fmt.Println("WARNING: an error occured during checking centralized inc token is valid or not: ", err)
+			continue
+		}
 		if !ok {
+			fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
 			continue
 		}
+
 		_, pk, amount, assetID := tx.GetTransferData()
 		if !bytes.Equal(issuingReq.ReceiverAddress.Pk[:], pk[:]) ||
 			issuingReq.DepositedAmount != amount ||
 			!bytes.Equal(issuingReq.TokenID[:], assetID[:]) {
 			continue
 		}
-
+		ac.CBridgeTokens = append(ac.CBridgeTokens, &issuingTokenID)
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, errors.Errorf("no IssuingRequest tx found for IssuingResponse tx %s", tx.Hash().String())
+		return false, errors.Errorf("no IssuingRequest tx found for the IssuingResponse tx %s", tx.Hash().String())
 	}
-	txsUsed[idx] = 1
+	instUsed[idx] = 1
 	return true, nil
 }
