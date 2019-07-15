@@ -669,7 +669,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 			if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken == 0 {
 				// paid by prv fee only
 				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
-				replaceFee = float64(tx.GetTxFeeToken())
+				replaceFee = float64(tx.GetTxFee())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee {
 					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
