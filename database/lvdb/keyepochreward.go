@@ -24,6 +24,12 @@ func NewKeyAddShardRewardRequest(
 	return res, nil
 }
 
+/**
+ * NewKeyAddCommitteeReward create a key for store reward of a person P in committee in db.
+ * @param committeeAddress: Public key of person P
+ * @param tokenID: currency unit
+ * @return ([]byte, error): Key, error of this process
+ */
 func NewKeyAddCommitteeReward(
 	committeeAddress []byte,
 	tokenID common.Hash,
