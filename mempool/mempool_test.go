@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -74,6 +75,7 @@ var _ = func() (_ struct{}) {
 		DataBase:      db,
 		PubSubManager: pbMempool,
 		ChainParams:   &blockchain.ChainTestParam,
+		MemCache:      memcache.New(),
 	}, true)
 	bc.BestState = &blockchain.BestState{
 		Beacon: &blockchain.BestStateBeacon{},
@@ -242,6 +244,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
+	outCoins, err = tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	if err != nil {
 		fmt.Println("Can't create transaction", err)
 		return nil
