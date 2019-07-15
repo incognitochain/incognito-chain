@@ -313,6 +313,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		{
 			txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
 			isPaidByPRV := false
+			isPaidPartiallyPRV := false
 			// check PRV element and pToken element
 			if txPrivacyToken.Tx.Proof != nil {
 				// tx contain PRV data -> check with PRV fee
@@ -328,6 +329,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 								limitFee*txPrivacyToken.GetTxActualSize()))
 							return err
 						}
+						isPaidPartiallyPRV = false
 					} else {
 						// paid partial with PRV
 						ok := txPrivacyToken.Tx.CheckTransactionFee(limitFee)
@@ -339,6 +341,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 								limitFee*txPrivacyToken.Tx.GetTxActualSize()))
 							return err
 						}
+						isPaidPartiallyPRV = true
 					}
 				}
 				isPaidByPRV = true
@@ -359,16 +362,18 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 							return err
 						}
 					} else {
-						// paid partially by PRV
-						// -> check fee on pToken tx data size(only for pToken tx)
-						ok := txPrivacyToken.CheckTransactionFeePrivacyToken(limitFeeToken)
-						if !ok {
-							err := MempoolTxError{}
-							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
-								txHash.String(),
-								tx.GetTxFeeToken(),
-								limitFeeToken*txPrivacyToken.GetTxPrivacyTokenActualSize()))
-							return err
+						// paid by PRV
+						if isPaidPartiallyPRV {
+							// paid partially -> check fee on pToken tx data size(only for pToken tx)
+							ok := txPrivacyToken.CheckTransactionFeePrivacyToken(limitFeeToken)
+							if !ok {
+								err := MempoolTxError{}
+								err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+									txHash.String(),
+									tx.GetTxFeeToken(),
+									limitFeeToken*txPrivacyToken.GetTxPrivacyTokenActualSize()))
+								return err
+							}
 						}
 					}
 				}
