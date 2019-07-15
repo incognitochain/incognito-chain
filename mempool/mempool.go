@@ -61,7 +61,7 @@ type TxPool struct {
 	lastUpdated               int64 // last time pool was updated
 	pool                      map[common.Hash]*TxDesc
 	poolSerialNumbersHashList map[common.Hash][]common.Hash // [txHash] -> list hash serialNumbers of input coin
-	poolSerailNumberHash      map[common.Hash]common.Hash   // [hash from list of serialNumber] -> txHash
+	poolSerialNumberHash      map[common.Hash]common.Hash   // [hash from list of serialNumber] -> txHash
 	mtx                       sync.RWMutex
 	PoolCandidate             map[common.Hash]string //Candidate List in mempool
 	candidateMtx              sync.RWMutex
@@ -86,7 +86,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
-	tp.poolSerailNumberHash = make(map[common.Hash]common.Hash)
+	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolTokenID = make(map[common.Hash]string)
 	tp.PoolCandidate = make(map[common.Hash]string)
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
@@ -118,7 +118,7 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 		err := tp.ResetDatabaseMempool()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
-			return err
+			return NewMempoolTxError(DatabaseError, err)
 		} else {
 			Logger.log.Critical("Successfully Reset from database")
 		}
@@ -126,7 +126,7 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 		txDescs, err := tp.LoadDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
-			return err
+			return NewMempoolTxError(DatabaseError, err)
 		} else {
 			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
 		}
@@ -211,8 +211,6 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	if tp.IsTest {
-		err := MempoolTxError{}
-		err.Init(UnexpectedTransactionError, errors.New("Not allowed test tx"))
 		return &common.Hash{}, &TxDesc{}, nil
 	}
 	go func(txHash common.Hash) {
@@ -220,8 +218,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}(*tx.Hash())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
 		senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		err := MempoolTxError{}
-		err.Init(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
+		err := NewMempoolTxError(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
 		Logger.log.Error(err)
 		return &common.Hash{}, &TxDesc{}, err
 	}
@@ -242,9 +239,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 		metrics.TagValue:         txType})
 	//==========
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
-		err := MempoolTxError{}
-		err.Init(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
-		return nil, nil, err
+		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
 	startAdd := time.Now()
 	hash, txDesc, err := tp.maybeAcceptTransaction(tx, tp.config.PersistMempool, true)
@@ -302,7 +297,6 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	_, txDesc, err := tp.maybeAcceptTransaction(tx, false, false)
 	if err != nil {
 		Logger.log.Error(err)
-		fmt.Printf("[db] maybe err: %+v\n", tx.GetMetadataType())
 		return nil, err
 	}
 	tempTxDesc := &txDesc.Desc
@@ -326,6 +320,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	}
 	txSize := fmt.Sprintf("%d", tx.GetTxActualSize())
 	startValidate := time.Now()
+	// validate tx
 	err := tp.validateTransaction(tx)
 	if err != nil {
 		return nil, nil, err
@@ -408,7 +403,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 
 	// Condition 1: sanity data
 	now = time.Now()
-	validated, errS := tx.ValidateSanityData(tp.config.BlockChain)
+	validated, err := tx.ValidateSanityData(tp.config.BlockChain)
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
 		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
@@ -416,9 +411,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if !validated {
-		err := MempoolTxError{}
-		err.Init(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), errS.Error()))
-		return err
+		return NewMempoolTxError(RejectSansityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), err))
 	}
 
 	// Condition 2: Don't accept the transaction if it already exists in the pool.
@@ -436,9 +429,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			metrics.Measurement:      metrics.TxPoolDuplicateTxs,
 			metrics.MeasurementValue: float64(1),
 		})
-		err := MempoolTxError{}
-		err.Init(RejectDuplicateTx, errors.New(str))
-		return err
+		return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("%+v", str))
 	}
 	// Condition 3: A standalone transaction must not be a salary transaction.
 	now = time.Now()
@@ -450,9 +441,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if isSalaryTx {
-		err := MempoolTxError{}
-		err.Init(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
-		return err
+		return NewMempoolTxError(RejectSalaryTx, fmt.Errorf("%+v is salary tx", txHash.String()))
 	}
 	// Condition 4: check fee PRV of tx
 	now = time.Now()
@@ -471,24 +460,20 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 						// paid all with PRV
 						ok := txPrivacyToken.CheckTransactionFee(limitFee)
 						if !ok {
-							err := MempoolTxError{}
-							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
 								txHash.String(),
 								txPrivacyToken.Tx.GetTxFee(),
 								limitFee*txPrivacyToken.GetTxActualSize()))
-							return err
 						}
 						isPaidPartiallyPRV = false
 					} else {
 						// paid partial with PRV
 						ok := txPrivacyToken.Tx.CheckTransactionFee(limitFee)
 						if !ok {
-							err := MempoolTxError{}
-							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
 								txHash.String(),
 								txPrivacyToken.Tx.GetTxFee(),
 								limitFee*txPrivacyToken.Tx.GetTxActualSize()))
-							return err
 						}
 						isPaidPartiallyPRV = true
 					}
@@ -503,12 +488,10 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 						// -> check fee on total tx size(prv tx container + pToken tx)
 						ok := txPrivacyToken.CheckTransactionFee(limitFeeToken)
 						if !ok {
-							err := MempoolTxError{}
-							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 								txHash.String(),
 								tx.GetTxFeeToken(),
 								limitFeeToken*txPrivacyToken.GetTxActualSize()))
-							return err
 						}
 					} else {
 						// paid by PRV
@@ -516,12 +499,10 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 							// paid partially -> check fee on pToken tx data size(only for pToken tx)
 							ok := txPrivacyToken.CheckTransactionFeePrivacyToken(limitFeeToken)
 							if !ok {
-								err := MempoolTxError{}
-								err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+								return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 									txHash.String(),
 									tx.GetTxFeeToken(),
 									limitFeeToken*txPrivacyToken.GetTxPrivacyTokenActualSize()))
-								return err
 							}
 						}
 					}
@@ -538,9 +519,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 					txFee := txNormal.GetTxFee()
 					ok := tx.CheckTransactionFee(limitFee) // @NOTICE: only check tx fee
 					if !ok {
-						err := MempoolTxError{}
-						err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
-						return err
+						return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
 					}
 				}
 			}
@@ -555,9 +534,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 					txFee := txNormal.GetTxFee()
 					ok := tx.CheckTransactionFee(limitFee)
 					if !ok {
-						err := MempoolTxError{}
-						err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
-						return err
+						return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
 					}
 				}
 			}
@@ -595,9 +572,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			}
 		} else {
 			// replace fail
-			tempErr := MempoolTxError{}
-			tempErr.Init(RejectDoubleSpendWithMempoolTx, err)
-			return tempErr
+			return NewMempoolTxError(RejectDoubleSpendWithMempoolTx, err)
 		}
 	}
 	// Condition 6: ValidateTransaction tx by it self
@@ -611,13 +586,11 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if !validated {
-		err := MempoolTxError{}
 		messageError := "Invalid tx - "
 		if errValidateTxByItself != nil {
 			messageError += errValidateTxByItself.Error()
 		}
-		err.Init(RejectInvalidTx, errors.New(messageError))
-		return err
+		return NewMempoolTxError(RejectInvalidTx, errors.New(messageError))
 	}
 
 	// Condition 7: validate tx with data of blockchain
@@ -630,9 +603,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if err != nil {
-		tempErr := MempoolTxError{}
-		tempErr.Init(RejectDoubleSpendWithBlockchainTx, err)
-		return tempErr
+		return NewMempoolTxError(RejectDoubleSpendWithBlockchainTx, err)
 	}
 	// Condition 8: init exist custom token or not
 	now = time.Now()
@@ -654,10 +625,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if foundTokenID > 0 {
-		str := fmt.Sprintf("Init Transaction of this Token is in pool already %+v", tokenID)
-		err := MempoolTxError{}
-		err.Init(RejectDuplicateInitTokenTx, errors.New(str))
-		return err
+		return NewMempoolTxError(RejectDuplicateInitTokenTx, fmt.Errorf("Init Transaction of this Token is in pool already %+v", tokenID))
 	}
 	// Condition 9: check duplicate stake public key ONLY with staking transaction
 	now = time.Now()
@@ -678,10 +646,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
 	if foundPubkey > 0 {
-		str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
-		err := MempoolTxError{}
-		err.Init(RejectDuplicateStakePubkey, errors.New(str))
-		return err
+		return NewMempoolTxError(RejectDuplicateStakePubkey, fmt.Errorf("This public key already stake and still in pool %+v", pubkey))
 	}
 	return nil
 }
@@ -696,12 +661,9 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error, bool) {
 	// calculate match serial number list in pool for replaced tx
 	serialNumberHashList := tx.ListSerialNumbersHashH()
-	hash, err := common.HashArrayInterface(serialNumberHashList)
-	if err != nil {
-		return NewMempoolTxError(ReplacementError, err), false
-	}
+	hash := common.HashArrayOfHashArray(serialNumberHashList)
 	// find replace tx in pool
-	if txHashToBeReplaced, ok := tp.poolSerailNumberHash[hash]; ok {
+	if txHashToBeReplaced, ok := tp.poolSerialNumberHash[hash]; ok {
 		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
 			var baseReplaceFee float64
 			var baseReplaceFeeToken float64
@@ -710,20 +672,20 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 			var isReplaced = false
 			if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken == 0 {
 				// paid by prv fee only
-				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
-				replaceFeeToken = float64(tx.GetTxFeeToken())
+				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
+				replaceFee = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
-				if baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
-					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
+				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee {
+					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
 				//paid by token fee only
-				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
-				replaceFee = float64(tx.GetTxFee())
+				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
+				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
-				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee {
-					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+				if baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
+					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -735,7 +697,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
-					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			}
@@ -746,7 +708,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
 				return nil, true
 			} else {
-				return NewMempoolTxError(ReplacementError, errors.New("Unexpected error occur")), true
+				return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Unexpected error occur")), true
 			}
 		} else {
 			//found no tx to be replaced
@@ -776,12 +738,9 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 	}
 	tp.pool[*txHash] = txD
-	//==================================================
 	serialNumberList := txD.Desc.Tx.ListSerialNumbersHashH()
-	serialNumberListHash, err := common.HashArrayInterface(serialNumberList)
-	if err != nil {
-		tp.poolSerailNumberHash[serialNumberListHash] = *txD.Desc.Tx.Hash()
-	}
+	serialNumberListHash := common.HashArrayOfHashArray(serialNumberList)
+	tp.poolSerialNumberHash[serialNumberListHash] = *txD.Desc.Tx.Hash()
 	tp.poolSerialNumbersHashList[*txHash] = serialNumberList
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
@@ -945,11 +904,9 @@ func (tp *TxPool) removeTx(tx metadata.Transaction) {
 		delete(tp.poolSerialNumbersHashList, *tx.Hash())
 	}
 	serialNumberHashList := tx.ListSerialNumbersHashH()
-	hash, err := common.HashArrayInterface(serialNumberHashList)
-	if err == nil {
-		if _, exists := tp.poolSerailNumberHash[hash]; exists {
-			delete(tp.poolSerailNumberHash, hash)
-		}
+	hash := common.HashArrayOfHashArray(serialNumberHashList)
+	if _, exists := tp.poolSerialNumberHash[hash]; exists {
+		delete(tp.poolSerialNumberHash, hash)
 	}
 }
 
@@ -1040,8 +997,7 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 	if exists {
 		return txDesc.Desc.Tx, nil
 	}
-	err := MempoolTxError{}
-	err.Init(TransactionNotFoundError, errors.New("Transaction "+txHash.String()+" Not Found!"))
+	err := NewMempoolTxError(TransactionNotFoundError, fmt.Errorf("Transaction "+txHash.String()+" Not Found!"))
 	Logger.log.Error(err)
 	return nil, err
 }

@@ -32,7 +32,7 @@ const (
 	RejectTestTransactionError
 	WrongShardIDError
 	HashError
-	ReplacementError
+	RejectReplacementTx
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -62,7 +62,7 @@ var ErrCodeMessage = map[int]struct {
 	MarshalError:                      {-1019, "Marshal Error"},
 	UnmarshalError:                    {-1020, "Unmarshal Error"},
 	HashError:                         {-1021, "Hash Error"},
-	ReplacementError:                  {-1022, "Replacement or Cancel Tx Error"},
+	RejectReplacementTx:               {-1022, "Replacement or Cancel Tx Error"},
 }
 
 type MempoolTxError struct {
@@ -78,11 +78,11 @@ func (e MempoolTxError) Error() string {
 
 // txRuleError creates an underlying MempoolTxError with the given a set of
 // arguments and returns a RuleError that encapsulates it.
-func (e *MempoolTxError) Init(key int, err error) {
-	e.Code = ErrCodeMessage[key].Code
-	e.Message = ErrCodeMessage[key].Message
-	e.Err = errors.Wrap(err, e.Message)
-}
+//func (e *MempoolTxError) Init(key int, err error) {
+//	e.Code = ErrCodeMessage[key].Code
+//	e.Message = ErrCodeMessage[key].Message
+//	e.Err = errors.Wrap(err, e.Message)
+//}
 func NewMempoolTxError(key int, err error) *MempoolTxError {
 	return &MempoolTxError{
 		Code:    ErrCodeMessage[key].Code,
