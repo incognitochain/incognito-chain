@@ -68,7 +68,7 @@ func NewIssuingETHRequestFromMap(
 		proofStrs = append(proofStrs, item.(string))
 	}
 
-	incTokenID, err := common.NewHashFromStr(data["IncTokenID"].(string))
+	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
 	if err != nil {
 		return nil, errors.Errorf("TokenID incorrect")
 	}

@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/libp2p/go-libp2p-peer"
@@ -49,7 +49,7 @@ func (msg *MessageTx) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageTx) SignMsg(_ *cashec.KeySet) error {
+func (msg *MessageTx) SignMsg(_ *incognitokey.KeySet) error {
 	return nil
 }
 

@@ -393,8 +393,6 @@ func powerVector(base *big.Int, n int) []*big.Int {
 	wg.Add(n - 1)
 	for i := 1; i < n; i++ {
 		go func(i int, wg *sync.WaitGroup) {
-			//res[i] = new(big.Int).Mul(res[i-1], base)
-			//res[i].Mod(res[i], privacy.Curve.Params().N)
 			defer wg.Done()
 			res[i] = new(big.Int).Exp(base, new(big.Int).SetInt64(int64(i)), privacy.Curve.Params().N)
 		}(i, &wg)

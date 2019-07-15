@@ -17,7 +17,10 @@ func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		t.Error(err)
+	}
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
@@ -44,7 +47,10 @@ func TestRpcServer_RemovePeerByPbk(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		t.Error(err)
+	}
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
@@ -76,7 +82,10 @@ func TestRpcServer_PeerHeartBeat(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		t.Error(err)
+	}
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",

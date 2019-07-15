@@ -20,18 +20,36 @@ type Coin struct {
 	Info           []byte //256 bytes
 }
 
+// Init (Coin) initializes a coin
+func (coin *Coin) Init() *Coin {
+	coin.PublicKey = new(EllipticPoint).Zero()
+	coin.CoinCommitment = new(EllipticPoint).Zero()
+	coin.SNDerivator = new(big.Int)
+	coin.SerialNumber = new(EllipticPoint).Zero()
+	coin.Randomness = new(big.Int)
+	coin.Value = 0
+	return coin
+}
+
 // GetPubKeyLastByte returns the last byte of public key
 func (coin *Coin) GetPubKeyLastByte() byte {
 	pubKeyBytes := coin.PublicKey.Compress()
 	return pubKeyBytes[len(pubKeyBytes)-1]
 }
 
+// MarshalJSON (Coin) converts coin to bytes array,
+// base58 check encode that bytes array into string
+// json.Marshal the string
 func (coin Coin) MarshalJSON() ([]byte, error) {
 	data := coin.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
+// UnmarshalJSON (Coin) receives bytes array of coin (it was be MarshalJSON before),
+// json.Unmarshal the bytes array to string
+// base58 check decode that string to bytes array
+// and set bytes array to coin
 func (coin *Coin) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
@@ -43,24 +61,23 @@ func (coin *Coin) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// return hash of coin data
+// HashH returns the SHA3-256 hashing of coin bytes array
 func (coin *Coin) HashH() *common.Hash {
 	hash := common.HashH(coin.Bytes())
 	return &hash
 }
 
-// Init initializes a coin
-func (coin *Coin) Init() *Coin {
-	coin.PublicKey = new(EllipticPoint).Zero()
-	coin.CoinCommitment = new(EllipticPoint).Zero()
-	coin.SNDerivator = new(big.Int)
-	coin.SerialNumber = new(EllipticPoint).Zero()
-	coin.Randomness = new(big.Int)
-	coin.Value = 0
-	return coin
+//CommitAll commits a coin with 5 attributes include:
+// public key, value, serial number derivator, shardID form last byte public key, randomness
+func (coin *Coin) CommitAll() {
+	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
+	coin.CoinCommitment = PedCom.CommitAll(values)
+	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }
 
 // Bytes converts a coin's details to a bytes array
+// Each fields in coin is saved in len - body format
 func (coin *Coin) Bytes() []byte {
 	var coinBytes []byte
 
@@ -120,10 +137,11 @@ func (coin *Coin) Bytes() []byte {
 	return coinBytes
 }
 
-// SetBytes reverts a byte array to a Coin-type
+// SetBytes receives a coinBytes (in bytes array), and
+// reverts coinBytes to a Coin object
 func (coin *Coin) SetBytes(coinBytes []byte) error {
 	if len(coinBytes) == 0 {
-		return nil
+		return errors.New("coinBytes is empty")
 	}
 
 	var err error
@@ -195,9 +213,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		lenField = coinBytes[offset]
+		coin.Info = make([]byte, lenField)
 		copy(coin.Info, coinBytes[offset:offset+int(lenField)])
-		offset += int(lenField)
 	}
 	return nil
 }
@@ -207,6 +224,7 @@ type InputCoin struct {
 	CoinDetails *Coin
 }
 
+// Init (InputCoin) initializes a input coin
 func (inputCoin *InputCoin) Init() *InputCoin {
 	if inputCoin.CoinDetails == nil {
 		inputCoin.CoinDetails = new(Coin).Init()
@@ -214,30 +232,36 @@ func (inputCoin *InputCoin) Init() *InputCoin {
 	return inputCoin
 }
 
+// Bytes (InputCoin) converts a input coin's details to a bytes array
+// Each fields in coin is saved in len - body format
 func (inputCoin *InputCoin) Bytes() []byte {
 	return inputCoin.CoinDetails.Bytes()
 }
 
+// SetBytes (InputCoin) receives a coinBytes (in bytes array), and
+// reverts coinBytes to a InputCoin object
 func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
-	if len(bytes) == 0 {
-		return errors.New("bytes array is empty")
-	}
-
 	inputCoin.CoinDetails = new(Coin)
 	return inputCoin.CoinDetails.SetBytes(bytes)
 }
 
+// OutputCoin represents a output coin of transaction
+// It contains CoinDetails and CoinDetailsEncrypted (encrypted value and randomness)
+// CoinDetailsEncrypted is nil when you send tx without privacy
 type OutputCoin struct {
 	CoinDetails          *Coin
 	CoinDetailsEncrypted *Ciphertext
 }
 
+// Init (OutputCoin) initializes a output coin
 func (outputCoin *OutputCoin) Init() *OutputCoin {
 	outputCoin.CoinDetails = new(Coin).Init()
 	outputCoin.CoinDetailsEncrypted = new(Ciphertext)
 	return outputCoin
 }
 
+// Bytes (OutputCoin) converts a output coin's details to a bytes array
+// Each fields in coin is saved in len - body format
 func (outputCoin *OutputCoin) Bytes() []byte {
 	var outCoinBytes []byte
 
@@ -255,9 +279,11 @@ func (outputCoin *OutputCoin) Bytes() []byte {
 	return outCoinBytes
 }
 
+// SetBytes (OutputCoin) receives a coinBytes (in bytes array), and
+// reverts coinBytes to a OutputCoin object
 func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return errors.New("bytes array is empty")
+		return errors.New("coinBytes is empty")
 	}
 
 	offset := 0
@@ -291,13 +317,13 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // in which AES encryption scheme is used as a data encapsulation scheme,
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
 func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
-	// 32 byte first: Randomness
+	// 32-byte first: Randomness, the rest of msg is value of coin
 	msg := append(AddPaddingBigInt(outputCoin.CoinDetails.Randomness, BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
 
 	pubKeyPoint := new(EllipticPoint)
 	err := pubKeyPoint.Decompress(recipientTK)
 	if err != nil {
-		return NewPrivacyErr(EncryptOutputCoinErr, err)
+		return NewPrivacyErr(DecompressTransmissionKeyErr, err)
 	}
 
 	outputCoin.CoinDetailsEncrypted, err = HybridEncrypt(msg, pubKeyPoint)
@@ -320,12 +346,4 @@ func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
 	outputCoin.CoinDetails.Value = new(big.Int).SetBytes(msg[BigIntSize:]).Uint64()
 
 	return nil
-}
-
-//CommitAll commits a coin with 5 attributes (public key, value, serial number derivator, last byte pk, r)
-func (coin *Coin) CommitAll() {
-	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
-	coin.CoinCommitment = PedCom.CommitAll(values)
-	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
 }

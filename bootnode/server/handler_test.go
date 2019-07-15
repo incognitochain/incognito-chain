@@ -18,7 +18,10 @@ func TestHandler_Ping(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		t.Error(err)
+	}
 
 	args := &PingArgs{
 		RawAddress: "localhost:9333",
