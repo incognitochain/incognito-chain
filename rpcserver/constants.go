@@ -2,9 +2,12 @@ package rpcserver
 
 // rpc cmd method
 const (
+	// test rpc server
+	testHttpServer = "testrpcserver"
 	startProfiling = "startprofiling"
 	stopProfiling  = "stopprofiling"
 
+	getNodeRole        = "getnoderole"
 	getNetworkInfo     = "getnetworkinfo"
 	getConnectionCount = "getconnectioncount"
 	getAllPeers        = "getallpeers"
@@ -29,6 +32,7 @@ const (
 	getCrossShardPoolStateV2      = "getcrossshardpoolstatev2"
 	getShardPoolStateV2           = "getshardpoolstatev2"
 	getBeaconPoolStateV2          = "getbeaconpoolstatev2"
+	getFeeEstimator               = "getfeeestimator"
 
 	getBestBlock        = "getbestblock"
 	getBestBlockHash    = "getbestblockhash"
@@ -122,13 +126,13 @@ const (
 )
 
 const (
-	testSubcrice               = "testsubcribe"
-	subcribeNewShardBlock      = "subcribenewshardblock"
-	subcribeNewBeaconBlock     = "subcribenewbeaconblock"
-	subcribePendingTransaction = "subcribependingtransaction"
-	subcribeMempoolInfo = "subcribemempoolinfo"
-	subcribeShardBestState = "subcribeshardbeststate"
-	subcribeBeaconBestState = "subcribebeaconbeststate"
+	testSubcrice                = "testsubcribe"
+	subcribeNewShardBlock       = "subcribenewshardblock"
+	subcribeNewBeaconBlock      = "subcribenewbeaconblock"
+	subcribePendingTransaction  = "subcribependingtransaction"
+	subcribeMempoolInfo         = "subcribemempoolinfo"
+	subcribeShardBestState      = "subcribeshardbeststate"
+	subcribeBeaconBestState     = "subcribebeaconbeststate"
 	subcribeBeaconPoolBeststate = "subcribebeaconpoolbeststate"
-	subcribeShardPoolBeststate = "subcribeshardpoolbeststate"
+	subcribeShardPoolBeststate  = "subcribeshardpoolbeststate"
 )

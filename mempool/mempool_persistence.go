@@ -18,7 +18,8 @@ type TempDesc struct {
 	FeePerKB      int32
 }
 
-func (tp *TxPool) AddTransactionToDatabaseMP(txHash *common.Hash, txDesc TxDesc) error {
+// AddTransactionToDatabaseMempool - Add a transaction data into mempool database
+func (tp *TxPool) AddTransactionToDatabaseMempool(txHash *common.Hash, txDesc TxDesc) error {
 	tx := txDesc.Desc.Tx
 	tempDesc := TempDesc{
 		StartTime:     txDesc.StartTime,
@@ -82,18 +83,26 @@ func (tp *TxPool) AddTransactionToDatabaseMP(txHash *common.Hash, txDesc TxDesc)
 	return nil
 }
 
-func (tp *TxPool) GetTransactionFromDatabaseMP(txHash *common.Hash) (TxDesc, error) {
+// GetTransactionFromDatabaseMempool - get tx from mempool database
+func (tp *TxPool) GetTransactionFromDatabaseMempool(txHash *common.Hash) (*TxDesc, error) {
 	value, err := tp.config.DataBaseMempool.GetTransaction(txHash)
 	values := strings.Split(string(value), string(lvdb.Splitter))
-	txDesc, err := UmmarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
+	if len(values) != 3 {
+		return nil, err
+	}
+	txDesc, err := UnMarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
 	if err != nil {
-		return TxDesc{}, err
+		return nil, err
 	}
 	return txDesc, nil
 }
-func (tp *TxPool) ResetDatabaseMP() error {
+
+// ResetDatabaseMempool - reset data in data mempool
+func (tp *TxPool) ResetDatabaseMempool() error {
 	return tp.config.DataBaseMempool.Reset()
 }
+
+// LoadDatabaseMP - Get all tx in mempool database persistence
 func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
 	txDescs := []TxDesc{}
 	allTxHashes, allTxs, err := tp.config.DataBaseMempool.Load()
@@ -103,7 +112,7 @@ func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
 	}
 	for index, tx := range allTxs {
 		values := strings.Split(string(tx), string(lvdb.Splitter))
-		txDesc, err := UmmarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
+		txDesc, err := UnMarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
 		if err != nil {
 			txHash, err := common.Hash{}.NewHash(allTxHashes[index][3:])
 			if err != nil {
@@ -124,11 +133,13 @@ func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
 			continue
 		}
 
-		tp.addTx(&txDesc, false)
-		txDescs = append(txDescs, txDesc)
+		tp.addTx(txDesc, false)
+		txDescs = append(txDescs, *txDesc)
 	}
 	return txDescs, nil
 }
+
+// RemoveTransactionFromDatabaseMP - remove tx from mempool db persistence
 func (tp *TxPool) RemoveTransactionFromDatabaseMP(txHash *common.Hash) error {
 	if has, _ := tp.config.DataBaseMempool.HasTransaction(txHash); has {
 		err := tp.config.DataBaseMempool.RemoveTransaction(txHash)
@@ -137,7 +148,8 @@ func (tp *TxPool) RemoveTransactionFromDatabaseMP(txHash *common.Hash) error {
 	return nil
 }
 
-func UmmarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byte) (TxDesc, error) {
+// UnMarshallTxDescFromDatabase - convert tx data in mempool database persistence into TxDesc
+func UnMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byte) (*TxDesc, error) {
 	txDesc := TxDesc{}
 	switch txType {
 	case common.TxNormalType:
@@ -145,7 +157,7 @@ func UmmarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 			tx := transaction.Tx{}
 			err := json.Unmarshal(valueTx, &tx)
 			if err != nil {
-				return txDesc, err
+				return nil, err
 			}
 
 			txDesc.Desc.Tx = &tx
@@ -155,7 +167,7 @@ func UmmarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 			customTokenTx := transaction.TxCustomToken{}
 			err := json.Unmarshal(valueTx, &customTokenTx)
 			if err != nil {
-				return txDesc, err
+				return nil, err
 			}
 			txDesc.Desc.Tx = &customTokenTx
 		}
@@ -164,7 +176,7 @@ func UmmarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 			customTokenPrivacyTx := transaction.TxCustomTokenPrivacy{}
 			err := json.Unmarshal(valueTx, &customTokenPrivacyTx)
 			if err != nil {
-				return txDesc, err
+				return nil, err
 			}
 			txDesc.Desc.Tx = &customTokenPrivacyTx
 		}
@@ -172,12 +184,12 @@ func UmmarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 	tempDesc := TempDesc{}
 	err := json.Unmarshal(valueDesc, &tempDesc)
 	if err != nil {
-		return txDesc, err
+		return nil, err
 	}
 	txDesc.IsFowardMessage = tempDesc.IsPushMessage
 	txDesc.StartTime = tempDesc.StartTime
 	txDesc.Desc.Height = tempDesc.Height
 	txDesc.Desc.Fee = tempDesc.Fee
 	txDesc.Desc.FeePerKB = tempDesc.FeePerKB
-	return txDesc, nil
+	return &txDesc, nil
 }

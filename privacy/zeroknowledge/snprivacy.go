@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"errors"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"math/big"
 )
@@ -33,6 +34,7 @@ type SNPrivacyProof struct {
 	zRInput *big.Int // second challenge-dependent information to open the commitment to input
 }
 
+// ValidateSanity validates sanity of proof
 func (proof *SNPrivacyProof) ValidateSanity() bool {
 	if !proof.stmt.sn.IsSafe() {
 		return false
@@ -184,7 +186,7 @@ func (proof *SNPrivacyProof) Bytes() []byte {
 
 func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return nil
+		return errors.New("Bytes array is empty")
 	}
 
 	offset := 0

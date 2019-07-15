@@ -2,6 +2,12 @@ package lvdb_test
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
+	"os"
+	"strconv"
+	"testing"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -9,11 +15,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
-	"log"
-	"os"
-	"strconv"
-	"testing"
 
 	"github.com/incognitochain/incognito-chain/database"
 	_ "github.com/incognitochain/incognito-chain/database/lvdb"
@@ -72,6 +73,21 @@ func TestDb_Base(t *testing.T) {
 		has, err = db.HasValue([]byte("a"))
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
+
+		batchData := []database.BatchData{}
+		batchData = append(batchData, database.BatchData{
+			Key:   []byte("abc1"),
+			Value: []byte("abc1"),
+		})
+		batchData = append(batchData, database.BatchData{
+			Key:   []byte("abc2"),
+			Value: []byte("abc2"),
+		})
+		err = db.PutBatch(batchData)
+		assert.Equal(t, err, nil)
+		v, err := db.Get([]byte("abc2"))
+		assert.Equal(t, err, nil)
+		assert.Equal(t, "abc2", string(v))
 	} else {
 		t.Error("DB is not open")
 	}
@@ -93,7 +109,7 @@ func TestDb_StoreShardBlock(t *testing.T) {
 
 		// test Fetch block
 		fail, err := db.FetchBlock(common.Hash{})
-		assert.NotEqual(t, nil, err)
+		assert.Equal(t, nil, err)
 		assert.Equal(t, 0, len(fail))
 		blockInBytes, err := db.FetchBlock(*block.Hash())
 		assert.Equal(t, err, nil)
@@ -211,13 +227,26 @@ func TestDb_StoreCrossShardNextHeight(t *testing.T) {
 		err := db.StoreCrossShardNextHeight(0, 1, 1, 2)
 		assert.Equal(t, err, nil)
 
+		err = db.StoreCrossShardNextHeight(0, 1, 2, 0)
+		assert.Equal(t, err, nil)
+
 		val, err := db.FetchCrossShardNextHeight(0, 1, 1)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, uint64(val), uint64(2))
 
-		//err = db.RestoreCrossShardNextHeights(0, 1, 2)
-		// TODO: 0xbahamooth\
-		//assert.Equal(t, err, nil)
+		err = db.StoreCrossShardNextHeight(0, 1, 2, 4)
+		assert.Equal(t, err, nil)
+
+		err = db.StoreCrossShardNextHeight(0, 1, 4, 0)
+		assert.Equal(t, err, nil)
+
+		err = db.RestoreCrossShardNextHeights(0, 1, 2)
+		assert.Equal(t, err, nil)
+
+		val, err = db.FetchCrossShardNextHeight(0, 1, 2)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, uint64(val), uint64(0))
+
 	} else {
 		t.Error("DB is not open")
 	}
@@ -253,6 +282,10 @@ func TestDb_StoreTxIndex(t *testing.T) {
 		}
 		assert.Equal(t, blockHash, *block.Hash())
 		assert.Equal(t, index, 1)
+
+		err = db.DeleteTransactionIndex(*block.Body.Transactions[1].Hash())
+		assert.Equal(t, err, nil)
+
 	} else {
 		t.Error("DB is not open")
 	}
@@ -481,8 +514,10 @@ func TestDb_StoreOutputCoins(t *testing.T) {
 		outputCoins := make([][]byte, 0)
 		cm1 := []byte{0, 1}
 		cm2 := []byte{0, 2}
+		cm3 := []byte{0, 3}
 		outputCoins = append(outputCoins, cm1)
 		outputCoins = append(outputCoins, cm2)
+		outputCoins = append(outputCoins, cm3)
 		tokenID := common.Hash{}
 		publicKey := common.Hash{}
 		err := db.StoreOutputCoins(tokenID, publicKey.GetBytes(), outputCoins, 1)
@@ -490,7 +525,10 @@ func TestDb_StoreOutputCoins(t *testing.T) {
 
 		data, err := db.GetOutcoinsByPubkey(tokenID, publicKey.GetBytes(), 1)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, len(data), 2)
+		assert.NotEqual(t, 2, len(data))
+		assert.Equal(t, 3, len(data))
+		err = db.DeleteOutputCoin(tokenID, publicKey.GetBytes(), outputCoins, 1)
+		assert.Equal(t, err, nil)
 
 	} else {
 		t.Error("DB is not open")
@@ -507,16 +545,16 @@ func TestDb_StoreSNDerivators(t *testing.T) {
 		snd = append(snd, snd2)
 		tokenID := common.Hash{}
 
-		err := db.StoreSNDerivators(tokenID, snd, 0)
+		err := db.StoreSNDerivators(tokenID, snd, 1)
 		assert.Equal(t, err, nil)
 
-		has, err := db.HasSNDerivator(tokenID, snd1, 0)
-		assert.Equal(t, err, nil)
-		assert.Equal(t, has, true)
+		has, err := db.HasSNDerivator(tokenID, snd1, 1)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, true, has)
 
 		err = db.CleanSNDerivator()
 		assert.Equal(t, err, nil)
-		has, err = db.HasSerialNumber(tokenID, snd2, 0)
+		has, err = db.HasSerialNumber(tokenID, snd2, 1)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, has, false)
 	} else {
@@ -652,6 +690,9 @@ func TestDb_StorePrivacyCustomTokenCrossShard(t *testing.T) {
 
 	has := db.PrivacyCustomTokenIDCrossShardExisted(tokenID)
 	assert.Equal(t, true, has)
+
+	err = db.DeletePrivacyCustomTokenCrossShard(tokenID)
+	assert.Equal(t, nil, err)
 }
 
 func TestDb_StoreIncomingCrossShard(t *testing.T) {
@@ -664,6 +705,9 @@ func TestDb_StoreIncomingCrossShard(t *testing.T) {
 	height, err := db.GetIncomingCrossShard(0, 1, common.Hash{})
 	assert.Equal(t, nil, err)
 	assert.Equal(t, uint64(1000), uint64(height))
+
+	err = db.DeleteIncomingCrossShard(0, 1, common.Hash{})
+	assert.Equal(t, nil, err)
 }
 
 func TestDb_StoreAcceptedShardToBeacon(t *testing.T) {

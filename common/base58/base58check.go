@@ -21,9 +21,9 @@ var ErrInvalidFormat = errors.New("invalid format: version and/or checksum bytes
 // ChecksumFirst4Bytes receives data in bytes array
 // and returns a checksum which is 4 first bytes of hashing of data
 func ChecksumFirst4Bytes(data []byte) (ckSum []byte) {
-	if len(data) == 0 {
+	/*if len(data) == 0 {
 		return []byte{}
-	}
+	}*/
 	ckSum = make([]byte, common.CheckSumLen)
 	h2 := common.HashB(data)
 	copy(ckSum[:], h2[:4])
@@ -35,9 +35,9 @@ type Base58Check struct {
 
 // Encode prepends a version byte and appends a four byte checksum.
 func (self Base58Check) Encode(input []byte, version byte) string {
-	if len(input) == 0 {
+	/*if len(input) == 0 {
 		return ""
-	}
+	}*/
 	b := make([]byte, 0, 1+len(input)+common.CheckSumLen)
 	b = append(b, version)
 	b = append(b, input[:]...)
@@ -48,9 +48,9 @@ func (self Base58Check) Encode(input []byte, version byte) string {
 
 // Decode decodes a string that was encoded with Encode and verifies the checksum.
 func (self Base58Check) Decode(input string) (result []byte, version byte, err error) {
-	if len(input) == 0{
+	/*if len(input) == 0 {
 		return []byte{}, 0, errors.New("Input to decode is empty")
-	}
+	}*/
 
 	decoded := Base58{}.Decode(input)
 	if len(decoded) < 5 {
