@@ -218,6 +218,7 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 	Cbyte := X.Compress()
 	Cbyte = append(Cbyte, R.Compress()...)
 	Cbyte = append(Cbyte, data...)
+	Cbyte = common.HashB(Cbyte)
 	C := big.NewInt(0)
 	C.SetBytes(Cbyte)
 	C.Mod(C, Curve.Params().N)

@@ -7,8 +7,11 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/pkg/errors"
+	"errors"
 )
+
+var InvalidXCoordErr = errors.New("X is not an abscissa of a point on the elliptic curve")
+var IsNotAnEllipticPointErr = errors.New("the point is not an elliptic point on P256 curve")
 
 // The NIST curve P-256 will be used in the whole protocol
 // https://csrc.nist.gov/publications/detail/fips/186/3/archive/2009-06-25
@@ -26,7 +29,10 @@ func (point *EllipticPoint) Zero() *EllipticPoint {
 	return point
 }
 
-// UnmarshalJSON returns an elliptic point from a byte array encoding for that point
+// UnmarshalJSON (EllipticPoint) receives bytes array of elli[tic point (it was be MarshalJSON before),
+// json.Unmarshal the bytes array to string
+// base58 check decode that string to bytes array
+// and decompress the bytes array to elliptic point
 func (point *EllipticPoint) UnmarshalJSON(data []byte) error {
 	dataStr := ""
 	_ = json.Unmarshal(data, &dataStr)
@@ -38,7 +44,9 @@ func (point *EllipticPoint) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// MarshalJSON returns a byte array encoding for an elliptic point
+// MarshalJSON (EllipticPoint) compresses elliptic point to bytes array,
+// base58 check encode that bytes array into string
+// json.Marshal the string
 func (point EllipticPoint) MarshalJSON() ([]byte, error) {
 	data := point.Compress()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
@@ -55,16 +63,18 @@ func (point *EllipticPoint) ComputeYCoord() error {
 
 	// compute sqrt(x^3 - 3*x + B) mod p
 	// https://bitcointalk.org/index.php?topic=162805.msg1712294#msg1712294
-	point.Y = new(big.Int).Exp(xCube, PAdd1Div4(Curve.Params().P), Curve.Params().P)
+	tmpY := new(big.Int).Exp(xCube, PAdd1Div4(Curve.Params().P), Curve.Params().P)
 
 	// check if y is a square root of x^3 - 3*x + B.
-	ySquared := new(big.Int).Mul(point.Y, point.Y)
+	ySquared := new(big.Int).Mul(tmpY, tmpY)
 	ySquared.Mod(ySquared, Curve.Params().P)
 
 	// check if (X, Y) is a point on the curve
 	if ySquared.Cmp(xCube) != 0 {
-		return errors.New("X is not an abscissa of a point on the elliptic curve")
+		return InvalidXCoordErr
 	}
+
+	point.Y = tmpY
 	return nil
 }
 
@@ -72,7 +82,7 @@ func (point *EllipticPoint) ComputeYCoord() error {
 func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 	// check if point is on the curve
 	if !Curve.IsOnCurve(point.X, point.Y) {
-		return nil, errors.New("The input point is not an elliptic point")
+		return nil, IsNotAnEllipticPointErr
 	}
 
 	resPoint := new(EllipticPoint).Zero()
@@ -85,7 +95,8 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 	return resPoint, nil
 }
 
-// Randomize generates a random elliptic point
+// Randomize generates a random elliptic point on P256 curve
+// the elliptic point must be not a double point (which is the point has order is two)
 func (point *EllipticPoint) Randomize() {
 	for {
 		point.X = RandScalar()
@@ -108,7 +119,7 @@ func (point EllipticPoint) IsSafe() bool {
 	return !doublePoint.IsEqual(new(EllipticPoint).Zero())
 }
 
-// Compress compresses key from 64 bytes to PointBytesLenCompressed bytes
+// Compress compresses point from 64 bytes to CompressedPointSize bytes (33 bytes)
 func (point EllipticPoint) Compress() []byte {
 	if Curve.IsOnCurve(point.X, point.Y) {
 		b := make([]byte, 0, CompressedPointSize)

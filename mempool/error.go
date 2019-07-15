@@ -11,15 +11,18 @@ const (
 	RejectInvalidTx
 	RejectSansityTx
 	RejectSalaryTx
-	RejectDuplicateStakeTx
+	RejectDuplicateStakePubkey
 	RejectDuplicateInitTokenTx
 	RejectVersion
 	RejectInvalidTxType
 	RejectDoubleSpendWithMempoolTx
+	RejectDoubleSpendWithBlockchainTx
 	RejectInvalidFee
 	RejectInvalidSize
 	CanNotCheckDoubleSpend
 	DatabaseError
+	MarshalError
+	UnmarshalError
 	ShardToBeaconBoolError
 	DuplicateBlockError
 	OldBlockError
@@ -27,30 +30,35 @@ const (
 	UnexpectedTransactionError
 	TransactionNotFoundError
 	RejectTestTransactionError
+	WrongShardIDError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	Message string
 }{
-	RejectDuplicateTx:          {-1000, "Reject duplicate tx"},
-	RejectInvalidTx:            {-1001, "Reject invalid tx"},
-	RejectSansityTx:            {-1002, "Reject not sansity tx"},
-	RejectSalaryTx:             {-1003, "Reject salary tx"},
-	RejectInvalidFee:           {-1004, "Reject invalid fee"},
-	RejectVersion:              {-1005, "Reject invalid version"},
-	CanNotCheckDoubleSpend:     {-1006, "Can not check double spend"},
-	DatabaseError:              {-1007, "Database Error"},
-	ShardToBeaconBoolError:     {-1007, "ShardToBeaconBool Error"},
-	RejectDuplicateStakeTx:     {-1008, "Reject Duplicate Stake Error"},
-	DuplicateBlockError:        {-1009, "Duplicate Block Error"},
-	OldBlockError:              {-1010, "Old Block Error"},
-	MaxPoolSizeError:           {-1011, "Max Pool Size Error"},
-	UnexpectedTransactionError: {-1012, "Unexpected Transaction Error"},
-	TransactionNotFoundError:   {-1013, "Transaction Not Found Error"},
-	RejectTestTransactionError: {-1014, "Reject Test Transaction Error"},
-	RejectInvalidTxType: {-1015, "Reject Invalid Tx Type"},
-	RejectDoubleSpendWithMempoolTx: {-1016, "Reject Double Spend With Other Tx in mempool"},
+	RejectDuplicateTx:                 {-1000, "Reject duplicate tx"},
+	RejectInvalidTx:                   {-1001, "Reject invalid tx"},
+	RejectSansityTx:                   {-1002, "Reject not sansity tx"},
+	RejectSalaryTx:                    {-1003, "Reject salary tx"},
+	RejectInvalidFee:                  {-1004, "Reject invalid fee"},
+	RejectVersion:                     {-1005, "Reject invalid version"},
+	CanNotCheckDoubleSpend:            {-1006, "Can not check double spend"},
+	DatabaseError:                  {-1007, "Database Error"},
+	ShardToBeaconBoolError:         {-1007, "ShardToBeaconBool Error"},
+	RejectDuplicateStakePubkey:     {-1008, "Reject Duplicate Stake Error"},
+	DuplicateBlockError:            {-1009, "Duplicate Block Error"},
+	OldBlockError:                  {-1010, "Old Block Error"},
+	MaxPoolSizeError:                  {-1011, "Max Pool Size Error"},
+	UnexpectedTransactionError:        {-1012, "Unexpected Transaction Error"},
+	TransactionNotFoundError:          {-1013, "Transaction Not Found Error"},
+	RejectTestTransactionError:        {-1014, "Reject Test Transaction Error"},
+	RejectInvalidTxType:               {-1015, "Reject Invalid Tx Type"},
+	RejectDoubleSpendWithMempoolTx:    {-1016, "Reject Double Spend With Other Tx in mempool"},
+	RejectDoubleSpendWithBlockchainTx: {-1017, "Reject Double Spend With Current Blockchain"},
+	WrongShardIDError:                 {-1018, "Reject Cross Shard Block With Same ShardID in Pool"},
+	MarshalError:                      {-1019, "Marshal Error"},
+	UnmarshalError:                    {-1020, "Unmarshal Error"},
 }
 
 type MempoolTxError struct {

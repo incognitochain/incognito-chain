@@ -5,9 +5,9 @@ import (
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -178,7 +178,7 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 	}
 	voutsAmount := int64(0)
-	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	tokenParams.Receiver, voutsAmount, _ = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
