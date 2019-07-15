@@ -3,6 +3,7 @@ package mubft
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -98,7 +99,12 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestShardToBeaconPoolState())
-		go common.AnalyzeTimeSeriesBeaconBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement: metrics.BeaconBlock,
+			metrics.MeasurementValue: float64(time.Since(start).Seconds()),
+			metrics.Tag: metrics.NodeIDTag,
+			metrics.TagValue: protocol.EngineCfg.UserKeySet.PaymentAddress.String(),
+		})
 		elasped = time.Since(start)
 		if err != nil {
 			Logger.log.Error(err)
@@ -130,8 +136,12 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	} else {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestCrossShardPoolState(), protocol.RoundData.MinBeaconHeight, start)
-		go common.AnalyzeTimeSeriesShardBlockMetric(protocol.EngineCfg.UserKeySet.PaymentAddress.String(), float64(time.Since(start).Seconds()))
-
+		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+			metrics.Measurement: metrics.ShardBlock,
+			metrics.MeasurementValue: float64(time.Since(start).Seconds()),
+			metrics.Tag: metrics.NodeIDTag,
+			metrics.TagValue: protocol.EngineCfg.UserKeySet.PaymentAddress.String(),
+		})
 		elasped = time.Since(start)
 		if err != nil {
 			Logger.log.Error(err)

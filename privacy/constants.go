@@ -26,9 +26,15 @@ const (
 	SigNoPrivacySize = 64
 	SigPrivacySize   = 96
 
-	PrivateKeySize = 32
+	BigIntSize          = 32 // bytes
+	Uint64Size          = 8  // bytes
+	PrivateKeySize      = 32 // bytes
+	PublicKeySize       = 33 // bytes
+	TransmissionKeySize = 33 //bytes
+	ReceivingKeySize    = 32 // bytes
+	PaymentAddressSize = 66 // bytes
 
-	BigIntSize    = 32 // bytes
-	Uint64Size    = 8  // bytes
-	PublicKeySize = 33
+	ElGamalCiphertextSize = 66 // bytes
+	SchnMultiSigSize = 65 // bytes
+
 )

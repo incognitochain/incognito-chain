@@ -5,10 +5,13 @@ type wsHandler func(*WsServer, interface{}, string, chan RpcSubResult, <-chan st
 
 // Commands valid for normal user
 var HttpHandler = map[string]httpHandler{
-
+	//Test Rpc Server
+	testHttpServer: (*HttpServer).handleTestHttpServer,
+	//profiling
 	startProfiling: (*HttpServer).handleStartProfiling,
 	stopProfiling:  (*HttpServer).handleStopProfiling,
 	// node
+	getNodeRole:              (*HttpServer).handleGetNodeRole,
 	getNetworkInfo:           (*HttpServer).handleGetNetWorkInfo,
 	getConnectionCount:       (*HttpServer).handleGetConnectionCount,
 	getAllPeers:              (*HttpServer).handleGetAllPeers,
@@ -28,6 +31,7 @@ var HttpHandler = map[string]httpHandler{
 	getShardToBeaconPoolState:   (*HttpServer).handleGetShardToBeaconPoolState,
 	getCrossShardPoolState:      (*HttpServer).handleGetCrossShardPoolState,
 	getNextCrossShard:           (*HttpServer).handleGetNextCrossShard,
+	getFeeEstimator:             (*HttpServer).handleGetFeeEstimator,
 	// block
 	getBestBlock:        (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:    (*HttpServer).handleGetBestBlockHash,

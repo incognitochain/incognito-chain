@@ -96,7 +96,7 @@ func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
 		}
 		fmt.Printf("[db] storeBurning: %s\n", inst)
 
-		txID, err := common.NewHashFromStr(inst[5])
+		txID, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
 			fmt.Printf("[db] storeBurning err: %v\n", err)
 			return err

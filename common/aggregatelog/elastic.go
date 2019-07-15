@@ -12,7 +12,7 @@ import (
 
 const LOG_AGGREGATION_INDEX = "log_aggregation"
 
-type Message struct {
+type MessageData struct {
 	Time     time.Time `json:"time"`
 	LogLevel string    `json:"level"`
 	Message  string    `json:"message"`
@@ -121,7 +121,7 @@ func SendMessageToElastic(message, level string) error {
 		return validErr
 	}
 
-	messageObject := Message{
+	messageObject := MessageData{
 		Time:     time.Now(),
 		Message:  message,
 		LogLevel: level,

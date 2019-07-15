@@ -63,10 +63,10 @@ func decodeSwapConfirmInst(inst []string) []byte {
 func decodeBurningConfirmInst(inst []string) []byte {
 	metaType := []byte(inst[0])
 	shardID := []byte(inst[1])
-	tokenID, _ := common.NewHashFromStr(inst[2])
+	tokenID, _ := common.Hash{}.NewHashFromStr(inst[2])
 	remoteAddr, _ := decodeRemoteAddr(inst[3])
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
-	txID, _ := common.NewHashFromStr(inst[5])
+	txID, _ := common.Hash{}.NewHashFromStr(inst[5])
 	height, _, _ := base58.Base58Check{}.Decode(inst[6])
 	fmt.Printf("[db] decoded BurningConfirm inst\n")
 	fmt.Printf("[db]\tamount: %x\n[db]\tremoteAddr: %x\n[db]\ttokenID: %x\n", amount, remoteAddr, tokenID)

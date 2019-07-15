@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 const (
@@ -73,7 +73,7 @@ func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 stri
 	rpcServer.peersMtx.Lock()
 	defer rpcServer.peersMtx.Unlock()
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
-		err := cashec.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
+		err := incognitokey.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
 		if err == nil {
 			rpcServer.Peers[publicKeyB58] = &Peer{
 				ID:         rpcServer.CombineID(rawAddress, publicKeyB58),
