@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"io"
 	"log"
 	"math/big"
@@ -14,7 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	
+
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/pubsub"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -105,7 +106,7 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.BestState.Beacon.Params = make(map[string]string)
 	bc.BestState.Beacon.ShardCommittee = make(map[byte][]string)
 	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]string)
-	bc.Synker = synker{
+	bc.Synker = Synker{
 		blockchain: bc,
 		cQuit:      bc.cQuitSync,
 	}
@@ -1402,11 +1403,11 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 }
 
 func CalculateNumberOfByteToRead(amountBytes int) []byte {
-	var result = make([]byte,8)
+	var result = make([]byte, 8)
 	binary.LittleEndian.PutUint32(result, uint32(amountBytes))
 	return result
 }
-func GetNumberOfByteToRead(value []byte) (int,error) {
+func GetNumberOfByteToRead(value []byte) (int, error) {
 	var result uint32
 	err := binary.Read(bytes.NewBuffer(value), binary.LittleEndian, &result)
 	if err != nil {
@@ -1419,34 +1420,34 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 	if err != nil {
 		return err
 	}
-		shardBestState := &BestStateShard{}
-		err = json.Unmarshal(bestStateBytes, shardBestState)
-		bestShardHeight := shardBestState.ShardHeight
-		var i uint64
-		for i = 1;i < bestShardHeight; i++{
-			block, err := blockchain.GetShardBlockByHeight(i, shardID)
-			if err != nil {
-				return err
-			}
-			data, err := json.Marshal(block)
-			if err != nil {
-				return err
-			}
-			_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
-			if err != nil {
-				return err
-			}
-			_, err = writer.Write(data)
-			if err != nil {
-				return err
-			}
-			if i % 100 == 0 {
-				log.Printf("Backup Shard %+v Block %+v", block.Header.ShardID, i)
-			}
-			if i == bestShardHeight - 1 {
-				log.Printf( "Finish Backup Shard %+v with Block %+v", block.Header.ShardID, i)
-			}
+	shardBestState := &BestStateShard{}
+	err = json.Unmarshal(bestStateBytes, shardBestState)
+	bestShardHeight := shardBestState.ShardHeight
+	var i uint64
+	for i = 1; i < bestShardHeight; i++ {
+		block, err := blockchain.GetShardBlockByHeight(i, shardID)
+		if err != nil {
+			return err
 		}
+		data, err := json.Marshal(block)
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(data)
+		if err != nil {
+			return err
+		}
+		if i%100 == 0 {
+			log.Printf("Backup Shard %+v Block %+v", block.Header.ShardID, i)
+		}
+		if i == bestShardHeight-1 {
+			log.Printf("Finish Backup Shard %+v with Block %+v", block.Header.ShardID, i)
+		}
+	}
 	return nil
 }
 func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
@@ -1458,7 +1459,7 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 	err = json.Unmarshal(bestStateBytes, beaconBestState)
 	bestBeaconHeight := beaconBestState.BeaconHeight
 	var i uint64
-	for i = 1;i < bestBeaconHeight; i++ {
+	for i = 1; i < bestBeaconHeight; i++ {
 		block, err := blockchain.GetBeaconBlockByHeight(i)
 		if err != nil {
 			return err
@@ -1476,11 +1477,11 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 		if err != nil {
 			return err
 		}
-		if i % 100 == 0 {
-			log.Printf( "Backup Beacon Block %+v", i)
+		if i%100 == 0 {
+			log.Printf("Backup Beacon Block %+v", i)
 		}
-		if i == bestBeaconHeight - 1 {
-			log.Printf( "Finish Backup Beacon with Block %+v", i)
+		if i == bestBeaconHeight-1 {
+			log.Printf("Finish Backup Beacon with Block %+v", i)
 		}
 	}
 	return nil
