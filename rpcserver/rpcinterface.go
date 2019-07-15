@@ -11,6 +11,7 @@ var HttpHandler = map[string]httpHandler{
 	startProfiling: (*HttpServer).handleStartProfiling,
 	stopProfiling:  (*HttpServer).handleStopProfiling,
 	// node
+	getNodeRole:              (*HttpServer).handleGetNodeRole,
 	getNetworkInfo:           (*HttpServer).handleGetNetWorkInfo,
 	getConnectionCount:       (*HttpServer).handleGetConnectionCount,
 	getAllConnectedPeers:     (*HttpServer).handleGetAllConnectedPeers,
@@ -31,6 +32,7 @@ var HttpHandler = map[string]httpHandler{
 	getShardToBeaconPoolState:   (*HttpServer).handleGetShardToBeaconPoolState,
 	getCrossShardPoolState:      (*HttpServer).handleGetCrossShardPoolState,
 	getNextCrossShard:           (*HttpServer).handleGetNextCrossShard,
+	getFeeEstimator:             (*HttpServer).handleGetFeeEstimator,
 	// block
 	getBestBlock:        (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:    (*HttpServer).handleGetBestBlockHash,

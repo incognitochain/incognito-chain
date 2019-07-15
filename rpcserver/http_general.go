@@ -75,6 +75,10 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetNodeRole(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return httpServer.config.Server.GetNodeRole(), nil
+}
+
 func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetNetworkInfoResult{}
 
@@ -493,6 +497,10 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	}
 	Logger.log.Infof("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetFeeEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return httpServer.config.FeeEstimator, nil
 }
 
 // handleGetActiveShards - return active shard num
