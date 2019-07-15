@@ -4,13 +4,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-	
+
 	"github.com/incognitochain/incognito-chain/pubsub"
-	
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/patrickmn/go-cache"
-	
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/peer"
@@ -36,6 +36,7 @@ type NetSync struct {
 	config *NetSyncConfig
 	Cache  *NetSyncCache
 }
+
 type NetSyncConfig struct {
 	BlockChain            *blockchain.BlockChain
 	ChainParam            *blockchain.Params
@@ -59,6 +60,7 @@ type NetSyncConfig struct {
 		OnBFTMsg(wire.Message)
 	}
 }
+
 type NetSyncCache struct {
 	blockCache    *cache.Cache
 	txCache       *cache.Cache
@@ -336,6 +338,7 @@ func (netSync *NetSync) QueueBlock(_ *peer.Peer, msg wire.Message, done chan str
 	}
 	netSync.cMessage <- msg
 }
+
 func (netSync *NetSync) QueueGetBlockShard(peer *peer.Peer, msg *wire.MessageGetBlockShard, done chan struct{}) {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&netSync.shutdown) != 0 {
@@ -371,6 +374,7 @@ func (netSync *NetSync) HandleMessageBeaconBlock(msg *wire.MessageBlockBeacon) {
 	}
 	//}
 }
+
 func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 	Logger.log.Info("Handling new message BlockShard")
 	if isAdded := netSync.HandleCacheBlock("s" + msg.Block.Header.Hash().String()); !isAdded {
@@ -378,6 +382,7 @@ func (netSync *NetSync) HandleMessageShardBlock(msg *wire.MessageBlockShard) {
 		return
 	}
 }
+
 func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	Logger.log.Info("Handling new message CrossShard")
 	if isAdded := netSync.HandleCacheBlock("c" + msg.Block.Header.Hash().String()); !isAdded {
@@ -385,6 +390,7 @@ func (netSync *NetSync) HandleMessageCrossShard(msg *wire.MessageCrossShard) {
 	}
 
 }
+
 func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeacon) {
 	Logger.log.Info("Handling new message ShardToBeacon")
 	if isAdded := netSync.HandleCacheBlock("s2b" + msg.Block.Header.Hash().String()); !isAdded {
@@ -466,6 +472,7 @@ func (netSync *NetSync) HandleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 		netSync.GetBlkShardByHeightAndSend(peerID, msg.FromPool, 1, msg.BySpecificHeight, msg.FromShardID, msg.BlkHeights, msg.ToShardID)
 	}
 }
+
 func (netSync *NetSync) HandleCacheBlock(blockHash string) bool {
 	netSync.Cache.blockCacheMtx.Lock()
 	defer netSync.Cache.blockCacheMtx.Unlock()

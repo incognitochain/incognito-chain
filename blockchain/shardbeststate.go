@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -190,7 +190,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 
 	blkHash := block.Header.Hash()
 	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	err = cashec.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
+	err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
 	if err != nil {
 		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
 	}
