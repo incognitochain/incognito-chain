@@ -169,6 +169,7 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	var (
 		isTransaction bool
 		isBlock       bool
+		isBeaconBlock bool
 	)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
@@ -187,6 +188,18 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	_, _, err := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
 	if err != nil {
 		isBlock = false
+		_, _, err = httpServer.config.BlockChain.GetBeaconBlockByHash(*hash)
+		if err != nil {
+			isBeaconBlock = false
+		} else {
+			result := jsonresult.HashValueDetail{
+				IsBlock:       isBlock,
+				IsTransaction: false,
+				IsBeaconBlock: true,
+			}
+			Logger.log.Infof("handleCheckHashValue result: %+v", result)
+			return result, nil
+		}
 	} else {
 		isBlock = true
 		result := jsonresult.HashValueDetail{
@@ -211,6 +224,7 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	result := jsonresult.HashValueDetail{
 		IsBlock:       isBlock,
 		IsTransaction: isTransaction,
+		IsBeaconBlock: isBeaconBlock,
 	}
 	Logger.log.Infof("handleCheckHashValue result: %+v", result)
 	return result, nil
