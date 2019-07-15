@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -916,16 +917,24 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	var err error
 	if blockchain.config.MemCache != nil {
 		key := make([]byte, 0)
-		key = append(key, []byte("listoutputcoin_")...)
+		key = append(key, []byte("-")...)
+		key = append(key, []byte("listoutputcoin")...)
+		key = append(key, []byte("-")...)
 		key = append(key, keyset.PaymentAddress.Pk[:]...)
+		key = append(key, []byte("-")...)
+		key = append(key, tokenID.GetBytes()...)
+		key = append(key, shardID)
+		// get from cache
 		cachedData, _ := blockchain.config.MemCache.Get(key)
 		if cachedData != nil {
 			err = json.Unmarshal(cachedData, &outCointsInBytes)
 		} else {
+			// cached data is nil
 			outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
 			cachedData, err = json.Marshal(outCointsInBytes)
 			if err == nil {
-				blockchain.config.MemCache.Put(key, cachedData)
+				// cache 1 day for result
+				blockchain.config.MemCache.PutExpired(key, cachedData, 1*24*60*60*time.Millisecond)
 			}
 		}
 	}
