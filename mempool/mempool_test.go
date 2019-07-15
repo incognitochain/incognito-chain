@@ -136,6 +136,7 @@ var _ = func() (_ struct{}) {
 func ResetMempoolTest() {
 	tp.pool = make(map[common.Hash]*TxDesc)
 	tp.poolSerialNumbersHashList = make(map[common.Hash][]common.Hash)
+	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolTokenID = make(map[common.Hash]string)
 	tp.PoolCandidate = make(map[common.Hash]string)
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
@@ -699,8 +700,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err1 == nil {
 		t.Fatal("Expect max version error error but no error")
 	} else {
-		if err1.(MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+		if err1.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err1)
 		}
 	}
 	tx1.(*transaction.Tx).Version = 1
@@ -712,8 +713,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err2 == nil {
 		t.Fatal("Expect size error error but no error")
 	} else {
-		if err2.(MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+		if err2.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err2)
 		}
 	}
 	common.MaxTxSize = 100
@@ -725,8 +726,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err3 == nil {
 		t.Fatal("Expect type error error but no error")
 	} else {
-		if err3.(MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+		if err3.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err3)
 		}
 	}
 	tx3.(*transaction.Tx).Type = common.TxNormalType
@@ -738,8 +739,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err4 == nil {
 		t.Fatal("Expect type error error but no error")
 	} else {
-		if err4.(MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+		if err4.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err4)
 		}
 	}
 	tx4.(*transaction.Tx).LockTime = tempLockTime
@@ -754,8 +755,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err5 == nil {
 		t.Fatal("Expect type error error but no error")
 	} else {
-		if err5.(MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
+		if err5.(*MempoolTxError).Code != ErrCodeMessage[RejectSansityTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err5)
 		}
 	}
 	tx4.(*transaction.Tx).Info = []byte{}
@@ -766,8 +767,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err6 == nil {
 		t.Fatal("Expect reject duplicate error but no error")
 	} else {
-		if err6.(MempoolTxError).Code != ErrCodeMessage[RejectDuplicateTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateTx], err)
+		if err6.(*MempoolTxError).Code != ErrCodeMessage[RejectDuplicateTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateTx], err6)
 		}
 	}
 	// Check Condition 3: Salary Transaction
@@ -776,8 +777,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err7 == nil {
 		t.Fatal("Expect salary error error but no error")
 	} else {
-		if err7.(MempoolTxError).Code != ErrCodeMessage[RejectSalaryTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSalaryTx], err)
+		if err7.(*MempoolTxError).Code != ErrCodeMessage[RejectSalaryTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSalaryTx], err7)
 		}
 	}
 	// Check Condition 4: Validate fee
@@ -786,8 +787,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err8 == nil {
 		t.Fatal("Expect fee error error but no error")
 	} else {
-		if err8.(MempoolTxError).Code != ErrCodeMessage[RejectInvalidFee].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectInvalidFee], err)
+		if err8.(*MempoolTxError).Code != ErrCodeMessage[RejectInvalidFee].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectInvalidFee], err8)
 		}
 	}
 	tx5.(*transaction.Tx).Type = common.TxNormalType
@@ -798,8 +799,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err9 == nil {
 		t.Fatal("Expect double spend error error but no error")
 	} else {
-		if err9.(MempoolTxError).Code != ErrCodeMessage[RejectDoubleSpendWithMempoolTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDoubleSpendWithMempoolTx], err)
+		if err9.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err9)
 		}
 	}
 	// Check Condition 5: Check double spend with mempool
@@ -809,10 +810,12 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err10 == nil {
 		t.Fatal("Expect double spend in mempool error error but no error")
 	} else {
-		if err10.(MempoolTxError).Code != ErrCodeMessage[RejectDoubleSpendWithMempoolTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDoubleSpendWithMempoolTx], err)
+		if err10.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err10)
 		}
 	}
+	//TODO: Check double spend error
+
 	// check Condition 7: Check double spend with blockchain
 	ResetMempoolTest()
 	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
@@ -828,7 +831,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err11 == nil {
 		t.Fatal("Expect double spend with blockchain error error but no error")
 	} else {
-		if err11.(MempoolTxError).Code != ErrCodeMessage[RejectDoubleSpendWithBlockchainTx].Code {
+		if err11.(*MempoolTxError).Code != ErrCodeMessage[RejectDoubleSpendWithBlockchainTx].Code {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDoubleSpendWithBlockchainTx], err)
 		}
 	}
@@ -839,7 +842,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err12 == nil {
 		t.Fatal("Expect duplicate init token error error but no error")
 	} else {
-		if err12.(MempoolTxError).Code != ErrCodeMessage[RejectDuplicateInitTokenTx].Code {
+		if err12.(*MempoolTxError).Code != ErrCodeMessage[RejectDuplicateInitTokenTx].Code {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateInitTokenTx], err)
 		}
 	}
@@ -850,7 +853,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err13 == nil {
 		t.Fatal("Expect duplicate staking pubkey error error but no error")
 	} else {
-		if err13.(MempoolTxError).Code != ErrCodeMessage[RejectDuplicateStakePubkey].Code {
+		if err13.(*MempoolTxError).Code != ErrCodeMessage[RejectDuplicateStakePubkey].Code {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateStakePubkey], err)
 		}
 	}
@@ -858,7 +861,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err13 == nil {
 		t.Fatal("Expect duplicate staking pubkey error error but no error")
 	} else {
-		if err13.(MempoolTxError).Code != ErrCodeMessage[RejectDuplicateStakePubkey].Code {
+		if err13.(*MempoolTxError).Code != ErrCodeMessage[RejectDuplicateStakePubkey].Code {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDuplicateStakePubkey], err)
 		}
 	}
@@ -1054,10 +1057,13 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	tp.maybeAcceptTransaction(txStakingBeacon, false, true)
 	tp.maybeAcceptTransaction(tx6, false, true)
 	if len(tp.pool) != 6 {
-		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.pool))
+		t.Fatalf("Expect 6 transaction from pool but get %+v", len(tp.pool))
 	}
 	if len(tp.poolSerialNumbersHashList) != 6 {
-		t.Fatalf("Expect 6 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
+		t.Fatalf("Expect 6 transaction from poolSerialNumbersHashList but get %+v", len(tp.poolSerialNumbersHashList))
+	}
+	if len(tp.poolSerialNumberHash) != 6 {
+		t.Fatalf("Expect 6 transaction from poolSerialNumberHash but get %+v", len(tp.poolSerialNumberHash))
 	}
 	if common.IndexOfStrInHashMap(stakingPublicKey, tp.PoolCandidate) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
@@ -1077,6 +1083,9 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	}
 	if len(tp.poolSerialNumbersHashList) != 0 {
 		t.Fatalf("Expect 0 transaction from mempool but get %+v", len(tp.poolSerialNumbersHashList))
+	}
+	if len(tp.poolSerialNumberHash) != 0 {
+		t.Fatalf("Expect 0 transaction from mempool but get %+v", len(tp.poolSerialNumberHash))
 	}
 	if common.IndexOfStrInHashMap(stakingPublicKey, tp.PoolCandidate) < 0 {
 		t.Fatalf("Expect %+v in pool but get %+v", stakingPublicKey, tp.PoolCandidate)
@@ -1143,7 +1152,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 	if err1 == nil {
 		t.Fatal("Expect unexpected transaction error error but no error")
 	} else {
-		if err1.(MempoolTxError).Code != ErrCodeMessage[UnexpectedTransactionError].Code {
+		if err1.(*MempoolTxError).Code != ErrCodeMessage[UnexpectedTransactionError].Code {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
 		}
 	}
@@ -1153,7 +1162,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 	if err2 == nil {
 		t.Fatal("Expect max pool size error error but no error")
 	} else {
-		if err2.(MempoolTxError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
+		if err2.(*MempoolTxError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
 		}
 	}
@@ -1162,7 +1171,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 	if err3 == nil {
 		t.Fatal("Expect max pool size error error but no error")
 	} else {
-		if err3.(MempoolTxError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
+		if err3.(*MempoolTxError).Code != ErrCodeMessage[MaxPoolSizeError].Code {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
 		}
 	}
