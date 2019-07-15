@@ -264,7 +264,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	db := httpServer.config.BlockChain.GetDatabase()
 	arrayParams := common.InterfaceSlice(params)
-	data := arrayParams[4].(map[string]interface{})
+	data := arrayParams[0].(map[string]interface{})
 	blockHash := rCommon.HexToHash(data["BlockHash"].(string))
 	txIdx := uint(data["TxIndex"].(float64))
 	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)

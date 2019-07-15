@@ -450,10 +450,6 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 			return err
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
-		case metadata.ContractingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 		case metadata.BurningRequestMeta:
 			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
@@ -528,10 +524,6 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		}
 
 		switch metaType {
-		case metadata.IssuingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
-		case metadata.ContractingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 		case metadata.BurningRequestMeta:
 			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
