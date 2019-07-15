@@ -23,7 +23,7 @@ const (
 )
 
 var ErrCodeMessage = map[int]struct {
-	code    int
+	Code    int
 	message string
 }{
 	// -1xxx driver
@@ -59,7 +59,7 @@ func (e DatabaseError) Error() string {
 func NewDatabaseError(key int, err error) *DatabaseError {
 	return &DatabaseError{
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
-		code:    ErrCodeMessage[key].code,
+		code:    ErrCodeMessage[key].Code,
 		message: ErrCodeMessage[key].message,
 	}
 }

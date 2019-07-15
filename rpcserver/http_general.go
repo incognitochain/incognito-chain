@@ -457,6 +457,10 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetFeeEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return httpServer.config.FeeEstimator, nil
+}
+
 // handleGetActiveShards - return active shard num
 func (httpServer *HttpServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetActiveShards params: %+v", params)
