@@ -843,6 +843,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectDoubleSpendWithMempoolTx], err10)
 		}
 	}
+	// check Condition 6: validate by it self
 	// check Condition 7: Check double spend with blockchain
 	ResetMempoolTest()
 	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
@@ -1278,4 +1279,3 @@ func TestTxPoolEmptyPool(t *testing.T) {
 		t.Fatal("Can't empty token id pool")
 	}
 }
-// TODO: test repalce tx
