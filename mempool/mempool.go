@@ -379,6 +379,23 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				}
 			}
 		}
+	case common.TxCustomTokenType:
+		{
+			{
+				// This is a normal tx -> only check like normal tx with PRV
+				limitFee := tp.config.FeeEstimator[shardID].limitFee
+				txNormal := tx.(*transaction.TxCustomToken)
+				if limitFee > 0 {
+					txFee := txNormal.GetTxFee()
+					ok := tx.CheckTransactionFee(limitFee)
+					if !ok {
+						err := MempoolTxError{}
+						err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
+						return err
+					}
+				}
+			}
+		}
 	default:
 		{
 			{
