@@ -109,27 +109,3 @@ func BuildCoinbaseTxByCoinID(
 	}
 	return nil, nil
 }
-
-func BuildCoinbaseTxs(
-	paymentAddresses []*privacy.PaymentAddress,
-	amounts []uint64,
-	producerPrivateKey *privacy.PrivateKey,
-	db database.DatabaseInterface,
-	metaList []metadata.Metadata,
-) ([]*Tx, error) {
-	txs := []*Tx{}
-	for i, paymentAddress := range paymentAddresses {
-		var meta metadata.Metadata
-		if len(metaList) == 0 {
-			meta = nil
-		} else {
-			meta = metaList[i]
-		}
-		tx, err := BuildCoinbaseTx(paymentAddress, amounts[i], producerPrivateKey, db, meta)
-		if err != nil {
-			return nil, err
-		}
-		txs = append(txs, tx)
-	}
-	return txs, nil
-}

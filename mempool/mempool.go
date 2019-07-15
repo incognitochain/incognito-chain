@@ -24,9 +24,9 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	BlockChain            *blockchain.BlockChain // Block chain of node
-	DataBase              database.DatabaseInterface
-	DataBaseMempool       databasemp.DatabaseInterface
+	BlockChain            *blockchain.BlockChain       // Block chain of node
+	DataBase              database.DatabaseInterface   // main database of blockchain
+	DataBaseMempool       databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
 	ChainParams           *blockchain.Params
 	FeeEstimator          map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
 	TxLifeTime            uint                   // Transaction life time in pool
@@ -86,12 +86,12 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.config.RoleInCommitteesEvent = subChanRole
 	tp.IsTest = false
 }
+
+// InitChannelMempool - init channel
 func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
 }
-func (tp *TxPool) InitDatabaseMempool(db databasemp.DatabaseInterface) {
-	tp.config.DataBaseMempool = db
-}
+
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
@@ -99,11 +99,14 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 		Logger.log.Critical("Turn off Mempool Persistence Database")
 	}
 }
-func (tp *TxPool) LoadOrResetDatabaseMP() {
+
+// LoadOrResetDatabaseMempool - Load and reset database of mempool when start node
+func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	if !tp.config.IsLoadFromMempool {
-		err := tp.ResetDatabaseMP()
+		err := tp.ResetDatabaseMempool()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
+			return err
 		} else {
 			Logger.log.Critical("Successfully Reset from database")
 		}
@@ -111,12 +114,15 @@ func (tp *TxPool) LoadOrResetDatabaseMP() {
 		txDescs, err := tp.LoadDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
+			return err
 		} else {
 			Logger.log.Criticalf("Successfully load %+v from database \n", len(txDescs))
 		}
 	}
-	//return []TxDesc{}
+	return nil
 }
+
+// createTxDescMempool - return an object TxDesc for mempool from original Tx
 func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
 	txDesc := &TxDesc{
 		Desc: metadata.TxDesc{
@@ -130,6 +136,7 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 	}
 	return txDesc
 }
+
 // ----------- transaction.MempoolRetriever's implementation -----------------
 func (tp *TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
 	return tp.poolSerialNumbersHashH
@@ -152,6 +159,7 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	}
 	return false
 }
+
 /*
 // add transaction into pool
 // #1: tx
@@ -162,7 +170,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	if isStore {
-		err := tp.AddTransactionToDatabaseMP(txHash, *txD)
+		err := tp.AddTransactionToDatabaseMempool(txHash, *txD)
 		if err != nil {
 			Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
 		} else {
@@ -191,6 +199,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 		if flag {
 			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
+				Logger.log.Info("Observe Transaction for ", shardID, txD.Desc.Tx.Hash().String())
 				temp.ObserveTransaction(txD)
 			}
 		}
@@ -232,7 +241,8 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 5. Validate with other txs in mempool
 6. Validate data in tx: privacy proof, metadata,...
 7. Validate tx with blockchain: douple spend, ...
-8. Check Duplicate stake public key in pool ONLY with staking transaction
+8. CustomInitToken: Check Custom Init Token try to init exist token ID
+9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 
 */
 func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
@@ -248,6 +258,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			txType = metrics.TxNormalNoPrivacy
 		}
 	}
+
 	// Condition 1: sanity data
 	now = time.Now()
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
@@ -261,7 +272,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition1,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
-	
+
 	// Condition 2: Don't accept the transaction if it already exists in the pool.
 	now = time.Now()
 	if tp.isTxInPool(txHash) {
@@ -280,6 +291,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition2,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+
 	// Condition 3: A standalone transaction must not be a salary transaction.
 	now = time.Now()
 	if tx.IsSalaryTx() {
@@ -293,15 +305,97 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition3,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+
 	// Condition 4: check fee of tx
 	now = time.Now()
-	limitFee := tp.config.FeeEstimator[shardID].limitFee
-	txFee := tx.GetTxFee()
-	ok := tx.CheckTransactionFee(limitFee)
-	if !ok {
-		err := MempoolTxError{}
-		err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
-		return err
+	switch tx.GetType() {
+	case common.TxCustomTokenPrivacyType:
+		{
+			txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
+			isPaidByPRV := false
+			isPaidPartiallyPRV := false
+			// check PRV element and pToken element
+			if txPrivacyToken.Tx.Proof != nil {
+				// tx contain PRV data -> check with PRV fee
+				limitFee := tp.config.FeeEstimator[shardID].limitFee
+				if limitFee > 0 {
+					if txPrivacyToken.GetTxFeeToken() == 0 { // paid all with PRV
+						ok := txPrivacyToken.CheckTransactionFee(limitFee)
+						if !ok {
+							err := MempoolTxError{}
+							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+								txHash.String(),
+								txPrivacyToken.Tx.GetTxFee(),
+								limitFee*txPrivacyToken.GetTxActualSize()))
+							return err
+						}
+						isPaidPartiallyPRV = false
+					} else {
+						// paid partial with PRV
+						ok := txPrivacyToken.Tx.CheckTransactionFee(limitFee)
+						if !ok {
+							err := MempoolTxError{}
+							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+								txHash.String(),
+								txPrivacyToken.Tx.GetTxFee(),
+								limitFee*txPrivacyToken.Tx.GetTxActualSize()))
+							return err
+						}
+						isPaidPartiallyPRV = true
+					}
+				}
+				isPaidByPRV = true
+			}
+			if txPrivacyToken.TxTokenPrivacyData.TxNormal.Proof != nil {
+				limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
+				if limitFeeToken > 0 {
+					if !isPaidByPRV {
+						// not paid anything by PRV
+						// -> check fee on total tx size(prv tx container + pToken tx)
+						ok := txPrivacyToken.CheckTransactionFee(limitFeeToken)
+						if !ok {
+							err := MempoolTxError{}
+							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+								txHash.String(),
+								tx.GetTxFeeToken(),
+								limitFeeToken*txPrivacyToken.GetTxActualSize()))
+							return err
+						}
+					} else {
+						// paid by PRV
+						if isPaidPartiallyPRV {
+							// paid partially -> check fee on pToken tx data size(only for pToken tx)
+							ok := txPrivacyToken.CheckTransactionFeePrivacyToken(limitFeeToken)
+							if !ok {
+								err := MempoolTxError{}
+								err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+									txHash.String(),
+									tx.GetTxFeeToken(),
+									limitFeeToken*txPrivacyToken.GetTxPrivacyTokenActualSize()))
+								return err
+							}
+						}
+					}
+				}
+			}
+		}
+	default:
+		{
+			{
+				// This is a normal tx -> only check like normal tx with PRV
+				limitFee := tp.config.FeeEstimator[shardID].limitFee
+				txNormal := tx.(*transaction.Tx)
+				if limitFee > 0 {
+					txFee := txNormal.GetTxFee()
+					ok := tx.CheckTransactionFee(limitFee)
+					if !ok {
+						err := MempoolTxError{}
+						err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
+						return err
+					}
+				}
+			}
+		}
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
@@ -309,6 +403,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition4,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+
 	// Condition 5: check tx with all txs in current mempool
 	now = time.Now()
 	err = tx.ValidateTxWithCurrentMempool(tp)
@@ -323,6 +418,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition5,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+
 	// Condition 6: ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	now = time.Now()
@@ -347,7 +443,9 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	now = time.Now()
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardID, tp.config.DataBase)
 	if err != nil {
-		return err
+		tempErr := MempoolTxError{}
+		tempErr.Init(RejectDoubleSpendWithBlockchainTx, err)
+		return tempErr
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.TxPoolValidationDetails,
@@ -388,7 +486,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			if found > 0 {
 				str := fmt.Sprintf("This public key already stake and still in pool %+v", pubkey)
 				err := MempoolTxError{}
-				err.Init(RejectDuplicateStakeTx, errors.New(str))
+				err.Init(RejectDuplicateStakePubkey, errors.New(str))
 				return err
 			}
 		}
@@ -583,6 +681,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction) (*common.Hash,
 	}
 	return hash, txDesc, err
 }
+
+// SendTransactionToBlockGen - push tx into channel and send to Block generate of consensus
 func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
@@ -592,6 +692,7 @@ func (tp *TxPool) SendTransactionToBlockGen() {
 	tp.IsUnlockMempool = true
 }
 
+// MarkForwardedTransaction - mart a transaction is forward message
 func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
 	if tp.IsTest {
 		return
@@ -941,6 +1042,7 @@ func (tp *TxPool) monitorPool() {
 				metrics.Measurement:      metrics.PoolSize,
 				metrics.MeasurementValue: float64(size)})
 		}
+		//TODO: delete in persist db
 		tp.mtx.Unlock()
 	}
 }

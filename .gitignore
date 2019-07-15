@@ -60,3 +60,4 @@ incognito
 config
 
 mempool/testdatabase
+cmd/incognito

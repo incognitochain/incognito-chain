@@ -43,16 +43,13 @@ func mainMaster(serverChan chan<- *Server) error {
 	// another subsystem such as the RPC server.
 	interrupt := interruptListener()
 	defer Logger.log.Warn("Shutdown complete")
-
 	// Show version at startup.
 	version := version()
 	Logger.log.Infof("Version %s", version)
-
 	// Return now if an interrupt signal was triggered.
 	if interruptRequested(interrupt) {
 		return nil
 	}
-
 	db, err := database.Open("leveldb", filepath.Join(cfg.DataDir, cfg.DatabaseDir))
 	// Create db and use it.
 	if err != nil {
@@ -67,7 +64,6 @@ func mainMaster(serverChan chan<- *Server) error {
 		Logger.log.Error(err)
 		panic(err)
 	}
-
 	// Check wallet and start it
 	var walletObj *wallet.Wallet
 	if cfg.Wallet {
@@ -97,7 +93,6 @@ func mainMaster(serverChan chan<- *Server) error {
 			}
 		}
 	}
-
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
@@ -117,13 +112,11 @@ func mainMaster(serverChan chan<- *Server) error {
 	if serverChan != nil {
 		serverChan <- &server
 	}
-
 	// Check Metric analyzation system
 	env := os.Getenv("GrafanaURL")
 	if env != "" {
 		Logger.log.Criticalf("Metric Server: %+v", os.Getenv("GrafanaURL"))
 	}
-
 	// Wait until the interrupt signal is received from an OS signal or
 	// shutdown is requested through one of the subsystems such as the RPC
 	// server.
@@ -131,7 +124,6 @@ func mainMaster(serverChan chan<- *Server) error {
 	return nil
 
 }
-
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	fmt.Println("NumCPU", runtime.NumCPU())
@@ -145,7 +137,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to set limits: %+v\n", err)
 		os.Exit(common.ExitByOs)
 	}
-
 	// Call serviceMain on Windows to handle running as a service.  When
 	// the return isService flag is true, exit now since we ran as a
 	// service.  Otherwise, just fall through to normal operation.
@@ -159,7 +150,6 @@ func main() {
 			os.Exit(common.ExitCodeUnknow)
 		}
 	}
-
 	// Work around defer not working after os.Exit()
 	if err := mainMaster(nil); err != nil {
 		os.Exit(common.ExitByOs)

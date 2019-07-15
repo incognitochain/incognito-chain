@@ -11,7 +11,7 @@ import (
 )
 
 func (db *db) StoreCrossShardNextHeight(fromShard, toShard byte, curHeight uint64, nextHeight uint64) error {
-	//ncsh-{fromShard}-{toShard}-{curHeight} = {nextHeight, nextHash}
+	//ncsh-{fromShard}-{toShard}-{curHeight} = nextHeight
 	key := append(nextCrossShardKeyPrefix, fromShard)
 	key = append(key, []byte("-")...)
 	key = append(key, toShard)
@@ -40,7 +40,7 @@ func (db *db) HasCrossShardNextHeight(key []byte) (bool, error) {
 }
 
 func (db *db) FetchCrossShardNextHeight(fromShard, toShard byte, curHeight uint64) (uint64, error) {
-	//ncsh-{fromShard}-{toShard}-{curHeight} = {nextHeight, nextHash}
+	//ncsh-{fromShard}-{toShard}-{curHeight} = nextHeight
 	key := append(nextCrossShardKeyPrefix, fromShard)
 	key = append(key, []byte("-")...)
 	key = append(key, toShard)
