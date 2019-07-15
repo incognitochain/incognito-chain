@@ -422,21 +422,21 @@ func (db *db) GetTransactionIndexById(txId common.Hash) (common.Hash, int, *data
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		return common.Hash{}, -1, database.NewDatabaseError(database.ErrUnexpected, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 
 	res, err := db.Get([]byte(key))
 	if err != nil {
-		return common.Hash{}, -1, database.NewDatabaseError(database.ErrUnexpected, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	reses := strings.Split(string(res), (string(Splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
-		return common.Hash{}, -1, database.NewDatabaseError(database.ErrUnexpected, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	index, err := strconv.Atoi(reses[1])
 	if err != nil {
-		return common.Hash{}, -1, database.NewDatabaseError(database.ErrUnexpected, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return *hash, index, nil
 }
