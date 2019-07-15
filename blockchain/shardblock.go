@@ -62,6 +62,7 @@ func (shardBlock *ShardBlock) Hash() *common.Hash {
 }
 
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
+	// TODO
 	if shardBlock.Header.BeaconHeight == 0 {
 		return false, errors.New("Beacon is invalid")
 	}
