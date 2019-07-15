@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"sort"
-
+	
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -461,7 +460,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 				}
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
-				fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
+				//fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
 				//for customTokenID := range listCustomTokens {
 				//	if newHashInitToken.String() == customTokenID.String() {
 				//		fmt.Println("INIT Tx Custom Token/ Existed", customTokenID, customTokenID.String() == newHashInitToken.String())

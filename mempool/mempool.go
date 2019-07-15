@@ -467,7 +467,8 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				// tx contain PRV data -> check with PRV fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
-					if txPrivacyToken.GetTxFeeToken() == 0 { // paid all with PRV
+					if txPrivacyToken.GetTxFeeToken() == 0 {
+						// paid all with PRV
 						ok := txPrivacyToken.CheckTransactionFee(limitFee)
 						if !ok {
 							err := MempoolTxError{}
@@ -535,7 +536,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				txNormal := tx.(*transaction.TxCustomToken)
 				if limitFee > 0 {
 					txFee := txNormal.GetTxFee()
-					ok := tx.CheckTransactionFee(limitFee)
+					ok := tx.CheckTransactionFee(limitFee) // @NOTICE: only check tx fee
 					if !ok {
 						err := MempoolTxError{}
 						err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
@@ -692,6 +693,70 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	}
 	return false
 }
+func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error, bool) {
+	// calculate match serial number list in pool for replaced tx
+	serialNumberHashList := tx.ListSerialNumbersHashH()
+	hash, err := common.HashArrayInterface(serialNumberHashList)
+	if err != nil {
+		return NewMempoolTxError(ReplacementError, err), false
+	}
+	// find replace tx in pool
+	if txHashToBeReplaced, ok := tp.poolSerailNumberHash[hash]; ok {
+		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
+			var baseReplaceFee float64
+			var baseReplaceFeeToken float64
+			var replaceFee float64
+			var replaceFeeToken float64
+			var isReplaced = false
+			if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken == 0 {
+				// paid by prv fee only
+				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
+				replaceFeeToken = float64(tx.GetTxFeeToken())
+				// not a higher enough fee than return error
+				if baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
+					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
+				}
+				isReplaced = true
+			} else if txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
+				//paid by token fee only
+				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
+				replaceFee = float64(tx.GetTxFee())
+				// not a higher enough fee than return error
+				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee {
+					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+				}
+				isReplaced = true
+			} else if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
+				// paid by both prv fee and token fee
+				// then only one of fee is higher then it will be accepted
+				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
+				replaceFee = float64(tx.GetTxFee())
+				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
+				replaceFeeToken = float64(tx.GetTxFeeToken())
+				// not a higher enough fee than return error
+				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
+					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+				}
+				isReplaced = true
+			}
+			if isReplaced {
+				txToBeReplaced := txDescToBeReplaced.Desc.Tx
+				tp.removeTx(txToBeReplaced)
+				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
+				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
+				return nil, true
+			} else {
+				return NewMempoolTxError(ReplacementError, errors.New("Unexpected error occur")), true
+			}
+		} else {
+			//found no tx to be replaced
+			return nil, false
+		}
+	} else {
+		// no match serial number list to be replaced
+		return nil, false
+	}
+}
 
 /*
 // add transaction into pool
@@ -784,69 +849,6 @@ func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 	} else {
 		tp.roleMtx.RUnlock()
 		return false
-	}
-}
-func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error, bool) {
-	// calculate match serial number list in pool for replaced tx
-	serialNumberHashList := tx.ListSerialNumbersHashH()
-	hash, err := common.HashArrayInterface(serialNumberHashList)
-	if err != nil {
-		return NewMempoolTxError(ReplacementError, err), false
-	}
-	// find replace tx in pool
-	if txHashToBeReplaced, ok := tp.poolSerailNumberHash[hash]; ok {
-		if txDescToBeReplaced, ok := tp.pool[txHashToBeReplaced]; ok {
-			var baseReplaceFee float64
-			var baseReplaceFeeToken float64
-			var replaceFee float64
-			var replaceFeeToken float64
-			var isReplaced = false
-			if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken == 0 {
-				// paid by prv fee only
-				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
-				replaceFeeToken = float64(tx.GetTxFeeToken())
-				// not a higher enough fee than return error
-				if baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
-					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
-				}
-				isReplaced = true
-			} else if txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
-				//paid by token fee only
-				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
-				replaceFee = float64(tx.GetTxFee())
-				// not a higher enough fee than return error
-				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee {
-					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
-				}
-				isReplaced = true
-			} else if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
-				// paid by both prv fee and token fee
-				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
-				replaceFee = float64(tx.GetTxFee())
-				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
-				replaceFeeToken = float64(tx.GetTxFeeToken())
-				// not a higher enough fee than return error
-				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
-					return NewMempoolTxError(ReplacementError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
-				}
-				isReplaced = true
-			}
-			if isReplaced {
-				txToBeReplaced := txDescToBeReplaced.Desc.Tx
-				tp.removeTx(txToBeReplaced)
-				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
-				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
-				return nil, true
-			} else {
-				return NewMempoolTxError(ReplacementError, errors.New("Unexpected error occur")), true
-			}
-		} else {
-			//found no tx to be replaced
-			return nil, false
-		}
-	} else {
-		// no match serial number list to be replaced
-		return nil, false
 	}
 }
 
