@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -19,21 +20,25 @@ var (
 	// errMemorydbNotFound is returned if a key is requested that is not found in
 	// the provided memory database.
 	errMemorydbNotFound = errors.New("not found")
+
+	errExpired = errors.New("expired time")
 )
 
 // MemoryCache is an ephemeral key-value store. Apart from basic data storage
 // functionality it also supports batch writes and iterating over the keyspace in
 // binary-alphabetical order.
 type MemoryCache struct {
-	db   map[string][]byte
-	lock sync.RWMutex
+	db      map[string][]byte
+	expired map[string]time.Time
+	lock    sync.RWMutex
 }
 
 // New returns a wrapped map with all the required database interface methods
 // implemented.
 func New() *MemoryCache {
 	return &MemoryCache{
-		db: make(map[string][]byte),
+		db:      make(map[string][]byte),
+		expired: make(map[string]time.Time),
 	}
 }
 
@@ -70,14 +75,26 @@ func (db *MemoryCache) Has(key []byte) (bool, error) {
 // Get retrieves the given key if it's present in the key-value store.
 func (db *MemoryCache) Get(key []byte) ([]byte, error) {
 	db.lock.RLock()
-	defer db.lock.RUnlock()
+	//defer db.lock.RUnlock()
 
 	if db.db == nil {
+		db.lock.RUnlock()
 		return nil, errMemorydbClosed
 	}
 	if entry, ok := db.db[string(key)]; ok {
+		// check expired time
+		if expired, ok1 := db.expired[string(key)]; ok1 {
+			if expired.Before(time.Now()) {
+				// is expired
+				db.lock.RUnlock()
+				db.Delete(key)
+				return nil, errExpired
+			}
+		}
+		db.lock.RUnlock()
 		return common.CopyBytes(entry), nil
 	}
+	db.lock.RUnlock()
 	return nil, errMemorydbNotFound
 }
 
@@ -90,6 +107,19 @@ func (db *MemoryCache) Put(key []byte, value []byte) error {
 		return errMemorydbClosed
 	}
 	db.db[string(key)] = common.CopyBytes(value)
+	return nil
+}
+
+// Put inserts the given value into the key-value store. expired is mili second
+func (db *MemoryCache) PutExpired(key []byte, value []byte, expired time.Duration) error {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
+	if db.db == nil {
+		return errMemorydbClosed
+	}
+	db.db[string(key)] = common.CopyBytes(value)
+	db.expired[string(key)] = time.Now().Add(expired * time.Millisecond)
 	return nil
 }
 
