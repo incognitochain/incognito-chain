@@ -84,9 +84,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
-	}
+
 	shardBlock.AggregatedSig = tempBlk.AggregatedSig
 	shardBlock.R = tempBlk.R
 	shardBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
@@ -98,6 +96,10 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 	shardBlock.Header = tempBlk.Header
+
+	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
 
 	shardBlock.Body = blkBody
 	return nil
