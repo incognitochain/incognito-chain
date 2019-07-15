@@ -916,16 +916,9 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	var outCointsInBytes [][]byte
 	var err error
 	if blockchain.config.MemCache != nil {
-		key := make([]byte, 0)
-		key = append(key, []byte("-")...)
-		key = append(key, []byte("listoutputcoin")...)
-		key = append(key, []byte("-")...)
-		key = append(key, keyset.PaymentAddress.Pk[:]...)
-		key = append(key, []byte("-")...)
-		key = append(key, tokenID.GetBytes()...)
-		key = append(key, shardID)
 		// get from cache
-		cachedData, _ := blockchain.config.MemCache.Get(key)
+		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
+		cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
 		if cachedData != nil {
 			err = json.Unmarshal(cachedData, &outCointsInBytes)
 		} else {
@@ -934,7 +927,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 			cachedData, err = json.Marshal(outCointsInBytes)
 			if err == nil {
 				// cache 1 day for result
-				blockchain.config.MemCache.PutExpired(key, cachedData, 1*24*60*60*time.Millisecond)
+				blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
 			}
 		}
 	}
