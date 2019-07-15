@@ -586,9 +586,9 @@ func TestTxPoolIsTxInPool(t *testing.T) {
 }
 func TestTxPoolAddTx(t *testing.T) {
 	ResetMempoolTest()
-	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
-	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false)
-	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false)
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee, false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee, false)
 	txDesc1 := createTxDescMempool(tx1, 1, 10, 0)
 	txDesc2 := createTxDescMempool(tx2, 1, 10, 0)
 	txDesc3 := createTxDescMempool(tx3, 1, 10, 0)
@@ -882,9 +882,9 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 }
 func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	ResetMempoolTest()
-	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
-	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false)
-	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false)
+	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false)
+	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee, false)
+	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee, false)
 	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
 	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
@@ -1251,3 +1251,4 @@ func TestTxPoolEmptyPool(t *testing.T) {
 		t.Fatal("Can't empty token id pool")
 	}
 }
+// TODO: test repalce tx
