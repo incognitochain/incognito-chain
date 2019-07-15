@@ -449,16 +449,6 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	}
 	// Condition 4: check fee PRV of tx
 	now = time.Now()
-	limitFee := tp.config.FeeEstimator[shardID].limitFee
-	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		metrics.Measurement:      metrics.TxPoolValidationDetails,
-		metrics.MeasurementValue: float64(time.Since(now).Seconds()),
-		metrics.TagValue:         metrics.Condition41,
-		metrics.Tag:              metrics.ValidateConditionTag,
-	})
-
-	// Condition 4: check fee of tx
-	now = time.Now()
 	switch tx.GetType() {
 	case common.TxCustomTokenPrivacyType:
 		{
