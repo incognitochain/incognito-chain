@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
@@ -206,7 +206,7 @@ func (tx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db database.Databa
 		}
 		totalVinAmount := uint64(0)
 		for _, vin := range tx.TxTokenData.Vins {
-			keySet := cashec.KeySet{}
+			keySet := incognitokey.KeySet{}
 			keySet.PaymentAddress = vin.PaymentAddress
 
 			// get data from utxo
@@ -351,13 +351,12 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 		tokenDataSize += uint64(len(vin.Signature))
 		tokenDataSize += uint64(len(vin.TxCustomTokenID))
 		tokenDataSize += 4 // for VoutIndex
-		tokenDataSize += uint64(vin.PaymentAddress.Size())
+		tokenDataSize += uint64(privacy.PaymentAddressSize)
 	}
 
-	for _, vout := range tx.TxTokenData.Vouts {
-		tokenDataSize += 8 // for value
-		tokenDataSize += uint64(vout.PaymentAddress.Size())
-	}
+	// size of Vouts (include value and payment address)
+	sizeVout := 8 + privacy.PaymentAddressSize
+	tokenDataSize += uint64(len(tx.TxTokenData.Vouts) * sizeVout)
 
 	// calculate metadata size if any
 	meta := tx.Metadata
@@ -524,7 +523,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	return nil
 }
 
-func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset cashec.KeySet) ([]byte, error) {
+func (tx *TxCustomToken) GetTxCustomTokenSignature(keyset incognitokey.KeySet) ([]byte, error) {
 	buff := new(bytes.Buffer)
 	json.NewEncoder(buff).Encode(tx)
 	return keyset.Sign(buff.Bytes())

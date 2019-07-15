@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -51,7 +51,7 @@ func (msg *MessageBFTAgree) SetSenderID(senderID peer.ID) error {
 	return nil
 }
 
-func (msg *MessageBFTAgree) SignMsg(keySet *cashec.KeySet) error {
+func (msg *MessageBFTAgree) SignMsg(keySet *incognitokey.KeySet) error {
 	dataBytes := []byte{}
 	dataBytes = append(dataBytes, msg.BlkHash.GetBytes()...)
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
@@ -68,6 +68,6 @@ func (msg *MessageBFTAgree) VerifyMsgSanity() error {
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
 	dataBytes = append(dataBytes, msg.Ri...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
-	err := cashec.ValidateDataB58(msg.Pubkey, msg.ContentSig, dataBytes)
+	err := incognitokey.ValidateDataB58(msg.Pubkey, msg.ContentSig, dataBytes)
 	return err
 }

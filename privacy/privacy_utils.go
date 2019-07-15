@@ -1,13 +1,12 @@
 package privacy
 
 import (
-	"errors"
 	"math/big"
 	rand2 "math/rand"
 	"time"
 )
 
-// RandBytes generates random bytes
+// RandBytes generates random bytes with length
 func RandBytes(length int) []byte {
 	seed := time.Now().UnixNano()
 	b := make([]byte, length)
@@ -50,7 +49,7 @@ func IsPowerOfTwo(n int) bool {
 	return true
 }
 
-// ConvertIntToBinary represents a integer number in binary
+// ConvertIntToBinary represents a integer number in binary array with little endian with size n
 func ConvertIntToBinary(inum int, n int) []byte {
 	binary := make([]byte, n)
 
@@ -95,6 +94,7 @@ func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
 }
 
 // AddPaddingBigInt adds padding to big int to it is fixed size
+// and returns bytes array
 func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
 	numBytes := numInt.Bytes()
 	lenNumBytes := len(numBytes)
@@ -103,7 +103,7 @@ func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
 	return numBytes
 }
 
-// IntToByteArr converts an integer number to 2 bytes array
+// IntToByteArr converts an integer number to 2-byte array in big endian
 func IntToByteArr(n int) []byte {
 	if n == 0 {
 		return []byte{0, 0}
@@ -122,7 +122,7 @@ func IntToByteArr(n int) []byte {
 	return a.Bytes()
 }
 
-// ByteArrToInt reverts an integer number from bytes array
+// ByteArrToInt reverts an integer number from 2-byte array
 func ByteArrToInt(bytesArr []byte) int {
 	if len(bytesArr) != 2 {
 		return 0
@@ -152,91 +152,4 @@ func paddedAppend(size uint, dst, src []byte) []byte {
 		dst = append(dst, 0)
 	}
 	return append(dst, src...)
-}
-
-// checkZeroArray check whether all ellement of values array are zero value or not
-func checkZeroArray(values []*big.Int) bool {
-	for i := 0; i < len(values); i++ {
-		if values[i].Cmp(big.NewInt(0)) != 0 {
-			return false
-		}
-	}
-	return true
-}
-
-func MaxBitLen(values []*big.Int) int {
-	res := 0
-	for i := 0; i < len(values); i++ {
-		if values[i].BitLen() > res {
-			res = values[i].BitLen()
-		}
-	}
-
-	return res
-}
-
-// MultiScalar2 uses Shamir's simultanenous Squaring Multi-Exponentiation Algorithm
-func MultiScalar2(g []*EllipticPoint, values []*big.Int) (*EllipticPoint, error) {
-	// Check inputs
-	if len(g) != len(values) {
-		return nil, errors.New("wrong inputs")
-	}
-
-	//convert value array to binary array
-	maxBitLen := MaxBitLen(values)
-	valueBinary := make([][]*big.Int, len(values))
-	for i := range values {
-		valueBinary[i] = ConvertBigIntToBinary(values[i], maxBitLen)
-	}
-
-	// generator result point
-	res := new(EllipticPoint).Zero()
-
-	oneNumber := big.NewInt(1)
-
-	for i := maxBitLen - 1; i >= 0; i-- {
-		// res = 2*res
-		res = res.ScalarMult(big.NewInt(2))
-
-		for j := 0; j < len(values); j++ {
-			if valueBinary[j][i].Cmp(oneNumber) == 0 {
-				res = res.Add(g[j])
-			}
-		}
-	}
-	return res, nil
-}
-
-func MultiScalarmult(bases []*EllipticPoint, exponents []*big.Int) (*EllipticPoint, error) {
-	n := len(bases)
-	if n != len(exponents) {
-		return nil, errors.New("wrong inputs")
-	}
-
-	baseTmp := make([]*EllipticPoint, n)
-	for i := 0; i < n; i++ {
-		baseTmp[i] = new(EllipticPoint)
-		baseTmp[i].Set(bases[i].X, bases[i].Y)
-	}
-
-	expTmp := make([]*big.Int, n)
-	for i := 0; i < n; i++ {
-		expTmp[i] = new(big.Int)
-		expTmp[i].Set(exponents[i])
-	}
-
-	result := new(EllipticPoint).Zero()
-
-	for !checkZeroArray(expTmp) {
-		for i := 0; i < n; i++ {
-			if new(big.Int).And(expTmp[i], big.NewInt(1)).Cmp(big.NewInt(1)) == 0 {
-				result = result.Add(baseTmp[i])
-			}
-
-			expTmp[i].Rsh(expTmp[i], uint(1))
-			baseTmp[i] = baseTmp[i].Add(baseTmp[i])
-		}
-	}
-
-	return result, nil
 }

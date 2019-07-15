@@ -77,8 +77,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	tokenID, err := common.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
+	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -151,8 +154,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	tokenID, err := common.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
+	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}

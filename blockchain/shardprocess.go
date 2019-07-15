@@ -13,9 +13,9 @@ import (
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
-	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -171,7 +171,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}()
 
 	//=========Remove invalid shard block in pool
-	blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
+	go blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 
 	//Update Cross shard pool: remove invalid block
 	go func() {
@@ -206,8 +206,8 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 				blockchain.config.CRemovedTxs <- tx
 			}
 		}
-		blockchain.config.TxPool.RemoveCandidateList(candidates)
-		blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
+		go blockchain.config.TxPool.RemoveCandidateList(candidates)
+		go blockchain.config.TxPool.RemoveTokenIDList(tokenIDs)
 
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(block.Body.Transactions, true)
@@ -235,7 +235,9 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	})
 	// call FeeEstimator for processing
 	if feeEstimator, ok := blockchain.config.FeeEstimator[block.Header.ShardID]; ok {
-		go feeEstimator.RegisterBlock(block)
+		blockBodyJson, _ := json.MarshalIndent(block, "", "  ")
+		Logger.log.Info("FeeEstimator RegisterBlock for ", shardID, block.Hash(), string(blockBodyJson))
+		feeEstimator.RegisterBlock(block)
 	}
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
@@ -465,7 +467,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		tokenIDsfromTxs = append(tokenIDsfromTxs, tokenID)
 	}
 	sort.Slice(tokenIDsfromTxs, func(i int, j int) bool {
-		return tokenIDsfromTxs[i].Cmp(&tokenIDsfromTxs[j]) == -1
+		res, _ := tokenIDsfromTxs[i].Cmp(&tokenIDsfromTxs[j])
+		return res == -1
 	})
 
 	tokenIDsfromBlock := make([]common.Hash, 0)
@@ -473,7 +476,8 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		tokenIDsfromBlock = append(tokenIDsfromBlock, tokenID)
 	}
 	sort.Slice(tokenIDsfromBlock, func(i int, j int) bool {
-		return tokenIDsfromBlock[i].Cmp(&tokenIDsfromBlock[j]) == -1
+		res, _ := tokenIDsfromBlock[i].Cmp(&tokenIDsfromBlock[j])
+		return res == -1
 	})
 
 	if len(tokenIDsfromTxs) != len(tokenIDsfromBlock) {
@@ -676,7 +680,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	if strings.Compare(tempProducer, producerPubkey) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
-	if err := cashec.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
+	if err := incognitokey.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	//=============End Verify producer signature

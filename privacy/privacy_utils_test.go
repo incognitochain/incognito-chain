@@ -2,105 +2,122 @@ package privacy
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
-	"time"
 )
 
-func TestIsPowerOfTwo(t *testing.T) {
-	testcase1 := IsPowerOfTwo(64)
-	assert.Equal(t, true, testcase1)
+var _ = func() (_ struct{}) {
+	fmt.Println("This runs before init()!")
+	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	return
+}()
 
-	testcase2 := IsPowerOfTwo(124)
-	assert.Equal(t, false, testcase2)
+func TestUtilsRandBytes(t *testing.T) {
+	data := []int{
+		0,
+		10,
+		45,
+		100,
+		1000,
+	}
 
-	testcase3 := IsPowerOfTwo(0)
-	assert.Equal(t, false, testcase3)
-
-}
-
-func TestConvertBigIntToBinary(t *testing.T) {
-	num := big.NewInt(100)
-	binary := ConvertBigIntToBinary(num, 10)
-
-	for i := 0; i < len(binary); i++ {
-		fmt.Printf("%v: %v ", i, binary[i])
+	for _, item := range data {
+		res := RandBytes(item)
+		assert.Equal(t, item, len(res))
 	}
 }
 
-func TestMultiExponentiation(t *testing.T) {
-	exponents := []*big.Int{big.NewInt(5), big.NewInt(10), big.NewInt(5), big.NewInt(7), big.NewInt(5)}
-
-	//exponents := make([]*big.Int, 64)
-	//fmt.Printf("Values: %v\n", exponents[0])
-
-	start1 := time.Now()
-	expectedRes := PedCom.CommitAll(exponents)
-	end1 := time.Since(start1)
-	fmt.Printf("normal calculation time: %v\n", end1)
-	fmt.Printf("Res from normal calculation: %+v\n", expectedRes)
-
-	start2 := time.Now()
-	testcase4, err := MultiScalarmult(PedCom.G, exponents)
-	if err != nil {
-		Logger.Log.Errorf("Error of multi-exponentiation algorithm")
+func TestUtilsRandScalar(t *testing.T) {
+	for i:= 0;i<100; i++{
+		scalar := RandScalar()
+		isLessThanN := scalar.Cmp(Curve.Params().N)
+		assert.Equal(t, -1, isLessThanN)
+		assert.Equal(t, BigIntSize, len(scalar.Bytes()))
 	}
-	end2 := time.Since(start2)
-	fmt.Printf("multi scalarmult: %v\n", end2)
-	fmt.Printf("Res from multi exponentiation alg: %+v\n", testcase4)
-
-	start3 := time.Now()
-	testcase5, err := MultiScalar2(PedCom.G, exponents)
-	if err != nil {
-		Logger.Log.Errorf("Error of multi-exponentiation algorithm")
-	}
-	end3 := time.Since(start3)
-	fmt.Printf("multi scalarmult 2: %v\n", end3)
-	fmt.Printf("Res from multi exponentiation 2 alg: %+v\n", testcase5)
-	assert.Equal(t, expectedRes, testcase4)
 }
 
-func TestHashEC(t *testing.T) {
-	res := PedCom.G[0].Hash(100)
-	fmt.Printf("Res: %v\n", res.Compress())
-
-	res = PedCom.G[0].Hash(1000)
-	fmt.Printf("Res: %v\n", res.Compress())
-
-	res = PedCom.G[0].Hash(10000)
-	fmt.Printf("Res: %v\n", res.Compress())
-
-	res = PedCom.G[0].Hash(100000)
-	fmt.Printf("Res: %v\n", res.Compress())
-
-	res = PedCom.G[0].Hash(1000000)
-	fmt.Printf("Res: %v\n", res.Compress())
-
-	res = PedCom.G[0].Hash(10000000)
-	fmt.Printf("Res: %v\n", res.Compress())
-
-	res = PedCom.G[0].Hash(100000000)
-	//fmt.Printf("Byte: %v\n", byte(100000000))
-	fmt.Printf("Res: %v\n", res.Compress())
-
-	res = PedCom.G[0].Hash(1000000000)
-	fmt.Printf("Res: %v\n", res.Compress())
-
-	res = PedCom.G[0].Hash(10000000000)
-	fmt.Printf("Res: %v\n", res.Compress())
-}
-
-func TestMap(t *testing.T) {
-	m := map[int][]int{
-		0: {0, 2, 4, 6, 8},
-		1: {1, 3, 5, 7},
+func TestUtilsIsPowerOfTwo(t *testing.T) {
+	data := []struct{
+		number int
+		isPowerOf2 bool
+	}{
+		{64, true},
+		{124, false},
+		{0, false},
+		{1, false},
 	}
 
-	m[2] = append(m[2], 10)
+	for _, item := range data {
+		res := IsPowerOfTwo(item.number)
+		assert.Equal(t, item.isPowerOf2, res)
+	}
+}
 
-	fmt.Printf("m[false]: %v\n", m[0])
-	fmt.Printf("m[true]: %v\n", m[1])
-	fmt.Printf("m[2]: %v\n", m[2])
+func TestUtilsConvertIntToBinary(t *testing.T) {
+	data := []struct{
+		number int
+		size int
+		binary []byte
+	}{
+		{64, 8, []byte{0,0,0,0,0,0,1,0}},
+		{100, 10, []byte{0,0,1,0,0,1,1,0,0,0}},
+	}
 
+	for _, item := range data {
+		res := ConvertIntToBinary(item.number, item.size)
+		assert.Equal(t, item.binary, res)
+	}
+}
+
+func TestUtilsConvertBigIntToBinary(t *testing.T) {
+	data := []struct{
+		number *big.Int
+		size int
+		binary []*big.Int
+	}{
+		{new(big.Int).SetUint64(uint64(64)), 8, []*big.Int{new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(1),new(big.Int).SetInt64(0)}},
+		{new(big.Int).SetUint64(uint64(100)), 10, []*big.Int{new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(1),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(1),new(big.Int).SetInt64(1),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0)}},
+	}
+
+	for _, item := range data {
+		res := ConvertBigIntToBinary(item.number, item.size)
+		assert.Equal(t, item.binary, res)
+	}
+}
+
+func TestUtilsAddPaddingBigInt(t *testing.T) {
+	data := []struct{
+		number *big.Int
+		size int
+	}{
+		{new(big.Int).SetBytes(RandBytes(12)), BigIntSize},
+		{new(big.Int).SetBytes(RandBytes(42)), 50},
+		{new(big.Int).SetBytes(RandBytes(0)), 10},
+	}
+
+	for _, item := range data {
+		res := AddPaddingBigInt(item.number, item.size)
+		assert.Equal(t, item.size, len(res))
+	}
+}
+
+func TestUtilsIntToByteArr(t *testing.T) {
+	data := []struct{
+		number int
+		bytes []byte
+	}{
+		{12345, []byte{48, 57}},
+		{123, []byte{0, 123}},
+		{0, []byte{0,0}},
+	}
+
+	for _, item := range data {
+		res := IntToByteArr(item.number)
+		assert.Equal(t, item.bytes, res)
+
+		number := ByteArrToInt(res)
+		assert.Equal(t, item.number, number)
+	}
 }

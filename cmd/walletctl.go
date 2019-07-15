@@ -86,8 +86,11 @@ func createAccount(accountName string, shardID *byte) (interface{}, error) {
 	}
 
 	if walletObj != nil {
-		account1 := walletObj.CreateNewAccount(accountName, shardID)
-		err := walletObj.Save(cfg.WalletPassphrase)
+		account1, err := walletObj.CreateNewAccount(accountName, shardID)
+		if err != nil {
+			return nil, err
+		}
+		err = walletObj.Save(cfg.WalletPassphrase)
 		if err != nil {
 			return nil, err
 		}
