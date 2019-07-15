@@ -258,6 +258,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			txType = metrics.TxNormalNoPrivacy
 		}
 	}
+
 	// Condition 1: sanity data
 	now = time.Now()
 	if validated, errS := tx.ValidateSanityData(tp.config.BlockChain); !validated {
@@ -290,6 +291,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition2,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+
 	// Condition 3: A standalone transaction must not be a salary transaction.
 	now = time.Now()
 	if tx.IsSalaryTx() {
@@ -303,27 +305,91 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition3,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
-	// Condition 4: check fee PRV of tx
-	now = time.Now()
-	limitFee := tp.config.FeeEstimator[shardID].limitFee
-	if limitFee > 0 {
-		txFee := tx.GetTxFee()
-		ok := tx.CheckTransactionFee(limitFee)
-		if !ok {
-			err := MempoolTxError{}
-			err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
-			return err
-		}
-	}
 
-	limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
-	if limitFeeToken > 0 && tx.GetType() == common.TxCustomTokenPrivacyType {
-		txFee := tx.(*transaction.TxCustomTokenPrivacy).GetTxFeeToken()
-		ok := tx.(*transaction.TxCustomTokenPrivacy).TxTokenPrivacyData.TxNormal.CheckTransactionFee(limitFeeToken)
-		if !ok {
-			err := MempoolTxError{}
-			err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
-			return err
+	// Condition 4: check fee of tx
+	now = time.Now()
+	switch tx.GetType() {
+	case common.TxCustomTokenPrivacyType:
+		{
+			txPrivacyToken := tx.(*transaction.TxCustomTokenPrivacy)
+			isPaidByPRV := false
+			// check PRV element and pToken element
+			if txPrivacyToken.Tx.Proof != nil {
+				// tx contain PRV data -> check with PRV fee
+				limitFee := tp.config.FeeEstimator[shardID].limitFee
+				if limitFee > 0 {
+					if txPrivacyToken.GetTxFeeToken() == 0 { // paid all with PRV
+						ok := txPrivacyToken.CheckTransactionFee(limitFee)
+						if !ok {
+							err := MempoolTxError{}
+							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+								txHash.String(),
+								txPrivacyToken.Tx.GetTxFee(),
+								limitFee*txPrivacyToken.GetTxActualSize()))
+							return err
+						}
+					} else {
+						// paid partial with PRV
+						ok := txPrivacyToken.Tx.CheckTransactionFee(limitFee)
+						if !ok {
+							err := MempoolTxError{}
+							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d",
+								txHash.String(),
+								txPrivacyToken.Tx.GetTxFee(),
+								limitFee*txPrivacyToken.Tx.GetTxActualSize()))
+							return err
+						}
+					}
+				}
+				isPaidByPRV = true
+			}
+			if txPrivacyToken.TxTokenPrivacyData.TxNormal.Proof != nil {
+				limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
+				if limitFeeToken > 0 {
+					if !isPaidByPRV {
+						// not paid anything by PRV
+						// -> check fee on total tx size(prv tx container + pToken tx)
+						ok := txPrivacyToken.CheckTransactionFee(limitFeeToken)
+						if !ok {
+							err := MempoolTxError{}
+							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+								txHash.String(),
+								tx.GetTxFeeToken(),
+								limitFeeToken*txPrivacyToken.GetTxActualSize()))
+							return err
+						}
+					} else {
+						// paid partially by PRV
+						// -> check fee on pToken tx data size(only for pToken tx)
+						ok := txPrivacyToken.CheckTransactionFeePrivacyToken(limitFeeToken)
+						if !ok {
+							err := MempoolTxError{}
+							err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+								txHash.String(),
+								tx.GetTxFeeToken(),
+								limitFeeToken*txPrivacyToken.GetTxPrivacyTokenActualSize()))
+							return err
+						}
+					}
+				}
+			}
+		}
+	default:
+		{
+			{
+				// This is a normal tx -> only check like normal tx with PRV
+				limitFee := tp.config.FeeEstimator[shardID].limitFee
+				txNormal := tx.(*transaction.Tx)
+				if limitFee > 0 {
+					txFee := txNormal.GetTxFee()
+					ok := tx.CheckTransactionFee(limitFee)
+					if !ok {
+						err := MempoolTxError{}
+						err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
+						return err
+					}
+				}
+			}
 		}
 	}
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -332,6 +398,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition4,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+
 	// Condition 5: check tx with all txs in current mempool
 	now = time.Now()
 	err = tx.ValidateTxWithCurrentMempool(tp)
@@ -346,6 +413,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		metrics.TagValue:         metrics.Condition5,
 		metrics.Tag:              metrics.ValidateConditionTag,
 	})
+
 	// Condition 6: ValidateTransaction tx by it self
 	shardID = common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	now = time.Now()
