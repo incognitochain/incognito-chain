@@ -562,6 +562,13 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
 			err = blockchain.config.DataBase.StoreOutputCoins(*view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+			// clear cached data
+			if blockchain.config.MemCache != nil {
+				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
+				if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e != nil {
+					_ = blockchain.config.MemCache.Delete(cachedKey)
+				}
+			}
 			if err != nil {
 				return err
 			}
