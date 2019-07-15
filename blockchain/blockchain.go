@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"io"
 	"log"
@@ -14,7 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -51,6 +53,7 @@ type BestState struct {
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
 	DataBase          database.DatabaseInterface
+	MemCache          *memcache.MemoryCache
 	Interrupt         <-chan struct{}
 	ChainParams       *Params
 	RelayShards       []byte
@@ -559,6 +562,13 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
 			err = blockchain.config.DataBase.StoreOutputCoins(*view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+			// clear cached data
+			if blockchain.config.MemCache != nil {
+				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
+				if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e != nil {
+					_ = blockchain.config.MemCache.Delete(cachedKey)
+				}
+			}
 			if err != nil {
 				return err
 			}
@@ -910,10 +920,31 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 
-	outCointsInBytes, err := blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
-	if err != nil {
-		return nil, err
+	var outCointsInBytes [][]byte
+	var err error
+	if blockchain.config.MemCache != nil {
+		// get from cache
+		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
+		cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
+		if cachedData != nil {
+			err = json.Unmarshal(cachedData, &outCointsInBytes)
+		} else {
+			// cached data is nil
+			outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
+			cachedData, err = json.Marshal(outCointsInBytes)
+			if err == nil {
+				// cache 1 day for result
+				blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+			}
+		}
 	}
+	if len(outCointsInBytes) == 0 {
+		outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// convert from []byte to object
 	outCoints := make([]*privacy.OutputCoin, 0)
 	for _, item := range outCointsInBytes {
@@ -1399,11 +1430,11 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 }
 
 func CalculateNumberOfByteToRead(amountBytes int) []byte {
-	var result = make([]byte,8)
+	var result = make([]byte, 8)
 	binary.LittleEndian.PutUint32(result, uint32(amountBytes))
 	return result
 }
-func GetNumberOfByteToRead(value []byte) (int,error) {
+func GetNumberOfByteToRead(value []byte) (int, error) {
 	var result uint32
 	err := binary.Read(bytes.NewBuffer(value), binary.LittleEndian, &result)
 	if err != nil {
@@ -1416,34 +1447,34 @@ func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) e
 	if err != nil {
 		return err
 	}
-		shardBestState := &BestStateShard{}
-		err = json.Unmarshal(bestStateBytes, shardBestState)
-		bestShardHeight := shardBestState.ShardHeight
-		var i uint64
-		for i = 1;i < bestShardHeight; i++{
-			block, err := blockchain.GetShardBlockByHeight(i, shardID)
-			if err != nil {
-				return err
-			}
-			data, err := json.Marshal(block)
-			if err != nil {
-				return err
-			}
-			_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
-			if err != nil {
-				return err
-			}
-			_, err = writer.Write(data)
-			if err != nil {
-				return err
-			}
-			if i % 100 == 0 {
-				log.Printf("Backup Shard %+v Block %+v", block.Header.ShardID, i)
-			}
-			if i == bestShardHeight - 1 {
-				log.Printf( "Finish Backup Shard %+v with Block %+v", block.Header.ShardID, i)
-			}
+	shardBestState := &BestStateShard{}
+	err = json.Unmarshal(bestStateBytes, shardBestState)
+	bestShardHeight := shardBestState.ShardHeight
+	var i uint64
+	for i = 1; i < bestShardHeight; i++ {
+		block, err := blockchain.GetShardBlockByHeight(i, shardID)
+		if err != nil {
+			return err
 		}
+		data, err := json.Marshal(block)
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(data)
+		if err != nil {
+			return err
+		}
+		if i%100 == 0 {
+			log.Printf("Backup Shard %+v Block %+v", block.Header.ShardID, i)
+		}
+		if i == bestShardHeight-1 {
+			log.Printf("Finish Backup Shard %+v with Block %+v", block.Header.ShardID, i)
+		}
+	}
 	return nil
 }
 func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
@@ -1455,7 +1486,7 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 	err = json.Unmarshal(bestStateBytes, beaconBestState)
 	bestBeaconHeight := beaconBestState.BeaconHeight
 	var i uint64
-	for i = 1;i < bestBeaconHeight; i++ {
+	for i = 1; i < bestBeaconHeight; i++ {
 		block, err := blockchain.GetBeaconBlockByHeight(i)
 		if err != nil {
 			return err
@@ -1473,11 +1504,11 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 		if err != nil {
 			return err
 		}
-		if i % 100 == 0 {
-			log.Printf( "Backup Beacon Block %+v", i)
+		if i%100 == 0 {
+			log.Printf("Backup Beacon Block %+v", i)
 		}
-		if i == bestBeaconHeight - 1 {
-			log.Printf( "Finish Backup Beacon with Block %+v", i)
+		if i == bestBeaconHeight-1 {
+			log.Printf("Finish Backup Beacon with Block %+v", i)
 		}
 	}
 	return nil
