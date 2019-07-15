@@ -4,6 +4,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+/**
+ * NewKeyAddShardRewardRequest create a key for store reward of a shard X at epoch T in db.
+ * @param epoch: epoch T
+ * @param shardID: shard X
+ * @param tokenID: currency unit
+ * @return ([]byte, error): Key, error of this process
+ */
 func NewKeyAddShardRewardRequest(
 	epoch uint64,
 	shardID byte,
