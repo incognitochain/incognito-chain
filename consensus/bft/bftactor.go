@@ -3,9 +3,10 @@ package bft
 import (
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"time"
 )
 
 type ProposeMsg struct {
