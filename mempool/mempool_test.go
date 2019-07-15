@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -63,13 +64,11 @@ var _ = func() (_ struct{}) {
 	}
 	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/mempool"))
 	if err != nil {
-		fmt.Println("Could not open database connection", err)
-		return
+		log.Fatal("Could not open database connection", err)
 	}
 	dbp, err = databasemp.Open("leveldbmempool", filepath.Join("./", "./testdatabase/persistmempool"))
 	if err != nil {
-		fmt.Println("Could not open persist database connection", err)
-		return
+		log.Fatal("Could not open persist database connection", err)
 	}
 	bc = blockchain.NewBlockChain(&blockchain.Config{
 		DataBase:      db,
@@ -140,7 +139,7 @@ func ResetMempoolTest() {
 	tp.poolTokenID = make(map[common.Hash]string)
 	tp.PoolCandidate = make(map[common.Hash]string)
 	tp.DuplicateTxs = make(map[common.Hash]uint64)
-	tp.config.RoleInCommittees = -1
+	tp.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 	tp.IsUnlockMempool = false
 	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
@@ -478,13 +477,13 @@ func TestTxPoolStart(t *testing.T) {
 	ResetMempoolTest()
 	cQuit := make(chan struct{})
 	go tp.Start(cQuit)
-	if tp.config.RoleInCommittees != -1 {
-		t.Fatal("Expect role is -1 but get ", tp.config.RoleInCommittees)
+	if tp.RoleInCommittees != -1 {
+		t.Fatal("Expect role is -1 but get ", tp.RoleInCommittees)
 	}
 	go tp.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, int(0)))
 	now := time.Now()
 	for {
-		if tp.config.RoleInCommittees == 0 {
+		if tp.RoleInCommittees == 0 {
 			close(cQuit)
 			return
 		}
@@ -518,15 +517,15 @@ func TestTxPoolCheckRelayShard(t *testing.T) {
 func TestTxPoolCheckPublicKeyRole(t *testing.T) {
 	ResetMempoolTest()
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
-	tp.config.RoleInCommittees = -1
+	tp.RoleInCommittees = -1
 	if isOK := tp.checkPublicKeyRole(tx1); isOK {
 		t.Fatalf("Expect false but get true")
 	}
-	tp.config.RoleInCommittees = 1
+	tp.RoleInCommittees = 1
 	if isOK := tp.checkPublicKeyRole(tx1); isOK {
 		t.Fatalf("Expect false but get true")
 	}
-	tp.config.RoleInCommittees = 0
+	tp.RoleInCommittees = 0
 	if isOK := tp.checkPublicKeyRole(tx1); !isOK {
 		t.Fatalf("Expect true but get false")
 	}
@@ -1034,7 +1033,7 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, tx1.Hash(), tx1Temp.Hash())
 
-	tp.removeTx(&tx1)
+	tp.removeTx(tx1)
 	_, err = tp.GetTx(tx1.Hash())
 	assert.NotEqual(t, nil, err)
 }
@@ -1139,7 +1138,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false)
 	// test relay shard and role in committeess
 	tp.config.RelayShards = []byte{}
-	tp.config.RoleInCommittees = -1
+	tp.RoleInCommittees = -1
 	_, _, err1 := tp.MaybeAcceptTransaction(tx1)
 	if err1 == nil {
 		t.Fatal("Expect unexpected transaction error error but no error")
@@ -1158,7 +1157,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectSansityTx], err)
 		}
 	}
-	tp.config.RoleInCommittees = 0
+	tp.RoleInCommittees = 0
 	_, _, err3 := tp.MaybeAcceptTransaction(tx1)
 	if err3 == nil {
 		t.Fatal("Expect max pool size error error but no error")
@@ -1177,7 +1176,7 @@ func TestTxPoolMaybeAcceptTransaction(t *testing.T) {
 	tp.IsBlockGenStarted = true
 	tp.IsUnlockMempool = true
 	tp.config.RelayShards = []byte{0}
-	tp.config.RoleInCommittees = 0
+	tp.RoleInCommittees = 0
 	// test push transaction to block gen
 	_, _, err5 := tp.MaybeAcceptTransaction(tx1)
 	if err5 != nil {
