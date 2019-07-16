@@ -172,7 +172,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
-		mempoolErr, ok := err.(mempool.MempoolTxError)
+		mempoolErr, ok := err.(*mempool.MempoolTxError)
 		if ok {
 			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
 				Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
