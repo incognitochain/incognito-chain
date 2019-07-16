@@ -517,15 +517,11 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			if limitFee > 0 {
 				ok := txCustomToken.GetListUTXOFromTxCustomToken(tp.config.BlockChain)
 				if !ok {
-					err := MempoolTxError{}
-					err.Init(UnexpectedTransactionError, fmt.Errorf("Can not get list utxo of tx normal token"))
-					return err
+					return NewMempoolTxError(UnexpectedTransactionError, fmt.Errorf("Can not get list utxo of tx normal token"))
 				}
 				ok = txCustomToken.CheckTransactionFee(limitFee)
 				if !ok {
-					err := MempoolTxError{}
-					err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txCustomToken.GetTxFee(), limitFee*tx.GetTxActualSize()))
-					return err
+					return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txCustomToken.GetTxFee(), limitFee*tx.GetTxActualSize()))
 				}
 			}
 		}
@@ -538,9 +534,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				txFee := txNormal.GetTxFee()
 				ok := tx.CheckTransactionFee(limitFee)
 				if !ok {
-					err := MempoolTxError{}
-					err.Init(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
-					return err
+					return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txFee, limitFee*tx.GetTxActualSize()))
 				}
 			}
 		}
