@@ -666,7 +666,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
 				replaceFee = float64(tx.GetTxFee())
 				// not a higher enough fee than return error
-				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee {
+				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee {
 					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
@@ -675,7 +675,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
-				if baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
+				if baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
 					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
 				}
 				isReplaced = true
@@ -687,7 +687,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
-				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
+				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
 					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
