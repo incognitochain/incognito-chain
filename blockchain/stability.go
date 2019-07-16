@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -63,7 +64,8 @@ func decodeSwapConfirmInst(inst []string) []byte {
 func decodeBurningConfirmInst(inst []string) []byte {
 	metaType := []byte(inst[0])
 	shardID := []byte(inst[1])
-	tokenID, _ := common.NewHashFromStr(inst[2])
+	tokenID, _, _ := base58.Base58Check{}.Decode(inst[2])
+	tokenIDFixedLen := toBytes32BigEndian(tokenID)
 	remoteAddr, _ := decodeRemoteAddr(inst[3])
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
 	txID, _ := common.NewHashFromStr(inst[5])
@@ -73,7 +75,7 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
-	flatten = append(flatten, tokenID[:]...)
+	flatten = append(flatten, tokenIDFixedLen...)
 	flatten = append(flatten, remoteAddr...)
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
 	flatten = append(flatten, txID[:]...)
@@ -92,7 +94,7 @@ func decodeRemoteAddr(addr string) ([]byte, error) {
 	return addrFixedLen[:], nil
 }
 
-// toBytes32BigEndian converts a Big.Int bytes to uint256 for of Ethereum
+// toBytes32BigEndian converts []byte to uint256 for of Ethereum
 func toBytes32BigEndian(b []byte) []byte {
 	a := [32]byte{}
 	copy(a[32-len(b):], b)
@@ -229,8 +231,25 @@ func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight u
 	}
 }
 
+// convertBurningRequestToConfirm finds all BurningRequest insts in a list of beacon blocks and convert them to BurningConfirmInst
+func convertBurningRequestToConfirm(beaconBlocks []*BeaconBlock, db database.DatabaseInterface) ([][]string, error) {
+	insts := [][]string{}
+	for _, blk := range beaconBlocks {
+		for _, inst := range blk.Body.Instructions {
+			if strconv.Itoa(metadata.BurningRequestMeta) == inst[0] {
+				burningConfirmInst, err := buildBurningConfirmInst(inst, blk.Header.Height, db)
+				if err != nil {
+					return nil, err
+				}
+				insts = append(insts, burningConfirmInst)
+			}
+		}
+	}
+	return insts, nil
+}
+
 // buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
-func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
+func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseInterface) ([]string, error) {
 	fmt.Printf("[db] build BurningConfirmInst: %s\n", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
@@ -246,8 +265,11 @@ func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
 
 	shardID := byte(common.BRIDGE_SHARD_ID)
 
-	// TODO(@0xbunyip): use mapping from tokenID to eth id
-	tokenID := md.TokenID.String()
+	// Convert to external tokenID
+	tokenID, err := db.GetBridgeExternalTokenID(md.TokenID, false)
+	if err != nil {
+		return nil, err
+	}
 
 	// Convert height to big.Int to get bytes later
 	h := big.NewInt(0).SetUint64(height)
@@ -255,7 +277,7 @@ func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
 	return []string{
 		strconv.Itoa(metadata.BurningConfirmMeta),
 		strconv.Itoa(int(shardID)),
-		tokenID,
+		base58.Base58Check{}.Encode(tokenID, 0x00),
 		md.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
@@ -270,7 +292,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	beaconBestState *BestStateBeacon,
 ) ([][]string, error) {
 	instructions := [][]string{}
-	beaconHeight := beaconBestState.BeaconHeight
 	for _, inst := range shardBlockInstructions {
 		if inst[0] == strconv.Itoa(metadata.BurningRequestMeta) {
 			fmt.Printf("[db] shardBlockInst: %s\n", inst)
@@ -289,19 +310,14 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			return [][]string{}, err
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta:
+		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta, metadata.BurningRequestMeta, metadata.BurningConfirmMeta:
 			newInst = [][]string{inst}
 
 		case metadata.IssuingETHRequestMeta:
 			newInst, err = buildInstructionsForETHIssuingReq(contentStr, shardID)
 
-		case metadata.BurningRequestMeta:
-			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
-			burningConfirm, err := buildBurningConfirmInst(inst, beaconHeight+1)
-			if err != nil {
-				return [][]string{}, err
-			}
-			newInst = [][]string{inst, burningConfirm}
+		// TODO(@0xbunyip): remove processing BurningRequestMeta when reverting beacon blocks
+		// case metadata.BurningRequestMeta:
 
 		default:
 			continue
@@ -341,34 +357,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 					}
 					resTxs = append(resTxs, tx)
 				}
-
 			}
-			// shardToProcess, err := strconv.Atoi(l[1])
-			// if err != nil {
-			// 	continue
-			// }
-			// if shardToProcess == int(shardID) {
-			// 	// metaType, err := strconv.Atoi(l[0])
-			// 	// if err != nil {
-			// 	// 	return nil, err
-			// 	// }
-			// 	// var newIns []string
-			// 	// switch metaType {
-			// 	// case metadata.BeaconSalaryRequestMeta:
-			// 	// 	txs, err := blockgen.buildBeaconSalaryRes(l[0], l[3], producerPrivateKey)
-			// 	// 	if err != nil {
-			// 	// 		return nil, err
-			// 	// 	}
-			// 	// 	resTxs = append(resTxs, txs...)
-			// 	// }
-
-			// }
-			// if l[0] == StakeAction || l[0] == RandomAction {
-			// 	continue
-			// }
-			// if len(l) <= 2 {
-			// 	continue
-			// }
 			metaType, err := strconv.Atoi(l[0])
 			if err != nil {
 				return nil, err
