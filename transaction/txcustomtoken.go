@@ -676,3 +676,28 @@ func (tx *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr)
 }
+
+// GetTxFeeToken - return Token Fee use to pay for privacy token Tx
+func (tx *TxCustomToken) GetTxFeeToken() uint64 {
+	outValue := uint64(0)
+	for _, out := range tx.TxTokenData.Vouts {
+		outValue += out.Value
+	}
+	inValue := uint64(0)
+	if len(tx.listUtxo) > 0 {
+		for _, in := range tx.TxTokenData.Vins {
+			utxo := tx.listUtxo[in.TxCustomTokenID]
+			vout := utxo.TxTokenData.Vouts[in.VoutIndex]
+			inValue += vout.Value
+		}
+	}
+	if inValue < outValue {
+		return 0
+	}
+	return inValue - outValue
+}
+
+// GetTxFee - return fee PRV of Tx which contain privacy token Tx
+func (tx *TxCustomToken) GetTxFee() uint64 {
+	return tx.Tx.GetTxFee()
+}
