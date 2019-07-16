@@ -20,7 +20,9 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 
 	result := *httpServer.config.BlockChain.BestState.Beacon
 	result.BestBlock = blockchain.BeaconBlock{}
-	Logger.log.Infof("handleGetBeaconBestState result: %+v", result)
+
+	//Logger.log.Infof("handleGetBeaconBestState result: %+v", result)
+
 	return result, nil
 }
 
@@ -60,7 +62,7 @@ func (httpServer *HttpServer) handleGetCandidateList(params interface{}, closeCh
 	CBWFNR := httpServer.config.BlockChain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
 	epoch := httpServer.config.BlockChain.BestState.Beacon.Epoch
 	result := jsonresult.CandidateListsResult{
-		Epoch:                                  epoch,
+		Epoch: epoch,
 		CandidateShardWaitingForCurrentRandom:  CSWFCR,
 		CandidateBeaconWaitingForCurrentRandom: CBWFCR,
 		CandidateShardWaitingForNextRandom:     CSWFNR,
