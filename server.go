@@ -237,8 +237,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,
 		DataBase:    serverObj.dataBase,
-		//MemCache:          serverObj.memCache,
-		MemCache:          nil,
+		MemCache:    serverObj.memCache,
+		//MemCache:          nil,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,

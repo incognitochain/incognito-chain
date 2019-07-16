@@ -565,8 +565,11 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 			// clear cached data
 			if blockchain.config.MemCache != nil {
 				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
-				if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e != nil {
-					_ = blockchain.config.MemCache.Delete(cachedKey)
+				if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e == nil {
+					er := blockchain.config.MemCache.Delete(cachedKey)
+					if er != nil {
+						Logger.log.Error("can not delete memcache", "GetListOutputcoinCachedKey", base58.Base58Check{}.Encode(cachedKey, 0x0))
+					}
 				}
 			}
 			if err != nil {

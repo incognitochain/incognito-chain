@@ -4,6 +4,7 @@ package memcache
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"sort"
 	"strings"
 	"sync"
@@ -68,7 +69,8 @@ func (db *MemoryCache) Has(key []byte) (bool, error) {
 	if db.db == nil {
 		return false, errMemorydbClosed
 	}
-	_, ok := db.db[string(key)]
+	keyStr := base58.Base58Check{}.Encode(key, 0x0)
+	_, ok := db.db[keyStr]
 	return ok, nil
 }
 
@@ -81,9 +83,10 @@ func (db *MemoryCache) Get(key []byte) ([]byte, error) {
 		db.lock.RUnlock()
 		return nil, errMemorydbClosed
 	}
-	if entry, ok := db.db[string(key)]; ok {
+	keyStr := base58.Base58Check{}.Encode(key, 0x0)
+	if entry, ok := db.db[keyStr]; ok {
 		// check expired time
-		if expired, ok1 := db.expired[string(key)]; ok1 {
+		if expired, ok1 := db.expired[keyStr]; ok1 {
 			if expired.Before(time.Now()) {
 				// is expired
 				db.lock.RUnlock()
@@ -106,7 +109,8 @@ func (db *MemoryCache) Put(key []byte, value []byte) error {
 	if db.db == nil {
 		return errMemorydbClosed
 	}
-	db.db[string(key)] = common.CopyBytes(value)
+	keyStr := base58.Base58Check{}.Encode(key, 0x0)
+	db.db[keyStr] = common.CopyBytes(value)
 	return nil
 }
 
@@ -118,8 +122,9 @@ func (db *MemoryCache) PutExpired(key []byte, value []byte, expired time.Duratio
 	if db.db == nil {
 		return errMemorydbClosed
 	}
-	db.db[string(key)] = common.CopyBytes(value)
-	db.expired[string(key)] = time.Now().Add(expired * time.Millisecond)
+	keyStr := base58.Base58Check{}.Encode(key, 0x0)
+	db.db[keyStr] = common.CopyBytes(value)
+	db.expired[keyStr] = time.Now().Add(expired * time.Millisecond)
 	return nil
 }
 
@@ -131,7 +136,8 @@ func (db *MemoryCache) Delete(key []byte) error {
 	if db.db == nil {
 		return errMemorydbClosed
 	}
-	delete(db.db, string(key))
+	keyStr := base58.Base58Check{}.Encode(key, 0x0)
+	delete(db.db, keyStr)
 	return nil
 }
 
