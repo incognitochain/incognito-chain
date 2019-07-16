@@ -108,7 +108,7 @@ func (tx *TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 	tokenDataSize += 4 // for TxTokenPrivacyData.Type
 	tokenDataSize += 8 // for TxTokenPrivacyData.Amount
 
-	meta := tx.Metadata
+	meta := tx.TxTokenPrivacyData.TxNormal.Metadata
 	if meta != nil {
 		tokenDataSize += meta.CalculateSize()
 	}
