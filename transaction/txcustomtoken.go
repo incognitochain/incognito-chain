@@ -232,7 +232,7 @@ func (customTokenTx *TxCustomToken) ValidateTransaction(hasPrivacy bool, db data
 	return false, err
 }
 
-func (customTokenTx *TxCustomToken) getListUTXOFromTxCustomToken(
+func (customTokenTx *TxCustomToken) GetListUTXOFromTxCustomToken(
 	bcr metadata.BlockchainRetriever,
 ) bool {
 	data := make(map[common.Hash]TxCustomToken)
@@ -287,7 +287,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	}
 
 	//Process CustomToken Transfer
-	ok := customTokenTx.getListUTXOFromTxCustomToken(bcr)
+	ok := customTokenTx.GetListUTXOFromTxCustomToken(bcr)
 	if !ok {
 		return false, errors.New("getListUTXOFromTxCustomToken")
 	}
@@ -373,6 +373,42 @@ func (customTokenTx *TxCustomToken) GetTxActualSize() uint64 {
 	}
 	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
+
+// GetTxTokenActualSize - return size of tx token data in full tx
+// size of this tx = (custom token data size)
+/*func (tx *TxCustomToken) GetTxTokenActualSize() uint64 {
+	tokenDataSize := uint64(0)
+
+	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
+	tokenDataSize += uint64(len(tx.TxTokenData.PropertyID))
+	tokenDataSize += 4 // for TxTokenData.Type
+
+	for _, vin := range tx.TxTokenData.Vins {
+		tokenDataSize += uint64(len(vin.Signature))
+		tokenDataSize += uint64(len(vin.TxCustomTokenID))
+		tokenDataSize += 4 // for VoutIndex
+		tokenDataSize += uint64(privacy.PaymentAddressSize)
+	}
+
+	// size of Vouts (include value and payment address)
+	sizeVout := 8 + privacy.PaymentAddressSize
+	tokenDataSize += uint64(len(tx.TxTokenData.Vouts) * sizeVout)
+
+	return uint64(math.Ceil(float64(tokenDataSize) / 1024))
+}*/
+
+func (tx *TxCustomToken) CheckTransactionFee(minFeePerKbTx uint64) bool {
+	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+	return tx.GetTxFee() >= fullFee
+}
+
+/*func (tx *TxCustomToken) CheckTransactionFeePrivacyToken(minFeePerKbTx uint64) bool {
+	if tx.IsSalaryTx() {
+		return true
+	}
+	fullFee := minFeePerKbTx * tx.GetTxTokenActualSize()
+	return tx.GetTxFeeToken() >= fullFee
+}*/
 
 // CreateTxCustomToken ...
 func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
@@ -679,4 +715,29 @@ func (txCustomToken *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 		return false, nil
 	}
 	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomToken, bcr)
+}
+
+// GetTxFeeToken - return Token Fee use to pay for privacy token Tx
+/*func (tx *TxCustomToken) GetTxFeeToken() uint64 {
+	outValue := uint64(0)
+	for _, out := range tx.TxTokenData.Vouts {
+		outValue += out.Value
+	}
+	inValue := uint64(0)
+	if len(tx.listUtxo) > 0 {
+		for _, in := range tx.TxTokenData.Vins {
+			utxo := tx.listUtxo[in.TxCustomTokenID]
+			vout := utxo.TxTokenData.Vouts[in.VoutIndex]
+			inValue += vout.Value
+		}
+	}
+	if inValue < outValue {
+		return 0
+	}
+	return inValue - outValue
+}*/
+
+// GetTxFee - return fee PRV of Tx which contain privacy token Tx
+func (tx *TxCustomToken) GetTxFee() uint64 {
+	return tx.Tx.GetTxFee()
 }
