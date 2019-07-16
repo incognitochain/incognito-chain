@@ -3,13 +3,15 @@ package mubft
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/pubsub"
+	libp2p "github.com/libp2p/go-libp2p-peer"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -282,7 +284,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 			newShardToBeaconBlock := shardBlk.CreateShardToBeaconBlock(engine.config.BlockChain)
 			newShardToBeaconMsg, err := MakeMsgShardToBeaconBlock(newShardToBeaconBlock)
 			if err == nil {
-				go engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg)
+				go engine.config.Server.PushMessageToBeacon(newShardToBeaconMsg, map[libp2p.ID]bool{})
 			}
 			//fmt.Println("Create and Push all Cross Shard Block")
 			//PUSH CROSS-SHARD
@@ -292,7 +294,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 			for sID, newCrossShardBlock := range newCrossShardBlocks {
 				newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)
 				if err == nil {
-					engine.config.Server.PushMessageToShard(newCrossShardMsg, sID)
+					engine.config.Server.PushMessageToShard(newCrossShardMsg, sID, map[libp2p.ID]bool{})
 				}
 			}
 		}()

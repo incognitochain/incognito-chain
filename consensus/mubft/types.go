@@ -16,8 +16,8 @@ type serverInterface interface {
 	GetPeerIDsFromPublicKey(string) []libp2p.ID
 	PushMessageToAll(wire.Message) error
 	PushMessageToPeer(wire.Message, libp2p.ID) error
-	PushMessageToShard(wire.Message, byte) error
-	PushMessageToBeacon(wire.Message) error
+	PushMessageToShard(wire.Message, byte, map[libp2p.ID]bool) error
+	PushMessageToBeacon(wire.Message, map[libp2p.ID]bool) error
 	PushMessageToPbk(wire.Message, string) error
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 }
