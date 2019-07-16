@@ -515,12 +515,6 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			limitFee := tp.config.FeeEstimator[shardID].limitFee
 			txCustomToken := tx.(*transaction.TxCustomToken)
 			if limitFee > 0 {
-				/*ok := txCustomToken.GetListUTXOFromTxCustomToken(tp.config.BlockChain)
-				if !ok {
-					err := MempoolTxError{}
-					err.Init(UnexpectedTransactionError, fmt.Errorf("Can not get list utxo of tx normal token"))
-					return err
-				}*/
 				ok := txCustomToken.CheckTransactionFee(limitFee)
 				if !ok {
 					return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d", txHash.String(), txCustomToken.GetTxFee(), limitFee*tx.GetTxActualSize()))
