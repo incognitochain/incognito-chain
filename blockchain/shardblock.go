@@ -66,7 +66,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Header.BeaconHeight == 0 {
 		return false, errors.New("Beacon is invalid")
 	}
-	if shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
+	if shardBlock.Header.BeaconHeight > 0 && shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
 		return false, errors.New("Beacon is invalid")
 	}
 	return true, nil
