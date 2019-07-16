@@ -367,6 +367,27 @@ func (tx *TxCustomToken) GetTxActualSize() uint64 {
 	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
+func (tx *TxCustomToken) GetTxTokenActualSize() uint64 {
+	tokenDataSize := uint64(0)
+
+	tokenDataSize += uint64(len(tx.TxTokenData.PropertyName))
+	tokenDataSize += uint64(len(tx.TxTokenData.PropertyID))
+	tokenDataSize += 4 // for TxTokenData.Type
+
+	for _, vin := range tx.TxTokenData.Vins {
+		tokenDataSize += uint64(len(vin.Signature))
+		tokenDataSize += uint64(len(vin.TxCustomTokenID))
+		tokenDataSize += 4 // for VoutIndex
+		tokenDataSize += uint64(privacy.PaymentAddressSize)
+	}
+
+	// size of Vouts (include value and payment address)
+	sizeVout := 8 + privacy.PaymentAddressSize
+	tokenDataSize += uint64(len(tx.TxTokenData.Vouts) * sizeVout)
+
+	return uint64(math.Ceil(float64(tokenDataSize) / 1024))
+}
+
 // CreateTxCustomToken ...
 func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
