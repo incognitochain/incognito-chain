@@ -258,21 +258,3 @@ func (db *db) IsBridgeTokenExistedByType(
 	}
 	return true, nil
 }
-
-func (db *db) GetBridgeExternalTokenID(
-	incTokenID common.Hash,
-	isCentralized bool,
-) ([]byte, error) {
-	prefix := getBridgePrefix(isCentralized)
-	key := append(prefix, incTokenID[:]...)
-	tokenInfoBytes, dbErr := db.lvdb.Get(key, nil)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
-	}
-	bridgeTokenInfo := BridgeTokenInfo{}
-	err := json.Unmarshal(tokenInfoBytes, &bridgeTokenInfo)
-	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, err)
-	}
-	return bridgeTokenInfo.ExternalTokenID, nil
-}
