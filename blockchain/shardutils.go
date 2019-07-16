@@ -138,14 +138,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 		return nil, err
 	}
 
-	if shardID == byte(common.BRIDGE_SHARD_ID) {
-		burningConfirmInsts, err := convertBurningRequestToConfirm(beaconBlocks, bc.config.DataBase)
-		if err != nil {
-			return nil, err
-		}
-		instructions = append(instructions, burningConfirmInsts...)
-	}
-
 	for _, tx := range transactions {
 
 		switch tx.GetMetadataType() {

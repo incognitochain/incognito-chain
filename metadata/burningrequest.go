@@ -126,11 +126,7 @@ func (bReq *BurningRequest) BuildReqActions(tx Transaction, bcr BlockchainRetrie
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{
-		strconv.Itoa(BurningRequestMeta),
-		strconv.Itoa(common.BRIDGE_SHARD_ID),
-		actionContentBase64Str,
-	}
+	action := []string{strconv.Itoa(BurningRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
