@@ -90,14 +90,15 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 			}
 
 		}
-		// TODO(@0xbunyip): move inside previous if: only generate instruction when there's a new committee
-		// Generate instruction storing merkle root of validators pubkey and send to beacon
-		if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
-			startHeight := blockgen.chain.BestState.Shard[shardID].ShardHeight + 2
-			bridgePubkeyInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
-			prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
-			fmt.Printf("[db] added bridgeCommRoot in shard block %d\n", prevBlock.Header.Height+1)
-		}
+		// // TODO(@0xbunyip): move inside previous if: only generate instruction when there's a new committee
+		// // Generate instruction storing merkle root of validators pubkey and send to beacon
+		// bridgeID := byte(common.BRIDGE_SHARD_ID)
+		// if shardID == bridgeID {
+		// 	startHeight := blockgen.chain.BestState.Shard[shardID].ShardHeight + 2
+		// 	bridgePubkeyInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
+		// 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
+		// 	fmt.Printf("[db] added bridgeCommRoot in shard block %d\n", prevBlock.Header.Height+1)
+		// }
 	}
 	if !reflect.DeepEqual(swapInstruction, []string{}) {
 		instructions = append(instructions, swapInstruction)
@@ -110,7 +111,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 
 	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
 	// Also, pick BurningConfirm inst and save to bridge block
-	if shardID == byte(1) { // TODO(@0xbunyip): replace with bridge's shardID
+	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	if shardID == bridgeID {
 		// TODO(0xbunyip): validate these instructions in shardprocess
 		commPubkeyInst := pickBeaconPubkeyRootInstruction(beaconBlocks)
 		if len(commPubkeyInst) > 0 {

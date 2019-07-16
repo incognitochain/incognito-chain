@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -66,7 +67,7 @@ func getShardAndBeaconBlocks(
 	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
 ) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
-	bridgeID := byte(1) // TODO(@0xbunyip): replace with bridge shardID
+	bridgeID := byte(common.BRIDGE_SHARD_ID)
 	bridgeBlock, err := bc.GetShardBlockByHeight(height, bridgeID)
 	if err != nil {
 		return nil, nil, err
