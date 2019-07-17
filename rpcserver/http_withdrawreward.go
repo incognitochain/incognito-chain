@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -46,14 +47,22 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if len(arrayParams) != 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
 	}
-	paymentAddress := arrayParams[0]
-	senderKey, err := wallet.Base58CheckDeserialize(paymentAddress.(string))
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-	// senderKey only contain payment address
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+	senderKeyParam := arrayParams[0]
+
+	var keySet *incognitokey.KeySet
+
+	if senderKeyParam != "" {
+		senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		keySet = &senderKey.KeySet
+	} else {
+		keySet = httpServer.config.Server.GetUserKeySet()
 	}
 
 	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
@@ -63,7 +72,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 
 	rewardAmounts := make(map[common.Hash]uint64)
 	for _, coinID := range allCoinIDs {
-		amount, err := (*httpServer.config.Database).GetCommitteeReward(senderKey.KeySet.PaymentAddress.Pk, coinID)
+		amount, err := (*httpServer.config.Database).GetCommitteeReward(keySet.PaymentAddress.Pk, coinID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
