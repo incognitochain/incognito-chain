@@ -612,7 +612,9 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	for _, tx := range temps {
+	tokenIDs := make(map[common.Hash]interface{})
+	for tokenID, tx := range temps {
+		tokenIDs[tokenID] = 0
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = tx.TxTokenPrivacyData.PropertyName
 		item.Symbol = tx.TxTokenPrivacyData.PropertySymbol
@@ -643,7 +645,10 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
-	for _, customTokenCrossShard := range listCustomTokenCrossShard {
+	for tokenID, customTokenCrossShard := range listCustomTokenCrossShard {
+		if _, ok := tokenIDs[tokenID]; ok {
+			continue
+		}
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = customTokenCrossShard.PropertyName
 		item.Symbol = customTokenCrossShard.PropertySymbol
@@ -903,6 +908,36 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	}
 	result["Commitments"] = temp
 	Logger.log.Debugf("handleRandomCommitments result: %+v", result)
+	return result, nil
+}
+
+// handleListSerialNumbers - return list all serialnumber in shard for token ID
+func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	var err error
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	if len(arrayParams) > 0 {
+		tokenIDTemp, ok := arrayParams[0].(string)
+		if !ok {
+			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+		}
+		tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
+		if err != nil {
+			Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		}
+	}
+	shardID := 0
+	if len(arrayParams) > 1 {
+		shardID = int(arrayParams[1].(float64))
+	}
+	db := *(httpServer.config.Database)
+	result, err := db.ListSerialNumber(*tokenID, byte(shardID))
+	if err != nil {
+		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+	}
 	return result, nil
 }
 
