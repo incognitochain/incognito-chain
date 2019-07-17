@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -16,23 +14,14 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func buildInstructionsForETHIssuingReq(
+func buildInstructionsForIssuingReq(
 	contentStr string,
 	shardID byte,
+	metaType int,
 ) ([][]string, error) {
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		return [][]string{}, err
-	}
-	var issuingETHReqAction metadata.IssuingETHReqAction
-	err = json.Unmarshal(contentBytes, &issuingETHReqAction)
-	if err != nil {
-		return nil, err
-	}
 	instructions := [][]string{}
-
 	returnedInst := []string{
-		strconv.Itoa(metadata.IssuingETHRequestMeta),
+		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
 		"accepted",
 		contentStr,
@@ -43,16 +32,41 @@ func buildInstructionsForETHIssuingReq(
 }
 
 func (blockgen *BlkTmplGenerator) buildIssuanceTx(
-	tx metadata.Transaction,
+	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	ac *metadata.AccumulatedValues,
 ) (metadata.Transaction, error) {
-	issuingReq := tx.GetMetadata().(*metadata.IssuingRequest)
+	if shardID != common.BRIDGE_SHARD_ID {
+		return nil, nil
+	}
 
+	db := blockgen.chain.GetDatabase()
+	fmt.Println("haha start buildIssuanceTx")
+
+	issuingReqAction, err := metadata.ParseIssuingInstContent(contentStr)
+	if err != nil {
+		return nil, err
+	}
+	issuingReq := issuingReqAction.Meta
 	issuingTokenID := issuingReq.TokenID
 	issuingTokenName := issuingReq.TokenName
+	if !ac.CanProcessCIncToken(issuingTokenID) {
+		fmt.Printf("WARNING: The issuing token (%s) was already used in the current block.", issuingTokenID.String())
+		return nil, nil
+	}
+
+	ok, err := db.CanProcessCIncToken(issuingTokenID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
+		return nil, nil
+	}
+
 	issuingRes := metadata.NewIssuingResponse(
-		*tx.Hash(),
+		issuingReqAction.TxReqID,
 		metadata.IssuingResponseMeta,
 	)
 
@@ -92,6 +106,7 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 		Logger.log.Error(initErr)
 		return nil, initErr
 	}
+	ac.CBridgeTokens = append(ac.CBridgeTokens, &issuingTokenID)
 	return resTx, nil
 }
 
@@ -105,10 +120,9 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		return nil, nil
 	}
 
-	db := blockgen.chain.GetDatabase()
 	fmt.Println("haha start buildETHIssuanceTx")
-
-	issuingETHReqAction, err := metadata.ParseInstContent(contentStr)
+	db := blockgen.chain.GetDatabase()
+	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
 		return nil, err
 	}
@@ -119,13 +133,14 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		fmt.Println("WARNING: an error occured during verifying proof & parsing receipt: ", err)
 		return nil, err
 	}
-	bb, _ := json.MarshalIndent(constructedReceipt, "", "    ")
-	fmt.Println("haha constructedReceipt: ", string(bb))
+	if constructedReceipt == nil {
+		return nil, nil
+	}
 
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique eth tx as combination of block hash and tx index.
 	uniqETHTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
-	isUsedInBlock := metadata.IsETHHashUsedInBlock(uniqETHTx, ac.UniqETHTxsUsed)
+	isUsedInBlock := metadata.IsETHTxHashUsedInBlock(uniqETHTx, ac.UniqETHTxsUsed)
 	if isUsedInBlock {
 		fmt.Println("WARNING: already issued for the hash in current block: ", uniqETHTx)
 		return nil, nil
@@ -148,9 +163,6 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		fmt.Println("WARNING: could not find log map out from receipt")
 		return nil, nil
 	}
-
-	jj, _ := json.Marshal(logMap)
-	fmt.Println("haha logMap: ", string(jj))
 
 	// the token might be ETH/ERC20
 	ethereumAddr, ok := logMap["_token"].(rCommon.Address)
@@ -189,9 +201,6 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	} else { // ERC20
 		amount = amt.Uint64()
 	}
-
-	fmt.Println("haha addressStr: ", addressStr)
-	fmt.Println("haha amount: ", amount)
 
 	receiver := &privacy.PaymentInfo{
 		Amount:         amount,
@@ -236,6 +245,6 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	}
 	ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqETHTx)
 	ac.DBridgeTokenPair[md.IncTokenID.String()] = ethereumToken
-	fmt.Println("haha create res tx ok")
+	fmt.Println("haha create tx ok")
 	return resTx, nil
 }

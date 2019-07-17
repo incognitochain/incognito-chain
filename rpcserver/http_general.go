@@ -33,6 +33,10 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetNodeRole(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return httpServer.config.Server.GetNodeRole(), nil
+}
+
 func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetNetworkInfoResult{}
 
@@ -125,7 +129,10 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 			continue
 		}
 
-		keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
 		shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
@@ -162,6 +169,7 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	var (
 		isTransaction bool
 		isBlock       bool
+		isBeaconBlock bool
 	)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
@@ -180,6 +188,18 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	_, _, err := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
 	if err != nil {
 		isBlock = false
+		_, _, err = httpServer.config.BlockChain.GetBeaconBlockByHash(*hash)
+		if err != nil {
+			isBeaconBlock = false
+		} else {
+			result := jsonresult.HashValueDetail{
+				IsBlock:       isBlock,
+				IsTransaction: false,
+				IsBeaconBlock: true,
+			}
+			Logger.log.Infof("handleCheckHashValue result: %+v", result)
+			return result, nil
+		}
 	} else {
 		isBlock = true
 		result := jsonresult.HashValueDetail{
@@ -204,6 +224,7 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	result := jsonresult.HashValueDetail{
 		IsBlock:       isBlock,
 		IsTransaction: isTransaction,
+		IsBeaconBlock: isBeaconBlock,
 	}
 	Logger.log.Infof("handleCheckHashValue result: %+v", result)
 	return result, nil
@@ -436,7 +457,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	// param #3: tokenId
 	var tokenId *common.Hash
 	if len(arrayParams) >= 4 && arrayParams[3] != nil {
-		tokenId, err = common.NewHashFromStr(arrayParams[3].(string))
+		tokenId, err = common.Hash{}.NewHashFromStr(arrayParams[3].(string))
 	}
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -448,6 +469,10 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	}
 	Logger.log.Infof("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetFeeEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return httpServer.config.FeeEstimator, nil
 }
 
 // handleGetActiveShards - return active shard num

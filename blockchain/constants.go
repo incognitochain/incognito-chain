@@ -77,29 +77,10 @@ const (
 
 // for beacon
 // public key
-//var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
-var PreSelectBeaconNodeTestnetSerializedPubkey = []string{
-	"17YiepCpN6tMwD91MGSXbEBjLBjeUysVcQJm87kCSHfXA2bWM46",
-	"16jWkWY5xRqZDkwDQaA32uvnakS27YyyWqeWtap6a6ELEc2Vbwi",
-	"15gXn3sEVp41Kdquy696ftT5bi3fRRbExFT7p5ZftEQusaJGi3y",
-}
-
-//var PreSelectShardNodeTestnetSerializedPubkey = []string{}
-var PreSelectShardNodeTestnetSerializedPubkey = []string{
-	// Committee of shard 0
-	"183GBqPhSfcEFZP7MQFTnuLVuX2PRkd5HFA3qkqkLN4STghvxpw", //shard 0
-	"15ezEJs61P8qq6F8Zrhbcd2RpuqrtDWtzPheJWiEM6ct1sWjFTi", //shard 0
-	"15s3gAPBWfWshH4uZLwL1W4wWYamFqRs2GUMKY8Qmdhet3a6s7Z", //shard 0
-
-	// Committee of shard 1
-	"18BxVp5W9LwXMzeKxauAA6BC1HvUCsC6XAij2Ng1K99ghb9G6hX", //shard 1
-	"16H5t5ezMF16S5j5ZEyHP3N4nBBcsppg5bRfU5Ft8N1VZYBQu38", //shard 1
-	"156qsnqcYWPUb8PLbdowV4TtUhS8kuEboABfHgVeh4MguoPwqVj", //shard 1
-}
+var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
+var PreSelectShardNodeTestnetSerializedPubkey = []string{}
 
 func init() {
-	return
-
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
 		return
 	}

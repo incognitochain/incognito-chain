@@ -1,5 +1,5 @@
 {
-  "Version": "0.1.0-beta",
-  "Note": "New code is needed to be update",
-  "RemoveData": false
+  "Version": "0.1.1-beta",
+  "Note": "New code is needed to be update with new signature",
+  "RemoveData": true
 }

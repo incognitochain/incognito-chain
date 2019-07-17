@@ -5,7 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
@@ -15,10 +15,11 @@ type KeyWallet struct {
 	Depth       byte   // 1 bytes
 	ChildNumber []byte // 4 bytes
 	ChainCode   []byte // 32 bytes
-	KeySet      cashec.KeySet
+	KeySet      incognitokey.KeySet
 }
 
 // NewMasterKey creates a new master extended PubKey from a Seed
+// Seed is a bytes array which any size
 func NewMasterKey(seed []byte) (*KeyWallet, error) {
 	// Generate PubKey and chaincode
 	hmac := hmac.New(sha512.New, []byte("Incognito Seed"))
@@ -33,7 +34,7 @@ func NewMasterKey(seed []byte) (*KeyWallet, error) {
 	keyBytes := intermediary[:32]  // use to create master private/public keypair
 	chainCode := intermediary[32:] // be used with public PubKey (in keypair) for new Child keys
 
-	keySet := (&cashec.KeySet{}).GenerateKey(keyBytes)
+	keySet := (&incognitokey.KeySet{}).GenerateKey(keyBytes)
 
 	// Create the PubKey struct
 	key := &KeyWallet{
@@ -46,7 +47,8 @@ func NewMasterKey(seed []byte) (*KeyWallet, error) {
 	return key, nil
 }
 
-// NewChildKey derives a Child PubKey from a given parent as outlined by bip32
+// NewChildKey derives a Child KeyWallet from a given parent as outlined by bip32
+// 2 child keys is derived from one key and a same child index are the same
 func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 	intermediary, err := key.getIntermediary(childIdx)
 	if err != nil {
@@ -55,10 +57,10 @@ func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 
 	newSeed := []byte{}
 	newSeed = append(newSeed[:], intermediary[:32]...)
-	newKeyset := (&cashec.KeySet{}).GenerateKey(newSeed)
+	newKeyset := (&incognitokey.KeySet{}).GenerateKey(newSeed)
 	// Create Child KeySet with data common to all both scenarios
 	childKey := &KeyWallet{
-		ChildNumber: uint32Bytes(childIdx),
+		ChildNumber: common.Uint32ToBytes(childIdx),
 		ChainCode:   intermediary[32:],
 		Depth:       key.Depth + 1,
 		KeySet:      *newKeyset,
@@ -67,8 +69,9 @@ func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 	return childKey, nil
 }
 
+// getIntermediary
 func (key *KeyWallet) getIntermediary(childIdx uint32) ([]byte, error) {
-	childIndexBytes := uint32Bytes(childIdx)
+	childIndexBytes := common.Uint32ToBytes(childIdx)
 
 	var data []byte
 	data = append(data, childIndexBytes...)
@@ -81,13 +84,13 @@ func (key *KeyWallet) getIntermediary(childIdx uint32) ([]byte, error) {
 	return hmac.Sum(nil), nil
 }
 
-// Serialize a KeySet to a 78 byte byte slice
+// Serialize receives keyType and serializes key which has keyType to bytes array
+// and append 4-byte checksum into bytes array
 func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
 	buffer.WriteByte(keyType)
 	if keyType == PriKeyType {
-
 		buffer.WriteByte(key.Depth)
 		buffer.Write(key.ChildNumber)
 		buffer.Write(key.ChainCode)
@@ -113,6 +116,8 @@ func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 		keyBytes = append(keyBytes, byte(len(key.KeySet.ReadonlyKey.Rk))) // set length Skenc
 		keyBytes = append(keyBytes, key.KeySet.ReadonlyKey.Rk[:]...)      // set Pkenc
 		buffer.Write(keyBytes)
+	} else {
+		return []byte{}, NewWalletError(InvalidKeyTypeErr, nil)
 	}
 
 	// Append the standard doublesha256 checksum
@@ -125,7 +130,9 @@ func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 	return serializedKey, nil
 }
 
-// Base58CheckSerialize encodes the KeySet in the standard Incognito base58 encoding
+// Base58CheckSerialize encodes the key corresponding to keyType in KeySet
+// in the standard Incognito base58 encoding
+// It returns the encoding string of the key
 func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 	serializedKey, err := key.Serialize(keyType)
 	if err != nil {
@@ -135,7 +142,9 @@ func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 	return base58.Base58Check{}.Encode(serializedKey, common.ZeroByte)
 }
 
-// Deserialize a byte slice into a KeySet
+// Deserialize receives a byte array and deserializes into KeySet
+// because data contains keyType and serialized data of corresponding key
+// it returns KeySet just contain corresponding key
 func Deserialize(data []byte) (*KeyWallet, error) {
 	var key = &KeyWallet{}
 	keyType := data[0]
@@ -174,22 +183,12 @@ func Deserialize(data []byte) (*KeyWallet, error) {
 }
 
 // Base58CheckDeserialize deserializes a KeySet encoded in base58 encoding
-// because data contained serialized key type -> return object can contain data of keyset with only one of data keyset
+// because data contains keyType and serialized data of corresponding key
+// it returns KeySet just contain corresponding key
 func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	b, _, err := base58.Base58Check{}.Decode(data)
 	if err != nil {
 		return nil, err
 	}
 	return Deserialize(b)
-}
-
-func GetPublicKeyFromPrivateKeyStr(privateKeyStr string) ([]byte, error) {
-	keyWallet, err := Base58CheckDeserialize(privateKeyStr)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
-
-	return keyWallet.KeySet.PaymentAddress.Pk, nil
 }

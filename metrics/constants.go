@@ -29,6 +29,9 @@ const (
 	TxPoolRemovedTime                 = "TxPoolRemovedTime"
 	TxPoolRemovedTimeDetails          = "TxPoolRemovedTimeDetails"
 	TxPoolTxBeginEnter                = "TxPoolTxBeginEnter"
+	
+	BeaconBlock = "BeaconBlock"
+	ShardBlock  = "ShardBlock"
 )
 
 // tag
@@ -41,6 +44,9 @@ const (
 	ValidateConditionTag = "validatecond"
 	TxPrivacyOrNotTag    = "txprivacyornot"
 	ShardIDTag           = "shardid"
+	NodeIDTag            = "node"
+	TxHashTag               = "txhash"
+	FuncTag = "func"
 )
 
 //Tag value

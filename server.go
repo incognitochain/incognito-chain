@@ -16,16 +16,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 
+	"cloud.google.com/go/storage"
+
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -34,6 +35,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus/mubft"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
@@ -53,6 +55,7 @@ type Server struct {
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
 	dataBase          database.DatabaseInterface
+	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
 	tempMemPool       *mempool.TxPool
@@ -63,7 +66,7 @@ type Server struct {
 	waitGroup         sync.WaitGroup
 	netSync           *netsync.NetSync
 	addrManager       *addrmanager.AddrManager
-	userKeySet        *cashec.KeySet
+	userKeySet        *incognitokey.KeySet
 	wallet            *wallet.Wallet
 	consensusEngine   *mubft.Engine
 	blockgen          *blockchain.BlkTmplGenerator
@@ -184,6 +187,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cQuit = make(chan struct{})
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
+	serverObj.memCache = memcache.New()
 
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
@@ -236,6 +240,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams:       serverObj.chainParams,
 		DataBase:          serverObj.dataBase,
+		MemCache:          serverObj.memCache,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,
@@ -278,7 +283,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 					serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 						mempool.DefaultEstimateFeeMaxRollback,
 						mempool.DefaultEstimateFeeMinRegisteredBlocks,
-						cfg.LimitFee)
+						cfg.LimitFee, cfg.LimitFeeToken)
 				} else {
 					serverObj.feeEstimator[shardID] = feeEstimator
 				}
@@ -288,7 +293,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 				serverObj.feeEstimator[shardID] = mempool.NewFeeEstimator(
 					mempool.DefaultEstimateFeeMaxRollback,
 					mempool.DefaultEstimateFeeMinRegisteredBlocks,
-					cfg.LimitFee)
+					cfg.LimitFee, cfg.LimitFeeToken)
 			}
 		}
 	} else {
@@ -638,7 +643,7 @@ func (serverObj Server) Start() {
 	}
 
 	if serverObj.memPool != nil {
-		serverObj.memPool.LoadOrResetDatabaseMP()
+		serverObj.memPool.LoadOrResetDatabaseMempool()
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
 	}
@@ -966,7 +971,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 
 	pbk := ""
 	if msg.PublicKey != "" {
-		err := cashec.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
+		err := incognitokey.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
 		if err == nil {
 			pbk = msg.PublicKey
 		} else {
@@ -1129,6 +1134,35 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	}
 
 	return result
+}
+
+func (serverObj *Server) GetNodeRole() string {
+	if serverObj.userKeySet == nil {
+		return ""
+	}
+	pubkey := serverObj.userKeySet.GetPublicKeyB58()
+	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconCommittee) > -1 {
+		return "BEACON_VALIDATOR"
+	}
+	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconPendingValidator) > -1 {
+		return "BEACON_WAITING"
+	}
+	shardCommittee := blockchain.GetBestStateBeacon().GetShardCommittee()
+	for _, s := range shardCommittee {
+		if common.IndexOfStr(pubkey, s) > -1 {
+			return "SHARD_VALIDATOR"
+		}
+	}
+	shardPendingCommittee := blockchain.GetBestStateBeacon().GetShardPendingValidator()
+	for _, s := range shardPendingCommittee {
+		if common.IndexOfStr(pubkey, s) > -1 {
+			return "SHARD_VALIDATOR"
+		}
+	}
+	if cfg.NodeMode == "relay" {
+		return "RELAY"
+	}
+	return ""
 }
 
 /*
@@ -1520,7 +1554,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 			serverObj.blockChain.BestState.Shard[shardID].Hash(),
 		}
 	}
-	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidPendingBlockHeight()
+	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
 	if serverObj.userKeySet != nil {
 		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
 		if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && userRole == common.NODEMODE_SHARD {

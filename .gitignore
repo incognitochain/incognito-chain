@@ -38,6 +38,7 @@ privacy/server/verifying\.key
 .env
 datadirs/data**
 data/**
+ethdata/**
 constant-*
 constant_*
 incognito-*
@@ -55,5 +56,9 @@ go.sum
 priv.json
 bin/keylist.json
 bin/incognito
+bin/bootnode
 incognito
 config
+
+mempool/testdatabase
+cmd/incognito

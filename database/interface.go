@@ -6,10 +6,16 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+type BatchData struct {
+	Key   []byte
+	Value []byte
+}
+
 // DatabaseInterface provides the interface that is used to store blocks, txs, or any data of Incognito network.
 type DatabaseInterface interface {
 	// basic function
 	Put(key, value []byte) error
+	PutBatch(data []BatchData) error
 	Get(key []byte) ([]byte, error)
 	Delete(key []byte) error
 	HasValue(key []byte) (bool, error)
@@ -49,7 +55,7 @@ type DatabaseInterface interface {
 	GetIndexOfBlock(common.Hash) (uint64, byte, error)
 	GetBlockByIndex(uint64, byte) (common.Hash, error)
 
-	// Block index
+	// Block index for beacon
 	StoreBeaconBlockIndex(common.Hash, uint64) error
 	GetIndexOfBeaconBlock(common.Hash) (uint64, error)
 	GetBeaconBlockHashByIndex(uint64) (common.Hash, error)
@@ -59,27 +65,29 @@ type DatabaseInterface interface {
 	GetTransactionIndexById(txId common.Hash) (common.Hash, int, *DatabaseError)
 	DeleteTransactionIndex(txId common.Hash) error
 
-	// Best state of shard chain
+	// Best state of Prev
 	StorePrevBestState([]byte, bool, byte) error
 	FetchPrevBestState(bool, byte) ([]byte, error)
 	CleanBackup(bool, byte) error
+
+	// Best state of shard chain
 	StoreShardBestState(interface{}, byte) error
 	FetchShardBestState(byte) ([]byte, error)
 	CleanShardBestState() error
 
 	// Best state of beacon chain
 	StoreBeaconBestState(interface{}) error
-	StoreCommitteeByHeight(uint64, interface{}) error
+	FetchBeaconBestState() ([]byte, error)
+	CleanBeaconBestState() error
+
+	// Commitee with epoch
+	//StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
 	StoreBeaconCommitteeByEpoch(uint64, interface{}) error
 	DeleteCommitteeByEpoch(uint64) error
-
-	//
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
 	FetchBeaconCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
-	FetchBeaconBestState() ([]byte, error)
-	CleanBeaconBestState() error
 
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error
@@ -154,7 +162,9 @@ type DatabaseInterface interface {
 	InsertETHTxHashIssued([]byte) error
 	IsETHTxHashIssued([]byte) (bool, error)
 	CanProcessTokenPair([]byte, common.Hash) (bool, error)
-	UpdateBridgeTokenPairInfo(common.Hash, []byte, bool) error
+	CanProcessCIncToken(common.Hash) (bool, error)
+	UpdateBridgeTokenInfo(common.Hash, []byte, bool) error
+	GetAllBridgeTokens() ([]byte, error)
 
 	// Block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error

@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -35,7 +35,7 @@ type multiSigScheme struct {
 	scheme *privacy.MultiSigScheme
 }
 
-func (multiSig *multiSigScheme) Init(userKeySet *cashec.KeySet, committee []string) {
+func (multiSig *multiSigScheme) Init(userKeySet *incognitokey.KeySet, committee []string) {
 	multiSig.combine.SigningCommittee = make([]string, len(committee))
 	copy(multiSig.combine.SigningCommittee, committee)
 	multiSig.scheme = new(privacy.MultiSigScheme)

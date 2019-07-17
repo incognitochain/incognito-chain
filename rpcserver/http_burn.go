@@ -15,7 +15,7 @@ import (
 func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetBurnProof params: %+v", params)
 	listParams := params.([]interface{})
-	txID, err := common.NewHashFromStr(listParams[0].(string))
+	txID, err := common.Hash{}.NewHashFromStr(listParams[0].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -121,7 +121,7 @@ func findBurnConfirmInst(insts [][]string, txID *common.Hash) ([]string, int) {
 			continue
 		}
 
-		h, err := common.NewHashFromStr(inst[len(inst)-2])
+		h, err := common.Hash{}.NewHashFromStr(inst[len(inst)-2])
 		if err != nil {
 			continue
 		}

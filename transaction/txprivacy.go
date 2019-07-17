@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
@@ -105,8 +105,12 @@ func (tx *Tx) Init(
 	}
 
 	// create sender's key set from sender's spending key
-	senderFullKey := cashec.KeySet{}
-	senderFullKey.ImportFromPrivateKey(senderSK)
+	senderFullKey := incognitokey.KeySet{}
+	err = senderFullKey.ImportFromPrivateKey(senderSK)
+	if err != nil {
+		Logger.log.Error(err)
+		return NewTransactionErr(UnexpectedErr, err)
+	}
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
 
@@ -611,7 +615,7 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 
 func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	sender := []byte{} // Empty byte slice for coinbase tx
-	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 {
+	if tx.Proof != nil && len(tx.Proof.InputCoins) > 0 && !tx.IsPrivacy() {
 		sender = tx.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
 	}
 	pubkeys, amounts := tx.GetReceivers()
