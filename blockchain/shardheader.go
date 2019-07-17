@@ -84,7 +84,6 @@ func (shardHeader *ShardHeader) MetaHash() common.Hash {
 }
 
 func (shardHeader *ShardHeader) Hash() common.Hash {
-	// TODO(@0xbunyip): modify only bridge shard
 	// Block header of bridge uses Keccak256 as a hash func to check on Ethereum when relaying blocks
 	blkMetaHash := shardHeader.MetaHash()
 	blkInstHash := shardHeader.InstructionMerkleRoot
