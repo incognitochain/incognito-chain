@@ -1386,20 +1386,33 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		txType = transaction.NormalCoinType
 	}
 	if txType == -1 {
-		mapBridgeTokenID, err := blockchain.GetDatabase().GetBridgeTokensAmounts()
+
+		db := blockchain.GetDatabase()
+		allBridgeTokensBytes, err := db.GetAllBridgeTokens()
 		if err != nil {
 			return nil, err
 		}
-		for _, bridgeTokenIDBytes := range mapBridgeTokenID {
-			var tokenWithAmount lvdb.TokenWithAmount
-			err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
-			if err != nil {
-				return nil, err
-			}
+		var allBridgeTokens []*lvdb.BridgeTokenInfo
+		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 
-			if res, err := coinID.Cmp(tokenWithAmount.TokenID); err == nil && res == 0 {
+		if err != nil {
+			return nil, err
+		}
+
+		// mapBridgeTokenID, err := blockchain.GetDatabase().GetBridgeTokensAmounts()
+		// if err != nil {
+		// 	return nil, err
+		// }
+		for _, bridgeTokenIDs := range allBridgeTokens {
+			// var tokenWithAmount lvdb.TokenWithAmount
+			// err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
+			// if err != nil {
+			// 	return nil, err
+			// }
+
+			if res, err := coinID.Cmp(bridgeTokenIDs.TokenID); err == nil && res == 0 {
 				txType = transaction.CustomTokenPrivacyType
-				//fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", tokenWithAmount.TokenID)
+				fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", bridgeTokenIDs.TokenID)
 				break
 			}
 		}
