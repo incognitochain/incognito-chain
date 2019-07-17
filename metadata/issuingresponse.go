@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -13,6 +15,10 @@ import (
 type IssuingResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
+}
+
+type IssuingResAction struct {
+	IncTokenID *common.Hash `json:"incTokenID"`
 }
 
 func NewIssuingResponse(requestedTxID common.Hash, metaType int) *IssuingResponse {
@@ -118,4 +124,22 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 	instUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *IssuingResponse) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	incTokenID := tx.GetTokenID()
+	actionContent := map[string]interface{}{
+		"incTokenID": incTokenID,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(IssuingResponseMeta), actionContentBase64Str}
+	return [][]string{action}, nil
 }

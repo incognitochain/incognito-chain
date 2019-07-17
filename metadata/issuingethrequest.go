@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strconv"
+	"fmt"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -25,6 +26,7 @@ type IssuingETHReqAction struct {
 }
 
 func ParseETHIssuingInstContent(instContentStr string) (*IssuingETHReqAction, error) {
+	fmt.Println("haha instContentStr: ", instContentStr)
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
 		return nil, err
