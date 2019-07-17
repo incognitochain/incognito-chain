@@ -41,7 +41,7 @@ func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params inte
 	)
 }
 
-// Get the reward amount of a private key
+// handleGetRewardAmount - Get the reward amount of a payment address with all existed token
 func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -80,4 +80,10 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	}
 
 	return rewardAmounts, nil
+}
+
+// handleListRewardAmount - Get the reward amount of all committee with all existed token
+func (httpServer *HttpServer) handleListRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	result := (*httpServer.config.Database).ListCommitteeReward()
+	return result, nil
 }
