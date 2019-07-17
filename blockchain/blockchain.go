@@ -467,12 +467,12 @@ Uses an existing database to update the set of used tx by saving list serialNumb
 this is a list tx-out which are used by a new tx
 */
 func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
-	//for _, item1 := range view.listSerialNumbers {
-	err := blockchain.config.DataBase.StoreSerialNumbers(*view.tokenID, view.listSerialNumbers, view.shardID)
-	if err != nil {
-		return err
+	if len(view.listSerialNumbers) > 0 {
+		err := blockchain.config.DataBase.StoreSerialNumbers(*view.tokenID, view.listSerialNumbers, view.shardID)
+		if err != nil {
+			return err
+		}
 	}
-	//}
 	return nil
 }
 
