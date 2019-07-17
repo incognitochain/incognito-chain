@@ -76,8 +76,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		PRV := common.Hash{4}
-		if coinID == PRV {
+		if coinID == common.PRVCoinID {
 			rewardAmountResult["PRV"] = amount
 		} else {
 			rewardAmounts[coinID] = amount
@@ -89,7 +88,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	Z
+
 	for _, token := range cusPrivTok {
 		if rewardAmounts[token.TxTokenPrivacyData.PropertyID] > 0 {
 			rewardAmountResult[token.TxTokenPrivacyData.PropertySymbol] = rewardAmounts[token.TxTokenPrivacyData.PropertyID]
