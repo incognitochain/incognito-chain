@@ -350,8 +350,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 		}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			fmt.Printf("[ndh] error - - %+v\n", err)
-			return err
+			continue
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:

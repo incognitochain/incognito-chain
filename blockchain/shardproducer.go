@@ -77,8 +77,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
 	bridgePubkeyInst := []string{}
 	if beaconHeight%common.EPOCH == 0 {
-		fmt.Printf("[db] shardPendingValidator: %s\n", shardPendingValidator)
 		if len(shardPendingValidator) > 0 {
+			fmt.Printf("[db] shardPendingValidator: %s\n", shardPendingValidator)
 			Logger.log.Critical("shardPendingValidator", shardPendingValidator)
 			Logger.log.Critical("shardCommittee", shardCommittee)
 			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize)
@@ -89,16 +89,15 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *cashec.KeySet, s
 				return nil, err
 			}
 
+			// Generate instruction storing merkle root of validators pubkey and send to beacon
+			bridgeID := byte(common.BRIDGE_SHARD_ID)
+			if shardID == bridgeID {
+				startHeight := blockgen.chain.BestState.Shard[shardID].ShardHeight + 2
+				bridgePubkeyInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
+				prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
+				fmt.Printf("[db] added bridgeCommRoot in shard block %d\n", prevBlock.Header.Height+1)
+			}
 		}
-		// // TODO(@0xbunyip): move inside previous if: only generate instruction when there's a new committee
-		// // Generate instruction storing merkle root of validators pubkey and send to beacon
-		// bridgeID := byte(common.BRIDGE_SHARD_ID)
-		// if shardID == bridgeID {
-		// 	startHeight := blockgen.chain.BestState.Shard[shardID].ShardHeight + 2
-		// 	bridgePubkeyInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
-		// 	prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
-		// 	fmt.Printf("[db] added bridgeCommRoot in shard block %d\n", prevBlock.Header.Height+1)
-		// }
 	}
 	if !reflect.DeepEqual(swapInstruction, []string{}) {
 		instructions = append(instructions, swapInstruction)
