@@ -61,6 +61,8 @@ const (
 	Condition2                            = "condition2"
 	Condition3                            = "condition3"
 	Condition4                            = "condition4"
+	Condition41                            = "condition42"
+	Condition42                            = "condition42"
 	Condition5                            = "condition5"
 	Condition6                            = "condition6"
 	Condition7                            = "condition7"
@@ -69,4 +71,5 @@ const (
 	Condition10                           = "condition10"
 	Condition11                           = "condition11"
 	VTBITxTypeMetic                       = "vtbitxtype"
+	ReplaceTxMetic                       = "replacetx"
 )
