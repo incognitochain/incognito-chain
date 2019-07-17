@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -198,7 +200,7 @@ func parseAndConcatPubkeys(vals []string) []byte {
 // buildBeaconSwapConfirmInstruction stores in an instruction the list of new beacon validators and the block that they start signing on
 func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
 	beaconComm := parseAndConcatPubkeys(currentValidators)
-	fmt.Printf("[db] added beaconComm: %d %x\n", startHeight, beaconComm)
+	fmt.Printf("[db] new beaconComm: %d %x\n", startHeight, beaconComm)
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
@@ -242,16 +244,19 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 	}
 	md := burningReqAction.Meta
 	txID := burningReqAction.RequestedTxID // to prevent double-release token
-
-	// Convert amount to big.Int to get bytes later
-	amount := big.NewInt(0).SetUint64(md.BurningAmount)
-
 	shardID := byte(common.BRIDGE_SHARD_ID)
 
 	// Convert to external tokenID
 	tokenID, err := findExternalTokenID(&md.TokenID, db)
 	if err != nil {
 		return nil, err
+	}
+
+	// Convert amount to big.Int to get bytes later
+	amount := big.NewInt(0).SetUint64(md.BurningAmount)
+	if bytes.Equal(tokenID, rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes()) {
+		// Convert Gwei to Wei for Ether
+		amount = amount.Mul(amount, big.NewInt(1000000000))
 	}
 
 	// Convert height to big.Int to get bytes later
