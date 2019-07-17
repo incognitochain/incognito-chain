@@ -68,6 +68,7 @@ type TxPool struct {
 	poolTokenID               map[common.Hash]string //Token ID List in Mempool
 	tokenIDMtx                sync.RWMutex
 	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
+	CRemoveTxs                chan<- metadata.Transaction // channel to deliver txs to block gen
 	RoleInCommittees          int                         //Current Role of Node
 	roleMtx                   sync.RWMutex
 	ScanTime                  time.Duration
@@ -101,8 +102,9 @@ func (tp *TxPool) Init(cfg *Config) {
 }
 
 // InitChannelMempool - init channel
-func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
+func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction, cRemoveTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
+	tp.CRemoveTxs = cRemoveTxs
 }
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
@@ -697,6 +699,11 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				tp.removeTx(txToBeReplaced)
 				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
 				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
+				if tp.IsBlockGenStarted {
+					go func(tx metadata.Transaction) {
+						tp.CRemoveTxs <- tx
+					}(tx)
+				}
 				return nil, true
 			} else {
 				return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Unexpected error occur")), true
