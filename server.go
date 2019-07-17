@@ -240,8 +240,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,
 		DataBase:    serverObj.dataBase,
-		//MemCache:          serverObj.memCache,
-		MemCache:          nil,
+		MemCache:    serverObj.memCache,
+		//MemCache:          nil,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,
@@ -651,7 +651,7 @@ func (serverObj Server) Start() {
 	go serverObj.pusubManager.Start()
 }
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
-	<-time.Tick(serverObj.memPool.Scantime)
+	<-time.Tick(serverObj.memPool.ScanTime)
 	serverObj.memPool.LockPool()
 	txDescs := serverObj.memPool.GetPool()
 	for _, txDesc := range txDescs {

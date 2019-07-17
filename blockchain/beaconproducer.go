@@ -487,6 +487,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 		shardID,
 		shardBlock.Instructions,
 		beaconBestState,
+		blockChain.config.DataBase,
 	)
 	if err != nil {
 		Logger.log.Errorf("Build stability instructions failed: %s \n", err.Error())
