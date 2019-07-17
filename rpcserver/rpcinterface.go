@@ -94,6 +94,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendContractingRequest: (*HttpServer).handleCreateAndSendContractingRequest,
 	getBridgeTokensAmounts:          (*HttpServer).handleGetBridgeTokensAmounts,
 	checkETHHashIssued:              (*HttpServer).handleCheckETHHashIssued,
+	getAllBridgeTokens:              (*HttpServer).handleGetAllBridgeTokens,
 	// wallet
 	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
 	defragmentAccount:                (*HttpServer).handleDefragmentAccount,

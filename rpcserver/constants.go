@@ -119,6 +119,7 @@ const (
 	createAndSendTxWithIssuingETHReq = "createandsendtxwithissuingethreq"
 	getRelayedETHHeader              = "getrelayedethheader"
 	checkETHHashIssued               = "checkethhashissued"
+	getAllBridgeTokens               = "getallbridgetokens"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof = "getbeaconswapproof"
