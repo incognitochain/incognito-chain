@@ -5,9 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"io"
 	"log"
 	"math/big"
@@ -16,6 +13,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/consensus/multisigschemes"
+	"github.com/incognitochain/incognito-chain/memcache"
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"

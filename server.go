@@ -1,17 +1,10 @@
 package main
 
 import (
-	"cloud.google.com/go/storage"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
-	"golang.org/x/net/context"
-	"google.golang.org/api/option"
 	"io/ioutil"
 	"log"
 	"net"
@@ -22,6 +15,15 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"cloud.google.com/go/storage"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/memcache"
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
 
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/metadata"

@@ -73,13 +73,13 @@ func (s *ShardChain) CreateNewBlock(round int) BlockInterface {
 	return newBlock
 }
 
-func (s *ShardChain) ValidateBlock(interface{}) int {
-	return 1
+func (s *ShardChain) ValidateBlock(interface{}) error {
+	return nil
 }
 
-func (s *ShardChain) ValidatePreSignBlock(block interface{}) bool {
+func (s *ShardChain) ValidatePreSignBlock(block interface{}) error {
 	_ = block.(*blockchain.BeaconBlock)
-	return true
+	return nil
 }
 
 func (s *ShardChain) InsertBlk(block interface{}, isValid bool) {
