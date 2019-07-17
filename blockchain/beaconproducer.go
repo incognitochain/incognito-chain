@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -87,7 +87,6 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		rewardByEpochInstruction, err = blkTmplGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch)
 		if err != nil {
-			fmt.Printf("[ndh]-[ERROR] -- --- -- --- %+v\n", err)
 			return nil, err
 		}
 		beaconBlock.Header.Epoch++
@@ -373,13 +372,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	swapers := [][]string{}
 	stabilityInstructions := [][]string{}
 	acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
-	// str, _ := acceptedBlockRewardInfo.GetStringFormat()
-	// fmt.Printf("[ndh] - - - - - - aaaaaaaaaaaaaaa\n\n\n")
-	// for key, value := range shardBlock.Header.TotalTxsFee {
-	// 	fmt.Printf("[ndh] ======================= %+v %+v \n", key, value)
-	// }
 	acceptedRewardInstructions, err := acceptedBlockRewardInfo.GetStringFormat()
-	// fmt.Printf("[ndh] ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ %+v\n", acceptedRewardInstructions)
 	if err != nil {
 		panic("[ndh] Cant create acceptedRewardInstructions")
 	}
@@ -408,7 +401,6 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 		Logger.log.Criticalf("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
 	}
 	for _, l := range instructions {
-		// fmt.Printf("[ndh]-[INFO] - - Instruction from shard: %+v\n", l)
 		if len(l) > 0 {
 			if l[0] == StakeAction {
 				stakers = append(stakers, l)
