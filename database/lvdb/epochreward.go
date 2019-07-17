@@ -1,13 +1,23 @@
 package lvdb
 
 import (
-	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-func (db *db) AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uint64, tokenID common.Hash) error {
-	fmt.Printf("[ndh]-[DATABASE] AddShardRewardRequest- - - %+v %+v %+v %+v\n", epoch, shardID, rewardAmount, tokenID)
+/**
+ * AddShardRewardRequest save the amount of rewards for a shard X at epoch T.
+ * @param epoch: epoch T
+ * @param shardID: shard X
+ * @param rewardAmount: the amount of rewards
+ * @param tokenID: currency unit
+ * @return error
+ */
+func (db *db) AddShardRewardRequest(
+	epoch uint64,
+	shardID byte,
+	rewardAmount uint64,
+	tokenID common.Hash,
+) error {
 	key, err := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	if err != nil {
 		return err
@@ -15,7 +25,7 @@ func (db *db) AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uin
 	oldValue, err := db.Get(key)
 	if err != nil {
 		err1 := db.Put(key, common.Uint64ToBytes(rewardAmount))
-		//fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 1- - - %+v\n", err1)
+		////fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 1- - - %+v\n", err1)
 		if err1 != nil {
 			return err1
 		}
@@ -26,24 +36,45 @@ func (db *db) AddShardRewardRequest(epoch uint64, shardID byte, rewardAmount uin
 		}
 		newValue += rewardAmount
 		err = db.Put(key, common.Uint64ToBytes(newValue))
-		//fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 2- - - %+v\n", err)
+		////fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 2- - - %+v\n", err)
 	}
 	return nil
 }
 
-func (db *db) GetRewardOfShardByEpoch(epoch uint64, shardID byte, tokenID common.Hash) (uint64, error) {
-	fmt.Printf("[ndh]-[DATABASE] GetRewardOfShardByEpoch- - - %+v %+v %+v\n", epoch, shardID, tokenID)
+/**
+ * GetRewardOfShardByEpoch get the amount of rewards for a shard X at epoch T.
+ * @param epoch: epoch T
+ * @param shardID: shard X
+ * @param tokenID: currency unit
+ * @return (uint64, error): the amount of rewards, error of this process
+ */
+func (db *db) GetRewardOfShardByEpoch(
+	epoch uint64,
+	shardID byte,
+	tokenID common.Hash,
+) (uint64, error) {
 	key, _ := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	rewardAmount, err := db.Get(key)
 	if err != nil {
-		//fmt.Printf("[ndh]-[ERROR] 1 --- %+v\n", err)
+		////fmt.Printf("[ndh]-[ERROR] 1 --- %+v\n", err)
 		return 0, nil
 	}
-	//fmt.Printf("[ndh] - - - %+v\n", rewardAmount)
+	////fmt.Printf("[ndh] - - - %+v\n", rewardAmount)
 	return common.BytesToUint64(rewardAmount)
 }
 
-func (db *db) AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error {
+/**
+ * AddCommitteeReward increase the amount of rewards for a person in committee P.
+ * @param committeeAddress: Public key of person P
+ * @param amount: the amount of rewards
+ * @param tokenID: currency unit
+ * @return error
+ */
+func (db *db) AddCommitteeReward(
+	committeeAddress []byte,
+	amount uint64,
+	tokenID common.Hash,
+) error {
 	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
 	if err != nil {
 		return err
@@ -68,7 +99,16 @@ func (db *db) AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID
 	return nil
 }
 
-func (db *db) GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error) {
+/**
+ * AddCommitteeReward get the amount of rewards for a person in committee P.
+ * @param committeeAddress: Public key of person P
+ * @param tokenID: currency unit
+ * @return (uint64, error): the amount of rewards, error of this process
+ */
+func (db *db) GetCommitteeReward(
+	committeeAddress []byte,
+	tokenID common.Hash,
+) (uint64, error) {
 	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
 	if err != nil {
 		return 0, err
@@ -81,7 +121,18 @@ func (db *db) GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (
 	return common.BytesToUint64(value)
 }
 
-func (db *db) RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error {
+/**
+ * RemoveCommitteeReward decrease the amount of rewards for a person in committee P.
+ * @param committeeAddress: Public key of person P
+ * @param amount: the amount of rewards
+ * @param tokenID: currency unit
+ * @return error
+ */
+func (db *db) RemoveCommitteeReward(
+	committeeAddress []byte,
+	amount uint64,
+	tokenID common.Hash,
+) error {
 	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
 	if err != nil {
 		return err
