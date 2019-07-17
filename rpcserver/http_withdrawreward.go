@@ -2,9 +2,8 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
@@ -70,16 +69,40 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
+	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)
 	for _, coinID := range allCoinIDs {
 		amount, err := (*httpServer.config.Database).GetCommitteeReward(keySet.PaymentAddress.Pk, coinID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		rewardAmounts[coinID] = amount
+		PRV := common.Hash{4}
+		if coinID == PRV {
+			rewardAmountResult["PRV"] = amount
+		} else {
+			rewardAmounts[coinID] = amount
+		}
 	}
 
-	return rewardAmounts, nil
+	cusPrivTok, crossPrivToken, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
+
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	Z
+	for _, token := range cusPrivTok {
+		if rewardAmounts[token.TxTokenPrivacyData.PropertyID] > 0 {
+			rewardAmountResult[token.TxTokenPrivacyData.PropertySymbol] = rewardAmounts[token.TxTokenPrivacyData.PropertyID]
+		}
+	}
+
+	for _, token := range crossPrivToken {
+		if rewardAmounts[token.TokenID] > 0 {
+			rewardAmountResult[token.PropertySymbol] = rewardAmounts[token.TokenID]
+		}
+	}
+
+	return rewardAmountResult, nil
 }
 
 // handleListRewardAmount - Get the reward amount of all committee with all existed token
