@@ -172,6 +172,7 @@ type DatabaseInterface interface {
 	AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
 	GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error)
 	RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
+	ListCommitteeReward() map[string]map[common.Hash]uint64
 
 	BackupShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error  //beacon
 	BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash) error        //shard
