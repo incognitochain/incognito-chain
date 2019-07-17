@@ -289,12 +289,10 @@ func (bestStateBeacon *BestStateBeacon) GenerateInstruction(
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(swappedValidator, ","))
 			swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 			instructions = append(instructions, swapBeaconInstructions)
+			// Generate instruction storing merkle root of validators pubkey and send to bridge
+			beaconRootInst := buildBeaconSwapConfirmInstruction(currentValidators, block.Header.Height+1)
+			instructions = append(instructions, beaconRootInst)
 		}
-
-		// TODO(@0xbunyip): move inside previous if: only generate instruction when there's a new committee
-		// Generate instruction storing merkle root of validators pubkey and send to bridge
-		beaconRootInst := buildBeaconSwapConfirmInstruction(currentValidators, block.Header.Height+1)
-		instructions = append(instructions, beaconRootInst)
 	}
 	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
