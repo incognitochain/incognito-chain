@@ -918,7 +918,7 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if len(arrayParams) > 0 {
-		tokenIDTemp, ok := arrayParams[2].(string)
+		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
 			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
 			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
