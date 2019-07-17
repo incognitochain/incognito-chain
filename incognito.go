@@ -126,7 +126,7 @@ func mainMaster(serverChan chan<- *Server) error {
 
 }
 func main() {
-	limitThreads := os.Getenv("THREADS")
+	limitThreads := os.Getenv("CPU")
 	if limitThreads == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	} else {
