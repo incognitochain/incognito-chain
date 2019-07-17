@@ -13,9 +13,9 @@ import (
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 /*
@@ -211,7 +211,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	go blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 	err := blockchain.updateDatabaseFromBeaconBlock(block)
 	if err != nil {
-		fmt.Printf("[ndh] - - - [Error here] %+v \n", err)
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
 	}
@@ -324,7 +323,6 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		if block.Header.Height%common.EPOCH == 1 {
 			rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(block.Header.Epoch - 1)
 			if err != nil {
-				fmt.Printf("[ndh]-[ERROR] -- --- -- --- %+v\n", err)
 				return err
 			}
 		}

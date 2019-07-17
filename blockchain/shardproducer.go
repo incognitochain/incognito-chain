@@ -22,7 +22,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	//============Build body=============
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
-	fmt.Printf("[ndh] Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	//fmt.Printf("[ndh] Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	fmt.Printf("\n[db] producing block: %d\n", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
@@ -147,7 +147,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	// 	Logger.log.Error(err)
 	// 	return nil, err
 	// }
-	// fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
+	// //fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
 	//============End Build Body===========
 	blockCreationLeftOver := common.MinShardBlkCreation.Nanoseconds() - time.Since(start).Nanoseconds()
 	txsToAddFromBlock, err := blockgen.getTransactionForNewBlock(&producerKeySet.PrivateKey, shardID, blockgen.chain.config.DataBase, beaconBlocks, blockCreationLeftOver)
@@ -159,22 +159,22 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	}
 	err = blockgen.chain.BuildResponseTransactionFromTxsWithMetadata(&block.Body, &producerKeySet.PrivateKey)
 	if err != nil {
-		fmt.Printf("[ndh] BuildResponseTransactionFromTxsWithMetadata err %+v \n", err)
+		//fmt.Printf("[ndh] BuildResponseTransactionFromTxsWithMetadata err %+v \n", err)
 		return nil, err
 	}
 	//TODO calculate fee for another tx type
 	for _, tx := range block.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 		txType := tx.GetType()
-		// fmt.Printf("[ndh] - - - - TxType %+v\n", txType)
+		// //fmt.Printf("[ndh] - - - - TxType %+v\n", txType)
 		if txType == common.TxCustomTokenPrivacyType {
 			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
 			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
-			// fmt.Printf("[ndh]####################### %+v %+v\n", *txCustomPrivacy.GetTokenID(), totalTxsFee[*txCustomPrivacy.GetTokenID()])
+			// //fmt.Printf("[ndh]####################### %+v %+v\n", *txCustomPrivacy.GetTokenID(), totalTxsFee[*txCustomPrivacy.GetTokenID()])
 		}
 	}
 	// for key, value := range totalTxsFee {
-	// 	fmt.Printf("[ndh] - key %+v Value: %+v\n", key, value)
+	// 	//fmt.Printf("[ndh] - key %+v Value: %+v\n", key, value)
 	// }
 	//============Build Header=============
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
