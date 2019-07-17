@@ -286,7 +286,7 @@ func (blockchain *BlockChain) updateStuffForIssuingRes(
 	err := db.UpdateBridgeTokenInfo(
 		*tx.GetTokenID(),
 		[]byte{},
-		false,
+		true,
 	)
 	return err
 }

@@ -30,6 +30,10 @@ func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 		switch inst[0] {
 		case strconv.Itoa(metadata.BurningRequestMeta):
 			updatingInfoByTokenID, err = chain.processBurningReq(inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.IssuingResponseMeta):
+			err = chain.processIssuingRes(inst)
+		case strconv.Itoa(metadata.IssuingETHResponseMeta):
+			err = chain.processIssuingETHRes(inst)
 		}
 		if err != nil {
 			return err
@@ -52,6 +56,45 @@ func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 		}
 	}
 	return nil
+}
+
+func (chain *BlockChain) processIssuingRes(inst []string) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(inst[1])
+	if err != nil {
+		return err
+	}
+	var issuingResAction metadata.IssuingResAction
+	err = json.Unmarshal(contentBytes, &issuingResAction)
+	if err != nil {
+		return err
+	}
+	return chain.GetDatabase().UpdateBridgeTokenInfo(
+		*issuingResAction.IncTokenID,
+		[]byte{},
+		true,
+	)
+}
+
+func (chain *BlockChain) processIssuingETHRes(inst []string) error {
+	contentBytes, err := base64.StdEncoding.DecodeString(inst[1])
+	if err != nil {
+		return err
+	}
+	var issuingETHResAction metadata.IssuingETHResAction
+	err = json.Unmarshal(contentBytes, &issuingETHResAction)
+	if err != nil {
+		return err
+	}
+	db := chain.GetDatabase()
+	err = db.InsertETHTxHashIssued(issuingETHResAction.Meta.UniqETHTx)
+	if err != nil {
+		return err
+	}
+	return db.UpdateBridgeTokenInfo(
+		*issuingETHResAction.IncTokenID,
+		issuingETHResAction.Meta.ExternalTokenID,
+		false,
+	)
 }
 
 func decodeContent(content string, action interface{}) error {
