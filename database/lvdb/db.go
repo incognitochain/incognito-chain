@@ -11,10 +11,6 @@ type db struct {
 	lvdb *leveldb.DB
 }
 
-type hasher interface {
-	Hash() *common.Hash
-}
-
 var (
 	prevShardPrefix         = []byte("prevShd-")
 	prevBeaconPrefix        = []byte("prevBea-")
@@ -54,7 +50,7 @@ var (
 	// centralized bridge
 	centralizedBridgePrefix   = []byte("centralizedbridge-")
 	decentralizedBridgePrefix = []byte("decentralizedbridge-")
-	bridgePrefix              = []byte("bridge-")
+	ethTxHashIssued           = []byte("ethtxhashissued-")
 
 	// Incognito -> Ethereum relayer
 	burnConfirmPrefix = []byte("burnConfirm-")
@@ -95,6 +91,20 @@ func (db *db) Put(key, value []byte) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Put"))
 	}
 	return nil
+}
+
+func (db *db) Batch(data []database.BatchData) leveldb.Batch {
+	batch := new(leveldb.Batch)
+	for _, v := range data {
+		batch.Put(v.Key, v.Value)
+	}
+	return *batch
+}
+
+func (db *db) PutBatch(data []database.BatchData) error {
+	batch := db.Batch(data)
+	err := db.lvdb.Write(&batch, nil)
+	return err
 }
 
 func (db *db) Delete(key []byte) error {
@@ -138,35 +148,6 @@ func (db db) GetKey(keyType string, key common.Hash) []byte {
 		dbkey = append(tokenInitPrefix, key[:]...)
 	case string(privacyTokenInitPrefix):
 		dbkey = append(privacyTokenInitPrefix, key[:]...)
-	}
-	return dbkey
-}
-
-func (db db) GetKeyOldVersion(keyType string, key interface{}) []byte {
-	var dbkey []byte
-	switch keyType {
-	case string(blockKeyPrefix):
-		dbkey = append(blockKeyPrefix, key.(*common.Hash)[:]...)
-	case string(blockKeyIdxPrefix):
-		dbkey = append(blockKeyIdxPrefix, key.(*common.Hash)[:]...)
-	case string(serialNumbersPrefix):
-		dbkey = append(serialNumbersPrefix, []byte(key.(*common.Hash).String())...)
-	case string(commitmentsPrefix):
-		dbkey = append(commitmentsPrefix, []byte(key.(*common.Hash).String())...)
-	case string(outcoinsPrefix):
-		dbkey = append(outcoinsPrefix, []byte(key.(*common.Hash).String())...)
-	case string(snderivatorsPrefix):
-		dbkey = append(snderivatorsPrefix, []byte(key.(*common.Hash).String())...)
-	case string(TokenPrefix):
-		dbkey = append(TokenPrefix, []byte(key.(*common.Hash).String())...)
-	case string(PrivacyTokenPrefix):
-		dbkey = append(PrivacyTokenPrefix, []byte(key.(*common.Hash).String())...)
-	case string(PrivacyTokenCrossShardPrefix):
-		dbkey = append(PrivacyTokenCrossShardPrefix, []byte(key.(*common.Hash).String())...)
-	case string(tokenInitPrefix):
-		dbkey = append(tokenInitPrefix, []byte(key.(*common.Hash).String())...)
-	case string(privacyTokenInitPrefix):
-		dbkey = append(privacyTokenInitPrefix, []byte(key.(*common.Hash).String())...)
 	}
 	return dbkey
 }

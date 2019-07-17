@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"log"
+	"strconv"
+	"strings"
 )
 
 var (
@@ -119,6 +122,95 @@ func main() {
 					return
 				}
 				log.Println(string(result))
+			}
+		case backupChain:
+			{
+				if cfg.Beacon == false && cfg.ShardIDs == "" {
+					log.Println("No Expected Params")
+					return
+				}
+				bc, err := makeBlockChain(cfg.ChainDataDir, cfg.TestNet)
+				if err != nil {
+					log.Println("Error create blockchain variable ", err)
+					return
+				}
+				if cfg.Beacon {
+					err := BackupBeaconChain(bc, cfg.OutDataDir, cfg.FileName)
+					if err != nil {
+						log.Printf("Beacon Beackup failed, err %+v", err)
+					}
+				}
+				var shardIDs = []byte{}
+				if cfg.ShardIDs != "" {
+					// all shard
+					if cfg.ShardIDs == "all" {
+						var numberOfShards int
+						if cfg.TestNet {
+							numberOfShards = blockchain.ChainTestParam.ActiveShards
+						} else {
+							numberOfShards = blockchain.ChainMainParam.ActiveShards
+						}
+						for i:=0; i < numberOfShards; i++ {
+							shardIDs = append(shardIDs, byte(i))
+						}
+					} else {
+						// some particular shard
+						strs := strings.Split(cfg.ShardIDs, ",")
+						if len(strs) > 256 {
+							log.Println("Number of shard id to process exceed limit")
+							return
+						}
+						for _, value := range strs {
+							temp, err := strconv.Atoi(value)
+							if err != nil {
+								log.Println("ShardID Params MUST contain number only in range 0-255")
+								return
+							}
+							if temp > 256 {
+								log.Println("ShardID exceed MAX value (> 255)")
+								return
+							}
+							shardID := byte(temp)
+							if common.IndexOfByte(shardID, shardIDs) > 0 {
+								continue
+							}
+							shardIDs = append(shardIDs, shardID)
+						}
+					}
+					//backup shard
+					for _, shardID := range shardIDs {
+						err := BackupShardChain(bc, shardID, cfg.OutDataDir, cfg.FileName)
+						if err != nil {
+							log.Printf("Shard %+v back up failed, err %+v", shardID, err)
+						}
+					}
+				}
+			}
+		case restoreChain:
+			{
+				if cfg.FileName == "" {
+					log.Println("No Backup File to Process")
+					return
+				}
+				bc, err := makeBlockChain(cfg.ChainDataDir, cfg.TestNet)
+				if err != nil {
+					log.Println("Error create blockchain variable ", err)
+					return
+				}
+				if cfg.Beacon {
+					err := RestoreBeaconChain(bc, cfg.FileName,)
+					if err != nil {
+						log.Printf("Beacon Restore failed, err %+v", err)
+					}
+				} else {
+					filenames := strings.Split(cfg.FileName, ",")
+					for _, filename := range filenames {
+						err := RestoreShardChain(bc, filename)
+						if err != nil {
+							log.Printf("File %+v back up failed, err %+v", filename, err)
+						}
+					}
+				}
 			}
 		}
 	} else {

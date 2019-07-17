@@ -15,7 +15,9 @@ import (
 type txs struct {
 	Txs []string `json:"Txs"`
 }
-
+func (httpServer *HttpServer) handleTestHttpServer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	return nil, nil
+}
 /*
 For testing and benchmark only
 */
@@ -36,7 +38,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 	isSent := arrayParams[2].(bool)
 	interval := int64(arrayParams[3].(float64))
 	Logger.log.Criticalf("Interval between transactions %+v \n", interval)
-	datadir := "./utility/"
+	datadir := "./bin/"
 	filename := ""
 	success := 0
 	fail := 0

@@ -79,7 +79,7 @@ func (httpServer *HttpServer) handleGetAddressesByAccount(params interface{}, cl
 		return nil, nil
 	}
 	result := jsonresult.GetAddressesByAccount{}
-	result.Addresses = httpServer.config.Wallet.GetAddressesByAccount(paramTemp)
+	result.Addresses = httpServer.config.Wallet.GetAddressesByAccName(paramTemp)
 	return result, nil
 }
 
@@ -97,13 +97,18 @@ func (httpServer *HttpServer) handleGetAccountAddress(params interface{}, closeC
 	}
 	activeShards := httpServer.config.BlockChain.BestState.Beacon.ActiveShards
 	shardID := httpServer.config.Wallet.GetConfig().ShardID
-	shardIDInt := int(*shardID)
-	if shardID != nil && (shardIDInt >= activeShards) {
-		randShard := rand.Int31n(int32(activeShards))
-		temp := byte(randShard)
-		shardID = &temp
+	// if shardID is nil -> create with any shard
+	if shardID != nil {
+		// if shardID is configured with not nil
+		shardIDInt := int(*shardID)
+		// check with activeshards
+		if shardIDInt >= activeShards || shardIDInt <= 0 {
+			randShard := rand.Int31n(int32(activeShards))
+			temp := byte(randShard)
+			shardID = &temp
+		}
 	}
-	result := httpServer.config.Wallet.GetAccountAddress(paramTemp, shardID)
+	result := httpServer.config.Wallet.GetAddressByAccName(paramTemp, shardID)
 	return result, nil
 }
 
@@ -169,7 +174,7 @@ func (httpServer *HttpServer) handleRemoveAccount(params interface{}, closeChan 
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("privateKey is invalid"))
 	}
-	accountName, ok := arrayParams[1].(string)
+	_, ok = arrayParams[1].(string)
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("accountName is invalid"))
 	}
@@ -177,7 +182,7 @@ func (httpServer *HttpServer) handleRemoveAccount(params interface{}, closeChan 
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("passPhrase is invalid"))
 	}
-	err := httpServer.config.Wallet.RemoveAccount(privateKey, accountName, passPhrase)
+	err := httpServer.config.Wallet.RemoveAccount(privateKey, passPhrase)
 	if err != nil {
 		return false, NewRPCError(ErrUnexpected, err)
 	}
@@ -198,11 +203,15 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
-	log.Println(err)
 	if err != nil {
+		log.Println(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		log.Println(err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	log.Println(senderKey)
 
 	// get balance for accountName in wallet

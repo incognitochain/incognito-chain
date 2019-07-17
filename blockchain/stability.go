@@ -63,10 +63,10 @@ func decodeSwapConfirmInst(inst []string) []byte {
 func decodeBurningConfirmInst(inst []string) []byte {
 	metaType := []byte(inst[0])
 	shardID := []byte(inst[1])
-	tokenID, _ := common.NewHashFromStr(inst[2])
+	tokenID, _ := common.Hash{}.NewHashFromStr(inst[2])
 	remoteAddr, _ := decodeRemoteAddr(inst[3])
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
-	txID, _ := common.NewHashFromStr(inst[5])
+	txID, _ := common.Hash{}.NewHashFromStr(inst[5])
 	height, _, _ := base58.Base58Check{}.Decode(inst[6])
 	fmt.Printf("[db] decoded BurningConfirm inst\n")
 	fmt.Printf("[db]\tamount: %x\n[db]\tremoteAddr: %x\n[db]\ttokenID: %x\n", amount, remoteAddr, tokenID)
@@ -288,11 +288,11 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			return [][]string{}, err
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta, metadata.ContractingRequestMeta:
+		case metadata.ContractingRequestMeta, metadata.IssuingResponseMeta, metadata.IssuingETHResponseMeta:
 			newInst = [][]string{inst}
 
-		case metadata.IssuingETHRequestMeta:
-			newInst, err = buildInstructionsForETHIssuingReq(contentStr, shardID)
+		case metadata.IssuingRequestMeta, metadata.IssuingETHRequestMeta:
+			newInst, err = buildInstructionsForIssuingReq(contentStr, shardID, metaType)
 
 		case metadata.BurningRequestMeta:
 			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
@@ -379,6 +379,10 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 				if len(l) >= 4 {
 					newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, accumulatedValues)
 				}
+			case metadata.IssuingRequestMeta:
+				if len(l) >= 4 {
+					newTx, err = blockgen.buildIssuanceTx(l[3], producerPrivateKey, shardID, accumulatedValues)
+				}
 
 			default:
 				continue
@@ -402,15 +406,9 @@ func (blockgen *BlkTmplGenerator) buildStabilityResponseTxsAtShardOnly(
 	respTxs := []metadata.Transaction{}
 	removeIds := []int{}
 	var relayingRewardTx metadata.Transaction
-	for i, tx := range txs {
+	for i, _ := range txs {
 		var respTx metadata.Transaction
 		var err error
-
-		switch tx.GetMetadataType() {
-		case metadata.IssuingRequestMeta:
-			respTx, err = blockgen.buildIssuanceTx(tx, producerPrivateKey, shardID)
-		}
-
 		if err != nil {
 			// Remove this tx if cannot create corresponding response
 			removeIds = append(removeIds, i)

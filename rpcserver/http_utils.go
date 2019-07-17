@@ -24,9 +24,6 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 	arrayParams := common.InterfaceSlice(params)
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	meta, errCons := metaConstructorType(metaRaw)
-	if errCons != nil {
-		return nil, NewRPCError(ErrUnexpected, errCons)
-	}
 
 	_, errParseKey := httpServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
 	if err := common.CheckError(errCons, errParseKey); err != nil {

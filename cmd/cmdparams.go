@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/0xsirrush/color"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/jessevdk/go-flags"
-	"os"
-	"path/filepath"
 )
 
 const (
@@ -29,11 +30,20 @@ type params struct {
 	DataDir string `short:"b" long:"datadir" description:"Directory to store data"`
 	TestNet bool   `long:"testnet" description:"Use the test network"`
 
-	// For Wallet
+	// Chain
+	Beacon bool `long:"beacon" description:"Process Beacon Chain"`
+	// shardIDs:
+	// "all": process all shards
+	// 1,2,3,4: shard 1, shard 2, shard 3, shard 4
+	ShardIDs     string `long:"shardids" description:"Process one or many Shard Chain with ShardID"`
+	ChainDataDir string `long:"chaindatadir" description:"Directory of Stored Blockchain Database"`
+	OutDataDir   string `long:"outdatadir" description:"Directory of Export Blockchain Data"`
+	FileName     string `long:"filename" description:"Filename of Backup Blockchin Data"`
+	// wallet
 	WalletName        string `long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
 	WalletPassphrase  string `long:"walletpassphrase" description:"Wallet passphrase"`
 	WalletAccountName string `long:"walletaccountname" description:"Wallet account name"`
-	ShardID           int8   `long:"shardid" description:"ShardID to create account for wallet"`
+	ShardID           int8   `long:"shardid" description:"Process Shard Chain with ShardID"`
 
 	// pToken
 	PNetwork string `long:"pNetwork" description:"Bridge network"`
