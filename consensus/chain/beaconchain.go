@@ -73,14 +73,14 @@ func (s *BeaconChain) CreateNewBlock(round int) BlockInterface {
 	return newBlock
 }
 
-func (s *BeaconChain) ValidateBlock(block interface{}) int {
+func (s *BeaconChain) ValidateBlock(block interface{}) error {
 	_ = block.(*blockchain.BeaconBlock)
-	return 1
+	return nil
 }
 
-func (s *BeaconChain) ValidatePreSignBlock(block interface{}) bool {
+func (s *BeaconChain) ValidatePreSignBlock(block interface{}) error {
 	_ = block.(*blockchain.BeaconBlock)
-	return true
+	return nil
 }
 
 func (s *BeaconChain) InsertBlk(block interface{}, isValid bool) {
