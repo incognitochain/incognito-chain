@@ -474,12 +474,12 @@ Uses an existing database to update the set of used tx by saving list serialNumb
 this is a list tx-out which are used by a new tx
 */
 func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint) error {
-	//for _, item1 := range view.listSerialNumbers {
-	err := blockchain.config.DataBase.StoreSerialNumbers(*view.tokenID, view.listSerialNumbers, view.shardID)
-	if err != nil {
-		return err
+	if len(view.listSerialNumbers) > 0 {
+		err := blockchain.config.DataBase.StoreSerialNumbers(*view.tokenID, view.listSerialNumbers, view.shardID)
+		if err != nil {
+			return err
+		}
 	}
-	//}
 	return nil
 }
 
@@ -572,8 +572,11 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 			// clear cached data
 			if blockchain.config.MemCache != nil {
 				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
-				if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e != nil {
-					_ = blockchain.config.MemCache.Delete(cachedKey)
+				if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e == nil {
+					er := blockchain.config.MemCache.Delete(cachedKey)
+					if er != nil {
+						Logger.log.Error("can not delete memcache", "GetListOutputcoinCachedKey", base58.Base58Check{}.Encode(cachedKey, 0x0))
+					}
 				}
 			}
 			if err != nil {
@@ -933,15 +936,19 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 		// get from cache
 		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
 		cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
-		if cachedData != nil {
-			err = json.Unmarshal(cachedData, &outCointsInBytes)
-		} else {
-			// cached data is nil
+		if cachedData != nil && len(cachedData) > 0 {
+			// try to parsing on outCointsInBytes
+			_ = json.Unmarshal(cachedData, &outCointsInBytes)
+		}
+		if len(outCointsInBytes) == 0 {
+			// cached data is nil or fail -> get from database
 			outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
-			cachedData, err = json.Marshal(outCointsInBytes)
-			if err == nil {
+			if len(outCointsInBytes) > 0 {
 				// cache 1 day for result
-				blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+				cachedData, err = json.Marshal(outCointsInBytes)
+				if err == nil {
+					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+				}
 			}
 		}
 	}
