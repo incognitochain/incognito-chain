@@ -120,6 +120,7 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		return nil, nil
 	}
 
+	fmt.Println("haha start buildETHIssuanceTx")
 	db := blockgen.chain.GetDatabase()
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
@@ -244,5 +245,6 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	}
 	ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqETHTx)
 	ac.DBridgeTokenPair[md.IncTokenID.String()] = ethereumToken
+	fmt.Println("haha create tx ok")
 	return resTx, nil
 }

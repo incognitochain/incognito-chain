@@ -281,3 +281,20 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 	}
 	return issued, nil
 }
+
+func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	db := httpServer.config.BlockChain.GetDatabase()
+	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	// for _, item := range allBridgeTokens {
+	// 	item.ExternalTokenIDStr = hex.EncodeToString(item.ExternalTokenID)
+	// }
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	return allBridgeTokens, nil
+}
