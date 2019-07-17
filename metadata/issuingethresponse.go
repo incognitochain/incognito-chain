@@ -97,15 +97,12 @@ func IsETHTxHashUsedInBlock(uniqETHTx []byte, uniqETHTxsUsed [][]byte) bool {
 func ParseETHLogData(data []byte) (map[string]interface{}, error) {
 	abiIns, err := abi.JSON(strings.NewReader(common.ABIJSON))
 	if err != nil {
-		fmt.Println("haha err 1: ", err)
 		return nil, err
 	}
 	dataMap := map[string]interface{}{}
 	if err = abiIns.UnpackIntoMap(dataMap, "Deposit", data); err != nil {
-		fmt.Println("haha err 2: ", err)
 		return nil, err
 	}
-	fmt.Println("haha ngon lanh het")
 	return dataMap, nil
 }
 
