@@ -77,7 +77,8 @@ func (s *ShardChain) ValidateBlock(interface{}) int {
 	return 1
 }
 
-func (s *ShardChain) ValidateSignature(interface{}, string) bool {
+func (s *ShardChain) ValidatePreSignBlock(block interface{}) bool {
+	_ = block.(*blockchain.BeaconBlock)
 	return true
 }
 
