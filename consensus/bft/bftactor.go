@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus/chain"
+	"github.com/incognitochain/incognito-chain/consensus/multisigschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -55,7 +56,8 @@ type BFTCore struct {
 
 	Blocks map[string]chain.BlockInterface
 
-	IsRunning bool
+	MultiSigScheme multisigschemes.MultiSigsSchemeInterface
+	IsRunning      bool
 }
 
 func (e *BFTCore) IsRun() bool {
@@ -124,7 +126,7 @@ func (e *BFTCore) Start() {
 				case LISTEN:
 					// timeout or vote nil?
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
-					if e.Blocks[roundKey] != nil && e.Chain.ValidateBlock(e.Blocks[roundKey]) == 1 {
+					if e.Blocks[roundKey] != nil && e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]) != nil {
 						e.Block = e.Blocks[roundKey]
 						e.enterPreparePhase()
 					}

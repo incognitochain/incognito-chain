@@ -22,6 +22,7 @@ type ConsensusInterface interface {
 type BlockInterface interface {
 	GetHeight() uint64
 	GetProducerPubKey() string
+	// GetProducerSig() string
 	Hash() *common.Hash
 	AddValidationField(validateData string) error
 	GetValidationField() string
@@ -40,6 +41,8 @@ type ChainInterface interface {
 	GetNodePubKey() string
 	CreateNewBlock(round int) BlockInterface
 	InsertBlk(interface{}, bool)
+	ValidateBlock(interface{}) error
+	ValidatePreSignBlock(interface{}) error
 }
 
 type Node interface {
@@ -48,12 +51,4 @@ type Node interface {
 	GetNodePubKey() string
 	GetUserKeySet() *incognitokey.KeySet
 	GetActiveShardNumber() int
-}
-
-type MulSigsSchemeInterface interface {
-	Prepare(data interface{}) error
-	ValidateAggSig(dataHash []byte, validationField string, chain ChainInterface) error
-	ValidateSingleSig(dataHash []byte, sig string, pubkey string) error
-	SignData(privKey string, dataHash []byte) string
-	AggregateSig() string
 }

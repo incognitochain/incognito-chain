@@ -42,7 +42,7 @@ func (e *BFTCore) getMajorityVote(votes map[string]SigStatus) int {
 	reject := 0
 	for k, v := range votes {
 
-		if !v.Verified && !e.Chain.ValidateSignature(e.Block, v.SigContent) {
+		if !v.Verified && e.MultiSigScheme.ValidateSingleSig(e.Block.Hash(), v.SigContent, k) != nil {
 			delete(votes, k)
 			continue
 		}
@@ -64,14 +64,11 @@ func (e *BFTCore) getMajorityVote(votes map[string]SigStatus) int {
 }
 
 func (e *BFTCore) validateAndSendVote() {
-	if e.Chain.ValidateBlock(e.Block) == 1 {
+	if e.Chain.ValidateBlock(e.Block) == nil {
 		msg, _ := MakeBFTPrepareMsg(true, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
 		go e.Chain.PushMessageToValidator(msg)
-		e.NotYetSendPrepare = false
-	} else if e.Chain.ValidateBlock(e.Block) == -1 {
-		//TODO: could send vote nil for this block
-		e.NotYetSendPrepare = false
 	} else {
-		e.NotYetSendPrepare = true // wait for necessary data and then send prepare in actor loop
+		msg, _ := MakeBFTPrepareMsg(false, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
+		go e.Chain.PushMessageToValidator(msg)
 	}
 }

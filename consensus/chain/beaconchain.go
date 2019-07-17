@@ -78,7 +78,7 @@ func (s *BeaconChain) ValidateBlock(block interface{}) int {
 	return 1
 }
 
-func (s *BeaconChain) ValidateSignature(block interface{}, sigs string) bool {
+func (s *BeaconChain) ValidatePreSignBlock(block interface{}) bool {
 	_ = block.(*blockchain.BeaconBlock)
 	return true
 }
