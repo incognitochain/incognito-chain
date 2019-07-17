@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/consensus/multisigschemes"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -87,6 +88,8 @@ type Config struct {
 		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	}
 	UserKeySet *incognitokey.KeySet
+
+	MultiSigScheme multisigschemes.MultiSigsSchemeInterface
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
