@@ -12,6 +12,7 @@ const (
 	getAllConnectedPeers = "getallconnectedpeers"
 	getAllPeers          = "getallpeers"
 	getNodeRole          = "getnoderole"
+	getInOutPeerMessages = "getinoutpeermessages"
 
 	estimateFee              = "estimatefee"
 	estimateFeeWithEstimator = "estimatefeewithestimator"
