@@ -4,10 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"strconv"
+	"fmt"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
 
@@ -17,6 +18,25 @@ type IssuingETHRequest struct {
 	ProofStrs  []string
 	IncTokenID common.Hash
 	MetadataBase
+}
+
+type IssuingETHReqAction struct {
+	Meta    IssuingETHRequest `json:"meta"`
+	TxReqID common.Hash       `json:"txReqId"`
+}
+
+func ParseETHIssuingInstContent(instContentStr string) (*IssuingETHReqAction, error) {
+	fmt.Println("haha instContentStr: ", instContentStr)
+	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
+	if err != nil {
+		return nil, err
+	}
+	var issuingETHReqAction IssuingETHReqAction
+	err = json.Unmarshal(contentBytes, &issuingETHReqAction)
+	if err != nil {
+		return nil, err
+	}
+	return &issuingETHReqAction, nil
 }
 
 func NewIssuingETHRequest(
@@ -50,7 +70,7 @@ func NewIssuingETHRequestFromMap(
 		proofStrs = append(proofStrs, item.(string))
 	}
 
-	incTokenID, err := common.NewHashFromStr(data["IncTokenID"].(string))
+	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
 	if err != nil {
 		return nil, errors.Errorf("TokenID incorrect")
 	}

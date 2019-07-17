@@ -15,6 +15,7 @@ const (
 	SetBytesProofErr
 	EncryptOutputCoinErr
 	DecryptOutputCoinErr
+	DecompressTransmissionKeyErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -31,6 +32,7 @@ var ErrCodeMessage = map[int]struct {
 	SetBytesProofErr : {-6, "Set bytes payment proof error"},
 	EncryptOutputCoinErr : {-7, "Encrypt output coins error"},
 	DecryptOutputCoinErr : {-8, "Decrypt output coins error"},
+	DecompressTransmissionKeyErr : {-7, "Can not decompress transmission key error"},
 }
 
 type PrivacyError struct {
@@ -41,6 +43,10 @@ type PrivacyError struct {
 
 func (e PrivacyError) Error() string {
 	return fmt.Sprintf("%+v: %+v %+v", e.code, e.message, e.err)
+}
+
+func (e PrivacyError) GetCode() int {
+	return e.code
 }
 
 func NewPrivacyErr(key int, err error) *PrivacyError {

@@ -138,7 +138,7 @@ func (blockCypherClient *BlockCypherClient) GetCurrentChainTimeStamp() (int64, e
 // #param 1: timestamp -> flag false
 // #param 2: nonce -> flag true
 func (blockCypherClient *BlockCypherClient) GetTimeStampAndNonceByBlockHeight(blockHeight int) (int64, int64, error) {
-	<-time.Tick(5 * time.Second)
+	<-time.Tick(15 * time.Second)
 	resp, err := http.Get("https://api.blockcypher.com/v1/btc/main/blocks/" + strconv.Itoa(blockHeight) + "?start=1&limit=1")
 	if err != nil {
 		return MaxTimeStamp, -1, NewBTCAPIError(APIError, err)

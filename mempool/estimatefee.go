@@ -155,13 +155,14 @@ type FeeEstimator struct {
 	dropped []*registeredBlock
 
 	// min fee which be needed for payment on tx(per Kb data)
-	limitFee uint64
+	limitFee      uint64
+	limitFeeToken uint64
 }
 
 // NewFeeEstimator creates a feeEstimator for which at most maxRollback blocks
 // can be unregistered and which returns an error unless minRegisteredBlocks
 // have been registered with it.
-func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *FeeEstimator {
+func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64, limitFeeToken uint64) *FeeEstimator {
 	return &FeeEstimator{
 		maxRollback:         maxRollback,
 		minRegisteredBlocks: minRegisteredBlocks,
@@ -171,6 +172,7 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64) *
 		observed:            make(map[common.Hash]*observedTransaction),
 		dropped:             make([]*registeredBlock, 0, maxRollback),
 		limitFee:            limitFee,
+		limitFeeToken:       limitFeeToken,
 	}
 }
 
@@ -203,6 +205,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 			observed:        t.Desc.Height,
 			mined:           UnminedHeight,
 		}
+		Logger.log.Info("Observe Transaction success", t.Desc.Tx.Hash())
 	}
 }
 
@@ -216,7 +219,9 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 
 	height := block.Header.Height
 	if height != ef.lastKnownHeight+1 && ef.lastKnownHeight != UnminedHeight {
-		return fmt.Errorf("intermediate block not recorded; current height is %d; new height is %d",
+		Logger.log.Errorf("RegisterBlock: intermediate block not recorded; current height is %d; new height is %d, shardID %d",
+			ef.lastKnownHeight, height, block.Header.ShardID)
+		return fmt.Errorf("RegisterBlock: intermediate block not recorded; current height is %d; new height is %d",
 			ef.lastKnownHeight, height)
 	}
 
@@ -255,6 +260,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 		// Have we observed this tx in the mempool?
 		o, ok := ef.observed[*t]
 		if !ok {
+			Logger.log.Info("RegisterBlock: Not in observed", block.Header.ShardID, t.String())
 			continue
 		}
 
@@ -264,18 +270,20 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 		// This shouldn't happen if the fee estimator works correctly,
 		// but return an error if it does.
 		if o.mined != UnminedHeight {
-			Logger.log.Error("Estimate fee: transaction ", t.String(), " has already been mined")
+			Logger.log.Error("RegisterBlock: Estimate fee: transaction ", t.String(), " has already been mined", block.Header.ShardID, t.String())
 			return errors.New("Transaction has already been mined")
 		}
 
 		// This shouldn't happen but check just in case to avoid
 		// an out-of-bounds array index later.
 		if blocksToConfirm >= estimateFeeDepth {
+			Logger.log.Info("RegisterBlock: This shouldn't happen but check just in case to avoid an out-of-bounds array index later.", block.Header.ShardID, t.String())
 			continue
 		}
 
 		// Make sure we do not replace too many transactions per min.
 		if replacementCounts[blocksToConfirm] == int(ef.maxReplacements) {
+			Logger.log.Info("RegisterBlock: Make sure we do not replace too many transactions per min", block.Header.ShardID, t.String())
 			continue
 		}
 
@@ -317,7 +325,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	} else {
 		ef.dropped = append(ef.dropped, dropped)
 	}
-
+	Logger.log.Info("RegisterBlock: success for", block.Header.ShardID, block.Hash().String())
 	return nil
 }
 

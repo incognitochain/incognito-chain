@@ -77,8 +77,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	tokenID, err := common.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
+	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -151,8 +154,11 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-	_, voutsAmount := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	tokenID, err := common.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
+	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(tokenParamsRaw["TokenID"].(string))
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -264,7 +270,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	db := httpServer.config.BlockChain.GetDatabase()
 	arrayParams := common.InterfaceSlice(params)
-	data := arrayParams[4].(map[string]interface{})
+	data := arrayParams[0].(map[string]interface{})
 	blockHash := rCommon.HexToHash(data["BlockHash"].(string))
 	txIdx := uint(data["TxIndex"].(float64))
 	uniqETHTx := append(blockHash[:], []byte(strconv.Itoa(int(txIdx)))...)
@@ -274,4 +280,21 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 		return false, NewRPCError(ErrUnexpected, err)
 	}
 	return issued, nil
+}
+
+func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	db := httpServer.config.BlockChain.GetDatabase()
+	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	// for _, item := range allBridgeTokens {
+	// 	item.ExternalTokenIDStr = hex.EncodeToString(item.ExternalTokenID)
+	// }
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	return allBridgeTokens, nil
 }
