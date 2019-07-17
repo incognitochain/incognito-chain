@@ -187,7 +187,6 @@ func parseAndConcatPubkeys(vals []string) []byte {
 	pks := []byte{}
 	for _, val := range vals {
 		pk, _, _ := base58.Base58Check{}.Decode(val)
-		// TODO(@0xbunyip): handle error
 		pks = append(pks, pk...)
 	}
 	return pks
@@ -201,11 +200,11 @@ func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight u
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
 
-	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
+	bridgeID := byte(common.BRIDGE_SHARD_ID)
 	instContent := base58.Base58Check{}.Encode(beaconComm, 0x00)
 	return []string{
 		strconv.Itoa(metadata.BeaconSwapConfirmMeta),
-		strconv.Itoa(int(shardID)),
+		strconv.Itoa(int(bridgeID)),
 		base58.Base58Check{}.Encode(height.Bytes(), 0x00),
 		instContent,
 	}
@@ -219,11 +218,11 @@ func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight u
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
 
-	shardID := byte(1) // TODO(@0xbunyip): change to bridge shardID
+	bridgeID := byte(common.BRIDGE_SHARD_ID)
 	instContent := base58.Base58Check{}.Encode(bridgeComm, 0x00)
 	return []string{
 		strconv.Itoa(metadata.BridgeSwapConfirmMeta),
-		strconv.Itoa(int(shardID)),
+		strconv.Itoa(int(bridgeID)),
 		base58.Base58Check{}.Encode(height.Bytes(), 0x00),
 		instContent,
 	}
@@ -244,8 +243,7 @@ func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)
 
-	// TODO(@0xbunyip): replace with bridge's shardID
-	shardID := byte(1)
+	shardID := byte(common.BRIDGE_SHARD_ID)
 
 	// TODO(@0xbunyip): use mapping from tokenID to eth id
 	tokenID := md.TokenID.String()
@@ -364,12 +362,12 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			// 	// }
 
 			// }
-			// if l[0] == StakeAction || l[0] == RandomAction {
-			// 	continue
-			// }
-			// if len(l) <= 2 {
-			// 	continue
-			// }
+			if l[0] == StakeAction || l[0] == RandomAction {
+				continue
+			}
+			if len(l) <= 2 {
+				continue
+			}
 			metaType, err := strconv.Atoi(l[0])
 			if err != nil {
 				return nil, err
