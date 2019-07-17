@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -63,7 +66,7 @@ func decodeSwapConfirmInst(inst []string) []byte {
 func decodeBurningConfirmInst(inst []string) []byte {
 	metaType := []byte(inst[0])
 	shardID := []byte(inst[1])
-	tokenID, _ := common.Hash{}.NewHashFromStr(inst[2])
+	tokenID, _, _ := base58.Base58Check{}.Decode(inst[2])
 	remoteAddr, _ := decodeRemoteAddr(inst[3])
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
 	txID, _ := common.Hash{}.NewHashFromStr(inst[5])
@@ -73,7 +76,7 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
-	flatten = append(flatten, tokenID[:]...)
+	flatten = append(flatten, toBytes32BigEndian(tokenID)...)
 	flatten = append(flatten, remoteAddr...)
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
 	flatten = append(flatten, txID[:]...)
@@ -92,7 +95,7 @@ func decodeRemoteAddr(addr string) ([]byte, error) {
 	return addrFixedLen[:], nil
 }
 
-// toBytes32BigEndian converts a Big.Int bytes to uint256 for of Ethereum
+// toBytes32BigEndian converts a []byte to uint256 of Ethereum
 func toBytes32BigEndian(b []byte) []byte {
 	a := [32]byte{}
 	copy(a[32-len(b):], b)
@@ -229,7 +232,7 @@ func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight u
 }
 
 // buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
-func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
+func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseInterface) ([]string, error) {
 	fmt.Printf("[db] build BurningConfirmInst: %s\n", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
@@ -245,8 +248,11 @@ func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
 
 	shardID := byte(common.BRIDGE_SHARD_ID)
 
-	// TODO(@0xbunyip): use mapping from tokenID to eth id
-	tokenID := md.TokenID.String()
+	// Convert to external tokenID
+	tokenID, err := findExternalTokenID(&md.TokenID, db)
+	if err != nil {
+		return nil, err
+	}
 
 	// Convert height to big.Int to get bytes later
 	h := big.NewInt(0).SetUint64(height)
@@ -254,7 +260,7 @@ func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
 	return []string{
 		strconv.Itoa(metadata.BurningConfirmMeta),
 		strconv.Itoa(int(shardID)),
-		tokenID,
+		base58.Base58Check{}.Encode(tokenID, 0x00),
 		md.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
@@ -262,11 +268,31 @@ func buildBurningConfirmInst(inst []string, height uint64) ([]string, error) {
 	}, nil
 }
 
+// findExternalTokenID get all bridge token from database and find the external tokenID for one
+func findExternalTokenID(tokenID *common.Hash, db database.DatabaseInterface) ([]byte, error) {
+	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
+	if err != nil {
+		return nil, err
+	}
+	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	if err != nil {
+		return nil, err
+	}
+	for _, token := range allBridgeTokens {
+		if token.TokenID.IsEqual(tokenID) {
+			return token.ExternalTokenID, nil
+		}
+	}
+	return nil, fmt.Errorf("invalid tokenID")
+}
+
 // build instructions at beacon chain before syncing to shards
 func (blockChain *BlockChain) buildStabilityInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconBestState *BestStateBeacon,
+	db database.DatabaseInterface,
 ) ([][]string, error) {
 	instructions := [][]string{}
 	beaconHeight := beaconBestState.BeaconHeight
@@ -296,7 +322,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 
 		case metadata.BurningRequestMeta:
 			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
-			burningConfirm, err := buildBurningConfirmInst(inst, beaconHeight+1)
+			burningConfirm, err := buildBurningConfirmInst(inst, beaconHeight+1, db)
 			if err != nil {
 				return [][]string{}, err
 			}

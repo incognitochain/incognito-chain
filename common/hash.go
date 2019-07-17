@@ -186,3 +186,11 @@ func HashArrayInterface(target interface{}) (Hash, error) {
 	}
 	return HashH(temp), nil
 }
+
+func HashArrayOfHashArray(target []Hash) Hash {
+	temp := []byte{0}
+	for _, hash := range target {
+		temp = append(temp, hash[:]...)
+	}
+	return HashH(temp)
+}
