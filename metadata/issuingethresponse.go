@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -26,6 +27,11 @@ type IssuingETHResponse struct {
 	RequestedTxID   common.Hash
 	UniqETHTx       []byte
 	ExternalTokenID []byte
+}
+
+type IssuingETHResAction struct {
+	Meta       *IssuingETHResponse `json:"meta"`
+	IncTokenID *common.Hash        `json:"incTokenID"`
 }
 
 func NewIssuingETHResponse(
@@ -209,15 +215,18 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instMetaType := inst[0]
+		if instUsed[i] > 0 ||
+			instMetaType != strconv.Itoa(IssuingETHRequestMeta) {
+			continue
+		}
+
 		issuingETHReqAction, err := ParseETHIssuingInstContent(inst[3])
 		if err != nil {
 			fmt.Println("WARNING: an error occured during parsing instruction content: ", err)
 			continue
 		}
 
-		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(IssuingETHRequestMeta) ||
-			!bytes.Equal(iRes.RequestedTxID[:], issuingETHReqAction.TxReqID[:]) {
+		if !bytes.Equal(iRes.RequestedTxID[:], issuingETHReqAction.TxReqID[:]) {
 			continue
 		}
 
@@ -321,4 +330,23 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 	instUsed[idx] = 1
 	return true, nil
+}
+
+func (ieRes *IssuingETHResponse) BuildReqActions(
+	tx Transaction,
+	bcr BlockchainRetriever,
+	shardID byte,
+) ([][]string, error) {
+	incTokenID := tx.GetTokenID()
+	actionContent := map[string]interface{}{
+		"meta":       *ieRes,
+		"incTokenID": incTokenID,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(IssuingETHResponseMeta), actionContentBase64Str}
+	return [][]string{action}, nil
 }
