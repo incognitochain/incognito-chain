@@ -13,14 +13,14 @@ import (
 handleGetShardToBeaconPoolState - RPC get shard to beacon pool state
 */
 func (httpServer *HttpServer) handleGetShardToBeaconPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetShardToBeaconPoolState params: %+v", params)
+	Logger.log.Debugf("handleGetShardToBeaconPoolState params: %+v", params)
 	shardToBeaconPool := mempool.GetShardToBeaconPool()
 	if shardToBeaconPool == nil {
-		Logger.log.Infof("handleGetShardToBeaconPoolState result: %+v", nil)
+		Logger.log.Debugf("handleGetShardToBeaconPoolState result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
 	result := shardToBeaconPool.GetAllBlockHeight()
-	Logger.log.Infof("handleGetShardToBeaconPoolState result: %+v", result)
+	Logger.log.Debugf("handleGetShardToBeaconPoolState result: %+v", result)
 	return result, nil
 }
 
@@ -28,66 +28,66 @@ func (httpServer *HttpServer) handleGetShardToBeaconPoolState(params interface{}
 handleGetCrossShardPoolState - RPC get cross shard pool state
 */
 func (httpServer *HttpServer) handleGetCrossShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetCrossShardPoolState params: %+v", params)
+	Logger.log.Debugf("handleGetCrossShardPoolState params: %+v", params)
 	// get component
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 1 {
-		Logger.log.Infof("handleGetCrossShardPoolState result: %+v", nil)
+		Logger.log.Debugf("handleGetCrossShardPoolState result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	shardIDTemp, ok := paramsArray[0].(float64)
 	if !ok {
-		Logger.log.Infof("handleGetCrossShardPoolState result: %+v", nil)
+		Logger.log.Debugf("handleGetCrossShardPoolState result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	shardID := byte(shardIDTemp)
 
 	result := mempool.GetCrossShardPool(shardID).GetAllBlockHeight()
-	Logger.log.Infof("handleGetCrossShardPoolState result: %+v", result)
+	Logger.log.Debugf("handleGetCrossShardPoolState result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleGetNextCrossShard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetNextCrossShard params: %+v", params)
+	Logger.log.Debugf("handleGetNextCrossShard params: %+v", params)
 	// get component
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 3 {
-		Logger.log.Infof("handleGetNextCrossShard result: %+v", nil)
+		Logger.log.Debugf("handleGetNextCrossShard result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	fromShardTemp, ok := paramsArray[0].(float64)
 	if !ok {
-		Logger.log.Infof("handleGetNextCrossShard result: %+v", nil)
+		Logger.log.Debugf("handleGetNextCrossShard result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	fromShard := byte(fromShardTemp)
 	toShardTemp, ok := paramsArray[1].(float64)
 	if !ok {
-		Logger.log.Infof("handleGetNextCrossShard result: %+v", nil)
+		Logger.log.Debugf("handleGetNextCrossShard result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	toShard := byte(toShardTemp)
 	startHeightTemp, ok := paramsArray[2].(float64)
 	if !ok {
-		Logger.log.Infof("handleGetNextCrossShard result: %+v", nil)
+		Logger.log.Debugf("handleGetNextCrossShard result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	startHeight := uint64(startHeightTemp)
 
 	result := mempool.GetCrossShardPool(toShard).GetNextCrossShardHeight(fromShard, toShard, startHeight)
-	Logger.log.Infof("handleGetNextCrossShard result: %+v", result)
+	Logger.log.Debugf("handleGetNextCrossShard result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleGetBeaconPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetBeaconPoolState params: %+v", params)
+	Logger.log.Debugf("handleGetBeaconPoolState params: %+v", params)
 	beaconPool := mempool.GetBeaconPool()
 	if beaconPool == nil {
-		Logger.log.Infof("handleGetBeaconPoolState result: %+v", nil)
+		Logger.log.Debugf("handleGetBeaconPoolState result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Beacon Pool not init"))
 	}
 	result := beaconPool.GetAllBlockHeight()
-	Logger.log.Infof("handleGetBeaconPoolState result: %+v", result)
+	Logger.log.Debugf("handleGetBeaconPoolState result: %+v", result)
 	return result, nil
 }
 
@@ -98,7 +98,7 @@ type Blocks struct {
 }
 
 func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetShardPoolState params: %+v", params)
+	Logger.log.Debugf("handleGetShardPoolState params: %+v", params)
 	// get params
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 1 {
@@ -106,14 +106,14 @@ func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeC
 	}
 	shardIDTemp, ok := paramsArray[0].(float64)
 	if !ok {
-		Logger.log.Infof("handleGetShardPoolState result: %+v", nil)
+		Logger.log.Debugf("handleGetShardPoolState result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
 	}
 	shardID := byte(shardIDTemp)
 
 	shardPool := mempool.GetShardPool(shardID)
 	if shardPool == nil {
-		Logger.log.Infof("handleGetShardPoolState result: %+v", nil)
+		Logger.log.Debugf("handleGetShardPoolState result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
 	result := shardPool.GetAllBlockHeight()
@@ -121,32 +121,32 @@ func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeC
 		return result[i] < result[j]
 	})
 	temp := Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
-	Logger.log.Infof("handleGetShardPoolState result: %+v", temp)
+	Logger.log.Debugf("handleGetShardPoolState result: %+v", temp)
 	return temp, nil
 }
 
 func (httpServer *HttpServer) handleGetShardPoolLatestValidHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetShardPoolLatestValidHeight params: %+v", params)
+	Logger.log.Debugf("handleGetShardPoolLatestValidHeight params: %+v", params)
 	// get params
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 1 {
-		Logger.log.Infof("handleGetShardPoolLatestValidHeight result: %+v", nil)
+		Logger.log.Debugf("handleGetShardPoolLatestValidHeight result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
 	}
 	shardIDTemp, ok := paramsArray[0].(float64)
 	if !ok {
-		Logger.log.Infof("handleGetShardPoolLatestValidHeight result: %+v", nil)
+		Logger.log.Debugf("handleGetShardPoolLatestValidHeight result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
 	}
 	shardID := byte(shardIDTemp)
 
 	shardPool := mempool.GetShardPool(shardID)
 	if shardPool == nil {
-		Logger.log.Infof("handleGetShardPoolLatestValidHeight result: %+v", nil)
+		Logger.log.Debugf("handleGetShardPoolLatestValidHeight result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
 	result := shardPool.GetLatestValidBlockHeight()
-	Logger.log.Infof("handleGetShardPoolLatestValidHeight result: %+v", result)
+	Logger.log.Debugf("handleGetShardPoolLatestValidHeight result: %+v", result)
 	return result, nil
 }
 
@@ -155,15 +155,15 @@ func (httpServer *HttpServer) handleGetShardPoolLatestValidHeight(params interfa
 handleGetShardToBeaconPoolState - RPC get shard to beacon pool state
 */
 func (httpServer *HttpServer) handleGetShardToBeaconPoolStateV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetShardToBeaconPoolStateV2 params: %+v", params)
+	Logger.log.Debugf("handleGetShardToBeaconPoolStateV2 params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) != 0 {
-		Logger.log.Infof("handleGetShardToBeaconPoolStateV2 result: %+v", nil)
+		Logger.log.Debugf("handleGetShardToBeaconPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("wrong format params"))
 	}
 	shardToBeaconPool := mempool.GetShardToBeaconPool()
 	if shardToBeaconPool == nil {
-		Logger.log.Infof("handleGetShardToBeaconPoolStateV2 result: %+v", nil)
+		Logger.log.Debugf("handleGetShardToBeaconPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
 	allBlockHeight := shardToBeaconPool.GetAllBlockHeight()
@@ -184,7 +184,7 @@ func (httpServer *HttpServer) handleGetShardToBeaconPoolStateV2(params interface
 		}
 		index++
 	}
-	Logger.log.Infof("handleGetShardToBeaconPoolStateV2 result: %+v", shardToBeaconPoolResult)
+	Logger.log.Debugf("handleGetShardToBeaconPoolStateV2 result: %+v", shardToBeaconPoolResult)
 	return shardToBeaconPoolResult, nil
 }
 
@@ -192,18 +192,18 @@ func (httpServer *HttpServer) handleGetShardToBeaconPoolStateV2(params interface
 handleGetCrossShardPoolState - RPC get cross shard pool state
 */
 func (httpServer *HttpServer) handleGetCrossShardPoolStateV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetCrossShardPoolStateV2 params: %+v", params)
+	Logger.log.Debugf("handleGetCrossShardPoolStateV2 params: %+v", params)
 	var index = 0
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) != 1 {
-		Logger.log.Infof("handleGetCrossShardPoolStateV2 result: %+v", nil)
+		Logger.log.Debugf("handleGetCrossShardPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("wrong format params"))
 	}
 	shardID := byte(paramsArray[0].(float64))
 
 	crossShardPool := mempool.GetCrossShardPool(shardID)
 	if crossShardPool == nil {
-		Logger.log.Infof("handleGetCrossShardPoolStateV2 result: %+v", nil)
+		Logger.log.Debugf("handleGetCrossShardPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Cross Shard Pool not init"))
 	}
 	allValidBlockHeight := crossShardPool.GetValidBlockHeight()
@@ -222,7 +222,7 @@ func (httpServer *HttpServer) handleGetCrossShardPoolStateV2(params interface{},
 		crossShardPoolResult.PendingBlockHeight[index].ShardID = shardID
 		crossShardPoolResult.PendingBlockHeight[index].BlockHeightList = blockHeights
 	}
-	Logger.log.Infof("handleGetCrossShardPoolStateV2 result: %+v", crossShardPoolResult)
+	Logger.log.Debugf("handleGetCrossShardPoolStateV2 result: %+v", crossShardPoolResult)
 	return crossShardPoolResult, nil
 }
 
@@ -230,22 +230,22 @@ func (httpServer *HttpServer) handleGetCrossShardPoolStateV2(params interface{},
 handleGetShardPoolState - RPC get shard block in pool
 */
 func (httpServer *HttpServer) handleGetShardPoolStateV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetShardPoolStateV2 params: %+v", params)
+	Logger.log.Debugf("handleGetShardPoolStateV2 params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 1 {
-		Logger.log.Infof("handleGetShardPoolStateV2 result: %+v", nil)
+		Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key params"))
 	}
 	shardIDTemp, ok := paramsArray[0].(float64)
 	if !ok {
-		Logger.log.Infof("handleGetShardPoolStateV2 result: %+v", nil)
+		Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("shardID is invalid"))
 	}
 	shardID := byte(shardIDTemp)
 
 	shardPool := mempool.GetShardPool(shardID)
 	if shardPool == nil {
-		Logger.log.Infof("handleGetShardPoolStateV2 result: %+v", nil)
+		Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Shard to Beacon Pool not init"))
 	}
 	result := shardPool.GetAllBlockHeight()
@@ -253,18 +253,18 @@ func (httpServer *HttpServer) handleGetShardPoolStateV2(params interface{}, clos
 		return result[i] < result[j]
 	})
 	temp := Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
-	Logger.log.Infof("handleGetShardPoolStateV2 result: %+v", temp)
+	Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", temp)
 	return temp, nil
 }
 
 func (httpServer *HttpServer) handleGetBeaconPoolStateV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetBeaconPoolStateV2 params: %+v", params)
+	Logger.log.Debugf("handleGetBeaconPoolStateV2 params: %+v", params)
 	beaconPool := mempool.GetBeaconPool()
 	if beaconPool == nil {
-		Logger.log.Infof("handleGetBeaconPoolStateV2 result: %+v", nil)
+		Logger.log.Debugf("handleGetBeaconPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Beacon Pool not init"))
 	}
 	result := Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
-	Logger.log.Infof("handleGetBeaconPoolStateV2 result: %+v", result)
+	Logger.log.Debugf("handleGetBeaconPoolStateV2 result: %+v", result)
 	return result, nil
 }
