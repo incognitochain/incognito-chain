@@ -1232,11 +1232,19 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	mapBridgeTokenID, err := blockchain.GetDatabase().GetBridgeTokensAmounts()
+
+	db := blockchain.GetDatabase()
+	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
 	if err != nil {
 		return nil, err
 	}
-	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+len(mapBridgeTokenID)+1)
+	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+
+	if err != nil {
+		return nil, err
+	}
+	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+len(allBridgeTokens)+1)
 	allCoinID[0] = common.PRVCoinID
 	index := 1
 	for key := range mapCustomToken {
@@ -1252,13 +1260,8 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 		index++
 	}
 
-	for _, bridgeTokenIDBytes := range mapBridgeTokenID {
-		var tokenWithAmount lvdb.TokenWithAmount
-		err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
-		if err != nil {
-			return nil, err
-		}
-		allCoinID[index] = *tokenWithAmount.TokenID
+	for _, bridgeTokens := range allBridgeTokens {
+		allCoinID[index] = *bridgeTokens.TokenID
 		index++
 	}
 	return allCoinID, nil
@@ -1303,10 +1306,9 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
-			fmt.Printf("[ndh] - buildWithDrawTransactionResponse for tx %+v, error: %+v\n", value, err)
 			return err
 		} else {
-			fmt.Printf("[ndh] - buildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
+			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
 		txsRes = append(txsRes, txRes)
 	}
@@ -1329,11 +1331,11 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
-			fmt.Printf("[ndh] - response %+v\n", tx)
+			//fmt.Printf("[ndh] -  %+v\n", tx)
 
 			requester := base58.Base58Check{}.Encode(requesterRes, VERSION)
 			if txRequestTable[requester] == nil {
-				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
+				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
 				return errors.New("This response dont match with any request")
 			}
 			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
@@ -1342,16 +1344,16 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 			amount, err := db.GetCommitteeReward(requesterRes, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
-				fmt.Printf("[ndh] - - [error] Not enough reward %+v %+v\n", amount, err)
+				//fmt.Printf("[ndh] - - [error] Not enough reward %+v %+v\n", amount, err)
 				return errors.New("Not enough reward")
 			}
 			if amount != amountRes {
-				fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amountRes)
+				//fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amountRes)
 				return errors.New("Wrong amount")
 			}
 
 			if res, err := txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()); err == nil && res != 0 {
-				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amountRes)
+				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amountRes)
 				return errors.New("This response dont match with any request")
 			}
 			txRequestTable[requester] = nil
@@ -1360,7 +1362,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 		}
 	}
 	if numberOfTxRequest != numberOfTxResponse {
-		fmt.Printf("[ndh] - - [error] Not match request and response %+v %+v\n", numberOfTxRequest, numberOfTxResponse)
+		//fmt.Printf("[ndh] - - [error] Not match request and response %+v %+v\n", numberOfTxRequest, numberOfTxResponse)
 		return errors.New("Not match request and response")
 	}
 	return nil
@@ -1397,7 +1399,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 			if res, err := coinID.Cmp(tokenWithAmount.TokenID); err == nil && res == 0 {
 				txType = transaction.CustomTokenPrivacyType
-				fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", tokenWithAmount.TokenID)
+				//fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", tokenWithAmount.TokenID)
 				break
 			}
 		}
