@@ -19,7 +19,7 @@ import (
 handleGetAllPeers - return all peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetAllPeers params: %+v", params)
+	Logger.log.Debugf("handleGetAllPeers params: %+v", params)
 	result := jsonresult.GetAllPeersResult{}
 	peersMap := []string{}
 
@@ -28,7 +28,7 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 		peersMap = append(peersMap, peer.RawAddress)
 	}
 	result.Peers = peersMap
-	Logger.log.Infof("handleGetAllPeers result: %+v", result)
+	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
 
@@ -95,7 +95,7 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 //Parameter #3—the list priv-key which be used to view utxo
 //
 func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleListUnspentOutputCoins params: %+v", params)
+	Logger.log.Debugf("handleListUnspentOutputCoins params: %+v", params)
 	result := jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
@@ -159,15 +159,16 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		}
 		result.Outputs[priKeyStr] = item
 	}
-	Logger.log.Infof("handleListUnspentOutputCoins result: %+v", result)
+	Logger.log.Debugf("handleListUnspentOutputCoins result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleCheckHashValue params: %+v", params)
+	Logger.log.Debugf("handleCheckHashValue params: %+v", params)
 	var (
 		isTransaction bool
 		isBlock       bool
+		isBeaconBlock bool
 	)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
@@ -178,7 +179,7 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected hash string value"))
 	}
 	// param #1: transaction Hash
-	Logger.log.Infof("Check hash value  input Param %+v", arrayParams[0].(string))
+	Logger.log.Debugf("Check hash value  input Param %+v", arrayParams[0].(string))
 	log.Printf("Check hash value  input Param %+v", hashParams)
 	hash, _ := common.Hash{}.NewHashFromStr(hashParams)
 
@@ -186,13 +187,25 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	_, _, err := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
 	if err != nil {
 		isBlock = false
+		_, _, err = httpServer.config.BlockChain.GetBeaconBlockByHash(*hash)
+		if err != nil {
+			isBeaconBlock = false
+		} else {
+			result := jsonresult.HashValueDetail{
+				IsBlock:       isBlock,
+				IsTransaction: false,
+				IsBeaconBlock: true,
+			}
+			Logger.log.Debugf("handleCheckHashValue result: %+v", result)
+			return result, nil
+		}
 	} else {
 		isBlock = true
 		result := jsonresult.HashValueDetail{
 			IsBlock:       isBlock,
 			IsTransaction: false,
 		}
-		Logger.log.Infof("handleCheckHashValue result: %+v", result)
+		Logger.log.Debugf("handleCheckHashValue result: %+v", result)
 		return result, nil
 	}
 	_, _, _, _, err1 := httpServer.config.BlockChain.GetTransactionByHash(*hash)
@@ -204,14 +217,15 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 			IsBlock:       false,
 			IsTransaction: isTransaction,
 		}
-		Logger.log.Infof("handleCheckHashValue result: %+v", result)
+		Logger.log.Debugf("handleCheckHashValue result: %+v", result)
 		return result, nil
 	}
 	result := jsonresult.HashValueDetail{
 		IsBlock:       isBlock,
 		IsTransaction: isTransaction,
+		IsBeaconBlock: isBeaconBlock,
 	}
-	Logger.log.Infof("handleCheckHashValue result: %+v", result)
+	Logger.log.Debugf("handleCheckHashValue result: %+v", result)
 	return result, nil
 }
 
@@ -219,14 +233,14 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetConnectionCount params: %+v", params)
+	Logger.log.Debugf("handleGetConnectionCount params: %+v", params)
 	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.ListeningPeer == nil {
 		return 0, nil
 	}
 	result := 0
 	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
 	result += len(listeningPeer.PeerConns)
-	Logger.log.Infof("handleGetConnectionCount result: %+v", result)
+	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil
 }
 
@@ -234,7 +248,7 @@ func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, close
 handleGetMiningInfo - RPC returns various mining-related info
 */
 func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetMiningInfo params: %+v", params)
+	Logger.log.Debugf("handleGetMiningInfo params: %+v", params)
 	if !httpServer.config.IsMiningNode || httpServer.config.MiningPubKeyB58 == "" {
 		return jsonresult.GetMiningInfoResult{
 			IsCommittee: false,
@@ -257,7 +271,7 @@ func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan 
 	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
 		result.ShardID = -1
 	}
-	Logger.log.Infof("handleGetMiningInfo result: %+v", result)
+	Logger.log.Debugf("handleGetMiningInfo result: %+v", result)
 	return result, nil
 }
 
@@ -266,18 +280,18 @@ handleGetRawMempool - RPC returns all transaction ids in memory pool as a json a
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetRawMempool params: %+v", params)
+	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
 	result := jsonresult.GetRawMempoolResult{
 		TxHashes: httpServer.config.TxMemPool.ListTxs(),
 	}
-	Logger.log.Infof("handleGetRawMempool result: %+v", result)
+	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetNumberOfTxsInMempool params: %+v", params)
+	Logger.log.Debugf("handleGetNumberOfTxsInMempool params: %+v", params)
 	result := len(httpServer.config.TxMemPool.ListTxs())
-	Logger.log.Infof("handleGetNumberOfTxsInMempool result: %+v", result)
+	Logger.log.Debugf("handleGetNumberOfTxsInMempool result: %+v", result)
 	return result, nil
 }
 
@@ -285,24 +299,24 @@ func (httpServer *HttpServer) handleGetNumberOfTxsInMempool(params interface{}, 
 handleMempoolEntry - RPC fetch a specific transaction from the mempool
 */
 func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleMempoolEntry params: %+v", params)
+	Logger.log.Debugf("handleMempoolEntry params: %+v", params)
 	// Param #1: hash string of tx(tx id)
 	if params == nil {
 		params = ""
 	}
 	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
-		Logger.log.Infof("handleMempoolEntry result: nil %+v", err)
+		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	result := jsonresult.GetMempoolEntryResult{}
 	result.Tx, err = httpServer.config.TxMemPool.GetTx(txID)
 	if err != nil {
-		Logger.log.Infof("handleMempoolEntry result: nil %+v", err)
+		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	Logger.log.Infof("handleMempoolEntry result: %+v", result)
+	Logger.log.Debugf("handleMempoolEntry result: %+v", result)
 	return result, nil
 }
 
@@ -310,7 +324,7 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleEstimateFee params: %+v", params)
+	Logger.log.Debugf("handleEstimateFee params: %+v", params)
 	/******* START Fetch all component to ******/
 	// all component
 	arrayParams := common.InterfaceSlice(params)
@@ -405,13 +419,13 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 		EstimateTxSizeInKb:   estimateTxSizeInKb,
 	}
-	Logger.log.Infof("handleEstimateFee result: %+v", result)
+	Logger.log.Debugf("handleEstimateFee result: %+v", result)
 	return result, nil
 }
 
 // handleEstimateFeeWithEstimator -- get fee from estomator
 func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleEstimateFeeWithEstimator params: %+v", params)
+	Logger.log.Debugf("handleEstimateFeeWithEstimator params: %+v", params)
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 2 {
@@ -452,7 +466,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	result := jsonresult.EstimateFeeResult{
 		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
 	}
-	Logger.log.Infof("handleEstimateFeeWithEstimator result: %+v", result)
+	Logger.log.Debugf("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
 }
 
@@ -462,21 +476,21 @@ func (httpServer *HttpServer) handleGetFeeEstimator(params interface{}, closeCha
 
 // handleGetActiveShards - return active shard num
 func (httpServer *HttpServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetActiveShards params: %+v", params)
+	Logger.log.Debugf("handleGetActiveShards params: %+v", params)
 	activeShards := httpServer.config.BlockChain.BestState.Beacon.ActiveShards
-	Logger.log.Infof("handleGetActiveShards result: %+v", activeShards)
+	Logger.log.Debugf("handleGetActiveShards result: %+v", activeShards)
 	return activeShards, nil
 }
 
 func (httpServer *HttpServer) handleGetMaxShardsNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetMaxShardsNumber params: %+v", params)
+	Logger.log.Debugf("handleGetMaxShardsNumber params: %+v", params)
 	result := common.MAX_SHARD_NUMBER
-	Logger.log.Infof("handleGetMaxShardsNumber result: %+v", result)
+	Logger.log.Debugf("handleGetMaxShardsNumber result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetStakingAmount params: %+v", params)
+	Logger.log.Debugf("handleGetStakingAmount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) <= 0 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
@@ -490,7 +504,7 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 	if stackingType == 0 {
 		amount = stakingData.GetShardStateAmount()
 	}
-	Logger.log.Infof("handleGetStakingAmount result: %+v", amount)
+	Logger.log.Debugf("handleGetStakingAmount result: %+v", amount)
 	return amount, nil
 }
 

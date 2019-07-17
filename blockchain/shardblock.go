@@ -64,6 +64,20 @@ func (shardBlock *ShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
+	// TODO
+	if shardBlock.Header.BeaconHeight == 0 {
+		return false, errors.New("Beacon is invalid. Beacon height, shardBlock.Header.BeaconHeight")
+	}
+	if shardBlock.Header.BeaconHeight == 1 && !shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
+		return false, errors.New("Beacon is invalid")
+	}
+	if shardBlock.Header.BeaconHeight > 1 && shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
+		return false, errors.New("Beacon is invalid")
+	}
+	return true, nil
+}
+
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
 		AggregatedSig string  `json:"AggregatedSig"`
@@ -77,6 +91,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
+
 	shardBlock.AggregatedSig = tempBlk.AggregatedSig
 	shardBlock.R = tempBlk.R
 	shardBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
@@ -88,6 +103,10 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 	shardBlock.Header = tempBlk.Header
+
+	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
+		return NewBlockChainError(UnmashallJsonBlockError, err)
+	}
 
 	shardBlock.Body = blkBody
 	return nil
