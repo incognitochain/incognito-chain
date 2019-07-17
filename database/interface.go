@@ -164,6 +164,7 @@ type DatabaseInterface interface {
 	CanProcessTokenPair([]byte, common.Hash) (bool, error)
 	CanProcessCIncToken(common.Hash) (bool, error)
 	UpdateBridgeTokenInfo(common.Hash, []byte, bool) error
+	GetAllBridgeTokens() ([]byte, error)
 
 	// Block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error

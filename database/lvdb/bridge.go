@@ -275,3 +275,45 @@ func (db *db) IsBridgeTokenExistedByType(
 	}
 	return true, nil
 }
+
+func (db *db) getBridgeTokensByType(isCentralized bool) ([]*BridgeTokenInfo, error) {
+	prefix := getBridgePrefix(isCentralized)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
+	bridgeTokenInfos := []*BridgeTokenInfo{}
+	for iter.Next() {
+		value := iter.Value()
+		itemBytes := make([]byte, len(value))
+		copy(itemBytes, value)
+		var bridgeTokenInfo BridgeTokenInfo
+		err := json.Unmarshal(itemBytes, &bridgeTokenInfo)
+		if err != nil {
+			return nil, err
+		}
+		bridgeTokenInfos = append(bridgeTokenInfos, &bridgeTokenInfo)
+	}
+
+	iter.Release()
+	err := iter.Error()
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+
+	return bridgeTokenInfos, nil
+}
+
+func (db *db) GetAllBridgeTokens() ([]byte, error) {
+	cBridgeTokenInfos, err := db.getBridgeTokensByType(true)
+	if err != nil {
+		return nil, err
+	}
+	dBridgeTokenInfos, err := db.getBridgeTokensByType(false)
+	if err != nil {
+		return nil, err
+	}
+	allBridgeTokens := append(cBridgeTokenInfos, dBridgeTokenInfos...)
+	allBridgeTokensBytes, err := json.Marshal(allBridgeTokens)
+	if err != nil {
+		return nil, err
+	}
+	return allBridgeTokensBytes, nil
+}
