@@ -338,7 +338,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-	serverObj.memPool.InitChannelMempool(cPendingTxs)
+	serverObj.memPool.InitChannelMempool(cPendingTxs, cRemovedTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
@@ -852,6 +852,11 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 		config.UserKeySet = KeySetUser
 	}
 	return config
+}
+
+func (serverObj *Server) GetUserKeySet() *incognitokey.KeySet {
+	k, _ := cfg.GetUserKeySet()
+	return k
 }
 
 // OnBlock is invoked when a peer receives a block message.  It
