@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -83,7 +84,7 @@ func findBridgeBlockWithInst(
 	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
 ) (*blockchain.ShardBlock, int, error) {
-	bridgeID := byte(1) // TODO(@0xbunyip); replace with bridge's shardID
+	bridgeID := byte(common.BRIDGE_SHARD_ID)
 	for _, state := range beaconBlock.Body.ShardState[bridgeID] {
 		bridgeBlock, _, err := getShardAndBeaconBlocks(state.Height, bc, db)
 		if err != nil {

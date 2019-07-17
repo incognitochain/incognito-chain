@@ -521,7 +521,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			return err
+			continue
 		}
 
 		switch metaType {
