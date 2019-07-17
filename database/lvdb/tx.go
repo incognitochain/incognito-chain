@@ -76,12 +76,10 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 		serialNumberInByte := key[len(key)-33:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
-		index, err := common.BytesToUint64(value)
-		if err != nil {
-			return nil, err
-		}
+		index := big.Int{}
+		index.SetBytes(value)
 		serialNumber := base58.Base58Check{}.Encode(serialNumberInByte, 0x0)
-		result[serialNumber] = index
+		result[serialNumber] = index.Uint64()
 	}
 	return result, nil
 }
