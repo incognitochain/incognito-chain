@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,8 +14,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // BestState houses information about the current best block and other info
@@ -451,17 +450,14 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			fmt.Printf("[ndh] error - - %+v\n", err)
 			return err
 		}
 		switch metaType {
 		case metadata.BurningRequestMeta:
 			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
-			fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
-				fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
@@ -472,8 +468,9 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 				}
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
+			Logger.log.Infof("TxsFee in Epoch: %+v of shardID: %+v:\n", currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID)
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+				Logger.log.Infof("===> TokenID:%+v: Amount: %+v\n", key, value)
 				err = blockchain.config.DataBase.RestoreShardRewardRequest(currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
 				if err != nil {
 					return err
@@ -531,10 +528,8 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		case metadata.BurningRequestMeta:
 			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
-			fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
-				fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
@@ -545,8 +540,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 				}
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
-			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+			for key, _ := range acceptedBlkRewardInfo.TxsFee {
 				err = blockchain.config.DataBase.BackupShardRewardRequest(block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
 				if err != nil {
 					return err
