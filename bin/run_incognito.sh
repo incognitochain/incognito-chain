@@ -9,7 +9,7 @@ if [ -z $NAME ]; then
 fi
 
 if [ -z $BOOTNODE_IP ]; then
-    BOOTNODE_IP="172.105.115.134";
+    BOOTNODE_IP="172.105.115.134:9330";
 fi
 
 if [ -z $NODE_PORT ]; then

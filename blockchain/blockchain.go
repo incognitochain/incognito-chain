@@ -5,6 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/memcache"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"io"
 	"log"
 	"math/big"
@@ -12,10 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/consensus/multisigschemes"
-	"github.com/incognitochain/incognito-chain/pubsub"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -53,6 +53,7 @@ type BestState struct {
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
 	DataBase          database.DatabaseInterface
+	MemCache          *memcache.MemoryCache
 	Interrupt         <-chan struct{}
 	ChainParams       *Params
 	RelayShards       []byte
@@ -566,6 +567,16 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(view TxViewPoint, 
 				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 			}
 			err = blockchain.config.DataBase.StoreOutputCoins(*view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+			// clear cached data
+			if blockchain.config.MemCache != nil {
+				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
+				if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e == nil {
+					er := blockchain.config.MemCache.Delete(cachedKey)
+					if er != nil {
+						Logger.log.Error("can not delete memcache", "GetListOutputcoinCachedKey", base58.Base58Check{}.Encode(cachedKey, 0x0))
+					}
+				}
+			}
 			if err != nil {
 				return err
 			}
@@ -917,10 +928,35 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 
-	outCointsInBytes, err := blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
-	if err != nil {
-		return nil, err
+	var outCointsInBytes [][]byte
+	var err error
+	if blockchain.config.MemCache != nil {
+		// get from cache
+		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
+		cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
+		if cachedData != nil && len(cachedData) > 0 {
+			// try to parsing on outCointsInBytes
+			_ = json.Unmarshal(cachedData, &outCointsInBytes)
+		}
+		if len(outCointsInBytes) == 0 {
+			// cached data is nil or fail -> get from database
+			outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
+			if len(outCointsInBytes) > 0 {
+				// cache 1 day for result
+				cachedData, err = json.Marshal(outCointsInBytes)
+				if err == nil {
+					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+				}
+			}
+		}
 	}
+	if len(outCointsInBytes) == 0 {
+		outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// convert from []byte to object
 	outCoints := make([]*privacy.OutputCoin, 0)
 	for _, item := range outCointsInBytes {
