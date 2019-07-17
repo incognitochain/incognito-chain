@@ -612,7 +612,9 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	for _, tx := range temps {
+	tokenIDs := make(map[common.Hash]interface{})
+	for tokenID, tx := range temps {
+		tokenIDs[tokenID] = 0
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = tx.TxTokenPrivacyData.PropertyName
 		item.Symbol = tx.TxTokenPrivacyData.PropertySymbol
@@ -643,7 +645,10 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
-	for _, customTokenCrossShard := range listCustomTokenCrossShard {
+	for tokenID, customTokenCrossShard := range listCustomTokenCrossShard {
+		if _, ok := tokenIDs[tokenID]; ok {
+			continue
+		}
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = customTokenCrossShard.PropertyName
 		item.Symbol = customTokenCrossShard.PropertySymbol
