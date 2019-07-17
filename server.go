@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"golang.org/x/net/context"
@@ -51,6 +51,7 @@ type Server struct {
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
 	dataBase          database.DatabaseInterface
+	memCache          *memcache.MemoryCache
 	rpcServer         *rpcserver.RpcServer
 	memPool           *mempool.TxPool
 	tempMemPool       *mempool.TxPool
@@ -182,6 +183,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cQuit = make(chan struct{})
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
+	serverObj.memCache = memcache.New()
 
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
@@ -232,8 +234,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
 	}
 	err = serverObj.blockChain.Init(&blockchain.Config{
-		ChainParams:       serverObj.chainParams,
-		DataBase:          serverObj.dataBase,
+		ChainParams: serverObj.chainParams,
+		DataBase:    serverObj.dataBase,
+		MemCache:    serverObj.memCache,
+		//MemCache:          nil,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,
@@ -634,7 +638,7 @@ func (serverObj *Server) GetUserKeySet() *incognitokey.KeySet {
 }
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
-	<-time.Tick(serverObj.memPool.Scantime)
+	<-time.Tick(serverObj.memPool.ScanTime)
 	serverObj.memPool.LockPool()
 	txDescs := serverObj.memPool.GetPool()
 	for _, txDesc := range txDescs {
