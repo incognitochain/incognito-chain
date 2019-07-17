@@ -19,7 +19,6 @@ type TokenWithAmount struct {
 type BridgeTokenInfo struct {
 	TokenID         *common.Hash `json:"tokenId"`
 	Amount          uint64       `json:"amount"`
-	IsCentralized   bool         `json:"isCentralized"`
 	ExternalTokenID []byte       `json:"externalTokenId"`
 	Network         string       `json:"network"`
 }
@@ -118,7 +117,7 @@ func (db *db) UpdateAmtByTokenID(
 func (db *db) InsertETHTxHashIssued(
 	uniqETHTx []byte,
 ) error {
-	key := append(decentralizedBridgePrefix, uniqETHTx...)
+	key := append(ethTxHashIssued, uniqETHTx...)
 	dbErr := db.Put(key, []byte{1})
 	if dbErr != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.put"))
@@ -129,7 +128,7 @@ func (db *db) InsertETHTxHashIssued(
 func (db *db) IsETHTxHashIssued(
 	uniqETHTx []byte,
 ) (bool, error) {
-	key := append(decentralizedBridgePrefix, uniqETHTx...)
+	key := append(ethTxHashIssued, uniqETHTx...)
 	contentBytes, dbErr := db.lvdb.Get(key, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
@@ -140,7 +139,29 @@ func (db *db) IsETHTxHashIssued(
 	return true, nil
 }
 
-//////////////////////////////////////////////
+func (db *db) CanProcessCIncToken(
+	incTokenID common.Hash,
+) (bool, error) {
+	dBridgeTokenExisted, err := db.IsBridgeTokenExistedByType(incTokenID, false)
+	if err != nil {
+		return false, err
+	}
+	if dBridgeTokenExisted {
+		return false, nil
+	}
+
+	cBridgeTokenExisted, err := db.IsBridgeTokenExistedByType(incTokenID, true)
+	if err != nil {
+		return false, err
+	}
+	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(incTokenID)
+	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(incTokenID)
+	if !cBridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (db *db) CanProcessTokenPair(
 	externalTokenID []byte,
 	incTokenID common.Hash,
@@ -210,16 +231,13 @@ func (db *db) CanProcessTokenPair(
 }
 
 func getBridgePrefix(isCentralized bool) []byte {
-	prefix := []byte{}
 	if isCentralized {
-		prefix = centralizedBridgePrefix
-	} else {
-		prefix = decentralizedBridgePrefix
+		return centralizedBridgePrefix
 	}
-	return prefix
+	return decentralizedBridgePrefix
 }
 
-func (db *db) UpdateBridgeTokenPairInfo(
+func (db *db) UpdateBridgeTokenInfo(
 	incTokenID common.Hash,
 	externalTokenID []byte,
 	isCentralized bool,
@@ -228,7 +246,6 @@ func (db *db) UpdateBridgeTokenPairInfo(
 	key := append(prefix, incTokenID[:]...)
 	bridgeTokenInfo := BridgeTokenInfo{
 		TokenID:         &incTokenID,
-		IsCentralized:   isCentralized,
 		ExternalTokenID: externalTokenID,
 	}
 	bridgeTokenInfoBytes, err := json.Marshal(bridgeTokenInfo)
@@ -257,4 +274,46 @@ func (db *db) IsBridgeTokenExistedByType(
 		return false, nil
 	}
 	return true, nil
+}
+
+func (db *db) getBridgeTokensByType(isCentralized bool) ([]*BridgeTokenInfo, error) {
+	prefix := getBridgePrefix(isCentralized)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
+	bridgeTokenInfos := []*BridgeTokenInfo{}
+	for iter.Next() {
+		value := iter.Value()
+		itemBytes := make([]byte, len(value))
+		copy(itemBytes, value)
+		var bridgeTokenInfo BridgeTokenInfo
+		err := json.Unmarshal(itemBytes, &bridgeTokenInfo)
+		if err != nil {
+			return nil, err
+		}
+		bridgeTokenInfos = append(bridgeTokenInfos, &bridgeTokenInfo)
+	}
+
+	iter.Release()
+	err := iter.Error()
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+
+	return bridgeTokenInfos, nil
+}
+
+func (db *db) GetAllBridgeTokens() ([]byte, error) {
+	cBridgeTokenInfos, err := db.getBridgeTokensByType(true)
+	if err != nil {
+		return nil, err
+	}
+	dBridgeTokenInfos, err := db.getBridgeTokensByType(false)
+	if err != nil {
+		return nil, err
+	}
+	allBridgeTokens := append(cBridgeTokenInfos, dBridgeTokenInfos...)
+	allBridgeTokensBytes, err := json.Marshal(allBridgeTokens)
+	if err != nil {
+		return nil, err
+	}
+	return allBridgeTokensBytes, nil
 }

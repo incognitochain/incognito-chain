@@ -1,5 +1,10 @@
 FROM alpine:3.9
 
+RUN apk add bind-tools
+RUN  apk update && \
+     apk add libc6-compat && \
+     apk add ca-certificates
+     
 ARG commit=commit
 ENV commit=$commit
 
@@ -45,4 +50,4 @@ RUN mkdir /utility
 #COPY ./txs-shard1-privacy-3000.1.json /utility/
 #COPY ./txs-shard1-privacy-3000.2.json /utility/
 #COPY ./txs-shard1-privacy-3000.3.json /utility/
-CMD ["/bin/sh"]
+CMD ["/bin/sh","run_incognito.sh"]

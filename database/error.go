@@ -20,14 +20,10 @@ const (
 	BlockExisted
 	UnexpectedError
 	KeyExisted
-
-	//voting err
-	NotEnoughCandidate
-	ErrUnexpected
 )
 
 var ErrCodeMessage = map[int]struct {
-	code    int
+	Code    int
 	message string
 }{
 	// -1xxx driver
@@ -44,10 +40,6 @@ var ErrCodeMessage = map[int]struct {
 	BlockExisted:      {-3001, "Block already existed"},
 	UnexpectedError:   {-3002, "Unexpected error"},
 	KeyExisted:        {-3003, "PubKey already existed in database"},
-
-	// -4xxx voting
-	NotEnoughCandidate: {-4000, "Not enough candidate for DCB Board"},
-	ErrUnexpected:      {-4001, "unknown"},
 }
 
 type DatabaseError struct {
@@ -67,7 +59,7 @@ func (e DatabaseError) Error() string {
 func NewDatabaseError(key int, err error) *DatabaseError {
 	return &DatabaseError{
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
-		code:    ErrCodeMessage[key].code,
+		code:    ErrCodeMessage[key].Code,
 		message: ErrCodeMessage[key].message,
 	}
 }

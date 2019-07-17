@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/cashec"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -14,7 +14,7 @@ func main() {
 		burnPubKey := burnPubKeyE.Compress()
 		if burnPubKey[len(burnPubKey)-1] == 0 {
 			burnKey := wallet.KeyWallet{
-				KeySet: cashec.KeySet{
+				KeySet: incognitokey.KeySet{
 					PaymentAddress: privacy.PaymentAddress{
 						Pk: burnPubKey,
 					},

@@ -14,6 +14,6 @@ func (db *db) GetBurningConfirm(txID []byte) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	height := common.BytesToUint64(value)
+	height, _ := common.BytesToUint64(value)
 	return height, nil
 }

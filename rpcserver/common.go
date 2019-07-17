@@ -5,9 +5,9 @@ import (
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/cashec"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -16,14 +16,15 @@ import (
 )
 
 func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.PaymentInfo,
-	estimateFeeCoinPerKb int64, numBlock uint64, keyset *cashec.KeySet, shardIDSender byte,
+	estimateFeeCoinPerKb int64, numBlock uint64, keyset *incognitokey.KeySet, shardIDSender byte,
 	hasPrivacy bool,
 	metadataParam metadata.Metadata,
 	customTokenParams *transaction.CustomTokenParamTx,
 	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx,
 ) ([]*privacy.InputCoin, uint64, *RPCError) {
+	// estimate fee according to 8 recent block
 	if numBlock == 0 {
-		numBlock = 8
+		numBlock = 1000
 	}
 	// calculate total amount to send
 	totalAmmount := uint64(0)
@@ -168,7 +169,7 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	return &tx, nil
 }
 
-func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
+func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -177,7 +178,7 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 	}
 	voutsAmount := int64(0)
-	tokenParams.Receiver, voutsAmount = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
+	tokenParams.Receiver, voutsAmount, _ = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
 	switch tokenParams.TokenTxType {
 	case transaction.CustomTokenTransfer:
 		{
@@ -319,7 +320,7 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 	return tx, nil
 }
 
-func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *cashec.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -480,14 +481,16 @@ func (rpcServer HttpServer) estimateFeeWithEstimator(defaultFee int64, shardID b
 }
 
 // estimateFee - estimate fee from tx data and return real full fee, fee per kb and real tx size
-func (rpcServer HttpServer) estimateFee(defaultFee int64, candidateOutputCoins []*privacy.OutputCoin,
+func (rpcServer HttpServer) estimateFee(
+	defaultFee int64,
+	candidateOutputCoins []*privacy.OutputCoin,
 	paymentInfos []*privacy.PaymentInfo, shardID byte,
 	numBlock uint64, hasPrivacy bool,
 	metadata metadata.Metadata,
 	customTokenParams *transaction.CustomTokenParamTx,
 	privacyCustomTokenParams *transaction.CustomTokenPrivacyParamTx) (uint64, uint64, uint64) {
 	if numBlock == 0 {
-		numBlock = 10
+		numBlock = 1000
 	}
 	// check real fee(nano PRV) per tx
 	var realFee uint64
@@ -496,7 +499,7 @@ func (rpcServer HttpServer) estimateFee(defaultFee int64, candidateOutputCoins [
 
 	tokenId := &common.Hash{}
 	if privacyCustomTokenParams != nil {
-		tokenId, _ = common.NewHashFromStr(privacyCustomTokenParams.PropertyID)
+		tokenId, _ = common.Hash{}.NewHashFromStr(privacyCustomTokenParams.PropertyID)
 	}
 
 	estimateFeeCoinPerKb = rpcServer.estimateFeeWithEstimator(defaultFee, shardID, numBlock, tokenId)
@@ -588,7 +591,7 @@ func (rpcServer HttpServer) GetPaymentAddressFromPrivateKeyParams(senderKeyParam
 
 // GetKeySetFromKeyParams - deserialize a key string(wallet serialized)
 // into keyWallet - this keywallet may contain
-func (rpcServer HttpServer) GetKeySetFromKeyParams(keyParam string) (*cashec.KeySet, error) {
+func (rpcServer HttpServer) GetKeySetFromKeyParams(keyParam string) (*incognitokey.KeySet, error) {
 	keyWallet, err := wallet.Base58CheckDeserialize(keyParam)
 	if err != nil {
 		return nil, err
@@ -598,13 +601,16 @@ func (rpcServer HttpServer) GetKeySetFromKeyParams(keyParam string) (*cashec.Key
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string
 // into keyWallet object and fill all keyset in keywallet with private key
-func (rpcServer HttpServer) GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*cashec.KeySet, error) {
+func (rpcServer HttpServer) GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.KeySet, error) {
 	// deserialize to crate keywallet object which contain private key
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKeyWalletStr)
 	if err != nil {
 		return nil, err
 	}
 	// fill paymentaddress and readonly key with privatekey
-	keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
 	return &keyWallet.KeySet, nil
 }

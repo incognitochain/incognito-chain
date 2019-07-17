@@ -11,5 +11,5 @@ env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o bootnode ../
 cp ../keylist.json .
 
 commit=`git show --summary --oneline | cut -d ' ' -f 1`
-docker build --build-arg commit=$commit . -t dungvanautonomous/incognito && docker push dungvanautonomous/incognito && echo "Commit: $commit"
+docker build --build-arg commit=$commit . -t incognitochain/incognito && docker push incognitochain/incognito && echo "Commit: $commit"
 docker rmi -f $(docker images --filter "dangling=true" -q)

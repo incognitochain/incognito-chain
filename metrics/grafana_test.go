@@ -6,12 +6,15 @@ import (
 )
 
 func TestPoolDataSendTimeSeriesMetricDataGrafana(T *testing.T) {
-	os.Setenv("GRAFANAURL", GrafanaURL)
 	data := map[string]interface{}{
 		Measurement:      PoolSize,
 		MeasurementValue: float64(10),
 	}
-	SendTimeSeriesMetricDataGrafana(data)
+	grafanaEmptyUrl := NewGrafana("")
+	grafanaEmptyUrl.SendTimeSeriesMetricData(data)
+	os.Setenv("GRAFANAURL", GrafanaURL)
+	grafana := NewGrafana(os.Getenv("GRAFANAURL"))
+	grafana.SendTimeSeriesMetricData(data)
 }
 
 func TestBlockDataSendTimeSeriesMetricDataGrafana(T *testing.T) {
@@ -22,5 +25,6 @@ func TestBlockDataSendTimeSeriesMetricDataGrafana(T *testing.T) {
 		Tag:              BlockHeightTag,
 		TagValue:         "1000",
 	}
-	SendTimeSeriesMetricDataGrafana(data)
+	grafana := NewGrafana(os.Getenv("GRAFANAURL"))
+	grafana.SendTimeSeriesMetricData(data)
 }
