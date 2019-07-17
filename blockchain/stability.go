@@ -187,7 +187,6 @@ func parseAndConcatPubkeys(vals []string) []byte {
 	pks := []byte{}
 	for _, val := range vals {
 		pk, _, _ := base58.Base58Check{}.Decode(val)
-		// TODO(@0xbunyip): handle error
 		pks = append(pks, pk...)
 	}
 	return pks
@@ -363,12 +362,12 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			// 	// }
 
 			// }
-			// if l[0] == StakeAction || l[0] == RandomAction {
-			// 	continue
-			// }
-			// if len(l) <= 2 {
-			// 	continue
-			// }
+			if l[0] == StakeAction || l[0] == RandomAction {
+				continue
+			}
+			if len(l) <= 2 {
+				continue
+			}
 			metaType, err := strconv.Atoi(l[0])
 			if err != nil {
 				return nil, err
