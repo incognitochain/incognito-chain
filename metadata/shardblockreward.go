@@ -146,9 +146,9 @@ func NewAcceptedBlockRewardInfoFromStr(
 ) (*AcceptedBlockRewardInfo, error) {
 	Ins := &AcceptedBlockRewardInfo{}
 	err := json.Unmarshal([]byte(inst), Ins)
-	// fmt.Printf("[ndh] - - - New From String ++++++++++++++++++++++++++++++++++++++++++++\n")
+	// //fmt.Printf("[ndh] - - - New From String ++++++++++++++++++++++++++++++++++++++++++++\n")
 	// for key, value := range Ins.TxsFee {
-	// 	fmt.Printf("[ndh] +=+================ %+v %+v\n", key, value)
+	// 	//fmt.Printf("[ndh] +=+================ %+v %+v\n", key, value)
 	// }
 	if err != nil {
 		return nil, err
@@ -158,9 +158,9 @@ func NewAcceptedBlockRewardInfoFromStr(
 
 func (blockRewardInfo *AcceptedBlockRewardInfo) GetStringFormat() ([]string, error) {
 	content, err := json.Marshal(blockRewardInfo)
-	// fmt.Printf("[ndh] $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ %+v \n", content)
+	// //fmt.Printf("[ndh] $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ %+v \n", content)
 	// for key, value := range blockRewardInfo.TxsFee {
-	// 	fmt.Printf("[ndh] @@@@@@@@@@@@@@@@@@@@@@@@@ %+v %+v\n", key, value)
+	// 	//fmt.Printf("[ndh] @@@@@@@@@@@@@@@@@@@@@@@@@ %+v %+v\n", key, value)
 	// }
 	if err != nil {
 		return nil, err
