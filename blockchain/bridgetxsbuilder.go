@@ -27,7 +27,6 @@ func buildInstructionsForIssuingReq(
 		contentStr,
 	}
 	instructions = append(instructions, returnedInst)
-	fmt.Println("hahah returnedInst : ", returnedInst)
 	return instructions, nil
 }
 
@@ -42,8 +41,6 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 	}
 
 	db := blockgen.chain.GetDatabase()
-	fmt.Println("haha start buildIssuanceTx")
-
 	issuingReqAction, err := metadata.ParseIssuingInstContent(contentStr)
 	if err != nil {
 		return nil, err
@@ -107,6 +104,7 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 		return nil, initErr
 	}
 	ac.CBridgeTokens = append(ac.CBridgeTokens, &issuingTokenID)
+	fmt.Println("[Centralized token issuance] Create tx ok.")
 	return resTx, nil
 }
 
@@ -120,7 +118,6 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		return nil, nil
 	}
 
-	fmt.Println("haha start buildETHIssuanceTx")
 	db := blockgen.chain.GetDatabase()
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
@@ -245,6 +242,6 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	}
 	ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqETHTx)
 	ac.DBridgeTokenPair[md.IncTokenID.String()] = ethereumToken
-	fmt.Println("haha create tx ok")
+	fmt.Println("[Decentralized bridge token issuance] Create tx ok.")
 	return resTx, nil
 }
