@@ -443,14 +443,14 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	}
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
 	tokenIDs := make(map[common.Hash]interface{})
-	for _, token := range temps {
+	for tokenID, token := range temps {
 		item := jsonresult.CustomToken{}
 		item.InitPrivacy(token)
-		tokenIDs[token.TxTokenPrivacyData.PropertyID] = 0
+		tokenIDs[tokenID] = 0
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
-	for _, token := range listCustomTokenCrossShard {
-		if _, ok := tokenIDs[token.TokenID]; ok {
+	for tokenID, token := range listCustomTokenCrossShard {
+		if _, ok := tokenIDs[tokenID]; ok {
 			continue
 		}
 		item := jsonresult.CustomToken{}
