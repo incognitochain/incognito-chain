@@ -73,10 +73,10 @@ func (sm *StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
-	if sm.Type == ShardStakingMeta && amount != sm.GetShardStateAmount() {
+	if sm.Type == ShardStakingMeta && amount != bcr.GetStakingAmountShard() {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if sm.Type == BeaconStakingMeta && amount != sm.GetBeaconStakeAmount() {
+	if sm.Type == BeaconStakingMeta && amount != bcr.GetStakingAmountShard()*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 	return true, true, nil
