@@ -11,39 +11,12 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-type TokenWithAmount struct {
-	TokenID *common.Hash `json:"tokenId"`
-	Amount  uint64       `json:"amount"`
-}
-
 type BridgeTokenInfo struct {
 	TokenID         *common.Hash `json:"tokenId"`
 	Amount          uint64       `json:"amount"`
 	ExternalTokenID []byte       `json:"externalTokenId"`
 	Network         string       `json:"network"`
-}
-
-func buildBridgedTokensAmounts(item []byte, results [][]byte) [][]byte {
-	results = append(results, item)
-	return results
-}
-
-func (db *db) GetBridgeTokensAmounts() ([][]byte, error) {
-	iter := db.lvdb.NewIterator(util.BytesPrefix(centralizedBridgePrefix), nil)
-	results := [][]byte{}
-	for iter.Next() {
-		value := iter.Value()
-		bridgedTokensAmountBytes := make([]byte, len(value))
-		copy(bridgedTokensAmountBytes, value)
-		results = append(results, bridgedTokensAmountBytes)
-	}
-
-	iter.Release()
-	err := iter.Error()
-	if err != nil && err != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-	return results, nil
+	IsCentralized   bool         `json:"isCentralized"`
 }
 
 func (db *db) IsBridgeTokenExisted(
@@ -58,60 +31,6 @@ func (db *db) IsBridgeTokenExisted(
 		return false, nil
 	}
 	return true, nil
-}
-
-func (db *db) UpdateAmtByTokenID(
-	tokenID common.Hash,
-	amount uint64,
-	updateType string,
-) error {
-	// don't need to have atomic operation here since instructions on beacon would be processed one by one, not in parallel
-	key := append(centralizedBridgePrefix, tokenID[:]...)
-
-	tokenWithAmtBytes, dbErr := db.lvdb.Get(key, nil)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
-	}
-
-	var newTokenWithAmount TokenWithAmount
-	if len(tokenWithAmtBytes) == 0 {
-		newTokenWithAmount = TokenWithAmount{
-			TokenID: &tokenID,
-		}
-		if updateType == "-" {
-			newTokenWithAmount.Amount = 0
-		} else {
-			newTokenWithAmount.Amount = amount
-		}
-
-	} else { // found existing amount info
-		var existingTokenWithAmount TokenWithAmount
-		unmarshalErr := json.Unmarshal(tokenWithAmtBytes, &existingTokenWithAmount)
-		if unmarshalErr != nil {
-			return unmarshalErr
-		}
-		newTokenWithAmount = TokenWithAmount{
-			TokenID: existingTokenWithAmount.TokenID,
-		}
-		if updateType == "+" {
-			newTokenWithAmount.Amount = existingTokenWithAmount.Amount + amount
-		} else if existingTokenWithAmount.Amount <= amount {
-			newTokenWithAmount.Amount = 0
-		} else {
-			newTokenWithAmount.Amount = existingTokenWithAmount.Amount - amount
-		}
-	}
-
-	contentBytes, marshalErr := json.Marshal(newTokenWithAmount)
-	if marshalErr != nil {
-		return marshalErr
-	}
-
-	dbErr = db.Put(key, contentBytes)
-	if dbErr != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.put"))
-	}
-	return nil
 }
 
 func (db *db) InsertETHTxHashIssued(

@@ -439,7 +439,6 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		blockchain.config.CrossShardPool[fromShard].UpdatePool()
 	}
 
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range currentBestStateBlk.Body.Instructions {
 		if inst[0] == StakeAction || inst[0] == RandomAction {
 			continue
@@ -453,8 +452,6 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 			return err
 		}
 		switch metaType {
-		case metadata.BurningRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
@@ -482,12 +479,6 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 			return err
 		}
 	}
-	for tokenID, _ := range updatingInfoByTokenID {
-		err := blockchain.config.DataBase.RestoreBridgedTokenByTokenID(tokenID)
-		if err != nil {
-			return err
-		}
-	}
 
 	blockchain.config.DataBase.DeleteBeaconBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height)
 	blockchain.BestState.Beacon = &beaconBestState
@@ -509,7 +500,6 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if inst[0] == StakeAction || inst[0] == RandomAction {
 			continue
@@ -525,8 +515,6 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		}
 
 		switch metaType {
-		case metadata.BurningRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
@@ -549,12 +537,6 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 			}
 		}
 
-		if err != nil {
-			return err
-		}
-	}
-	for tokenID, _ := range updatingInfoByTokenID {
-		err := blockchain.config.DataBase.BackupBridgedTokenByTokenID(tokenID)
 		if err != nil {
 			return err
 		}

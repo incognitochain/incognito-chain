@@ -1406,10 +1406,6 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 			return nil, err
 		}
 
-		// mapBridgeTokenID, err := blockchain.GetDatabase().GetBridgeTokensAmounts()
-		// if err != nil {
-		// 	return nil, err
-		// }
 		for _, bridgeTokenIDs := range allBridgeTokens {
 			// var tokenWithAmount lvdb.TokenWithAmount
 			// err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
