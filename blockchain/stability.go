@@ -285,7 +285,7 @@ func findExternalTokenID(tokenID *common.Hash, db database.DatabaseInterface) ([
 		return nil, err
 	}
 	for _, token := range allBridgeTokens {
-		if token.TokenID.IsEqual(tokenID) {
+		if token.TokenID.IsEqual(tokenID) && len(token.ExternalTokenID) > 0 {
 			return token.ExternalTokenID, nil
 		}
 	}
