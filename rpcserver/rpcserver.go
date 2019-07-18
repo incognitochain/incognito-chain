@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"net"
@@ -70,6 +71,7 @@ type RpcServerConfig struct {
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 		GetNodeRole() string
+		GetUserKeySet() *incognitokey.KeySet
 	}
 	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool *mempool.ShardToBeaconPool
