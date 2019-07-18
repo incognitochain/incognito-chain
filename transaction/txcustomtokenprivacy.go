@@ -481,6 +481,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 	}
 	return txValue
 }
+
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ListSerialNumbersHashH() []common.Hash {
 	tx := txCustomTokenPrivacy.Tx
 	result := []common.Hash{}
@@ -492,7 +493,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ListSerialNumbersHashH() []com
 	}
 	customTokenPrivacy := txCustomTokenPrivacy.TxTokenPrivacyData
 	if customTokenPrivacy.TxNormal.Proof != nil {
-		for _, d := range tx.Proof.InputCoins {
+		for _, d := range customTokenPrivacy.TxNormal.Proof.InputCoins {
 			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
 			result = append(result, hash)
 		}
@@ -502,6 +503,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ListSerialNumbersHashH() []com
 	})
 	return result
 }
+
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.SigPubKey
 }

@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"strconv"
 	"strings"
 
@@ -60,6 +61,27 @@ func (db *db) HasSerialNumber(tokenID common.Hash, serialNumber []byte, shardID 
 	} else {
 		return hasValue, nil
 	}
+}
+
+// ListSerialNumber -  return all serial number and its index
+func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
+	result := make(map[string]uint64)
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
+	key = append(key, shardID)
+
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iterator.Next() {
+		key := make([]byte, len(iterator.Key()))
+		copy(key, iterator.Key())
+		serialNumberInByte := key[len(key)-33:]
+		value := make([]byte, len(iterator.Value()))
+		copy(value, iterator.Value())
+		index := big.Int{}
+		index.SetBytes(value)
+		serialNumber := base58.Base58Check{}.Encode(serialNumberInByte, 0x0)
+		result[serialNumber] = index.Uint64()
+	}
+	return result, nil
 }
 
 // GetCommitmentIndex - return index of commitment in db list
