@@ -442,12 +442,17 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
-	for _, token := range temps {
+	tokenIDs := make(map[common.Hash]interface{})
+	for tokenID, token := range temps {
 		item := jsonresult.CustomToken{}
 		item.InitPrivacy(token)
+		tokenIDs[tokenID] = 0
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
-	for _, token := range listCustomTokenCrossShard {
+	for tokenID, token := range listCustomTokenCrossShard {
+		if _, ok := tokenIDs[tokenID]; ok {
+			continue
+		}
 		item := jsonresult.CustomToken{}
 		item.InitPrivacyForCrossShard(token)
 		result.ListCustomToken = append(result.ListCustomToken, item)
