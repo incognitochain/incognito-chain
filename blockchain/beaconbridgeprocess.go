@@ -15,42 +15,18 @@ type BurningReqAction struct {
 	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
-type UpdatingInfo struct {
-	countUpAmt uint64
-	deductAmt  uint64
-}
-
 func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
 		}
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.BurningRequestMeta):
-			updatingInfoByTokenID, err = chain.processBurningReq(inst, updatingInfoByTokenID)
 		case strconv.Itoa(metadata.IssuingResponseMeta):
 			err = chain.processIssuingRes(inst)
 		case strconv.Itoa(metadata.IssuingETHResponseMeta):
 			err = chain.processIssuingETHRes(inst)
 		}
-		if err != nil {
-			return err
-		}
-	}
-	for tokenID, updatingInfo := range updatingInfoByTokenID {
-		var updatingAmt uint64
-		var updatingType string
-		if updatingInfo.countUpAmt > updatingInfo.deductAmt {
-			updatingAmt = updatingInfo.countUpAmt - updatingInfo.deductAmt
-			updatingType = "+"
-		}
-		if updatingInfo.countUpAmt < updatingInfo.deductAmt {
-			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
-			updatingType = "-"
-		}
-		err := chain.GetDatabase().UpdateAmtByTokenID(tokenID, updatingAmt, updatingType)
 		if err != nil {
 			return err
 		}
@@ -103,30 +79,6 @@ func decodeContent(content string, action interface{}) error {
 		return err
 	}
 	return json.Unmarshal(contentBytes, &action)
-}
-
-func (bc *BlockChain) processBurningReq(
-	inst []string,
-	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
-) (map[common.Hash]UpdatingInfo, error) {
-	var burningReqAction BurningReqAction
-	err := decodeContent(inst[1], &burningReqAction)
-	if err != nil {
-		return nil, err
-	}
-	md := burningReqAction.Meta
-	updatingInfo, found := updatingInfoByTokenID[md.TokenID]
-	if found {
-		updatingInfo.deductAmt += md.BurningAmount
-	} else {
-		updatingInfo = UpdatingInfo{
-			countUpAmt: 0,
-			deductAmt:  md.BurningAmount,
-		}
-	}
-	updatingInfoByTokenID[md.TokenID] = updatingInfo
-
-	return updatingInfoByTokenID, nil
 }
 
 func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {

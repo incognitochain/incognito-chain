@@ -114,7 +114,6 @@ const (
 	sendIssuingRequest               = "sendissuingrequest"
 	createAndSendIssuingRequest      = "createandsendissuingrequest"
 	createAndSendContractingRequest  = "createandsendcontractingrequest"
-	getBridgeTokensAmounts           = "getbridgetokensamounts"
 	createAndSendBurningRequest      = "createandsendburningrequest"
 	createAndSendTxWithIssuingETHReq = "createandsendtxwithissuingethreq"
 	getRelayedETHHeader              = "getrelayedethheader"
