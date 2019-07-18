@@ -176,7 +176,7 @@ func (self *ShardToBeaconPool) updateLatestShardState() {
 			lastHeight = blk.Header.Height
 		}
 		self.latestValidHeight[shardID] = lastHeight
-		Logger.log.Infof("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
+		Logger.log.Debugf("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
 	}
 }
 

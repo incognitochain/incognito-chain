@@ -358,7 +358,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 ) error {
 	db := blockchain.config.DataBase
 	for _, inst := range beaconBlock.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction {
+		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
 		}
 		if len(inst) <= 2 {
