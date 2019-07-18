@@ -117,6 +117,7 @@ type MempoolRetriever interface {
 
 // Interface for blockchain which is used in metadata
 type BlockchainRetriever interface {
+	GetStakingAmountShard() uint64
 	GetTxChainHeight(tx Transaction) (uint64, error)
 	GetChainHeight(byte) uint64
 	GetBeaconHeight() uint64
