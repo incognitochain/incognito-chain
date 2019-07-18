@@ -35,8 +35,8 @@ const (
 	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
-	MainnetBasicReward                = 50      //50 mili PRV
-	MainnetRewardHalflife             = 6307200 //1 year, reduce 10% per year
+	MainnetBasicReward                = 500000000 //50 mili PRV
+	MainnetRewardHalflife             = 6307200   //1 year, reduce 10% per year
 	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
@@ -70,8 +70,8 @@ const (
 	TestNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
-	TestnetBasicReward                = 50      //50 mili PRV
-	TestnetRewardHalflife             = 6307200 //1 year, reduce 10% per year
+	TestnetBasicReward                = 500000000 //0.5 PRV
+	TestnetRewardHalflife             = 6307200   //1 year, reduce 10% per year
 	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 )
 
