@@ -15,31 +15,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (httpServer *HttpServer) handleGetBridgeTokensAmounts(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	db := httpServer.config.BlockChain.GetDatabase()
-	tokensAmtsBytesArr, dbErr := db.GetBridgeTokensAmounts()
-	if dbErr != nil {
-		return nil, NewRPCError(ErrUnexpected, dbErr)
-	}
-
-	result := &jsonresult.GetBridgeTokensAmounts{
-		BridgeTokensAmounts: make(map[string]jsonresult.GetBridgeTokensAmount),
-	}
-	for _, tokensAmtsBytes := range tokensAmtsBytesArr {
-		var tokenWithAmount lvdb.TokenWithAmount
-		err := json.Unmarshal(tokensAmtsBytes, &tokenWithAmount)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-		tokenID := tokenWithAmount.TokenID
-		result.BridgeTokensAmounts[tokenID.String()] = jsonresult.GetBridgeTokensAmount{
-			TokenID: tokenWithAmount.TokenID,
-			Amount:  tokenWithAmount.Amount,
-		}
-	}
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleCreateIssuingRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	constructor := metaConstructors[createAndSendIssuingRequest]
 	return httpServer.createRawTxWithMetadata(params, closeChan, constructor)

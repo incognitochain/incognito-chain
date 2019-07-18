@@ -148,9 +148,7 @@ type DatabaseInterface interface {
 	DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error
 
 	// Centralized bridge
-	GetBridgeTokensAmounts() ([][]byte, error)
 	IsBridgeTokenExisted(common.Hash) (bool, error)
-	UpdateAmtByTokenID(common.Hash, uint64, string) error
 	BackupBridgedTokenByTokenID(tokenID common.Hash) error
 	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
 
