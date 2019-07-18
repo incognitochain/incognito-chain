@@ -234,7 +234,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 
 	// Write the response.
 	// for testing only
-	w.WriteHeader(http.StatusOK)
+	// w.WriteHeader(http.StatusOK)
 	err = httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusOK, buf)
 	if err != nil {
 		Logger.log.Error(err)
