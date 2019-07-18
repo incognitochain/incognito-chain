@@ -928,24 +928,24 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err91)
 		}
 	}
-	// Check Condition 5: replace (custom token privacy tx)
-	ResetMempoolTest()
-	tp.addTx(txDesc1CustomTokenPrivacy, false)
-	err92 := tp.validateTransaction(txInitCustomTokenPrivacyReplace)
-	if err92 != nil {
-		t.Fatal("Expect no error error but get ", err92)
-	}
-	// Check Condition 5: Check replace with mempool (custom token privacy tx)
-	ResetMempoolTest()
-	tp.addTx(txDesc1CustomTokenPrivacy, false)
-	err93 := tp.validateTransaction(txInitCustomTokenPrivacyReplaceFailed)
-	if err93 == nil {
-		t.Fatal("Expect replace fail error in mempool error error but no error")
-	} else {
-		if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err93)
-		}
-	}
+	//// Check Condition 5: replace (custom token privacy tx)
+	//ResetMempoolTest()
+	//tp.addTx(txDesc1CustomTokenPrivacy, false)
+	//err92 := tp.validateTransaction(txInitCustomTokenPrivacyReplace)
+	//if err92 != nil {
+	//	t.Fatal("Expect no error error but get ", err92)
+	//}
+	//// Check Condition 5: Check replace with mempool (custom token privacy tx)
+	//ResetMempoolTest()
+	//tp.addTx(txDesc1CustomTokenPrivacy, false)
+	//err93 := tp.validateTransaction(txInitCustomTokenPrivacyReplaceFailed)
+	//if err93 == nil {
+	//	t.Fatal("Expect replace fail error in mempool error error but no error")
+	//} else {
+	//	if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
+	//		t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err93)
+	//	}
+	//}
 	// Check Condition 5: Check double spend with mempool
 	ResetMempoolTest()
 	tp.addTx(txDesc1, false)
