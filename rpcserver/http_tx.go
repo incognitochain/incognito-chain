@@ -854,7 +854,10 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	usableOutputCoins := []*privacy.OutputCoin{}
 	for _, item := range outputs {
 		out := jsonresult.OutCoin{}
-		out.Init(item)
+		err1 := out.Init(item)
+		if err1 != nil {
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprint("outputs is invalid", out)))
+		}
 		i := &privacy.OutputCoin{
 			CoinDetails: &privacy.Coin{
 				Value: out.Value,

@@ -20,11 +20,11 @@ type OutCoin struct {
 	Info           string
 }
 
-func (outcoin *OutCoin) Init(data interface{}) {
+func (outcoin *OutCoin) Init(data interface{}) error {
 	temp, err := json.Marshal(data)
 	if err != nil {
 		log.Print(err)
-		return
+		return err
 	}
 
 	type Alias OutCoin
@@ -40,6 +40,6 @@ func (outcoin *OutCoin) Init(data interface{}) {
 	outcoin.Value = temp2.Uint64()
 	if err != nil {
 		log.Print(err)
-		return
+		return err
 	}
 }
