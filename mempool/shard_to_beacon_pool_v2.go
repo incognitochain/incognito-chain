@@ -202,7 +202,9 @@ func (self *ShardToBeaconPool) removeBlock(blockItems map[byte]uint64) {
 				break
 			}
 		}
-		Logger.log.Infof("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
+		if blockHeight != 1 {
+			Logger.log.Infof("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
+		}
 	}
 }
 
