@@ -30,6 +30,11 @@ func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, sh
 	} else {
 		lenData = len.Int64()
 	}
+	/*if ("799a461a4132fffac562feb34adb1778389b0a846581034bffc9e89f9218e3d5" == tokenID.String()) {
+		//panic(1111)
+		a := 1
+		_ = a
+	}*/
 	for _, s := range serialNumbers {
 		newIndex := big.NewInt(lenData).Bytes()
 		if lenData == 0 {
@@ -73,6 +78,9 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 	for iterator.Next() {
 		key := make([]byte, len(iterator.Key()))
 		copy(key, iterator.Key())
+		if string(key[len(key)-3:]) == "len" {
+			continue
+		}
 		serialNumberInByte := key[len(key)-33:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
