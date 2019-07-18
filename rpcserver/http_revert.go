@@ -15,7 +15,7 @@ func (httpServer *HttpServer) handleRevertBeacon(params interface{}, closeChan <
 }
 
 func (httpServer *HttpServer) handleRevertShard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleRevertShard: %+v", params)
+	Logger.log.Debugf("handleRevertShard: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID empty"))
