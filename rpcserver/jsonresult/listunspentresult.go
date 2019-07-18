@@ -3,6 +3,7 @@ package jsonresult
 import (
 	"encoding/json"
 	"log"
+	"math/big"
 )
 
 type ListOutputCoins struct {
@@ -25,7 +26,18 @@ func (outcoin *OutCoin) Init(data interface{}) {
 		log.Print(err)
 		return
 	}
-	err = json.Unmarshal(temp, outcoin)
+
+	type Alias OutCoin
+	temp1 := &struct {
+		Value string
+		*Alias
+	}{
+		Alias: (*Alias)(outcoin),
+	}
+	err = json.Unmarshal(temp, temp1)
+	temp2 := big.Int{}
+	temp2.SetString(temp1.Value, 10)
+	outcoin.Value = temp2.Uint64()
 	if err != nil {
 		log.Print(err)
 		return
