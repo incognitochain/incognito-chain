@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"sort"
 	"strconv"
 	"strings"
@@ -14,8 +14,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // BestState houses information about the current best block and other info
@@ -58,11 +58,12 @@ type BestStateBeacon struct {
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
 	LastCrossShardState map[byte]map[byte]uint64 `json:"LastCrossShardState"`
-	ShardHandle map[byte]bool `json:"ShardHandle"` // lock sync.RWMutex
-	lockMu      sync.RWMutex
-	randomClient btc.RandomClient
+	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
+	lockMu              sync.RWMutex
+	randomClient        btc.RandomClient
 }
-func (bestStateBeacon *BestStateBeacon) InitRandomClient (randomClient btc.RandomClient) {
+
+func (bestStateBeacon *BestStateBeacon) InitRandomClient(randomClient btc.RandomClient) {
 	bestStateBeacon.randomClient = randomClient
 }
 func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
@@ -440,7 +441,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range currentBestStateBlk.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction {
+		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
 		}
 		if len(inst) < 2 {
@@ -514,7 +515,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction {
+		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
 		}
 
