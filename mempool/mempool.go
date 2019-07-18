@@ -68,6 +68,7 @@ type TxPool struct {
 	poolTokenID               map[common.Hash]string //Token ID List in Mempool
 	tokenIDMtx                sync.RWMutex
 	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
+	CRemoveTxs                chan<- metadata.Transaction // channel to deliver txs to block gen
 	RoleInCommittees          int                         //Current Role of Node
 	roleMtx                   sync.RWMutex
 	ScanTime                  time.Duration
@@ -101,8 +102,9 @@ func (tp *TxPool) Init(cfg *Config) {
 }
 
 // InitChannelMempool - init channel
-func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
+func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction, cRemoveTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
+	tp.CRemoveTxs = cRemoveTxs
 }
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
@@ -452,7 +454,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			isPaidByPRV := false
 			isPaidPartiallyPRV := false
 			// check PRV element and pToken element
-			if txPrivacyToken.Tx.Proof != nil {
+			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit {
 				// tx contain PRV data -> check with PRV fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
@@ -666,7 +668,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				baseReplaceFee = float64(txDescToBeReplaced.Desc.Fee)
 				replaceFee = float64(tx.GetTxFee())
 				// not a higher enough fee than return error
-				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee {
+				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee {
 					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
@@ -675,7 +677,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
-				if baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
+				if baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
 					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
 				}
 				isReplaced = true
@@ -687,7 +689,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				baseReplaceFeeToken = float64(txDescToBeReplaced.Desc.FeeToken)
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
-				if baseReplaceFee*tp.ReplaceFeeRatio > replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio > replaceFeeToken {
+				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
 					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
@@ -697,6 +699,11 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				tp.removeTx(txToBeReplaced)
 				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
 				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
+				if tp.IsBlockGenStarted {
+					go func(tx metadata.Transaction) {
+						tp.CRemoveTxs <- tx
+					}(tx)
+				}
 				return nil, true
 			} else {
 				return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Unexpected error occur")), true
