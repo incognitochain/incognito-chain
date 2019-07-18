@@ -131,6 +131,7 @@ const (
 	SwapAction   = "swap"
 	RandomAction = "random"
 	StakeAction  = "stake"
+	AssignAction = "assign"
 )
 
 // ---------------------------------------------
