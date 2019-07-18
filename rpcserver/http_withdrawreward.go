@@ -46,19 +46,16 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if len(arrayParams) != 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
 	}
-	senderKeyParam := arrayParams[0]
+	paymentAddress := arrayParams[0]
 
 	var keySet *incognitokey.KeySet
 
-	if senderKeyParam != "" {
-		senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if paymentAddress != "" {
+		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress.(string))
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
-		err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
+
 		keySet = &senderKey.KeySet
 	} else {
 		keySet = httpServer.config.Server.GetUserKeySet()
