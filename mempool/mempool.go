@@ -454,7 +454,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			isPaidByPRV := false
 			isPaidPartiallyPRV := false
 			// check PRV element and pToken element
-			if txPrivacyToken.Tx.Proof != nil {
+			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit {
 				// tx contain PRV data -> check with PRV fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
