@@ -32,7 +32,7 @@ const (
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
 	MainNetActiveShards        = 2
-	MainNetStakingAmountShard  = 175000
+	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
 	MainnetBasicReward                = 50      //50 mili PRV
@@ -67,7 +67,7 @@ const (
 	TestNetShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize = 4
 	TestNetActiveShards        = 8
-	TestNetStakingAmountShard  = 175000
+	TestNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
 	TestnetBasicReward                = 50      //50 mili PRV
@@ -131,6 +131,7 @@ const (
 	SwapAction   = "swap"
 	RandomAction = "random"
 	StakeAction  = "stake"
+	AssignAction = "assign"
 )
 
 // ---------------------------------------------
