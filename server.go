@@ -398,7 +398,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			return err
 		}
 	}
-	if cfg.NodeMode == common.NODEMODE_RELAY {
+	isRelayNodeForConsensus := cfg.Accelerator
+	if isRelayNodeForConsensus {
 		cfg.MaxPeersSameShard = 9999
 		cfg.MaxPeersOtherShard = 9999
 		cfg.MaxPeersOther = 9999
@@ -1110,8 +1111,8 @@ func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) 
 func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	Logger.log.Debug("Receive a BFTMsg START")
 	var txProcessed chan struct{}
-
-	if cfg.NodeMode == common.NODEMODE_RELAY {
+	isRelayNodeForConsensus := cfg.Accelerator
+	if isRelayNodeForConsensus {
 		senderPublicKey := p.RemotePeer.PublicKey
 		bestState := blockchain.GetBestStateBeacon()
 		beaconCommitteeList := bestState.BeaconCommittee
