@@ -90,6 +90,7 @@ type DatabaseInterface interface {
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error
 	HasSerialNumber(tokenID common.Hash, data []byte, shardID byte) (bool, error)
+	ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]uint64, error)
 	BackupSerialNumbersLen(tokenID common.Hash, shardID byte) error
 	RestoreSerialNumber(tokenID common.Hash, shardID byte, serialNumbers [][]byte) error
 	// DeleteSerialNumber(tokenID common.Hash, data []byte, shardID byte) error
@@ -158,6 +159,7 @@ type DatabaseInterface interface {
 	AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
 	GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error)
 	RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
+	ListCommitteeReward() map[string]map[common.Hash]uint64
 
 	BackupShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error  //beacon
 	BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash) error        //shard

@@ -44,7 +44,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 		TxID:            tx.Hash().String(),
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
-	Logger.log.Infof("\n\n\n\n\n\n\n createRawTxWithMetadata OK \n\n\n\n\n\n")
+	Logger.log.Debugf("\n\n\n\n\n\n\n createRawTxWithMetadata OK \n\n\n\n\n\n")
 	return result, nil
 }
 
@@ -95,7 +95,7 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
@@ -136,7 +136,7 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	Logger.log.Infof("there is hash of transaction: %s\n", hash.String())
+	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
 
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)

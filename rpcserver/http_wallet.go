@@ -134,7 +134,7 @@ handleImportAccount - import a new account by private-key
 - Param #3: passPhrase of wallet
 */
 func (httpServer *HttpServer) handleImportAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleImportAccount params: %+v", params)
+	Logger.log.Debugf("handleImportAccount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 3 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
@@ -160,12 +160,12 @@ func (httpServer *HttpServer) handleImportAccount(params interface{}, closeChan 
 		Pubkey:         hex.EncodeToString(account.Key.KeySet.PaymentAddress.Pk),
 		ReadonlyKey:    account.Key.Base58CheckSerialize(wallet.ReadonlyKeyType),
 	}
-	Logger.log.Infof("handleImportAccount result: %+v", result)
+	Logger.log.Debugf("handleImportAccount result: %+v", result)
 	return result, nil
 }
 
 func (httpServer *HttpServer) handleRemoveAccount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleRemoveAccount params: %+v", params)
+	Logger.log.Debugf("handleRemoveAccount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 3 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("params is invalid"))
@@ -257,10 +257,10 @@ func (httpServer *HttpServer) handleGetBalanceByPaymentAddress(params interface{
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender, prvCoinID)
-	Logger.log.Infof("OutCoins: %+v", outcoints)
-	Logger.log.Infof("shardIDSender: %+v", shardIDSender)
-	Logger.log.Infof("accountWithPaymentAddress.KeySet: %+v", accountWithPaymentAddress.KeySet)
-	Logger.log.Infof("paymentAddressParam: %+v", paymentAddressParam)
+	Logger.log.Debugf("OutCoins: %+v", outcoints)
+	Logger.log.Debugf("shardIDSender: %+v", shardIDSender)
+	Logger.log.Debugf("accountWithPaymentAddress.KeySet: %+v", accountWithPaymentAddress.KeySet)
+	Logger.log.Debugf("paymentAddressParam: %+v", paymentAddressParam)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -442,12 +442,17 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result := jsonresult.ListCustomToken{ListCustomToken: []jsonresult.CustomToken{}}
-	for _, token := range temps {
+	tokenIDs := make(map[common.Hash]interface{})
+	for tokenID, token := range temps {
 		item := jsonresult.CustomToken{}
 		item.InitPrivacy(token)
+		tokenIDs[tokenID] = 0
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
-	for _, token := range listCustomTokenCrossShard {
+	for tokenID, token := range listCustomTokenCrossShard {
+		if _, ok := tokenIDs[tokenID]; ok {
+			continue
+		}
 		item := jsonresult.CustomToken{}
 		item.InitPrivacyForCrossShard(token)
 		result.ListCustomToken = append(result.ListCustomToken, item)

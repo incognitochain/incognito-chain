@@ -69,14 +69,20 @@ func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Payme
 		privacyCustomTokenParams)
 
 	if totalAmmount == 0 && realFee == 0 {
-		metadataType := metadataParam.GetType()
-		switch metadataType {
-		case metadata.WithDrawRewardRequestMeta:
-			{
-				return nil, realFee, nil
+		if metadataParam != nil {
+			metadataType := metadataParam.GetType()
+			switch metadataType {
+			case metadata.WithDrawRewardRequestMeta:
+				{
+					return nil, realFee, nil
+				}
 			}
+			return nil, realFee, NewRPCError(ErrRejectInvalidFee, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
 		}
-		return nil, realFee, NewRPCError(ErrRejectInvalidFee, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
+		if privacyCustomTokenParams != nil {
+			// for privacy token
+			return nil, 0, nil
+		}
 	}
 
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
@@ -428,7 +434,9 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 	/****** END FEtch data from params *********/
 
 	/******* START choose output native coins(PRV), which is used to create tx *****/
-	inputCoins, realFeePrv, err := rpcServer.chooseOutsCoinByKeyset(paymentInfos,
+	var inputCoins []*privacy.InputCoin
+	var realFeePrv uint64
+	inputCoins, realFeePrv, err = rpcServer.chooseOutsCoinByKeyset(paymentInfos,
 		estimateFeeCoinPerKb, 0, senderKeySet,
 		shardIDSender, hasPrivacyCoin, nil,
 		nil, tokenParams)
