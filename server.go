@@ -847,6 +847,11 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 	return config
 }
 
+func (serverObj *Server) GetUserKeySet() *incognitokey.KeySet {
+	k, _ := cfg.GetUserKeySet()
+	return k
+}
+
 // OnBlock is invoked when a peer receives a block message.  It
 // blocks until the coin block has been fully processed.
 func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
