@@ -42,4 +42,5 @@ func (outcoin *OutCoin) Init(data interface{}) error {
 		log.Print(err)
 		return err
 	}
+	return nil
 }
