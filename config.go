@@ -143,6 +143,8 @@ type config struct {
 	BtcClientPort     string `long:"btcclientport" description:"Bitcoin Client Port (default 8332)"`
 	BtcClientUsername string `long:"btcclientusername" description:"Bitcoin Client Username for RPC"`
 	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
+
+	Accelerator bool `long:"accelerator" description:"Relay Node Configuration For Consensus"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
