@@ -10,7 +10,7 @@ type GetInstructionProof struct {
 	BeaconInstRoot       string   // Hex encoded root of the inst merkle tree
 	BeaconBlkData        string   // Hex encoded hash of the block meta
 	BeaconBlkHash        string   // Hex encoded block hash
-	BeaconSignerSig      string   // Hex encoded signature
+	BeaconSignerSig      string   // Hex encoded signature (R' and S)
 	BeaconPubkeys        []string // To decompress and send to contract
 	BeaconRIdxs          []int    // Idxs of R's aggregators
 	BeaconSigIdxs        []int    // Idxs of signer
