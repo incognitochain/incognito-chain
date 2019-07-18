@@ -16,7 +16,6 @@ type BridgeTokenInfo struct {
 	Amount          uint64       `json:"amount"`
 	ExternalTokenID []byte       `json:"externalTokenId"`
 	Network         string       `json:"network"`
-	IsCentralized   bool         `json:"isCentralized"`
 }
 
 func (db *db) IsBridgeTokenExisted(

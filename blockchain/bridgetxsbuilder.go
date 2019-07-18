@@ -118,6 +118,7 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		return nil, nil
 	}
 
+	fmt.Println("[Decentralized bridge token issuance] Starting...")
 	db := blockgen.chain.GetDatabase()
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
