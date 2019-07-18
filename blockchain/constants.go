@@ -35,8 +35,8 @@ const (
 	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
-	MainnetBasicReward                = 500000000 //50 mili PRV
-	MainnetRewardHalflife             = 6307200   //1 year, reduce 10% per year
+	MainnetBasicReward                = 400000000 //40 mili PRV
+	MainnetRewardHalflife             = 3155760   //1 year, reduce 12.5% per year
 	MainnetGenesisblockPaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
 	// ------------- end Mainnet --------------------------------------
 )
@@ -70,8 +70,8 @@ const (
 	TestNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
-	TestnetBasicReward                = 500000000 //0.5 PRV
-	TestnetRewardHalflife             = 6307200   //1 year, reduce 10% per year
+	TestnetBasicReward                = 400000000 //40 mili PRV
+	TestnetRewardHalflife             = 3155760   //1 year, reduce 12.5% per year
 	TestnetGenesisBlockPaymentAddress = "1Uv46Pu4pqBvxCcPw7MXhHfiAD5Rmi2xgEE7XB6eQurFAt4vSYvfyGn3uMMB1xnXDq9nRTPeiAZv5gRFCBDroRNsXJF1sxPSjNQtivuHk"
 )
 
@@ -136,16 +136,16 @@ const (
 
 // ---------------------------------------------
 var TestnetInitPRV = []string{
-	`{  
-   "Version":1,
-   "Type":"s",
-   "LockTime":1557799670,
-   "Fee":0,
-   "Info":null,
-   "SigPubKey":"AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA",
-   "Sig":"P1wbiDpmn2PK9G3FNILqu3JrU5E4ekfrnOz9X7Dd9HRHwp+YDFiEAMLicj7mhKcp3RCR+SWsWOaFxenbrmzXdA==",
-   "Proof":"1111111RMhr5Bpy8zSZm7bQEnJcEEbeMSYh6wX9LdwSBjWhESroPN9mvBuwapr4DfKH26bQm9Eu8jtKR3saFoseZj46YQbf7iyuiA6JhAKmekHK1ds4qtFw1ipFzhLYNvp4MYXEupErvQGvZ6bvd9sxDxbwrEFJuV7i8QnHMLftsAAwDAEpDr8MkuxwDXAr5rEjoo9h6SDBHo4c1X6VRBT2GSe3",
-   "PubKeyLastByteSender":0,
-   "Metadata":null
-	}`,
+	`{
+  "Version": 1,
+  "Type": "s",
+  "LockTime": 1563438751,
+  "Fee": 0,
+  "Info": null,
+  "SigPubKey": "AsKCsGYkt3JthzFysVzWHxkESGfEoSRFeWafGB+DZRQA",
+  "Sig": "OA3DSbUjZt28zPtTRdbHRvwI8CfZvLeVpsBggHnDMusfpkGmE3MgkmTuhqh9/rOwlEgB1ULgU3yxmdYRSUQpOA==",
+  "Proof": "1111111dP9RnNmXbXtb5GKjmThj1fuurPVnBJjr5Nw15gvMRyNfy8QdqGFnPrYmeQe5NpYwgRvx7hRsgDaYGwZmM8rNGBszCM5CGyTcFsHUP95AqhTzZFugrmRU3EFt8TnfM3LktX13eD9ep7V51Ww2UcQ2PewVLz3VwktfUAvmZ3tbPWtQoQLmSFmZ4z7A47gkk7q6WjjRDLtfUbF1yj6CcswkKwMN",
+  "PubKeyLastByteSender": 0,
+  "Metadata": null
+}`,
 }
