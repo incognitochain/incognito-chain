@@ -6,7 +6,7 @@ import (
 	"errors"
 	"math"
 	"sort"
-	
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -701,6 +701,7 @@ func (txCustomToken *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
+	accumulatedValues *metadata.AccumulatedValues,
 ) (bool, error) {
 	if !txCustomToken.TxTokenData.Mintable {
 		return true, nil
@@ -714,7 +715,7 @@ func (txCustomToken *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomToken, bcr)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomToken, bcr, accumulatedValues)
 }
 
 // GetTxFeeToken - return Token Fee use to pay for privacy token Tx

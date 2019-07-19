@@ -36,6 +36,10 @@ type ShardHeader struct {
 	BeaconHash   common.Hash
 
 	TotalTxsFee map[common.Hash]uint64
+
+	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
+	// This obsoletes InstructionRoot but for simplicity, we keep it for now
+	InstructionMerkleRoot common.Hash
 }
 
 func (shardHeader *ShardHeader) String() string {
@@ -75,6 +79,14 @@ func (shardHeader *ShardHeader) String() string {
 	return res
 }
 
+func (shardHeader *ShardHeader) MetaHash() common.Hash {
+	return common.Keccak256([]byte(shardHeader.String()))
+}
+
 func (shardHeader *ShardHeader) Hash() common.Hash {
-	return common.HashH([]byte(shardHeader.String()))
+	// Block header of bridge uses Keccak256 as a hash func to check on Ethereum when relaying blocks
+	blkMetaHash := shardHeader.MetaHash()
+	blkInstHash := shardHeader.InstructionMerkleRoot
+	combined := append(blkMetaHash[:], blkInstHash[:]...)
+	return common.Keccak256(combined)
 }
