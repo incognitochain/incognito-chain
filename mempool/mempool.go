@@ -11,9 +11,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/databasemp"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -454,8 +452,9 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			isPaidByPRV := false
 			isPaidPartiallyPRV := false
 			// check PRV element and pToken element
-			if txPrivacyToken.Tx.Proof != nil {
+			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit {
 				// tx contain PRV data -> check with PRV fee
+				// @notice: check limit fee but apply for token fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
 					if txPrivacyToken.GetTxFeeToken() == 0 {
@@ -736,7 +735,12 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 	}
 	tp.pool[*txHash] = txD
-	serialNumberList := txD.Desc.Tx.ListSerialNumbersHashH()
+	var serialNumberList []common.Hash
+	serialNumberList = append(serialNumberList, txD.Desc.Tx.ListSerialNumbersHashH()...)
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
+		txPrivacy := txD.Desc.Tx.(*transaction.TxCustomTokenPrivacy)
+		serialNumberList = append(serialNumberList, txPrivacy.TxTokenPrivacyData.TxNormal.ListSerialNumbersHashH()...)
+	}
 	serialNumberListHash := common.HashArrayOfHashArray(serialNumberList)
 	tp.poolSerialNumberHash[serialNumberListHash] = *txD.Desc.Tx.Hash()
 	tp.poolSerialNumbersHashList[*txHash] = serialNumberList

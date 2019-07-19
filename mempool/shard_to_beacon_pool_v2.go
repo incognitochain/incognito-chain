@@ -176,7 +176,7 @@ func (self *ShardToBeaconPool) updateLatestShardState() {
 			lastHeight = blk.Header.Height
 		}
 		self.latestValidHeight[shardID] = lastHeight
-		Logger.log.Infof("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
+		Logger.log.Debugf("ShardToBeaconPool: Updated/LastValidHeight %+v of Shard %+v \n", lastHeight, shardID)
 	}
 }
 
@@ -202,7 +202,9 @@ func (self *ShardToBeaconPool) removeBlock(blockItems map[byte]uint64) {
 				break
 			}
 		}
-		Logger.log.Infof("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
+		if blockHeight != 1 {
+			Logger.log.Infof("ShardToBeaconPool: Removed/LastValidHeight %+v of shard %+v \n", blockHeight, shardID)
+		}
 	}
 }
 

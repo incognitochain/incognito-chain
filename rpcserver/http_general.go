@@ -182,8 +182,10 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	// param #1: transaction Hash
 	Logger.log.Debugf("Check hash value  input Param %+v", arrayParams[0].(string))
 	log.Printf("Check hash value  input Param %+v", hashParams)
-	hash, _ := common.Hash{}.NewHashFromStr(hashParams)
-
+	hash, err2 := common.Hash{}.NewHashFromStr(hashParams)
+	if err2 != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected hash string value"))
+	}
 	// Check block
 	_, _, err := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
 	if err != nil {
