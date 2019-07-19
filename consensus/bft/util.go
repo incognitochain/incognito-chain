@@ -22,8 +22,8 @@ func (e *BFTCore) setState(state string) {
 	e.State = state
 }
 
-func (e *BFTCore) getCurrentRound() uint64 {
-	return uint64(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
+func (e *BFTCore) getCurrentRound() int {
+	return int(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
 }
 
 func (e *BFTCore) isInTimeFrame() bool {
