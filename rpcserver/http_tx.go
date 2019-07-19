@@ -283,6 +283,7 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Proof:       tempTx.Proof,
 				SigPubKey:   tempTx.SigPubKey,
 				Sig:         tempTx.Sig,
+				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
@@ -311,6 +312,7 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Proof:       tempTx.Proof,
 				SigPubKey:   tempTx.SigPubKey,
 				Sig:         tempTx.Sig,
+				Info:        string(tempTx.Info),
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
@@ -341,6 +343,7 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Proof:       tempTx.Proof,
 				SigPubKey:   tempTx.SigPubKey,
 				Sig:         tempTx.Sig,
+				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
