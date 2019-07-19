@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"strconv"
 
 	"math/big"
 
@@ -39,7 +40,7 @@ type TxViewPoint struct {
 	crossTxTokenData map[int32]*transaction.TxTokenData
 
 	// use to fetch tx - pubkey
-	txByPubKey map[string]common.Hash // map[base58check.encode{pubkey}](txID)
+	txByPubKey map[string]interface{} // map[base58check.encode{pubkey}+"_"+base58check.encode{txid})
 }
 
 /*
@@ -164,7 +165,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
-					view.txByPubKey[pubkey] = *tx.Hash()
+					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
 				}
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
@@ -193,7 +194,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
-					view.txByPubKey[pubkey] = *tx.Hash()
+					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
 				}
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
@@ -225,7 +226,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
-					view.txByPubKey[pubkey] = *tx.Hash()
+					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
 				}
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
@@ -257,7 +258,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						subView.mapCommitments[pubkey] = make([][]byte, 0)
 					}
 					subView.mapCommitments[pubkey] = append(subView.mapCommitments[pubkey], data...)
-					view.txByPubKey[pubkey] = *tx.Hash()
+					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
 				}
 				for pubkey, data := range outCoinsP {
 					if subView.mapOutputCoins[pubkey] == nil {
@@ -322,7 +323,7 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
 		crossTxTokenData:            make(map[int32]*transaction.TxTokenData),
 
-		txByPubKey: make(map[string]common.Hash),
+		txByPubKey: make(map[string]interface{}),
 	}
 	result.tokenID.SetBytes(common.PRVCoinID[:])
 	return result
