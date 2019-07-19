@@ -119,6 +119,7 @@ const (
 	getRelayedETHHeader              = "getrelayedethheader"
 	checkETHHashIssued               = "checkethhashissued"
 	getAllBridgeTokens               = "getallbridgetokens"
+	getETHHeaderByHash               = "getethheaderbyhash"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof = "getbeaconswapproof"

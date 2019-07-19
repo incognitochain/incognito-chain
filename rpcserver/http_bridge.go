@@ -273,3 +273,14 @@ func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, close
 	}
 	return allBridgeTokens, nil
 }
+
+func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	ethBlockHash := arrayParams[0].(string)
+	bc := httpServer.config.BlockChain
+	ethHeader, err := metadata.GetETHHeader(bc, rCommon.HexToHash(ethBlockHash))
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	return ethHeader, nil
+}
