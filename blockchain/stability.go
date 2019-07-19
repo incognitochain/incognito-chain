@@ -74,7 +74,7 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	txID, _ := common.Hash{}.NewHashFromStr(inst[5])
 	height, _, _ := base58.Base58Check{}.Decode(inst[6])
 	fmt.Printf("[db] decoded BurningConfirm inst\n")
-	fmt.Printf("[db]\tamount: %x\n[db]\tremoteAddr: %x\n[db]\ttokenID: %x\n", amount, remoteAddr, tokenID)
+	fmt.Printf("[db]\tamount: %d\n[db]\tremoteAddr: %x\n[db]\ttokenID: %x\n", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
@@ -308,7 +308,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if len(inst) == 0 {
 			continue
 		}
-		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction {
+		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction || inst[0] == AssignAction {
 			continue
 		}
 

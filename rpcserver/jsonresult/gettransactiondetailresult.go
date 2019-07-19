@@ -1,6 +1,7 @@
 package jsonresult
 
 import (
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"math/big"
 )
@@ -21,8 +22,8 @@ type TransactionDetail struct {
 	Proof           *zkp.PaymentProof `json:"Proof"`
 	ProofDetail     ProofDetail       `json:"ProofDetail"`
 	InputCoinPubKey string            `json:"InputCoinPubKey"`
-	SigPubKey       []byte            `json:"SigPubKey,omitempty"` // 64 bytes
-	Sig             []byte            `json:"Sig,omitempty"`       // 64 bytes
+	SigPubKey       string            `json:"SigPubKey,omitempty"` // 64 bytes
+	Sig             string            `json:"Sig,omitempty"`       // 64 bytes
 
 	Metadata               string `json:"Metadata"`
 	CustomTokenData        string `json:"CustomTokenData"`
@@ -30,6 +31,8 @@ type TransactionDetail struct {
 
 	IsInMempool bool `json:"IsInMempool"`
 	IsInBlock   bool `json:"IsInBlock"`
+
+	Info string `json:"Info"`
 }
 
 type ProofDetail struct {
@@ -45,9 +48,9 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 		}
 		if input.CoinDetails != nil {
 			in.CoinDetails.Value = input.CoinDetails.Value
-			in.CoinDetails.Info = input.CoinDetails.Info
+			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.Info, 0x0)
 			if input.CoinDetails.CoinCommitment != nil {
-				in.CoinDetails.CoinCommitment = input.CoinDetails.CoinCommitment.Compress()
+				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.CoinCommitment.Compress(), 0x0)
 			}
 			if input.CoinDetails.Randomness != nil {
 				in.CoinDetails.Randomness = *input.CoinDetails.Randomness
@@ -56,10 +59,10 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 				in.CoinDetails.SNDerivator = *input.CoinDetails.SNDerivator
 			}
 			if input.CoinDetails.SerialNumber != nil {
-				in.CoinDetails.SerialNumber = input.CoinDetails.SerialNumber.Compress()
+				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.SerialNumber.Compress(), 0x0)
 			}
 			if input.CoinDetails.PublicKey != nil {
-				in.CoinDetails.PublicKey = input.CoinDetails.PublicKey.Compress()
+				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.PublicKey.Compress(), 0x0)
 			}
 		}
 		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
@@ -71,9 +74,9 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 		}
 		if output.CoinDetails != nil {
 			out.CoinDetails.Value = output.CoinDetails.Value
-			out.CoinDetails.Info = output.CoinDetails.Info
+			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.Info, 0x0)
 			if output.CoinDetails.CoinCommitment != nil {
-				out.CoinDetails.CoinCommitment = output.CoinDetails.CoinCommitment.Compress()
+				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.CoinCommitment.Compress(), 0x0)
 			}
 			if output.CoinDetails.Randomness != nil {
 				out.CoinDetails.Randomness = *output.CoinDetails.Randomness
@@ -82,13 +85,13 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 				out.CoinDetails.SNDerivator = *output.CoinDetails.SNDerivator
 			}
 			if output.CoinDetails.SerialNumber != nil {
-				out.CoinDetails.SerialNumber = output.CoinDetails.SerialNumber.Compress()
+				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.SerialNumber.Compress(), 0x0)
 			}
 			if output.CoinDetails.PublicKey != nil {
-				out.CoinDetails.PublicKey = output.CoinDetails.PublicKey.Compress()
+				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.PublicKey.Compress(), 0x0)
 			}
 			if output.CoinDetailsEncrypted != nil {
-				out.CoinDetailsEncrypted = output.CoinDetailsEncrypted.Bytes()
+				out.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), 0x0)
 			}
 		}
 		proofDetail.OutputCoins = append(proofDetail.OutputCoins, &out)
@@ -97,15 +100,15 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 
 type CoinDetail struct {
 	CoinDetails          Coin
-	CoinDetailsEncrypted []byte
+	CoinDetailsEncrypted string
 }
 
 type Coin struct {
-	PublicKey      []byte
-	CoinCommitment []byte
+	PublicKey      string
+	CoinCommitment string
 	SNDerivator    big.Int
-	SerialNumber   []byte
+	SerialNumber   string
 	Randomness     big.Int
 	Value          uint64
-	Info           []byte
+	Info           string
 }
