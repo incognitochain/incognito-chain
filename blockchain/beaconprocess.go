@@ -706,7 +706,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 				return NewBlockChainError(UnExpectedError, err)
 			}
 			bestStateBeacon.CurrentRandomNumber = int64(temp)
-			Logger.log.Info("Random number found %+v", bestStateBeacon.CurrentRandomNumber)
+			Logger.log.Infof("Random number found %+v", bestStateBeacon.CurrentRandomNumber)
 			randomFlag = true
 		}
 		// Update candidate
