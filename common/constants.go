@@ -41,9 +41,9 @@ var (
 // for mining consensus
 const (
 	MaxTxsInBlock        = 1000
-	MinBeaconBlkInterval = 5 * time.Second //second
-	MinShardBlkInterval  = 5 * time.Second //second => process block in
-	MinShardBlkCreation  = 2 * time.Second //second => process block in
+	MinBeaconBlkInterval = 10 * time.Second //second
+	MinShardBlkInterval  = 10 * time.Second //second => process block in
+	MinShardBlkCreation  = 4 * time.Second  //second => process block in
 )
 
 // special token ids (aka. PropertyID in custom token)

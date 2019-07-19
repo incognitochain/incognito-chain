@@ -11,6 +11,7 @@ ENV commit=$commit
 COPY ./incognito /
 COPY ./bootnode /
 COPY ./keylist.json /
+COPY ./sample-config.conf /
 
 RUN chmod +x /incognito
 RUN chmod +x /bootnode
@@ -18,6 +19,7 @@ RUN chmod +x /bootnode
 COPY ./run_bootnode.sh /
 COPY ./run_incognito.sh /
 COPY ./run_fullnode.sh /
+
 
 RUN chmod +x /run_bootnode.sh
 RUN chmod +x /run_incognito.sh
