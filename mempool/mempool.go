@@ -457,7 +457,8 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				// @notice: check limit fee but apply for token fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
-					if txPrivacyToken.GetTxFeeToken() == 0 {
+					if txPrivacyToken.GetTxFeeToken() == 0 || // not paid with token -> use PRV for paying fee
+						txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
 						// paid all with PRV
 						ok := txPrivacyToken.CheckTransactionFee(limitFee)
 						if !ok {
