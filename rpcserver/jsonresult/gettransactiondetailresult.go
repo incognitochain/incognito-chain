@@ -30,6 +30,8 @@ type TransactionDetail struct {
 
 	IsInMempool bool `json:"IsInMempool"`
 	IsInBlock   bool `json:"IsInBlock"`
+
+	Info string `json:"Info"`
 }
 
 type ProofDetail struct {
