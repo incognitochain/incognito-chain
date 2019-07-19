@@ -314,9 +314,9 @@ func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, [
 	}
 
 	signerIdxs := bb.ValidatorsIdx(1) // List of signers
-	pubkeys := make([][]byte, len(signerIdxs))
-	for i, signerID := range signerIdxs {
-		pubkey, _, err := base58.Base58Check{}.Decode(comm[signerID])
+	pubkeys := make([][]byte, len(comm))
+	for i, pkRaw := range comm {
+		pubkey, _, err := base58.Base58Check{}.Decode(pkRaw)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -378,9 +378,9 @@ func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []
 	}
 
 	signerIdxs := sb.ValidatorsIdx(1) // List of signers
-	pubkeys := make([][]byte, len(signerIdxs))
-	for i, signerID := range signerIdxs {
-		pubkey, _, err := base58.Base58Check{}.Decode(comm[signerID])
+	pubkeys := make([][]byte, len(comm))
+	for i, pkRaw := range comm {
+		pubkey, _, err := base58.Base58Check{}.Decode(pkRaw)
 		if err != nil {
 			return nil, nil, err
 		}

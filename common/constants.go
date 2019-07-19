@@ -41,9 +41,9 @@ var (
 // for mining consensus
 const (
 	MaxTxsInBlock        = 1000
-	MinBeaconBlkInterval = 5 * time.Second //second
-	MinShardBlkInterval  = 5 * time.Second //second => process block in
-	MinShardBlkCreation  = 2 * time.Second //second => process block in
+	MinBeaconBlkInterval = 10 * time.Second //second
+	MinShardBlkInterval  = 10 * time.Second //second => process block in
+	MinShardBlkCreation  = 4 * time.Second  //second => process block in
 )
 
 // special token ids (aka. PropertyID in custom token)
@@ -90,7 +90,7 @@ const (
 	BRIDGE_SHARD_ID = 1
 
 	ETH_ADDR_STR          = "0x0000000000000000000000000000000000000000"
-	ETH_CONTRACT_ADDR_STR = "0x131356605a83a56a22bd7a3689eda3b19728b823"
+	ETH_CONTRACT_ADDR_STR = "0xA35FF1d02C0fd7b03c660ceD7eaE6fA962DeAc25"
 
 	ETHERERUM_LIGHT_NODE_PROTOCOL = "http"
 	ETHERERUM_LIGHT_NODE_PORT     = "8545"
@@ -100,5 +100,5 @@ var (
 	// if the blockchain is running in Docker container
 	// then using GETH_NAME env's value (aka geth container name)
 	// otherwise using localhost
-	ETHERERUM_LIGHT_NODE_HOST     = GetENV("GETH_NAME", "127.0.0.1")
+	ETHERERUM_LIGHT_NODE_HOST = GetENV("GETH_NAME", "127.0.0.1")
 )
