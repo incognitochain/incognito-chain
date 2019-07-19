@@ -374,6 +374,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGett
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
+	accumulatedValues *metadata.AccumulatedValues,
 ) (bool, error) {
 	if !txCustomTokenPrivacy.TxTokenPrivacyData.Mintable {
 		return true, nil
@@ -387,7 +388,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGett
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomTokenPrivacy, bcr)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomTokenPrivacy, bcr, accumulatedValues)
 }
 
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenReceivers() ([][]byte, []uint64) {

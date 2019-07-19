@@ -5,16 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 /*
@@ -79,7 +80,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated bool) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
-	
+
 	blockHash := block.Header.Hash()
 	Logger.log.Infof("Check block existence for insert process %d, with hash %+v", block.Header.Height, blockHash)
 	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Header.Hash())
@@ -146,6 +147,19 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
 		return err
 	}
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
+		return err
+	}
+	// }
+	// shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
+	// if err != nil {
+	// 	fmt.Println("No committee for this epoch")
+	// }
+	// shardCommittee := make(map[byte][]string)
+	// if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+	// 	fmt.Println("Fail to unmarshal shard committee")
+	// }
+	// fmt.Println("Beacon Process/Shard Committee in Epoch ", block.Header.Epoch, shardCommittee)
 	//=========Store cross shard state ==================================
 	if block.Body.ShardState != nil {
 		GetBestStateBeacon().lockMu.Lock()
@@ -197,7 +211,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	go blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 	err := blockchain.updateDatabaseFromBeaconBlock(block)
 	if err != nil {
-		fmt.Printf("[ndh] - - - [Error here] %+v \n", err)
 		Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 		return NewBlockChainError(UnExpectedError, err)
 	}
@@ -296,13 +309,20 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			}
 		}
 	}
+
+	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
+	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
+	root := GetKeccak256MerkleRoot(flattenInsts)
+	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
+		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
+	}
+
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
 		rewardByEpochInstruction := [][]string{}
 		if block.Header.Height%common.EPOCH == 1 {
 			rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(block.Header.Epoch - 1)
 			if err != nil {
-				fmt.Printf("[ndh]-[ERROR] -- --- -- --- %+v\n", err)
 				return err
 			}
 		}

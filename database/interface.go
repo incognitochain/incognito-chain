@@ -83,8 +83,10 @@ type DatabaseInterface interface {
 	// Commitee with epoch
 	//StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
+	StoreBeaconCommitteeByEpoch(uint64, interface{}) error
 	DeleteCommitteeByEpoch(uint64) error
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
+	FetchBeaconCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 
 	// SerialNumber
@@ -147,11 +149,21 @@ type DatabaseInterface interface {
 	DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error
 
 	// Centralized bridge
-	GetBridgeTokensAmounts() ([][]byte, error)
 	IsBridgeTokenExisted(common.Hash) (bool, error)
-	UpdateAmtByTokenID(common.Hash, uint64, string) error
 	BackupBridgedTokenByTokenID(tokenID common.Hash) error
 	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
+
+	// Incognito -> Ethereum relay
+	StoreBurningConfirm(txID []byte, height uint64) error
+	GetBurningConfirm(txID []byte) (uint64, error)
+
+	// Decentralized bridge
+	InsertETHTxHashIssued([]byte) error
+	IsETHTxHashIssued([]byte) (bool, error)
+	CanProcessTokenPair([]byte, common.Hash) (bool, error)
+	CanProcessCIncToken(common.Hash) (bool, error)
+	UpdateBridgeTokenInfo(common.Hash, []byte, bool) error
+	GetAllBridgeTokens() ([]byte, error)
 
 	// Block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error
