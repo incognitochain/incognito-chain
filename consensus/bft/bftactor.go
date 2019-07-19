@@ -3,6 +3,7 @@ package bft
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus/chain"
@@ -39,7 +40,7 @@ type BFTCore struct {
 	ChainKey   string
 	Chain      chain.ChainInterface
 	PeerID     string
-	Round      uint64
+	Round      int
 	NextHeight uint64
 
 	UserKeySet        *incognitokey.KeySet
@@ -101,7 +102,13 @@ func (e *BFTCore) Start() {
 			case <-e.StopCh:
 				return
 			case b := <-e.ProposeMsgCh:
-				e.Blocks[b.RoundKey] = b.Block
+				round, err := strconv.Atoi(b.RoundKey)
+				if err != nil {
+					continue
+				}
+				if round >= e.Round {
+					e.Blocks[b.RoundKey] = b.Block
+				}
 
 			case sig := <-e.PrepareMsgCh:
 				if e.PrepareMsgs[sig.RoundKey] == nil {
