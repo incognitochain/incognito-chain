@@ -440,7 +440,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 	}
 
 	for _, inst := range currentBestStateBlk.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction {
+		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
 		}
 		if len(inst) < 2 {
@@ -501,7 +501,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 	}
 
 	for _, inst := range block.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction {
+		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
 		}
 

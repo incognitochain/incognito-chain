@@ -308,7 +308,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		if len(inst) == 0 {
 			continue
 		}
-		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction {
+		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction || inst[0] == AssignAction {
 			continue
 		}
 

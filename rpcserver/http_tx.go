@@ -281,8 +281,9 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Fee:         tempTx.Fee,
 				IsPrivacy:   tempTx.IsPrivacy(),
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
@@ -309,8 +310,9 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
@@ -339,8 +341,9 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
@@ -854,7 +857,10 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	usableOutputCoins := []*privacy.OutputCoin{}
 	for _, item := range outputs {
 		out := jsonresult.OutCoin{}
-		out.Init(item)
+		err1 := out.Init(item)
+		if err1 != nil {
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprint("outputs is invalid", out)))
+		}
 		i := &privacy.OutputCoin{
 			CoinDetails: &privacy.Coin{
 				Value: out.Value,
@@ -908,6 +914,36 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	}
 	result["Commitments"] = temp
 	Logger.log.Debugf("handleRandomCommitments result: %+v", result)
+	return result, nil
+}
+
+// handleListSerialNumbers - return list all serialnumber in shard for token ID
+func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	var err error
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	if len(arrayParams) > 0 {
+		tokenIDTemp, ok := arrayParams[0].(string)
+		if !ok {
+			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+		}
+		tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
+		if err != nil {
+			Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		}
+	}
+	shardID := 0
+	if len(arrayParams) > 1 {
+		shardID = int(arrayParams[1].(float64))
+	}
+	db := *(httpServer.config.Database)
+	result, err := db.ListSerialNumber(*tokenID, byte(shardID))
+	if err != nil {
+		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+	}
 	return result, nil
 }
 

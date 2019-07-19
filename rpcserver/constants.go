@@ -74,6 +74,7 @@ const (
 	randomCommitments                          = "randomcommitments"
 	hasSerialNumbers                           = "hasserialnumbers"
 	hasSnDerivators                            = "hassnderivators"
+	listSerialNumbers                          = "listserialnumbers"
 
 	createAndSendStakingTransaction = "createandsendstakingtransaction"
 
