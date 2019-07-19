@@ -55,6 +55,7 @@ var HttpHandler = map[string]httpHandler{
 	randomCommitments:               (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
 	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
+	listSerialNumbers:               (*HttpServer).handleListSerialNumbers,
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
