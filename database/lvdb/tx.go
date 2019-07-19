@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"strconv"
 	"strings"
 
@@ -29,6 +30,11 @@ func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, sh
 	} else {
 		lenData = len.Int64()
 	}
+	/*if ("799a461a4132fffac562feb34adb1778389b0a846581034bffc9e89f9218e3d5" == tokenID.String()) {
+		//panic(1111)
+		a := 1
+		_ = a
+	}*/
 	for _, s := range serialNumbers {
 		newIndex := big.NewInt(lenData).Bytes()
 		if lenData == 0 {
@@ -60,6 +66,30 @@ func (db *db) HasSerialNumber(tokenID common.Hash, serialNumber []byte, shardID 
 	} else {
 		return hasValue, nil
 	}
+}
+
+// ListSerialNumber -  return all serial number and its index
+func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
+	result := make(map[string]uint64)
+	key := db.GetKey(string(serialNumbersPrefix), tokenID)
+	key = append(key, shardID)
+
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iterator.Next() {
+		key := make([]byte, len(iterator.Key()))
+		copy(key, iterator.Key())
+		if string(key[len(key)-3:]) == "len" {
+			continue
+		}
+		serialNumberInByte := key[len(key)-33:]
+		value := make([]byte, len(iterator.Value()))
+		copy(value, iterator.Value())
+		index := big.Int{}
+		index.SetBytes(value)
+		serialNumber := base58.Base58Check{}.Encode(serialNumberInByte, 0x0)
+		result[serialNumber] = index.Uint64()
+	}
+	return result, nil
 }
 
 // GetCommitmentIndex - return index of commitment in db list
@@ -439,4 +469,9 @@ func (db *db) GetTransactionIndexById(txId common.Hash) (common.Hash, int, *data
 		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return *hash, index, nil
+}
+
+func (db *db) StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) error {
+
+	return nil
 }

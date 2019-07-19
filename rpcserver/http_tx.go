@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/mempool"
@@ -108,7 +109,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
-				Value:          outCoin.CoinDetails.Value,
+				Value:          strconv.FormatUint(outCoin.CoinDetails.Value, 10),
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
 				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
@@ -281,8 +282,9 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Fee:         tempTx.Fee,
 				IsPrivacy:   tempTx.IsPrivacy(),
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
@@ -309,8 +311,9 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
@@ -339,8 +342,9 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
@@ -612,7 +616,9 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	for _, tx := range temps {
+	tokenIDs := make(map[common.Hash]interface{})
+	for tokenID, tx := range temps {
+		tokenIDs[tokenID] = 0
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = tx.TxTokenPrivacyData.PropertyName
 		item.Symbol = tx.TxTokenPrivacyData.PropertySymbol
@@ -643,7 +649,10 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		result.ListCustomTokenBalance = append(result.ListCustomTokenBalance, item)
 		result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	}
-	for _, customTokenCrossShard := range listCustomTokenCrossShard {
+	for tokenID, customTokenCrossShard := range listCustomTokenCrossShard {
+		if _, ok := tokenIDs[tokenID]; ok {
+			continue
+		}
 		item := jsonresult.CustomTokenBalance{}
 		item.Name = customTokenCrossShard.PropertyName
 		item.Symbol = customTokenCrossShard.PropertySymbol
@@ -849,10 +858,15 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	usableOutputCoins := []*privacy.OutputCoin{}
 	for _, item := range outputs {
 		out := jsonresult.OutCoin{}
-		out.Init(item)
+		err1 := out.Init(item)
+		if err1 != nil {
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprint("outputs is invalid", out)))
+		}
+		temp := big.Int{}
+		temp.SetString(out.Value, 10)
 		i := &privacy.OutputCoin{
 			CoinDetails: &privacy.Coin{
-				Value: out.Value,
+				Value: temp.Uint64(),
 			},
 		}
 		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
@@ -903,6 +917,36 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	}
 	result["Commitments"] = temp
 	Logger.log.Debugf("handleRandomCommitments result: %+v", result)
+	return result, nil
+}
+
+// handleListSerialNumbers - return list all serialnumber in shard for token ID
+func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	var err error
+	tokenID := &common.Hash{}
+	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	if len(arrayParams) > 0 {
+		tokenIDTemp, ok := arrayParams[0].(string)
+		if !ok {
+			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+		}
+		tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
+		if err != nil {
+			Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
+			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		}
+	}
+	shardID := 0
+	if len(arrayParams) > 1 {
+		shardID = int(arrayParams[1].(float64))
+	}
+	db := *(httpServer.config.Database)
+	result, err := db.ListSerialNumber(*tokenID, byte(shardID))
+	if err != nil {
+		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+	}
 	return result, nil
 }
 
@@ -1014,11 +1058,11 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(httpServer.config.Database)
 		ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), privacy.BigIntSize), shardIDSender)
-		if ok || err != nil {
-			// serial number in db
+		if ok && err == nil {
+			// SnD in db
 			result = append(result, true)
 		} else {
-			// serial number not in db
+			// SnD not in db
 			result = append(result, false)
 		}
 	}

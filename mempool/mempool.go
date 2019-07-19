@@ -10,14 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
-	"github.com/incognitochain/incognito-chain/databasemp"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -68,6 +66,7 @@ type TxPool struct {
 	poolTokenID               map[common.Hash]string //Token ID List in Mempool
 	tokenIDMtx                sync.RWMutex
 	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
+	CRemoveTxs                chan<- metadata.Transaction // channel to deliver txs to block gen
 	RoleInCommittees          int                         //Current Role of Node
 	roleMtx                   sync.RWMutex
 	ScanTime                  time.Duration
@@ -101,8 +100,9 @@ func (tp *TxPool) Init(cfg *Config) {
 }
 
 // InitChannelMempool - init channel
-func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction) {
+func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction, cRemoveTxs chan metadata.Transaction) {
 	tp.CPendingTxs = cPendingTxs
+	tp.CRemoveTxs = cRemoveTxs
 }
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
@@ -452,11 +452,13 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			isPaidByPRV := false
 			isPaidPartiallyPRV := false
 			// check PRV element and pToken element
-			if txPrivacyToken.Tx.Proof != nil {
+			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit {
 				// tx contain PRV data -> check with PRV fee
+				// @notice: check limit fee but apply for token fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
-					if txPrivacyToken.GetTxFeeToken() == 0 {
+					if txPrivacyToken.GetTxFeeToken() == 0 || // not paid with token -> use PRV for paying fee
+						txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
 						// paid all with PRV
 						ok := txPrivacyToken.CheckTransactionFee(limitFee)
 						if !ok {
@@ -485,8 +487,8 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				if limitFeeToken > 0 {
 					if !isPaidByPRV {
 						// not paid anything by PRV
-						// -> check fee on total tx size(prv tx container + pToken tx)
-						ok := txPrivacyToken.CheckTransactionFee(limitFeeToken)
+						// -> check fee on total tx size(prv tx container + pToken tx) and use token as fee
+						ok := txPrivacyToken.CheckTransactionFeeByFeeToken(limitFeeToken)
 						if !ok {
 							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 								txHash.String(),
@@ -497,7 +499,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 						// paid by PRV
 						if isPaidPartiallyPRV {
 							// paid partially -> check fee on pToken tx data size(only for pToken tx)
-							ok := txPrivacyToken.CheckTransactionFeePrivacyToken(limitFeeToken)
+							ok := txPrivacyToken.CheckTransactionFeeByFeeTokenForTokenData(limitFeeToken)
 							if !ok {
 								return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 									txHash.String(),
@@ -697,6 +699,11 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				tp.removeTx(txToBeReplaced)
 				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
 				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
+				if tp.IsBlockGenStarted {
+					go func(tx metadata.Transaction) {
+						tp.CRemoveTxs <- tx
+					}(tx)
+				}
 				return nil, true
 			} else {
 				return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Unexpected error occur")), true
@@ -729,7 +736,12 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 	}
 	tp.pool[*txHash] = txD
-	serialNumberList := txD.Desc.Tx.ListSerialNumbersHashH()
+	var serialNumberList []common.Hash
+	serialNumberList = append(serialNumberList, txD.Desc.Tx.ListSerialNumbersHashH()...)
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
+		txPrivacy := txD.Desc.Tx.(*transaction.TxCustomTokenPrivacy)
+		serialNumberList = append(serialNumberList, txPrivacy.TxTokenPrivacyData.TxNormal.ListSerialNumbersHashH()...)
+	}
 	serialNumberListHash := common.HashArrayOfHashArray(serialNumberList)
 	tp.poolSerialNumberHash[serialNumberListHash] = *txD.Desc.Tx.Hash()
 	tp.poolSerialNumbersHashList[*txHash] = serialNumberList
