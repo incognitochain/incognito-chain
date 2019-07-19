@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -151,7 +152,7 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 			item = append(item, jsonresult.OutCoin{
 				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
-				Value:          outCoin.CoinDetails.Value,
+				Value:          strconv.FormatUint(outCoin.CoinDetails.Value, 10),
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
 				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
