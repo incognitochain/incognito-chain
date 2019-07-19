@@ -7,7 +7,7 @@ const (
 	LocalHost         = "0.0.0.0"
 	MaxRetryConn      = 15
 	RetryConnDuration = 10 * time.Second
-	ProtocolId        = "/blockchain/1.0.0"
+	ProtocolId        = "/incognito/0.2.1-beta"
 	DelimMessageByte  = '\n'
 	DelimMessageStr   = "\n"
 

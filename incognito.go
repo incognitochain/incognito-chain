@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/database"
 	_ "github.com/incognitochain/incognito-chain/database/lvdb"
@@ -125,7 +126,16 @@ func mainMaster(serverChan chan<- *Server) error {
 
 }
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	limitThreads := os.Getenv("CPU")
+	if limitThreads == "" {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	} else {
+		numThreads, err := strconv.Atoi(limitThreads)
+		if err != nil {
+			panic(err)
+		}
+		runtime.GOMAXPROCS(numThreads)
+	}
 	fmt.Println("NumCPU", runtime.NumCPU())
 	// Block and transaction processing can cause bursty allocations.  This
 	// limits the garbage collector from excessively overallocating during

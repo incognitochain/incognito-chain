@@ -55,6 +55,7 @@ var HttpHandler = map[string]httpHandler{
 	randomCommitments:               (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
 	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
+	listSerialNumbers:               (*HttpServer).handleListSerialNumbers,
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
@@ -92,15 +93,26 @@ var HttpHandler = map[string]httpHandler{
 	sendIssuingRequest:              (*HttpServer).handleSendIssuingRequest,
 	createAndSendIssuingRequest:     (*HttpServer).handleCreateAndSendIssuingRequest,
 	createAndSendContractingRequest: (*HttpServer).handleCreateAndSendContractingRequest,
-	getBridgeTokensAmounts:          (*HttpServer).handleGetBridgeTokensAmounts,
+	checkETHHashIssued:              (*HttpServer).handleCheckETHHashIssued,
+	getAllBridgeTokens:              (*HttpServer).handleGetAllBridgeTokens,
+	getETHHeaderByHash:              (*HttpServer).handleGetETHHeaderByHash,
 	// wallet
-	getPublicKeyFromPaymentAddress: (*HttpServer).handleGetPublicKeyFromPaymentAddress,
-	defragmentAccount:              (*HttpServer).handleDefragmentAccount,
-	getStackingAmount:              (*HttpServer).handleGetStakingAmount,
-	hashToIdenticon:                (*HttpServer).handleHashToIdenticon,
+	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
+	defragmentAccount:                (*HttpServer).handleDefragmentAccount,
+	getStackingAmount:                (*HttpServer).handleGetStakingAmount,
+	hashToIdenticon:                  (*HttpServer).handleHashToIdenticon,
+	createAndSendBurningRequest:      (*HttpServer).handleCreateAndSendBurningRequest,
+	createAndSendTxWithIssuingETHReq: (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
+
+	// Incognito -> Ethereum bridge
+	getBeaconSwapProof: (*HttpServer).handleGetBeaconSwapProof,
+	getBridgeSwapProof: (*HttpServer).handleGetBridgeSwapProof,
+	getBurnProof:       (*HttpServer).handleGetBurnProof,
+
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
 	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
+	listRewardAmount:             (*HttpServer).handleListRewardAmount,
 	//revert
 	revertbeaconchain: (*HttpServer).handleRevertBeacon,
 	revertshardchain:  (*HttpServer).handleRevertShard,

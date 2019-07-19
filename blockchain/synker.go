@@ -233,13 +233,11 @@ func (synker *Synker) UpdateState() {
 			}
 		}
 		if peerState.Beacon.Height >= synker.blockchain.BestState.Beacon.BeaconHeight {
-			if peerState.Beacon.Height > synker.blockchain.BestState.Beacon.BeaconHeight {
-				if RCS.ClosestBeaconState.Height == synker.blockchain.BestState.Beacon.BeaconHeight {
-					RCS.ClosestBeaconState = *peerState.Beacon
-				}
-				if peerState.Beacon.Height < RCS.ClosestBeaconState.Height {
-					RCS.ClosestBeaconState = *peerState.Beacon
-				}
+			if RCS.ClosestBeaconState.Height == synker.blockchain.BestState.Beacon.BeaconHeight {
+				RCS.ClosestBeaconState = *peerState.Beacon
+			}
+			if peerState.Beacon.Height < RCS.ClosestBeaconState.Height {
+				RCS.ClosestBeaconState = *peerState.Beacon
 			}
 
 			// record pool state
@@ -274,7 +272,7 @@ func (synker *Synker) UpdateState() {
 					}
 					for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
 						if shardState, ok := peerState.Shard[shardID]; ok {
-							if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) {
+							if shardState.Height >= GetBestStateBeacon().GetBestHeightOfShard(shardID) {
 								if RCS.ClosestShardsState[shardID].Height == 0 {
 									RCS.ClosestShardsState[shardID] = *shardState
 								} else {
