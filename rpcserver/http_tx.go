@@ -1058,11 +1058,11 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(httpServer.config.Database)
 		ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), privacy.BigIntSize), shardIDSender)
-		if ok || err != nil {
-			// serial number in db
+		if ok && err == nil {
+			// SnD in db
 			result = append(result, true)
 		} else {
-			// serial number not in db
+			// SnD not in db
 			result = append(result, false)
 		}
 	}

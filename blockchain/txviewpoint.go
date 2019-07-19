@@ -18,21 +18,28 @@ type TxViewPoint struct {
 	tokenID           *common.Hash
 	shardID           byte
 	listSerialNumbers [][]byte // array serialNumbers
-	//listSnD            []big.Int
-	mapSnD         map[string][][]byte
+
+	// FOR PRV
+	// use to fetch snDerivator
+	mapSnD map[string][][]byte
+	// use to fetch commitment
 	mapCommitments map[string][][]byte //map[base58check.encode{pubkey}]([]([]byte-commitment))
+	// use to fetch output coin
 	mapOutputCoins map[string][]privacy.OutputCoin
 
-	// data of normal custom token
+	// data of NORMAL custom token
 	customTokenTxs map[int32]*transaction.TxCustomToken
 
-	// data of privacy custom token
-	privacyCustomTokenViewPoint map[int32]*TxViewPoint
+	// data of PRIVACY custom token
+	privacyCustomTokenViewPoint map[int32]*TxViewPoint // sub tx viewpoint for token
 	privacyCustomTokenTxs       map[int32]*transaction.TxCustomTokenPrivacy
 	privacyCustomTokenMetadata  *CrossShardTokenPrivacyMetaData
 
 	//cross shard tx token
 	crossTxTokenData map[int32]*transaction.TxTokenData
+
+	// use to fetch tx - pubkey
+	txByPubKey map[string]common.Hash // map[base58check.encode{pubkey}](txID)
 }
 
 /*
@@ -157,6 +164,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
+					view.txByPubKey[pubkey] = *tx.Hash()
 				}
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
@@ -185,6 +193,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
+					view.txByPubKey[pubkey] = *tx.Hash()
 				}
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
@@ -216,6 +225,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
+					view.txByPubKey[pubkey] = *tx.Hash()
 				}
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
@@ -247,6 +257,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						subView.mapCommitments[pubkey] = make([][]byte, 0)
 					}
 					subView.mapCommitments[pubkey] = append(subView.mapCommitments[pubkey], data...)
+					view.txByPubKey[pubkey] = *tx.Hash()
 				}
 				for pubkey, data := range outCoinsP {
 					if subView.mapOutputCoins[pubkey] == nil {
@@ -310,6 +321,8 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
 		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
 		crossTxTokenData:            make(map[int32]*transaction.TxTokenData),
+
+		txByPubKey: make(map[string]common.Hash),
 	}
 	result.tokenID.SetBytes(common.PRVCoinID[:])
 	return result
