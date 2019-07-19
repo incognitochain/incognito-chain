@@ -92,6 +92,7 @@ type DatabaseInterface interface {
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error
 	HasSerialNumber(tokenID common.Hash, data []byte, shardID byte) (bool, error)
+	ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]uint64, error)
 	BackupSerialNumbersLen(tokenID common.Hash, shardID byte) error
 	RestoreSerialNumber(tokenID common.Hash, shardID byte, serialNumbers [][]byte) error
 	// DeleteSerialNumber(tokenID common.Hash, data []byte, shardID byte) error

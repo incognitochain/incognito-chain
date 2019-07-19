@@ -33,6 +33,7 @@ var (
 	tp               = &TxPool{}
 	feeEstimator     = make(map[byte]*FeeEstimator)
 	cPendingTxs      = make(chan metadata.Transaction, 1000)
+	cRemoveTxs      = make(chan metadata.Transaction, 1000)
 	privateKeyShard0 = []string{
 		"112t8rqdy2bgV3kf9qb8eso8jJkgEw1RKSTqtxRNoGobZtK7YeJfzE4rPX1uYZynzP6Ym5EMjEUMGGdgeGH1pxryCU22QmtgxoMPLyaaP1J8",
 		"112t8rrGixbjxd7Fh8NoECAqX6mfgjkMRDygcejkXt8NCqZVU7BjFNRaDMjdGao5KRiRg7Dn7gQdsYrXLzz5yxsryTUNLWkq9GaSyMGYKxtT",
@@ -55,6 +56,7 @@ var (
 	higherFee               = int64(math.Round(float64(commonFee)*defaultReplaceFeeRatio)) +1
 	lowerFee                = int64(math.Round(float64(commonFee)*defaultReplaceFeeRatio)) - 1
 	noFee                   = int64(0)
+	defaultTokenFee = float64(5)
 	defaultTokenParams      = make(map[string]interface{})
 	defaultTokenReceiver    = make(map[string]interface{})
 )
@@ -65,7 +67,7 @@ var _ = func() (_ struct{}) {
 		feeEstimator[shardID] = NewFeeEstimator(
 			DefaultEstimateFeeMaxRollback,
 			DefaultEstimateFeeMinRegisteredBlocks,
-			1, 1)
+			1, 0)
 	}
 	db, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/mempool"))
 	if err != nil {
@@ -109,6 +111,7 @@ var _ = func() (_ struct{}) {
 		ChainParams:       &blockchain.ChainTestParam,
 	})
 	tp.CPendingTxs = nil
+	tp.CRemoveTxs = nil
 	var transactions []metadata.Transaction
 	for _, privateKey := range privateKeyShard0 {
 		txs := initTx(strconv.Itoa(maxAmount), privateKey, db)
@@ -142,7 +145,8 @@ var _ = func() (_ struct{}) {
 	defaultTokenParams["TokenTxType"] = float64(0)
 	defaultTokenReceiver[receiverPaymentAddress1] = float64(1000)
 	defaultTokenParams["TokenReceivers"] = defaultTokenReceiver
-	// token id: 6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89
+	defaultTokenParams["TokenFee"] = defaultTokenFee
+	// token id custom token: 6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	privacy.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	transaction.Logger.Init(common.NewBackend(nil).Logger("test", true))
@@ -163,6 +167,7 @@ func ResetMempoolTest() {
 	tp.config.RoleInCommitteesEvent = subChanRole
 	tp.IsTest = false
 	tp.CPendingTxs = cPendingTxs
+	tp.CRemoveTxs = cRemoveTxs
 	tp.config.DataBaseMempool.Reset()
 }
 func initTx(amount string, privateKey string, db database.DatabaseInterface) []metadata.Transaction {
@@ -402,8 +407,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	}
 	return &tx
 }
-func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, tokenParamsRaw map[string]interface{}) metadata.Transaction {
-	var hasPrivacyCoin = false
+func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, tokenParamsRaw map[string]interface{}, hasPrivacyCoin bool) metadata.Transaction {
 	// get sender key set from private key
 	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
 	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
@@ -456,7 +460,6 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 	}
 	tokenParams.Receiver, _, _ = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-
 	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, tokenParams, nil, 1)
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
@@ -483,6 +486,95 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 		db,
 		nil,
 		hasPrivacyCoin,
+		shardIDSender,
+	)
+	if err1 != nil {
+		panic("no tx found")
+	}
+	return tx
+}
+func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee int64, tokenParamsRaw map[string]interface{}, hasPrivacyCoin bool) metadata.Transaction {
+	// get sender key set from private key
+	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKey)
+	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
+	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	
+	receiversPaymentAddressStrParam := make(map[string]interface{})
+	receiversPaymentAddressStrParam[receiverPaymentAddress2] = 50
+	paymentInfos := make([]*privacy.PaymentInfo, 0)
+	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
+		keyWalletReceiver, _ := wallet.Base58CheckDeserialize(paymentAddressStr)
+		paymentInfo := &privacy.PaymentInfo{
+			Amount:         uint64(amount.(int)),
+			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
+		}
+		paymentInfos = append(paymentInfos, paymentInfo)
+	}
+	estimateFeeCoinPerKb := fee
+	totalAmmount := uint64(0)
+	for _, receiver := range paymentInfos {
+		totalAmmount += receiver.Amount
+	}
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
+	if err != nil {
+		fmt.Println("Can't create transaction", err)
+		return nil
+	}
+	remainOutputCoins := make([]*privacy.OutputCoin, 0)
+	for _, outCoin := range outCoins {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.SerialNumber.Compress()) == nil {
+			remainOutputCoins = append(remainOutputCoins, outCoin)
+		}
+	}
+	if len(outCoins) == 0 && totalAmmount > 0 {
+		fmt.Println("Can't create transaction")
+		return nil
+	}
+	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := chooseBestOutCoinsToSpent(outCoins, totalAmmount)
+	if err != nil {
+		fmt.Println("Can't create transaction", err)
+		return nil
+	}
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID:     tokenParamsRaw["TokenID"].(string),
+		PropertyName:   tokenParamsRaw["TokenName"].(string),
+		PropertySymbol: tokenParamsRaw["TokenSymbol"].(string),
+		TokenTxType:    int(tokenParamsRaw["TokenTxType"].(float64)),
+		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
+		TokenInput:     nil,
+		Fee:            uint64(tokenParamsRaw["TokenFee"].(float64)),
+	}
+	tokenParams.Receiver, _ = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
+	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, tokenParams, 1)
+	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
+	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
+	// if not enough to pay fee
+	if needToPayFee > 0 {
+		if len(outCoins) > 0 {
+			candidateOutputCoinsForFee, _, _, err := chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
+			if err != nil {
+				fmt.Println("Can't create transaction", err)
+				return nil
+			}
+			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
+		}
+	}
+	// convert to inputcoins
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
+	tx := &transaction.TxCustomTokenPrivacy{}
+	err1 := tx.Init(
+		&senderKeySet.KeySet.PrivateKey,
+		nil,
+		inputCoins,
+		realFee,
+		tokenParams,
+		db,
+		nil,
+		hasPrivacyCoin,
+		true,
 		shardIDSender,
 	)
 	if err1 != nil {
@@ -550,12 +642,16 @@ func TestTxPoolCheckPublicKeyRole(t *testing.T) {
 }
 func TestTxPoolInitChannelMempool(t *testing.T) {
 	tp.CPendingTxs = nil
-	if tp.CPendingTxs != nil {
-		t.Fatal("Expect nil channel but get", tp.CPendingTxs)
+	tp.CRemoveTxs = nil
+	if tp.CPendingTxs != nil && tp.CRemoveTxs != nil{
+		t.Fatal("Expect nil channel but get", tp.CPendingTxs, tp.CRemoveTxs)
 	} else {
-		tp.InitChannelMempool(cPendingTxs)
+		tp.InitChannelMempool(cPendingTxs, cRemoveTxs)
 		if tp.CPendingTxs == nil {
 			t.Fatalf("Expect %+v channel but get nil", tp.CPendingTxs)
+		}
+		if tp.CRemoveTxs == nil {
+			t.Fatalf("Expect %+v channel but get nil", tp.CRemoveTxs)
 		}
 	}
 }
@@ -608,7 +704,7 @@ func TestTxPoolAddTx(t *testing.T) {
 	txDesc1 := createTxDescMempool(tx1, 1, 10, 0)
 	txDesc2 := createTxDescMempool(tx2, 1, 10, 0)
 	txDesc3 := createTxDescMempool(tx3, 1, 10, 0)
-	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
 	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
@@ -702,15 +798,19 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	tx1Replace := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], higherFee, false, maxAmount)
 	tx1DoubleSpend := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false, maxAmount + maxAmount)
 	tx1ReplaceFailed := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], lowerFee, false, maxAmount)
+	txInitCustomTokenPrivacy := CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKeyShard0[0], commonFee, defaultTokenParams, false)
+	txInitCustomTokenPrivacyReplace := CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKeyShard0[0], higherFee, defaultTokenParams, false)
+	txInitCustomTokenPrivacyReplaceFailed := CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKeyShard0[0], lowerFee, defaultTokenParams, false)
 	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee, false,normalTranferAmount)
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee, false,normalTranferAmount)
 	tx4 := CreateAndSaveTestNormalTransaction(privateKeyShard0[3], noFee, false,normalTranferAmount)
 	tx5 := CreateAndSaveTestNormalTransaction(privateKeyShard0[4], commonFee, false,normalTranferAmount)
-	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
-	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
+	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams, false)
 	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	txDesc1 := createTxDescMempool(tx1, 1, tx1.GetTxFee(), tx1.GetTxFeeToken())
+	txDesc1CustomTokenPrivacy := createTxDescMempool(txInitCustomTokenPrivacy, 1, tx1.GetTxFee(), tx1.GetTxFeeToken())
 	// Check condition 1: Sanity - Max version error
 	ResetMempoolTest()
 	tx1.(*transaction.Tx).Version = 2
@@ -810,14 +910,14 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 		}
 	}
 	tx5.(*transaction.Tx).Type = common.TxNormalType
-	// Check Condition 5: Double spend
+	// Check Condition 5: replace (normal tx)
 	ResetMempoolTest()
 	tp.addTx(txDesc1, false)
 	err9 := tp.validateTransaction(tx1Replace)
 	if err9 != nil {
 		t.Fatal("Expect no error error but get ", err9)
 	}
-	// Check Condition 5: Check double spend with mempool
+	// Check Condition 5: Check replace with mempool (normal tx)
 	ResetMempoolTest()
 	tp.addTx(txDesc1, false)
 	err91 := tp.validateTransaction(tx1ReplaceFailed)
@@ -828,6 +928,24 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err91)
 		}
 	}
+	//// Check Condition 5: replace (custom token privacy tx)
+	//ResetMempoolTest()
+	//tp.addTx(txDesc1CustomTokenPrivacy, false)
+	//err92 := tp.validateTransaction(txInitCustomTokenPrivacyReplace)
+	//if err92 != nil {
+	//	t.Fatal("Expect no error error but get ", err92)
+	//}
+	//// Check Condition 5: Check replace with mempool (custom token privacy tx)
+	//ResetMempoolTest()
+	//tp.addTx(txDesc1CustomTokenPrivacy, false)
+	//err93 := tp.validateTransaction(txInitCustomTokenPrivacyReplaceFailed)
+	//if err93 == nil {
+	//	t.Fatal("Expect replace fail error in mempool error error but no error")
+	//} else {
+	//	if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
+	//		t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err93)
+	//	}
+	//}
 	// Check Condition 5: Check double spend with mempool
 	ResetMempoolTest()
 	tp.addTx(txDesc1, false)
@@ -913,8 +1031,8 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false,normalTranferAmount)
 	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], commonFee, false,normalTranferAmount)
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], commonFee, false,normalTranferAmount)
-	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
-	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
+	txInitCustomTokenFailed := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[4], commonFee, defaultTokenParams, false)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
 	_, _, err1 := tp.maybeAcceptTransaction(tx1, false, true)
@@ -1074,7 +1192,7 @@ func TestTxPoolRemoveTx(t *testing.T) {
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false,normalTranferAmount)
 	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false,normalTranferAmount)
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false,normalTranferAmount)
-	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
 	txs := []metadata.Transaction{tx1, tx2, tx3, txInitCustomToken, txStakingBeacon, tx6}
@@ -1243,7 +1361,7 @@ func TestTxPoolEmptyPool(t *testing.T) {
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], 10, false,normalTranferAmount)
 	tx2 := CreateAndSaveTestNormalTransaction(privateKeyShard0[1], 10, false,normalTranferAmount)
 	tx3 := CreateAndSaveTestNormalTransaction(privateKeyShard0[2], 10, false,normalTranferAmount)
-	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams)
+	txInitCustomToken := CreateAndSaveTestInitCustomTokenTransaction(privateKeyShard0[3], commonFee, defaultTokenParams, false)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	tx6 := CreateAndSaveTestNormalTransaction(privateKeyShard0[5], commonFee, true, 50)
 	tp.maybeAcceptTransaction(tx1, true, true)

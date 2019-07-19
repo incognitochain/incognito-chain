@@ -9,6 +9,10 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
+func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
+	return blockchain.config.ChainParams.StakingAmountShard
+}
+
 func (blockchain *BlockChain) GetDatabase() database.DatabaseInterface {
 	return blockchain.config.DataBase
 }
@@ -70,7 +74,7 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]st
 	if blockchain.IsTest {
 		SC := make(map[byte][]string)
 		SPV := make(map[byte][]string)
-		return SC,SPV,[]string{},[]string{},[]string{},[]string{},[]string{},[]string{}
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}
 	}
 	beaconBestState := BestStateBeacon{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
