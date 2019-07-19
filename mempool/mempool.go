@@ -10,12 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -486,8 +486,8 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				if limitFeeToken > 0 {
 					if !isPaidByPRV {
 						// not paid anything by PRV
-						// -> check fee on total tx size(prv tx container + pToken tx)
-						ok := txPrivacyToken.CheckTransactionFee(limitFeeToken)
+						// -> check fee on total tx size(prv tx container + pToken tx) and use token as fee
+						ok := txPrivacyToken.CheckTransactionFeeByFeeToken(limitFeeToken)
 						if !ok {
 							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 								txHash.String(),
@@ -498,7 +498,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 						// paid by PRV
 						if isPaidPartiallyPRV {
 							// paid partially -> check fee on pToken tx data size(only for pToken tx)
-							ok := txPrivacyToken.CheckTransactionFeePrivacyToken(limitFeeToken)
+							ok := txPrivacyToken.CheckTransactionFeeByFeeTokenForTokenData(limitFeeToken)
 							if !ok {
 								return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 									txHash.String(),
