@@ -133,10 +133,11 @@ func CreateShardInstructionsFromTransactionAndIns(
 	stakeBeaconPubKey := []string{}
 	stakeShardTxID := []string{}
 	stakeBeaconTxID := []string{}
-	instructions, err = buildStabilityActions(transactions, bc, shardID, producerAddress, shardBlockHeight, beaconBlocks, beaconHeight)
+	instructions, err = buildStabilityActions(transactions, bc, shardID)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, tx := range transactions {
 
 		switch tx.GetMetadataType() {

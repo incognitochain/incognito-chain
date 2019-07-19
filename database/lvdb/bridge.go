@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -10,27 +11,11 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
-type TokenWithAmount struct {
-	TokenID *common.Hash `json:"tokenId"`
-	Amount  uint64       `json:"amount"`
-}
-
-func (db *db) GetBridgeTokensAmounts() ([][]byte, error) {
-	iter := db.lvdb.NewIterator(util.BytesPrefix(centralizedBridgePrefix), nil)
-	results := [][]byte{}
-	for iter.Next() {
-		value := iter.Value()
-		bridgedTokensAmountBytes := make([]byte, len(value))
-		copy(bridgedTokensAmountBytes, value)
-		results = append(results, bridgedTokensAmountBytes)
-	}
-
-	iter.Release()
-	err := iter.Error()
-	if err != nil && err != lvdberr.ErrNotFound {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
-	}
-	return results, nil
+type BridgeTokenInfo struct {
+	TokenID         *common.Hash `json:"tokenId"`
+	Amount          uint64       `json:"amount"`
+	ExternalTokenID []byte       `json:"externalTokenId"`
+	Network         string       `json:"network"`
 }
 
 func (db *db) IsBridgeTokenExisted(
@@ -47,56 +32,206 @@ func (db *db) IsBridgeTokenExisted(
 	return true, nil
 }
 
-func (db *db) UpdateAmtByTokenID(
-	tokenID common.Hash,
-	amount uint64,
-	updateType string,
+func (db *db) InsertETHTxHashIssued(
+	uniqETHTx []byte,
 ) error {
-	// don't need to have atomic operation here since instructions on beacon would be processed one by one, not in parallel
-	key := append(centralizedBridgePrefix, tokenID[:]...)
-
-	tokenWithAmtBytes, dbErr := db.lvdb.Get(key, nil)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
-	}
-
-	var newTokenWithAmount TokenWithAmount
-	if len(tokenWithAmtBytes) == 0 {
-		newTokenWithAmount = TokenWithAmount{
-			TokenID: &tokenID,
-		}
-		if updateType == "-" {
-			newTokenWithAmount.Amount = 0
-		} else {
-			newTokenWithAmount.Amount = amount
-		}
-
-	} else { // found existing amount info
-		var existingTokenWithAmount TokenWithAmount
-		unmarshalErr := json.Unmarshal(tokenWithAmtBytes, &existingTokenWithAmount)
-		if unmarshalErr != nil {
-			return unmarshalErr
-		}
-		newTokenWithAmount = TokenWithAmount{
-			TokenID: existingTokenWithAmount.TokenID,
-		}
-		if updateType == "+" {
-			newTokenWithAmount.Amount = existingTokenWithAmount.Amount + amount
-		} else if existingTokenWithAmount.Amount <= amount {
-			newTokenWithAmount.Amount = 0
-		} else {
-			newTokenWithAmount.Amount = existingTokenWithAmount.Amount - amount
-		}
-	}
-
-	contentBytes, marshalErr := json.Marshal(newTokenWithAmount)
-	if marshalErr != nil {
-		return marshalErr
-	}
-
-	dbErr = db.Put(key, contentBytes)
+	key := append(ethTxHashIssued, uniqETHTx...)
+	dbErr := db.Put(key, []byte{1})
 	if dbErr != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
+}
+
+func (db *db) IsETHTxHashIssued(
+	uniqETHTx []byte,
+) (bool, error) {
+	key := append(ethTxHashIssued, uniqETHTx...)
+	contentBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	}
+	if len(contentBytes) == 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (db *db) CanProcessCIncToken(
+	incTokenID common.Hash,
+) (bool, error) {
+	dBridgeTokenExisted, err := db.IsBridgeTokenExistedByType(incTokenID, false)
+	if err != nil {
+		return false, err
+	}
+	if dBridgeTokenExisted {
+		return false, nil
+	}
+
+	cBridgeTokenExisted, err := db.IsBridgeTokenExistedByType(incTokenID, true)
+	if err != nil {
+		return false, err
+	}
+	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(incTokenID)
+	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(incTokenID)
+	if !cBridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (db *db) CanProcessTokenPair(
+	externalTokenID []byte,
+	incTokenID common.Hash,
+) (bool, error) {
+	if len(externalTokenID) == 0 || len(incTokenID[:]) == 0 {
+		return false, nil
+	}
+	// check incognito bridge token is existed in centralized bridge tokens or not
+	cBridgeTokenExisted, err := db.IsBridgeTokenExistedByType(incTokenID, true)
+	if err != nil {
+		return false, err
+	}
+	if cBridgeTokenExisted {
+		return false, nil
+	}
+
+	dBridgeTokenExisted, err := db.IsBridgeTokenExistedByType(incTokenID, false)
+	if err != nil {
+		return false, err
+	}
+	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(incTokenID)
+	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(incTokenID)
+	if !dBridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
+		return false, nil
+	}
+
+	key := append(decentralizedBridgePrefix, incTokenID[:]...)
+	contentBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	}
+	if len(contentBytes) > 0 {
+		var bridgeTokenInfo BridgeTokenInfo
+		err := json.Unmarshal(contentBytes, &bridgeTokenInfo)
+		if err != nil {
+			return false, err
+		}
+		if bytes.Equal(bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:]) {
+			return true, nil
+		}
+		return false, nil
+	}
+	// else: could not find incTokenID out
+	iter := db.lvdb.NewIterator(util.BytesPrefix(decentralizedBridgePrefix), nil)
+	for iter.Next() {
+		value := iter.Value()
+		itemBytes := make([]byte, len(value))
+		copy(itemBytes, value)
+		var bridgeTokenInfo BridgeTokenInfo
+		err := json.Unmarshal(itemBytes, &bridgeTokenInfo)
+		if err != nil {
+			return false, err
+		}
+		if !bytes.Equal(bridgeTokenInfo.ExternalTokenID, externalTokenID) {
+			continue
+		}
+		return false, nil
+	}
+
+	iter.Release()
+	err = iter.Error()
+	if err != nil && err != lvdberr.ErrNotFound {
+		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+	// both tokens are not existed -> can create new one
+	return true, nil
+}
+
+func getBridgePrefix(isCentralized bool) []byte {
+	if isCentralized {
+		return centralizedBridgePrefix
+	}
+	return decentralizedBridgePrefix
+}
+
+func (db *db) UpdateBridgeTokenInfo(
+	incTokenID common.Hash,
+	externalTokenID []byte,
+	isCentralized bool,
+) error {
+	prefix := getBridgePrefix(isCentralized)
+	key := append(prefix, incTokenID[:]...)
+	bridgeTokenInfo := BridgeTokenInfo{
+		TokenID:         &incTokenID,
+		ExternalTokenID: externalTokenID,
+	}
+	bridgeTokenInfoBytes, err := json.Marshal(bridgeTokenInfo)
+	if err != nil {
+		return err
+	}
+
+	dbErr := db.Put(key, bridgeTokenInfoBytes)
+	if dbErr != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) IsBridgeTokenExistedByType(
+	incTokenID common.Hash,
+	isCentralized bool,
+) (bool, error) {
+	prefix := getBridgePrefix(isCentralized)
+	key := append(prefix, incTokenID[:]...)
+	tokenInfoBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	}
+	if len(tokenInfoBytes) == 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (db *db) getBridgeTokensByType(isCentralized bool) ([]*BridgeTokenInfo, error) {
+	prefix := getBridgePrefix(isCentralized)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(prefix), nil)
+	bridgeTokenInfos := []*BridgeTokenInfo{}
+	for iter.Next() {
+		value := iter.Value()
+		itemBytes := make([]byte, len(value))
+		copy(itemBytes, value)
+		var bridgeTokenInfo BridgeTokenInfo
+		err := json.Unmarshal(itemBytes, &bridgeTokenInfo)
+		if err != nil {
+			return nil, err
+		}
+		bridgeTokenInfos = append(bridgeTokenInfos, &bridgeTokenInfo)
+	}
+
+	iter.Release()
+	err := iter.Error()
+	if err != nil && err != lvdberr.ErrNotFound {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+	}
+
+	return bridgeTokenInfos, nil
+}
+
+func (db *db) GetAllBridgeTokens() ([]byte, error) {
+	cBridgeTokenInfos, err := db.getBridgeTokensByType(true)
+	if err != nil {
+		return nil, err
+	}
+	dBridgeTokenInfos, err := db.getBridgeTokensByType(false)
+	if err != nil {
+		return nil, err
+	}
+	allBridgeTokens := append(cBridgeTokenInfos, dBridgeTokenInfos...)
+	allBridgeTokensBytes, err := json.Marshal(allBridgeTokens)
+	if err != nil {
+		return nil, err
+	}
+	return allBridgeTokensBytes, nil
 }

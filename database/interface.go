@@ -83,13 +83,16 @@ type DatabaseInterface interface {
 	// Commitee with epoch
 	//StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByEpoch(uint64, interface{}) error
+	StoreBeaconCommitteeByEpoch(uint64, interface{}) error
 	DeleteCommitteeByEpoch(uint64) error
 	FetchCommitteeByEpoch(uint64) ([]byte, error)
+	FetchBeaconCommitteeByEpoch(uint64) ([]byte, error)
 	HasCommitteeByEpoch(uint64) (bool, error)
 
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error
 	HasSerialNumber(tokenID common.Hash, data []byte, shardID byte) (bool, error)
+	ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]uint64, error)
 	BackupSerialNumbersLen(tokenID common.Hash, shardID byte) error
 	RestoreSerialNumber(tokenID common.Hash, shardID byte, serialNumbers [][]byte) error
 	// DeleteSerialNumber(tokenID common.Hash, data []byte, shardID byte) error
@@ -113,6 +116,9 @@ type DatabaseInterface interface {
 	StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID byte) error
 	HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSNDerivator() error
+
+	// Tx for Public key
+	StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) error
 
 	// Fee estimator
 	StoreFeeEstimator([]byte, byte) error
@@ -146,11 +152,21 @@ type DatabaseInterface interface {
 	DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error
 
 	// Centralized bridge
-	GetBridgeTokensAmounts() ([][]byte, error)
 	IsBridgeTokenExisted(common.Hash) (bool, error)
-	UpdateAmtByTokenID(common.Hash, uint64, string) error
 	BackupBridgedTokenByTokenID(tokenID common.Hash) error
 	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
+
+	// Incognito -> Ethereum relay
+	StoreBurningConfirm(txID []byte, height uint64) error
+	GetBurningConfirm(txID []byte) (uint64, error)
+
+	// Decentralized bridge
+	InsertETHTxHashIssued([]byte) error
+	IsETHTxHashIssued([]byte) (bool, error)
+	CanProcessTokenPair([]byte, common.Hash) (bool, error)
+	CanProcessCIncToken(common.Hash) (bool, error)
+	UpdateBridgeTokenInfo(common.Hash, []byte, bool) error
+	GetAllBridgeTokens() ([]byte, error)
 
 	// Block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error
@@ -158,6 +174,7 @@ type DatabaseInterface interface {
 	AddCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
 	GetCommitteeReward(committeeAddress []byte, tokenID common.Hash) (uint64, error)
 	RemoveCommitteeReward(committeeAddress []byte, amount uint64, tokenID common.Hash) error
+	ListCommitteeReward() map[string]map[common.Hash]uint64
 
 	BackupShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error  //beacon
 	BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash) error        //shard
