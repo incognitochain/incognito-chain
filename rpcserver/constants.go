@@ -74,6 +74,7 @@ const (
 	randomCommitments                          = "randomcommitments"
 	hasSerialNumbers                           = "hasserialnumbers"
 	hasSnDerivators                            = "hassnderivators"
+	listSerialNumbers                          = "listserialnumbers"
 
 	createAndSendStakingTransaction = "createandsendstakingtransaction"
 
@@ -110,15 +111,26 @@ const (
 	// utils
 	hashToIdenticon = "hashtoidenticon"
 
-	createIssuingRequest            = "createissuingrequest"
-	sendIssuingRequest              = "sendissuingrequest"
-	createAndSendIssuingRequest     = "createandsendissuingrequest"
-	createAndSendContractingRequest = "createandsendcontractingrequest"
-	getBridgeTokensAmounts          = "getbridgetokensamounts"
+	createIssuingRequest             = "createissuingrequest"
+	sendIssuingRequest               = "sendissuingrequest"
+	createAndSendIssuingRequest      = "createandsendissuingrequest"
+	createAndSendContractingRequest  = "createandsendcontractingrequest"
+	createAndSendBurningRequest      = "createandsendburningrequest"
+	createAndSendTxWithIssuingETHReq = "createandsendtxwithissuingethreq"
+	getRelayedETHHeader              = "getrelayedethheader"
+	checkETHHashIssued               = "checkethhashissued"
+	getAllBridgeTokens               = "getallbridgetokens"
+	getETHHeaderByHash               = "getethheaderbyhash"
+
+	// Incognito -> Ethereum bridge
+	getBeaconSwapProof = "getbeaconswapproof"
+	getBridgeSwapProof = "getbridgeswapproof"
+	getBurnProof       = "getburnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"
 	getRewardAmount              = "getrewardamount"
+	listRewardAmount             = "listrewardamount"
 
 	revertbeaconchain                  = "revertbeaconchain"
 	revertshardchain                   = "revertshardchain"

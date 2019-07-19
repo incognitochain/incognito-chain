@@ -172,7 +172,7 @@ func (tx *Tx) Init(
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return NewTransactionErr(WrongInput, errors.New("input value less than output value"))
+		return NewTransactionErr(WrongInput, errors.New(fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, fee)))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
@@ -698,8 +698,8 @@ func (tx *Tx) ValidateTxWithBlockChain(
 		return nil
 	}
 	if tx.Metadata != nil {
-		fmt.Printf("[db] validate metadata with blockchain: %d %h\n", tx.GetMetadataType(), tx.Hash())
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
+		fmt.Printf("[db] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
 			return err
 		}
@@ -1169,6 +1169,7 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
+	accumulatedValues *metadata.AccumulatedValues,
 ) (bool, error) {
 	if tx.IsPrivacy() {
 		return true, nil
@@ -1185,7 +1186,7 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 	}
 	if meta != nil {
-		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr)
+		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr, accumulatedValues)
 	}
 	return true, nil
 }
