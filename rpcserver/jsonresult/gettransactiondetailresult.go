@@ -21,8 +21,8 @@ type TransactionDetail struct {
 	Proof           *zkp.PaymentProof `json:"Proof"`
 	ProofDetail     ProofDetail       `json:"ProofDetail"`
 	InputCoinPubKey string            `json:"InputCoinPubKey"`
-	SigPubKey       []byte            `json:"SigPubKey,omitempty"` // 64 bytes
-	Sig             []byte            `json:"Sig,omitempty"`       // 64 bytes
+	SigPubKey       string            `json:"SigPubKey,omitempty"` // 64 bytes
+	Sig             string            `json:"Sig,omitempty"`       // 64 bytes
 
 	Metadata               string `json:"Metadata"`
 	CustomTokenData        string `json:"CustomTokenData"`
