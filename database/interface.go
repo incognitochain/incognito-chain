@@ -117,6 +117,9 @@ type DatabaseInterface interface {
 	HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error)
 	CleanSNDerivator() error
 
+	// Tx for Public key
+	StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) error
+
 	// Fee estimator
 	StoreFeeEstimator([]byte, byte) error
 	GetFeeEstimator(byte) ([]byte, error)
