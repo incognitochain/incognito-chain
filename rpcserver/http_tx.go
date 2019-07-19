@@ -281,8 +281,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Fee:         tempTx.Fee,
 				IsPrivacy:   tempTx.IsPrivacy(),
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
@@ -310,8 +310,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
@@ -341,8 +341,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
 				Fee:         tempTx.Fee,
 				Proof:       tempTx.Proof,
-				SigPubKey:   tempTx.SigPubKey,
-				Sig:         tempTx.Sig,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
 			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
