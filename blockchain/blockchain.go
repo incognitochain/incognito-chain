@@ -534,6 +534,20 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 	return nil
 }
 
+func (blockchain *BlockChain) StoreTxByPublicKey(data string) error {
+	dataArr := strings.Split(data, "_")
+	pubKey, _, _ := base58.Base58Check{}.Decode(dataArr[0])
+	txID, _ := common.Hash{}.NewHashFromStr(dataArr[1])
+	shardID, _ := strconv.Atoi(dataArr[2])
+
+	err := blockchain.config.DataBase.StoreTxByPublicKey(pubKey, *txID, byte(shardID))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 /*
 Uses an existing database to update the set of not used tx by saving list commitments of privacy,
 this is a list tx-in which are used by a new tx
