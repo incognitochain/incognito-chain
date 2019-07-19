@@ -41,7 +41,7 @@ func initTx() {
 			db,
 			nil,
 		)
-		initTx, _ := json.Marshal(testSalaryTX)
+		initTx, _ := json.MarshalIndent(testSalaryTX, "", "  ")
 		initTxs = append(initTxs, string(initTx))
 	}
 	fmt.Println(initTxs)
