@@ -37,8 +37,9 @@ const (
 	TransactionError
 	InstructionError
 	SwapError
-	DuplicateBlockErr
+	DuplicateBlockError
 	CommitteeOrValidatorError
+	ShardBlockSanityError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -70,8 +71,9 @@ var ErrCodeMessage = map[int]struct {
 	InstructionError:              {-23, "Instruction Error"},
 	SwapError:                     {-24, "Swap Error"},
 	MashallJsonError:              {-25, "MashallJson Error"},
-	DuplicateBlockErr:             {-26, "Duplicate Block Error"},
-	CommitteeOrValidatorError:             {-27, "Committee or Validator Error"},
+	DuplicateBlockError:           {-26, "Duplicate Block Error"},
+	CommitteeOrValidatorError:     {-27, "Committee or Validator Error"},
+	ShardBlockSanityError:         {-28, "Shard Block Sanity Data Error"},
 }
 
 type BlockChainError struct {

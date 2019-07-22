@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"sort"
 
@@ -235,8 +234,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
-				fmt.Println("INIT Tx Custom Token Privacy/ newHashInitToken", newHashInitToken)
-
+				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
 				existed := db.PrivacyCustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
@@ -302,6 +300,31 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(m
 	err := txCustomTokenPrivacy.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
+	}
+	return nil
+}
+
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
+	if txCustomTokenPrivacy.Proof == nil {
+		return nil
+	}
+	temp := make(map[common.Hash]interface{})
+	for _, desc := range txCustomTokenPrivacy.Proof.InputCoins {
+		hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+		temp[hash] = nil
+	}
+
+	for _, desc := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.InputCoins {
+		hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+		temp[hash] = nil
+	}
+
+	for _, listSerialNumbers := range poolSerialNumbersHashH {
+		for _, serialNumberHash := range listSerialNumbers {
+			if _, ok := temp[serialNumberHash]; ok {
+				return errors.New("double spend")
+			}
+		}
 	}
 	return nil
 }
@@ -384,7 +407,6 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGett
 		Logger.log.Error("Mintable custom token must contain metadata")
 		return false, nil
 	}
-	// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
