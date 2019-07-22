@@ -2,10 +2,7 @@ package metadata
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"reflect"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -103,16 +100,17 @@ func (cReq *ContractingRequest) Hash() *common.Hash {
 }
 
 func (cReq *ContractingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	actionContent := map[string]interface{}{
-		"meta": *cReq,
-	}
-	actionContentBytes, err := json.Marshal(actionContent)
-	if err != nil {
-		return [][]string{}, err
-	}
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(ContractingRequestMeta), actionContentBase64Str}
-	return [][]string{action}, nil
+	return [][]string{}, nil
+	// actionContent := map[string]interface{}{
+	// 	"meta": *cReq,
+	// }
+	// actionContentBytes, err := json.Marshal(actionContent)
+	// if err != nil {
+	// 	return [][]string{}, err
+	// }
+	// actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	// action := []string{strconv.Itoa(ContractingRequestMeta), actionContentBase64Str}
+	// return [][]string{action}, nil
 }
 
 func (cReq *ContractingRequest) CalculateSize() uint64 {

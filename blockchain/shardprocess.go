@@ -241,17 +241,75 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
-		fmt.Printf("[ndh]  - - - [error]1: %+v\n", err)
+		//fmt.Printf("[ndh]  - - - [error]1: %+v\n", err)
 		return err
 	}
 	err = blockchain.updateDatabaseFromShardBlock(block)
 	if err != nil {
-		fmt.Printf("[ndh]  - - - [error]2: %+v\n", err)
+		//fmt.Printf("[ndh]  - - - [error]2: %+v\n", err)
 		return err
 	}
-	fmt.Printf("[ndh]  - - - nonerror \n")
+	//fmt.Printf("[ndh]  - - - nonerror \n")
+
+	// Save result of BurningConfirm instruction to get proof later
+	err = blockchain.storeBurningConfirm(block)
+	if err != nil {
+		return err
+	}
+
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, block))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
+	return nil
+}
+
+func (blockchain *BlockChain) updateStuffForIssuingETHRes(
+	tx metadata.Transaction,
+) error {
+	db := blockchain.GetDatabase()
+	issuingETHResdMeta := tx.GetMetadata().(*metadata.IssuingETHResponse)
+	err := db.InsertETHTxHashIssued(issuingETHResdMeta.UniqETHTx)
+	if err != nil {
+		return err
+	}
+	err = db.UpdateBridgeTokenInfo(
+		*tx.GetTokenID(),
+		issuingETHResdMeta.ExternalTokenID,
+		false,
+	)
+	return err
+}
+
+func (blockchain *BlockChain) updateStuffForIssuingRes(
+	tx metadata.Transaction,
+) error {
+	db := blockchain.GetDatabase()
+	err := db.UpdateBridgeTokenInfo(
+		*tx.GetTokenID(),
+		[]byte{},
+		true,
+	)
+	return err
+}
+
+func (blockchain *BlockChain) updateDatabaseFromShardBlock(
+	shardBlock *ShardBlock,
+) error {
+	db := blockchain.config.DataBase
+	for _, tx := range shardBlock.Body.Transactions {
+		metaType := tx.GetMetadataType()
+		var err error
+		if metaType == metadata.WithDrawRewardResponseMeta {
+			_, requesterRes, amountRes, coinID := tx.GetTransferData()
+			err = db.RemoveCommitteeReward(requesterRes, amountRes, *coinID)
+		} else if metaType == metadata.IssuingETHResponseMeta {
+			err = blockchain.updateStuffForIssuingETHRes(tx)
+		} else if metaType == metadata.IssuingResponseMeta {
+			err = blockchain.updateStuffForIssuingRes(tx)
+		}
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -459,6 +517,16 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("Error verify action root"))
 	}
+
+	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
+	flattenTxInsts := FlattenAndConvertStringInst(txInstructions)
+	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
+	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be the same as when creating new shard block
+	root := GetKeccak256MerkleRoot(insts)
+	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
+		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
+	}
+
 	//Get beacon hash by height in db
 	//If hash not found then fail to verify
 	beaconHash, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(block.Header.BeaconHeight)
