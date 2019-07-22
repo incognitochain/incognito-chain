@@ -6,17 +6,19 @@ to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
 type Params struct {
-	Name string  // Name defines a human-readable identifier for the network.
-	Net uint32 // Net defines the magic bytes used to identify the network.
-	DefaultPort         string // DefaultPort defines the default peer-to-peer port for the network.
-	ShardCommitteeSize  int
-	BeaconCommitteeSize int
-	StakingAmountShard  uint64
-	ActiveShards        int
-	GenesisBeaconBlock *BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock *ShardBlock // GenesisBlock defines the first block of the chain.
-	BasicReward       uint64
-	RewardHalflife    uint64
+	Name                   string  // Name defines a human-readable identifier for the network.
+	Net                    uint32 // Net defines the magic bytes used to identify the network.
+	DefaultPort            string // DefaultPort defines the default peer-to-peer port for the network.
+	MaxShardCommitteeSize  int
+	MinShardCommitteeSize  int
+	MaxBeaconCommitteeSize int
+	MinBeaconCommitteeSize int
+	StakingAmountShard     uint64
+	ActiveShards           int
+	GenesisBeaconBlock     *BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock      *ShardBlock // GenesisBlock defines the first block of the chain.
+	BasicReward            uint64
+	RewardHalflife         uint64
 }
 
 type GenesisParams struct {
@@ -46,13 +48,15 @@ func init() {
 		InitialIncognito: TestnetInitPRV,
 	}
 	ChainTestParam = Params{
-		Name:                TestnetName,
-		Net:                 Testnet,
-		DefaultPort:         TestnetDefaultPort,
-		ShardCommitteeSize:  TestNetShardCommitteeSize,  //TestNetShardCommitteeSize,
-		BeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
-		StakingAmountShard:  TestNetStakingAmountShard,
-		ActiveShards:        TestNetActiveShards,
+		Name:                   TestnetName,
+		Net:                    Testnet,
+		DefaultPort:            TestnetDefaultPort,
+		MaxShardCommitteeSize:  TestNetShardCommitteeSize,  //TestNetShardCommitteeSize,
+		MinShardCommitteeSize:  TestNetMinShardCommitteeSize,  //TestNetShardCommitteeSize,
+		MaxBeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+		MinBeaconCommitteeSize: TestNetMinBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+		StakingAmountShard:     TestNetStakingAmountShard,
+		ActiveShards:           TestNetActiveShards,
 		// blockChain parameters
 		GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
 		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
@@ -70,13 +74,13 @@ func init() {
 		InitialIncognito: MainnetInitPRV,
 	}
 	ChainMainParam = Params{
-		Name:                MainetName,
-		Net:                 Mainnet,
-		DefaultPort:         MainnetDefaultPort,
-		ShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
-		BeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
-		StakingAmountShard:  MainNetStakingAmountShard,
-		ActiveShards:        MainNetActiveShards,
+		Name:                   MainetName,
+		Net:                    Mainnet,
+		DefaultPort:            MainnetDefaultPort,
+		MaxShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
+		MaxBeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
+		StakingAmountShard:     MainNetStakingAmountShard,
+		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
 		GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
 		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
