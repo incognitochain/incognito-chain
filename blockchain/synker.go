@@ -3,7 +3,10 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -62,10 +65,28 @@ type synker struct {
 		}
 		sync.Mutex
 	}
+	Event struct {
+		requestSyncShardBlockByHashEvent pubsub.EventChannel
+		requestSyncShardBlockByHeightEvent pubsub.EventChannel
+		requestSyncBeaconBlockByHashEvent pubsub.EventChannel
+		requestSyncBeaconBlockByHeightEvent pubsub.EventChannel
+	}
 	blockchain *BlockChain
+	pubSubManager         *pubsub.PubSubManager
 	cQuit      chan struct{}
 }
-
+func newSyncker(cQuit chan struct{}, blockchain *BlockChain, pubSubManager *pubsub.PubSubManager) synker {
+	s := synker{
+		blockchain: blockchain,
+		cQuit: cQuit,
+		pubSubManager: pubSubManager,
+	}
+	_, s.Event.requestSyncShardBlockByHashEvent, _ = pubSubManager.RegisterNewSubscriber(pubsub.RequestShardBlockByHashTopic)
+	_, s.Event.requestSyncShardBlockByHeightEvent, _ = pubSubManager.RegisterNewSubscriber(pubsub.RequestShardBlockByHeightTopic)
+	_, s.Event.requestSyncBeaconBlockByHashEvent, _ = pubSubManager.RegisterNewSubscriber(pubsub.RequestBeaconBlockByHashTopic)
+	_, s.Event.requestSyncBeaconBlockByHeightEvent, _ = pubSubManager.RegisterNewSubscriber(pubsub.RequestBeaconBlockByHeightTopic)
+	return s
+}
 func (synker *synker) Start() {
 	if synker.Status.Beacon {
 		return
@@ -121,6 +142,21 @@ func (synker *synker) Start() {
 			return
 		case <-updateStatesTicker.C:
 			synker.UpdateState()
+		case msg := <-synker.Event.requestSyncShardBlockByHashEvent:
+			str, ok := msg.Value.(string)
+			if !ok {
+				continue
+			}
+			strs := strings.Split(str, ",")
+			shardID, err := strconv.Atoi(strs[0])
+			if err != nil {
+				continue
+			}
+			hash, err := common.Hash{}.NewHashFromStr(strs[1])
+			if err != nil {
+				continue
+			}
+			synker.SyncBlkShard(byte(shardID),true, false, true, []common.Hash{*hash}, []uint64{}, 0, 0, "")
 		}
 	}
 }

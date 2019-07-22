@@ -130,7 +130,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	if config.ChainParams == nil {
 		return NewBlockChainError(UnExpectedError, errors.New("Chain parameters is not config"))
 	}
-
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
@@ -140,12 +139,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	if err := blockchain.initChainState(); err != nil {
 		return err
 	}
-
 	blockchain.cQuitSync = make(chan struct{})
-	blockchain.Synker = synker{
-		blockchain: blockchain,
-		cQuit:      blockchain.cQuitSync,
-	}
+	blockchain.Synker = newSyncker(blockchain.cQuitSync, blockchain, blockchain.config.PubSubManager)
 	return nil
 }
 

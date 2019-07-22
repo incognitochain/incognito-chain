@@ -2,11 +2,13 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -126,7 +128,6 @@ func (self *ShardPool) AddShardBlock(block *blockchain.ShardBlock) error {
 	}
 	self.insertNewShardBlockToPool(block)
 	self.promotePendingPool()
-	//self.CleanOldBlock(blockchain.GetBestStateShard(self.shardID).ShardHeight)
 	return nil
 }
 
@@ -166,7 +167,6 @@ func (self *ShardPool) validateShardBlock(block *blockchain.ShardBlock, isPendin
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -264,6 +264,10 @@ func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) b
 							delete(self.conflictedPool, previousBlock.Header.Hash())
 							return true
 						}
+					} else {
+						msg := strconv.Itoa(int(block.Header.ShardID))
+						msg += fmt.Sprint("%+v", block.Header.PrevBlockHash)
+						self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestShardBlockByHashTopic, msg))
 					}
 					return false
 				}
