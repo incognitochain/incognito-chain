@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/consensus/multisigschemes"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/pubsub"
 

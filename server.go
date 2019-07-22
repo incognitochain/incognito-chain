@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -32,7 +33,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 
-	"github.com/incognitochain/incognito-chain/consensus/mubft"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -847,11 +847,6 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 		config.UserKeySet = KeySetUser
 	}
 	return config
-}
-
-func (serverObj *Server) GetUserKeySet() *incognitokey.KeySet {
-	k, _ := cfg.GetUserKeySet()
-	return k
 }
 
 // OnBlock is invoked when a peer receives a block message.  It
