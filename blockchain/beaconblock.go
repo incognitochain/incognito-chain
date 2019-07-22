@@ -190,3 +190,7 @@ func (beaconBlock *BeaconBlock) AddValidationField(validateData string) error {
 func (beaconBlock *BeaconBlock) GetValidationField() string {
 	return beaconBlock.ValidationData
 }
+
+func (beaconBlock BeaconBlock) GetRound() int {
+	return beaconBlock.Header.Round
+}
