@@ -73,8 +73,8 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
 	txID, _ := common.Hash{}.NewHashFromStr(inst[5])
 	height, _, _ := base58.Base58Check{}.Decode(inst[6])
-	fmt.Printf("[db] decoded BurningConfirm inst\n")
-	fmt.Printf("[db]\tamount: %d\n[db]\tremoteAddr: %x\n[db]\ttokenID: %x\n", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
+	BLogger.log.Infof("Decoded BurningConfirm inst\n")
+	BLogger.log.Infof("\tamount: %d\n\tremoteAddr: %x\n\ttokenID: %x\n", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
@@ -200,7 +200,7 @@ func parseAndConcatPubkeys(vals []string) []byte {
 // buildBeaconSwapConfirmInstruction stores in an instruction the list of new beacon validators and the block that they start signing on
 func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
 	beaconComm := parseAndConcatPubkeys(currentValidators)
-	fmt.Printf("[db] new beaconComm: %d %x\n", startHeight, beaconComm)
+	BLogger.log.Infof("New beaconComm: %d %x\n", startHeight, beaconComm)
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
@@ -218,7 +218,7 @@ func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight u
 // buildBridgeSwapConfirmInstruction stores in an instruction the list of new bridge validators and the block that they start signing on
 func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
 	bridgeComm := parseAndConcatPubkeys(currentValidators)
-	fmt.Printf("[db] added bridgeComm: %d %x\n", startHeight, bridgeComm)
+	BLogger.log.Infof("New bridgeComm: %d %x\n", startHeight, bridgeComm)
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
@@ -235,7 +235,7 @@ func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight u
 
 // buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
 func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseInterface) ([]string, error) {
-	fmt.Printf("[db] build BurningConfirmInst: %s\n", inst)
+	BLogger.log.Infof("Build BurningConfirmInst: %s\n", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
 	err := decodeContent(inst[1], &burningReqAction)
@@ -302,9 +302,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	instructions := [][]string{}
 	beaconHeight := beaconBestState.BeaconHeight
 	for _, inst := range shardBlockInstructions {
-		if inst[0] == strconv.Itoa(metadata.BurningRequestMeta) {
-			fmt.Printf("[db] shardBlockInst: %s\n", inst)
-		}
 		if len(inst) == 0 {
 			continue
 		}
@@ -326,7 +323,6 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			newInst, err = buildInstructionsForIssuingReq(contentStr, shardID, metaType)
 
 		case metadata.BurningRequestMeta:
-			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
 			burningConfirm, err := buildBurningConfirmInst(inst, beaconHeight+1, db)
 			if err != nil {
 				return [][]string{}, err

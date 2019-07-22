@@ -92,7 +92,7 @@ func findBridgeBlockWithInst(
 		}
 
 		_, bridgeInstID := findCommSwapInst(bridgeBlock.Body.Instructions, metadata.BridgeSwapConfirmMeta)
-		fmt.Printf("[db] finding swap bridge inst in bridge block %d %d\n", state.Height, bridgeInstID)
+		BLogger.log.Debugf("Finding swap bridge inst in bridge block %d %d\n", state.Height, bridgeInstID)
 		if bridgeInstID >= 0 {
 			return bridgeBlock, bridgeInstID, nil
 		}
