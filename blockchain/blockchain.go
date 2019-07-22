@@ -1231,7 +1231,7 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
-		baseRewards[key] = value / uint64(blockchain.BestState.Beacon.MaxBeaconCommitteeSize)
+		baseRewards[key] = value / uint64(len(blockchain.BestState.Beacon.BeaconCommittee))
 	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
 		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)
