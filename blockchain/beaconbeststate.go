@@ -4,12 +4,12 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -46,16 +46,16 @@ type BestStateBeacon struct {
 	CandidateShardWaitingForNextRandom     []string             `json:"CandidateShardWaitingForNextRandom"` // shard candidate list, waiting to be shuffled in next epoch
 	CandidateBeaconWaitingForNextRandom    []string             `json:"CandidateBeaconWaitingForNextRandom"`
 	ShardCommittee                         map[byte][]string    `json:"ShardCommittee"`        // current committee and validator of all shard
-	ShardPendingValidator  map[byte][]string `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
-	CurrentRandomNumber    int64             `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp int64             `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber      bool              `json:"IsGetRandomNumber"`
-	Params                 map[string]string `json:"Params,omitempty"`
-	MaxBeaconCommitteeSize int               `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize int               `json:"MaxBeaconCommitteeSize"`
-	MaxShardCommitteeSize  int               `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize  int               `json:"MaxShardCommitteeSize"`
-	ActiveShards           int               `json:"ActiveShards"`
+	ShardPendingValidator                  map[byte][]string    `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
+	CurrentRandomNumber                    int64                `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp                 int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber                      bool                 `json:"IsGetRandomNumber"`
+	Params                                 map[string]string    `json:"Params,omitempty"`
+	MaxBeaconCommitteeSize                 int                  `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize                 int                  `json:"MaxBeaconCommitteeSize"`
+	MaxShardCommitteeSize                  int                  `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize                  int                  `json:"MaxShardCommitteeSize"`
+	ActiveShards                           int                  `json:"ActiveShards"`
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -527,7 +527,6 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		blockchain.config.CrossShardPool[fromShard].UpdatePool()
 	}
 
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range currentBestStateBlk.Body.Instructions {
 		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
@@ -538,19 +537,12 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			fmt.Printf("[ndh] error - - %+v\n", err)
 			return err
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
-		case metadata.ContractingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
-			fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
-				fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
@@ -561,8 +553,9 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 				}
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
+			Logger.log.Infof("TxsFee in Epoch: %+v of shardID: %+v:\n", currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID)
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+				Logger.log.Infof("===> TokenID:%+v: Amount: %+v\n", key, value)
 				err = blockchain.config.DataBase.RestoreShardRewardRequest(currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
 				if err != nil {
 					return err
@@ -570,12 +563,6 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 
 			}
 		}
-		if err != nil {
-			return err
-		}
-	}
-	for tokenID, _ := range updatingInfoByTokenID {
-		err := blockchain.config.DataBase.RestoreBridgedTokenByTokenID(tokenID)
 		if err != nil {
 			return err
 		}
@@ -601,7 +588,6 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
@@ -613,20 +599,13 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			fmt.Printf("[ndh] error - - %+v\n", err)
-			return err
+			continue
 		}
 
 		switch metaType {
-		case metadata.IssuingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
-		case metadata.ContractingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
-			fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
-				fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
@@ -637,8 +616,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 				}
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
-			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+			for key, _ := range acceptedBlkRewardInfo.TxsFee {
 				err = blockchain.config.DataBase.BackupShardRewardRequest(block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
 				if err != nil {
 					return err
@@ -647,12 +625,6 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 			}
 		}
 
-		if err != nil {
-			return err
-		}
-	}
-	for tokenID, _ := range updatingInfoByTokenID {
-		err := blockchain.config.DataBase.BackupBridgedTokenByTokenID(tokenID)
 		if err != nil {
 			return err
 		}
