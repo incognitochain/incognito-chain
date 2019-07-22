@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -81,9 +81,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 			fmt.Printf("[db] shardPendingValidator: %s\n", shardPendingValidator)
 			Logger.log.Critical("shardPendingValidator", shardPendingValidator)
 			Logger.log.Critical("shardCommittee", shardCommittee)
-			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize)
+			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize)
 			Logger.log.Critical("shardID", shardID)
-			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize, shardID)
+			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize, shardID)
 			if err != nil {
 				Logger.log.Error(err)
 				return nil, err
