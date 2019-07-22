@@ -81,7 +81,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
 	beaconBlock.Header.Round = round
-	BLogger.log.Infof("Producing block: %d\n", beaconBlock.Header.Height)
+	BLogger.log.Infof("Producing block: %d", beaconBlock.Header.Height)
 	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
 	rewardByEpochInstruction := [][]string{}
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
@@ -482,7 +482,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	}
 	// Create stability instruction
 	if len(shardBlock.Instructions) > 0 || shardBlock.Header.Height%10 == 0 {
-		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s\n", shardID, shardBlock.Header.Height, shardBlock.Instructions)
+		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s", shardID, shardBlock.Header.Height, shardBlock.Instructions)
 	}
 	stabilityInstructionsPerBlock, err := blockChain.buildStabilityInstructions(
 		shardID,
@@ -491,14 +491,14 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 		blockChain.config.DataBase,
 	)
 	if err != nil {
-		BLogger.log.Errorf("Build stability instructions failed: %s \n", err.Error())
+		BLogger.log.Errorf("Build stability instructions failed: %s", err.Error())
 	}
 
 	// Pick instruction with merkle root of shard committee's pubkeys and save to beacon block
 	commPubkeyInst := pickBridgePubkeyRootInstruction(shardBlock)
 	if len(commPubkeyInst) > 0 {
 		stabilityInstructionsPerBlock = append(instructions, commPubkeyInst...)
-		BLogger.log.Infof("Found bridge pubkey root inst: %s\n", commPubkeyInst)
+		BLogger.log.Infof("Found bridge pubkey root inst: %s", commPubkeyInst)
 	}
 
 	stabilityInstructions = append(stabilityInstructions, stabilityInstructionsPerBlock...)
