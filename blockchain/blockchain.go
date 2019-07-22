@@ -1201,32 +1201,7 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 // 	return blockchain.syncStatus.IsReady.Beacon
 // }
 
-// func (blockchain *BlockChain) BuildAcceptRewardInstructions(rewardInstructionsRequest [][]string, beaconHeight uint64, beaconPaymentAddress *privacy.PaymentAddress) ([][]string, error) {
-// 	resIns := [][]string{}
-// 	totalBeaconReward := blockchain.getRewardAmount(beaconHeight)
-// 	var shardRewards map[string]uint64
-// 	var shardPaymentAddress map[string]*privacy.PaymentAddress
-// 	for _, rewardRequestIns := range rewardInstructionsRequest {
-// 		rewardRequest, err := metadata.NewShardBlockSalaryRequestFromStr(rewardRequestIns[2])
-// 		if err != nil {
-// 			return [][]string{}, err
-// 		}
-// 		totalBeaconReward += rewardRequest.TxsFeeForBeacon
-// 		shardAddressStr := rewardRequest.PayToAddress.String()
-// 		if shardRewards[shardAddressStr] == 0 {
-// 			shardPaymentAddress[shardAddressStr] = rewardRequest.PayToAddress
-// 		}
-// 		shardRewards[shardAddressStr] += rewardRequest.TxsFeeForShard + blockchain.getRewardAmount(rewardRequest.ShardBlockHeight)
-// 	}
-// 	beaconRewardIns, err := metadata.BuildInstForBeaconSalary(totalBeaconReward, beaconHeight, beaconPaymentAddress)
-// 	if err != nil {
-// 		return [][]string{}, err
-// 	}
-// 	resIns = append(resIns, beaconRewardIns)
-// 	return resIns, nil
-// }
-
-//TODO implement more logic for fair
+//BuildInstRewardForBeacons create reward instruction for beacons
 func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
