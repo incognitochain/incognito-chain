@@ -283,7 +283,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
 
-	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.ShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.ShardCommitteeSize)+blockchain.config.ChainParams.ShardCommitteeSize]...)
+	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.MaxShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MaxShardCommitteeSize)+blockchain.config.ChainParams.MaxShardCommitteeSize]...)
 
 	genesisBeaconBlk, err := blockchain.GetBeaconBlockByHeight(1)
 	if err != nil {
@@ -1206,7 +1206,7 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
-		baseRewards[key] = value / uint64(blockchain.BestState.Beacon.BeaconCommitteeSize)
+		baseRewards[key] = value / uint64(blockchain.BestState.Beacon.MaxBeaconCommitteeSize)
 	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
 		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)
