@@ -11,25 +11,34 @@ fi
 if [ "$1" == "shard0-2" ]; then
 go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtxdpGEx5H7MHi5EXGKZhKAxgbEkRv1d8TH1cbqKzc5j4mXEKC2NUCeCSQRA3zDeUQxKUW54sAGzpqFi86JQGaPAh4Ao4Gqo7q51yGw" --nodemode "auto" --datadir "data/shard0-2" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpcauth --rpclisten "127.0.0.1:9336" --relayshards "0"
 fi
+if [ "$1" == "shard0-3" ]; then
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8ruUPhxinaPG89z372Gza7B7G7ZZHkHaXa3PvARVpqdAjB6Nwe32Qtt8fV3yCEA4jgnZGuYHsS2Un89juYwv9Uqpw9v5b8cunXmtoULJ" --nodemode "auto" --datadir "data/shard0-3" --listen "127.0.0.1:9436" --externaladdress "127.0.0.1:9436" --norpcauth --rpclisten "127.0.0.1:9337" --relayshards "0"
+fi
 # Shard 1
 if [ "$1" == "shard1-0" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roCAzRKCBy3VpSwujBaM2iPJZ82Sb5dtYJiyS1Cknax3bxd3x9aynNkZmoNsNLJWb8NMtJZXf9S68RHHy5W9iuvVErrd1Q37eW3uerc" --nodemode "auto" --datadir "data/shard1-0" --listen "127.0.0.1:9443" --externaladdress "127.0.0.1:9443" --norpcauth --rpclisten "127.0.0.1:9337" --enablewallet --wallet "wallet3" --walletpassphrase "12345678" --walletautoinit
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roCAzRKCBy3VpSwujBaM2iPJZ82Sb5dtYJiyS1Cknax3bxd3x9aynNkZmoNsNLJWb8NMtJZXf9S68RHHy5W9iuvVErrd1Q37eW3uerc" --nodemode "auto" --datadir "data/shard1-0" --listen "127.0.0.1:9443" --externaladdress "127.0.0.1:9443" --norpcauth --rpclisten "127.0.0.1:9338" --enablewallet --wallet "wallet3" --walletpassphrase "12345678" --walletautoinit
 fi
 if [ "$1" == "shard1-1" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rpHmXL5Eb9tW4wuKT3sh5ADthEBKJPw8thFreVNJyvY6o9iRTbdomrCC3VchVmLYox6pnxS7pvNzwdPrykokmaNQa1Q1ZYfNVEDMwKS" --nodemode "auto" --datadir "data/shard1-1" --listen "127.0.0.1:9444" --externaladdress "127.0.0.1:9444" --norpcauth --rpclisten "127.0.0.1:9338"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rpHmXL5Eb9tW4wuKT3sh5ADthEBKJPw8thFreVNJyvY6o9iRTbdomrCC3VchVmLYox6pnxS7pvNzwdPrykokmaNQa1Q1ZYfNVEDMwKS" --nodemode "auto" --datadir "data/shard1-1" --listen "127.0.0.1:9444" --externaladdress "127.0.0.1:9444" --norpcauth --rpclisten "127.0.0.1:9339"
 fi
 if [ "$1" == "shard1-2" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rqXccVRRjL4CGxoJUD3Fya7rzfWXXF5uakQokbNuiiWSabr78SwnXLEqSozeJZzgUWajgZkUbMJmoAUnkVvkDgYTEBzjhKeU9ECNPtY" --nodemode "auto" --datadir "data/shard1-2" --listen "127.0.0.1:9445" --externaladdress "127.0.0.1:9445" --norpcauth --rpclisten "127.0.0.1:9339"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rqXccVRRjL4CGxoJUD3Fya7rzfWXXF5uakQokbNuiiWSabr78SwnXLEqSozeJZzgUWajgZkUbMJmoAUnkVvkDgYTEBzjhKeU9ECNPtY" --nodemode "auto" --datadir "data/shard1-2" --listen "127.0.0.1:9445" --externaladdress "127.0.0.1:9445" --norpcauth --rpclisten "127.0.0.1:9340"
+fi
+if [ "$1" == "shard1-3" ]; then
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rrYgmYrxDRyBoWHw7RMksy2RoETHC9DRXTMLTDrN6gid6M3wsvYfUZ9Gn9vsFHC25tujQBkvYKeJNAtUAActG69V6Rp6rgy69g8zcrA" --nodemode "auto" --datadir "data/shard1-3" --listen "127.0.0.1:9446" --externaladdress "127.0.0.1:9446" --norpcauth --rpclisten "127.0.0.1:9341"
 fi
 # Beacon
 if [ "$1" == "beacon-0" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sDsj4tnDQ7mv5E26hfrHpsjyueJybmyJyKfn2uB7NbVY8pAzQEiLrKURuqihV8EvwrJoMLoz2apTyJWPYTQeEPMtDgnAKXjCKGPmvkb" --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9423" --externaladdress "127.0.0.1:9423" --norpcauth --rpclisten "127.0.0.1:9340" 
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sDsj4tnDQ7mv5E26hfrHpsjyueJybmyJyKfn2uB7NbVY8pAzQEiLrKURuqihV8EvwrJoMLoz2apTyJWPYTQeEPMtDgnAKXjCKGPmvkb" --nodemode "auto" --datadir "data/beacon-0" --listen "127.0.0.1:9423" --externaladdress "127.0.0.1:9423" --norpcauth --rpclisten "127.0.0.1:9342"
 fi
 if [ "$1" == "beacon-1" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sFHLcDnYJyndjBYs7UFRQGnzq9MtDcr6xsgQ8wfZZ7kXRFexnGxSA7u1SB7iJXoWXRB2ono5BHzKb1eqzTATEWTA32G82GcGc2krrSm" --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9424" --externaladdress "127.0.0.1:9424" --norpcauth --rpclisten "127.0.0.1:9341"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sFHLcDnYJyndjBYs7UFRQGnzq9MtDcr6xsgQ8wfZZ7kXRFexnGxSA7u1SB7iJXoWXRB2ono5BHzKb1eqzTATEWTA32G82GcGc2krrSm" --nodemode "auto" --datadir "data/beacon-1" --listen "127.0.0.1:9424" --externaladdress "127.0.0.1:9424" --norpcauth --rpclisten "127.0.0.1:9343"
 fi
 if [ "$1" == "beacon-2" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sL2pTLHdZuTuZSFAeDq6rzBruAqvyMYwKyav9TKUc1zKTz3ScSbT44MG4GgiN9KxC1234j63fFgBE88pHfE1Wbrz6qbm6vGohhNua2h" --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9425" --externaladdress "127.0.0.1:9425" --norpcauth --rpclisten "127.0.0.1:9342"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sL2pTLHdZuTuZSFAeDq6rzBruAqvyMYwKyav9TKUc1zKTz3ScSbT44MG4GgiN9KxC1234j63fFgBE88pHfE1Wbrz6qbm6vGohhNua2h" --nodemode "auto" --datadir "data/beacon-2" --listen "127.0.0.1:9425" --externaladdress "127.0.0.1:9425" --norpcauth --rpclisten "127.0.0.1:9344"
+fi
+if [ "$1" == "beacon-3" ]; then
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8sP8ZgYgFTjMTVmzZ9YpPpESfoe5b78a7TqvWn9PAkVPUrQsccx5QB62TAupWm4zCPVh9DKFeorMRxYpgQtRGEBCDv4MCEkePXZ4gbek" --nodemode "auto" --datadir "data/beacon-3" --listen "127.0.0.1:9426" --externaladdress "127.0.0.1:9426" --norpcauth --rpclisten "127.0.0.1:9345"
 fi
 # FullNode
 if [ "$1" == "full_node" ]; then
@@ -37,7 +46,7 @@ go run *.go --discoverpeersaddress "127.0.0.1:9330" --nodemode "relay" --datadir
 fi
 ######
 if [ "$1" == "shard-stake-1" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe" --nodemode "auto" --datadir "data/shard-stake" --listen "127.0.0.1:9436" --externaladdress "127.0.0.1:9436" --norpcauth --rpclisten "127.0.0.1:9343" 
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe" --nodemode "auto" --datadir "data/shard-stake" --listen "127.0.0.1:9436" --externaladdress "127.0.0.1:9436" --norpcauth --rpclisten "127.0.0.1:9343"
 fi
 if [ "$1" == "shard-stake-2" ]; then
 go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM" --nodemode "auto" --datadir "data/shard-stake-2" --listen "127.0.0.1:9446" --externaladdress "127.0.0.1:9446" --norpcauth --rpclisten "127.0.0.1:9344"
@@ -64,5 +73,5 @@ go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8ruLZgaV3z
 fi
 # Relay node
 if [ "$1" == "relaynode" ]; then
-go run *.go --relayshards "all" --datadir "data/relaynode" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpcauth --rpclisten "127.0.0.1:9336" --enablewallet --wallet "wallet3" --walletpassphrase "12345678" --walletautoinit
+go run *.go --relayshards "all" --datadir "data/relaynode" --listen "127.0.0.1:9435" --externaladdress "127.0.0.1:9435" --norpcauth --rpclisten "127.0.0.1:9360" --enablewallet --wallet "wallet3" --walletpassphrase "12345678" --walletautoinit
 fi
