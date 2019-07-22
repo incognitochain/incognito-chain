@@ -1,8 +1,6 @@
 package metadata
 
 import (
-	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -25,10 +23,6 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	tokenID, err := common.Hash{}.NewHashFromStr(requestTokenID)
 	if err != nil {
 		return nil, err
-	}
-	fmt.Printf("[ndh] - - request %+v PRV %+v\n", *tokenID, common.PRVCoinID)
-	for key, value := range data {
-		fmt.Printf("[ndh]- - - - Key %+v; value %+v\n", key, value)
 	}
 	requesterPublicKeySet, err := wallet.Base58CheckDeserialize(requesterPaymentStr)
 	if err != nil {
@@ -62,7 +56,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) Hash() *common.Hash {
 }
 
 func (withDrawRewardRequest *WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
-	//TODO - check fee?
+	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
 
@@ -78,7 +72,7 @@ func (withDrawRewardRequest *WithDrawRewardRequest) ValidateTxWithBlockChain(txr
 	if value > 0 {
 		isPositive = true
 	}
-	// }
+
 	if !isPositive {
 		return false, errors.New("Not enough reward")
 	}
@@ -99,7 +93,7 @@ func (withDrawRewardRequest *WithDrawRewardRequest) ValidateMetadataByItself() b
 }
 
 func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
-	//TODO - check fee?
+	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
 
