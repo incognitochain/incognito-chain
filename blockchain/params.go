@@ -6,7 +6,7 @@ to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
 type Params struct {
-	Name                   string  // Name defines a human-readable identifier for the network.
+	Name                   string // Name defines a human-readable identifier for the network.
 	Net                    uint32 // Net defines the magic bytes used to identify the network.
 	DefaultPort            string // DefaultPort defines the default peer-to-peer port for the network.
 	MaxShardCommitteeSize  int
@@ -16,16 +16,16 @@ type Params struct {
 	StakingAmountShard     uint64
 	ActiveShards           int
 	GenesisBeaconBlock     *BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock      *ShardBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock      *ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward            uint64
 	RewardHalflife         uint64
 }
 
 type GenesisParams struct {
-	InitialPaymentAddress string
-	InitialIncognito []string
-	FeePerTxKb uint64
-	RandomNumber uint64
+	InitialPaymentAddress               string
+	InitialIncognito                    []string
+	FeePerTxKb                          uint64
+	RandomNumber                        uint64
 	PreSelectBeaconNodeSerializedPubkey []string
 	PreSelectBeaconNode                 []string
 	PreSelectShardNodeSerializedPubkey  []string
@@ -51,9 +51,9 @@ func init() {
 		Name:                   TestnetName,
 		Net:                    Testnet,
 		DefaultPort:            TestnetDefaultPort,
-		MaxShardCommitteeSize:  TestNetShardCommitteeSize,  //TestNetShardCommitteeSize,
+		MaxShardCommitteeSize:  TestNetShardCommitteeSize,     //TestNetShardCommitteeSize,
 		MinShardCommitteeSize:  TestNetMinShardCommitteeSize,  //TestNetShardCommitteeSize,
-		MaxBeaconCommitteeSize: TestNetBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+		MaxBeaconCommitteeSize: TestNetBeaconCommitteeSize,    //TestNetBeaconCommitteeSize,
 		MinBeaconCommitteeSize: TestNetMinBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
 		StakingAmountShard:     TestNetStakingAmountShard,
 		ActiveShards:           TestNetActiveShards,
