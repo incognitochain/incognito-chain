@@ -632,12 +632,6 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			continue
 		}
 
-		if l[0] == SetAction {
-			bestStateBeacon.Params[l[1]] = l[2]
-		}
-		if l[0] == DeleteAction {
-			delete(bestStateBeacon.Params, l[1])
-		}
 		if l[0] == SwapAction {
 			fmt.Println("SWAP", l)
 			// format
