@@ -242,7 +242,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	//prevBlockHash := block.Header.PrevBlockHash
 	//parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	//if err != nil {
-	//	return NewBlockChainError(DBError, err)
+	//	return NewBlockChainError(DatabaseError, err)
 	//}
 	//parentBlock := ShardBlock{}
 	//json.Unmarshal(parentBlockData, &parentBlock)

@@ -88,7 +88,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 				Logger.log.Error(err)
 				return nil, err
 			}
-
 			// Generate instruction storing merkle root of validators pubkey and send to beacon
 			bridgeID := byte(common.BRIDGE_SHARD_ID)
 			if shardID == bridgeID {

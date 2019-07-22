@@ -403,7 +403,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	prevBlockHash := block.Header.PrevBlockHash
 	parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	if err != nil {
-		return NewBlockChainError(DBError, err)
+		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlock := ShardBlock{}
 	err = json.Unmarshal(parentBlockData, &parentBlock)
@@ -505,6 +505,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		Logger.log.Error(err)
 		return nil
 	}
+	//TODO: validator create instruction again (ONLY validator need to do that)
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
@@ -573,7 +574,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		if err := blockchain.VerifyTransactionFromNewBlock(block.Body.Transactions); err != nil {
 			return NewBlockChainError(TransactionError, err)
 		}
-
 		crossTxTokenData := make(map[byte][]CrossTxTokenData)
 		toShard := shardID
 		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
