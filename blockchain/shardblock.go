@@ -63,8 +63,11 @@ func (shardBlock *ShardBlock) Hash() *common.Hash {
 
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//Check Header
+	if shardBlock.Header.Height == 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Height 1 Producer Address have %+v bytes but get %+v bytes", 0, len(shardBlock.Header.ProducerAddress.Bytes())))
+	}
 	// producer address must have 66 bytes: 33-byte public key, 33-byte transmission key
-	if len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
+	if shardBlock.Header.Height > 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Producer Address have %+v bytes but get %+v bytes", 66, len(shardBlock.Header.ProducerAddress.Bytes())))
 	}
 	if int(shardBlock.Header.ShardID) < 0 || int(shardBlock.Header.ShardID) > 256 {
@@ -127,7 +130,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//if shardBlock.Header.BeaconHeight == 1 && !shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
 	//	return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Beacon Height 1 have Zero Hash Value"))
 	//}
-	if shardBlock.Header.BeaconHeight > 0 && shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
+	if shardBlock.Header.BeaconHeight > 1 && shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Beacon Height greater or equal than 1 have Non-Zero Hash Value"))
 	}
 	if shardBlock.Header.TotalTxsFee == nil {
@@ -192,6 +195,9 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Body.CrossTransactions = make(map[byte][]CrossTransaction)
 	}
 	shardBlock.Header = tempBlk.Header
+	if shardBlock.Header.TotalTxsFee == nil {
+		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
+	}
 	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
