@@ -3,13 +3,14 @@ package mubft
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/pubsub"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -170,7 +171,6 @@ func (engine *Engine) execBeaconRole() {
 	case common.PROPOSER_ROLE:
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
-		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
@@ -180,7 +180,6 @@ func (engine *Engine) execBeaconRole() {
 	case common.VALIDATOR_ROLE:
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
-		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
