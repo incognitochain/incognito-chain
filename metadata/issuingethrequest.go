@@ -3,8 +3,8 @@ package metadata
 import (
 	"encoding/base64"
 	"encoding/json"
-	"strconv"
 	"fmt"
+	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"

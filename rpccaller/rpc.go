@@ -9,4 +9,3 @@ type RPCBaseRes struct {
 	Id       int       `json:"id"`
 	RPCError *RPCError `json:"error"`
 }
-
