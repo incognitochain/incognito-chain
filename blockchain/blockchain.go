@@ -534,17 +534,32 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 	return nil
 }
 
-func (blockchain *BlockChain) StoreTxByPublicKey(data string) error {
-	dataArr := strings.Split(data, "_")
-	pubKey, _, _ := base58.Base58Check{}.Decode(dataArr[0])
-	txID, _ := common.Hash{}.NewHashFromStr(dataArr[1])
-	shardID, _ := strconv.Atoi(dataArr[2])
+// StoreTxByPublicKey - store txID by public key of receiver,
+// use this data to get tx which send to receiver, because we can get this tx from cross shard
+// -> only fullnode data can provide this data for all
+func (blockchain *BlockChain) StoreTxByPublicKey(view *TxViewPoint) error {
+	for data := range view.txByPubKey {
+		dataArr := strings.Split(data, "_")
+		pubKey, _, err := base58.Base58Check{}.Decode(dataArr[0])
+		if err != nil {
+			return err
+		}
+		txIDInByte, _, err := base58.Base58Check{}.Decode(dataArr[1])
+		if err != nil {
+			return err
+		}
+		txID := common.Hash{}
+		err = txID.SetBytes(txIDInByte)
+		if err != nil {
+			return err
+		}
+		shardID, _ := strconv.Atoi(dataArr[2])
 
-	err := blockchain.config.DataBase.StoreTxByPublicKey(pubKey, *txID, byte(shardID))
-	if err != nil {
-		return err
+		err = blockchain.config.DataBase.StoreTxByPublicKey(pubKey, txID, byte(shardID))
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 
@@ -726,10 +741,16 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	if err != nil {
 		return err
 	}
+
+	err = blockchain.StoreTxByPublicKey(view)
+	if err != nil {
+		return err
+	}
 	//endtime := time.Now()
 	//runTime := endtime.Sub(startTime)
 	//go common.AnalyzeFuncCreateAndSaveTxViewPointFromBlock(runTime.Seconds())
 	//Logger.log.Critical("*** CreateAndSaveTxViewPointFromBlock  ***", block.Header.Height, runTime)
+
 	return nil
 }
 
@@ -1055,6 +1076,18 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 	}
 	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
 	return block.Header.ShardID, blockHash, index, block.Body.Transactions[index], nil
+}
+
+// GetTransactionHashByReceiver - return list tx id which receiver get from any sender
+// this feature only apply on full node, because full node get all data from all shard
+func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet) (map[byte][]common.Hash, error) {
+	result := make(map[byte][]common.Hash)
+	var err error
+	result, err = blockchain.config.DataBase.GetTxByPublicKey(keySet.PaymentAddress.Pk)
+	if err != nil {
+		return nil, NewBlockChainError(UnExpectedError, err)
+	}
+	return result, nil
 }
 
 // Check Custom token ID is existed
