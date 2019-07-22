@@ -129,7 +129,6 @@ func init() {
 // Action for instruction
 const (
 	SetAction    = "set"
-	DeleteAction = "del"
 	SwapAction   = "swap"
 	RandomAction = "random"
 	StakeAction  = "stake"
