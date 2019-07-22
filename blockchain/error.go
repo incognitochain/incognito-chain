@@ -19,7 +19,7 @@ const (
 	HashError
 	VersionError
 	BlockHeightError
-	DBError
+	DatabaseError
 	EpochError
 	TimestampError
 	InstructionHashError
@@ -53,7 +53,7 @@ var ErrCodeMessage = map[int]struct {
 	HashError:                     {-5, "Hash error"},
 	VersionError:                  {-6, "Version error"},
 	BlockHeightError:              {-7, "Block height error"},
-	DBError:                       {-8, "Database Error"},
+	DatabaseError:                 {-8, "Database Error"},
 	EpochError:                    {-9, "Epoch Error"},
 	TimestampError:                {-10, "Timestamp Error"},
 	InstructionHashError:          {-11, "Instruction Hash Error"},
