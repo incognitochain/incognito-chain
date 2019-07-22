@@ -83,7 +83,7 @@ func decodeContent(content string, action interface{}) error {
 
 func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
 	if len(block.Body.Instructions) > 0 {
-		BLogger.log.Debugf("storeBurningConfirm for block %d %v\n", block.Header.Height, block.Body.Instructions)
+		BLogger.log.Debugf("storeBurningConfirm for block %d %v", block.Header.Height, block.Body.Instructions)
 	}
 	for _, inst := range block.Body.Instructions {
 		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {

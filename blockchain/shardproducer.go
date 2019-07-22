@@ -22,7 +22,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	//fmt.Printf("[ndh] Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
-	BLogger.log.Infof("Producing block: %d\n", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	BLogger.log.Infof("Producing block: %d", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 
 	if len(bridgePubkeyInst) > 0 {
 		instructions = append(instructions, bridgePubkeyInst)
-		BLogger.log.Infof("Build bridge pubkey root inst: %s\n", bridgePubkeyInst)
+		BLogger.log.Infof("Build bridge pubkey root inst: %s", bridgePubkeyInst)
 	}
 
 	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
@@ -122,7 +122,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 				bid = append(bid, b.Header.Height)
 			}
 			prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
-			BLogger.log.Infof("Picked burning confirm inst: %s %d %v\n", confirmInsts, prevBlock.Header.Height+1, bid)
+			BLogger.log.Infof("Picked burning confirm inst: %s %d %v", confirmInsts, prevBlock.Header.Height+1, bid)
 			instructions = append(instructions, confirmInsts...)
 		}
 	}
