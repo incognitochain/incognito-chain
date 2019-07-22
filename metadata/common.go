@@ -35,8 +35,17 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
 
+	case IssuingETHRequestMeta:
+		md = &IssuingETHRequest{}
+
+	case IssuingETHResponseMeta:
+		md = &IssuingETHResponse{}
+
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
+
+	case BurningRequestMeta:
+		md = &BurningRequest{}
 
 	case ShardStakingMeta:
 		md = &StakingMetadata{}

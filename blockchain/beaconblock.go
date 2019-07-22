@@ -57,6 +57,10 @@ type BeaconHeader struct {
 	ShardStateHash common.Hash `json:"ShardListRootHash"`
 	// hash of all parameters == hash of instruction
 	InstructionHash common.Hash `json:"InstructionHash"`
+
+	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
+	// This obsoletes InstructionHash but for simplicity, we keep it for now
+	InstructionMerkleRoot common.Hash
 }
 
 type BeaconBlock struct {
@@ -154,6 +158,14 @@ func (beaconHeader *BeaconHeader) toString() string {
 	return res
 }
 
+func (beaconBlock *BeaconHeader) MetaHash() common.Hash {
+	return common.Keccak256([]byte(beaconBlock.toString()))
+}
+
 func (beaconBlock *BeaconHeader) Hash() common.Hash {
-	return common.HashH([]byte(beaconBlock.toString()))
+	// Block header of beacon uses Keccak256 as a hash func to check on Ethereum when relaying blocks
+	blkMetaHash := beaconBlock.MetaHash()
+	blkInstHash := beaconBlock.InstructionMerkleRoot
+	combined := append(blkMetaHash[:], blkInstHash[:]...)
+	return common.Keccak256(combined)
 }

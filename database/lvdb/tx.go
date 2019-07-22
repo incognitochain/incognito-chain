@@ -470,3 +470,8 @@ func (db *db) GetTransactionIndexById(txId common.Hash) (common.Hash, int, *data
 	}
 	return *hash, index, nil
 }
+
+func (db *db) StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) error {
+
+	return nil
+}

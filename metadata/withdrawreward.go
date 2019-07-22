@@ -1,8 +1,6 @@
 package metadata
 
 import (
-	"fmt"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -25,10 +23,6 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	tokenID, err := common.Hash{}.NewHashFromStr(requestTokenID)
 	if err != nil {
 		return nil, err
-	}
-	fmt.Printf("[ndh] - - request %+v PRV %+v\n", *tokenID, common.PRVCoinID)
-	for key, value := range data {
-		fmt.Printf("[ndh]- - - - Key %+v; value %+v\n", key, value)
 	}
 	requesterPublicKeySet, err := wallet.Base58CheckDeserialize(requesterPaymentStr)
 	if err != nil {
