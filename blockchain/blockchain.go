@@ -5,9 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"io"
 	"log"
 	"math/big"
@@ -17,6 +14,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/memcache"
+	"github.com/incognitochain/incognito-chain/pubsub"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -24,6 +25,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
@@ -43,8 +45,10 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
+	RPCClient        *rpccaller.RPCClient
 	IsTest           bool
 }
+
 type BestState struct {
 	Beacon *BestStateBeacon
 	Shard  map[byte]*BestStateShard
@@ -279,7 +283,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
 
-	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.ShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.ShardCommitteeSize)+blockchain.config.ChainParams.ShardCommitteeSize]...)
+	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.MaxShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MaxShardCommitteeSize)+blockchain.config.ChainParams.MaxShardCommitteeSize]...)
 
 	genesisBeaconBlk, err := blockchain.GetBeaconBlockByHeight(1)
 	if err != nil {
@@ -308,6 +312,9 @@ func (blockchain *BlockChain) initBeaconState() error {
 		return err
 	}
 	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
+		return err
+	}
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
 		return err
 	}
 	blockHash := initBlock.Hash()
@@ -524,6 +531,20 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 	// 		}
 	// 	}
 	// }
+	return nil
+}
+
+func (blockchain *BlockChain) StoreTxByPublicKey(data string) error {
+	dataArr := strings.Split(data, "_")
+	pubKey, _, _ := base58.Base58Check{}.Decode(dataArr[0])
+	txID, _ := common.Hash{}.NewHashFromStr(dataArr[1])
+	shardID, _ := strconv.Atoi(dataArr[2])
+
+	err := blockchain.config.DataBase.StoreTxByPublicKey(pubKey, *txID, byte(shardID))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1180,37 +1201,12 @@ func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd
 // 	return blockchain.syncStatus.IsReady.Beacon
 // }
 
-// func (blockchain *BlockChain) BuildAcceptRewardInstructions(rewardInstructionsRequest [][]string, beaconHeight uint64, beaconPaymentAddress *privacy.PaymentAddress) ([][]string, error) {
-// 	resIns := [][]string{}
-// 	totalBeaconReward := blockchain.getRewardAmount(beaconHeight)
-// 	var shardRewards map[string]uint64
-// 	var shardPaymentAddress map[string]*privacy.PaymentAddress
-// 	for _, rewardRequestIns := range rewardInstructionsRequest {
-// 		rewardRequest, err := metadata.NewShardBlockSalaryRequestFromStr(rewardRequestIns[2])
-// 		if err != nil {
-// 			return [][]string{}, err
-// 		}
-// 		totalBeaconReward += rewardRequest.TxsFeeForBeacon
-// 		shardAddressStr := rewardRequest.PayToAddress.String()
-// 		if shardRewards[shardAddressStr] == 0 {
-// 			shardPaymentAddress[shardAddressStr] = rewardRequest.PayToAddress
-// 		}
-// 		shardRewards[shardAddressStr] += rewardRequest.TxsFeeForShard + blockchain.getRewardAmount(rewardRequest.ShardBlockHeight)
-// 	}
-// 	beaconRewardIns, err := metadata.BuildInstForBeaconSalary(totalBeaconReward, beaconHeight, beaconPaymentAddress)
-// 	if err != nil {
-// 		return [][]string{}, err
-// 	}
-// 	resIns = append(resIns, beaconRewardIns)
-// 	return resIns, nil
-// }
-
-//TODO implement more logic for fair
+//BuildInstRewardForBeacons create reward instruction for beacons
 func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
-		baseRewards[key] = value / uint64(blockchain.BestState.Beacon.BeaconCommitteeSize)
+		baseRewards[key] = value / uint64(blockchain.BestState.Beacon.MaxBeaconCommitteeSize)
 	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
 		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)
@@ -1232,11 +1228,19 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	mapBridgeTokenID, err := blockchain.GetDatabase().GetBridgeTokensAmounts()
+
+	db := blockchain.GetDatabase()
+	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
 	if err != nil {
 		return nil, err
 	}
-	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+len(mapBridgeTokenID)+1)
+	var allBridgeTokens []*lvdb.BridgeTokenInfo
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+
+	if err != nil {
+		return nil, err
+	}
+	allCoinID := make([]common.Hash, len(mapCustomToken)+len(mapPrivacyCustomToken)+len(mapCrossShardCustomToken)+len(allBridgeTokens)+1)
 	allCoinID[0] = common.PRVCoinID
 	index := 1
 	for key := range mapCustomToken {
@@ -1252,13 +1256,8 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 		index++
 	}
 
-	for _, bridgeTokenIDBytes := range mapBridgeTokenID {
-		var tokenWithAmount lvdb.TokenWithAmount
-		err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
-		if err != nil {
-			return nil, err
-		}
-		allCoinID[index] = *tokenWithAmount.TokenID
+	for _, bridgeTokens := range allBridgeTokens {
+		allCoinID[index] = *bridgeTokens.TokenID
 		index++
 	}
 	return allCoinID, nil
@@ -1303,10 +1302,9 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
-			fmt.Printf("[ndh] - buildWithDrawTransactionResponse for tx %+v, error: %+v\n", value, err)
 			return err
 		} else {
-			fmt.Printf("[ndh] - buildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
+			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
 		txsRes = append(txsRes, txRes)
 	}
@@ -1329,11 +1327,11 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
-			fmt.Printf("[ndh] - response %+v\n", tx)
+			//fmt.Printf("[ndh] -  %+v\n", tx)
 
 			requester := base58.Base58Check{}.Encode(requesterRes, VERSION)
 			if txRequestTable[requester] == nil {
-				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
+				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
 				return errors.New("This response dont match with any request")
 			}
 			requestMeta := txRequestTable[requester].GetMetadata().(*metadata.WithDrawRewardRequest)
@@ -1342,16 +1340,16 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 			amount, err := db.GetCommitteeReward(requesterRes, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
-				fmt.Printf("[ndh] - - [error] Not enough reward %+v %+v\n", amount, err)
+				//fmt.Printf("[ndh] - - [error] Not enough reward %+v %+v\n", amount, err)
 				return errors.New("Not enough reward")
 			}
 			if amount != amountRes {
-				fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amountRes)
+				//fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amountRes)
 				return errors.New("Wrong amount")
 			}
 
 			if res, err := txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()); err == nil && res != 0 {
-				fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amountRes)
+				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v %+v\n", amount, amountRes)
 				return errors.New("This response dont match with any request")
 			}
 			txRequestTable[requester] = nil
@@ -1360,10 +1358,14 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 		}
 	}
 	if numberOfTxRequest != numberOfTxResponse {
-		fmt.Printf("[ndh] - - [error] Not match request and response %+v %+v\n", numberOfTxRequest, numberOfTxResponse)
+		//fmt.Printf("[ndh] - - [error] Not match request and response %+v %+v\n", numberOfTxRequest, numberOfTxResponse)
 		return errors.New("Not match request and response")
 	}
 	return nil
+}
+
+func (blockchain *BlockChain) GetRPCClient() *rpccaller.RPCClient {
+	return blockchain.RPCClient
 }
 
 func (blockchain *BlockChain) InitTxSalaryByCoinID(
@@ -1380,20 +1382,29 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		txType = transaction.NormalCoinType
 	}
 	if txType == -1 {
-		mapBridgeTokenID, err := blockchain.GetDatabase().GetBridgeTokensAmounts()
+
+		db := blockchain.GetDatabase()
+		allBridgeTokensBytes, err := db.GetAllBridgeTokens()
 		if err != nil {
 			return nil, err
 		}
-		for _, bridgeTokenIDBytes := range mapBridgeTokenID {
-			var tokenWithAmount lvdb.TokenWithAmount
-			err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
-			if err != nil {
-				return nil, err
-			}
+		var allBridgeTokens []*lvdb.BridgeTokenInfo
+		err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 
-			if res, err := coinID.Cmp(tokenWithAmount.TokenID); err == nil && res == 0 {
+		if err != nil {
+			return nil, err
+		}
+
+		for _, bridgeTokenIDs := range allBridgeTokens {
+			// var tokenWithAmount lvdb.TokenWithAmount
+			// err := json.Unmarshal(bridgeTokenIDBytes, &tokenWithAmount)
+			// if err != nil {
+			// 	return nil, err
+			// }
+
+			if res, err := coinID.Cmp(bridgeTokenIDs.TokenID); err == nil && res == 0 {
 				txType = transaction.CustomTokenPrivacyType
-				fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", tokenWithAmount.TokenID)
+				fmt.Printf("[ndh] eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee %+v \n", bridgeTokenIDs.TokenID)
 				break
 			}
 		}

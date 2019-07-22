@@ -117,7 +117,17 @@ func (tx *TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 	return uint64(math.Ceil(float64(tokenDataSize) / 1024))
 }
 
+// CheckTransactionFee - check fee for all tx by use PRV as fee
 func (tx *TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
+	if tx.IsSalaryTx() {
+		return true
+	}
+	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+	return tx.GetTxFee() >= fullFee
+}
+
+// CheckTransactionFeeByFeeToken - check fee for all tx by use token as fee
+func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
@@ -125,7 +135,8 @@ func (tx *TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	return tx.GetTxFeeToken() >= fullFee
 }
 
-func (tx *TxCustomTokenPrivacy) CheckTransactionFeePrivacyToken(minFeePerKbTx uint64) bool {
+// CheckTransactionFeeByFeeTokenForTokenData - check fee for token data info in tx by use token as fee
+func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
@@ -363,6 +374,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGett
 	instsUsed []int,
 	shardID byte,
 	bcr metadata.BlockchainRetriever,
+	accumulatedValues *metadata.AccumulatedValues,
 ) (bool, error) {
 	if !txCustomTokenPrivacy.TxTokenPrivacyData.Mintable {
 		return true, nil
@@ -372,11 +384,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGett
 		Logger.log.Error("Mintable custom token must contain metadata")
 		return false, nil
 	}
-	// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomTokenPrivacy, bcr)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomTokenPrivacy, bcr, accumulatedValues)
 }
 
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenReceivers() ([][]byte, []uint64) {

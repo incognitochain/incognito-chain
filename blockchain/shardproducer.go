@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -22,7 +22,8 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	//============Build body=============
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
-	fmt.Printf("[ndh] Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	//fmt.Printf("[ndh] Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	fmt.Printf("\n[db] producing block: %d\n", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
 		return nil, err
@@ -74,21 +75,60 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	//Swap instruction
 	// Swap instruction only appear when reach the last block in an epoch
 	//@NOTICE: In this block, only pending validator change, shard committees will change in the next block
+	bridgePubkeyInst := []string{}
 	if beaconHeight%common.EPOCH == 0 {
 		if len(shardPendingValidator) > 0 {
+			fmt.Printf("[db] shardPendingValidator: %s\n", shardPendingValidator)
 			Logger.log.Critical("shardPendingValidator", shardPendingValidator)
 			Logger.log.Critical("shardCommittee", shardCommittee)
-			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize)
+			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize)
 			Logger.log.Critical("shardID", shardID)
-			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize, shardID)
+			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize, shardID)
 			if err != nil {
 				Logger.log.Error(err)
 				return nil, err
+			}
+
+			// Generate instruction storing merkle root of validators pubkey and send to beacon
+			bridgeID := byte(common.BRIDGE_SHARD_ID)
+			if shardID == bridgeID {
+				startHeight := blockgen.chain.BestState.Shard[shardID].ShardHeight + 2
+				bridgePubkeyInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
+				prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
+				fmt.Printf("[db] added bridgeCommRoot in shard block %d\n", prevBlock.Header.Height+1)
 			}
 		}
 	}
 	if !reflect.DeepEqual(swapInstruction, []string{}) {
 		instructions = append(instructions, swapInstruction)
+	}
+
+	if len(bridgePubkeyInst) > 0 {
+		instructions = append(instructions, bridgePubkeyInst)
+		fmt.Printf("[db] build bridge pubkey root inst: %s\n", bridgePubkeyInst)
+	}
+
+	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
+	// Also, pick BurningConfirm inst and save to bridge block
+	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	if shardID == bridgeID {
+		// TODO(0xbunyip): validate these instructions in shardprocess
+		commPubkeyInst := pickBeaconPubkeyRootInstruction(beaconBlocks)
+		if len(commPubkeyInst) > 0 {
+			instructions = append(instructions, commPubkeyInst...)
+		}
+
+		height := blockgen.chain.BestState.Shard[shardID].ShardHeight + 1
+		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
+		if len(confirmInsts) > 0 {
+			bid := []uint64{}
+			for _, b := range beaconBlocks {
+				bid = append(bid, b.Header.Height)
+			}
+			prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
+			fmt.Printf("[db] picked burning confirm inst: %s %d %v\n", confirmInsts, prevBlock.Header.Height+1, bid)
+			instructions = append(instructions, confirmInsts...)
+		}
 	}
 
 	block := &ShardBlock{
@@ -108,7 +148,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	// 	Logger.log.Error(err)
 	// 	return nil, err
 	// }
-	// fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
+	// //fmt.Printf("[ndh]-[INSTRUCTION AT SHARD] - - %+v\n", rewardInfoInstructions)
 	//============End Build Body===========
 	blockCreationLeftOver := common.MinShardBlkCreation.Nanoseconds() - time.Since(start).Nanoseconds()
 	txsToAddFromBlock, err := blockgen.getTransactionForNewBlock(&producerKeySet.PrivateKey, shardID, blockgen.chain.config.DataBase, beaconBlocks, blockCreationLeftOver)
@@ -120,22 +160,22 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	}
 	err = blockgen.chain.BuildResponseTransactionFromTxsWithMetadata(&block.Body, &producerKeySet.PrivateKey)
 	if err != nil {
-		fmt.Printf("[ndh] BuildResponseTransactionFromTxsWithMetadata err %+v \n", err)
+		//fmt.Printf("[ndh] BuildResponseTransactionFromTxsWithMetadata err %+v \n", err)
 		return nil, err
 	}
 	//TODO calculate fee for another tx type
 	for _, tx := range block.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 		txType := tx.GetType()
-		// fmt.Printf("[ndh] - - - - TxType %+v\n", txType)
+		// //fmt.Printf("[ndh] - - - - TxType %+v\n", txType)
 		if txType == common.TxCustomTokenPrivacyType {
 			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
 			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
-			// fmt.Printf("[ndh]####################### %+v %+v\n", *txCustomPrivacy.GetTokenID(), totalTxsFee[*txCustomPrivacy.GetTokenID()])
+			// //fmt.Printf("[ndh]####################### %+v %+v\n", *txCustomPrivacy.GetTokenID(), totalTxsFee[*txCustomPrivacy.GetTokenID()])
 		}
 	}
 	// for key, value := range totalTxsFee {
-	// 	fmt.Printf("[ndh] - key %+v Value: %+v\n", key, value)
+	// 	//fmt.Printf("[ndh] - key %+v Value: %+v\n", key, value)
 	// }
 	//============Build Header=============
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
@@ -171,6 +211,16 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
+
+	// Instruction merkle root
+	flattenTxInsts := FlattenAndConvertStringInst(txInstructions)
+	flattenInsts := FlattenAndConvertStringInst(instructions)
+	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
+	instMerkleRoot := GetKeccak256MerkleRoot(insts)
+	if len(insts) >= 2 {
+		fmt.Printf("[db] block %d has %d insts\n", prevBlock.Header.Height, len(insts))
+	}
+
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
 	block.Header = ShardHeader{
 		ProducerAddress:      producerKeySet.PaymentAddress,
@@ -191,6 +241,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 		Epoch:                epoch,
 		Round:                round,
 	}
+	copy(block.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	return block, nil
 }
 

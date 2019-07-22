@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/mempool"
@@ -108,7 +109,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
-				Value:          outCoin.CoinDetails.Value,
+				Value:          strconv.FormatUint(outCoin.CoinDetails.Value, 10),
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
 				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
@@ -861,9 +862,11 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		if err1 != nil {
 			return nil, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprint("outputs is invalid", out)))
 		}
+		temp := big.Int{}
+		temp.SetString(out.Value, 10)
 		i := &privacy.OutputCoin{
 			CoinDetails: &privacy.Coin{
-				Value: out.Value,
+				Value: temp.Uint64(),
 			},
 		}
 		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
@@ -1055,11 +1058,11 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(httpServer.config.Database)
 		ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), privacy.BigIntSize), shardIDSender)
-		if ok || err != nil {
-			// serial number in db
+		if ok && err == nil {
+			// SnD in db
 			result = append(result, true)
 		} else {
-			// serial number not in db
+			// SnD not in db
 			result = append(result, false)
 		}
 	}

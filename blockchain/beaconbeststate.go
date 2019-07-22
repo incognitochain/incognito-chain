@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/blockchain/btc"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -51,8 +52,10 @@ type BestStateBeacon struct {
 	CurrentRandomTimeStamp                 int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                 `json:"IsGetRandomNumber"`
 	Params                                 map[string]string    `json:"Params,omitempty"`
-	BeaconCommitteeSize                    int                  `json:"BeaconCommitteeSize"`
-	ShardCommitteeSize                     int                  `json:"ShardCommitteeSize"`
+	MaxBeaconCommitteeSize                 int                  `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize                 int                  `json:"MaxBeaconCommitteeSize"`
+	MaxShardCommitteeSize                  int                  `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize                  int                  `json:"MaxShardCommitteeSize"`
 	ActiveShards                           int                  `json:"ActiveShards"`
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
@@ -177,12 +180,96 @@ func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
 	bestStateBeacon.ShardPendingValidator = make(map[byte][]string)
 	bestStateBeacon.Params = make(map[string]string)
 	bestStateBeacon.CurrentRandomNumber = -1
-	bestStateBeacon.BeaconCommitteeSize = netparam.BeaconCommitteeSize
-	bestStateBeacon.ShardCommitteeSize = netparam.ShardCommitteeSize
+	bestStateBeacon.MaxBeaconCommitteeSize = netparam.MaxBeaconCommitteeSize
+	bestStateBeacon.MinBeaconCommitteeSize = netparam.MinBeaconCommitteeSize
+	bestStateBeacon.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
+	bestStateBeacon.MinShardCommitteeSize = netparam.MinShardCommitteeSize
 	bestStateBeacon.ActiveShards = netparam.ActiveShards
 	bestStateBeacon.LastCrossShardState = make(map[byte]map[byte]uint64)
 	return bestStateBeacon
 }
+
+func (bestStateBeacon *BestStateBeacon) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
+	bestStateBeacon.lockMu.Lock()
+	defer bestStateBeacon.lockMu.Unlock()
+	// check input params, below MinCommitteeSize failed to acheive consensus
+	if maxShardCommitteeSize < MinCommitteeSize {
+		return false
+	}
+	// max committee size can't be lower than current min committee size
+	if maxShardCommitteeSize >= bestStateBeacon.MinShardCommitteeSize {
+		bestStateBeacon.MaxShardCommitteeSize = maxShardCommitteeSize
+		return true
+	}
+	return false
+}
+
+func (bestStateBeacon *BestStateBeacon) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
+	bestStateBeacon.lockMu.Lock()
+	defer bestStateBeacon.lockMu.Unlock()
+	// check input params, below MinCommitteeSize failed to acheive consensus
+	if minShardCommitteeSize < MinCommitteeSize {
+		return false
+	}
+	// min committee size can't be greater than current min committee size
+	if minShardCommitteeSize <= bestStateBeacon.MaxShardCommitteeSize {
+		bestStateBeacon.MinShardCommitteeSize = minShardCommitteeSize
+		return true
+	}
+	return false
+}
+
+func (bestStateBeacon *BestStateBeacon) SetMaxBeaconCommitteeSize(maxBeaconCommitteeSize int) bool {
+	bestStateBeacon.lockMu.Lock()
+	defer bestStateBeacon.lockMu.Unlock()
+	// check input params, below MinCommitteeSize failed to acheive consensus
+	if maxBeaconCommitteeSize < MinCommitteeSize {
+		return false
+	}
+	// max committee size can't be lower than current min committee size
+	if maxBeaconCommitteeSize >= bestStateBeacon.MinBeaconCommitteeSize {
+		bestStateBeacon.MaxBeaconCommitteeSize = maxBeaconCommitteeSize
+		return true
+	}
+	return false
+}
+
+func (bestStateBeacon *BestStateBeacon) SetMinBeaconCommitteeSize(minBeaconCommitteeSize int) bool {
+	bestStateBeacon.lockMu.Lock()
+	defer bestStateBeacon.lockMu.Unlock()
+	// check input params, below MinCommitteeSize failed to acheive consensus
+	if minBeaconCommitteeSize < MinCommitteeSize {
+		return false
+	}
+	// min committee size can't be greater than current min committee size
+	if minBeaconCommitteeSize <= bestStateBeacon.MaxBeaconCommitteeSize {
+		bestStateBeacon.MinBeaconCommitteeSize = minBeaconCommitteeSize
+		return true
+	}
+	return false
+}
+func (bestStateBeacon *BestStateBeacon) CheckCommitteeSize() error {
+	if bestStateBeacon.MaxBeaconCommitteeSize < MinCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect max beacon size %+v equal or greater than min size %+v", bestStateBeacon.MaxBeaconCommitteeSize, MinCommitteeSize))
+	}
+	if bestStateBeacon.MinBeaconCommitteeSize < MinCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect min beacon size %+v equal or greater than min size %+v", bestStateBeacon.MinBeaconCommitteeSize, MinCommitteeSize))
+	}
+	if bestStateBeacon.MaxShardCommitteeSize < MinCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect max shard size %+v equal or greater than min size %+v", bestStateBeacon.MaxShardCommitteeSize, MinCommitteeSize))
+	}
+	if bestStateBeacon.MinShardCommitteeSize < MinCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect min shard size %+v equal or greater than min size %+v", bestStateBeacon.MinShardCommitteeSize, MinCommitteeSize))
+	}
+	if bestStateBeacon.MaxBeaconCommitteeSize < bestStateBeacon.MinBeaconCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect Max beacon size is higher than min beacon size but max is %+v and min is %+v", bestStateBeacon.MaxBeaconCommitteeSize, bestStateBeacon.MinBeaconCommitteeSize))
+	}
+	if bestStateBeacon.MaxShardCommitteeSize < bestStateBeacon.MinShardCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect Max beacon size is higher than min beacon size but max is %+v and min is %+v", bestStateBeacon.MaxBeaconCommitteeSize, bestStateBeacon.MinBeaconCommitteeSize))
+	}
+	return nil
+}
+
 func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
@@ -290,8 +377,10 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 			res = append(res, []byte("false")...)
 		}
 	}
-	res = append(res, []byte(strconv.Itoa(bestStateBeacon.BeaconCommitteeSize))...)
-	res = append(res, []byte(strconv.Itoa(bestStateBeacon.ShardCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(bestStateBeacon.MaxBeaconCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(bestStateBeacon.MinBeaconCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(bestStateBeacon.MaxShardCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(bestStateBeacon.MinShardCommitteeSize))...)
 	res = append(res, []byte(strconv.Itoa(bestStateBeacon.ActiveShards))...)
 
 	keys = []int{}
@@ -439,7 +528,6 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		blockchain.config.CrossShardPool[fromShard].UpdatePool()
 	}
 
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range currentBestStateBlk.Body.Instructions {
 		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
@@ -450,19 +538,12 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			fmt.Printf("[ndh] error - - %+v\n", err)
 			return err
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
-		case metadata.ContractingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
-			fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
-				fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
@@ -473,8 +554,9 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 				}
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
+			Logger.log.Infof("TxsFee in Epoch: %+v of shardID: %+v:\n", currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID)
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+				Logger.log.Infof("===> TokenID:%+v: Amount: %+v\n", key, value)
 				err = blockchain.config.DataBase.RestoreShardRewardRequest(currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
 				if err != nil {
 					return err
@@ -482,12 +564,6 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 
 			}
 		}
-		if err != nil {
-			return err
-		}
-	}
-	for tokenID, _ := range updatingInfoByTokenID {
-		err := blockchain.config.DataBase.RestoreBridgedTokenByTokenID(tokenID)
 		if err != nil {
 			return err
 		}
@@ -513,7 +589,6 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		return NewBlockChainError(UnExpectedError, err)
 	}
 
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
@@ -525,20 +600,13 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			fmt.Printf("[ndh] error - - %+v\n", err)
-			return err
+			continue
 		}
 
 		switch metaType {
-		case metadata.IssuingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
-		case metadata.ContractingRequestMeta:
-			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 		case metadata.AcceptedBlockRewardInfoMeta:
-			fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
-				fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
@@ -549,8 +617,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 				}
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
-			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+			for key, _ := range acceptedBlkRewardInfo.TxsFee {
 				err = blockchain.config.DataBase.BackupShardRewardRequest(block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
 				if err != nil {
 					return err
@@ -559,12 +626,6 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 			}
 		}
 
-		if err != nil {
-			return err
-		}
-	}
-	for tokenID, _ := range updatingInfoByTokenID {
-		err := blockchain.config.DataBase.BackupBridgedTokenByTokenID(tokenID)
 		if err != nil {
 			return err
 		}
