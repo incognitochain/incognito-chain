@@ -28,20 +28,21 @@ import (
 // shared by all callers.
 
 type BestStateShard struct {
-	BestBlockHash          common.Hash       `json:"BestBlockHash"` // hash of block.
-	BestBlock              *ShardBlock       `json:"BestBlock"`     // block data
-	BestBeaconHash         common.Hash       `json:"BestBeaconHash"`
-	BeaconHeight           uint64            `json:"BeaconHeight"`
-	ShardID                byte              `json:"ShardID"`
-	Epoch                  uint64            `json:"Epoch"`
-	ShardHeight            uint64            `json:"ShardHeight"`
-	ShardCommitteeSize     int               `json:"ShardCommitteeSize"`
-	ShardProposerIdx       int               `json:"ShardProposerIdx"`
-	ShardCommittee         []string          `json:"ShardCommittee"`
-	ShardPendingValidator  []string          `json:"ShardPendingValidator"`
-	BestCrossShard         map[byte]uint64   `json:"BestCrossShard"` // Best cross shard block by heigh
-	StakingTx              map[string]string `json:"StakingTx"`
-	NumTxns                uint64            `json:"NumTxns"`                // The number of txns in the block.
+	BestBlockHash         common.Hash       `json:"BestBlockHash"` // hash of block.
+	BestBlock             *ShardBlock       `json:"BestBlock"`     // block data
+	BestBeaconHash        common.Hash       `json:"BestBeaconHash"`
+	BeaconHeight          uint64            `json:"BeaconHeight"`
+	ShardID               byte              `json:"ShardID"`
+	Epoch                 uint64            `json:"Epoch"`
+	ShardHeight           uint64            `json:"ShardHeight"`
+	MaxShardCommitteeSize int               `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize int               `json:"MinShardCommitteeSize"`
+	ShardProposerIdx      int               `json:"ShardProposerIdx"`
+	ShardCommittee        []string          `json:"ShardCommittee"`
+	ShardPendingValidator []string          `json:"ShardPendingValidator"`
+	BestCrossShard        map[byte]uint64   `json:"BestCrossShard"` // Best cross shard block by heigh
+	StakingTx             map[string]string `json:"StakingTx"`
+	NumTxns               uint64            `json:"NumTxns"`                // The number of txns in the block.
 	TotalTxns              uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
@@ -50,6 +51,35 @@ type BestStateShard struct {
 	lock              sync.RWMutex
 }
 
+func (bestStateShard *BestStateShard) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
+	bestStateShard.lock.Lock()
+	defer bestStateShard.lock.Unlock()
+	// check input params, below MinCommitteeSize failed to acheive consensus
+	if maxShardCommitteeSize < MinCommitteeSize {
+		return false
+	}
+	// max committee size can't be lower than current min committee size
+	if maxShardCommitteeSize >= bestStateShard.MinShardCommitteeSize {
+		bestStateShard.MaxShardCommitteeSize = maxShardCommitteeSize
+		return true
+	}
+	return false
+}
+
+func (bestStateShard *BestStateShard) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
+	bestStateShard.lock.Lock()
+	defer bestStateShard.lock.Unlock()
+	// check input params, below MinCommitteeSize failed to acheive consensus
+	if minShardCommitteeSize < MinCommitteeSize {
+		return false
+	}
+	// min committee size can't be greater than current min committee size
+	if minShardCommitteeSize <= bestStateShard.MaxShardCommitteeSize {
+		bestStateShard.MinShardCommitteeSize = minShardCommitteeSize
+		return true
+	}
+	return false
+}
 // Get role of a public key base on best state shard
 func (bestStateShard *BestStateShard) GetBytes() []byte {
 	res := []byte{}
@@ -67,8 +97,11 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 	binary.LittleEndian.PutUint64(shardHeightBytes, bestStateShard.ShardHeight)
 	res = append(res, shardHeightBytes...)
 	shardCommitteeSizeBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(shardCommitteeSizeBytes, uint32(bestStateShard.ShardCommitteeSize))
+	binary.LittleEndian.PutUint32(shardCommitteeSizeBytes, uint32(bestStateShard.MaxShardCommitteeSize))
 	res = append(res, shardCommitteeSizeBytes...)
+	minShardCommitteeSizeBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(minShardCommitteeSizeBytes, uint32(bestStateShard.MinShardCommitteeSize))
+	res = append(res, minShardCommitteeSizeBytes...)
 	proposerIdxBytes := make([]byte, 4)
 	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(bestStateShard.ShardProposerIdx))
 	res = append(res, proposerIdxBytes...)
@@ -167,7 +200,8 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 	bestStateShard.BestBeaconHash.SetBytes(make([]byte, 32))
 	bestStateShard.BestBlock = nil
 	bestStateShard.ShardCommittee = []string{}
-	bestStateShard.ShardCommitteeSize = netparam.ShardCommitteeSize
+	bestStateShard.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
+	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
 	bestStateShard.ShardPendingValidator = []string{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
