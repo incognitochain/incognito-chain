@@ -276,3 +276,7 @@ func (block *ShardBlock) AddValidationField(validateData string) error {
 func (block *ShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
+
+func (block ShardBlock) GetRound() int {
+	return block.Header.Round
+}

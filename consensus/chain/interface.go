@@ -26,6 +26,7 @@ type BlockInterface interface {
 	Hash() *common.Hash
 	AddValidationField(validateData string) error
 	GetValidationField() string
+	GetRound() int
 }
 
 type ChainInterface interface {
