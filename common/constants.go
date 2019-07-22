@@ -66,7 +66,7 @@ const (
 // CONSENSUS
 const (
 	EPOCH       = 50
-	RANDOM_TIME = 5
+	RANDOM_TIME = 25
 	OFFSET      = 1
 
 	NODEMODE_RELAY  = "relay"
