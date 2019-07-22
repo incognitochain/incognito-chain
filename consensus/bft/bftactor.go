@@ -3,7 +3,6 @@ package bft
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/consensus/chain"
@@ -102,12 +101,15 @@ func (e *BFTCore) Start() {
 			case <-e.StopCh:
 				return
 			case b := <-e.ProposeMsgCh:
-				round, err := strconv.Atoi(b.RoundKey)
-				if err != nil {
+				round := b.Block.GetRound()
+				if round < e.Round {
 					continue
 				}
-				if round >= e.Round {
-					e.Blocks[b.RoundKey] = b.Block
+				if e.Block != nil {
+					if e.Block.GetHeight() == b.Block.GetHeight() && e.Round == round {
+						e.Blocks[b.RoundKey] = b.Block
+					}
+
 				}
 
 			case sig := <-e.PrepareMsgCh:
