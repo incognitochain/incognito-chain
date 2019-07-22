@@ -143,6 +143,7 @@ func (synker *synker) Start() {
 		case <-updateStatesTicker.C:
 			synker.UpdateState()
 		case msg := <-synker.Event.requestSyncShardBlockByHashEvent:
+			// Message Value: "[shardID],[BlockHash]"
 			str, ok := msg.Value.(string)
 			if !ok {
 				continue
@@ -157,6 +158,36 @@ func (synker *synker) Start() {
 				continue
 			}
 			synker.SyncBlkShard(byte(shardID),true, false, true, []common.Hash{*hash}, []uint64{}, 0, 0, "")
+		case msg := <-synker.Event.requestSyncShardBlockByHeightEvent:
+			// Message Value: "[shardID],[blockheight]"
+			str, ok := msg.Value.(string)
+			if !ok {
+				continue
+			}
+			strs := strings.Split(str, ",")
+			shardID, err := strconv.Atoi(strs[0])
+			if err != nil {
+				continue
+			}
+			height, err := strconv.Atoi(strs[1])
+			if err != nil {
+				continue
+			}
+			synker.SyncBlkShard(byte(shardID),false, true, true, []common.Hash{}, []uint64{uint64(height)}, uint64(height), uint64(height), "")
+		case msg := <-synker.Event.requestSyncBeaconBlockByHashEvent:
+			// Message Value: [BlockHash]
+			hash, ok := msg.Value.(common.Hash)
+			if !ok {
+				continue
+			}
+			synker.SyncBlkBeacon(true, false, true, []common.Hash{hash}, []uint64{}, 0, 0, "")
+		case msg := <-synker.Event.requestSyncBeaconBlockByHeightEvent:
+			// Message Value: [blockheight]
+			height, ok := msg.Value.(uint64)
+			if !ok {
+				continue
+			}
+			synker.SyncBlkBeacon(false, true, true, []common.Hash{}, []uint64{uint64(height)}, uint64(height), uint64(height), "")
 		}
 	}
 }
