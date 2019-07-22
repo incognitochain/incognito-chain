@@ -403,7 +403,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	prevBlockHash := block.Header.PrevBlockHash
 	parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	if err != nil {
-		return NewBlockChainError(DBError, err)
+		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlock := ShardBlock{}
 	err = json.Unmarshal(parentBlockData, &parentBlock)

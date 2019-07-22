@@ -145,10 +145,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	}
 	Logger.log.Infof("Store Committee in Height %+v \n", block.Header.Height)
 	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
-		return err
+		return NewBlockChainError(DatabaseError, err)
 	}
 	if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
-		return err
+		return NewBlockChainError(DatabaseError, err)
 	}
 	// }
 	// shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
@@ -194,14 +194,14 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//========Store new Beaconblock and new Beacon bestState in cache
 	Logger.log.Info("Store Beacon BestState")
 	if err := blockchain.StoreBeaconBestState(); err != nil {
-		return err
+		return NewBlockChainError(DatabaseError, err)
 	}
 	Logger.log.Info("Store Beacon Block ", block.Header.Height, blockHash)
 	if err := blockchain.config.DataBase.StoreBeaconBlock(block, blockHash); err != nil {
-		return err
+		return NewBlockChainError(DatabaseError, err)
 	}
 	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, block.Header.Height); err != nil {
-		return err
+		return NewBlockChainError(DatabaseError, err)
 	}
 	//=========Remove beacon block in pool
 	go blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
@@ -271,7 +271,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	// Verify parent hash exist or not
 	parentBlock, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
 	if err != nil {
-		return NewBlockChainError(DBError, err)
+		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlockInterface := NewBeaconBlock()
 	json.Unmarshal(parentBlock, &parentBlockInterface)
@@ -643,7 +643,6 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			fmt.Println("SWAP l2", l[2])
 			fmt.Println("SWAP inPubkeys", inPubkeys)
 			fmt.Println("SWAP outPubkeys", outPubkeys)
-
 			if l[3] == "shard" {
 				temp, err := strconv.Atoi(l[4])
 				if err != nil {
@@ -654,41 +653,44 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 				// delete in public key out of sharding pending validator list
 				if len(l[1]) > 0 {
 					fmt.Println("Beacon Process/Update Before, ShardPendingValidator", bestStateBeacon.ShardPendingValidator[shardID])
-					bestStateBeacon.ShardPendingValidator[shardID], err = RemoveValidator(bestStateBeacon.ShardPendingValidator[shardID], inPubkeys)
+					tempShardPendingValidator, err := RemoveValidator(bestStateBeacon.ShardPendingValidator[shardID], inPubkeys)
 					fmt.Println("Beacon Process/Update After, ShardPendingValidator", bestStateBeacon.ShardPendingValidator[shardID])
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					bestStateBeacon.ShardPendingValidator[shardID] = tempShardPendingValidator
 					// append in public key to committees
 					bestStateBeacon.ShardCommittee[shardID] = append(bestStateBeacon.ShardCommittee[shardID], inPubkeys...)
 					fmt.Println("Beacon Process/Update Add New, ShardCommitees", bestStateBeacon.ShardCommittee[shardID])
 				}
 				// delete out public key out of current committees
 				if len(l[2]) > 0 {
-					bestStateBeacon.ShardCommittee[shardID], err = RemoveValidator(bestStateBeacon.ShardCommittee[shardID], outPubkeys)
+					tempShardCommittees, err := RemoveValidator(bestStateBeacon.ShardCommittee[shardID], outPubkeys)
 					fmt.Println("Beacon Process/Update Remove Old, ShardCommitees", bestStateBeacon.ShardCommittee[shardID])
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					bestStateBeacon.ShardCommittee[shardID] = tempShardCommittees
 				}
 			} else if l[3] == "beacon" {
-				var err error
 				if len(l[1]) > 0 {
-					bestStateBeacon.BeaconPendingValidator, err = RemoveValidator(bestStateBeacon.BeaconPendingValidator, inPubkeys)
+					tempBeaconPendingValidator, err := RemoveValidator(bestStateBeacon.BeaconPendingValidator, inPubkeys)
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					bestStateBeacon.BeaconPendingValidator = tempBeaconPendingValidator
 					bestStateBeacon.BeaconCommittee = append(bestStateBeacon.BeaconCommittee, inPubkeys...)
 				}
 				if len(l[2]) > 0 {
-					bestStateBeacon.BeaconCommittee, err = RemoveValidator(bestStateBeacon.BeaconCommittee, outPubkeys)
+					tempBeaconCommittes, err := RemoveValidator(bestStateBeacon.BeaconCommittee, outPubkeys)
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					bestStateBeacon.BeaconCommittee = tempBeaconCommittes
 				}
 			}
 		}
@@ -949,11 +951,11 @@ func RemoveValidator(validators []string, removedValidators []string) ([]string,
 	if len(removedValidators) > len(validators) {
 		return validators, errors.New("trying to remove too many validators")
 	}
-
 	for index, validator := range removedValidators {
 		if strings.Compare(validators[index], validator) == 0 {
 			validators = validators[1:]
 		} else {
+			// not found wanted validator
 			return validators, errors.New("remove Validator with Wrong Format")
 		}
 	}
