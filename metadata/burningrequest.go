@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strconv"
 
@@ -70,6 +69,9 @@ func (bReq *BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 		return true, true, nil
 	}
 
+	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
+		return false, false, err
+	}
 	if bReq.Type != BurningRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
@@ -96,10 +98,6 @@ func (bReq *BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 }
 
 func (bReq *BurningRequest) ValidateMetadataByItself() bool {
-	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
-		fmt.Printf("[db] err decode RemoteAddress: %v\n", err)
-		return false
-	}
 	return bReq.Type == BurningRequestMeta
 }
 

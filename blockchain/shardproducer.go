@@ -2,15 +2,14 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -23,7 +22,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	// Fetch Beacon information
 	Logger.log.Infof("Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	//fmt.Printf("[ndh] Creating shard block%+v", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
-	fmt.Printf("\n[db] producing block: %d\n", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
+	BLogger.log.Infof("Producing block: %d\n", blockgen.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHash, err := blockgen.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
 		return nil, err
@@ -78,7 +77,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	bridgePubkeyInst := []string{}
 	if beaconHeight%common.EPOCH == 0 {
 		if len(shardPendingValidator) > 0 {
-			fmt.Printf("[db] shardPendingValidator: %s\n", shardPendingValidator)
 			Logger.log.Critical("shardPendingValidator", shardPendingValidator)
 			Logger.log.Critical("shardCommittee", shardCommittee)
 			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize)
@@ -89,13 +87,11 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 				return nil, err
 			}
 
-			// Generate instruction storing merkle root of validators pubkey and send to beacon
+			// Generate instruction storing validators pubkey and send to beacon
 			bridgeID := byte(common.BRIDGE_SHARD_ID)
 			if shardID == bridgeID {
 				startHeight := blockgen.chain.BestState.Shard[shardID].ShardHeight + 2
 				bridgePubkeyInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
-				prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
-				fmt.Printf("[db] added bridgeCommRoot in shard block %d\n", prevBlock.Header.Height+1)
 			}
 		}
 	}
@@ -105,7 +101,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 
 	if len(bridgePubkeyInst) > 0 {
 		instructions = append(instructions, bridgePubkeyInst)
-		fmt.Printf("[db] build bridge pubkey root inst: %s\n", bridgePubkeyInst)
+		BLogger.log.Infof("Build bridge pubkey root inst: %s\n", bridgePubkeyInst)
 	}
 
 	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
@@ -126,7 +122,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 				bid = append(bid, b.Header.Height)
 			}
 			prevBlock := blockgen.chain.BestState.Shard[shardID].BestBlock
-			fmt.Printf("[db] picked burning confirm inst: %s %d %v\n", confirmInsts, prevBlock.Header.Height+1, bid)
+			BLogger.log.Infof("Picked burning confirm inst: %s %d %v\n", confirmInsts, prevBlock.Header.Height+1, bid)
 			instructions = append(instructions, confirmInsts...)
 		}
 	}
@@ -217,9 +213,6 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 	flattenInsts := FlattenAndConvertStringInst(instructions)
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
-	if len(insts) >= 2 {
-		fmt.Printf("[db] block %d has %d insts\n", prevBlock.Header.Height, len(insts))
-	}
 
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
 	block.Header = ShardHeader{
