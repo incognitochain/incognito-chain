@@ -173,7 +173,7 @@ func RestoreShardChain(bc *blockchain.BlockChain, filename string) error {
 		}
 		err = bc.InsertShardBlock(block, true)
 		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
-			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockErr].Code {
+			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockError].Code {
 				continue
 			}
 		}
@@ -260,7 +260,7 @@ func RestoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 		}
 		err = bc.InsertBeaconBlock(block, true)
 		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
-			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockErr].Code {
+			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockError].Code {
 				continue
 			}
 		}
