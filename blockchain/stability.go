@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/pkg/errors"
 )
 
 // FlattenAndConvertStringInst receives a slice of insts; concats each inst ([]string) and converts to []byte to build merkle tree later
@@ -73,8 +74,8 @@ func decodeBurningConfirmInst(inst []string) []byte {
 	amount, _, _ := base58.Base58Check{}.Decode(inst[4])
 	txID, _ := common.Hash{}.NewHashFromStr(inst[5])
 	height, _, _ := base58.Base58Check{}.Decode(inst[6])
-	BLogger.log.Infof("Decoded BurningConfirm inst\n")
-	BLogger.log.Infof("\tamount: %d\n\tremoteAddr: %x\n\ttokenID: %x\n", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
+	BLogger.log.Infof("Decoded BurningConfirm inst")
+	BLogger.log.Infof("\tamount: %d\n\tremoteAddr: %x\n\ttokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
@@ -200,7 +201,7 @@ func parseAndConcatPubkeys(vals []string) []byte {
 // buildBeaconSwapConfirmInstruction stores in an instruction the list of new beacon validators and the block that they start signing on
 func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
 	beaconComm := parseAndConcatPubkeys(currentValidators)
-	BLogger.log.Infof("New beaconComm: %d %x\n", startHeight, beaconComm)
+	BLogger.log.Infof("New beaconComm: %d %x", startHeight, beaconComm)
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
@@ -218,7 +219,7 @@ func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight u
 // buildBridgeSwapConfirmInstruction stores in an instruction the list of new bridge validators and the block that they start signing on
 func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
 	bridgeComm := parseAndConcatPubkeys(currentValidators)
-	BLogger.log.Infof("New bridgeComm: %d %x\n", startHeight, bridgeComm)
+	BLogger.log.Infof("New bridgeComm: %d %x", startHeight, bridgeComm)
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
@@ -235,12 +236,12 @@ func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight u
 
 // buildBurningConfirmInst builds on beacon an instruction confirming a tx burning bridge-token
 func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseInterface) ([]string, error) {
-	BLogger.log.Infof("Build BurningConfirmInst: %s\n", inst)
+	BLogger.log.Infof("Build BurningConfirmInst: %s", inst)
 	// Parse action and get metadata
 	var burningReqAction BurningReqAction
 	err := decodeContent(inst[1], &burningReqAction)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "invalid BurningRequest")
 	}
 	md := burningReqAction.Meta
 	txID := burningReqAction.RequestedTxID // to prevent double-release token
@@ -282,14 +283,14 @@ func findExternalTokenID(tokenID *common.Hash, db database.DatabaseInterface) ([
 	var allBridgeTokens []*lvdb.BridgeTokenInfo
 	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 	for _, token := range allBridgeTokens {
 		if token.TokenID.IsEqual(tokenID) && len(token.ExternalTokenID) > 0 {
 			return token.ExternalTokenID, nil
 		}
 	}
-	return nil, fmt.Errorf("invalid tokenID")
+	return nil, errors.New("invalid tokenID")
 }
 
 // build instructions at beacon chain before syncing to shards
