@@ -471,7 +471,41 @@ func (db *db) GetTransactionIndexById(txId common.Hash) (common.Hash, int, *data
 	return *hash, index, nil
 }
 
+// StoreTxByPublicKey - store txID by public key of receiver,
+// use this data to get tx which send to receiver
 func (db *db) StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) error {
+	key := make([]byte, 0)
+	key = append(key, publicKey...)       // 1st 33b bytes for pubkey
+	key = append(key, txID.GetBytes()...) // 2nd 32 bytes fir txID which receiver get from
+	key = append(key, shardID)            // 3nd 1 byte for shardID where sender send to receiver
+
+	if err := db.Put(key, []byte{}); err != nil {
+		database.Logger.Log.Debug("StoreTxByPublicKey", err)
+		return err
+	}
 
 	return nil
+}
+
+// GetTxByPublicKey -  from public key, use this function to get list all txID which someone send use by txID from any shardID
+func (db *db) GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error) {
+	itertor := db.lvdb.NewIterator(util.BytesPrefix(publicKey), nil)
+	result := make(map[byte][]common.Hash)
+	for itertor.Next() {
+		iKey := itertor.Key()
+		key := make([]byte, len(iKey))
+		copy(key, iKey)
+		shardID := key[len(key)-1]
+		if result[shardID] == nil {
+			result[shardID] = make([]common.Hash, 0)
+		}
+		txID := common.Hash{}
+		err := txID.SetBytes(key[33 : 33+32])
+		if err != nil {
+			database.Logger.Log.Debugf("Err at GetTxByPublicKey", err)
+			return nil, err
+		}
+		result[shardID] = append(result[shardID], txID)
+	}
+	return result, nil
 }

@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"sort"
-
+	
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -235,8 +234,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
-				fmt.Println("INIT Tx Custom Token Privacy/ newHashInitToken", newHashInitToken)
-
+				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
 				existed := db.PrivacyCustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
@@ -384,7 +382,6 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGett
 		Logger.log.Error("Mintable custom token must contain metadata")
 		return false, nil
 	}
-	// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
