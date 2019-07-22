@@ -376,7 +376,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					hash := shardBlock.Header.Hash()
 					err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 					if index == 0 && err != nil {
-						currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.ShardCommitteeSize, common.OFFSET)
+						currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
 						if err != nil {
 							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 						}
@@ -728,10 +728,10 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")
 		//Test with 1 member
-		bestStateBeacon.BeaconCommittee = make([]string, bestStateBeacon.BeaconCommitteeSize)
-		copy(bestStateBeacon.BeaconCommittee, newBeaconCandidate[:bestStateBeacon.BeaconCommitteeSize])
+		bestStateBeacon.BeaconCommittee = make([]string, bestStateBeacon.MaxBeaconCommitteeSize)
+		copy(bestStateBeacon.BeaconCommittee, newBeaconCandidate[:bestStateBeacon.MaxBeaconCommitteeSize])
 		for shardID := 0; shardID < bestStateBeacon.ActiveShards; shardID++ {
-			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.ShardCommitteeSize:(shardID+1)*bestStateBeacon.ShardCommitteeSize]...)
+			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.MaxShardCommitteeSize:(shardID+1)*bestStateBeacon.MaxShardCommitteeSize]...)
 			fmt.Println(bestStateBeacon.ShardCommittee[byte(shardID)])
 		}
 		bestStateBeacon.Epoch = 1
@@ -807,7 +807,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			beaconNewCommittees    []string
 			err                    error
 		)
-		bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
+		bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.MaxBeaconCommitteeSize, common.OFFSET)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)
@@ -989,4 +989,44 @@ func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
 	}
 	fmt.Println("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
 	return sortedCandidate, nil
+}
+
+/*
+	Kick a list of candidate out of current validators list
+	Candidates will be eliminated as the list order (from 0 index to last index)
+	A candidate will be click out of list if it match those condition:
+		- candidate pubkey found in current validators list
+		- size of current validator list is greater or equal to min committess size
+	Return params:
+	#1 kickedValidator, #2 remain candidates (not kick yet), #3 new current validator list
+*/
+func kickValidatorByPubkeyList(candidates []string, currentValidators []string, minCommitteeSize int) ([]string, []string, []string) {
+	removedCandidates := []string{}
+	remainedCandidates := []string{}
+	remainedIndex := 0
+	for index, candidate := range candidates {
+		remainedIndex = index
+		if len(currentValidators) == minCommitteeSize {
+			break
+		}
+		if index := common.IndexOfStr(candidate, currentValidators); index < 0 {
+			remainedCandidates = append(remainedCandidates, candidate)
+			continue
+		} else {
+			removedCandidates = append(removedCandidates, candidate)
+			currentValidators = append(currentValidators[:index], currentValidators[index+1:]...)
+		}
+	}
+	if remainedIndex < len(candidates)-1 {
+		remainedCandidates = append(remainedCandidates, candidates[remainedIndex:]...)
+	}
+	return removedCandidates, remainedCandidates, currentValidators
+}
+func kickValidatorByPubkey(candidate string, currentValidators []string, minCommitteeSize int) (bool, []string) {
+	if index := common.IndexOfStr(candidate, currentValidators); index < 0 {
+		return false, currentValidators
+	} else {
+		currentValidators = append(currentValidators[:index], currentValidators[index+1:]...)
+		return true, currentValidators
+	}
 }
