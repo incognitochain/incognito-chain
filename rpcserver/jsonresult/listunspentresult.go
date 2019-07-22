@@ -15,19 +15,21 @@ type OutCoin struct {
 	SNDerivator    string
 	SerialNumber   string
 	Randomness     string
-	Value          uint64
+	Value          string
 	Info           string
 }
 
-func (outcoin *OutCoin) Init(data interface{}) {
+func (outcoin *OutCoin) Init(data interface{}) error {
 	temp, err := json.Marshal(data)
 	if err != nil {
 		log.Print(err)
-		return
+		return err
 	}
-	err = json.Unmarshal(temp, outcoin)
+
+	err = json.Unmarshal(temp, &outcoin)
 	if err != nil {
 		log.Print(err)
-		return
+		return err
 	}
+	return nil
 }

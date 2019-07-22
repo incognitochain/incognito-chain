@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpccaller"
 )
 
 type BlkTmplGenerator struct {
@@ -113,4 +114,8 @@ func (blkTmplGenerator *BlkTmplGenerator) GetPendingTxsV2() []metadata.Transacti
 		pendingTxs = append(pendingTxs, tx)
 	}
 	return pendingTxs
+}
+
+func (blkTmplGenerator *BlkTmplGenerator) SetRPCClientChain(rpcClient *rpccaller.RPCClient) {
+	blkTmplGenerator.chain.RPCClient = rpcClient
 }

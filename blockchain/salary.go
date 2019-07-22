@@ -152,9 +152,6 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	var resInst [][]string
 
 	allCoinID, err := blockchain.GetAllCoinID()
-	for _, coinID := range allCoinID {
-		fmt.Printf("[ndh] coin IDDDDDDDDDDDDDDDDDDDDDDDDDDDD %+v\n", coinID)
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -173,16 +170,16 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 			totalRewards[ID] = map[common.Hash]uint64{}
 		}
 		for _, coinID := range allCoinID {
-			fmt.Printf("[ndh] aaaaaaaaaaaaaaaaaaaaaaaaaaa %+v\n", coinID)
+			//fmt.Printf("[ndh] aaaaaaaaaaaaaaaaaaaaaaaaaaa %+v\n", coinID)
 			totalRewards[ID][coinID], err = blockchain.GetDatabase().GetRewardOfShardByEpoch(epoch, byte(ID), coinID)
 			if err != nil {
 				return nil, err
 			}
 			if totalRewards[ID][coinID] == 0 {
-				fmt.Printf("[ndh] Delete key %+v\n", coinID)
+				//fmt.Printf("[ndh] Delete key %+v\n", coinID)
 				delete(totalRewards[ID], coinID)
 			}
-			fmt.Printf("[ndh] bbbbbbbbbbbbbbbbbbbbbbbbbbb %+v\n", totalRewards[ID][coinID])
+			//fmt.Printf("[ndh] bbbbbbbbbbbbbbbbbbbbbbbbbbb %+v\n", totalRewards[ID][coinID])
 		}
 		rewardForBeacon, rewardForDev, err := splitReward(&totalRewards[ID], numberOfActiveShards, forDev)
 		if err != nil {
@@ -337,22 +334,6 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 	return nil
 }
 
-func (blockchain *BlockChain) updateDatabaseFromShardBlock(
-	shardBlock *ShardBlock,
-) error {
-	db := blockchain.config.DataBase
-	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
-			_, requesterRes, amountRes, coinID := tx.GetTransferData()
-			err := db.RemoveCommitteeReward(requesterRes, amountRes, *coinID)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 	beaconBlock *BeaconBlock,
 ) error {
@@ -366,15 +347,14 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 		}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			fmt.Printf("[ndh] error - - %+v\n", err)
-			return err
+			continue
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:
-			fmt.Printf("[ndh] - - %+v\n", inst[2])
+			//fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
-				fmt.Printf("[ndh] error1 - - %+v\n", err)
+				//fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
@@ -386,7 +366,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+				//fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
 				err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key)
 				if err != nil {
 					return err
@@ -395,7 +375,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 			continue
 		}
 	}
-	fmt.Printf("[ndh] non error \n")
+	//fmt.Printf("[ndh] non error \n")
 	return nil
 }
 
@@ -463,13 +443,13 @@ func splitReward(
 			rewardForBeacon[key] = uint64(18*value) / ((uint64(numberOfActiveShards) + 2) * 10)
 			rewardForDev[key] = value / uint64(10)
 			(*totalReward)[key] = value - (rewardForBeacon[key] + rewardForDev[key])
-			fmt.Printf("[ndh] TokenID %+v - - Beacon: %+v; Dev: %+v; Shard: %+v;\n", key, rewardForBeacon[key], rewardForDev[key], (*totalReward)[key])
+			//fmt.Printf("[ndh] TokenID %+v - - Beacon: %+v; Dev: %+v; Shard: %+v;\n", key, rewardForBeacon[key], rewardForDev[key], (*totalReward)[key])
 			if !hasValue {
 				hasValue = true
 			}
 		}
 		if !hasValue {
-			fmt.Printf("[ndh] not enough reward\n")
+			//fmt.Printf("[ndh] not enough reward\n")
 			return nil, nil, nil
 		}
 		return &rewardForBeacon, &rewardForDev, nil
@@ -477,13 +457,13 @@ func splitReward(
 		for key, value := range *totalReward {
 			rewardForBeacon[key] = uint64(2*value) / (uint64(numberOfActiveShards) + 2)
 			(*totalReward)[key] = value - (rewardForBeacon[key])
-			fmt.Printf("[ndh] TokenID %+v - - Beacon: %+v; noDev; Shard: %+v;\n", key, rewardForBeacon[key], (*totalReward)[key])
+			//fmt.Printf("[ndh] TokenID %+v - - Beacon: %+v; noDev; Shard: %+v;\n", key, rewardForBeacon[key], (*totalReward)[key])
 			if !hasValue {
 				hasValue = true
 			}
 		}
 		if !hasValue {
-			fmt.Printf("[ndh] not enough reward\n")
+			//fmt.Printf("[ndh] not enough reward\n")
 			return nil, nil, nil
 		}
 		return &rewardForBeacon, nil, nil

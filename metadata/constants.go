@@ -6,6 +6,9 @@ const (
 	IssuingRequestMeta     = 24
 	IssuingResponseMeta    = 25
 	ContractingRequestMeta = 26
+	BurningRequestMeta     = 27
+	IssuingETHRequestMeta  = 80
+	IssuingETHResponseMeta = 81
 
 	ResponseBaseMeta             = 35
 	ShardBlockReward             = 36
@@ -22,12 +25,18 @@ const (
 	//statking
 	ShardStakingMeta  = 63
 	BeaconStakingMeta = 64
+
+	// Incognito -> Ethereum bridge
+	BeaconSwapConfirmMeta = 70
+	BridgeSwapConfirmMeta = 71
+	BurningConfirmMeta    = 72
 )
 
 var minerCreatedMetaTypes = []int{
 	ShardBlockReward,
 	BeaconSalaryResponseMeta,
 	IssuingResponseMeta,
+	IssuingETHResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 }

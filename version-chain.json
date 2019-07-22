@@ -1,5 +1,5 @@
 {
-  "Version": "0.1.2-beta",
-  "Note": "New code is needed to be update with new genesis block",
+  "Version": "0.3.1-beta",
+  "Note": "New code is needed to be update with updating EPOCH time",
   "RemoveData": true
 }
