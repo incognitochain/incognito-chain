@@ -174,17 +174,17 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-
 	shardBlock.AggregatedSig = tempBlk.AggregatedSig
 	shardBlock.R = tempBlk.R
 	shardBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
 	shardBlock.ProducerSig = tempBlk.ProducerSig
-
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempBlk.Body)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
+	shardBlock.Header = tempBlk.Header
+	// Init shard block data if get nil value
 	if shardBlock.Body.Transactions == nil {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
@@ -194,7 +194,6 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	if shardBlock.Body.CrossTransactions == nil {
 		shardBlock.Body.CrossTransactions = make(map[byte][]CrossTransaction)
 	}
-	shardBlock.Header = tempBlk.Header
 	if shardBlock.Header.TotalTxsFee == nil {
 		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
 	}
