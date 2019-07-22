@@ -25,7 +25,7 @@ type ShardHeader struct {
 	TxRoot               common.Hash            `json:"TxRoot"`               // Transaction root created from transaction in shard
 	ShardTxRoot          common.Hash            `json:"ShardTxRoot"`          // output root created for other shard
 	CrossTransactionRoot common.Hash            `json:"CrossTransactionRoot"` // transaction root created from transaction of micro shard to shard block (from other shard)
-	InstructionsRoot     common.Hash            `json:"InstructionRoot"`      // actions root created from Instructions and Metadata of transaction
+	InstructionsRoot     common.Hash            `json:"InstructionsRoot"`     // actions root created from Instructions and Metadata of transaction
 	CommitteeRoot        common.Hash            `json:"CommitteeRoot"`        // hash from public key list of all committees designated to create this block
 	PendingValidatorRoot common.Hash            `json:"PendingValidatorRoot"` // hash from public key list of all pending validators designated to this ShardID
 	CrossShards          []byte                 `json:"CrossShards"`          // crossShards bitmap for beacon
