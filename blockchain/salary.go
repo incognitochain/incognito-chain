@@ -316,7 +316,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(epoch)
+						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(epoch * common.EPOCH)
 						if err != nil {
 							return err
 						}
