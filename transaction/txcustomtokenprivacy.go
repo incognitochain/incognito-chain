@@ -338,6 +338,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
+	err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
+	if err != nil {
+		return NewTransactionErr(UnexpectedErr, err)
+	}
 	return nil
 }
 
