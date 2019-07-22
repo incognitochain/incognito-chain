@@ -847,7 +847,6 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		})
 		now = time.Now()
 		tp.removeTx(tx)
-		// remove serialNumbersHashH
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
@@ -896,7 +895,15 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	return
 }
 
-// remove transaction for pool
+/*
+	- Remove transaction out of pool
+		+ Tx Description pool
+		+ List Serial Number Pool
+		+ Hash of List Serial Number Pool
+	- Transaction want to be removed maybe replaced by another transaction:
+		+ New tx (Replacement tx) still exist in pool
+		+ Using the same list serial number to delete new transaction out of pool
+*/
 func (tp *TxPool) removeTx(tx metadata.Transaction) {
 	//Logger.log.Infof((*tx).Hash().String())
 	if _, exists := tp.pool[*tx.Hash()]; exists {
@@ -910,6 +917,15 @@ func (tp *TxPool) removeTx(tx metadata.Transaction) {
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
 	if _, exists := tp.poolSerialNumberHash[hash]; exists {
 		delete(tp.poolSerialNumberHash, hash)
+		// Using the same list serial number to delete new transaction out of pool
+		// this new transaction maybe not exist
+		if _, exists := tp.pool[hash]; exists {
+			delete(tp.pool, hash)
+			atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+		}
+		if _, exists := tp.poolSerialNumbersHashList[hash]; exists {
+			delete(tp.poolSerialNumbersHashList, hash)
+		}
 	}
 }
 

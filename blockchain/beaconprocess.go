@@ -85,7 +85,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	Logger.log.Infof("Check block existence for insert process %d, with hash %+v", block.Header.Height, blockHash)
 	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Header.Hash())
 	if isExist {
-		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+		return NewBlockChainError(DuplicateBlockError, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("Begin Insert new block %d, with hash %+v \n", block.Header.Height, blockHash)
 	if !isValidated {
