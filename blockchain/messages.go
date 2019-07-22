@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 

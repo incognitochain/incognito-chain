@@ -895,13 +895,12 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	return
 }
 
-// remove transaction for pool
 /*
 	- Remove transaction out of pool
 		+ Tx Description pool
 		+ List Serial Number Pool
 		+ Hash of List Serial Number Pool
-	- Transaction maybe remove because of replacement tx but already included in block:
+	- Transaction want to be removed maybe replaced by another transaction:
 		+ New tx (Replacement tx) still exist in pool
 		+ Using the same list serial number to delete new transaction out of pool
 */
