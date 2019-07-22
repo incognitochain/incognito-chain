@@ -6,7 +6,7 @@ import (
 	"errors"
 	"math"
 	"sort"
-	
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -300,6 +300,31 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(m
 	err := txCustomTokenPrivacy.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
+	}
+	return nil
+}
+
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
+	if txCustomTokenPrivacy.Proof == nil {
+		return nil
+	}
+	temp := make(map[common.Hash]interface{})
+	for _, desc := range txCustomTokenPrivacy.Proof.InputCoins {
+		hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+		temp[hash] = nil
+	}
+
+	for _, desc := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.InputCoins {
+		hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+		temp[hash] = nil
+	}
+
+	for _, listSerialNumbers := range poolSerialNumbersHashH {
+		for _, serialNumberHash := range listSerialNumbers {
+			if _, ok := temp[serialNumberHash]; ok {
+				return errors.New("double spend")
+			}
+		}
 	}
 	return nil
 }
