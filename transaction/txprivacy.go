@@ -1180,7 +1180,6 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 		if meta == nil {
 			return false, nil
 		}
-		// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
 		if !meta.IsMinerCreatedMetaType() {
 			return false, nil
 		}

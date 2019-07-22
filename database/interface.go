@@ -119,6 +119,7 @@ type DatabaseInterface interface {
 
 	// Tx for Public key
 	StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) error
+	GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 
 	// Fee estimator
 	StoreFeeEstimator([]byte, byte) error
