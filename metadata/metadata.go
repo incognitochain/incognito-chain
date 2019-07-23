@@ -2,11 +2,11 @@ package metadata
 
 import (
 	"encoding/json"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/rpccaller"
 )
 
@@ -152,8 +152,7 @@ type Metadata interface {
 
 // Interface for all type of transaction
 type Transaction interface {
-	Hash() *common.Hash
-	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) (bool, error)
+	// GET/SET func
 	GetMetadataType() int
 	GetType() string
 	GetLockTime() int64
@@ -161,27 +160,12 @@ type Transaction interface {
 	GetSenderAddrLastByte() byte
 	GetTxFee() uint64
 	GetTxFeeToken() uint64
-	ListSerialNumbersHashH() []common.Hash
-	CheckTxVersion(int8) bool
-	CheckTransactionFee(minFeePerKbTx uint64) bool
-	IsSalaryTx() bool
-	ValidateTxWithCurrentMempool(MempoolRetriever) error
-	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
-	ValidateSanityData(BlockchainRetriever) (bool, error)
-	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) (bool, error)
-	ValidateType() bool
 	GetMetadata() Metadata
 	SetMetadata(Metadata)
 	GetInfo() []byte
-	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface, *common.Hash) error
-
 	GetSender() []byte
 	GetSigPubKey() []byte
-	IsPrivacy() bool
-	IsCoinsBurning() bool
-	CalculateTxValue() uint64
 	GetProof() *zkp.PaymentProof
-
 	// Get receivers' data for tx
 	GetReceivers() ([][]byte, []uint64)
 	GetUniqueReceiver() (bool, []byte, uint64)
@@ -193,5 +177,24 @@ type Transaction interface {
 
 	GetMetadataFromVinsTx(BlockchainRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
+
+	ListSerialNumbersHashH() []common.Hash
+	Hash() *common.Hash
+
+	// Validate func
+	CheckTxVersion(int8) bool
+	CheckTransactionFee(minFeePerKbTx uint64) bool
+	ValidateTxWithCurrentMempool(MempoolRetriever) error
+	ValidateTxWithBlockChain(BlockchainRetriever, byte, database.DatabaseInterface) error
+	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface, *common.Hash) error
+	ValidateSanityData(BlockchainRetriever) (bool, error)
+	ValidateTxByItself(bool, database.DatabaseInterface, BlockchainRetriever, byte) (bool, error)
+	ValidateType() bool
+	ValidateTransaction(bool, database.DatabaseInterface, byte, *common.Hash) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, BlockchainRetriever, *AccumulatedValues) (bool, error)
+
+	IsPrivacy() bool
+	IsCoinsBurning() bool
+	CalculateTxValue() uint64
+	IsSalaryTx() bool
 }
