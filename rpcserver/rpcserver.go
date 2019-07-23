@@ -91,8 +91,8 @@ type RpcServerConfig struct {
 	DisableAuth  bool
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
-	FeeEstimator    map[byte]*mempool.FeeEstimator
-	IsMiningNode    bool   // flag mining node. True: mining, False: not mining
+	FeeEstimator map[byte]*mempool.FeeEstimator
+	// IsMiningNode    bool   // flag mining node. True: mining, False: not mining
 	MiningPubKeyB58 string // base58check encode of mining pubkey
 	PubSubManager   *pubsub.PubSubManager
 }
