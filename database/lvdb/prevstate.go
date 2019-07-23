@@ -286,10 +286,10 @@ func (db *db) RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeig
 	return nil
 }
 
-func (db *db) DeleteCommitteeByEpoch(blkEpoch uint64) error {
+func (db *db) DeleteCommitteeByHeight(blkEpoch uint64) error {
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
-	key = append(key, epochPrefix...)
+	key = append(key, heightPrefix...)
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, blkEpoch)
 	key = append(key, buf[:]...)

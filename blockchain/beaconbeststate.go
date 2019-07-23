@@ -510,7 +510,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 	blockchain.config.BeaconPool.SetBeaconState(beaconBestState.BeaconHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
-	if err := blockchain.config.DataBase.DeleteCommitteeByEpoch(currentBestStateBlk.Header.Height); err != nil {
+	if err := blockchain.config.DataBase.DeleteCommitteeByHeight(currentBestStateBlk.Header.Height); err != nil {
 		return err
 	}
 

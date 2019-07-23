@@ -605,7 +605,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 							return NewBlockChainError(CrossShardBlockError, errors.New("Next Cross Shard Block "+strconv.Itoa(int(toShardCrossShardBlock.Header.Height))+"is Not Expected block Height "+strconv.Itoa(int(nextHeight))+" from shard "+strconv.Itoa(int(fromShard))))
 						}
 						startHeight = nextHeight
-						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(toShardCrossShardBlock.Header.BeaconHeight)
+						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(toShardCrossShardBlock.Header.BeaconHeight)
 						if err != nil {
 							return NewBlockChainError(CrossShardBlockError, err)
 						}
