@@ -249,37 +249,6 @@ func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, close
 }
 
 /*
-handleGetMiningInfo - RPC returns various mining-related info
-*/
-func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleGetMiningInfo params: %+v", params)
-	if !httpServer.config.IsMiningNode || httpServer.config.MiningPubKeyB58 == "" {
-		return jsonresult.GetMiningInfoResult{
-			IsCommittee: false,
-		}, nil
-	}
-
-	result := jsonresult.GetMiningInfoResult{}
-	result.IsCommittee = true
-	result.PoolSize = httpServer.config.TxMemPool.Count()
-	result.Chain = httpServer.config.ChainParams.Name
-
-	result.BeaconHeight = httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
-
-	role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
-	result.Role = role
-	if role == common.SHARD_ROLE {
-		result.ShardHeight = httpServer.config.BlockChain.BestState.Shard[shardID].ShardHeight
-		result.CurrentShardBlockTx = len(httpServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
-		result.ShardID = int(shardID)
-	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
-		result.ShardID = -1
-	}
-	Logger.log.Debugf("handleGetMiningInfo result: %+v", result)
-	return result, nil
-}
-
-/*
 handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */

@@ -20,4 +20,5 @@ type serverInterface interface {
 	PushMessageToBeacon(wire.Message) error
 	PushMessageToPbk(wire.Message, string) error
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
+	IsEnableMining() bool
 }
