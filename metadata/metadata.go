@@ -173,7 +173,7 @@ type Transaction interface {
 	GetMetadata() Metadata
 	SetMetadata(Metadata)
 	GetInfo() []byte
-	ValidateConstDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface) error
+	ValidateDoubleSpendWithBlockchain(BlockchainRetriever, byte, database.DatabaseInterface, *common.Hash) error
 
 	GetSender() []byte
 	GetSigPubKey() []byte
