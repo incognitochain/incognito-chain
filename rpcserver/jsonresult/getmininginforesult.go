@@ -9,4 +9,5 @@ type GetMiningInfoResult struct {
 	IsCommittee         bool   `json:"IsCommittee"`
 	ShardID             int    `json:"ShardID"`
 	Role                string `json:"Role"`
+	IsEnableMining      bool   `json:"IsEnableMining"`
 }

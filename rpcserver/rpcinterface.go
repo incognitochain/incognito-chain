@@ -117,6 +117,10 @@ var HttpHandler = map[string]httpHandler{
 	//revert
 	revertbeaconchain: (*HttpServer).handleRevertBeacon,
 	revertshardchain:  (*HttpServer).handleRevertShard,
+
+	//GetNodeStatus
+	enableMining:         (*HttpServer).handleEnableMining,
+	getChainMiningStatus: (*HttpServer).handleGetChainMiningStatus,
 }
 
 // Commands that are available to a limited user
