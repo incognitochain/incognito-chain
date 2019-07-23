@@ -354,7 +354,7 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 				continue
 			}
 			startHeight = nextHeight
-			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.BeaconHeight)
+			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByHeight(blk.Header.BeaconHeight)
 			if err != nil {
 				break
 			}
