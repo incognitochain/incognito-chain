@@ -506,18 +506,19 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return nil
 	}
 	//TODO: validator create instruction again (ONLY validator need to do that)
-	totalInstructions := []string{}
-	for _, value := range txInstructions {
-		totalInstructions = append(totalInstructions, value...)
+	if !isPresig {
+		totalInstructions := []string{}
+		for _, value := range txInstructions {
+			totalInstructions = append(totalInstructions, value...)
+		}
+		for _, value := range block.Body.Instructions {
+			totalInstructions = append(totalInstructions, value...)
+		}
+		isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
+		if !isOk {
+			return NewBlockChainError(HashError, errors.New("Error verify action root"))
+		}
 	}
-	for _, value := range block.Body.Instructions {
-		totalInstructions = append(totalInstructions, value...)
-	}
-	isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
-	if !isOk {
-		return NewBlockChainError(HashError, errors.New("Error verify action root"))
-	}
-
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
 	flattenTxInsts := FlattenAndConvertStringInst(txInstructions)
 	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
@@ -574,6 +575,26 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		if err := blockchain.VerifyTransactionFromNewBlock(block.Body.Transactions); err != nil {
 			return NewBlockChainError(TransactionError, err)
 		}
+		// Verify Instruction
+		instructions := [][]string{}
+		shardCommittee := blockchain.BestState.Shard[shardID].ShardCommittee
+		shardPendingValidator := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
+		instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, block.Header.BeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
+		if err != nil {
+			return NewBlockChainError(InstructionError, err)
+		}
+		totalInstructions := []string{}
+		for _, value := range txInstructions {
+			totalInstructions = append(totalInstructions, value...)
+		}
+		for _, value := range instructions {
+			totalInstructions = append(totalInstructions, value...)
+		}
+		isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
+		if !isOk {
+			return NewBlockChainError(HashError, errors.New("Error verify action root"))
+		}
+		// Verify Cross Shard Output Coin and Custom Token Transaction
 		crossTxTokenData := make(map[byte][]CrossTxTokenData)
 		toShard := shardID
 		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
