@@ -3,13 +3,14 @@ package mubft
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/pubsub"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -57,6 +58,9 @@ func (engine *Engine) Start() error {
 	if engine.started {
 		return errors.New("Consensus engine is already started")
 	}
+	if engine.config.UserKeySet == nil {
+		return errors.New("UserKeyset can't be empty")
+	}
 	engine.cQuit = make(chan struct{})
 	//Start block generator
 	go engine.config.BlockGen.Start(engine.cQuit)
@@ -86,6 +90,10 @@ func (engine *Engine) Start() error {
 					}
 					time.Sleep(time.Millisecond * 100)
 				} else {
+					if !engine.config.Server.IsEnableMining() {
+						time.Sleep(time.Millisecond * 100)
+						continue
+					}
 					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, engine.currentBFTRound)
 					if engine.config.NodeMode == common.NODEMODE_BEACON && userRole == common.SHARD_ROLE {
 						userRole = common.EmptyString

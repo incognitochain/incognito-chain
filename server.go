@@ -51,6 +51,7 @@ type Server struct {
 	startupTime int64
 
 	protocolVersion   string
+	isEnableMining    bool
 	chainParams       *blockchain.Params
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
@@ -633,14 +634,13 @@ func (serverObj Server) Start() {
 			Logger.log.Error(err)
 			go serverObj.Stop()
 			return
-		} else {
-			serverObj.memPool.IsBlockGenStarted = true
-			serverObj.blockChain.SetIsBlockGenStarted(true)
-			for _, shardPool := range serverObj.shardPool {
-				go shardPool.Start(serverObj.cQuit)
-			}
-			go serverObj.beaconPool.Start(serverObj.cQuit)
 		}
+		serverObj.memPool.IsBlockGenStarted = true
+		serverObj.blockChain.SetIsBlockGenStarted(true)
+		for _, shardPool := range serverObj.shardPool {
+			go shardPool.Start(serverObj.cQuit)
+		}
+		go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
 	if serverObj.memPool != nil {
@@ -743,6 +743,12 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 			}
 			force := currentVersion != versionChain.Version
 			if force {
+				Logger.log.Error("\n*********************************************************************************\n" +
+					versionChain.Note +
+					"\n*********************************************************************************\n")
+				Logger.log.Error("\n*********************************************************************************\n You're running version: " +
+					currentVersion +
+					"\n*********************************************************************************\n")
 				Logger.log.Error("\n*********************************************************************************\n" +
 					versionChain.Note +
 					"\n*********************************************************************************\n")
@@ -1574,4 +1580,55 @@ func (serverObj *Server) BoardcastNodeState() error {
 	Logger.log.Debugf("Boardcast peerstate from %s", listener.RawAddress)
 	serverObj.PushMessageToAll(msg)
 	return nil
+}
+
+func (serverObj *Server) EnableMining(enable bool) error {
+	serverObj.isEnableMining = enable
+	return nil
+}
+
+func (serverObj *Server) IsEnableMining() bool {
+	return serverObj.isEnableMining
+}
+
+func (serverObj *Server) GetChainMiningStatus(chain int) string {
+	const (
+		offline = "offline"
+		syncing = "syncing"
+		ready   = "ready"
+		mining  = "mining"
+	)
+	if chain >= common.MAX_SHARD_NUMBER || chain < -1 {
+		return offline
+	}
+	if serverObj.userKeySet != nil {
+		//Beacon: chain = -1
+		if chain == -1 {
+			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_BEACON {
+				return offline
+			}
+			if serverObj.blockChain.Synker.IsLatest(false, 0) {
+				if serverObj.isEnableMining {
+					return mining
+				}
+				return ready
+			} else {
+				return syncing
+			}
+		} else {
+			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_SHARD {
+				return offline
+			}
+			if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
+				if serverObj.isEnableMining {
+					return mining
+				}
+				return ready
+			} else {
+				return syncing
+			}
+		}
+
+	}
+	return offline
 }
