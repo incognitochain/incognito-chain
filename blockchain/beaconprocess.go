@@ -144,10 +144,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		}
 	}
 	Logger.log.Infof("Store Committee in Height %+v \n", block.Header.Height)
-	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
+	if err := blockchain.config.DataBase.StoreCommitteeByHeight(block.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
 		return NewBlockChainError(DatabaseError, err)
 	}
-	if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(block.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
 		return NewBlockChainError(DatabaseError, err)
 	}
 	// }
