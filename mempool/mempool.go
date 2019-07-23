@@ -738,10 +738,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tp.pool[*txHash] = txD
 	var serialNumberList []common.Hash
 	serialNumberList = append(serialNumberList, txD.Desc.Tx.ListSerialNumbersHashH()...)
-	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txPrivacy := txD.Desc.Tx.(*transaction.TxCustomTokenPrivacy)
-		serialNumberList = append(serialNumberList, txPrivacy.TxTokenPrivacyData.TxNormal.ListSerialNumbersHashH()...)
-	}
 	serialNumberListHash := common.HashArrayOfHashArray(serialNumberList)
 	tp.poolSerialNumberHash[serialNumberListHash] = *txD.Desc.Tx.Hash()
 	tp.poolSerialNumbersHashList[*txHash] = serialNumberList
