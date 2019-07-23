@@ -224,7 +224,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if err != nil {
 		return err
 	}
-	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, blockHash)
 	shardIDForMetric := strconv.Itoa(int(block.Header.ShardID))
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
@@ -240,24 +239,20 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
-		//fmt.Printf("[ndh]  - - - [error]1: %+v\n", err)
 		return err
 	}
 	err = blockchain.updateDatabaseFromShardBlock(block)
 	if err != nil {
-		//fmt.Printf("[ndh]  - - - [error]2: %+v\n", err)
 		return err
 	}
-	//fmt.Printf("[ndh]  - - - nonerror \n")
-
 	// Save result of BurningConfirm instruction to get proof later
 	err = blockchain.storeBurningConfirm(block)
 	if err != nil {
 		return err
 	}
-
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, block))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
+	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, blockHash)
 	return nil
 }
 
@@ -336,7 +331,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// Process transaction db
-	Logger.log.Criticalf("SHARD %+v | ⚒︎ %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
+	Logger.log.Criticalf("SHARD %+v | 🎉︎ %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
 	if block.Header.Height != 1 {
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxInOneBlock,
