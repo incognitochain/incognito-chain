@@ -66,19 +66,20 @@ type synker struct {
 		sync.Mutex
 	}
 	Event struct {
-		requestSyncShardBlockByHashEvent pubsub.EventChannel
-		requestSyncShardBlockByHeightEvent pubsub.EventChannel
-		requestSyncBeaconBlockByHashEvent pubsub.EventChannel
+		requestSyncShardBlockByHashEvent    pubsub.EventChannel
+		requestSyncShardBlockByHeightEvent  pubsub.EventChannel
+		requestSyncBeaconBlockByHashEvent   pubsub.EventChannel
 		requestSyncBeaconBlockByHeightEvent pubsub.EventChannel
 	}
-	blockchain *BlockChain
-	pubSubManager         *pubsub.PubSubManager
-	cQuit      chan struct{}
+	blockchain    *BlockChain
+	pubSubManager *pubsub.PubSubManager
+	cQuit         chan struct{}
 }
+
 func newSyncker(cQuit chan struct{}, blockchain *BlockChain, pubSubManager *pubsub.PubSubManager) synker {
 	s := synker{
-		blockchain: blockchain,
-		cQuit: cQuit,
+		blockchain:    blockchain,
+		cQuit:         cQuit,
 		pubSubManager: pubSubManager,
 	}
 	_, s.Event.requestSyncShardBlockByHashEvent, _ = pubSubManager.RegisterNewSubscriber(pubsub.RequestShardBlockByHashTopic)
@@ -157,7 +158,7 @@ func (synker *synker) Start() {
 			if err != nil {
 				continue
 			}
-			synker.SyncBlkShard(byte(shardID),true, false, true, []common.Hash{*hash}, []uint64{}, 0, 0, "")
+			synker.SyncBlkShard(byte(shardID), true, false, true, []common.Hash{*hash}, []uint64{}, 0, 0, "")
 		case msg := <-synker.Event.requestSyncShardBlockByHeightEvent:
 			// Message Value: "[shardID],[blockheight]"
 			str, ok := msg.Value.(string)
@@ -173,7 +174,7 @@ func (synker *synker) Start() {
 			if err != nil {
 				continue
 			}
-			synker.SyncBlkShard(byte(shardID),false, true, true, []common.Hash{}, []uint64{uint64(height)}, uint64(height), uint64(height), "")
+			synker.SyncBlkShard(byte(shardID), false, true, true, []common.Hash{}, []uint64{uint64(height)}, uint64(height), uint64(height), "")
 		case msg := <-synker.Event.requestSyncBeaconBlockByHashEvent:
 			// Message Value: [BlockHash]
 			hash, ok := msg.Value.(common.Hash)
