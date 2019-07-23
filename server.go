@@ -1619,6 +1619,10 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_SHARD {
 				return offline
 			}
+			currentSynsShards := serverObj.blockChain.Synker.GetCurrentSyncShards()
+			if common.IndexOfByte(byte(chain), currentSynsShards) == -1 {
+				return offline
+			}
 			if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
 				if serverObj.isEnableMining {
 					return mining
