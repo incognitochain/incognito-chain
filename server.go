@@ -212,6 +212,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
 	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
 	serverObj.blockChain = &blockchain.BlockChain{}
+	serverObj.isEnableMining = cfg.EnableMining
 
 	relayShards := []byte{}
 	if cfg.RelayShards == "all" {
@@ -465,7 +466,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,
 			Database:        &serverObj.dataBase,
-			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
 			MiningPubKeyB58: miningPubkeyB58,
 			NetSync:         serverObj.netSync,
 			PubSubManager:   pubsub,
