@@ -1,13 +1,14 @@
 package rpcserver
 
 import (
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/netsync"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"net"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/netsync"
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -72,6 +73,9 @@ type RpcServerConfig struct {
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 		GetNodeRole() string
 		GetUserKeySet() *incognitokey.KeySet
+		EnableMining(enable bool) error
+		IsEnableMining() bool
+		GetChainMiningStatus(chain int) string
 	}
 	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool *mempool.ShardToBeaconPool
