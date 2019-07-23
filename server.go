@@ -1597,24 +1597,30 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 		syncing = "syncing"
 		ready   = "ready"
 		mining  = "mining"
+		pending = "pending"
 	)
 	if chain >= common.MAX_SHARD_NUMBER || chain < -1 {
 		return offline
 	}
 	if serverObj.userKeySet != nil {
 		//Beacon: chain = -1
+		role, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), 0)
 		if chain == -1 {
 			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_BEACON {
 				return offline
 			}
 			if serverObj.blockChain.Synker.IsLatest(false, 0) {
 				if serverObj.isEnableMining {
-					return mining
+					if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE {
+						return mining
+					}
+					if role == common.PENDING_ROLE {
+						return pending
+					}
 				}
 				return ready
-			} else {
-				return syncing
 			}
+			return syncing
 		} else {
 			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_SHARD {
 				return offline
@@ -1625,12 +1631,17 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 			}
 			if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
 				if serverObj.isEnableMining {
-					return mining
+					role = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), 0)
+					if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE {
+						return mining
+					}
+					if role == common.PENDING_ROLE {
+						return pending
+					}
 				}
 				return ready
-			} else {
-				return syncing
 			}
+			return syncing
 		}
 
 	}
