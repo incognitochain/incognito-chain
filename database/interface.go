@@ -81,7 +81,6 @@ type DatabaseInterface interface {
 	CleanBeaconBestState() error
 
 	// Commitee with epoch
-	//StoreCommitteeByHeight(uint64, interface{}) error
 	StoreCommitteeByHeight(uint64, interface{}) error
 	StoreBeaconCommitteeByHeight(uint64, interface{}) error
 	DeleteCommitteeByHeight(uint64) error
