@@ -305,18 +305,21 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(m
 }
 
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
-	if txCustomTokenPrivacy.Proof == nil {
+	if txCustomTokenPrivacy.Proof == nil && txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof == nil {
 		return nil
 	}
 	temp := make(map[common.Hash]interface{})
-	for _, desc := range txCustomTokenPrivacy.Proof.InputCoins {
-		hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
-		temp[hash] = nil
+	if txCustomTokenPrivacy.Proof != nil {
+		for _, desc := range txCustomTokenPrivacy.Proof.InputCoins {
+			hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+			temp[hash] = nil
+		}
 	}
-
-	for _, desc := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.InputCoins {
-		hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
-		temp[hash] = nil
+	if txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof != nil {
+		for _, desc := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.InputCoins {
+			hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+			temp[hash] = nil
+		}
 	}
 
 	for _, listSerialNumbers := range poolSerialNumbersHashH {
@@ -334,11 +337,11 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
-	err := txCustomTokenPrivacy.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
+	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, nil)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
-	err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
+	err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, txCustomTokenPrivacy.GetTokenID())
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
