@@ -1,5 +1,5 @@
 {
-  "Version": "0.3.1-beta",
-  "Note": "New code is needed to be update with updating EPOCH time",
+  "Version": "0.4.1-beta",
+  "Note": "New code is needed to be update with fixing some bugs on reward",
   "RemoveData": true
 }
