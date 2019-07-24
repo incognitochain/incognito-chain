@@ -294,8 +294,6 @@ func (synker *synker) UpdateState() {
 	}
 
 	for peerID, peerState := range synker.States.PeersState {
-		fmt.Println("PeerState:", peerState)
-
 		for shardID := range synker.Status.Shards {
 			if shardState, ok := peerState.Shard[shardID]; ok {
 				if shardState.Height >= GetBestStateBeacon().GetBestHeightOfShard(shardID) && shardState.Height > GetBestStateShard(shardID).ShardHeight {
@@ -386,11 +384,11 @@ func (synker *synker) UpdateState() {
 							}
 						}
 					}
-					}
 				}
 			}
 		}
 	}
+
 	synker.States.ClosestState.ClosestBeaconState = RCS.ClosestBeaconState.Height
 	for shardID, state := range RCS.ClosestShardsState {
 		synker.States.ClosestState.ClosestShardsState[shardID] = state.Height
