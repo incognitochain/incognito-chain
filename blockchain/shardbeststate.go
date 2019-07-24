@@ -130,7 +130,8 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 		keystr = append(keystr, k)
 	}
 	sort.Strings(keystr)
-	for key, value := range bestStateShard.StakingTx {
+	for _, key := range keystr {
+		value := bestStateShard.StakingTx[key]
 		res = append(res, []byte(key)...)
 		res = append(res, []byte(value)...)
 	}
