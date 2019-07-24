@@ -190,6 +190,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 
 			// issue token with data of privacy
 			temp := Tx{}
+			temp.Type = common.TxNormalType
 			temp.Proof = new(zkp.PaymentProof)
 			temp.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
 			temp.Proof.OutputCoins[0] = new(privacy.OutputCoin)
@@ -367,6 +368,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateSanityData(bcr metadat
 		return result, NewTransactionErr(InvalidSanityDataPRV, err)
 	}
 	// validate sanity for pToken
+
 	result, err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.validateNormalTxSanityData()
 	if err != nil {
 		return result, NewTransactionErr(InvalidSanityDataPrivacyToken, err)
