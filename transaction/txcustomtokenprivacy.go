@@ -368,11 +368,11 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateSanityData(bcr metadat
 		return result, NewTransactionErr(InvalidSanityDataPRV, err)
 	}
 	// validate sanity for pToken
-	/* TODO - uncomment later
+
 	result, err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.validateNormalTxSanityData()
 	if err != nil {
 		return result, NewTransactionErr(InvalidSanityDataPrivacyToken, err)
-	}*/
+	}
 	return result, nil
 }
 
