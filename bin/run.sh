@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
-docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
+privatekey=
+miner_port=9330
+miner_rpc=9334
 dataDir="data"
 ethDataDir="eth-data"
 
-source miner.conf
+docker -v || bash -c "wget -qO- https://get.docker.com/ | sh"
 
 if [  -z "$privatekey" ]; then
     echo "Private key not set!"
@@ -27,9 +29,6 @@ docker pull incognitochain/incognito
 
 docker rm -f inc_miner
 docker rm -f inc_geth
-
-# docker run -e NAME=miner -p $miner_port:$miner_port -p $miner_rpc:$miner_rpc -e DISCOVERPEERSADDRESS='172.104.39.6:9330' -v /${dataDir}:/data -e PRIVATEKEY="${privatekey}" -e EXTERNALADDRESS="${ip}:9330"  -e PORT=$miner_port -e RPC_PORT=$miner_rpc -d --name constant_miner hungngoautonomous/incognito /run_constant.sh $clear
-
 
 docker network create --driver bridge inc_net || true
 
