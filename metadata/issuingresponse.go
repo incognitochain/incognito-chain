@@ -73,49 +73,40 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	bcr BlockchainRetriever,
 	ac *AccumulatedValues,
 ) (bool, error) {
-	db := bcr.GetDatabase()
 	idx := -1
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not IssuingETHRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		issuingReqAction, err := ParseIssuingInstContent(inst[3])
-		if err != nil {
-			fmt.Println("WARNING: an error occured during parsing instruction content: ", err)
-			continue
-		}
-
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(IssuingRequestMeta) ||
-			!bytes.Equal(iRes.RequestedTxID[:], issuingReqAction.TxReqID[:]) {
+			instMetaType != strconv.Itoa(IssuingETHRequestMeta) {
 			continue
 		}
 
-		issuingReq := issuingReqAction.Meta
-		issuingTokenID := issuingReq.TokenID
-		if !ac.CanProcessCIncToken(issuingTokenID) {
-			fmt.Printf("WARNING: The issuing token (%s) was already used in the current block.", issuingTokenID.String())
-			continue
-		}
-
-		ok, err := db.CanProcessCIncToken(issuingTokenID)
+		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			fmt.Println("WARNING: an error occured during checking centralized inc token is valid or not: ", err)
+			fmt.Println("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
-		if !ok {
-			fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
+		var issuingAcceptedInst IssuingAcceptedInst
+		err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
+		if err != nil {
+			fmt.Println("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			continue
+		}
+
+		if !bytes.Equal(iRes.RequestedTxID[:], issuingAcceptedInst.TxReqID[:]) {
 			continue
 		}
 
 		_, pk, amount, assetID := tx.GetTransferData()
-		if !bytes.Equal(issuingReq.ReceiverAddress.Pk[:], pk[:]) ||
-			issuingReq.DepositedAmount != amount ||
-			!bytes.Equal(issuingReq.TokenID[:], assetID[:]) {
+		if !bytes.Equal(issuingAcceptedInst.ReceiverAddr.Pk[:], pk[:]) ||
+			issuingAcceptedInst.DepositedAmount != amount ||
+			!bytes.Equal(issuingAcceptedInst.IncTokenID[:], assetID[:]) ||
+			issuingAcceptedInst.ShardID != shardID {
 			continue
 		}
-		ac.CBridgeTokens = append(ac.CBridgeTokens, &issuingTokenID)
 		idx = i
 		break
 	}
@@ -124,22 +115,4 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 	instUsed[idx] = 1
 	return true, nil
-}
-
-func (iRes *IssuingResponse) BuildReqActions(
-	tx Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-) ([][]string, error) {
-	incTokenID := tx.GetTokenID()
-	actionContent := map[string]interface{}{
-		"incTokenID": incTokenID,
-	}
-	actionContentBytes, err := json.Marshal(actionContent)
-	if err != nil {
-		return [][]string{}, err
-	}
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(IssuingResponseMeta), actionContentBase64Str}
-	return [][]string{action}, nil
 }

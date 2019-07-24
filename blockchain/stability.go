@@ -299,6 +299,11 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 	beaconBestState *BestStateBeacon,
 	db database.DatabaseInterface,
 ) ([][]string, error) {
+	accumulatedValues := &metadata.AccumulatedValues{
+		UniqETHTxsUsed:   [][]byte{},
+		DBridgeTokenPair: map[string][]byte{},
+		CBridgeTokens:    []*common.Hash{},
+	}
 	instructions := [][]string{}
 	beaconHeight := beaconBestState.BeaconHeight
 	for _, inst := range shardBlockInstructions {
@@ -322,8 +327,11 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 		case metadata.ContractingRequestMeta, metadata.IssuingResponseMeta, metadata.IssuingETHResponseMeta:
 			newInst = [][]string{inst}
 
-		case metadata.IssuingRequestMeta, metadata.IssuingETHRequestMeta:
-			newInst, err = buildInstructionsForIssuingReq(contentStr, shardID, metaType)
+		case metadata.IssuingRequestMeta:
+			newInst, err = blockChain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
+
+		case metadata.IssuingETHRequestMeta:
+			newInst, err = blockChain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
 
 		case metadata.BurningRequestMeta:
 			fmt.Printf("[db] found BurnningRequest meta: %d\n", metaType)
@@ -353,11 +361,6 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) ([]metadata.Transaction, error) {
-	accumulatedValues := &metadata.AccumulatedValues{
-		UniqETHTxsUsed:   [][]byte{},
-		DBridgeTokenPair: map[string][]byte{},
-		CBridgeTokens:    []*common.Hash{},
-	}
 	resTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -406,13 +409,12 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			var newTx metadata.Transaction
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
-				fmt.Println("haha isntruction: ", l)
 				if len(l) >= 4 {
-					newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, accumulatedValues)
+					newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.IssuingRequestMeta:
 				if len(l) >= 4 {
-					newTx, err = blockgen.buildIssuanceTx(l[3], producerPrivateKey, shardID, accumulatedValues)
+					newTx, err = blockgen.buildIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
 
 			default:
