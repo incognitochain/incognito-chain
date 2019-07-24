@@ -124,13 +124,14 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 		binary.LittleEndian.PutUint64(valueBytes, value)
 		res = append(res, valueBytes...)
 	}
-
+	
 	keystr := []string{}
 	for _, k := range bestStateShard.StakingTx {
 		keystr = append(keystr, k)
 	}
 	sort.Strings(keystr)
-	for key, value := range bestStateShard.StakingTx {
+	for _, key := range keystr {
+		value := bestStateShard.StakingTx[key]
 		res = append(res, []byte(key)...)
 		res = append(res, []byte(value)...)
 	}
