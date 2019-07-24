@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-privatekey=
+privatekey=$PRIVATEKEY
 miner_port=9330
 miner_rpc=9334
 dataDir="data"
