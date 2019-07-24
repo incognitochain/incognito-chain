@@ -496,7 +496,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	// Pick instruction with merkle root of shard committee's pubkeys and save to beacon block
 	commPubkeyInst := pickBridgePubkeyRootInstruction(shardBlock)
 	if len(commPubkeyInst) > 0 {
-		stabilityInstructionsPerBlock = append(instructions, commPubkeyInst...)
+		stabilityInstructionsPerBlock = append(stabilityInstructions, commPubkeyInst...)
 		fmt.Printf("[db] found bridge pubkey root inst: %s\n", commPubkeyInst)
 	}
 
