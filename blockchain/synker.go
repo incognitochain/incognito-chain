@@ -3,12 +3,13 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -336,7 +337,7 @@ func (synker *synker) UpdateState() {
 								if len(commonHeights) > 0 {
 									for idx := len(commonHeights) - 1; idx == 0; idx-- {
 										if idx == 0 {
-											synker.States.ClosestState.ShardToBeaconPool[shardID] = synker.blockchain.BestState.Beacon.GetBestHeightOfShard(shardID)
+											synker.States.ClosestState.ShardToBeaconPool[shardID] = commonHeights[idx]
 										}
 										if synker.States.ClosestState.ShardToBeaconPool[shardID] > commonHeights[idx] {
 											synker.States.ClosestState.ShardToBeaconPool[shardID] = commonHeights[idx]
