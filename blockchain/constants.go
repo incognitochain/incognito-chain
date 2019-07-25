@@ -64,7 +64,7 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize     = 4
+	TestNetShardCommitteeSize     = 8
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
@@ -109,12 +109,12 @@ func init() {
 		panic(err)
 	}
 
-	for i := 0; i < TestNetBeaconCommitteeSize; i++ {
+	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
 		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKey)
 	}
 
 	for i := 0; i < TestNetActiveShards; i++ {
-		for j := 0; j < TestNetShardCommitteeSize; j++ {
+		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
 			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKey)
 		}
 	}

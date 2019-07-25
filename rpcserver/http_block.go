@@ -133,6 +133,7 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.R = block.R
 			result.Round = block.Header.Round
 			result.CrossShards = []int{}
+			result.Instruction = block.Body.Instructions
 			if len(block.Header.CrossShards) > 0 {
 				for _, shardID := range block.Header.CrossShards {
 					result.CrossShards = append(result.CrossShards, int(shardID))
@@ -175,6 +176,7 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.R = block.R
 			result.Round = block.Header.Round
 			result.CrossShards = []int{}
+			result.Instruction = block.Body.Instructions
 			if len(block.Header.CrossShards) > 0 {
 				for _, shardID := range block.Header.CrossShards {
 					result.CrossShards = append(result.CrossShards, int(shardID))
