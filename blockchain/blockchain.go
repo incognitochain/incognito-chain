@@ -133,7 +133,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	if config.ChainParams == nil {
 		return NewBlockChainError(UnExpectedError, errors.New("Chain parameters is not config"))
 	}
-
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
@@ -143,15 +142,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	if err := blockchain.initChainState(); err != nil {
 		return err
 	}
-
 	blockchain.cQuitSync = make(chan struct{})
-	// blockchain.syncStatus.Shards = make(map[byte]struct{})
-	// blockchain.syncStatus.PeersState = make(map[libp2p.ID]*peerState)
-	// blockchain.syncStatus.IsReady.Shards = make(map[byte]bool)
-	blockchain.Synker = Synker{
-		blockchain: blockchain,
-		cQuit:      blockchain.cQuitSync,
-	}
+	blockchain.Synker = newSyncker(blockchain.cQuitSync, blockchain, blockchain.config.PubSubManager)
 	return nil
 }
 
@@ -317,10 +309,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 		Logger.log.Error("Error store beacon block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
-	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
+	if err := blockchain.config.DataBase.StoreCommitteeByHeight(initBlock.Header.Epoch, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
 		return err
 	}
-	if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(initBlock.Header.Epoch, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(initBlock.Header.Epoch, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
 		return err
 	}
 	blockHash := initBlock.Hash()
@@ -540,17 +532,32 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 	return nil
 }
 
-func (blockchain *BlockChain) StoreTxByPublicKey(data string) error {
-	dataArr := strings.Split(data, "_")
-	pubKey, _, _ := base58.Base58Check{}.Decode(dataArr[0])
-	txID, _ := common.Hash{}.NewHashFromStr(dataArr[1])
-	shardID, _ := strconv.Atoi(dataArr[2])
+// StoreTxByPublicKey - store txID by public key of receiver,
+// use this data to get tx which send to receiver, because we can get this tx from cross shard
+// -> only fullnode data can provide this data for all
+func (blockchain *BlockChain) StoreTxByPublicKey(view *TxViewPoint) error {
+	for data := range view.txByPubKey {
+		dataArr := strings.Split(data, "_")
+		pubKey, _, err := base58.Base58Check{}.Decode(dataArr[0])
+		if err != nil {
+			return err
+		}
+		txIDInByte, _, err := base58.Base58Check{}.Decode(dataArr[1])
+		if err != nil {
+			return err
+		}
+		txID := common.Hash{}
+		err = txID.SetBytes(txIDInByte)
+		if err != nil {
+			return err
+		}
+		shardID, _ := strconv.Atoi(dataArr[2])
 
-	err := blockchain.config.DataBase.StoreTxByPublicKey(pubKey, *txID, byte(shardID))
-	if err != nil {
-		return err
+		err = blockchain.config.DataBase.StoreTxByPublicKey(pubKey, txID, byte(shardID))
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 
@@ -732,10 +739,16 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	if err != nil {
 		return err
 	}
+
+	err = blockchain.StoreTxByPublicKey(view)
+	if err != nil {
+		return err
+	}
 	//endtime := time.Now()
 	//runTime := endtime.Sub(startTime)
 	//go common.AnalyzeFuncCreateAndSaveTxViewPointFromBlock(runTime.Seconds())
 	//Logger.log.Critical("*** CreateAndSaveTxViewPointFromBlock  ***", block.Header.Height, runTime)
+
 	return nil
 }
 
@@ -1063,6 +1076,18 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 	return block.Header.ShardID, blockHash, index, block.Body.Transactions[index], nil
 }
 
+// GetTransactionHashByReceiver - return list tx id which receiver get from any sender
+// this feature only apply on full node, because full node get all data from all shard
+func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet) (map[byte][]common.Hash, error) {
+	result := make(map[byte][]common.Hash)
+	var err error
+	result, err = blockchain.config.DataBase.GetTxByPublicKey(keySet.PaymentAddress.Pk)
+	if err != nil {
+		return nil, NewBlockChainError(UnExpectedError, err)
+	}
+	return result, nil
+}
+
 // Check Custom token ID is existed
 func (blockchain *BlockChain) CustomTokenIDExisted(tokenID *common.Hash) bool {
 	return blockchain.config.DataBase.CustomTokenIDExisted(*tokenID)
@@ -1212,7 +1237,7 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 	resInst := [][]string{}
 	baseRewards := map[common.Hash]uint64{}
 	for key, value := range totalReward {
-		baseRewards[key] = value / uint64(blockchain.BestState.Beacon.MaxBeaconCommitteeSize)
+		baseRewards[key] = value / uint64(len(blockchain.BestState.Beacon.BeaconCommittee))
 	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
 		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)

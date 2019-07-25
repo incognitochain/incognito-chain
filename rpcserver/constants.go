@@ -61,6 +61,7 @@ const (
 	getBlockProducerList                       = "getblockproducer"
 	listUnspentCustomToken                     = "listunspentcustomtoken"
 	getTransactionByHash                       = "gettransactionbyhash"
+	gettransactionhashbyreceiver               = "gettransactionhashbyreceiver"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
 	customTokenTxs                             = "customtoken"
@@ -135,6 +136,9 @@ const (
 	revertbeaconchain                  = "revertbeaconchain"
 	revertshardchain                   = "revertshardchain"
 	getRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
+
+	enableMining         = "enablemining"
+	getChainMiningStatus = "getchainminingstatus"
 )
 
 const (

@@ -302,7 +302,7 @@ func (bb *beaconBlock) Sig() string {
 
 // SignerPubkeys finds the pubkeys of all signers of a beacon block
 func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	commsRaw, err := db.FetchBeaconCommitteeByEpoch(bb.Header.Epoch)
+	commsRaw, err := db.FetchBeaconCommitteeByHeight(bb.Header.Height)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -361,7 +361,7 @@ func (sb *shardBlock) ValidatorsIdx(idx int) []int {
 
 // SignerPubkeys finds the pubkeys of all signers of a shard block
 func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	commsRaw, err := db.FetchCommitteeByEpoch(sb.Header.Epoch)
+	commsRaw, err := db.FetchCommitteeByHeight(sb.Header.Height)
 	if err != nil {
 		return nil, nil, err
 	}

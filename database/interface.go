@@ -81,13 +81,12 @@ type DatabaseInterface interface {
 	CleanBeaconBestState() error
 
 	// Commitee with epoch
-	//StoreCommitteeByHeight(uint64, interface{}) error
-	StoreCommitteeByEpoch(uint64, interface{}) error
-	StoreBeaconCommitteeByEpoch(uint64, interface{}) error
-	DeleteCommitteeByEpoch(uint64) error
-	FetchCommitteeByEpoch(uint64) ([]byte, error)
-	FetchBeaconCommitteeByEpoch(uint64) ([]byte, error)
-	HasCommitteeByEpoch(uint64) (bool, error)
+	StoreCommitteeByHeight(uint64, interface{}) error
+	StoreBeaconCommitteeByHeight(uint64, interface{}) error
+	DeleteCommitteeByHeight(uint64) error
+	FetchCommitteeByHeight(uint64) ([]byte, error)
+	FetchBeaconCommitteeByHeight(uint64) ([]byte, error)
+	HasCommitteeByHeight(uint64) (bool, error)
 
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error
@@ -119,6 +118,7 @@ type DatabaseInterface interface {
 
 	// Tx for Public key
 	StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) error
+	GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 
 	// Fee estimator
 	StoreFeeEstimator([]byte, byte) error

@@ -367,6 +367,35 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
+	}
+	paymentAddress := arrayParams[0]
+
+	var keySet *incognitokey.KeySet
+
+	if paymentAddress != "" {
+		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress.(string))
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, errors.New("key component invalid"))
+		}
+
+		keySet = &senderKey.KeySet
+	} else {
+		return nil, NewRPCError(ErrUnexpected, errors.New("key component invalid"))
+	}
+
+	result, err := httpServer.config.BlockChain.GetTransactionHashByReceiver(keySet)
+
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	return result, nil
+}
+
 // Get transaction by Hash
 func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetTransactionByHash params: %+v", params)

@@ -671,14 +671,18 @@ func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
-func (tx *Tx) ValidateConstDoubleSpendWithBlockchain(
+func (tx *Tx) ValidateDoubleSpendWithBlockchain(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 	db database.DatabaseInterface,
+	tokenID *common.Hash,
 ) error {
 
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
+	if tokenID != nil {
+		prvCoinID.SetBytes(tokenID.GetBytes())
+	}
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.InputCoins); i++ {
 		serialNumber := tx.Proof.InputCoins[i].CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(*prvCoinID, serialNumber, shardID)
@@ -707,7 +711,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 			return nil
 		}
 	}
-	return tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
+	return tx.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, nil)
 }
 
 func (tx Tx) validateNormalTxSanityData() (bool, error) {
