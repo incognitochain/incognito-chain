@@ -727,7 +727,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		bestStateBeacon.BeaconCommittee = make([]string, bestStateBeacon.MaxBeaconCommitteeSize)
 		copy(bestStateBeacon.BeaconCommittee, newBeaconCandidate[:bestStateBeacon.MaxBeaconCommitteeSize])
 		for shardID := 0; shardID < bestStateBeacon.ActiveShards; shardID++ {
-			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.MaxShardCommitteeSize:(shardID+1)*bestStateBeacon.MaxShardCommitteeSize]...)
+			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.MinShardCommitteeSize:(shardID+1)*bestStateBeacon.MinShardCommitteeSize]...)
 			fmt.Println(bestStateBeacon.ShardCommittee[byte(shardID)])
 		}
 		bestStateBeacon.Epoch = 1
