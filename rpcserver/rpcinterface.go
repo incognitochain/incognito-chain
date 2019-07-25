@@ -51,6 +51,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTransaction:        (*HttpServer).handleCreateAndSendTx,
 	getMempoolInfo:                  (*HttpServer).handleGetMempoolInfo,
 	getTransactionByHash:            (*HttpServer).handleGetTransactionByHash,
+	gettransactionhashbyreceiver:    (*HttpServer).handleGetTransactionHashByReceiver,
 	createAndSendStakingTransaction: (*HttpServer).handleCreateAndSendStakingTx,
 	randomCommitments:               (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
@@ -116,6 +117,10 @@ var HttpHandler = map[string]httpHandler{
 	//revert
 	revertbeaconchain: (*HttpServer).handleRevertBeacon,
 	revertshardchain:  (*HttpServer).handleRevertShard,
+
+	//GetNodeStatus
+	enableMining:         (*HttpServer).handleEnableMining,
+	getChainMiningStatus: (*HttpServer).handleGetChainMiningStatus,
 }
 
 // Commands that are available to a limited user

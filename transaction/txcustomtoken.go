@@ -140,7 +140,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 		}
 	}
 
-	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
+	err := customTokenTx.Tx.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, nil)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}

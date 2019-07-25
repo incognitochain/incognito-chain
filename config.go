@@ -43,6 +43,7 @@ const (
 	DefaultDisableRpcTLS          = true
 	DefaultFastStartup            = true
 	DefaultNodeMode               = common.NODEMODE_RELAY
+	DefaultEnableMining           = true
 	DefaultTxPoolTTL              = uint(86400) * 10 // in second
 	DefaultTxPoolMaxTx            = uint64(100000)
 	DefaultLimitFee               = uint64(0)
@@ -143,6 +144,7 @@ type config struct {
 	BtcClientPort     string `long:"btcclientport" description:"Bitcoin Client Port (default 8332)"`
 	BtcClientUsername string `long:"btcclientusername" description:"Bitcoin Client Username for RPC"`
 	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
+	EnableMining      bool   `long:"mining" description:"enable mining"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -324,6 +326,7 @@ func loadConfig() (*config, []string, error) {
 		MetricUrl:            DefaultMetricUrl,
 		BtcClient:            DefaultBtcClient,
 		BtcClientPort:        DefaultBtcClientPort,
+		EnableMining:         DefaultEnableMining,
 	}
 
 	// Service options which are only added on Windows.

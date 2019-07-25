@@ -26,7 +26,6 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID byte) error {
-	//Logger.log.Errorf("\n%v\n%v\n", block.Header, len(block.Body.Transactions))
 	if block.Header.ShardID != shardID {
 		return errors.New("wrong shard")
 	}
@@ -101,7 +100,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	isExist, _ := blockchain.config.DataBase.HasBlock(blockHash)
 	if isExist {
 		//return nil
-		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+		return NewBlockChainError(DuplicateBlockError, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("SHARD %+v | Begin Insert new block height %+v at hash %+v", block.Header.ShardID, block.Header.Height, blockHash)
 	// Verify block with previous best state
@@ -404,7 +403,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 	prevBlockHash := block.Header.PrevBlockHash
 	parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	if err != nil {
-		return NewBlockChainError(DBError, err)
+		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlock := ShardBlock{}
 	err = json.Unmarshal(parentBlockData, &parentBlock)
@@ -506,6 +505,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		Logger.log.Error(err)
 		return nil
 	}
+	//TODO: validator create instruction again (ONLY validator need to do that)
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
@@ -574,7 +574,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		if err := blockchain.VerifyTransactionFromNewBlock(block.Body.Transactions); err != nil {
 			return NewBlockChainError(TransactionError, err)
 		}
-
 		crossTxTokenData := make(map[byte][]CrossTxTokenData)
 		toShard := shardID
 		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
@@ -606,7 +605,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 							return NewBlockChainError(CrossShardBlockError, errors.New("Next Cross Shard Block "+strconv.Itoa(int(toShardCrossShardBlock.Header.Height))+"is Not Expected block Height "+strconv.Itoa(int(nextHeight))+" from shard "+strconv.Itoa(int(fromShard))))
 						}
 						startHeight = nextHeight
-						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(toShardCrossShardBlock.Header.BeaconHeight)
+						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(toShardCrossShardBlock.Header.BeaconHeight)
 						if err != nil {
 							return NewBlockChainError(CrossShardBlockError, err)
 						}

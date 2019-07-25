@@ -18,7 +18,7 @@ var (
 	beaconBestBlockkey      = []byte("bea-bestBlock")
 	stabilityPrefix         = []byte("sta-")
 	committeePrefix         = []byte("com-")
-	epochPrefix             = []byte("ep-")
+	heightPrefix            = []byte("ep-") // TODO rename key value
 	shardIDPrefix           = []byte("s-")
 	blockKeyPrefix          = []byte("b-")
 	blockHeaderKeyPrefix    = []byte("bh-")
