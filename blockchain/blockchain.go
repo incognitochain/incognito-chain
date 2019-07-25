@@ -1562,3 +1562,7 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 	}
 	return nil
 }
+
+func (blockchain *BlockChain) GetActiveShardNumber() int {
+	return blockchain.BestState.Beacon.ActiveShards
+}

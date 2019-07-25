@@ -44,6 +44,7 @@ type ChainInterface interface {
 	InsertBlk(interface{}, bool)
 	ValidateBlock(interface{}) error
 	ValidatePreSignBlock(interface{}) error
+	GetActiveShardNumber() int
 }
 
 type Node interface {
@@ -51,5 +52,4 @@ type Node interface {
 	PushMessageToBeacon(wire.Message) error
 	GetNodePubKey() string
 	GetUserKeySet() *incognitokey.KeySet
-	GetActiveShardNumber() int
 }
