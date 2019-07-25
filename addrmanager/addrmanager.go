@@ -63,8 +63,7 @@ func (addrManager *AddrManager) savePeers() error {
 	storageData.Version = 1
 	copy(storageData.Key[:], addrManager.key[:])
 
-	storageData.Addresses = make([]*serializedKnownAddress, len(addrManager.addrIndex))
-	i := 0
+	storageData.Addresses = []*serializedKnownAddress{}
 
 	// get all good address in list of addresses manager
 	for rawAddress, peerObj := range addrManager.addrIndex {
@@ -76,8 +75,7 @@ func (addrManager *AddrManager) savePeers() error {
 		addressData.PublicKey = peerObj.PublicKey
 
 		// push into array
-		storageData.Addresses[i] = addressData
-		i++
+		storageData.Addresses = append(storageData.Addresses, addressData)
 	}
 
 	// Create file with file path
