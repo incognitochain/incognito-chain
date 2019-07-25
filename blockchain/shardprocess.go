@@ -261,35 +261,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	return nil
 }
 
-func (blockchain *BlockChain) updateStuffForIssuingETHRes(
-	tx metadata.Transaction,
-) error {
-	db := blockchain.GetDatabase()
-	issuingETHResdMeta := tx.GetMetadata().(*metadata.IssuingETHResponse)
-	err := db.InsertETHTxHashIssued(issuingETHResdMeta.UniqETHTx)
-	if err != nil {
-		return err
-	}
-	err = db.UpdateBridgeTokenInfo(
-		*tx.GetTokenID(),
-		issuingETHResdMeta.ExternalTokenID,
-		false,
-	)
-	return err
-}
-
-func (blockchain *BlockChain) updateStuffForIssuingRes(
-	tx metadata.Transaction,
-) error {
-	db := blockchain.GetDatabase()
-	err := db.UpdateBridgeTokenInfo(
-		*tx.GetTokenID(),
-		[]byte{},
-		true,
-	)
-	return err
-}
-
 func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 	shardBlock *ShardBlock,
 ) error {
@@ -300,10 +271,6 @@ func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 		if metaType == metadata.WithDrawRewardResponseMeta {
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			err = db.RemoveCommitteeReward(requesterRes, amountRes, *coinID)
-		} else if metaType == metadata.IssuingETHResponseMeta {
-			err = blockchain.updateStuffForIssuingETHRes(tx)
-		} else if metaType == metadata.IssuingResponseMeta {
-			err = blockchain.updateStuffForIssuingRes(tx)
 		}
 		if err != nil {
 			return err
