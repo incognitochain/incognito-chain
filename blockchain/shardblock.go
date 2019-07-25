@@ -45,7 +45,7 @@ type CrossShardBlock struct {
 	CrossOutputCoin []privacy.OutputCoin
 	// Cross Shard Data for Custom Token Tx
 	CrossTxTokenData []transaction.TxTokenData
-	//TODO: add to hash
+	// Cross Shard For Custom token privacy
 	CrossTxTokenPrivacyData []ContentCrossTokenPrivacyData
 }
 
@@ -65,15 +65,101 @@ func (shardBlock *ShardBlock) Hash() *common.Hash {
 }
 
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
-	// TODO
-	if shardBlock.Header.BeaconHeight == 0 {
-		return false, errors.New("Beacon is invalid. Beacon height, shardBlock.Header.BeaconHeight")
+	//Check Header
+	if shardBlock.Header.Height == 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Height 1 Producer Address have %+v bytes but get %+v bytes", 0, len(shardBlock.Header.ProducerAddress.Bytes())))
 	}
-	if shardBlock.Header.BeaconHeight == 1 && !shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
-		return false, errors.New("Beacon is invalid")
+	// producer address must have 66 bytes: 33-byte public key, 33-byte transmission key
+	if shardBlock.Header.Height > 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Producer Address have %+v bytes but get %+v bytes", 66, len(shardBlock.Header.ProducerAddress.Bytes())))
 	}
+	if int(shardBlock.Header.ShardID) < 0 || int(shardBlock.Header.ShardID) > 256 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block ShardID in range 0 - 255 but get %+v ", shardBlock.Header.ShardID))
+	}
+	if shardBlock.Header.Version < VERSION {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Version greater or equal than but get %+v ", VERSION, shardBlock.Header.Version))
+	}
+	if len(shardBlock.Header.PrevBlockHash[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Previous Hash in the right format"))
+	}
+	if shardBlock.Header.Height < 1 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Height to be greater than 0"))
+	}
+	if shardBlock.Header.Height == 1 && !shardBlock.Header.PrevBlockHash.IsEqual(&common.Hash{}) {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Height 1 (first block) have Zero Hash Value"))
+	}
+	if shardBlock.Header.Height > 1 && shardBlock.Header.PrevBlockHash.IsEqual(&common.Hash{}) {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Height greater than 1 have Non-Zero Hash Value"))
+	}
+	if shardBlock.Header.Round < 1 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Round greater or equal than 1"))
+	}
+	if shardBlock.Header.Epoch < 1 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Epoch greater or equal than 1"))
+	}
+	if shardBlock.Header.Timestamp < 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Epoch greater or equal than 0"))
+	}
+	if len(shardBlock.Header.TxRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Tx Root in the right format"))
+	}
+	if len(shardBlock.Header.ShardTxRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Shard Tx Root in the right format"))
+	}
+	if len(shardBlock.Header.CrossTransactionRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Transaction Root in the right format"))
+	}
+	if len(shardBlock.Header.InstructionsRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Instructions Root in the right format"))
+	}
+	if len(shardBlock.Header.CommitteeRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Committee Root in the right format"))
+	}
+	if shardBlock.Header.Height == 1 && !shardBlock.Header.CommitteeRoot.IsEqual(&common.Hash{}) {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Height 1 have Zero Hash Value"))
+	}
+	if shardBlock.Header.Height > 1 && shardBlock.Header.CommitteeRoot.IsEqual(&common.Hash{}) {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Height greater than 1 have Non-Zero Hash Value"))
+	}
+	if len(shardBlock.Header.PendingValidatorRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Committee Root in the right format"))
+	}
+	if len(shardBlock.Header.CrossShards) > 254 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Shard Length Less Than 255"))
+	}
+	if shardBlock.Header.BeaconHeight < 1 {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block has Beacon Height greater or equal than 1"))
+	}
+	//if shardBlock.Header.BeaconHeight == 1 && !shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
+	//	return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Beacon Height 1 have Zero Hash Value"))
+	//}
 	if shardBlock.Header.BeaconHeight > 1 && shardBlock.Header.BeaconHash.IsEqual(&common.Hash{}) {
-		return false, errors.New("Beacon is invalid")
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Beacon Height greater or equal than 1 have Non-Zero Hash Value"))
+	}
+	if shardBlock.Header.TotalTxsFee == nil {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Total Txs Fee have nil value"))
+	}
+	if len(shardBlock.Header.InstructionMerkleRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Instruction Merkle Root in the right format"))
+	}
+	// body
+	if shardBlock.Body.Instructions == nil {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Instruction is not nil"))
+	}
+	if len(shardBlock.Body.Instructions) != 0 && shardBlock.Header.InstructionMerkleRoot.IsEqual(&common.Hash{}) {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Instruction Merkle Root have Non-Zero Hash Value because Instrucstion List is not empty"))
+	}
+	if shardBlock.Body.CrossTransactions == nil {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Transactions Map is not nil"))
+	}
+	if len(shardBlock.Body.CrossTransactions) != 0 && shardBlock.Header.CrossTransactionRoot.IsEqual(&common.Hash{}) {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Transaction Root have Non-Zero Hash Value because Cross Transaction List is not empty"))
+	}
+	if shardBlock.Body.Transactions == nil {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Transactions is not nil"))
+	}
+	if len(shardBlock.Body.Transactions) != 0 && shardBlock.Header.TxRoot.IsEqual(&common.Hash{}) {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Tx Root have Non-Zero Hash Value because Transactions List is not empty"))
 	}
 	return true, nil
 }
@@ -91,23 +177,32 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-
 	shardBlock.AggregatedSig = tempBlk.AggregatedSig
 	shardBlock.R = tempBlk.R
 	shardBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
 	shardBlock.ProducerSig = tempBlk.ProducerSig
-
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempBlk.Body)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
 	shardBlock.Header = tempBlk.Header
-
+	// Init shard block data if get nil value
+	if shardBlock.Body.Transactions == nil {
+		shardBlock.Body.Transactions = []metadata.Transaction{}
+	}
+	if shardBlock.Body.Instructions == nil {
+		shardBlock.Body.Instructions = [][]string{}
+	}
+	if shardBlock.Body.CrossTransactions == nil {
+		shardBlock.Body.CrossTransactions = make(map[byte][]CrossTransaction)
+	}
+	if shardBlock.Header.TotalTxsFee == nil {
+		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
+	}
 	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
 		return NewBlockChainError(UnmashallJsonBlockError, err)
 	}
-
 	shardBlock.Body = blkBody
 	return nil
 }
