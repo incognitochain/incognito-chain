@@ -13,19 +13,19 @@ var activeNetParams = &mainNetParams
 type params struct {
 	*blockchain.Params
 	rpcPort string
-	wsPort string
+	wsPort  string
 }
 
 var mainNetParams = params{
 	Params:  &blockchain.ChainMainParam,
 	rpcPort: MainnetRpcServerPort,
-	wsPort: MainnetWsServerPort,
+	wsPort:  MainnetWsServerPort,
 }
 
 var testNetParams = params{
 	Params:  &blockchain.ChainTestParam,
 	rpcPort: TestnetRpcServerPort,
-	wsPort: TestnetWsServerPort,
+	wsPort:  TestnetWsServerPort,
 }
 
 // netName returns the name used when referring to a coin network.

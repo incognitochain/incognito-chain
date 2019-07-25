@@ -377,7 +377,6 @@ func AppendSliceString(arrayStrings ...[][]string) [][]string {
 	return res
 }
 
-
 type ErrorSaver struct {
 	err error
 }
@@ -406,3 +405,11 @@ func CheckError(errs ...error) error {
 	return errSaver.Save(errs...)
 }
 
+// GetENV to get environment variable by key
+func GetENV(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}

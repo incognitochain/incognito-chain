@@ -24,6 +24,6 @@ func GetInitTransaction() []string{
 	//Shard1 = append(Shard1, InitTxsShard1_8...)
 	//Shard1 = append(Shard1, InitTxsShard1_9...)
 	//return append(Shard0, Shard1...)
-	return []string{`{"Version":1,"Type":"s","LockTime":1553762692,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"UndOECFI+/lIN+MjBwiFmmWQiHMDcNsTiVJ1yBdx5DEqBs1kj2gdxXsm6Etq29qtFASNJ3GhQgB1W2Z90ImNww==","Proof":"11111112F9nPGbqyBE7fPpGeJQACt1PrSaUj1kShmorbXzMnn3VJXPtUnqEpM1ZhU8uKk2TnaoHnCbw6tyk1hXQFcaSxDSt351633NZC2jz2oSnhikaVMJkdihtwDWkYD7VsKsBzS2WKwBqNmDwYDs297tRonb6ZntrF1dPKXtg47SETSoJnmzof2FfMQpzPTj8qJJEWPWCHFSYMLdvpr7j25","PubKeyLastByteSender":0,"Metadata":null}`,}
+	return []string{`{"Version":1,"Type":"s","LockTime":1563890129,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"dwstfFDJaenTqsbolRqCa5iPJRoq4TT06dODcvSCm2wEgj6XOfaaDCGixJKqFn9rIHATLzJpkL8yj2Cz7lvCYg==","Proof":"11111119DtejwEmPoZuACsRRBHzNegPXR1nmduM2sbiANsmQ2hrKnuSBZKrQtnLwEGVjHn2ra2MEeLJy4kLLaCLrjKWaeUXC7GGU7nGD3NuM6sjXroq8w4rscb5tnS5yTrEKGX7uTwZzgk3sCCtS16wP2YkWbUyWqs2aXMta9Cw6a74tWJGhPtivEWK47rCqzfJLHsLnFhUTysysBdEexQvv4L4EMz","PubKeyLastByteSender":0,"Metadata":null}`,}
 }
 

@@ -14,20 +14,33 @@ const (
 	DoubleSpend
 	TxNotExist
 	RandomCommitmentErr
+	InvalidSanityDataPRV
+	InvalidSanityDataPrivacyToken
+	InvalidDoubleSpendPRV
+	InvalidDoubleSpendPrivacyToken
 )
 
 var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
-	UnexpectedErr:       {-1, "Unexpected error"},
-	WrongTokenTxType:    {-2, "Can't handle this TokenTxType"},
-	CustomTokenExisted:  {-3, "This token is existed in network"},
-	WrongInput:          {-4, "Wrong input transaction"},
-	WrongSig:            {-5, "Wrong signature"},
-	DoubleSpend:         {-6, "Double spend"},
-	TxNotExist:          {-7, "Not exist tx for this"},
-	RandomCommitmentErr: {-8, "Number of list commitments indices must be corresponding with number of input coins"},
+	// for common
+	UnexpectedErr:       {-1000, "Unexpected error"},
+	WrongTokenTxType:    {-1001, "Can't handle this TokenTxType"},
+	CustomTokenExisted:  {-1002, "This token is existed in network"},
+	WrongInput:          {-1003, "Wrong input transaction"},
+	WrongSig:            {-1004, "Wrong signature"},
+	DoubleSpend:         {-1005, "Double spend"},
+	TxNotExist:          {-1006, "Not exist tx for this"},
+	RandomCommitmentErr: {-1007, "Number of list commitments indices must be corresponding with number of input coins"},
+
+	// for PRV
+	InvalidSanityDataPRV:  {-2000, "Invalid sanity data for PRV"},
+	InvalidDoubleSpendPRV: {-2001, "Double spend PRV in blockchain"},
+
+	// for privacy token
+	InvalidSanityDataPrivacyToken:  {-3000, "Invalid sanity data for privacy Token"},
+	InvalidDoubleSpendPrivacyToken: {-3001, "Double spend privacy Token in blockchain"},
 }
 
 type TransactionError struct {
