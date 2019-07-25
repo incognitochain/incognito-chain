@@ -105,7 +105,7 @@ func (bReq *BurningRequest) Hash() *common.Hash {
 	record := bReq.MetadataBase.Hash().String()
 	record += bReq.BurnerAddress.String()
 	record += bReq.TokenID.String()
-	record += string(bReq.BurningAmount)
+	record += strconv.FormatUint(bReq.BurningAmount, 10)
 	record += bReq.TokenName
 	record += bReq.RemoteAddress
 
