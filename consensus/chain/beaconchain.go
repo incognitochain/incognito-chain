@@ -88,3 +88,7 @@ func (s *BeaconChain) InsertBlk(block interface{}, isValid bool) {
 		s.Blockchain.InsertBeaconBlock(block.(*blockchain.BeaconBlock), true)
 	}
 }
+
+func (s *BeaconChain) GetActiveShardNumber() int {
+	return s.Blockchain.GetActiveShardNumber()
+}

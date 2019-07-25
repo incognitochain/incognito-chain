@@ -87,3 +87,7 @@ func (s *ShardChain) InsertBlk(block interface{}, isValid bool) {
 		s.Blockchain.InsertShardBlock(block.(*blockchain.ShardBlock), true)
 	}
 }
+
+func (s *ShardChain) GetActiveShardNumber() int {
+	return s.Blockchain.GetActiveShardNumber()
+}
