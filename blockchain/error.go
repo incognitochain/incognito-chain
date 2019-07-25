@@ -19,7 +19,7 @@ const (
 	HashError
 	VersionError
 	BlockHeightError
-	DBError
+	DatabaseError
 	EpochError
 	TimestampError
 	InstructionHashError
@@ -37,7 +37,9 @@ const (
 	TransactionError
 	InstructionError
 	SwapError
-	DuplicateBlockErr
+	DuplicateBlockError
+	CommitteeOrValidatorError
+	ShardBlockSanityError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -51,7 +53,7 @@ var ErrCodeMessage = map[int]struct {
 	HashError:                     {-5, "Hash error"},
 	VersionError:                  {-6, "Version error"},
 	BlockHeightError:              {-7, "Block height error"},
-	DBError:                       {-8, "Database Error"},
+	DatabaseError:                 {-8, "Database Error"},
 	EpochError:                    {-9, "Epoch Error"},
 	TimestampError:                {-10, "Timestamp Error"},
 	InstructionHashError:          {-11, "Instruction Hash Error"},
@@ -69,7 +71,9 @@ var ErrCodeMessage = map[int]struct {
 	InstructionError:              {-23, "Instruction Error"},
 	SwapError:                     {-24, "Swap Error"},
 	MashallJsonError:              {-25, "MashallJson Error"},
-	DuplicateBlockErr:             {-26, "Duplicate Block Error"},
+	DuplicateBlockError:           {-26, "Duplicate Block Error"},
+	CommitteeOrValidatorError:     {-27, "Committee or Validator Error"},
+	ShardBlockSanityError:         {-28, "Shard Block Sanity Data Error"},
 }
 
 type BlockChainError struct {

@@ -11,10 +11,10 @@ import (
 //Network fixed params
 const (
 	// BlockVersion is the current latest supported block version.
-	BlockVersion            = 1
-	DefaultMaxBlkReqPerPeer = 600
-	DefaultMaxBlkReqPerTime = 1200
-
+	BlockVersion              = 1
+	DefaultMaxBlkReqPerPeer   = 600
+	DefaultMaxBlkReqPerTime   = 1200
+	MinCommitteeSize          = 3                // min size to run bft
 	DefaultBroadcastStateTime = 2 * time.Second  // in second
 	DefaultStateUpdateTime    = 3 * time.Second  // in second
 	DefaultMaxBlockSyncTime   = 1 * time.Second  // in second
@@ -64,10 +64,12 @@ const (
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
 
-	TestNetShardCommitteeSize  = 4
-	TestNetBeaconCommitteeSize = 4
-	TestNetActiveShards        = 8
-	TestNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+	TestNetShardCommitteeSize     = 8
+	TestNetMinShardCommitteeSize  = 4
+	TestNetBeaconCommitteeSize    = 4
+	TestNetMinBeaconCommitteeSize = 4
+	TestNetActiveShards           = 8
+	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
 	TestnetBasicReward                = 400000000 //40 mili PRV
@@ -107,12 +109,12 @@ func init() {
 		panic(err)
 	}
 
-	for i := 0; i < TestNetBeaconCommitteeSize; i++ {
+	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
 		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKey)
 	}
 
 	for i := 0; i < TestNetActiveShards; i++ {
-		for j := 0; j < TestNetShardCommitteeSize; j++ {
+		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
 			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKey)
 		}
 	}
@@ -127,7 +129,6 @@ func init() {
 // Action for instruction
 const (
 	SetAction    = "set"
-	DeleteAction = "del"
 	SwapAction   = "swap"
 	RandomAction = "random"
 	StakeAction  = "stake"

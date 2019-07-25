@@ -48,6 +48,7 @@ type GetBlockResult struct {
 	RewardBeacon      uint64             `json:"RewardBeacon"`
 	Fee               uint64             `json:"Fee"`
 	Size              uint64             `json:"Size"`
+	Instruction       [][]string         `json:"Instruction"`
 }
 
 type GetBlockTxResult struct {

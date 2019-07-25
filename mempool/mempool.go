@@ -10,12 +10,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -457,7 +457,8 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				// @notice: check limit fee but apply for token fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
-					if txPrivacyToken.GetTxFeeToken() == 0 {
+					if txPrivacyToken.GetTxFeeToken() == 0 || // not paid with token -> use PRV for paying fee
+						txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
 						// paid all with PRV
 						ok := txPrivacyToken.CheckTransactionFee(limitFee)
 						if !ok {
@@ -486,8 +487,8 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				if limitFeeToken > 0 {
 					if !isPaidByPRV {
 						// not paid anything by PRV
-						// -> check fee on total tx size(prv tx container + pToken tx)
-						ok := txPrivacyToken.CheckTransactionFee(limitFeeToken)
+						// -> check fee on total tx size(prv tx container + pToken tx) and use token as fee
+						ok := txPrivacyToken.CheckTransactionFeeByFeeToken(limitFeeToken)
 						if !ok {
 							return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 								txHash.String(),
@@ -498,7 +499,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 						// paid by PRV
 						if isPaidPartiallyPRV {
 							// paid partially -> check fee on pToken tx data size(only for pToken tx)
-							ok := txPrivacyToken.CheckTransactionFeePrivacyToken(limitFeeToken)
+							ok := txPrivacyToken.CheckTransactionFeeByFeeTokenForTokenData(limitFeeToken)
 							if !ok {
 								return NewMempoolTxError(RejectInvalidFee, fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
 									txHash.String(),
@@ -737,10 +738,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 	tp.pool[*txHash] = txD
 	var serialNumberList []common.Hash
 	serialNumberList = append(serialNumberList, txD.Desc.Tx.ListSerialNumbersHashH()...)
-	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txPrivacy := txD.Desc.Tx.(*transaction.TxCustomTokenPrivacy)
-		serialNumberList = append(serialNumberList, txPrivacy.TxTokenPrivacyData.TxNormal.ListSerialNumbersHashH()...)
-	}
 	serialNumberListHash := common.HashArrayOfHashArray(serialNumberList)
 	tp.poolSerialNumberHash[serialNumberListHash] = *txD.Desc.Tx.Hash()
 	tp.poolSerialNumbersHashList[*txHash] = serialNumberList
@@ -846,7 +843,6 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		})
 		now = time.Now()
 		tp.removeTx(tx)
-		// remove serialNumbersHashH
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
 			metrics.MeasurementValue: float64(time.Since(now).Seconds()),
@@ -895,7 +891,15 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	return
 }
 
-// remove transaction for pool
+/*
+	- Remove transaction out of pool
+		+ Tx Description pool
+		+ List Serial Number Pool
+		+ Hash of List Serial Number Pool
+	- Transaction want to be removed maybe replaced by another transaction:
+		+ New tx (Replacement tx) still exist in pool
+		+ Using the same list serial number to delete new transaction out of pool
+*/
 func (tp *TxPool) removeTx(tx metadata.Transaction) {
 	//Logger.log.Infof((*tx).Hash().String())
 	if _, exists := tp.pool[*tx.Hash()]; exists {
@@ -909,6 +913,15 @@ func (tp *TxPool) removeTx(tx metadata.Transaction) {
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
 	if _, exists := tp.poolSerialNumberHash[hash]; exists {
 		delete(tp.poolSerialNumberHash, hash)
+		// Using the same list serial number to delete new transaction out of pool
+		// this new transaction maybe not exist
+		if _, exists := tp.pool[hash]; exists {
+			delete(tp.pool, hash)
+			atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+		}
+		if _, exists := tp.poolSerialNumbersHashList[hash]; exists {
+			delete(tp.poolSerialNumbersHashList, hash)
+		}
 	}
 }
 

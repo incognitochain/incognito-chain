@@ -262,32 +262,14 @@ func (db *db) GetAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) (
 	return idx, nil
 }
 
-/*func (db *db) StoreCommitteeByHeight(blkHeight uint64, v interface{}) error {
-	//key: bea-s-com-{height}
-	//value: all shard committee
-	key := append(beaconPrefix, shardIDPrefix...)
-	key = append(key, committeePrefix...)
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkHeight)
-	key = append(key, buf[:]...)
-	val, err := json.Marshal(v)
-	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
-	}
-	if err := db.Put(key, val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
-	}
-	return nil
-}*/
-
-func (db *db) StoreBeaconCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
-	//key: bea-s-com-ep-{epoch}
+func (db *db) StoreBeaconCommitteeByHeight(height uint64, v interface{}) error {
+	//key: bea-s-com-ep-{height}
 	//value: all shard committee
 	key := append(beaconPrefix)
 	key = append(key, committeePrefix...)
-	key = append(key, epochPrefix...)
+	key = append(key, heightPrefix...)
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkEpoch)
+	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
 	val, err := json.Marshal(v)
@@ -301,14 +283,14 @@ func (db *db) StoreBeaconCommitteeByEpoch(blkEpoch uint64, v interface{}) error 
 	return nil
 }
 
-func (db *db) StoreCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
-	//key: bea-s-com-ep-{epoch}
+func (db *db) StoreCommitteeByHeight(height uint64, v interface{}) error {
+	//key: bea-s-com-ep-{height}
 	//value: all shard committee
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
-	key = append(key, epochPrefix...)
+	key = append(key, heightPrefix...)
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkEpoch)
+	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
 	val, err := json.Marshal(v)
@@ -322,12 +304,12 @@ func (db *db) StoreCommitteeByEpoch(blkEpoch uint64, v interface{}) error {
 	return nil
 }
 
-func (db *db) FetchCommitteeByEpoch(blkEpoch uint64) ([]byte, error) {
+func (db *db) FetchCommitteeByHeight(height uint64) ([]byte, error) {
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
-	key = append(key, epochPrefix...)
+	key = append(key, heightPrefix...)
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkEpoch)
+	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
 	b, err := db.Get(key)
@@ -337,12 +319,12 @@ func (db *db) FetchCommitteeByEpoch(blkEpoch uint64) ([]byte, error) {
 	return b, nil
 }
 
-func (db *db) FetchBeaconCommitteeByEpoch(blkEpoch uint64) ([]byte, error) {
+func (db *db) FetchBeaconCommitteeByHeight(height uint64) ([]byte, error) {
 	key := append(beaconPrefix)
 	key = append(key, committeePrefix...)
-	key = append(key, epochPrefix...)
+	key = append(key, heightPrefix...)
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkEpoch)
+	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
 	b, err := db.lvdb.Get(key, nil)
@@ -352,12 +334,12 @@ func (db *db) FetchBeaconCommitteeByEpoch(blkEpoch uint64) ([]byte, error) {
 	return b, nil
 }
 
-func (db *db) HasCommitteeByEpoch(blkEpoch uint64) (bool, error) {
+func (db *db) HasCommitteeByHeight(height uint64) (bool, error) {
 	key := append(beaconPrefix, shardIDPrefix...)
 	key = append(key, committeePrefix...)
-	key = append(key, epochPrefix...)
+	key = append(key, heightPrefix...)
 	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, blkEpoch)
+	binary.LittleEndian.PutUint64(buf, height)
 	key = append(key, buf[:]...)
 
 	exist, err := db.HasValue(key)

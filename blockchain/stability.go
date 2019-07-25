@@ -390,7 +390,7 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			// 	// }
 
 			// }
-			if l[0] == StakeAction || l[0] == RandomAction {
+			if l[0] == StakeAction || l[0] == RandomAction || l[0] == AssignAction || l[0] == SwapAction {
 				continue
 			}
 			if len(l) <= 2 {

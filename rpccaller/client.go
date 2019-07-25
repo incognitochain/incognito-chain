@@ -25,6 +25,9 @@ func NewRPCClient() *RPCClient {
 }
 
 func buildRPCServerAddress(protocol string, host string, port int) string {
+	if protocol == "" {
+		return fmt.Sprintf("%s:%d", host, port)
+	}
 	return fmt.Sprintf("%s://%s:%d", protocol, host, port)
 }
 
@@ -36,7 +39,7 @@ func (client *RPCClient) RPCCall(
 	params interface{},
 	rpcResponse interface{},
 ) (err error) {
-	rpcPort, _ := strconv.Atoi(GetENV("RPC_PORT", rpcPortStr))
+	rpcPort, _ := strconv.Atoi(rpcPortStr)
 	rpcEndpoint := buildRPCServerAddress(rpcProtocol, rpcHost, rpcPort)
 
 	payload := map[string]interface{}{
