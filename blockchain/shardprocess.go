@@ -803,7 +803,10 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 				return NewBlockChainError(UnExpectedError, err)
 			}
-			swapedCommittees := strings.Split(l[2], ",")
+			swapedCommittees := []string{}
+			if len(l[2]) != 0 && l[2] != "" {
+				swapedCommittees = strings.Split(l[2], ",")
+			}
 			newCommittees := strings.Split(l[1], ",")
 
 			for _, v := range swapedCommittees {
