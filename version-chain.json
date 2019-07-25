@@ -1,5 +1,5 @@
 {
-  "Version": "0.4.2-beta",
+  "Version": "0.4.3-beta",
   "Note": "New code is needed to be update with increasing shard committee size from 4 to 8",
   "RemoveData": false
 }
