@@ -37,7 +37,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	//========Verify block only
-	Logger.log.Infof("Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
+	Logger.log.Criticalf("BEACON | Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
 	if err := blockchain.VerifyPreProcessingBeaconBlock(block, isCommittee); err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	if err := beaconBestState.VerifyPostProcessingBeaconBlock(block, snapShotBeaconCommittee); err != nil {
 		return err
 	}
-	Logger.log.Infof("Block %d, with hash %+v is VALID for signing", block.Header.Height, *block.Hash())
+	Logger.log.Infof("BEACON | Block %d, with hash %+v is VALID to be 🖊 signed", block.Header.Height, *block.Hash())
 	return nil
 }
 
@@ -82,19 +82,19 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	defer blockchain.chainLock.Unlock()
 
 	blockHash := block.Header.Hash()
-	Logger.log.Infof("Check block existence for insert process %d, with hash %+v", block.Header.Height, blockHash)
+	Logger.log.Infof("BEACON | Check block existence for insert process %d, with hash %+v", block.Header.Height, blockHash)
 	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Header.Hash())
 	if isExist {
-		return NewBlockChainError(DuplicateBlockErr, errors.New("This block has been stored already"))
+		return NewBlockChainError(DuplicateBlockError, errors.New("This block has been stored already"))
 	}
-	Logger.log.Infof("Begin Insert new block %d, with hash %+v \n", block.Header.Height, blockHash)
+	Logger.log.Infof("BEACON | Begin Insert new block %d, with hash %+v \n", block.Header.Height, blockHash)
 	if !isValidated {
-		Logger.log.Infof("Verify Pre Processing Beacon Block %+v \n", blockHash)
+		Logger.log.Infof("BEACON | Verify Pre Processing Beacon Block %+v \n", blockHash)
 		if err := blockchain.VerifyPreProcessingBeaconBlock(block, false); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Infof("BEACON %+v | SKIP Verify Pre Processing Block %+v \n", blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify Pre Processing Block %+v \n", blockHash)
 	}
 	//========Verify block with previous best state
 	// check with current final best state
@@ -104,13 +104,13 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	if !isValidated {
-		Logger.log.Infof("Verify BestState with Beacon Block %+v \n", blockHash)
+		Logger.log.Infof("BEACON | Verify BestState with Beacon Block %+v \n", blockHash)
 		// Verify block with previous best state
 		if err := blockchain.BestState.Beacon.VerifyBestStateWithBeaconBlock(block, true); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Infof("BEACON %+v | SKIP Verify BestState with Block %+v \n", blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify BestState with Block %+v \n", blockHash)
 	}
 	// Backup beststate
 	if blockchain.config.UserKeySet != nil {
@@ -123,32 +123,32 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 			}
 		}
 	}
-	Logger.log.Infof("Update BestState with Beacon Block %+v \n", blockHash)
+	Logger.log.Infof("BEACON | Update BestState with Beacon Block %+v \n", blockHash)
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee
 	if err := blockchain.BestState.Beacon.Update(block, blockchain); err != nil {
 		return err
 	}
 	if !isValidated {
-		Logger.log.Infof("Verify Post Processing Beacon Block %+v \n", blockHash)
+		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block %+v \n", blockHash)
 		//========Post verififcation: verify new beaconstate with corresponding block
 		if err := blockchain.BestState.Beacon.VerifyPostProcessingBeaconBlock(block, snapShotBeaconCommittee); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Infof("BEACON %+v | SKIP Verify Post Processing Block %+v \n", blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify Post Processing Block %+v \n", blockHash)
 	}
 	for shardID, shardStates := range block.Body.ShardState {
 		for _, shardState := range shardStates {
 			blockchain.config.DataBase.StoreAcceptedShardToBeacon(shardID, block.Header.Height, shardState.Hash)
 		}
 	}
-	Logger.log.Infof("Store Committee in Height %+v \n", block.Header.Height)
-	if err := blockchain.config.DataBase.StoreCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
-		return err
+	Logger.log.Infof("BEACON | Store Committee in Height %+v \n", block.Header.Height)
+	if err := blockchain.config.DataBase.StoreCommitteeByHeight(block.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
+		return NewBlockChainError(DatabaseError, err)
 	}
-	if err := blockchain.config.DataBase.StoreBeaconCommitteeByEpoch(block.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
-		return err
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(block.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
+		return NewBlockChainError(DatabaseError, err)
 	}
 	// }
 	// shardCommitteeByte, err := blockchain.config.DataBase.FetchCommitteeByEpoch(block.Header.Epoch)
@@ -194,14 +194,14 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	//========Store new Beaconblock and new Beacon bestState in cache
 	Logger.log.Info("Store Beacon BestState")
 	if err := blockchain.StoreBeaconBestState(); err != nil {
-		return err
+		return NewBlockChainError(DatabaseError, err)
 	}
 	Logger.log.Info("Store Beacon Block ", block.Header.Height, blockHash)
 	if err := blockchain.config.DataBase.StoreBeaconBlock(block, blockHash); err != nil {
-		return err
+		return NewBlockChainError(DatabaseError, err)
 	}
 	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, block.Header.Height); err != nil {
-		return err
+		return NewBlockChainError(DatabaseError, err)
 	}
 	//=========Remove beacon block in pool
 	go blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
@@ -271,7 +271,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	// Verify parent hash exist or not
 	parentBlock, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
 	if err != nil {
-		return NewBlockChainError(DBError, err)
+		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlockInterface := NewBeaconBlock()
 	json.Unmarshal(parentBlock, &parentBlockInterface)
@@ -376,7 +376,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					hash := shardBlock.Header.Hash()
 					err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 					if index == 0 && err != nil {
-						currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.ShardCommitteeSize, common.OFFSET)
+						currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
 						if err != nil {
 							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 						}
@@ -632,12 +632,6 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			continue
 		}
 
-		if l[0] == SetAction {
-			bestStateBeacon.Params[l[1]] = l[2]
-		}
-		if l[0] == DeleteAction {
-			delete(bestStateBeacon.Params, l[1])
-		}
 		if l[0] == SwapAction {
 			fmt.Println("SWAP", l)
 			// format
@@ -649,7 +643,6 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			fmt.Println("SWAP l2", l[2])
 			fmt.Println("SWAP inPubkeys", inPubkeys)
 			fmt.Println("SWAP outPubkeys", outPubkeys)
-
 			if l[3] == "shard" {
 				temp, err := strconv.Atoi(l[4])
 				if err != nil {
@@ -660,41 +653,44 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 				// delete in public key out of sharding pending validator list
 				if len(l[1]) > 0 {
 					fmt.Println("Beacon Process/Update Before, ShardPendingValidator", bestStateBeacon.ShardPendingValidator[shardID])
-					bestStateBeacon.ShardPendingValidator[shardID], err = RemoveValidator(bestStateBeacon.ShardPendingValidator[shardID], inPubkeys)
+					tempShardPendingValidator, err := RemoveValidator(bestStateBeacon.ShardPendingValidator[shardID], inPubkeys)
 					fmt.Println("Beacon Process/Update After, ShardPendingValidator", bestStateBeacon.ShardPendingValidator[shardID])
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					bestStateBeacon.ShardPendingValidator[shardID] = tempShardPendingValidator
 					// append in public key to committees
 					bestStateBeacon.ShardCommittee[shardID] = append(bestStateBeacon.ShardCommittee[shardID], inPubkeys...)
 					fmt.Println("Beacon Process/Update Add New, ShardCommitees", bestStateBeacon.ShardCommittee[shardID])
 				}
 				// delete out public key out of current committees
 				if len(l[2]) > 0 {
-					bestStateBeacon.ShardCommittee[shardID], err = RemoveValidator(bestStateBeacon.ShardCommittee[shardID], outPubkeys)
+					tempShardCommittees, err := RemoveValidator(bestStateBeacon.ShardCommittee[shardID], outPubkeys)
 					fmt.Println("Beacon Process/Update Remove Old, ShardCommitees", bestStateBeacon.ShardCommittee[shardID])
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					bestStateBeacon.ShardCommittee[shardID] = tempShardCommittees
 				}
 			} else if l[3] == "beacon" {
-				var err error
 				if len(l[1]) > 0 {
-					bestStateBeacon.BeaconPendingValidator, err = RemoveValidator(bestStateBeacon.BeaconPendingValidator, inPubkeys)
+					tempBeaconPendingValidator, err := RemoveValidator(bestStateBeacon.BeaconPendingValidator, inPubkeys)
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					bestStateBeacon.BeaconPendingValidator = tempBeaconPendingValidator
 					bestStateBeacon.BeaconCommittee = append(bestStateBeacon.BeaconCommittee, inPubkeys...)
 				}
 				if len(l[2]) > 0 {
-					bestStateBeacon.BeaconCommittee, err = RemoveValidator(bestStateBeacon.BeaconCommittee, outPubkeys)
+					tempBeaconCommittes, err := RemoveValidator(bestStateBeacon.BeaconCommittee, outPubkeys)
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
+					bestStateBeacon.BeaconCommittee = tempBeaconCommittes
 				}
 			}
 		}
@@ -728,10 +724,10 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 		// Assign committee with genesis block
 		Logger.log.Infof("Proccessing Genesis Block")
 		//Test with 1 member
-		bestStateBeacon.BeaconCommittee = make([]string, bestStateBeacon.BeaconCommitteeSize)
-		copy(bestStateBeacon.BeaconCommittee, newBeaconCandidate[:bestStateBeacon.BeaconCommitteeSize])
+		bestStateBeacon.BeaconCommittee = make([]string, bestStateBeacon.MaxBeaconCommitteeSize)
+		copy(bestStateBeacon.BeaconCommittee, newBeaconCandidate[:bestStateBeacon.MaxBeaconCommitteeSize])
 		for shardID := 0; shardID < bestStateBeacon.ActiveShards; shardID++ {
-			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.ShardCommitteeSize:(shardID+1)*bestStateBeacon.ShardCommitteeSize]...)
+			bestStateBeacon.ShardCommittee[byte(shardID)] = append(bestStateBeacon.ShardCommittee[byte(shardID)], newShardCandidate[shardID*bestStateBeacon.MinShardCommitteeSize:(shardID+1)*bestStateBeacon.MinShardCommitteeSize]...)
 			fmt.Println(bestStateBeacon.ShardCommittee[byte(shardID)])
 		}
 		bestStateBeacon.Epoch = 1
@@ -807,7 +803,7 @@ func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *Blo
 			beaconNewCommittees    []string
 			err                    error
 		)
-		bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.BeaconCommitteeSize, common.OFFSET)
+		bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(bestStateBeacon.BeaconPendingValidator, bestStateBeacon.BeaconCommittee, bestStateBeacon.MaxBeaconCommitteeSize, common.OFFSET)
 		if err != nil {
 			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 			return NewBlockChainError(UnExpectedError, err)
@@ -955,11 +951,11 @@ func RemoveValidator(validators []string, removedValidators []string) ([]string,
 	if len(removedValidators) > len(validators) {
 		return validators, errors.New("trying to remove too many validators")
 	}
-
 	for index, validator := range removedValidators {
 		if strings.Compare(validators[index], validator) == 0 {
 			validators = validators[1:]
 		} else {
+			// not found wanted validator
 			return validators, errors.New("remove Validator with Wrong Format")
 		}
 	}
@@ -989,4 +985,44 @@ func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
 	}
 	fmt.Println("Beacon Process/Shuffle Candidate: Candidate After Sort ", sortedCandidate)
 	return sortedCandidate, nil
+}
+
+/*
+	Kick a list of candidate out of current validators list
+	Candidates will be eliminated as the list order (from 0 index to last index)
+	A candidate will be click out of list if it match those condition:
+		- candidate pubkey found in current validators list
+		- size of current validator list is greater or equal to min committess size
+	Return params:
+	#1 kickedValidator, #2 remain candidates (not kick yet), #3 new current validator list
+*/
+func kickValidatorByPubkeyList(candidates []string, currentValidators []string, minCommitteeSize int) ([]string, []string, []string) {
+	removedCandidates := []string{}
+	remainedCandidates := []string{}
+	remainedIndex := 0
+	for index, candidate := range candidates {
+		remainedIndex = index
+		if len(currentValidators) == minCommitteeSize {
+			break
+		}
+		if index := common.IndexOfStr(candidate, currentValidators); index < 0 {
+			remainedCandidates = append(remainedCandidates, candidate)
+			continue
+		} else {
+			removedCandidates = append(removedCandidates, candidate)
+			currentValidators = append(currentValidators[:index], currentValidators[index+1:]...)
+		}
+	}
+	if remainedIndex < len(candidates)-1 {
+		remainedCandidates = append(remainedCandidates, candidates[remainedIndex:]...)
+	}
+	return removedCandidates, remainedCandidates, currentValidators
+}
+func kickValidatorByPubkey(candidate string, currentValidators []string, minCommitteeSize int) (bool, []string) {
+	if index := common.IndexOfStr(candidate, currentValidators); index < 0 {
+		return false, currentValidators
+	} else {
+		currentValidators = append(currentValidators[:index], currentValidators[index+1:]...)
+		return true, currentValidators
+	}
 }

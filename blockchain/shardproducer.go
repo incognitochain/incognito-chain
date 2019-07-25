@@ -79,9 +79,9 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 		if len(shardPendingValidator) > 0 {
 			Logger.log.Critical("shardPendingValidator", shardPendingValidator)
 			Logger.log.Critical("shardCommittee", shardCommittee)
-			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize)
+			Logger.log.Critical("blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize", blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize)
 			Logger.log.Critical("shardID", shardID)
-			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].ShardCommitteeSize, shardID)
+			swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, blockgen.chain.BestState.Shard[shardID].MaxShardCommitteeSize, shardID)
 			if err != nil {
 				Logger.log.Error(err)
 				return nil, err
@@ -348,7 +348,7 @@ func (blockgen *BlkTmplGenerator) getCrossShardData(shardID byte, lastBeaconHeig
 				continue
 			}
 			startHeight = nextHeight
-			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByEpoch(blk.Header.BeaconHeight)
+			temp, err := blockgen.chain.config.DataBase.FetchCommitteeByHeight(blk.Header.BeaconHeight)
 			if err != nil {
 				break
 			}
