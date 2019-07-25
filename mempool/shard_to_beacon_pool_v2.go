@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -238,7 +239,7 @@ func (self *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64) map[byte][]*
 	// }
 	// Logger.log.Info()
 	//==============
-
+	fmt.Println("GetValidBlock", limit, finalBlocks)
 	return finalBlocks
 }
 
