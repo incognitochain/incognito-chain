@@ -140,7 +140,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 		}
 	}
 
-	err := customTokenTx.Tx.ValidateConstDoubleSpendWithBlockchain(bcr, shardID, db)
+	err := customTokenTx.Tx.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, nil)
 	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -711,7 +711,6 @@ func (txCustomToken *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 		Logger.log.Error("Mintable custom token must contain metadata")
 		return false, nil
 	}
-	// TODO: uncomment below as we have fully validation for all tx/meta types in order to check strictly miner created tx
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}

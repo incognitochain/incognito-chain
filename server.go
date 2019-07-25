@@ -51,6 +51,7 @@ type Server struct {
 	startupTime int64
 
 	protocolVersion   string
+	isEnableMining    bool
 	chainParams       *blockchain.Params
 	connManager       *connmanager.ConnManager
 	blockChain        *blockchain.BlockChain
@@ -211,6 +212,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
 	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
 	serverObj.blockChain = &blockchain.BlockChain{}
+	serverObj.isEnableMining = cfg.EnableMining
 
 	relayShards := []byte{}
 	if cfg.RelayShards == "all" {
@@ -464,7 +466,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			FeeEstimator:    serverObj.feeEstimator,
 			ProtocolVersion: serverObj.protocolVersion,
 			Database:        &serverObj.dataBase,
-			IsMiningNode:    cfg.NodeMode != common.NODEMODE_RELAY && miningPubkeyB58 != "", // a node is mining if it constains this condiction when runing
 			MiningPubKeyB58: miningPubkeyB58,
 			NetSync:         serverObj.netSync,
 			PubSubManager:   pubsub,
@@ -633,14 +634,13 @@ func (serverObj Server) Start() {
 			Logger.log.Error(err)
 			go serverObj.Stop()
 			return
-		} else {
-			serverObj.memPool.IsBlockGenStarted = true
-			serverObj.blockChain.SetIsBlockGenStarted(true)
-			for _, shardPool := range serverObj.shardPool {
-				go shardPool.Start(serverObj.cQuit)
-			}
-			go serverObj.beaconPool.Start(serverObj.cQuit)
 		}
+		serverObj.memPool.IsBlockGenStarted = true
+		serverObj.blockChain.SetIsBlockGenStarted(true)
+		for _, shardPool := range serverObj.shardPool {
+			go shardPool.Start(serverObj.cQuit)
+		}
+		go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
 	if serverObj.memPool != nil {
@@ -743,6 +743,12 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 			}
 			force := currentVersion != versionChain.Version
 			if force {
+				Logger.log.Error("\n*********************************************************************************\n" +
+					versionChain.Note +
+					"\n*********************************************************************************\n")
+				Logger.log.Error("\n*********************************************************************************\n You're running version: " +
+					currentVersion +
+					"\n*********************************************************************************\n")
 				Logger.log.Error("\n*********************************************************************************\n" +
 					versionChain.Note +
 					"\n*********************************************************************************\n")
@@ -1574,4 +1580,70 @@ func (serverObj *Server) BoardcastNodeState() error {
 	Logger.log.Debugf("Boardcast peerstate from %s", listener.RawAddress)
 	serverObj.PushMessageToAll(msg)
 	return nil
+}
+
+func (serverObj *Server) EnableMining(enable bool) error {
+	serverObj.isEnableMining = enable
+	return nil
+}
+
+func (serverObj *Server) IsEnableMining() bool {
+	return serverObj.isEnableMining
+}
+
+func (serverObj *Server) GetChainMiningStatus(chain int) string {
+	const (
+		offline = "offline"
+		syncing = "syncing"
+		ready   = "ready"
+		mining  = "mining"
+		pending = "pending"
+	)
+	if chain >= common.MAX_SHARD_NUMBER || chain < -1 {
+		return offline
+	}
+	if serverObj.userKeySet != nil {
+		//Beacon: chain = -1
+		role, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), 0)
+		if chain == -1 {
+			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_BEACON {
+				return offline
+			}
+			if serverObj.blockChain.Synker.IsLatest(false, 0) {
+				if serverObj.isEnableMining {
+					if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE {
+						return mining
+					}
+					if role == common.PENDING_ROLE {
+						return pending
+					}
+				}
+				return ready
+			}
+			return syncing
+		} else {
+			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_SHARD {
+				return offline
+			}
+			currentSynsShards := serverObj.blockChain.Synker.GetCurrentSyncShards()
+			if common.IndexOfByte(byte(chain), currentSynsShards) == -1 {
+				return offline
+			}
+			if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
+				if serverObj.isEnableMining {
+					role = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), 0)
+					if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE {
+						return mining
+					}
+					if role == common.PENDING_ROLE {
+						return pending
+					}
+				}
+				return ready
+			}
+			return syncing
+		}
+
+	}
+	return offline
 }

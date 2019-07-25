@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -35,7 +35,8 @@ type BestStateShard struct {
 	ShardID                byte              `json:"ShardID"`
 	Epoch                  uint64            `json:"Epoch"`
 	ShardHeight            uint64            `json:"ShardHeight"`
-	ShardCommitteeSize     int               `json:"ShardCommitteeSize"`
+	MaxShardCommitteeSize  int               `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize  int               `json:"MinShardCommitteeSize"`
 	ShardProposerIdx       int               `json:"ShardProposerIdx"`
 	ShardCommittee         []string          `json:"ShardCommittee"`
 	ShardPendingValidator  []string          `json:"ShardPendingValidator"`
@@ -48,6 +49,36 @@ type BestStateShard struct {
 
 	MetricBlockHeight uint64
 	lock              sync.RWMutex
+}
+
+func (bestStateShard *BestStateShard) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
+	bestStateShard.lock.Lock()
+	defer bestStateShard.lock.Unlock()
+	// check input params, below MinCommitteeSize failed to acheive consensus
+	if maxShardCommitteeSize < MinCommitteeSize {
+		return false
+	}
+	// max committee size can't be lower than current min committee size
+	if maxShardCommitteeSize >= bestStateShard.MinShardCommitteeSize {
+		bestStateShard.MaxShardCommitteeSize = maxShardCommitteeSize
+		return true
+	}
+	return false
+}
+
+func (bestStateShard *BestStateShard) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
+	bestStateShard.lock.Lock()
+	defer bestStateShard.lock.Unlock()
+	// check input params, below MinCommitteeSize failed to acheive consensus
+	if minShardCommitteeSize < MinCommitteeSize {
+		return false
+	}
+	// min committee size can't be greater than current min committee size
+	if minShardCommitteeSize <= bestStateShard.MaxShardCommitteeSize {
+		bestStateShard.MinShardCommitteeSize = minShardCommitteeSize
+		return true
+	}
+	return false
 }
 
 // Get role of a public key base on best state shard
@@ -67,8 +98,11 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 	binary.LittleEndian.PutUint64(shardHeightBytes, bestStateShard.ShardHeight)
 	res = append(res, shardHeightBytes...)
 	shardCommitteeSizeBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(shardCommitteeSizeBytes, uint32(bestStateShard.ShardCommitteeSize))
+	binary.LittleEndian.PutUint32(shardCommitteeSizeBytes, uint32(bestStateShard.MaxShardCommitteeSize))
 	res = append(res, shardCommitteeSizeBytes...)
+	minShardCommitteeSizeBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(minShardCommitteeSizeBytes, uint32(bestStateShard.MinShardCommitteeSize))
+	res = append(res, minShardCommitteeSizeBytes...)
 	proposerIdxBytes := make([]byte, 4)
 	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(bestStateShard.ShardProposerIdx))
 	res = append(res, proposerIdxBytes...)
@@ -90,13 +124,14 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 		binary.LittleEndian.PutUint64(valueBytes, value)
 		res = append(res, valueBytes...)
 	}
-
+	
 	keystr := []string{}
 	for _, k := range bestStateShard.StakingTx {
 		keystr = append(keystr, k)
 	}
 	sort.Strings(keystr)
-	for key, value := range bestStateShard.StakingTx {
+	for _, key := range keystr {
+		value := bestStateShard.StakingTx[key]
 		res = append(res, []byte(key)...)
 		res = append(res, []byte(value)...)
 	}
@@ -167,7 +202,8 @@ func InitBestStateShard(shardID byte, netparam *Params) *BestStateShard {
 	bestStateShard.BestBeaconHash.SetBytes(make([]byte, 32))
 	bestStateShard.BestBlock = nil
 	bestStateShard.ShardCommittee = []string{}
-	bestStateShard.ShardCommitteeSize = netparam.ShardCommitteeSize
+	bestStateShard.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
+	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
 	bestStateShard.ShardPendingValidator = []string{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
@@ -207,7 +243,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	//prevBlockHash := block.Header.PrevBlockHash
 	//parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	//if err != nil {
-	//	return NewBlockChainError(DBError, err)
+	//	return NewBlockChainError(DatabaseError, err)
 	//}
 	//parentBlock := ShardBlock{}
 	//json.Unmarshal(parentBlockData, &parentBlock)
@@ -377,7 +413,7 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks [
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(epoch)
+						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(epoch * common.EPOCH)
 						if err != nil {
 							return err
 						}
@@ -599,7 +635,7 @@ func (blockchain *BlockChain) restoreDatabaseFromBeaconInstruction(beaconBlocks 
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchCommitteeByEpoch(epoch)
+						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(epoch * common.EPOCH)
 						if err != nil {
 							return err
 						}
