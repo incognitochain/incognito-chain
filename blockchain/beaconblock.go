@@ -36,7 +36,6 @@ type BeaconHeader struct {
 	Round         int         `json:"Round"`
 	Timestamp     int64       `json:"Timestamp"`
 	PrevBlockHash common.Hash `json:"PrevBlockHash"`
-
 	//Validator list will be store in database/memory (locally)
 	//Build from two list: BeaconCommittee + BeaconPendingValidator
 	ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
@@ -44,20 +43,11 @@ type BeaconHeader struct {
 	//Build from two list: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
 	// infer from history
 	// Candidate public key for beacon chain
-	BeaconCandidateRoot common.Hash `json:"BeaconCandidateRoot"`
-
-	// Candidate public key for all shard
-	ShardCandidateRoot common.Hash `json:"ShardCandidateRoot"`
-
-	// Shard validator build from ShardCommittee and ShardPendingValidator
+	BeaconCandidateRoot common.Hash `json:"BeaconCandidateRoot"` // Candidate public key for all shard
+	ShardCandidateRoot common.Hash `json:"ShardCandidateRoot"` // Shard validator build from ShardCommittee and ShardPendingValidator
 	ShardValidatorsRoot common.Hash `json:"ShardValidatorRoot"`
-
-	// each shard will have a list of blockHash
-	// shardRoot is hash of all list
-	ShardStateHash common.Hash `json:"ShardListRootHash"`
-	// hash of all parameters == hash of instruction
-	InstructionHash common.Hash `json:"InstructionHash"`
-
+	ShardStateHash common.Hash `json:"ShardListRootHash"` // each shard will have a list of blockHash, shardRoot is hash of all list
+	InstructionHash common.Hash `json:"InstructionHash"` 	// hash of all parameters == hash of instruction
 	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionHash but for simplicity, we keep it for now
 	InstructionMerkleRoot common.Hash

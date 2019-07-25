@@ -474,7 +474,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	// Verify parent hash exist or not
 	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
 	if err != nil {
-		return NewBlockChainError(DBError, err)
+		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlock := NewBeaconBlock()
 	json.Unmarshal(parentBlockBytes, &parentBlock)
@@ -510,7 +510,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 	blockchain.config.BeaconPool.SetBeaconState(beaconBestState.BeaconHeight)
 	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
 
-	if err := blockchain.config.DataBase.DeleteCommitteeByEpoch(currentBestStateBlk.Header.Height); err != nil {
+	if err := blockchain.config.DataBase.DeleteCommitteeByHeight(currentBestStateBlk.Header.Height); err != nil {
 		return err
 	}
 

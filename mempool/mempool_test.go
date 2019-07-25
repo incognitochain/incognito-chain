@@ -50,11 +50,11 @@ var (
 	receiverPaymentAddress1 = "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi"
 	receiverPaymentAddress2 = "1Uv2wgU5FR5jjeN3uY3UJ4SYYyjqj97spYBEDa6cTLGiP3w6BCY7mqmASKwXz8hXfLr6mpDjhWDJ8TiM5v5U5f2cxxqCn5kwy5JM9wBgi"
 	tokenID                 = "6efff7b815f2890758f55763c53c4563feada766726ea4c08fe04dba8fd11b89"
-	maxAmount = 3000000
+	maxAmount = 1750000000000*4
 	normalTranferAmount = 50
 	commonFee               = int64(10)
-	higherFee               = int64(math.Round(float64(commonFee)*defaultReplaceFeeRatio)) +1
-	lowerFee                = int64(math.Round(float64(commonFee)*defaultReplaceFeeRatio)) - 1
+	higherFee               = int64(math.Round(float64(commonFee)*defaultReplaceFeeRatio)) + 1
+	lowerFee                = int64(math.Round(float64(commonFee)/defaultReplaceFeeRatio - 2))
 	noFee                   = int64(0)
 	defaultTokenFee = float64(5)
 	defaultTokenParams      = make(map[string]interface{})
@@ -245,7 +245,8 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
 	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
 	receiversPaymentAddressStrParam := make(map[string]interface{})
 	receiversPaymentAddressStrParam[receiverPaymentAddress2] = amount
 	paymentInfos := make([]*privacy.PaymentInfo, 0)
@@ -262,10 +263,8 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	for _, receiver := range paymentInfos {
 		totalAmmount += receiver.Amount
 	}
-	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+
 	outCoins, err := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
-	outCoins, err = tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID) // test cached
 	if err != nil {
 		fmt.Println("Can't create transaction", err)
 		return nil
@@ -793,10 +792,25 @@ func TestTxPoolAddTx(t *testing.T) {
 }
 func TestTxPoolValidateTransaction(t *testing.T) {
 	ResetMempoolTest()
+	senderKeySet, _ := wallet.Base58CheckDeserialize(privateKeyShard0[0])
+	senderKeySet.KeySet.ImportFromPrivateKey(&senderKeySet.KeySet.PrivateKey)
+	lastByte := senderKeySet.KeySet.PaymentAddress.Pk[len(senderKeySet.KeySet.PaymentAddress.Pk)-1]
+	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	prvCoinID := &common.Hash{}
+	prvCoinID.SetBytes(common.PRVCoinID[:])
+	sum := uint64(0)
+	outCoins, _ := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
+	for _, outCoin := range outCoins {
+		hash := common.HashH(outCoin.CoinDetails.SerialNumber.Compress())
+		log.Println("Serial Number: ", hash)
+		sum += outCoin.CoinDetails.Value
+	}
+	log.Println(sum)
 	salaryTx := initTx("100", privateKeyShard0[0], db)
 	tx1 := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false, maxAmount)
 	tx1Replace := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], higherFee, false, maxAmount)
-	tx1DoubleSpend := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false, maxAmount + maxAmount)
+	tx1DoubleSpend := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], commonFee, false, int(sum)-maxAmount)
+	// get sender key set from private key
 	tx1ReplaceFailed := CreateAndSaveTestNormalTransaction(privateKeyShard0[0], lowerFee, false, maxAmount)
 	txInitCustomTokenPrivacy := CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKeyShard0[0], commonFee, defaultTokenParams, false)
 	txInitCustomTokenPrivacyReplace := CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKeyShard0[0], higherFee, defaultTokenParams, false)
@@ -810,7 +824,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	txStakingShard := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, false)
 	txStakingBeacon := CreateAndSaveTestStakingTransaction(privateKeyShard0[4], commonFee, true)
 	txDesc1 := createTxDescMempool(tx1, 1, tx1.GetTxFee(), tx1.GetTxFeeToken())
-	txDesc1CustomTokenPrivacy := createTxDescMempool(txInitCustomTokenPrivacy, 1, tx1.GetTxFee(), tx1.GetTxFeeToken())
+	txDesc1CustomTokenPrivacy := createTxDescMempool(txInitCustomTokenPrivacy, 1, txInitCustomTokenPrivacy.GetTxFee(), txInitCustomTokenPrivacy.GetTxFeeToken())
 	// Check condition 1: Sanity - Max version error
 	ResetMempoolTest()
 	tx1.(*transaction.Tx).Version = 2
@@ -928,24 +942,24 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err91)
 		}
 	}
-	//// Check Condition 5: replace (custom token privacy tx)
-	//ResetMempoolTest()
-	//tp.addTx(txDesc1CustomTokenPrivacy, false)
-	//err92 := tp.validateTransaction(txInitCustomTokenPrivacyReplace)
-	//if err92 != nil {
-	//	t.Fatal("Expect no error error but get ", err92)
-	//}
-	//// Check Condition 5: Check replace with mempool (custom token privacy tx)
-	//ResetMempoolTest()
-	//tp.addTx(txDesc1CustomTokenPrivacy, false)
-	//err93 := tp.validateTransaction(txInitCustomTokenPrivacyReplaceFailed)
-	//if err93 == nil {
-	//	t.Fatal("Expect replace fail error in mempool error error but no error")
-	//} else {
-	//	if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
-	//		t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err93)
-	//	}
-	//}
+	// Check Condition 5: replace (custom token privacy tx)
+	ResetMempoolTest()
+	tp.addTx(txDesc1CustomTokenPrivacy, false)
+	err92 := tp.validateTransaction(txInitCustomTokenPrivacyReplace)
+	if err92 != nil {
+		t.Fatal("Expect no error error but get ", err92)
+	}
+	// Check Condition 5: Check replace with mempool (custom token privacy tx)
+	ResetMempoolTest()
+	tp.addTx(txDesc1CustomTokenPrivacy, false)
+	err93 := tp.validateTransaction(txInitCustomTokenPrivacyReplaceFailed)
+	if err93 == nil {
+		t.Fatal("Expect replace fail error in mempool error error but no error")
+	} else {
+		if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err93)
+		}
+	}
 	// Check Condition 5: Check double spend with mempool
 	ResetMempoolTest()
 	tp.addTx(txDesc1, false)

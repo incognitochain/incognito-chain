@@ -197,7 +197,9 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(
 	validStakers := [][]string{}
 	validSwappers := make(map[byte][][]string)
 	//Get shard to beacon block from pool
+	fmt.Println("S2B: limit", shardsToBeacon)
 	allShardBlocks := blkTmplGenerator.shardToBeaconPool.GetValidBlock(shardsToBeacon)
+	fmt.Println("S2B: valid", allShardBlocks)
 	//Shard block is a map ShardId -> array of shard block
 	stabilityInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
@@ -213,7 +215,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(
 		// Only accept block in one epoch
 		totalBlock := 0
 		//UNCOMMENT FOR TESTING
-		fmt.Println("Beacon Producer/ Got These Block from pool")
+		fmt.Println("Beacon Producer/ Got These Block from pool", shardID)
 		for _, shardBlocks := range shardBlocks {
 			fmt.Printf(" %+v ", shardBlocks.Header.Height)
 		}
@@ -244,6 +246,7 @@ func (blkTmplGenerator *BlkTmplGenerator) GetShardState(
 			stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
 			acceptedRewardInstructions = append(acceptedRewardInstructions, acceptedRewardInstruction)
 		}
+
 	}
 	return shardStates, validStakers, validSwappers, stabilityInstructions, acceptedRewardInstructions
 }
@@ -496,7 +499,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	// Pick instruction with merkle root of shard committee's pubkeys and save to beacon block
 	commPubkeyInst := pickBridgePubkeyRootInstruction(shardBlock)
 	if len(commPubkeyInst) > 0 {
-		stabilityInstructionsPerBlock = append(instructions, commPubkeyInst...)
+		stabilityInstructionsPerBlock = append(stabilityInstructionsPerBlock, commPubkeyInst...)
 		fmt.Printf("[db] found bridge pubkey root inst: %s\n", commPubkeyInst)
 	}
 
