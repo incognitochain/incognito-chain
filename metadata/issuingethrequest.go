@@ -179,7 +179,7 @@ func (iReq *IssuingETHRequest) CalculateSize() uint64 {
 	return calculateSize(iReq)
 }
 
-func getETHHeader(
+func GetETHHeader(
 	bcr BlockchainRetriever,
 	ethBlockHash rCommon.Hash,
 ) (*types.Header, error) {
@@ -207,7 +207,7 @@ func getETHHeader(
 func (iReq *IssuingETHRequest) verifyProofAndParseReceipt(
 	bcr BlockchainRetriever,
 ) (*types.Receipt, error) {
-	ethHeader, err := getETHHeader(bcr, iReq.BlockHash)
+	ethHeader, err := GetETHHeader(bcr, iReq.BlockHash)
 	if err != nil {
 		return nil, err
 	}

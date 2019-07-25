@@ -16,6 +16,8 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+// NOTE: for whole bridge's deposit process, anytime an error occurs an error will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
+
 func buildInstruction(
 	metaType int,
 	shardID byte,
@@ -42,7 +44,7 @@ func (chain *BlockChain) buildInstructionsForIssuingReq(
 	issuingReqAction, err := metadata.ParseIssuingInstContent(contentStr)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while parsing issuing action content: ", err)
-		return [][]string{}, err
+		return append(instructions, rejectedInst), nil
 	}
 
 	issuingReq := issuingReqAction.Meta
@@ -56,7 +58,7 @@ func (chain *BlockChain) buildInstructionsForIssuingReq(
 	ok, err := db.CanProcessCIncToken(issuingTokenID)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
-		return nil, err
+		return append(instructions, rejectedInst), nil
 	}
 	if !ok {
 		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
@@ -74,11 +76,11 @@ func (chain *BlockChain) buildInstructionsForIssuingReq(
 	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while marshaling issuingAccepted instruction: ", err)
-		return nil, err
+		return append(instructions, rejectedInst), nil
 	}
 
 	ac.CBridgeTokens = append(ac.CBridgeTokens, &issuingTokenID)
-	returnedInst := buildInstruction(metaType, shardID, "accepted", string(issuingAcceptedInstBytes))
+	returnedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes))
 	return append(instructions, returnedInst), nil
 }
 
@@ -94,7 +96,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while parsing issuing action content: ", err)
-		return [][]string{}, err
+		return append(instructions, rejectedInst), nil
 	}
 	md := issuingETHReqAction.Meta
 	ethReceipt := issuingETHReqAction.ETHReceipt
@@ -114,7 +116,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 	isIssued, err := db.IsETHTxHashIssued(uniqETHTx)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while checking the eth tx hash is issued or not: ", err)
-		return nil, err
+		return append(instructions, rejectedInst), nil
 	}
 	if isIssued {
 		fmt.Println("WARNING: already issued for the hash in previous blocks: ", uniqETHTx)
@@ -124,7 +126,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 	logMap, err := metadata.PickNParseLogMapFromReceipt(ethReceipt)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while parsing log map from receipt: ", err)
-		return nil, err
+		return append(instructions, rejectedInst), nil
 	}
 	if logMap == nil {
 		fmt.Println("WARNING: could not find log map out from receipt")
@@ -141,7 +143,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 	canProcess, err := ac.CanProcessTokenPair(ethereumToken, md.IncTokenID)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while checking it can process for token pair on the current block or not: ", err)
-		return nil, err
+		return append(instructions, rejectedInst), nil
 	}
 	if !canProcess {
 		fmt.Println("WARNING: pair of incognito token id & ethereum's id is invalid in current block")
@@ -151,7 +153,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 	isValid, err := db.CanProcessTokenPair(ethereumToken, md.IncTokenID)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
-		return nil, err
+		return append(instructions, rejectedInst), nil
 	}
 	if !isValid {
 		fmt.Println("WARNING: pair of incognito token id & ethereum's id is invalid with previous blocks")
@@ -188,12 +190,12 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 	issuingETHAcceptedInstBytes, err := json.Marshal(issuingETHAcceptedInst)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while marshaling issuingETHAccepted instruction: ", err)
-		return nil, err
+		return append(instructions, rejectedInst), nil
 	}
 	ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqETHTx)
 	ac.DBridgeTokenPair[md.IncTokenID.String()] = ethereumToken
 
-	acceptedInst := buildInstruction(metaType, shardID, "accepted", string(issuingETHAcceptedInstBytes))
+	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingETHAcceptedInstBytes))
 	return append(instructions, acceptedInst), nil
 }
 
@@ -205,12 +207,14 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 	fmt.Println("[Centralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		return nil, err
+		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		return nil, nil
 	}
 	var issuingAcceptedInst metadata.IssuingAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
 	if err != nil {
-		return nil, err
+		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		return nil, nil
 	}
 
 	if shardID != issuingAcceptedInst.ShardID {
@@ -255,8 +259,9 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 	)
 
 	if initErr != nil {
-		Logger.log.Error(initErr)
-		return nil, initErr
+		// Logger.log.Error(initErr)
+		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
+		return nil, nil
 	}
 	fmt.Println("[Centralized token issuance] Create tx ok.")
 	return resTx, nil
@@ -270,12 +275,14 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	fmt.Println("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		return nil, err
+		fmt.Println("WARNING: an error occured while decoding content string of ETH accepted issuance instruction: ", err)
+		return nil, nil
 	}
 	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 	if err != nil {
-		return nil, err
+		fmt.Println("WARNING: an error occured while unmarshaling ETH accepted issuance instruction: ", err)
+		return nil, nil
 	}
 
 	if shardID != issuingETHAcceptedInst.ShardID {
@@ -284,7 +291,8 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 
 	key, err := wallet.Base58CheckDeserialize(issuingETHAcceptedInst.ReceiverAddrStr)
 	if err != nil {
-		return nil, err
+		fmt.Println("WARNING: an error occured while deserializing receiver address string: ", err)
+		return nil, nil
 	}
 
 	receiver := &privacy.PaymentInfo{
@@ -326,7 +334,8 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 	)
 
 	if initErr != nil {
-		return nil, initErr
+		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
+		return nil, nil
 	}
 	fmt.Println("[Decentralized bridge token issuance] Create tx ok.")
 	return resTx, nil
