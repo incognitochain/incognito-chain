@@ -77,8 +77,8 @@ type Synker struct {
 	cQuit         chan struct{}
 }
 
-func newSyncker(cQuit chan struct{}, blockchain *BlockChain, pubSubManager *pubsub.PubSubManager) synker {
-	s := synker{
+func newSyncker(cQuit chan struct{}, blockchain *BlockChain, pubSubManager *pubsub.PubSubManager) Synker {
+	s := Synker{
 		blockchain:    blockchain,
 		cQuit:         cQuit,
 		pubSubManager: pubSubManager,
@@ -89,7 +89,7 @@ func newSyncker(cQuit chan struct{}, blockchain *BlockChain, pubSubManager *pubs
 	_, s.Event.requestSyncBeaconBlockByHeightEvent, _ = pubSubManager.RegisterNewSubscriber(pubsub.RequestBeaconBlockByHeightTopic)
 	return s
 }
-func (synker *synker) Start() {
+func (synker *Synker) Start() {
 	if synker.Status.Beacon {
 		return
 	}

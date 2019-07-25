@@ -617,7 +617,7 @@ func (serverObj Server) Start() {
 	go serverObj.blockChain.Synker.Start()
 
 	if cfg.NodeMode != common.NODEMODE_RELAY {
-		err := serverObj.consensusEngine.Start()
+		err := serverObj.consensusEngine.Start(&serverObj, serverObj.blockChain, serverObj.blockgen)
 		if err != nil {
 			Logger.log.Error(err)
 			go serverObj.Stop()
@@ -640,7 +640,7 @@ func (serverObj Server) Start() {
 }
 
 func (serverObj *Server) GetActiveShardNumber() int {
-	return serverObj.chainParams.ActiveShards
+	return serverObj.blockChain.BestState.Beacon.ActiveShards
 }
 
 func (serverObj *Server) GetNodePubKey() string {

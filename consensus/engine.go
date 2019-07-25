@@ -3,13 +3,14 @@ package consensus
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/consensus/bft"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/wire"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -38,7 +39,7 @@ func init() {
 	}()
 }
 
-func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlkTmplGenerator) {
+func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlkTmplGenerator) error {
 	//start beacon and run consensus engine
 	beaconChain, ok := s.ChainList[BEACON_CHAINKEY]
 	if !ok {
@@ -50,7 +51,7 @@ func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, block
 	}
 
 	//start all active shard, but not run
-	for i := 0; i < node.GetActiveShardNumber(); i++ {
+	for i := 0; i < blockchain.GetActiveShardNumber(); i++ {
 		shardChain, ok := s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)]
 		if !ok {
 			bftcore := &bft.BFTCore{ChainKey: SHARD_CHAINKEY + "" + strconv.Itoa(i), IsRunning: false, UserKeySet: node.GetUserKeySet()}
@@ -60,6 +61,7 @@ func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, block
 			s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)] = shardChain
 		}
 	}
+	return nil
 }
 
 func (s *Engine) Stop(name string) error {
