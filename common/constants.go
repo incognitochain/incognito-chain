@@ -53,8 +53,8 @@ var (
 
 // centralized website's pubkey
 var (
-	CentralizedWebsitePubKey = []byte{2, 194, 130, 176, 102, 36, 183, 114, 109, 135, 49, 114, 177, 92, 214, 31, 25, 4, 72, 103, 196, 161, 36, 69, 121, 102, 159, 24, 31, 131, 101, 20, 0}
-	//CentralizedWebsitePubKey = []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0}
+	// CentralizedWebsitePubKey = []byte{2, 194, 130, 176, 102, 36, 183, 114, 109, 135, 49, 114, 177, 92, 214, 31, 25, 4, 72, 103, 196, 161, 36, 69, 121, 102, 159, 24, 31, 131, 101, 20, 0}
+	CentralizedWebsitePubKey = []byte{3, 159, 2, 42, 22, 163, 195, 221, 129, 31, 217, 133, 149, 16, 68, 108, 42, 192, 58, 95, 39, 204, 63, 68, 203, 132, 221, 48, 181, 131, 40, 189, 0}
 )
 
 // board addresses
@@ -90,7 +90,7 @@ const (
 	BRIDGE_SHARD_ID = 1
 
 	ETH_ADDR_STR          = "0x0000000000000000000000000000000000000000"
-	ETH_CONTRACT_ADDR_STR = "0xA35FF1d02C0fd7b03c660ceD7eaE6fA962DeAc25"
+	ETH_CONTRACT_ADDR_STR = "0xA80cB16fCd5BbbE8E9a9Fb247eAa2B87D9488556"
 
 	ETHERERUM_LIGHT_NODE_PROTOCOL = "http"
 	ETHERERUM_LIGHT_NODE_PORT     = "8545"
