@@ -67,16 +67,17 @@ func (engine *Engine) Start() error {
 	engine.cBFTMsg = make(chan wire.Message)
 	engine.started = true
 	engine.userPk = engine.config.UserKeySet.GetPublicKeyB58()
+	engine.currentBFTRound = 1
 	Logger.log.Info("Start consensus with key", engine.userPk)
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
 
 	go func() {
-		engine.currentBFTRound = 1
 		for {
 			select {
 			case <-engine.cQuit:
 				return
 			default:
+				time.Sleep(time.Millisecond * 100)
 				if !engine.config.BlockChain.Synker.IsLatest(false, 0) {
 					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, 0)
 					if userRole == common.SHARD_ROLE {
@@ -88,10 +89,9 @@ func (engine *Engine) Start() error {
 							go engine.NotifyShardRole(-1)
 						}
 					}
-					time.Sleep(time.Millisecond * 100)
 				} else {
 					if !engine.config.Server.IsEnableMining() {
-						time.Sleep(time.Millisecond * 100)
+						time.Sleep(time.Second * 1)
 						continue
 					}
 					userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, engine.currentBFTRound)
@@ -116,12 +116,9 @@ func (engine *Engine) Start() error {
 						}
 					case common.SHARD_ROLE:
 						if engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO {
-							if !engine.config.BlockChain.Synker.IsLatest(true, shardID) {
-								time.Sleep(time.Millisecond * 100)
-							} else {
+							if engine.config.BlockChain.Synker.IsLatest(true, shardID) {
 								engine.config.BlockChain.ConsensusOngoing = true
 								engine.execShardRole(shardID)
-								fmt.Println("BFT: exit")
 								engine.config.BlockChain.ConsensusOngoing = false
 							}
 						}
