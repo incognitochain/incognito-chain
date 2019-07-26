@@ -16,5 +16,6 @@ func TestMakeRPCRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	log.Println(res.Error == nil)
 	log.Println(result)
 }
