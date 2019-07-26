@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -12,8 +13,8 @@ import (
 )
 
 type Client struct {
-	Host string
-	Port string
+	Host string `json:"host"`
+	Port string `json:"port"`
 }
 
 func makeRPCRequest(ip, port, method string, params ...interface{}) (*rpcserver.JsonResponse, *rpcserver.RPCError) {
@@ -45,15 +46,15 @@ func makeRPCRequest(ip, port, method string, params ...interface{}) (*rpcserver.
 	return &response, nil
 }
 
-func (client *Client) getBlockChainInfo() (map[string]interface{}, *rpcserver.RPCError) {
-	res, rpcError := makeRPCRequest(client.Host, client.Port, "getblockchaininfo", []string{})
+func (client *Client) getBlockChainInfo() (*jsonresult.GetBlockChainInfoResult, *rpcserver.RPCError) {
+	result := &jsonresult.GetBlockChainInfoResult{}
+	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), []string{})
 	if rpcError != nil {
-		return nil, rpcError
+		return result, rpcError
 	}
-	result := make(map[string]interface{})
-	err := json.Unmarshal(res.Result, &result)
+	err := json.Unmarshal(res.Result, result)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
 	return result, res.Error
 }
@@ -62,7 +63,7 @@ type ExampleReponse struct {
 	F1 string
 	F2 int
 }
-
+// example response => json result
 func (client *Client) getExampleRpc(p1 string, p2 int) (result *ExampleReponse, err *rpcserver.RPCError) {
 	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), p1, p2)
 	if rpcError != nil {
