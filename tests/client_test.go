@@ -1,4 +1,4 @@
-package tests
+package main
 
 import (
 	"encoding/json"
@@ -7,12 +7,12 @@ import (
 )
 
 func TestMakeRPCRequest(t *testing.T) {
-	res, err := makeRPCRequest("http://localhost", "9334", "getblockchaininfo", []string{})
-	if err != nil {
-		t.Fatal(err)
+	res, rpcErr := makeRPCRequest("http://localhost", "9334", "getblockchaininfo", []string{})
+	if rpcErr != nil {
+		t.Fatal(rpcErr)
 	}
 	result := make(map[string]interface{})
-	err = json.Unmarshal(res.Result, &result)
+	err := json.Unmarshal(res.Result, &result)
 	if err != nil {
 		t.Fatal(err)
 	}
