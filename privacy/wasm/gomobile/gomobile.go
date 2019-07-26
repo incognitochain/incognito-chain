@@ -3,7 +3,10 @@ package gomobile
 import (
 	"encoding/base64"
 	"encoding/json"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"errors"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"math/big"
 	"time"
 )
@@ -17,6 +20,11 @@ func SayHello(i string) string {
 	return i
 }
 
+// args {
+//      "values": valueStrs,
+//      "rands": randStrs
+//    }
+// convert object to JSON string (JSON.stringify)
 func AggregatedRangeProve(args string) string {
 	println("args:", args)
 	bytes := []byte(args)
@@ -25,7 +33,7 @@ func AggregatedRangeProve(args string) string {
 
 	err := json.Unmarshal(bytes, &temp)
 	if err != nil {
-		println(err)
+		println("Can not unmarshal", err)
 		return ""
 	}
 	println("temp values", temp["values"])
@@ -61,4 +69,80 @@ func AggregatedRangeProve(args string) string {
 	println("proofBase64: %v\n", proofBase64)
 
 	return proofBase64
+}
+
+// args {
+//      "commitments": commitments,   // list of bytes arrays
+//      "rand": rand,					// string
+// 		"indexiszero" 					//number
+//    }
+// convert object to JSON string (JSON.stringify)
+func OneOutOfManyProve(args string) (string, error) {
+	bytes := []byte(args)
+	//println("Bytes:", bytes)
+	temp := make(map[string][]string)
+
+	err := json.Unmarshal(bytes, &temp)
+	if err != nil {
+		println(err)
+		return "", err
+	}
+
+	// list of commitments
+	commitmentStrs := temp["commitments"]
+	//fmt.Printf("commitmentStrs: %v\n", commitmentStrs)
+
+	if len(commitmentStrs) != privacy.CMRingSize {
+		println(err)
+		return "", errors.New("the number of Commitment list's elements must be equal to CMRingSize")
+	}
+
+	commitmentPoints := make([]*privacy.EllipticPoint, len(commitmentStrs))
+
+	for i := 0; i < len(commitmentStrs); i++ {
+		//fmt.Printf("commitments[i]: %v\n", commitmentStrs[i])
+		tmp, _ := new(big.Int).SetString(commitmentStrs[i], 16)
+		tmpByte := tmp.Bytes()
+
+		commitmentPoints[i] = new(privacy.EllipticPoint)
+		err = commitmentPoints[i].Decompress(tmpByte)
+		if err != nil {
+			println(err)
+			return "", err
+		}
+	}
+
+	// rand
+	randBN, _ := new(big.Int).SetString(temp["rand"][0], 10)
+	//println("randBN: ", randBN)
+
+	// indexIsZero
+	indexIsZero, _ := new(big.Int).SetString(temp["indexiszero"][0], 10)
+	indexIsZeroUint64 := indexIsZero.Uint64()
+
+	//println("indexIsZeroUint64: ", indexIsZeroUint64)
+
+	// set witness for One out of many protocol
+	wit := new(zkp.OneOutOfManyWitness)
+	wit.Set(commitmentPoints, randBN, indexIsZeroUint64)
+	println("Wit: ", wit)
+
+	// proving
+	start := time.Now()
+	proof, err := wit.Prove()
+	//fmt.Printf("Proof go: %v\n", proof)
+	if err != nil {
+		println("Err: %v\n", err)
+	}
+	end := time.Since(start)
+	fmt.Printf("One out of many proving time: %v\n", end)
+
+	// convert proof to bytes array
+	proofBytes := proof.Bytes()
+	//println("Proof bytes: ", proofBytes)
+
+	proofBase64 := base64.StdEncoding.EncodeToString(proofBytes)
+	//println("proofBase64: %v\n", proofBase64)
+
+	return proofBase64, nil
 }
