@@ -8,7 +8,8 @@
     },
     15,
     0
-   ]
+   ],
+   "type": "http"
   },
   "output": {
    "error": null,

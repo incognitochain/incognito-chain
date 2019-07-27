@@ -56,7 +56,7 @@ func makeRPCRequest(ip, port, method string, params ...interface{}) (*rpcserver.
 	return &response, nil
 }
 
-func (client *Client) getBlockChainInfo() (*jsonresult.GetBlockChainInfoResult, *rpcserver.RPCError) {
+func (client *Client) getBlockChainInfo(params ...interface{}) (interface{}, *rpcserver.RPCError) {
 	result := &jsonresult.GetBlockChainInfoResult{}
 	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), []string{})
 	if rpcError != nil {
@@ -69,37 +69,8 @@ func (client *Client) getBlockChainInfo() (*jsonresult.GetBlockChainInfoResult, 
 	return result, res.Error
 }
 
-type ExampleReponse struct {
-	F1 string
-	F2 int
-}
-// example response => json result
-func (client *Client) getExampleRpc(p1 string, p2 int) (result *ExampleReponse, err *rpcserver.RPCError) {
-	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), p1, p2)
-	err = handleResponse(res.Result, rpcError, &result)
-	return result, err
-}
-
-func handleResponse(resResult json.RawMessage, rpcError *rpcserver.RPCError, resultObj interface{}) *rpcserver.RPCError {
-	if rpcError != nil {
-		return rpcError
-	}
-	errUnMarshal := json.Unmarshal(resResult, resultObj)
-	if errUnMarshal != nil {
-		//TODO: unmarshal error
-		return rpcserver.NewRPCError(rpcserver.ErrNetwork, errUnMarshal)
-	}
-	return nil
-}
-
-
-func (client *Client) createAndSendTransaction(privateKey string, receiver map[string]interface{}, estimateFee float64, hasPrivacyCoin float64) (*jsonresult.CreateTransactionResult, *rpcserver.RPCError) {
+func (client *Client) createAndSendTransaction(params ...interface{}) (interface{}, *rpcserver.RPCError) {
 	result := &jsonresult.CreateTransactionResult{}
-	params := []interface{}{}
-	params = append(params, privateKey)
-	params = append(params, receiver)
-	params = append(params, estimateFee)
-	params = append(params, hasPrivacyCoin)
 	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), params)
 	if rpcError != nil {
 		return result, rpcError
