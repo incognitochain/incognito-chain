@@ -6,6 +6,10 @@
 Sample Json:
 ```json
 {
+ "node": {
+  "host": "http://localhost",
+  "ip": 9334
+ },
  "input": {
   "command": "...",
   "params": [],
@@ -18,6 +22,9 @@ Sample Json:
  }    
 }
 ```
+### Node structure
+- host: ip or host to called
+- port: port to called
 ### Input Structure:
 - command: name of command (ex: gettransactionbyhash)
 - params: params of command (ex: "0xe4afb36e5a99c20cbd5835a1312fc1b5fd65dbe7d36eb992f1dcfcfa8b64c796")

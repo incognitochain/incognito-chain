@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/rpcserver"
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -15,6 +14,15 @@ import (
 type Client struct {
 	Host string `json:"host"`
 	Port string `json:"port"`
+}
+func newClient() *Client {
+	return &Client{}
+}
+func newClientWithHost(host, port string) *Client {
+	return &Client{
+		Host: host,
+		Port: port,
+	}
 }
 func getMethodName(depthList ...int) string {
 	var depth int
@@ -57,12 +65,13 @@ func makeRPCRequest(ip, port, method string, params ...interface{}) (*rpcserver.
 }
 
 func (client *Client) getBlockChainInfo(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	result := &jsonresult.GetBlockChainInfoResult{}
-	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), []string{})
+	//result := &jsonresult.GetBlockChainInfoResult{}
+	result := make(map[string]interface{})
+	res, rpcError := makeRPCRequest(client.Host, client.Port, getBlockChainInfo, []string{})
 	if rpcError != nil {
 		return result, rpcError
 	}
-	err := json.Unmarshal(res.Result, result)
+	err := json.Unmarshal(res.Result, &result)
 	if err != nil {
 		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
@@ -70,12 +79,13 @@ func (client *Client) getBlockChainInfo(params ...interface{}) (interface{}, *rp
 }
 
 func (client *Client) createAndSendTransaction(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	result := &jsonresult.CreateTransactionResult{}
+	//result := &jsonresult.CreateTransactionResult{}
+	result := make(map[string]interface{})
 	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), params)
 	if rpcError != nil {
 		return result, rpcError
 	}
-	err := json.Unmarshal(res.Result, result)
+	err := json.Unmarshal(res.Result, &result)
 	if err != nil {
 		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}

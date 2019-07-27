@@ -1,12 +1,14 @@
 package main
 
 import (
+	"log"
 	"testing"
 )
 
 func TestReadFile(t *testing.T) {
-	ok := readfile("./testsdata/transaction.json")
-	if !ok {
+	res, err := readfile("./testsdata/transaction.json")
+	if err != nil {
 		t.Fatal()
 	}
+	log.Println(res)
 }
