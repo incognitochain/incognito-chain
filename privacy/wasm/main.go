@@ -22,11 +22,21 @@ func aggregatedRangeProve(_ js.Value, args []js.Value) interface{} {
 	return gomobile.AggregatedRangeProve(args[0].String())
 }
 
+func oneOutOfManyProve(_ js.Value, args []js.Value) interface{} {
+	println("args.len :", len(args))
+	proof, err := gomobile.OneOutOfManyProve(args[0].String())
+	if err != nil {
+		return nil
+	}
+	return proof
+}
+
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
 	js.Global().Set("add", js.FuncOf(add))
 	js.Global().Set("sayHello", js.FuncOf(sayHello))
 	js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
+	js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
 	<-c
 }
