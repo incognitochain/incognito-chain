@@ -1,0 +1,46 @@
+[
+  {
+    "input": {
+      "command": "getbalancebyprivatekey",
+      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZ"],
+      "type": "http",
+      "wait": 60
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "Result": 1000000000000000
+      }
+    }
+  },
+  {
+    "input": {
+      "command": "createandsendtransaction",
+      "params": [
+        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        {
+          "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi": 1000
+        },
+        10,
+        0
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  },
+  {
+    "input": {
+      "command": "getbalancebyprivatekey",
+      "params": ["112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM"],
+      "type": "http"
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "Result": 1000
+      }
+    }
+  }
+]
