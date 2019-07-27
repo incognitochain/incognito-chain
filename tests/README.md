@@ -8,14 +8,21 @@ Sample Json:
 {
  "input": {
   "command": "...",
-  "params": []
+  "params": [],
+  "type": "http",
+  "wait": "60"
  },
  "output": {
-  "error": null or {},
+  "error": null,
   "response": {}
  }    
 }
 ```
+### Input Structure:
+- command: name of command (ex: gettransactionbyhash)
+- params: params of command (ex: "0xe4afb36e5a99c20cbd5835a1312fc1b5fd65dbe7d36eb992f1dcfcfa8b64c796")
+- type: connection type to node, http or ws (websocket)
+- wait: wait time of this command, counted in second. This command may wait for n seconds or executed again and again in n second until the return output has `null` error. 
 ### Output structure:
 - Error:
     1. null
@@ -65,6 +72,7 @@ params: ["0xe4afb36e5a99c20cbd5835a1312fc1b5fd65dbe7d36eb992f1dcfcfa8b64c796"]
 
 ## Rpc Method Prototype
 ```$xslt
+
 type ExampleReponse struct {
 	F1 string
 	F2 int
@@ -72,14 +80,20 @@ type ExampleReponse struct {
 // example response => json result
 func (client *Client) getExampleRpc(p1 string, p2 int) (result *ExampleReponse, err *rpcserver.RPCError) {
 	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), p1, p2)
+	err = handleResponse(res.Result, rpcError, &result)
+	return result, err
+}
+
+func handleResponse(resResult json.RawMessage, rpcError *rpcserver.RPCError, resultObj interface{}) *rpcserver.RPCError {
 	if rpcError != nil {
-		return nil, rpcError
+		return rpcError
 	}
-	errUnMarshal := json.Unmarshal(res.Result, &result)
+	errUnMarshal := json.Unmarshal(resResult, resultObj)
 	if errUnMarshal != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		//TODO: unmarshal error
+		return rpcserver.NewRPCError(rpcserver.ErrNetwork, errUnMarshal)
 	}
-	return result, res.Error
+	return nil
 }
 
 ``` 
