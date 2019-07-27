@@ -92,7 +92,7 @@ func (proof *OneOutOfManyProof) isNil() bool {
 	if proof.zd == nil {
 		return true
 	}
-	return proof.stmt == nil
+	return false
 }
 
 func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
@@ -153,6 +153,8 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 	}
 	// convert array ca to bytes array
 	for i := 0; i < n; i++ {
+		fmt.Printf("proof.ca[i]: %v\n", proof.ca[i])
+		fmt.Printf("proof.ca[i]: %v\n", proof.ca[i].Compress())
 		bytes = append(bytes, proof.ca[i].Compress()...)
 	}
 
