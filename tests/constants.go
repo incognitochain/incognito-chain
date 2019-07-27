@@ -4,5 +4,5 @@ const (
 	getTransactionByHash = "gettransactionbyhash"
 	createAndSendTransaction = "createandsendtransaction"
 	getBalanceByPrivatekey = "getbalancebyprivatekey"
-	getBlockChainInfo = "getBlockChainInfo"
+	getBlockChainInfo = "getblockchaininfo"
 )
