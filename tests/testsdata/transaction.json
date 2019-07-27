@@ -1,5 +1,9 @@
 [
   {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
     "input": {
       "command": "getbalancebyprivatekey",
       "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZ"],
@@ -14,6 +18,10 @@
     }
   },
   {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
     "input": {
       "command": "createandsendtransaction",
       "params": [
@@ -31,6 +39,10 @@
     }
   },
   {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
     "input": {
       "command": "getbalancebyprivatekey",
       "params": ["112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM"],

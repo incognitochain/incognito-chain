@@ -77,7 +77,9 @@ type RPCError struct {
 	err        error  `json:"Err"`
 	StackTrace string `json:"StackTrace"`
 }
-
+func GetErrorCode(err int) int {
+	return ErrCodeMessage[err].code
+}
 // Guarantee RPCError satisifies the builtin error interface.
 var _, _ error = RPCError{}, (*RPCError)(nil)
 

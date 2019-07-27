@@ -8,6 +8,7 @@ import (
 	"time"
 )
 type step struct {
+	client *Client
 	input struct {
 		name string
 		params []interface{}
@@ -26,6 +27,7 @@ type step struct {
 }
 func newStep() *step {
 	step := &step{}
+	step.client = newClient()
 	step.input.name = ""
 	step.input.params = []interface{}{}
 	step.input.wait = time.Duration(0*time.Second)
@@ -41,16 +43,16 @@ func readfile(filename string) ([]*step, error) {
 		err error
 		ok bool
 		data []byte
-		tests []map[string]interface{}
+		testcase []map[string]interface{}
 		sc []*step
 	)
 	data, err = ioutil.ReadFile(filename)
 	if err != nil {
 		return sc, err
 	}
-	err = json.Unmarshal(data, &tests)
-	log.Println(tests)
-	sc,ok = parseScenarios(tests)
+	err = json.Unmarshal(data, &testcase)
+	log.Println(testcase)
+	sc,ok = parseScenarios(testcase)
 	if !ok {
 		return sc, fmt.Errorf("Parse file %+v error", filename)
 	}
@@ -61,6 +63,17 @@ func parseScenarios(tests []map[string]interface{}) ([]*step,bool) {
 	sc := []*step{}
 	for _, tests := range tests {
 		step := newStep()
+		if nodeData, ok := tests["node"]; !ok {
+			return sc, false
+		} else {
+			if node, ok := nodeData.(map[string]interface{}); !ok {
+				return sc, false
+			} else {
+				host := node["host"].(string)
+				port := node["port"].(string)
+				step.client = newClientWithHost(host, port)
+			}
+		}
 		if inputData, ok := tests["input"]; !ok {
 			return sc, false
 		} else {
