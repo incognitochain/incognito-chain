@@ -96,7 +96,7 @@ func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 	}
 
 	err = proof.SetBytes(temp)
-	if err != nil{
+	if err.(*privacy.PrivacyError) != nil {
 		return err
 	}
 	return nil
