@@ -1,8 +1,68 @@
 # Intergration Test
-
 ## Params
 - Second Os Params: testcase name
 - Third Os Params: config file
+## Json file format
+Sample Json:
+```json
+{
+ "input": {
+  "command": "...",
+  "params": []
+ },
+ "output": {
+  "error": null or {},
+  "response": {}
+ }    
+}
+```
+### Output structure:
+- Error:
+    1. null
+    2. Expect code and message, example:
+```json
+    {
+      "code": -1,
+      "message": "unexpected error"
+    }
+``` 
+- Response: expected value with key value type, 
+
+Check return result and find expected value by key then compare the value
+
+If response is `{}` then ignore expected response
+Example:
+- Expected response
+```json
+{
+  "balance": 1000
+}
+```
+- Returned response
+```json
+{
+  "paymentaddress": "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi",
+  "balance": 1000
+}
+```
+Returned response may have many information but as long as it meet the expected response then it pass the test. In another word, expected response is subset of returned response 
+### Command and Params List: 
+#### Create and Send Transaction:
+```
+command: createandsendtransaction
+params: [ "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM",
+        { "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":5250000000000},
+        2,
+        0,
+        64 ]
+```
+#### Get Transaction By Hash:
+```
+command: gettranssactionbyhash
+params: ["0xe4afb36e5a99c20cbd5835a1312fc1b5fd65dbe7d36eb992f1dcfcfa8b64c796"]
+```
+
+
 ## Rpc Method Prototype
 ```$xslt
 type ExampleReponse struct {
