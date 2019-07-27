@@ -46,10 +46,10 @@ go run *.go --discoverpeersaddress "127.0.0.1:9330" --nodemode "relay" --datadir
 fi
 ######
 if [ "$1" == "shard-stake-1" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe" --nodemode "auto" --datadir "data/shard-stake" --listen "127.0.0.1:9436" --externaladdress "127.0.0.1:9436" --norpcauth --rpclisten "127.0.0.1:9343"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe" --nodemode "auto" --datadir "data/shard-stake" --listen "127.0.0.1:9437" --externaladdress "127.0.0.1:9437" --norpcauth --rpclisten "127.0.0.1:9346"
 fi
 if [ "$1" == "shard-stake-2" ]; then
-go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM" --nodemode "auto" --datadir "data/shard-stake-2" --listen "127.0.0.1:9446" --externaladdress "127.0.0.1:9446" --norpcauth --rpclisten "127.0.0.1:9344"
+go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM" --nodemode "auto" --datadir "data/shard-stake-2" --listen "127.0.0.1:9438" --externaladdress "127.0.0.1:9438" --norpcauth --rpclisten "127.0.0.1:9347"
 fi
 if [ "$1" == "shard-stake-3" ]; then
 go run *.go --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rzcRLXhra2ouQo4yCZiQt1iEoZdRkD3m6fixXqCLzygjo28L3isePdPjPbXJ7zcxgyxbiNuF4Ex15NFCHVLwHhJD7QL7AHUfUsH78AP" --nodemode "auto" --datadir "data/shard-stake-3" --listen "127.0.0.1:9447" --externaladdress "127.0.0.1:9447" --norpcauth --rpclisten "127.0.0.1:9345"
