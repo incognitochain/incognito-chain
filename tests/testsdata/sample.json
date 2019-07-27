@@ -1,0 +1,17 @@
+{
+ "input": {
+  "command": "createandsendtransaction",
+  "params": [
+    "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+    {
+     "1Uv2wgU5FR5jjeN3uY3UJ4SYYyjqj97spYBEDa6cTLGiP3w6BCY7mqmASKwXz8hXfLr6mpDjhWDJ8TiM5v5U5f2cxxqCn5kwy5JM9wBgi":50
+    },
+    15,
+    0
+   ]
+  },
+  "output": {
+   "error": null,
+   "response": {}
+  }
+}
