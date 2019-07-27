@@ -16,7 +16,17 @@ type Client struct {
 	Host string `json:"host"`
 	Port string `json:"port"`
 }
-
+func getMethodName(depthList ...int) string {
+	var depth int
+	if depthList == nil {
+		depth = 1
+	} else {
+		depth = depthList[0]
+	}
+	function, _, _, _ := runtime.Caller(depth)
+	r, _ := regexp.Compile("\\.(.*)")
+	return strings.ToLower(r.FindStringSubmatch(runtime.FuncForPC(function).Name())[1])
+}
 func makeRPCRequest(ip, port, method string, params ...interface{}) (*rpcserver.JsonResponse, *rpcserver.RPCError) {
 	request := rpcserver.JsonRequest{
 		Jsonrpc: "1.0",
@@ -82,14 +92,23 @@ func handleResponse(resResult json.RawMessage, rpcError *rpcserver.RPCError, res
 	return nil
 }
 
-func getMethodName(depthList ...int) string {
-	var depth int
-	if depthList == nil {
-		depth = 1
-	} else {
-		depth = depthList[0]
+
+func (client *Client) createAndSendTransaction(privateKey string, receiver map[string]interface{}, estimateFee float64, hasPrivacyCoin float64) (*jsonresult.CreateTransactionResult, *rpcserver.RPCError) {
+	result := &jsonresult.CreateTransactionResult{}
+	params := []interface{}{}
+	params = append(params, privateKey)
+	params = append(params, receiver)
+	params = append(params, estimateFee)
+	params = append(params, hasPrivacyCoin)
+	res, rpcError := makeRPCRequest(client.Host, client.Port, getMethodName(), params)
+	if rpcError != nil {
+		return result, rpcError
 	}
-	function, _, _, _ := runtime.Caller(depth)
-	r, _ := regexp.Compile("\\.(.*)")
-	return strings.ToLower(r.FindStringSubmatch(runtime.FuncForPC(function).Name())[1])
+	err := json.Unmarshal(res.Result, result)
+	if err != nil {
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	}
+	return result, nil
 }
+
+
