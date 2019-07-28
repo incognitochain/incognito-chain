@@ -24,10 +24,6 @@ func (s *BeaconChain) PushMessageToValidator(msg wire.Message) error {
 	return s.Node.PushMessageToBeacon(msg)
 }
 
-func (s *BeaconChain) GetNodePubKey() string {
-	return s.Node.GetNodePubKey()
-}
-
 func (s *BeaconChain) GetLastBlockTimeStamp() uint64 {
 	return uint64(s.Blockchain.BestState.Beacon.BestBlock.Header.Timestamp)
 }
@@ -49,8 +45,7 @@ func (s *BeaconChain) GetCommitteeSize() int {
 	return len(s.Blockchain.BestState.Beacon.BeaconCommittee)
 }
 
-func (s *BeaconChain) GetNodePubKeyCommitteeIndex() int {
-	pubkey := s.Node.GetNodePubKey()
+func (s *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
 	return common.IndexOfStr(pubkey, s.Blockchain.BestState.Beacon.BeaconCommittee)
 }
 
@@ -58,18 +53,15 @@ func (s *BeaconChain) GetLastProposerIndex() int {
 	return common.IndexOfStr(base58.Base58Check{}.Encode(s.Blockchain.BestState.Beacon.BestBlock.Header.ProducerAddress.Pk, common.ZeroByte), s.Blockchain.BestState.Beacon.BeaconCommittee)
 }
 
-func (s *BeaconChain) CreateNewBlock(round int) BlockInterface {
-	userKeyset := s.Node.GetUserKeySet()
-	paymentAddress := userKeyset.PaymentAddress
-	newBlock, err := s.BlockGen.NewBlockBeacon(&paymentAddress, round, s.Blockchain.Synker.GetClosestShardToBeaconPoolState())
+func (s *BeaconChain) CreateNewBlock() BlockInterface {
+	newBlock, err := s.BlockGen.NewBlockBeacon(s.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil
-	} else {
-		err = s.BlockGen.FinalizeBeaconBlock(newBlock, userKeyset)
-		if err != nil {
-			return nil
-		}
 	}
+	// err = s.BlockGen.FinalizeBeaconBlock(newBlock, userKeyset)
+	// if err != nil {
+	// 	return nil
+	// }
 	return newBlock
 }
 

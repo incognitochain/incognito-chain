@@ -1,9 +1,21 @@
-package bft
+package blsbft
 
 import (
+	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
+
+type BFTPropose struct {
+	Block json.RawMessage
+}
+
+type BFTAgree struct {
+	RoundKey  string
+	Validator string
+	Sig       string
+}
 
 func MakeBFTProposeMsg(block, chainkey, roundkey string, userKeySet *incognitokey.KeySet) (wire.Message, error) {
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFTPropose)
@@ -18,7 +30,7 @@ func MakeBFTProposeMsg(block, chainkey, roundkey string, userKeySet *incognitoke
 	return msg, nil
 }
 
-func MakeBFTPrepareMsg(isOK bool, chainKey, blkHash, roundKey string, userKeySet *incognitokey.KeySet) (wire.Message, error) {
+func MakeBFTAgreeMsg(isOK bool, chainKey, blkHash, roundKey string, userKeySet *incognitokey.KeySet) (wire.Message, error) {
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFTPrepare)
 	msg.(*wire.MessageBFTPrepareV2).IsOk = isOK
 	msg.(*wire.MessageBFTPrepareV2).ChainKey = chainKey

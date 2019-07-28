@@ -41,6 +41,7 @@ const (
 	CmdBFTCommit  = "bftcommit"
 	CmdBFTReady   = "bftready"
 	CmdBFTReq     = "bftreq"
+	CmdBFT        = "bft"
 	CmdPeerState  = "peerstate"
 
 	// heavy message check cmd
@@ -167,14 +168,18 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdMsgCheck:
 		msg = &MessageMsgCheck{
-			Timestamp: time.Now().UnixNano(),
+			Timestamp: time.Now().Unix(),
 		}
 		break
 	case CmdMsgCheckResp:
 		msg = &MessageMsgCheckResp{
-			Timestamp: time.Now().UnixNano(),
+			Timestamp: time.Now().Unix(),
 		}
 		break
+	case CmdBFT:
+		msg = &MessageBFT{
+			Timestamp: time.Now().Unix(),
+		}
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -235,6 +240,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdMsgCheck, nil
 	case reflect.TypeOf(&MessageMsgCheckResp{}):
 		return CmdMsgCheckResp, nil
+	case reflect.TypeOf(&MessageBFT{}):
+		return CmdBFT, nil
 	default:
 		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
