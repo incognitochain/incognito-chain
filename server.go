@@ -361,7 +361,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	}
 
 	// Init consensus engine
-	serverObj.consensusEngine = &consensus.ConsensusManager
+	serverObj.consensusEngine = consensus.New(&serverObj, serverObj.blockChain, serverObj.blockgen)
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
@@ -617,7 +617,7 @@ func (serverObj Server) Start() {
 	go serverObj.blockChain.Synker.Start()
 
 	if cfg.NodeMode != common.NODEMODE_RELAY {
-		err := serverObj.consensusEngine.Start(&serverObj, serverObj.blockChain, serverObj.blockgen)
+		err := serverObj.consensusEngine.Start()
 		if err != nil {
 			Logger.log.Error(err)
 			go serverObj.Stop()

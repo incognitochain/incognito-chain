@@ -1,4 +1,4 @@
-package bft
+package blsbft
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ type SigStatus struct {
 	SigContent string
 }
 
-type BFTCore struct {
+type BLSBFT struct {
 	ChainKey   string
 	Chain      chain.ChainInterface
 	PeerID     string
@@ -60,30 +60,30 @@ type BFTCore struct {
 	IsRunning      bool
 }
 
-func (e *BFTCore) IsRun() bool {
+func (e *BLSBFT) IsRun() bool {
 	return e.IsRunning
 }
 
-func (e *BFTCore) GetInfo() string {
+func (e *BLSBFT) GetInfo() string {
 	return ""
 }
 
-func (e *BFTCore) ReceiveProposeMsg(msg interface{}) {
+func (e *BLSBFT) ReceiveProposeMsg(msg interface{}) {
 	e.ProposeMsgCh <- msg.(ProposeMsg)
 }
 
-func (e *BFTCore) ReceivePrepareMsg(msg interface{}) {
+func (e *BLSBFT) ReceivePrepareMsg(msg interface{}) {
 	e.PrepareMsgCh <- msg.(PrepareMsg)
 }
 
-func (e *BFTCore) Stop() {
+func (e *BLSBFT) Stop() {
 	if e.IsRunning {
 		close(e.StopCh)
 		e.IsRunning = false
 	}
 }
 
-func (e *BFTCore) Start() {
+func (e *BLSBFT) Start() {
 	e.IsRunning = true
 	e.StopCh = make(chan int)
 	e.PrepareMsgs = map[string]map[string]SigStatus{}
@@ -163,7 +163,7 @@ func (e *BFTCore) Start() {
 	}()
 }
 
-func (e *BFTCore) enterProposePhase() {
+func (e *BLSBFT) enterProposePhase() {
 	if !e.isInTimeFrame() || e.State == PROPOSE {
 		return
 	}
@@ -179,14 +179,14 @@ func (e *BFTCore) enterProposePhase() {
 
 }
 
-func (e *BFTCore) enterListenPhase() {
+func (e *BLSBFT) enterListenPhase() {
 	if !e.isInTimeFrame() || e.State == LISTEN {
 		return
 	}
 	e.setState(LISTEN)
 }
 
-func (e *BFTCore) enterPreparePhase() {
+func (e *BLSBFT) enterPreparePhase() {
 	if !e.isInTimeFrame() || e.State == PREPARE {
 		return
 	}
@@ -194,7 +194,7 @@ func (e *BFTCore) enterPreparePhase() {
 	e.validateAndSendVote()
 }
 
-func (e *BFTCore) enterNewRound() {
+func (e *BLSBFT) enterNewRound() {
 	//if chain is not ready,  return
 	if !e.Chain.IsReady() {
 		e.State = ""

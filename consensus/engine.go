@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/consensus/bft"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -19,16 +18,24 @@ const (
 )
 
 type Engine struct {
+	Node             chain.Node
 	ChainList        map[string]chain.ChainInterface
 	Blockchain       *blockchain.BlockChain
+	BlockGen         *blockchain.BlkTmplGenerator
 	ConsensusOnGoing bool
 }
 
-var ConsensusManager = Engine{
-	ChainList: make(map[string]chain.ChainInterface),
+func New(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlkTmplGenerator) *Engine {
+	engine := Engine{
+		Node:       node,
+		Blockchain: blockchain,
+		BlockGen:   blockgen,
+	}
+	return &engine
 }
 
-func init() {
+func (s *Engine) Start() error {
+	//start beacon and run consensus engine
 	go func() {
 		ticker := time.Tick(time.Millisecond * 1000)
 		for _ = range ticker {
@@ -37,10 +44,6 @@ func init() {
 			}
 		}
 	}()
-}
-
-func (s *Engine) Start(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlkTmplGenerator) error {
-	//start beacon and run consensus engine
 	beaconChain, ok := s.ChainList[BEACON_CHAINKEY]
 	if !ok {
 		bftcore := &bft.BFTCore{ChainKey: BEACON_CHAINKEY, IsRunning: false, UserKeySet: node.GetUserKeySet()}
@@ -124,4 +127,8 @@ func convertPrepareMsg(msg *wire.MessageBFTPrepareV2) bft.PrepareMsg {
 		BlkHash:    msg.BlkHash,
 	}
 	return prepareMsg
+}
+
+func GetShardChainKey(shardID byte) string {
+	return SHARD_CHAINKEY + "-" + string(shardID)
 }

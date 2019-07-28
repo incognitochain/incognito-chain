@@ -43,7 +43,7 @@ const (
 	DefaultDisableRpcTLS          = true
 	DefaultFastStartup            = true
 	DefaultNodeMode               = common.NODEMODE_RELAY
-	DefaultEnableMining           = true
+	DefaultEnableMining           = false
 	DefaultTxPoolTTL              = uint(86400) * 10 // in second
 	DefaultTxPoolMaxTx            = uint64(100000)
 	DefaultLimitFee               = uint64(0)
@@ -119,7 +119,7 @@ type config struct {
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
-	PrivateKey  string `long:"privatekey" description:"User spending key used for operation in consensus"`
+	// PrivateKey  string `long:"privatekey" description:"User spending key used for operation in consensus"`
 	NodeMode    string `long:"nodemode" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
@@ -145,6 +145,7 @@ type config struct {
 	BtcClientUsername string `long:"btcclientusername" description:"Bitcoin Client Username for RPC"`
 	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
 	EnableMining      bool   `long:"mining" description:"enable mining"`
+	MiningKeys        string `long:"miningkeys" description:"keys used for different consensus algorigthm"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -623,6 +624,10 @@ func loadConfig() (*config, []string, error) {
 			err := errors.New("discover peers server is empty")
 			return nil, nil, err
 		}
+	}
+
+	if cfg.MiningKeys == "" && cfg.NodeMode != common.NODEMODE_RELAY {
+		return nil, nil, errors.New("MiningKeys can't be empty if nodemode isn't relay")
 	}
 
 	// Warn about missing config file only after all other configuration is
