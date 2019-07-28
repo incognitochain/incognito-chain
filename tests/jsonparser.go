@@ -25,6 +25,7 @@ type step struct {
 		}
 		response map[string]interface{}
 	}
+	store map[string]string
 }
 type scenarios struct {
 	steps []*step
@@ -40,6 +41,7 @@ func newStep() *step {
 	step.input.conn = "http"
 	step.output.error.isNil = true
 	step.output.response = make(map[string]interface{})
+	step.store = make(map[string]string)
 	return step
 }
 func newScenarios() *scenarios {
@@ -48,13 +50,13 @@ func newScenarios() *scenarios {
 		context: make(map[string]interface{}),
 	}
 }
-func readfile(filename string) ([]*step, error) {
+func readfile(filename string) (*scenarios, error) {
 	var  (
 		err error
 		ok bool
 		data []byte
 		testcase []map[string]interface{}
-		sc []*step
+		sc *scenarios
 	)
 	data, err = ioutil.ReadFile(filename)
 	if err != nil {
@@ -147,7 +149,20 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios,bool) {
 				}
 			}
 		}
-		sc = append(sc, step)
+		if storeData, ok := tests["store"]; ok {
+			if store, ok := storeData.(map[string]interface{}); !ok {
+				return sc, false
+			} else {
+				for key, value := range store {
+					if _, ok := value.(string); !ok {
+						return sc, false
+					} else {
+						step.store[key] = value.(string)
+					}
+				}
+			}
+		}
+		sc.steps = append(sc.steps, step)
 	}
 	return sc, true
 }
