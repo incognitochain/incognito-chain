@@ -228,8 +228,10 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 		balance += out.CoinDetails.Value
 	}
 	log.Println(balance)
-
-	return balance, nil
+	return jsonresult.AccountBalanceResult{
+		Account: senderKey.Base58CheckSerialize(wallet.PaymentAddressType),
+		Balance: balance,
+	}, nil
 }
 
 // handleGetBalanceByPaymentAddress -  return balance of paymentaddress

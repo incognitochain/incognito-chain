@@ -7,20 +7,21 @@ import (
 	"log"
 	"time"
 )
+
 type step struct {
 	client *Client
-	input struct {
-		name string
+	input  struct {
+		name        string
 		fromContext bool
-		params []interface{}
-		isWait bool
-		wait time.Duration
-		conn string
+		params      []interface{}
+		isWait      bool
+		wait        time.Duration
+		conn        string
 	}
 	output struct {
 		error struct {
-			isNil bool
-			code int
+			isNil   bool
+			code    int
 			message string
 		}
 		response map[string]interface{}
@@ -28,15 +29,16 @@ type step struct {
 	store map[string]string
 }
 type scenarios struct {
-	steps []*step
+	steps   []*step
 	context map[string]interface{}
 }
+
 func newStep() *step {
 	step := &step{}
 	step.client = newClient()
 	step.input.name = ""
 	step.input.params = []interface{}{}
-	step.input.wait = time.Duration(0*time.Second)
+	step.input.wait = time.Duration(0 * time.Second)
 	step.input.isWait = false
 	step.input.conn = "http"
 	step.output.error.isNil = true
@@ -46,17 +48,17 @@ func newStep() *step {
 }
 func newScenarios() *scenarios {
 	return &scenarios{
-		steps: []*step{},
+		steps:   []*step{},
 		context: make(map[string]interface{}),
 	}
 }
 func readfile(filename string) (*scenarios, error) {
-	var  (
-		err error
-		ok bool
-		data []byte
+	var (
+		err      error
+		ok       bool
+		data     []byte
 		testcase []map[string]interface{}
-		sc *scenarios
+		sc       *scenarios
 	)
 	data, err = ioutil.ReadFile(filename)
 	if err != nil {
@@ -64,14 +66,14 @@ func readfile(filename string) (*scenarios, error) {
 	}
 	err = json.Unmarshal(data, &testcase)
 	log.Println(testcase)
-	sc,ok = parseScenarios(testcase)
+	sc, ok = parseScenarios(testcase)
 	if !ok {
 		return sc, fmt.Errorf("Parse file %+v error", filename)
 	}
 	return sc, nil
 }
 
-func parseScenarios(tests []map[string]interface{}) (*scenarios,bool) {
+func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 	sc := newScenarios()
 	for _, tests := range tests {
 		step := newStep()
@@ -128,7 +130,8 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios,bool) {
 					if errData == nil {
 						step.output.error.isNil = true
 					} else {
-						if err, ok := errData.(map[string]interface{}); !ok {
+						if err, ok := errData.(map[string]interface{}); ok {
+							step.output.error.isNil = false
 							if code, ok := err["code"]; !ok {
 								return sc, false
 							} else {
