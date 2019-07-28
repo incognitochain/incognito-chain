@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -17,16 +16,18 @@ type ConsensusInterface interface {
 
 	ReceiveProposeMsg(interface{})
 	ReceivePrepareMsg(interface{})
+
+	ProcessBFTMsg(interface{})
+	ValidateBlock(interface{}) error
 }
 
 type BlockInterface interface {
 	GetHeight() uint64
-	GetProducerPubKey() string
-	// GetProducerSig() string
 	Hash() *common.Hash
 	AddValidationField(validateData string) error
 	GetValidationField() string
 	GetRound() int
+	GetRoundKey() string
 }
 
 type ChainInterface interface {
@@ -50,6 +51,5 @@ type ChainInterface interface {
 type Node interface {
 	PushMessageToShard(wire.Message, byte) error
 	PushMessageToBeacon(wire.Message) error
-	GetNodePubKey() string
-	GetUserKeySet() *incognitokey.KeySet
+	IsEnableMining() bool
 }

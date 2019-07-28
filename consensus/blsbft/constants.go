@@ -1,11 +1,11 @@
-package bft
+package blsbft
 
 import "time"
 
 const (
 	PROPOSE  = "PROPOSE"
 	LISTEN   = "LISTEN"
-	PREPARE  = "PREPARE"
+	AGREE    = "AGREE"
 	NEWROUND = "NEWROUND"
 )
 

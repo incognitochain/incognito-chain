@@ -81,6 +81,8 @@ const (
 	PENDING_ROLE   = "pending"
 
 	MAX_SHARD_NUMBER = 8
+
+	BLS_CONSENSUS = "bls"
 )
 
 // Ethereum Decentralized bridge

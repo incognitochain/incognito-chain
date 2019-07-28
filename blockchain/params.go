@@ -1,5 +1,7 @@
 package blockchain
 
+import "github.com/incognitochain/incognito-chain/common"
+
 /*
 Params defines a network by its component. These component may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -30,6 +32,7 @@ type GenesisParams struct {
 	PreSelectBeaconNode                 []string
 	PreSelectShardNodeSerializedPubkey  []string
 	PreSelectShardNode                  []string
+	ConsensusAlgorithm                  string
 }
 
 var ChainTestParam = Params{}
@@ -45,7 +48,8 @@ func init() {
 
 		//@Notice: InitTxsForBenchmark is for testing and benchmark only
 		//InitialIncognito: benchmark.GetInitTransaction(),
-		InitialIncognito: TestnetInitPRV,
+		InitialIncognito:   TestnetInitPRV,
+		ConsensusAlgorithm: common.BLS_CONSENSUS,
 	}
 	ChainTestParam = Params{
 		Name:                   TestnetName,
@@ -71,7 +75,8 @@ func init() {
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
 
-		InitialIncognito: MainnetInitPRV,
+		InitialIncognito:   MainnetInitPRV,
+		ConsensusAlgorithm: common.BLS_CONSENSUS,
 	}
 	ChainMainParam = Params{
 		Name:                   MainetName,

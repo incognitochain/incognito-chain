@@ -44,10 +44,10 @@ type BeaconHeader struct {
 	// infer from history
 	// Candidate public key for beacon chain
 	BeaconCandidateRoot common.Hash `json:"BeaconCandidateRoot"` // Candidate public key for all shard
-	ShardCandidateRoot common.Hash `json:"ShardCandidateRoot"` // Shard validator build from ShardCommittee and ShardPendingValidator
+	ShardCandidateRoot  common.Hash `json:"ShardCandidateRoot"`  // Shard validator build from ShardCommittee and ShardPendingValidator
 	ShardValidatorsRoot common.Hash `json:"ShardValidatorRoot"`
-	ShardStateHash common.Hash `json:"ShardListRootHash"` // each shard will have a list of blockHash, shardRoot is hash of all list
-	InstructionHash common.Hash `json:"InstructionHash"` 	// hash of all parameters == hash of instruction
+	ShardStateHash      common.Hash `json:"ShardListRootHash"` // each shard will have a list of blockHash, shardRoot is hash of all list
+	InstructionHash     common.Hash `json:"InstructionHash"`   // hash of all parameters == hash of instruction
 	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionHash but for simplicity, we keep it for now
 	InstructionMerkleRoot common.Hash
@@ -183,4 +183,7 @@ func (beaconBlock *BeaconBlock) GetValidationField() string {
 
 func (beaconBlock BeaconBlock) GetRound() int {
 	return beaconBlock.Header.Round
+}
+func (beaconBlock BeaconBlock) GetRoundKey() string {
+	return fmt.Sprint(beaconBlock.Header.Height, "_", beaconBlock.Header.Round)
 }
