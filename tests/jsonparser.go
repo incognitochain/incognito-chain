@@ -11,6 +11,7 @@ type step struct {
 	client *Client
 	input struct {
 		name string
+		fromContext bool
 		params []interface{}
 		isWait bool
 		wait time.Duration
@@ -25,6 +26,10 @@ type step struct {
 		response map[string]interface{}
 	}
 }
+type scenarios struct {
+	steps []*step
+	context map[string]interface{}
+}
 func newStep() *step {
 	step := &step{}
 	step.client = newClient()
@@ -37,7 +42,12 @@ func newStep() *step {
 	step.output.response = make(map[string]interface{})
 	return step
 }
-
+func newScenarios() *scenarios {
+	return &scenarios{
+		steps: []*step{},
+		context: make(map[string]interface{}),
+	}
+}
 func readfile(filename string) ([]*step, error) {
 	var  (
 		err error
@@ -59,8 +69,8 @@ func readfile(filename string) ([]*step, error) {
 	return sc, nil
 }
 
-func parseScenarios(tests []map[string]interface{}) ([]*step,bool) {
-	sc := []*step{}
+func parseScenarios(tests []map[string]interface{}) (*scenarios,bool) {
+	sc := newScenarios()
 	for _, tests := range tests {
 		step := newStep()
 		if nodeData, ok := tests["node"]; !ok {
@@ -81,13 +91,14 @@ func parseScenarios(tests []map[string]interface{}) ([]*step,bool) {
 				return sc, false
 			} else {
 				step.input.name = input["command"].(string)
+				if fromContext, ok := input["context"]; !ok {
+					step.input.fromContext = false
+				} else {
+					step.input.fromContext = fromContext.(bool)
+				}
 				if params, ok := input["params"]; !ok {
 					return sc, false
 				} else {
-					//paramsBytes, err := json.Marshal(params)
-					//if err != nil {
-					//	return sc, false
-					//}
 					step.input.params = params.([]interface{})
 				}
 				if wait, ok := input["wait"]; !ok {

@@ -8,10 +8,11 @@ Sample Json:
 {
  "node": {
   "host": "http://localhost",
-  "ip": 9334
+  "ip": "9334"
  },
  "input": {
   "command": "...",
+  "context": false,
   "params": [],
   "type": "http",
   "wait": "60"
@@ -19,18 +20,26 @@ Sample Json:
  "output": {
   "error": null,
   "response": {}
+ },
+ "store": {
+  "variable-key": "variable-value"
  }    
 }
 ```
-### Node structure
+### Node Structure
 - host: ip or host to called
 - port: port to called
 ### Input Structure:
 - command: name of command (ex: gettransactionbyhash)
+- context:
+    + true: get value for params from scenarios context, get by key
+    + false (by default): get value from input params
 - params: params of command (ex: "0xe4afb36e5a99c20cbd5835a1312fc1b5fd65dbe7d36eb992f1dcfcfa8b64c796")
+    + if context is true: input params is keys in context
+    + if context is false: input params is value from json file
 - type: connection type to node, http or ws (websocket)
 - wait: wait time of this command, counted in second. This command may wait for n seconds or executed again and again in n second until the return output has `null` error. 
-### Output structure:
+### Output Structure:
 - Error:
     1. null
     2. Expect code and message, example:
@@ -59,7 +68,62 @@ Example:
   "balance": 1000
 }
 ```
-Returned response may have many information but as long as it meet the expected response then it pass the test. In another word, expected response is subset of returned response 
+Returned response may have many information but as long as it meet the expected response then it pass the test. In another word, expected response is subset of returned response
+### Store Structure:
+- Value to be stored must be a value from returned output
+- This key-value pair will be stored in context of scenarios
+ 
+#### Example
+```json
+[
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+    "input": {
+      "command": "createandsendtransaction",
+      "context": false,
+      "params": [
+        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        {
+          "1Uv34F64ktQkX1eyd6YEG8KTENV8W5w48LRsi6oqqxVm65uvcKxEAzL2dp5DDJTqAQA7HANfQ1enKXCh2EvVdvBftko6GtGnjSZ1KqJhi": 1000
+        },
+        10,
+        0
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    },
+    "store": {
+      "TxID1": "TxID"
+      // returned response must contain key TxID
+      // get value by key TxID then stored in scenarios context with key TxID1
+      // if TxID can't be found from returned response then testcase is failed  
+    }
+  },
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+    "input": {
+      "command": "gettransactionbyhash",
+      "context": true,
+      // get input params from scenarios context
+      "params": ["TxID1"],
+      // get value from scenarios context by key TxID1 as input params 
+      "type": "ws"
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  }
+]  
+```
 ### Command and Params List: 
 #### Create and Send Transaction:
 ```
