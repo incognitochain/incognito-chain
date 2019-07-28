@@ -6,9 +6,9 @@
     },
     "input": {
       "command": "getbalancebyprivatekey",
+      "context": false,
       "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZ"],
-      "type": "http",
-      "wait": 60
+      "type": "http"
     },
     "output": {
       "error": null,
@@ -24,6 +24,7 @@
     },
     "input": {
       "command": "createandsendtransaction",
+      "context": false,
       "params": [
         "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
         {
@@ -32,6 +33,25 @@
         10,
         0
       ]
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    },
+    "store": {
+      "TxID1": "TxID"
+    }
+  },
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+    "input": {
+      "command": "gettransactionbyhash",
+      "context": true,
+      "params": ["TxID1"],
+      "type": "ws"
     },
     "output": {
       "error": null,
@@ -45,8 +65,8 @@
     },
     "input": {
       "command": "getbalancebyprivatekey",
+      "context": false,
       "params": ["112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM"],
-      "type": "http"
     },
     "output": {
       "error": null,
