@@ -6,7 +6,8 @@ import (
 )
 
 func TestMakeRPCRequest(t *testing.T) {
-	res, rpcErr := makeRPCRequest("http://localhost", "9334", "getblockchaininfo", []string{})
+	client := newClientWithHost("http://localhost", "9334")
+	res, rpcErr := makeRPCRequest(client, "getblockchaininfo", []string{})
 	if rpcErr != nil {
 		t.Fatal(rpcErr)
 	}
