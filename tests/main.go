@@ -9,18 +9,20 @@ import (
 	"os/exec"
 	"strconv"
 )
+
 var (
 	shard0 []*Client
 	shard1 []*Client
 	beacon []*Client
 )
+
 func main() {
 	var nodefile = "sample-config.json"
 	var testcase = "testcase.json"
 	var err error
 	// -1: beacon
 	// 0, 1: shard
-	var shardIndex = []int{-1,0,1}
+	var shardIndex = []int{-1, 0, 1}
 	var nodeFileData = make(map[string]interface{})
 	var testcaseData = make(map[string]interface{})
 	if len(os.Args) == 3 {
@@ -35,7 +37,7 @@ func main() {
 	if err != nil {
 		panic("Failed to get config file")
 	}
-	
+
 	err = json.Unmarshal(nodefileBytes, &nodeFileData)
 	if err != nil {
 		panic("Failed to marshal config file")
@@ -85,7 +87,7 @@ func main() {
 			}
 			initTestcase = append(initTestcase, temp)
 		}
-		
+
 		log.Println("Begin to run Init Testcase")
 		for _, initTestcaseName := range initTestcase {
 			cmd := exec.Command("go", "test", "-run", initTestcaseName)
