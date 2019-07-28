@@ -1,15 +1,15 @@
-package bft
+package blsbft
 
 import (
 	"fmt"
 	"time"
 )
 
-func (e *BFTCore) getTimeSinceLastBlock() time.Duration {
+func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
 	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
 }
 
-func (e *BFTCore) waitForNextRound() {
+func (e *BLSBFT) waitForNextRound() {
 	timeSinceLastBlk := e.getTimeSinceLastBlock()
 	if timeSinceLastBlk > e.Chain.GetBlkMinTime() {
 		return
@@ -18,15 +18,15 @@ func (e *BFTCore) waitForNextRound() {
 	time.Sleep(e.Chain.GetBlkMinTime() - timeSinceLastBlk)
 }
 
-func (e *BFTCore) setState(state string) {
+func (e *BLSBFT) setState(state string) {
 	e.State = state
 }
 
-func (e *BFTCore) getCurrentRound() int {
+func (e *BLSBFT) getCurrentRound() int {
 	return int(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
 }
 
-func (e *BFTCore) isInTimeFrame() bool {
+func (e *BLSBFT) isInTimeFrame() bool {
 	if e.Chain.GetHeight()+1 != e.NextHeight {
 		return false
 	}
@@ -36,7 +36,7 @@ func (e *BFTCore) isInTimeFrame() bool {
 	return true
 }
 
-func (e *BFTCore) getMajorityVote(votes map[string]SigStatus) int {
+func (e *BLSBFT) getMajorityVote(votes map[string]SigStatus) int {
 	size := e.Chain.GetCommitteeSize()
 	approve := 0
 	reject := 0
@@ -63,7 +63,7 @@ func (e *BFTCore) getMajorityVote(votes map[string]SigStatus) int {
 	return 0
 }
 
-func (e *BFTCore) validateAndSendVote() {
+func (e *BLSBFT) validateAndSendVote() {
 	if e.Chain.ValidateBlock(e.Block) == nil {
 		msg, _ := MakeBFTPrepareMsg(true, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
 		go e.Chain.PushMessageToValidator(msg)
