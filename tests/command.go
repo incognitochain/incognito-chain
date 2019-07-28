@@ -5,9 +5,10 @@ import (
 )
 
 type command func(*Client, ...interface{}) (interface{}, *rpcserver.RPCError)
-var Command = map[string]command {
+
+var Command = map[string]command{
 	createAndSendTransaction: (*Client).createAndSendTransaction,
-	getBalanceByPrivatekey: (*Client).getBalanceByPrivatekey,
-	getTransactionByHash: (*Client).getTransactionByHash,
-	getBlockChainInfo: (*Client).getBlockChainInfo,
+	getBalanceByPrivatekey:   (*Client).getBalanceByPrivatekey,
+	getTransactionByHash:     (*Client).getTransactionByHash,
+	getBlockChainInfo:        (*Client).getBlockChainInfo,
 }

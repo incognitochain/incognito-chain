@@ -1,8 +1,8 @@
 package main
 
 const (
-	getTransactionByHash = "gettransactionbyhash"
+	getTransactionByHash     = "gettransactionbyhash"
 	createAndSendTransaction = "createandsendtransaction"
-	getBalanceByPrivatekey = "getbalancebyprivatekey"
-	getBlockChainInfo = "getblockchaininfo"
+	getBalanceByPrivatekey   = "getbalancebyprivatekey"
+	getBlockChainInfo        = "getblockchaininfo"
 )

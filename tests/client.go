@@ -15,6 +15,7 @@ type Client struct {
 	Host string `json:"host"`
 	Port string `json:"port"`
 }
+
 func newClient() *Client {
 	return &Client{}
 }
@@ -35,7 +36,7 @@ func getMethodName(depthList ...int) string {
 	r, _ := regexp.Compile("\\.(.*)")
 	return strings.ToLower(r.FindStringSubmatch(runtime.FuncForPC(function).Name())[1])
 }
-func makeRPCRequest(client* Client, method string, params ...interface{}) (*rpcserver.JsonResponse, *rpcserver.RPCError) {
+func makeRPCRequest(client *Client, method string, params ...interface{}) (*rpcserver.JsonResponse, *rpcserver.RPCError) {
 	request := rpcserver.JsonRequest{
 		Jsonrpc: "1.0",
 		Method:  method,
@@ -64,7 +65,7 @@ func makeRPCRequest(client* Client, method string, params ...interface{}) (*rpcs
 	return &response, nil
 }
 
-func makeRPCRequestV2(client* Client, method string, params ...interface{}) (map[string]interface{}, *rpcserver.RPCError) {
+func makeRPCRequestV2(client *Client, method string, params ...interface{}) (map[string]interface{}, *rpcserver.RPCError) {
 	request := rpcserver.JsonRequest{
 		Jsonrpc: "1.0",
 		Method:  method,
@@ -93,7 +94,7 @@ func makeRPCRequestV2(client* Client, method string, params ...interface{}) (map
 	result := make(map[string]interface{})
 	rpcError := json.Unmarshal(response.Result, &result)
 	if rpcError != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, rpcError)
 	}
 	return result, response.Error
 }
@@ -125,7 +126,6 @@ func (client *Client) createAndSendTransaction(params ...interface{}) (interface
 	}
 	return result, nil
 }
-
 
 func (client *Client) getBalanceByPrivatekey(params ...interface{}) (interface{}, *rpcserver.RPCError) {
 	result := make(map[string]interface{})
