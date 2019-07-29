@@ -53,7 +53,7 @@ func executeTest(filename string) (interface{}, error) {
 			if step.input.wait.Seconds() == 0 {
 				step.input.wait = defaultTimeout
 			}
-			result, rpcError = makeWsRequest(step.client, step.input.name, step.input.wait, params...)
+			rpcResult, rpcError = makeWsRequest(step.client, step.input.name, step.input.wait, params...)
 		} else {
 			if step.input.isWait {
 				<-time.Tick(step.input.wait)
