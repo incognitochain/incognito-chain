@@ -80,7 +80,7 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(IssuingETHRequestMeta) {
+			instMetaType != strconv.Itoa(IssuingRequestMeta) {
 			continue
 		}
 
