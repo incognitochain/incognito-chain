@@ -21,10 +21,8 @@ import (
 )
 
 type ConnManager struct {
-	start int32
-	stop  int32
-	// Discover Peers
-	//discoveredPeers     map[string]*DiscoverPeerInfo
+	start               int32
+	stop                int32
 	discoverPeerAddress string
 	// channel
 	cQuit            chan struct{}
@@ -68,12 +66,6 @@ type Config struct {
 	DiscoverPeers        bool
 	DiscoverPeersAddress string
 	ConsensusState       *ConsensusState
-}
-
-type DiscoverPeerInfo struct {
-	PublicKey  string
-	RawAddress string
-	PeerID     libpeer.ID
 }
 
 func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
@@ -164,7 +156,6 @@ func (connManager *ConnManager) Stop() {
 func (connManager ConnManager) New(cfg *Config) *ConnManager {
 	connManager.Config = *cfg
 	connManager.cQuit = make(chan struct{})
-	//connManager.discoveredPeers = make(map[string]*DiscoverPeerInfo)
 	connManager.ListeningPeer = nil
 	connManager.Config.ConsensusState = &ConsensusState{}
 	connManager.cDiscoveredPeers = make(chan struct{})
@@ -331,7 +322,7 @@ func (connManager *ConnManager) DiscoverPeers(discoverPeerAddress string) {
 			// receive channel stop
 			Logger.log.Info("Stop Discover Peers")
 			return
-		case <-time.NewTimer(IntervalDiscoverPeer * time.Second).C:
+		case <-time.NewTimer(intervalDiscoverPeer).C:
 			// every IntervalDiscoverPeer, (const = 60 second)
 			// call processDiscoverPeers func to reconnect RPC server of boot node
 			// and process data
