@@ -2,10 +2,11 @@ package addrmanager
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/peer"
 	"os"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peer"
 )
 
 var dataDir string
