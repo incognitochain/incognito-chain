@@ -146,6 +146,8 @@ type config struct {
 	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
 	EnableMining      bool   `long:"mining" description:"enable mining"`
 	MiningKeys        string `long:"miningkeys" description:"keys used for different consensus algorigthm"`
+
+	Accelerator bool `long:"accelerator" description:"Relay Node Configuration For Consensus"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
