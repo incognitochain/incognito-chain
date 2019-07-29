@@ -11,7 +11,7 @@ handleGetMiningInfo - RPC returns various mining-related info
 */
 func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetMiningInfo params: %+v", params)
-	if !httpServer.config.IsMiningNode || httpServer.config.MiningPubKeyB58 == "" {
+	if httpServer.config.MiningPubKeyB58 == "" {
 		return jsonresult.GetMiningInfoResult{
 			IsCommittee: false,
 		}, nil
@@ -32,6 +32,9 @@ func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan 
 		result.ShardID = int(shardID)
 	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
 		result.ShardID = -1
+	}
+	if role == common.EmptyString {
+		result.IsCommittee = false
 	}
 	Logger.log.Debugf("handleGetMiningInfo result: %+v", result)
 	return result, nil
