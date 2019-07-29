@@ -1,5 +1,7 @@
 package connmanager
 
+import "time"
+
 const (
-	IntervalDiscoverPeer = 60 // in second
+	intervalDiscoverPeer = 60 * time.Second // in second
 )
