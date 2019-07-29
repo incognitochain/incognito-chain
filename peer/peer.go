@@ -681,6 +681,8 @@ var outMutex = &sync.Mutex{}
 
 func StoreInboundPeerMessage(msg wire.Message, time int64) {
 	messageType := msg.MessageType()
+	inMutex.Lock()
+	defer inMutex.Unlock()
 	existingMessages := inboundPeerMessage[messageType]
 	if len(existingMessages) == 0 {
 		inboundPeerMessage[messageType] = []PeerMessageInOut{
@@ -688,8 +690,7 @@ func StoreInboundPeerMessage(msg wire.Message, time int64) {
 		}
 		return
 	}
-	inMutex.Lock()
-	defer inMutex.Unlock()
+
 	messages := []PeerMessageInOut{
 		{msg, time},
 	}
@@ -713,6 +714,8 @@ func GetInboundPeerMessagesByType(messageType string) []PeerMessageInOut {
 }
 func StoreOutboundPeerMessage(msg wire.Message, time int64) {
 	messageType := msg.MessageType()
+	outMutex.Lock()
+	defer outMutex.Unlock()
 	existingMessages := outboundPeerMessage[messageType]
 	if len(existingMessages) == 0 {
 		outboundPeerMessage[messageType] = []PeerMessageInOut{
@@ -720,8 +723,6 @@ func StoreOutboundPeerMessage(msg wire.Message, time int64) {
 		}
 		return
 	}
-	outMutex.Lock()
-	defer outMutex.Unlock()
 	messages := []PeerMessageInOut{
 		{msg, time},
 	}
