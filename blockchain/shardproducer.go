@@ -351,10 +351,10 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 */
 func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uint64, beaconBlocks []*BeaconBlock, shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
 	var (
-		instructions     = [][]string{}
-		bridgePubkeyInst = []string{}
-		swapInstruction  = []string{}
-		err              error
+		instructions          = [][]string{}
+		bridgeSwapConfirmInst = []string{}
+		swapInstruction       = []string{}
+		err                   error
 	)
 	if beaconHeight%common.EPOCH == 0 {
 		if len(shardPendingValidator) > 0 {
@@ -371,7 +371,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			bridgeID := byte(common.BRIDGE_SHARD_ID)
 			if shardID == bridgeID {
 				startHeight := blockchain.BestState.Shard[shardID].ShardHeight + 2
-				bridgePubkeyInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
+				bridgeSwapConfirmInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
 				prevBlock := blockchain.BestState.Shard[shardID].BestBlock
 				Logger.log.Infof("Add Bridge Committees Root in ShardID %+v block %d \n", shardID, prevBlock.Header.Height+1)
 			}
@@ -380,15 +380,15 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 	if len(swapInstruction) > 0 {
 		instructions = append(instructions, swapInstruction)
 	}
-	if len(bridgePubkeyInst) > 0 {
-		instructions = append(instructions, bridgePubkeyInst)
-		Logger.log.Infof("Build bridge pubkey root inst: %s \n", bridgePubkeyInst)
+	if len(bridgeSwapConfirmInst) > 0 {
+		instructions = append(instructions, bridgeSwapConfirmInst)
+		Logger.log.Infof("Build bridge swap confirm inst: %s \n", bridgeSwapConfirmInst)
 	}
 	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
 	// Also, pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BRIDGE_SHARD_ID)
 	if shardID == bridgeID {
-		commPubkeyInst := pickBeaconPubkeyRootInstruction(beaconBlocks)
+		commPubkeyInst := pickBeaconSwapConfirmInst(beaconBlocks)
 		if len(commPubkeyInst) > 0 {
 			instructions = append(instructions, commPubkeyInst...)
 		}
