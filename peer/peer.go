@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
@@ -667,4 +667,79 @@ func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
 		peerConns = append(peerConns, peerConn)
 	}
 	return peerConns
+}
+
+type PeerMessageInOut struct {
+	Message wire.Message
+	Time    int64
+}
+
+var inboundPeerMessage = map[string][]PeerMessageInOut{}
+var outboundPeerMessage = map[string][]PeerMessageInOut{}
+var inMutex = &sync.Mutex{}
+var outMutex = &sync.Mutex{}
+
+func StoreInboundPeerMessage(msg wire.Message, time int64) {
+	messageType := msg.MessageType()
+	existingMessages := inboundPeerMessage[messageType]
+	if len(existingMessages) == 0 {
+		inboundPeerMessage[messageType] = []PeerMessageInOut{
+			{Message: msg, Time: time},
+		}
+		return
+	}
+	inMutex.Lock()
+	defer inMutex.Unlock()
+	messages := []PeerMessageInOut{
+		{msg, time},
+	}
+	for _, message := range existingMessages {
+		if message.Time < time-10 {
+			continue
+		}
+		messages = append(messages, message)
+	}
+	inboundPeerMessage[messageType] = messages
+}
+func GetInboundPeerMessages() map[string][]PeerMessageInOut {
+	return inboundPeerMessage
+}
+func GetInboundPeerMessagesByType(messageType string) []PeerMessageInOut {
+	messages, ok := inboundPeerMessage[messageType]
+	if !ok {
+		return []PeerMessageInOut{}
+	}
+	return messages
+}
+func StoreOutboundPeerMessage(msg wire.Message, time int64) {
+	messageType := msg.MessageType()
+	existingMessages := outboundPeerMessage[messageType]
+	if len(existingMessages) == 0 {
+		outboundPeerMessage[messageType] = []PeerMessageInOut{
+			{Message: msg, Time: time},
+		}
+		return
+	}
+	outMutex.Lock()
+	defer outMutex.Unlock()
+	messages := []PeerMessageInOut{
+		{msg, time},
+	}
+	for _, message := range existingMessages {
+		if message.Time < time-10 {
+			continue
+		}
+		messages = append(messages, message)
+	}
+	outboundPeerMessage[messageType] = messages
+}
+func GetOutboundPeerMessages() map[string][]PeerMessageInOut {
+	return outboundPeerMessage
+}
+func GetOutboundPeerMessagesByType(messageType string) []PeerMessageInOut {
+	messages, ok := outboundPeerMessage[messageType]
+	if !ok {
+		return []PeerMessageInOut{}
+	}
+	return messages
 }
