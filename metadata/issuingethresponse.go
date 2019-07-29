@@ -5,19 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strconv"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	rCommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
@@ -85,116 +76,6 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func IsETHTxHashUsedInBlock(uniqETHTx []byte, uniqETHTxsUsed [][]byte) bool {
-	for _, item := range uniqETHTxsUsed {
-		if bytes.Equal(uniqETHTx, item) {
-			return true
-		}
-	}
-	return false
-}
-
-func ParseETHLogData(data []byte) (map[string]interface{}, error) {
-	abiIns, err := abi.JSON(strings.NewReader(common.ABIJSON))
-	if err != nil {
-		return nil, err
-	}
-	dataMap := map[string]interface{}{}
-	if err = abiIns.UnpackIntoMap(dataMap, "Deposit", data); err != nil {
-		return nil, err
-	}
-	return dataMap, nil
-}
-
-type GetBlockByNumberRes struct {
-	rpccaller.RPCBaseRes
-	Result *types.Header `json:"result"`
-}
-
-func GetETHHeader(
-	bcr BlockchainRetriever,
-	ethBlockHash rCommon.Hash,
-) (*types.Header, error) {
-	rpcClient := bcr.GetRPCClient()
-	params := []interface{}{ethBlockHash, false}
-	var getBlockByNumberRes GetBlockByNumberRes
-	err := rpcClient.RPCCall(
-		common.ETHERERUM_LIGHT_NODE_PROTOCOL,
-		common.ETHERERUM_LIGHT_NODE_HOST,
-		common.ETHERERUM_LIGHT_NODE_PORT,
-		"eth_getBlockByHash",
-		params,
-		&getBlockByNumberRes,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if getBlockByNumberRes.RPCError != nil {
-		fmt.Printf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
-		return nil, nil
-	}
-	return getBlockByNumberRes.Result, nil
-}
-
-func VerifyProofAndParseReceipt(
-	issuingETHReqAction *IssuingETHReqAction,
-	bcr BlockchainRetriever,
-) (*types.Receipt, error) {
-	md := issuingETHReqAction.Meta
-	ethHeader, err := GetETHHeader(bcr, md.BlockHash)
-	if err != nil {
-		return nil, err
-	}
-	if ethHeader == nil {
-		fmt.Println("WARNING: Could not find out the ETH block header with the hash: ", md.BlockHash)
-		return nil, nil
-	}
-	keybuf := new(bytes.Buffer)
-	keybuf.Reset()
-	rlp.Encode(keybuf, md.TxIndex)
-
-	nodeList := new(light.NodeList)
-	for _, proofStr := range md.ProofStrs {
-		proofBytes, err := base64.StdEncoding.DecodeString(proofStr)
-		if err != nil {
-			return nil, err
-		}
-		nodeList.Put([]byte{}, proofBytes)
-	}
-	proof := nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(ethHeader.ReceiptHash, keybuf.Bytes(), proof)
-	if err != nil {
-		fmt.Printf("WARNING: ETH issuance proof verification failed: %v", err)
-		return nil, err
-	}
-	// Decode value from VerifyProof into Receipt
-	constructedReceipt := new(types.Receipt)
-	err = rlp.DecodeBytes(val, constructedReceipt)
-	if err != nil {
-		return nil, err
-	}
-	return constructedReceipt, nil
-}
-
-func PickNParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]interface{}, error) {
-	logData := []byte{}
-	logLen := len(constructedReceipt.Logs)
-	if logLen == 0 {
-		fmt.Println("WARNING: LOG data is invalid.")
-		return nil, nil
-	}
-	for _, log := range constructedReceipt.Logs {
-		if bytes.Equal(rCommon.HexToAddress(common.ETH_CONTRACT_ADDR_STR).Bytes(), log.Address.Bytes()) {
-			logData = log.Data
-			break
-		}
-	}
-	if len(logData) == 0 {
-		return nil, nil
-	}
-	return ParseETHLogData(logData)
-}
-
 func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
@@ -205,7 +86,6 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	bcr BlockchainRetriever,
 	ac *AccumulatedValues,
 ) (bool, error) {
-	db := bcr.GetDatabase()
 	idx := -1
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not IssuingETHRequest instruction
@@ -217,108 +97,37 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 
-		issuingETHReqAction, err := ParseETHIssuingInstContent(inst[3])
+		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			fmt.Println("WARNING: an error occured during parsing instruction content: ", err)
+			fmt.Println("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
-
-		if !bytes.Equal(iRes.RequestedTxID[:], issuingETHReqAction.TxReqID[:]) {
-			continue
-		}
-
-		md := issuingETHReqAction.Meta
-		uniqETHTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
-		if !bytes.Equal(uniqETHTx, iRes.UniqETHTx) {
-			continue
-		}
-
-		constructedReceipt, err := VerifyProofAndParseReceipt(issuingETHReqAction, bcr)
+		var issuingETHAcceptedInst IssuingETHAcceptedInst
+		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 		if err != nil {
-			fmt.Println("WARNING: an error occured during verifying proof & parsing receipt: ", err)
-			continue
-		}
-		if constructedReceipt == nil {
+			fmt.Println("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 
-		isUsedInBlock := IsETHTxHashUsedInBlock(uniqETHTx, ac.UniqETHTxsUsed)
-		if isUsedInBlock {
-			fmt.Println("WARNING: already issued for the hash in current block: ", uniqETHTx)
+		if !bytes.Equal(iRes.RequestedTxID[:], issuingETHAcceptedInst.TxReqID[:]) ||
+			!bytes.Equal(iRes.UniqETHTx, issuingETHAcceptedInst.UniqETHTx) ||
+			!bytes.Equal(iRes.ExternalTokenID, issuingETHAcceptedInst.ExternalTokenID) ||
+			shardID != issuingETHAcceptedInst.ShardID {
 			continue
 		}
 
-		isIssued, err := db.IsETHTxHashIssued(uniqETHTx)
-		if err != nil {
-			continue
-		}
-		if isIssued {
-			fmt.Println("WARNING: already issued for the hash in previous block: ", uniqETHTx)
-			continue
-		}
-
-		logMap, err := PickNParseLogMapFromReceipt(constructedReceipt)
-		if err != nil {
-			fmt.Println("WARNING: an error occured during parsing log map from receipt: ", err)
-			continue
-		}
-		if logMap == nil {
-			fmt.Println("WARNING: could not find log map out from receipt")
-			continue
-		}
-
-		// the token might be ETH/ERC20
-		ethereumAddr, ok := logMap["_token"].(rCommon.Address)
-		if !ok {
-			continue
-		}
-		ethereumToken := ethereumAddr[:]
-		if !bytes.Equal(ethereumToken[:], iRes.ExternalTokenID[:]) {
-			fmt.Println("WARNING: ethereumToken is not matched to metadata's ExternalTokenID")
-			continue
-		}
-
-		canProcess, err := ac.CanProcessTokenPair(ethereumToken, md.IncTokenID)
-		if err != nil {
-			continue
-		}
-		if !canProcess {
-			fmt.Println("WARNING: pair of incognito token id & ethereum's id is invalid in current block")
-			continue
-		}
-
-		isValid, err := db.CanProcessTokenPair(ethereumToken, md.IncTokenID)
-		if err != nil {
-			fmt.Println("WARNING: An error occured as checking pair of tokens (incognito's & ethereum's): ", err)
-			continue
-		}
-		if !isValid {
-			fmt.Println("WARNING: pair of incognito token id & ethereum's id is invalid with previous blocks")
-			continue
-		}
-
-		addressStr := logMap["_incognito_address"].(string)
+		addressStr := issuingETHAcceptedInst.ReceiverAddrStr
 		key, err := wallet.Base58CheckDeserialize(addressStr)
 		if err != nil {
+			fmt.Println("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-		amt := logMap["_amount"].(*big.Int)
-		amount := uint64(0)
-		if bytes.Equal(rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes(), ethereumToken) {
-			// convert amt from wei (10^18) to nano eth (10^9)
-			amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
-		} else { // ERC20
-			amount = amt.Uint64()
-		}
-
 		_, pk, paidAmount, assetID := tx.GetTransferData()
 		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			amount != paidAmount ||
-			!bytes.Equal(md.IncTokenID[:], assetID[:]) {
+			issuingETHAcceptedInst.IssuingAmount != paidAmount ||
+			!bytes.Equal(issuingETHAcceptedInst.IncTokenID[:], assetID[:]) {
 			continue
 		}
-		ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqETHTx)
-		ac.DBridgeTokenPair[md.IncTokenID.String()] = ethereumToken
 		idx = i
 		break
 	}
@@ -327,23 +136,4 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 	instUsed[idx] = 1
 	return true, nil
-}
-
-func (ieRes *IssuingETHResponse) BuildReqActions(
-	tx Transaction,
-	bcr BlockchainRetriever,
-	shardID byte,
-) ([][]string, error) {
-	incTokenID := tx.GetTokenID()
-	actionContent := map[string]interface{}{
-		"meta":       *ieRes,
-		"incTokenID": incTokenID,
-	}
-	actionContentBytes, err := json.Marshal(actionContent)
-	if err != nil {
-		return [][]string{}, err
-	}
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(IssuingETHResponseMeta), actionContentBase64Str}
-	return [][]string{action}, nil
 }
