@@ -152,7 +152,6 @@ type DatabaseInterface interface {
 	DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error
 
 	// Centralized bridge
-	IsBridgeTokenExisted(common.Hash) (bool, error)
 	BackupBridgedTokenByTokenID(tokenID common.Hash) error
 	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
 
@@ -161,6 +160,7 @@ type DatabaseInterface interface {
 	GetBurningConfirm(txID []byte) (uint64, error)
 
 	// Decentralized bridge
+	IsBridgeTokenExistedByType(common.Hash, bool) (bool, error)
 	InsertETHTxHashIssued([]byte) error
 	IsETHTxHashIssued([]byte) (bool, error)
 	CanProcessTokenPair([]byte, common.Hash) (bool, error)
