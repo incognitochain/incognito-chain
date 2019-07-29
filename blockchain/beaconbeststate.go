@@ -538,7 +538,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			return err
+			continue
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:
