@@ -324,7 +324,7 @@ func (blockChain *BlockChain) buildStabilityInstructions(
 			return [][]string{}, err
 		}
 		switch metaType {
-		case metadata.ContractingRequestMeta, metadata.IssuingResponseMeta, metadata.IssuingETHResponseMeta:
+		case metadata.ContractingRequestMeta:
 			newInst = [][]string{inst}
 
 		case metadata.IssuingRequestMeta:
