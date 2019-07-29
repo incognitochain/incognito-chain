@@ -42,7 +42,7 @@ func (cReq *ContractingRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	bridgeTokenExisted, err := db.IsBridgeTokenExisted(cReq.TokenID)
+	bridgeTokenExisted, err := db.IsBridgeTokenExistedByType(cReq.TokenID, true)
 	if err != nil {
 		return false, err
 	}
@@ -101,16 +101,6 @@ func (cReq *ContractingRequest) Hash() *common.Hash {
 
 func (cReq *ContractingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	return [][]string{}, nil
-	// actionContent := map[string]interface{}{
-	// 	"meta": *cReq,
-	// }
-	// actionContentBytes, err := json.Marshal(actionContent)
-	// if err != nil {
-	// 	return [][]string{}, err
-	// }
-	// actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	// action := []string{strconv.Itoa(ContractingRequestMeta), actionContentBase64Str}
-	// return [][]string{action}, nil
 }
 
 func (cReq *ContractingRequest) CalculateSize() uint64 {

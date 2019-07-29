@@ -7,10 +7,12 @@ const (
 	startProfiling = "startprofiling"
 	stopProfiling  = "stopprofiling"
 
-	getNodeRole        = "getnoderole"
-	getNetworkInfo     = "getnetworkinfo"
-	getConnectionCount = "getconnectioncount"
-	getAllPeers        = "getallpeers"
+	getNetworkInfo       = "getnetworkinfo"
+	getConnectionCount   = "getconnectioncount"
+	getAllConnectedPeers = "getallconnectedpeers"
+	getAllPeers          = "getallpeers"
+	getNodeRole          = "getnoderole"
+	getInOutPeerMessages = "getinoutpeermessages"
 
 	estimateFee              = "estimatefee"
 	estimateFeeWithEstimator = "estimatefeewithestimator"
