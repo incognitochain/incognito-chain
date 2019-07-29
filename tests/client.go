@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"regexp"
 	"runtime"
 	"strings"
+	"time"
 )
 
 type Client struct {
@@ -83,6 +85,62 @@ func makeRPCRequestV2(client *Client, method string, params ...interface{}) (map
 	body := resp.Body
 	defer body.Close()
 	responseBytes, err := ioutil.ReadAll(body)
+	if err != nil {
+		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	}
+	response := rpcserver.JsonResponse{}
+	err = json.Unmarshal(responseBytes, &response)
+	if err != nil {
+		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	}
+	result := make(map[string]interface{})
+	rpcError := json.Unmarshal(response.Result, &result)
+	if rpcError != nil {
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, rpcError)
+	}
+	return result, response.Error
+}
+
+func makeWsRequest(client *Client, method string, timeout time.Duration, params ...interface{}) (map[string]interface{}, *rpcserver.RPCError) {
+	var cQuit = make(chan struct{})
+	request := rpcserver.JsonRequest{
+		Jsonrpc: "1.0",
+		Method:  method,
+		Params:  params,
+		Id:      "1",
+	}
+	subcription := rpcserver.SubcriptionRequest{
+		JsonRequest: request,
+		Subcription: "0",
+		Type: 0,
+	}
+	subcriptionBytes, err := json.Marshal(&subcription)
+	if err != nil {
+		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	}
+	conn, err := net.Dial("tcp", client.Host+":"+client.Port)
+	if err != nil {
+		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	}
+	defer conn.Close()
+	_, err = conn.Write(subcriptionBytes)
+	if err != nil {
+		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	}
+	responseBytes := []byte{}
+	go func(cQuit chan struct{}) {
+		<-time.Tick(timeout)
+		close(cQuit)
+	}(cQuit)
+	loop:
+	for {
+		select {
+			case <-cQuit:
+				break loop
+			default:
+			_, err = conn.Read(responseBytes)
+		}
+	}
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
