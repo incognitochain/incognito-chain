@@ -353,7 +353,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
-	serverObj.addrManager = addrmanager.New(cfg.DataDir)
+	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
 	// Init block template generator
 	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
 	if err != nil {
@@ -597,7 +597,10 @@ out:
 		}
 	}
 	serverObj.netSync.Stop()
-	serverObj.addrManager.Stop()
+	errStopAddrManager := serverObj.addrManager.Stop()
+	if errStopAddrManager != nil {
+		Logger.log.Error(errStopAddrManager)
+	}
 	serverObj.connManager.Stop()
 }
 
