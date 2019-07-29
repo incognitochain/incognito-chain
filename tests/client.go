@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"github.com/btcsuite/websocket"
 	"github.com/incognitochain/incognito-chain/rpcserver"
@@ -16,6 +17,9 @@ import (
 	"time"
 )
 
+var (
+	ErrParseFailed = errors.New("Failed to parse result")
+)
 type Client struct {
 	Host string `json:"host"`
 	Port string `json:"port"`
@@ -70,7 +74,7 @@ func makeRPCRequest(client *Client, method string, params ...interface{}) (*rpcs
 	return &response, nil
 }
 
-func makeRPCRequestV2(client *Client, method string, params ...interface{}) (map[string]interface{}, *rpcserver.RPCError) {
+func makeRPCRequestV2(client *Client, method string, params ...interface{}) (interface{}, *rpcserver.RPCError) {
 	request := rpcserver.JsonRequest{
 		Jsonrpc: "1.0",
 		Method:  method,
@@ -96,10 +100,9 @@ func makeRPCRequestV2(client *Client, method string, params ...interface{}) (map
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	result := make(map[string]interface{})
-	rpcError := json.Unmarshal(response.Result, &result)
-	if rpcError != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, rpcError)
+	result := parseResult(response.Result)
+	if result == nil {
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
 	}
 	return result, response.Error
 }

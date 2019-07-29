@@ -11,9 +11,7 @@
     },
     "output": {
       "error": null,
-      "response": {
-        "Balance": 1000000000000000
-      }
+      "response": 1000000000000000
     }
   },
   {
@@ -70,9 +68,7 @@
     },
     "output": {
       "error": null,
-      "response": {
-        "Balance": 1000
-      }
+      "response": 1000
     }
   },
   {
@@ -87,9 +83,7 @@
     },
     "output": {
       "error": null,
-      "response": {
-        "Balance": 999999999998980
-      }
+      "response": 999999999998980
     }
   }
 ]
