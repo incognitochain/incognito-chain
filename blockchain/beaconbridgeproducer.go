@@ -41,7 +41,7 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 		newInst := [][]string{}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			return [][]string{}, err
+			continue
 		}
 		switch metaType {
 		case metadata.ContractingRequestMeta:
