@@ -497,11 +497,11 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 		BLogger.log.Errorf("Build bridge instructions failed: %s", err.Error())
 	}
 
-	// Pick instruction with merkle root of shard committee's pubkeys and save to beacon block
-	commPubkeyInst := pickBridgePubkeyRootInstruction(shardBlock)
-	if len(commPubkeyInst) > 0 {
-		bridgeInstructionForBlock = append(bridgeInstructionForBlock, commPubkeyInst...)
-		BLogger.log.Infof("Found bridge pubkey root inst: %s", commPubkeyInst)
+	// Pick instruction with shard committee's pubkeys to save to beacon block
+	confirmInsts := pickBridgeSwapConfirmInst(shardBlock)
+	if len(confirmInsts) > 0 {
+		bridgeInstructionForBlock = append(bridgeInstructionForBlock, confirmInsts...)
+		BLogger.log.Infof("Found bridge swap confirm inst: %s", confirmInsts)
 	}
 
 	bridgeInstructions = append(bridgeInstructions, bridgeInstructionForBlock...)
