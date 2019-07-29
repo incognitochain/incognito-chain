@@ -23,7 +23,7 @@ func TestMakeRPCRequest(t *testing.T) {
 func TestMakeWsRequest(t *testing.T) {
 	log.Println("Test Make Ws Request")
 	client := newClientWithHost("localhost", "19334")
-	result, rpcErr := makeWsRequest(client, "subcribependingtransaction", 10*time.Second, "a9846c6545c62b11de7548ee29ad6d6b2adac0ffcdd385b7213ba628fbc1c08d")
+	result, rpcErr := makeWsRequest(client, "subcribependingtransaction", 10*time.Second, "ac9db9a149a892da81b5d6521f3296b6524e331893a133adc1e77c15186c1907")
 	if rpcErr != nil {
 		t.Fatal(rpcErr)
 	}
