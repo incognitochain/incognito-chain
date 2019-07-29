@@ -6,6 +6,9 @@ const (
 	// version of addrmanager
 	version = 1
 
+	// file to storage connected peer for reusing when restart node
+	dataFile = "peer.json"
+
 	// DumpAddressInterval is the interval used to dump the address
 	// cache to disk for future use. Every 10 second, automatically saving all
 	// connected address into file to reuse in the future
