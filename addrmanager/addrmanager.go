@@ -41,6 +41,8 @@ type serializedAddrManager struct {
 	Addresses []*serializedKnownAddress `json:"Addresses"`
 }
 
+// New - init a AddrManager object,
+// set config and return pointer to object
 func New(dataDir string) *AddrManager {
 	addrManager := AddrManager{
 		peersFilePath: filepath.Join(dataDir, "peer.json"), // path to file which is used for storing information in add manager
@@ -54,19 +56,24 @@ func New(dataDir string) *AddrManager {
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
 func (addrManager *AddrManager) savePeers() error {
-
+	// check len of addrIndex
 	if len(addrManager.addrIndex) == 0 {
+		// dont have anything to save into file data
 		return nil
 	}
 
 	storageData := new(serializedAddrManager)
-	storageData.Version = 1
+	storageData.Version = version
 	copy(storageData.Key[:], addrManager.key[:])
 
 	storageData.Addresses = []*serializedKnownAddress{}
 
 	// get all good address in list of addresses manager
 	for rawAddress, peerObj := range addrManager.addrIndex {
+		pretty := peerObj.PeerID.Pretty()
+		if len(pretty) > maxLengthPeerPretty {
+			continue
+		}
 		// init address data to push into storage data
 		addressData := new(serializedKnownAddress)
 		addressData.Addr = rawAddress
@@ -142,13 +149,13 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 		return fmt.Errorf("error reading %s: %+v", filePath, err)
 	}
 
-	if storageData.Version != Version {
+	if storageData.Version != version {
 		return fmt.Errorf("unknown Version %+v in serialized addrmanager", storageData.Version)
 	}
 	copy(addrManager.key[:], storageData.Key[:])
 
 	for _, storagePeer := range storageData.Addresses {
-		if len(storagePeer.Src) > 10000 {
+		if len(storagePeer.Src) > maxLengthPeerPretty {
 			continue
 		}
 		peer := new(peer.Peer)
@@ -198,7 +205,7 @@ func (addrManager *AddrManager) Stop() error {
 // addressHandler is the main handler for the address manager.  It must be run
 // as a goroutine.
 func (addrManager *AddrManager) addressHandler() {
-	dumpAddressTicker := time.NewTicker(DumpAddressInterval)
+	dumpAddressTicker := time.NewTicker(dumpAddressInterval)
 	defer dumpAddressTicker.Stop()
 out:
 	for {
