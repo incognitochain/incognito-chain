@@ -324,6 +324,8 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	default:
 		Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, peerConn)
 	}
+	// MONITOR INBOUND MESSAGE
+	StoreInboundPeerMessage(message, time.Now().Unix())
 	return nil
 }
 
@@ -422,6 +424,9 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.RemotePeer.PeerID.Pretty())
 					sendString = messageHex
 				}
+				// MONITOR OUTBOUND MESSAGE
+				StoreOutboundPeerMessage(outMsg.message, time.Now().Unix())
+
 				_, err := rw.Writer.WriteString(sendString)
 				if err != nil {
 					Logger.log.Critical("OutMessageHandler WriteString error", err)
@@ -600,7 +605,9 @@ func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
 
 // Close - close peer connection by close channel
 func (p *PeerConn) Close() {
-	close(p.cClose)
+	if _, ok := <-p.cClose; ok {
+		close(p.cClose)
+	}
 }
 
 // ForceClose - set flag and close channel
