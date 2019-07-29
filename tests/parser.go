@@ -24,7 +24,7 @@ type step struct {
 			code    int
 			message string
 		}
-		response map[string]interface{}
+		response interface{}
 	}
 	store map[string]string
 }
@@ -42,7 +42,6 @@ func newStep() *step {
 	step.input.isWait = false
 	step.input.conn = "http"
 	step.output.error.isNil = true
-	step.output.response = make(map[string]interface{})
 	step.store = make(map[string]string)
 	return step
 }
@@ -148,14 +147,12 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 				if response, ok := output["response"]; !ok {
 					return sc, false
 				} else {
-					step.output.response = response.(map[string]interface{})
+					step.output.response = response
 				}
 			}
 		}
 		if storeData, ok := tests["store"]; ok {
-			if store, ok := storeData.(map[string]interface{}); !ok {
-				return sc, false
-			} else {
+			if store, ok := storeData.(map[string]interface{}); ok {
 				for key, value := range store {
 					if _, ok := value.(string); !ok {
 						return sc, false
@@ -163,9 +160,49 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 						step.store[key] = value.(string)
 					}
 				}
+			} else {
+				// not return object => store all data in Result of Response
+				if store, ok := storeData.(string); !ok {
+					return sc, false
+				} else {
+					step.store[store] = ""
+				}
 			}
 		}
 		sc.steps = append(sc.steps, step)
 	}
 	return sc, true
+}
+/*
+	Type
+	- Number: float64
+	- String: string
+	- Boolean: bool
+	- Array: []interface
+	- Object: map[string]interface{}
+*/
+func parseResult(responseResult json.RawMessage) interface{} {
+	var (
+		number float64
+		str string
+		boolean bool
+		array []interface{}
+		obj = make(map[string]interface{})
+	)
+	if err := json.Unmarshal(responseResult, &number); err == nil {
+		return number
+	}
+	if err := json.Unmarshal(responseResult, &str); err == nil {
+		return str
+	}
+	if err := json.Unmarshal(responseResult, &boolean); err == nil {
+		return boolean
+	}
+	if err := json.Unmarshal(responseResult, &array); err == nil {
+		return array
+	}
+	if err := json.Unmarshal(responseResult, &obj); err == nil {
+		return obj
+	}
+	return nil
 }
