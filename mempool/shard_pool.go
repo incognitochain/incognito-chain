@@ -33,6 +33,8 @@ type ShardPool struct {
 }
 
 var shardPoolMap = make(map[byte]*ShardPool)
+var shardPoolMapMu sync.Mutex
+
 var defaultConfig = ShardPoolConfig{
 	MaxValidBlock:   MAX_VALID_SHARD_BLK_IN_POOL,
 	MaxPendingBlock: MAX_PENDING_SHARD_BLK_IN_POOL,
@@ -55,6 +57,8 @@ func init() {
 }
 
 func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.PubSubManager) {
+	shardPoolMapMu.Lock()
+	defer shardPoolMapMu.Unlock()
 	for i := 0; i < 255; i++ {
 		shardPoolMap[byte(i)] = GetShardPool(byte(i))
 		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
@@ -88,6 +92,8 @@ func (self *ShardPool) Start(cQuit chan struct{}) {
 
 // get singleton instance of Shard Pool
 func GetShardPool(shardID byte) *ShardPool {
+	shardPoolMapMu.Lock()
+	defer shardPoolMapMu.Unlock()
 	if shardPoolMap[shardID] == nil {
 		shardPool := new(ShardPool)
 		shardPool.shardID = shardID
