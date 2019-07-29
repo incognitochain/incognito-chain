@@ -59,8 +59,8 @@ func init() {
 func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.PubSubManager) {
 	shardPoolMapMu.Lock()
 	defer shardPoolMapMu.Unlock()
-	for i := 0; i < 255; i++ {
-		shardPoolMap[byte(i)] = GetShardPool(byte(i))
+	for i := 0; i < common.MAX_SHARD_NUMBER; i++ {
+		shardPoolMap[byte(i)] = getShardPool(byte(i))
 		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
 		//update last shard height
 		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
@@ -90,7 +90,24 @@ func (self *ShardPool) Start(cQuit chan struct{}) {
 	}
 }
 
-// get singleton instance of Shard Pool
+func getShardPool(shardID byte) *ShardPool {
+	if shardPoolMap[shardID] == nil {
+		shardPool := new(ShardPool)
+		shardPool.shardID = shardID
+		shardPool.latestValidHeight = 1
+		shardPool.RoleInCommittees = -1
+		shardPool.validPool = []*blockchain.ShardBlock{}
+		shardPool.conflictedPool = make(map[common.Hash]*blockchain.ShardBlock)
+		shardPool.config = defaultConfig
+		shardPool.pendingPool = make(map[uint64]*blockchain.ShardBlock)
+		shardPool.cache, _ = lru.New(shardPool.config.CacheSize)
+		shardPool.mtx = new(sync.RWMutex)
+		shardPoolMap[shardID] = shardPool
+	}
+	return shardPoolMap[shardID]
+}
+
+// get singleton instance of Shard Pool with lock
 func GetShardPool(shardID byte) *ShardPool {
 	shardPoolMapMu.Lock()
 	defer shardPoolMapMu.Unlock()
