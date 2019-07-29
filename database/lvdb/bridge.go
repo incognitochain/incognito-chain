@@ -18,20 +18,6 @@ type BridgeTokenInfo struct {
 	Network         string       `json:"network"`
 }
 
-func (db *db) IsBridgeTokenExisted(
-	tokenID common.Hash,
-) (bool, error) {
-	key := append(centralizedBridgePrefix, tokenID[:]...)
-	tokenWithAmtBytes, dbErr := db.lvdb.Get(key, nil)
-	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return false, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
-	}
-	if len(tokenWithAmtBytes) == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
 func (db *db) InsertETHTxHashIssued(
 	uniqETHTx []byte,
 ) error {
