@@ -529,11 +529,11 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 	}
 
 	for _, inst := range currentBestStateBlk.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
-			continue
-		}
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
+		}
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+			continue
 		}
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
@@ -590,13 +590,13 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 	}
 
 	for _, inst := range block.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
-			continue
-		}
-
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
 		}
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+			continue
+		}
+
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {

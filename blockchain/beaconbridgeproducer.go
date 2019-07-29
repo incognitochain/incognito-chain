@@ -30,19 +30,19 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 	instructions := [][]string{}
 	beaconHeight := beaconBestState.BeaconHeight
 	for _, inst := range shardBlockInstructions {
-		if len(inst) == 0 {
+		if len(inst) < 2 {
 			continue
 		}
-		if inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction || inst[0] == AssignAction {
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction || inst[0] == AssignAction {
 			continue
 		}
 
-		contentStr := inst[1]
-		newInst := [][]string{}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
 			continue
 		}
+		contentStr := inst[1]
+		newInst := [][]string{}
 		switch metaType {
 		case metadata.ContractingRequestMeta:
 			newInst = [][]string{inst}
@@ -54,11 +54,9 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 			newInst, err = blockChain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
 
 		case metadata.BurningRequestMeta:
-			burningConfirm, err := buildBurningConfirmInst(inst, beaconHeight+1, db)
-			if err != nil {
-				return [][]string{}, err
-			}
-			newInst = [][]string{inst, burningConfirm}
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(inst, beaconHeight+1, db)
+			newInst = [][]string{burningConfirm}
 
 		default:
 			continue
@@ -115,7 +113,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 	}, nil
 }
 
-// findExternalTokenID get all bridge token from database and find the external tokenID for one
+// findExternalTokenID finds the external tokenID for a bridge token from database
 func findExternalTokenID(tokenID *common.Hash, db database.DatabaseInterface) ([]byte, error) {
 	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
 	if err != nil {
