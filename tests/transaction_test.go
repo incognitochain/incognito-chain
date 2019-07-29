@@ -19,7 +19,9 @@ func TestCreateAndSendNormalTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	} else {
-		log.Println(res.steps[0], res.steps[1], res.steps[2], res.steps[3])
+		for _, step := range res.steps {
+			log.Println(step)
+		}
 	}
 	testResult, err := executeTest("./testsdata/transaction.json")
 	if err != nil {

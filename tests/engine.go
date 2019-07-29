@@ -47,10 +47,17 @@ func executeTest(filename string) (map[string]interface{}, error) {
 		} else {
 			params = append(params, step.input.params...)
 		}
-		if step.input.isWait {
-			<-time.Tick(step.input.wait)
+		if step.input.conn == "ws" {
+			if step.input.wait.Seconds() == 0 {
+				step.input.wait = defaultTimeout
+			}
+			result, rpcError = makeWsRequest(step.client, step.input.name, step.input.wait, params...)
+		} else {
+			if step.input.isWait {
+				<-time.Tick(step.input.wait)
+			}
+			result, rpcError = makeRPCRequestV2(step.client, step.input.name, params...)
 		}
-		result, rpcError = makeRPCRequestV2(step.client, step.input.name, params...)
 		//data, err := command(step.client, step.input.params)
 		if rpcError != nil && rpcError.Code == rpcserver.GetErrorCode(rpcserver.ErrNetwork) {
 			return result, rpcError

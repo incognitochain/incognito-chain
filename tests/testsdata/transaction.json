@@ -7,8 +7,7 @@
     "input": {
       "command": "getbalancebyprivatekey",
       "context": false,
-      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe"],
-      "type": "http"
+      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe"]
     },
     "output": {
       "error": null,
@@ -44,14 +43,14 @@
   },
   {
     "node": {
-      "host": "http://localhost",
-      "port": "9334"
+      "host": "localhost",
+      "port": "19334"
     },
     "input": {
-      "command": "gettransactionbyhash",
+      "command": "subcribependingtransaction",
       "context": true,
       "params": ["TxID1"],
-      "type": "http",
+      "type": "ws",
       "wait": 60
     },
     "output": {
