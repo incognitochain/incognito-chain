@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -208,9 +209,9 @@ func (blockgen *BlkTmplGenerator) FinalizeShardBlock(blk *ShardBlock, producerKe
 	Get Transaction For new Block
 	1. Get pending transaction from blockgen
 	2. Keep valid tx & Removed error tx
-	3. Build Stability Transaction For Shard
-	4. Build Stability Transaction For Beacon
-	5. Return valid transaction from pending, stability transactions from shard and beacon
+	3. Build response Transaction For Shard
+	4. Build response Transaction For Beacon
+	5. Return valid transaction from pending, response transactions from shard and beacon
 */
 func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.PrivateKey, shardID byte, db database.DatabaseInterface, beaconBlocks []*BeaconBlock, blockCreation int64) ([]metadata.Transaction, error) {
 	txsToAdd, txToRemove, _ := blockgen.getPendingTransaction(shardID, beaconBlocks, blockCreation)
@@ -223,14 +224,9 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 			blockgen.chain.config.CRemovedTxs <- tx
 		}
 	}()
-	var respTxsShard, respTxsBeacon []metadata.Transaction
+	var respTxsBeacon []metadata.Transaction
 	var errCh chan error
 	errCh = make(chan error)
-	go func() {
-		var err error
-		respTxsShard, err = blockgen.buildStabilityResponseTxsAtShardOnly(txsToAdd, privatekey, shardID)
-		errCh <- err
-	}()
 	go func() {
 		var err error
 		respTxsBeacon, err = blockgen.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
@@ -247,9 +243,84 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 			break
 		}
 	}
-	txsToAdd = append(txsToAdd, respTxsShard...)
 	txsToAdd = append(txsToAdd, respTxsBeacon...)
 	return txsToAdd, nil
+}
+
+// buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
+func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
+	beaconBlocks []*BeaconBlock,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) ([]metadata.Transaction, error) {
+	resTxs := []metadata.Transaction{}
+	for _, beaconBlock := range beaconBlocks {
+		for _, l := range beaconBlock.Body.Instructions {
+			if l[0] == SwapAction {
+				//fmt.Println("SA: swap instruction ", l, beaconBlock.Header.Height, blockgen.chain.BestState.Beacon.GetShardCommittee())
+				for _, v := range strings.Split(l[2], ",") {
+					tx, err := blockgen.buildReturnStakingAmountTx(v, producerPrivateKey)
+					if err != nil {
+						Logger.log.Error("SA:", err)
+						continue
+					}
+					resTxs = append(resTxs, tx)
+				}
+
+			}
+			// shardToProcess, err := strconv.Atoi(l[1])
+			// if err != nil {
+			// 	continue
+			// }
+			// if shardToProcess == int(shardID) {
+			// 	// metaType, err := strconv.Atoi(l[0])
+			// 	// if err != nil {
+			// 	// 	return nil, err
+			// 	// }
+			// 	// var newIns []string
+			// 	// switch metaType {
+			// 	// case metadata.BeaconSalaryRequestMeta:
+			// 	// 	txs, err := blockgen.buildBeaconSalaryRes(l[0], l[3], producerPrivateKey)
+			// 	// 	if err != nil {
+			// 	// 		return nil, err
+			// 	// 	}
+			// 	// 	resTxs = append(resTxs, txs...)
+			// 	// }
+
+			// }
+			if l[0] == StakeAction || l[0] == RandomAction || l[0] == AssignAction || l[0] == SwapAction {
+				continue
+			}
+			if len(l) <= 2 {
+				continue
+			}
+			metaType, err := strconv.Atoi(l[0])
+			if err != nil {
+				return nil, err
+			}
+			var newTx metadata.Transaction
+			switch metaType {
+			case metadata.IssuingETHRequestMeta:
+				if len(l) >= 4 {
+					newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID)
+				}
+			case metadata.IssuingRequestMeta:
+				if len(l) >= 4 {
+					newTx, err = blockgen.buildIssuanceTx(l[3], producerPrivateKey, shardID)
+				}
+
+			default:
+				continue
+			}
+			if err != nil {
+				return nil, err
+			}
+			if newTx != nil {
+				resTxs = append(resTxs, newTx)
+			}
+		}
+	}
+	return resTxs, nil
 }
 
 /*

@@ -513,7 +513,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 	}
 
-	// Verify stability transactions
+	// Verify response transactions
 	instsForValidations := [][]string{}
 	instsForValidations = append(instsForValidations, block.Body.Instructions...)
 	for _, beaconBlock := range beaconBlocks {
