@@ -14,6 +14,8 @@ var HttpHandler = map[string]httpHandler{
 	getNodeRole:              (*HttpServer).handleGetNodeRole,
 	getNetworkInfo:           (*HttpServer).handleGetNetWorkInfo,
 	getConnectionCount:       (*HttpServer).handleGetConnectionCount,
+	getAllConnectedPeers:     (*HttpServer).handleGetAllConnectedPeers,
+	getInOutPeerMessages:     (*HttpServer).handleGetInOutPeerMessages,
 	getAllPeers:              (*HttpServer).handleGetAllPeers,
 	estimateFee:              (*HttpServer).handleEstimateFee,
 	estimateFeeWithEstimator: (*HttpServer).handleEstimateFeeWithEstimator,
