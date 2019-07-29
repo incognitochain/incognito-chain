@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/metrics"
+	peer "github.com/libp2p/go-libp2p-peer"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -183,9 +184,9 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 
 func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
-		go protocol.EngineCfg.Server.PushMessageToBeacon(msg)
+		go protocol.EngineCfg.Server.PushMessageToBeacon(msg, map[peer.ID]bool{})
 	} else {
-		go protocol.EngineCfg.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
+		go protocol.EngineCfg.Server.PushMessageToShard(msg, protocol.RoundData.ShardID, map[peer.ID]bool{})
 	}
 }
 
