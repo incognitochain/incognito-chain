@@ -2,6 +2,7 @@ package connmanager
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/stretchr/testify/assert"
@@ -16,8 +17,7 @@ var _ = func() (_ struct{}) {
 }()
 
 func TestConnManager_GetPeerId(t *testing.T) {
-	connManager := ConnManager{}
-	connManager.New(&Config{})
+	connManager := New(&Config{})
 	peerID, err := connManager.GetPeerId("/ip4/172.105.115.134/tcp/10008/ipfs/Qmawc4fM5VqzeeUMBb8PAEYVvENFK1DLATQsZpQFMskxJq")
 	fmt.Println("PeerID 1", peerID)
 	if err != nil {
@@ -45,7 +45,7 @@ func TestConnManager_GetPeerConnOfAll(t *testing.T) {
 	peerConn := peer.PeerConn{}
 	mapPeerConnection[peerConn.RemotePeerID.String()] = &peerConn
 	peer1.PeerConns = mapPeerConnection
-	connManager := ConnManager{}.New(&Config{
+	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
 	result := make([]*peer.PeerConn, 0)
@@ -71,7 +71,7 @@ func TestConnManager_GetPeerConnOfPublicKey(t *testing.T) {
 	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
 	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
 	peer1.PeerConns = mapPeerConnection
-	connManager := ConnManager{}.New(&Config{
+	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
 	result := make([]*peer.PeerConn, 0)
@@ -104,14 +104,16 @@ func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
 	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
 	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
 	peer1.PeerConns = mapPeerConnection
-	connManager := ConnManager{}.New(&Config{
+	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
 	connManager.Config.ConsensusState = consensusState
 	result := make([]*peer.PeerConn, 0)
+	bestState := blockchain.GetBestStateBeacon()
+	bestState.BeaconCommittee = []string{"abc2", "abc1"}
 	result = connManager.GetPeerConnOfBeacon()
 	if len(result) != 2 {
-		t.Error("Error GetPeerConnOfPbk")
+		assert.Equal(t, 2, len(result))
 	} else {
 		assert.Equal(t, 1, 1)
 	}
@@ -147,17 +149,21 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
 	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
 	peer1.PeerConns = mapPeerConnection
-	connManager := ConnManager{}.New(&Config{
+	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
 	connManager.Config.ConsensusState = consensusState
 	result := make([]*peer.PeerConn, 0)
+	blockchain.InitBestStateBeacon(&blockchain.Params{})
+	bestState := blockchain.GetBestStateBeacon()
+	bestState.ShardCommittee[0] = []string{"abc1"}
 	result = connManager.GetPeerConnOfShard(0)
 	if len(result) != 1 {
 		t.Error("Error GetPeerConnOfPbk")
 	} else {
 		assert.Equal(t, 1, 1)
 	}
+	bestState.ShardCommittee[2] = []string{"abc2"}
 	result = connManager.GetPeerConnOfShard(2)
 	if len(result) != 1 {
 		t.Error("Error GetPeerConnOfPbk")
@@ -167,8 +173,7 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 }
 
 func TestConnManager_Start(t *testing.T) {
-	connManager := ConnManager{}
-	connManager.New(&Config{})
+	connManager := New(&Config{})
 	connManager.Start("")
 	connManager.Stop()
 }

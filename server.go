@@ -409,7 +409,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		cfg.MaxPeersNoShard = 0
 		cfg.MaxPeersBeacon = 9999
 	}
-	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
+	connManager := connmanager.New(&connmanager.Config{
 		OnInboundAccept:      serverObj.InboundPeerConnected,
 		OnOutboundConnection: serverObj.OutboundPeerConnected,
 		ListenerPeer:         peer,
