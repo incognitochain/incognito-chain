@@ -24,6 +24,7 @@ func GetInitTransaction() []string{
 	//Shard1 = append(Shard1, InitTxsShard1_8...)
 	//Shard1 = append(Shard1, InitTxsShard1_9...)
 	//return append(Shard0, Shard1...)
-	return []string{`{"Version":1,"Type":"s","LockTime":1563890129,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"dwstfFDJaenTqsbolRqCa5iPJRoq4TT06dODcvSCm2wEgj6XOfaaDCGixJKqFn9rIHATLzJpkL8yj2Cz7lvCYg==","Proof":"11111119DtejwEmPoZuACsRRBHzNegPXR1nmduM2sbiANsmQ2hrKnuSBZKrQtnLwEGVjHn2ra2MEeLJy4kLLaCLrjKWaeUXC7GGU7nGD3NuM6sjXroq8w4rscb5tnS5yTrEKGX7uTwZzgk3sCCtS16wP2YkWbUyWqs2aXMta9Cw6a74tWJGhPtivEWK47rCqzfJLHsLnFhUTysysBdEexQvv4L4EMz","PubKeyLastByteSender":0,"Metadata":null}`,}
+	return []string{`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"f+JDTKpO7+veF6DVYobNp6l0l6rAYxCZjYCNRrsFN0lx7aOMOwXhZK0OGrKiDLfqSIMX7CXr9ProBz7TIx3yqg==","Proof":"1111111dP9RnNnGCD9afUsg4bvrBHNWfjZijttFU2bkFYLYFGqCoK6i6RCeSEk2NUmv7p8B4kyhi1qaoMjvYCotjhDogGiuYrEqUT4NQLXatq2xqkfxgX8DURcv9xCgrgqVceQ2DrBR5NcgbMQHHBnW1xV3Dte2kmq837EeufP3KoQpz3m5N3oN6x1UssfWSeHAuw4t2dUinKDTe7SgRnFFhfF59dvy","PubKeyLastByteSender":0,"Metadata":null}`,
+		`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"As3StzeOJhR5qheXo9stChC6WqQJChZNqmPqdgNOFtkA","Sig":"ccWpvPZjitORv6+9WOWv7K5e8purHA4sX7mfBNE9m9YYFyPJ2awx5+1iHuWKD7BH9oum64XCiLYtW9iihVGlDw==","Proof":"1111111dP9RnNmZen93jhEW3eXaKkne72tbWVGtcdfAEfnbdf7fPDQmwYaTve2a9MBA56HHWXzXCbDxx79KCrtrArUqQKnxgun69qQpCjDZhaBdpKNZAAvYf7uBHrnxpm7qxRA4XLGSKbuLS6mBtrCUFPnit9BDbSAu9ZxQsPnr7XPPyHdbBofrBzFLqf2zTPMrqCAZqBqapA5AMtd8J8yknUHX6hWJ","PubKeyLastByteSender":0,"Metadata":null}`,}
 }
 

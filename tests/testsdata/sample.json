@@ -1,0 +1,17 @@
+[
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+   "input": {
+    "command": "getblockchaininfo",
+    "params": [],
+     "type": "http"
+    },
+    "output": {
+     "error": null,
+     "response": {}
+    }
+  }
+]

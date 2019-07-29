@@ -151,10 +151,11 @@ func (wsServer *WsServer) ProcessRpcWsRequest(ws *websocket.Conn) {
 				Logger.log.Infof("Websocket Connection Closed from client %+v \n", ws.RemoteAddr())
 				return
 			} else {
-				Logger.log.Info("Websocket Connection from client %+v counter error %+v \n", ws.RemoteAddr(), err)
+				Logger.log.Info("Websocket Connection from Client %+v counter error %+v \n", ws.RemoteAddr(), err)
 				continue
 			}
 		}
+		Logger.log.Infof("Handle Websocket Connection from Client %+v ", ws.RemoteAddr())
 		subRequest, jsonErr := parseSubcriptionRequest(msg)
 		if jsonErr == nil {
 			if subRequest.Type == 0 {
