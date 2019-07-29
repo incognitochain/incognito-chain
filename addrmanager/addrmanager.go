@@ -80,7 +80,7 @@ func (addrManager *AddrManager) savePeers() error {
 		// init address data to push into storage data
 		addressData := new(serializedKnownAddress)
 		addressData.Addr = rawAddress
-		Logger.log.Info("PeerID", peerID.String(), len(peerID.String()))
+		Logger.log.Debug("PeerID", peerID.String(), len(peerID.String()))
 		addressData.Src = pretty
 		addressData.PublicKey = peerObj.PublicKey
 
@@ -253,6 +253,7 @@ func (addrManager *AddrManager) AddressCache() []*peer.Peer {
 
 	addrIndexLen := len(addrManager.addrIndex)
 	if addrIndexLen == 0 {
+		Logger.log.Debug("Address is empty")
 		return nil
 	}
 	allAddr := make([]*peer.Peer, 0, addrIndexLen)
