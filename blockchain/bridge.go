@@ -124,15 +124,6 @@ func pickInstructionFromBeaconBlocks(beaconBlocks []*BeaconBlock, instType strin
 	return insts
 }
 
-// pickBeaconPubkeyRootInstruction finds all BeaconSwapConfirmMeta instructions
-// These instructions contain merkle root of beacon committee's pubkey
-func pickBeaconPubkeyRootInstruction(
-	beaconBlocks []*BeaconBlock,
-) [][]string {
-	instType := strconv.Itoa(metadata.BeaconSwapConfirmMeta)
-	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
-}
-
 // pickBurningConfirmInstruction finds all BurningConfirmMeta instructions
 func pickBurningConfirmInstruction(
 	beaconBlocks []*BeaconBlock,
@@ -150,9 +141,16 @@ func pickBurningConfirmInstruction(
 	return insts
 }
 
-// pickBridgePubkeyRootInstruction finds all BridgeSwapConfirmMeta instructions
-// These instructions contain merkle root of bridge committee's pubkey
-func pickBridgePubkeyRootInstruction(
+// pickBeaconSwapConfirmInst finds all BeaconSwapConfirmMeta instructions in some beacon blocks
+func pickBeaconSwapConfirmInst(
+	beaconBlocks []*BeaconBlock,
+) [][]string {
+	instType := strconv.Itoa(metadata.BeaconSwapConfirmMeta)
+	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
+}
+
+// pickBridgeSwapConfirmInst finds all BridgeSwapConfirmMeta instructions in a shard to beacon block
+func pickBridgeSwapConfirmInst(
 	block *ShardToBeaconBlock,
 ) [][]string {
 	shardType := strconv.Itoa(metadata.BridgeSwapConfirmMeta)
