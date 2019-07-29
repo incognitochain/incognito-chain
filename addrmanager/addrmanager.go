@@ -3,16 +3,16 @@ package addrmanager
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
 	peer2 "github.com/libp2p/go-libp2p-peer"
+	"github.com/pkg/errors"
 )
 
 type AddrManager struct {
