@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
+	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
 )
 
@@ -23,12 +24,12 @@ func (protocol *BFTProtocol) phasePropose() error {
 		fmt.Println("BFT: Request ready msg", time.Since(protocol.startTime).Seconds())
 		if protocol.RoundData.Layer == common.BEACON_ROLE {
 			msgReq, _ := MakeMsgBFTReq(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.UserKeySet)
-			if err := protocol.EngineCfg.Server.PushMessageToBeacon(msgReq); err != nil {
+			if err := protocol.EngineCfg.Server.PushMessageToBeacon(msgReq, map[libp2p.ID]bool{}); err != nil {
 				fmt.Println("BFT: no beacon", err)
 			}
 		} else {
 			msgReq, _ := MakeMsgBFTReq(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.UserKeySet)
-			if err := protocol.EngineCfg.Server.PushMessageToShard(msgReq, protocol.RoundData.ShardID); err != nil {
+			if err := protocol.EngineCfg.Server.PushMessageToShard(msgReq, protocol.RoundData.ShardID, map[libp2p.ID]bool{}); err != nil {
 				fmt.Println("BFT: no shard", err)
 			}
 		}
@@ -85,10 +86,10 @@ phase:
 func (protocol *BFTProtocol) phaseListen() error {
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 		msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight(), protocol.EngineCfg.UserKeySet)
-		protocol.EngineCfg.Server.PushMessageToBeacon(msgReady)
+		protocol.EngineCfg.Server.PushMessageToBeacon(msgReady, map[libp2p.ID]bool{})
 	} else {
 		msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight(), protocol.EngineCfg.UserKeySet)
-		protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID)
+		protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID, map[libp2p.ID]bool{})
 	}
 
 	var timeSinceLastBlk time.Duration
@@ -175,12 +176,12 @@ phase:
 							if protocol.RoundData.Layer == common.BEACON_ROLE {
 								if userRole, _ := protocol.EngineCfg.BlockChain.BestState.Beacon.GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Round); userRole == common.PROPOSER_ROLE {
 									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.ShardToBeaconPool.GetLatestValidPendingBlockHeight(), protocol.EngineCfg.UserKeySet)
-									protocol.EngineCfg.Server.PushMessageToBeacon(msgReady)
+									protocol.EngineCfg.Server.PushMessageToBeacon(msgReady, map[libp2p.ID]bool{})
 								}
 							} else {
 								if userRole := protocol.EngineCfg.BlockChain.BestState.Shard[protocol.RoundData.ShardID].GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Round); userRole == common.PROPOSER_ROLE {
 									msgReady, _ := MakeMsgBFTReady(protocol.RoundData.BestStateHash, protocol.RoundData.Round, protocol.EngineCfg.CrossShardPool[protocol.RoundData.ShardID].GetLatestValidBlockHeight(), protocol.EngineCfg.UserKeySet)
-									protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID)
+									protocol.EngineCfg.Server.PushMessageToShard(msgReady, protocol.RoundData.ShardID, map[libp2p.ID]bool{})
 								}
 							}
 						}
