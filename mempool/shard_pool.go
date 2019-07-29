@@ -111,20 +111,7 @@ func getShardPool(shardID byte) *ShardPool {
 func GetShardPool(shardID byte) *ShardPool {
 	shardPoolMapMu.Lock()
 	defer shardPoolMapMu.Unlock()
-	if shardPoolMap[shardID] == nil {
-		shardPool := new(ShardPool)
-		shardPool.shardID = shardID
-		shardPool.latestValidHeight = 1
-		shardPool.RoleInCommittees = -1
-		shardPool.validPool = []*blockchain.ShardBlock{}
-		shardPool.conflictedPool = make(map[common.Hash]*blockchain.ShardBlock)
-		shardPool.config = defaultConfig
-		shardPool.pendingPool = make(map[uint64]*blockchain.ShardBlock)
-		shardPool.cache, _ = lru.New(shardPool.config.CacheSize)
-		shardPool.mtx = new(sync.RWMutex)
-		shardPoolMap[shardID] = shardPool
-	}
-	return shardPoolMap[shardID]
+	return getShardPool(shardID)
 }
 
 func (self *ShardPool) SetShardState(lastestShardHeight uint64) {
