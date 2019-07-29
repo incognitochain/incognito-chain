@@ -224,7 +224,6 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if err != nil {
 		return err
 	}
-	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, blockHash)
 	shardIDForMetric := strconv.Itoa(int(block.Header.ShardID))
 	go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 		metrics.Measurement:      metrics.NumOfBlockInsertToChain,
@@ -240,54 +239,21 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
-		//fmt.Printf("[ndh]  - - - [error]1: %+v\n", err)
 		return err
 	}
 	err = blockchain.updateDatabaseFromShardBlock(block)
 	if err != nil {
-		//fmt.Printf("[ndh]  - - - [error]2: %+v\n", err)
 		return err
 	}
-	//fmt.Printf("[ndh]  - - - nonerror \n")
-
 	// Save result of BurningConfirm instruction to get proof later
 	err = blockchain.storeBurningConfirm(block)
 	if err != nil {
 		return err
 	}
-
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, block))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.BestState.Shard[shardID]))
+	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", block.Header.ShardID, block.Header.Height, blockHash)
 	return nil
-}
-
-func (blockchain *BlockChain) updateStuffForIssuingETHRes(
-	tx metadata.Transaction,
-) error {
-	db := blockchain.GetDatabase()
-	issuingETHResdMeta := tx.GetMetadata().(*metadata.IssuingETHResponse)
-	err := db.InsertETHTxHashIssued(issuingETHResdMeta.UniqETHTx)
-	if err != nil {
-		return err
-	}
-	err = db.UpdateBridgeTokenInfo(
-		*tx.GetTokenID(),
-		issuingETHResdMeta.ExternalTokenID,
-		false,
-	)
-	return err
-}
-
-func (blockchain *BlockChain) updateStuffForIssuingRes(
-	tx metadata.Transaction,
-) error {
-	db := blockchain.GetDatabase()
-	err := db.UpdateBridgeTokenInfo(
-		*tx.GetTokenID(),
-		[]byte{},
-		true,
-	)
-	return err
 }
 
 func (blockchain *BlockChain) updateDatabaseFromShardBlock(
@@ -300,10 +266,6 @@ func (blockchain *BlockChain) updateDatabaseFromShardBlock(
 		if metaType == metadata.WithDrawRewardResponseMeta {
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			err = db.RemoveCommitteeReward(requesterRes, amountRes, *coinID)
-		} else if metaType == metadata.IssuingETHResponseMeta {
-			err = blockchain.updateStuffForIssuingETHRes(tx)
-		} else if metaType == metadata.IssuingResponseMeta {
-			err = blockchain.updateStuffForIssuingRes(tx)
 		}
 		if err != nil {
 			return err
@@ -336,7 +298,7 @@ func (blockchain *BlockChain) ProcessStoreShardBlock(block *ShardBlock) error {
 	}
 
 	// Process transaction db
-	Logger.log.Criticalf("SHARD %+v | ⚒︎ %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
+	Logger.log.Criticalf("SHARD %+v | 🎉︎ %d transactions in block height %+v \n", block.Header.ShardID, len(block.Body.Transactions), block.Header.Height)
 	if block.Header.Height != 1 {
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxInOneBlock,
@@ -506,18 +468,19 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return nil
 	}
 	//TODO: validator create instruction again (ONLY validator need to do that)
-	totalInstructions := []string{}
-	for _, value := range txInstructions {
-		totalInstructions = append(totalInstructions, value...)
+	if !isPresig {
+		totalInstructions := []string{}
+		for _, value := range txInstructions {
+			totalInstructions = append(totalInstructions, value...)
+		}
+		for _, value := range block.Body.Instructions {
+			totalInstructions = append(totalInstructions, value...)
+		}
+		isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
+		if !isOk {
+			return NewBlockChainError(HashError, errors.New("Error verify action root"))
+		}
 	}
-	for _, value := range block.Body.Instructions {
-		totalInstructions = append(totalInstructions, value...)
-	}
-	isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
-	if !isOk {
-		return NewBlockChainError(HashError, errors.New("Error verify action root"))
-	}
-
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
 	flattenTxInsts := FlattenAndConvertStringInst(txInstructions)
 	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
@@ -574,6 +537,26 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		if err := blockchain.VerifyTransactionFromNewBlock(block.Body.Transactions); err != nil {
 			return NewBlockChainError(TransactionError, err)
 		}
+		// Verify Instruction
+		instructions := [][]string{}
+		shardCommittee := blockchain.BestState.Shard[shardID].ShardCommittee
+		shardPendingValidator := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
+		instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, block.Header.BeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
+		if err != nil {
+			return NewBlockChainError(InstructionError, err)
+		}
+		totalInstructions := []string{}
+		for _, value := range txInstructions {
+			totalInstructions = append(totalInstructions, value...)
+		}
+		for _, value := range instructions {
+			totalInstructions = append(totalInstructions, value...)
+		}
+		isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
+		if !isOk {
+			return NewBlockChainError(HashError, errors.New("Error verify action root"))
+		}
+		// Verify Cross Shard Output Coin and Custom Token Transaction
 		crossTxTokenData := make(map[byte][]CrossTxTokenData)
 		toShard := shardID
 		crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
