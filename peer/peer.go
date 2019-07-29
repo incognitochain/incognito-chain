@@ -670,6 +670,7 @@ func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
 }
 
 type PeerMessageInOut struct {
+	PeerID  peer.ID
 	Message wire.Message
 	Time    int64
 }
@@ -679,20 +680,20 @@ var outboundPeerMessage = map[string][]PeerMessageInOut{}
 var inMutex = &sync.Mutex{}
 var outMutex = &sync.Mutex{}
 
-func StoreInboundPeerMessage(msg wire.Message, time int64) {
+func StoreInboundPeerMessage(msg wire.Message, time int64, peerID peer.ID) {
 	messageType := msg.MessageType()
 	inMutex.Lock()
 	defer inMutex.Unlock()
 	existingMessages := inboundPeerMessage[messageType]
 	if len(existingMessages) == 0 {
 		inboundPeerMessage[messageType] = []PeerMessageInOut{
-			{Message: msg, Time: time},
+			{Message: msg, Time: time, PeerID: peerID},
 		}
 		return
 	}
 
 	messages := []PeerMessageInOut{
-		{msg, time},
+		{peerID, msg, time},
 	}
 	for _, message := range existingMessages {
 		if message.Time < time-10 {
@@ -712,19 +713,30 @@ func GetInboundPeerMessagesByType(messageType string) []PeerMessageInOut {
 	}
 	return messages
 }
-func StoreOutboundPeerMessage(msg wire.Message, time int64) {
+
+func GetInboundMessagesByPeer() map[string]int {
+	result := map[string]int{}
+	for _, inboundMessages := range inboundPeerMessage {
+		for _, message := range inboundMessages {
+			result[message.PeerID.Pretty()]++
+		}
+	}
+	return result
+}
+
+func StoreOutboundPeerMessage(msg wire.Message, time int64, peerID peer.ID) {
 	messageType := msg.MessageType()
 	outMutex.Lock()
 	defer outMutex.Unlock()
 	existingMessages := outboundPeerMessage[messageType]
 	if len(existingMessages) == 0 {
 		outboundPeerMessage[messageType] = []PeerMessageInOut{
-			{Message: msg, Time: time},
+			{Message: msg, Time: time, PeerID: peerID},
 		}
 		return
 	}
 	messages := []PeerMessageInOut{
-		{msg, time},
+		{peerID, msg, time},
 	}
 	for _, message := range existingMessages {
 		if message.Time < time-10 {
@@ -743,4 +755,14 @@ func GetOutboundPeerMessagesByType(messageType string) []PeerMessageInOut {
 		return []PeerMessageInOut{}
 	}
 	return messages
+}
+
+func GetOutboundMessagesByPeer() map[string]int {
+	result := map[string]int{}
+	for _, outboundMessages := range outboundPeerMessage {
+		for _, message := range outboundMessages {
+			result[message.PeerID.Pretty()]++
+		}
+	}
+	return result
 }
