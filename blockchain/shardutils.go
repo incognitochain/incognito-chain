@@ -137,9 +137,7 @@ func CreateShardInstructionsFromTransactionAndIns(
 	if err != nil {
 		return nil, err
 	}
-
 	for _, tx := range transactions {
-
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
@@ -153,7 +151,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 		}
 	}
-
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
 		instruction := []string{StakeAction, strings.Join(stakeShardPubKey, ","), "shard", strings.Join(stakeShardTxID, ",")}
 		instructions = append(instructions, instruction)
@@ -162,7 +159,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 		instruction := []string{StakeAction, strings.Join(stakeBeaconPubKey, ","), "beacon", strings.Join(stakeBeaconTxID, ",")}
 		instructions = append(instructions, instruction)
 	}
-
 	return instructions, nil
 }
 

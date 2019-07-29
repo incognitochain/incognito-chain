@@ -3,12 +3,15 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
+
+// NOTE: for whole bridge's deposit process, anytime an error occurs an error will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
 
 type BurningReqAction struct {
 	Meta          metadata.BurningRequest `json:"meta"`
@@ -22,10 +25,10 @@ func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 		}
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.IssuingResponseMeta):
-			err = chain.processIssuingRes(inst)
-		case strconv.Itoa(metadata.IssuingETHResponseMeta):
-			err = chain.processIssuingETHRes(inst)
+		case strconv.Itoa(metadata.IssuingETHRequestMeta):
+			err = chain.processIssuingETHReq(inst)
+		case strconv.Itoa(metadata.IssuingRequestMeta):
+			err = chain.processIssuingReq(inst)
 		}
 		if err != nil {
 			return err
@@ -34,43 +37,65 @@ func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 	return nil
 }
 
-func (chain *BlockChain) processIssuingRes(inst []string) error {
-	contentBytes, err := base64.StdEncoding.DecodeString(inst[1])
-	if err != nil {
-		return err
+func (chain *BlockChain) processIssuingETHReq(inst []string) error {
+	if len(inst) != 4 {
+		return nil // skip the instruction
 	}
-	var issuingResAction metadata.IssuingResAction
-	err = json.Unmarshal(contentBytes, &issuingResAction)
+	db := chain.GetDatabase()
+	contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 	if err != nil {
-		return err
+		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		return nil
 	}
-	return chain.GetDatabase().UpdateBridgeTokenInfo(
-		*issuingResAction.IncTokenID,
+	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
+	if err != nil {
+		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		return nil
+	}
+	err = db.InsertETHTxHashIssued(issuingETHAcceptedInst.UniqETHTx)
+	if err != nil {
+		fmt.Println("WARNING: an error occured while inserting ETH tx hash issued to leveldb: ", err)
+		return nil
+	}
+	err = db.UpdateBridgeTokenInfo(
+		issuingETHAcceptedInst.IncTokenID,
+		issuingETHAcceptedInst.ExternalTokenID,
+		false,
+	)
+	if err != nil {
+		fmt.Println("WARNING: an error occured while updating bridge token info to leveldb: ", err)
+		return nil
+	}
+	return nil
+}
+
+func (chain *BlockChain) processIssuingReq(inst []string) error {
+	if len(inst) != 4 {
+		return nil // skip the instruction
+	}
+	db := chain.GetDatabase()
+	contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
+	if err != nil {
+		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		return nil
+	}
+	var issuingAcceptedInst metadata.IssuingAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
+	if err != nil {
+		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		return nil
+	}
+	err = db.UpdateBridgeTokenInfo(
+		issuingAcceptedInst.IncTokenID,
 		[]byte{},
 		true,
 	)
-}
-
-func (chain *BlockChain) processIssuingETHRes(inst []string) error {
-	contentBytes, err := base64.StdEncoding.DecodeString(inst[1])
 	if err != nil {
-		return err
+		fmt.Println("WARNING: an error occured while updating bridge token info to leveldb: ", err)
+		return nil
 	}
-	var issuingETHResAction metadata.IssuingETHResAction
-	err = json.Unmarshal(contentBytes, &issuingETHResAction)
-	if err != nil {
-		return err
-	}
-	db := chain.GetDatabase()
-	err = db.InsertETHTxHashIssued(issuingETHResAction.Meta.UniqETHTx)
-	if err != nil {
-		return err
-	}
-	return db.UpdateBridgeTokenInfo(
-		*issuingETHResAction.IncTokenID,
-		issuingETHResAction.Meta.ExternalTokenID,
-		false,
-	)
+	return nil
 }
 
 func decodeContent(content string, action interface{}) error {
