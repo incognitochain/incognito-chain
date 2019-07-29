@@ -1,20 +1,96 @@
 package rpcserver
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
 )
+
+/*
+handleGetInOutPeerMessages - return all inbound/outbound messages peer which this node connected
+*/
+func (httpServer *HttpServer) handleGetInOutPeerMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetInOutPeerMessagess params: %+v", params)
+	inboundMessages := peer.GetInboundPeerMessages()
+	outboundMessages := peer.GetOutboundPeerMessages()
+	result := struct {
+		InboundMessages  map[string][]wire.Message `json:"Inbounds"`
+		OutboundMessages map[string][]wire.Message `json:"Outbounds"`
+	}{
+		map[string][]wire.Message{},
+		map[string][]wire.Message{},
+	}
+	for messageType, messagePeers := range inboundMessages {
+		messages := []wire.Message{}
+		for _, m := range messagePeers {
+			messages = append(messages, m.Message)
+		}
+		result.InboundMessages[messageType] = messages
+	}
+	for messageType, messagePeers := range outboundMessages {
+		messages := []wire.Message{}
+		for _, m := range messagePeers {
+			messages = append(messages, m.Message)
+		}
+		result.OutboundMessages[messageType] = messages
+	}
+	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
+	return result, nil
+}
+
+/*
+handleGetAllConnectedPeers - return all connnected peers which this node connected
+*/
+func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetAllConnectedPeers params: %+v", params)
+	// result := jsonresult.GetAllPeersResult{}
+	var result struct {
+		Peers []map[string]string `json:"Peers"`
+	}
+	peersMap := []map[string]string{}
+	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
+
+	bestState := blockchain.GetBestStateBeacon()
+	beaconCommitteeList := bestState.BeaconCommittee
+	shardCommitteeList := bestState.GetShardCommittee()
+
+	for _, peerConn := range listeningPeer.PeerConns {
+		peerItem := map[string]string{
+			"RawAddress": peerConn.RemoteRawAddress,
+			"PublicKey":  peerConn.RemotePeer.PublicKey,
+			"NodeType":   "",
+		}
+		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, beaconCommitteeList) != -1
+		if isInBeaconCommittee {
+			peerItem["NodeType"] = "Beacon"
+		}
+		for shardID, committees := range shardCommitteeList {
+			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, committees) != -1
+			if isInShardCommitee {
+				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
+				break
+			}
+		}
+		peersMap = append(peersMap, peerItem)
+	}
+	result.Peers = peersMap
+	Logger.log.Infof("handleGetAllPeers result: %+v", result)
+	return result, nil
+}
 
 /*
 handleGetAllPeers - return all peers which this node connected
