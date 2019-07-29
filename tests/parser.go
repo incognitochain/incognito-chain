@@ -145,7 +145,7 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 					}
 				}
 				if response, ok := output["response"]; !ok {
-					return sc, false
+					step.output.response = make(map[string]interface{})
 				} else {
 					step.output.response = response
 				}

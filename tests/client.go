@@ -18,6 +18,10 @@ import (
 )
 
 var (
+	flags = make(map[string]*string)
+)
+//Error
+var (
 	ErrParseFailed = errors.New("Failed to parse result")
 )
 type Client struct {
@@ -107,7 +111,7 @@ func makeRPCRequestV2(client *Client, method string, params ...interface{}) (int
 	return result, response.Error
 }
 
-func makeWsRequest(client *Client, method string, timeout time.Duration, params ...interface{}) (map[string]interface{}, *rpcserver.RPCError) {
+func makeWsRequest(client *Client, method string, timeout time.Duration, params ...interface{}) (interface{}, *rpcserver.RPCError) {
 	var done = make(chan struct{})
 	var wsError error
 	request := rpcserver.JsonRequest{
@@ -125,8 +129,13 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	var addr = flag.String("addr", client.Host+":"+client.Port, "http service address")
-	u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
+	var addr string
+	if flag.Lookup("address:"+client.Host+client.Port) != nil {
+		addr = flag.Lookup("address:"+client.Host+client.Port).Value.(flag.Getter).Get().(string)
+	} else {
+		addr = *flag.String("address:"+client.Host+client.Port, client.Host+":"+client.Port, "http service address")
+	}
+	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dial:", err)
@@ -172,10 +181,14 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	result := make(map[string]interface{})
-	rpcError := json.Unmarshal(response.Result, &result)
-	if rpcError != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, rpcError)
+	subResult := rpcserver.SubcriptionResult{}
+	err = json.Unmarshal(response.Result, &subResult)
+	if err != nil {
+		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	}
+	result := parseResult(subResult.Result)
+	if result == nil {
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
 	}
 	return result, response.Error
 }
