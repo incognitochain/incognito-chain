@@ -31,20 +31,19 @@ func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, clo
 	}{}
 	inboundMessageByPeers := peer.GetInboundMessagesByPeer()
 	outboundMessageByPeers := peer.GetOutboundMessagesByPeer()
-
-	if params == nil {
+	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) == 0 {
 		result.InboundMessages = inboundMessageByPeers
 		result.OutboundMessages = outboundMessageByPeers
 		return result, nil
 	}
 
-	peerID := params.(map[string]interface{})["peerID"]
-	peerID, ok := peerID.(string)
+	peerID, ok := paramsArray[0].(string)
 	if !ok {
 		peerID = ""
 	}
-	result.InboundMessages = inboundMessageByPeers[peerID.(string)]
-	result.OutboundMessages = outboundMessageByPeers[peerID.(string)]
+	result.InboundMessages = inboundMessageByPeers[peerID]
+	result.OutboundMessages = outboundMessageByPeers[peerID]
 
 	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
@@ -55,6 +54,8 @@ handleGetInOutPeerMessages - return all inbound/outbound messages peer which thi
 */
 func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetInOutPeerMessagess params: %+v", params)
+	paramsArray := common.InterfaceSlice(params)
+
 	inboundMessages := peer.GetInboundPeerMessages()
 	outboundMessages := peer.GetOutboundPeerMessages()
 	result := struct {
@@ -64,7 +65,7 @@ func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeCh
 		map[string]interface{}{},
 		map[string]interface{}{},
 	}
-	if params == nil {
+	if len(paramsArray) == 0 {
 		for messageType, messagePeers := range inboundMessages {
 			result.InboundMessages[messageType] = len(messagePeers)
 		}
@@ -73,11 +74,11 @@ func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeCh
 		}
 		return result, nil
 	}
-	peerID := params.(map[string]interface{})["peerID"]
-	peerID, ok := peerID.(string)
+	peerID, ok := paramsArray[0].(string)
 	if !ok {
 		peerID = ""
 	}
+
 	for messageType, messagePeers := range inboundMessages {
 		messages := []wire.Message{}
 		for _, m := range messagePeers {
