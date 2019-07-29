@@ -388,6 +388,14 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			return err
 		}
 	}
+	isRelayNodeForConsensus := cfg.Accelerator
+	if isRelayNodeForConsensus {
+		cfg.MaxPeersSameShard = 9999
+		cfg.MaxPeersOtherShard = 9999
+		cfg.MaxPeersOther = 9999
+		cfg.MaxPeersNoShard = 0
+		cfg.MaxPeersBeacon = 9999
+	}
 	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
 		OnInboundAccept:      serverObj.InboundPeerConnected,
 		OnOutboundConnection: serverObj.OutboundPeerConnected,
@@ -1107,9 +1115,27 @@ func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) 
 	Logger.log.Debugf("Receive addr message %v", msg.RawPeers)
 }
 
-func (serverObj *Server) OnBFTMsg(_ *peer.PeerConn, msg wire.Message) {
+func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	Logger.log.Debug("Receive a BFTMsg START")
 	var txProcessed chan struct{}
+	isRelayNodeForConsensus := cfg.Accelerator
+	if isRelayNodeForConsensus {
+		senderPublicKey := p.RemotePeer.PublicKey
+		bestState := blockchain.GetBestStateBeacon()
+		beaconCommitteeList := bestState.BeaconCommittee
+		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
+		if isInBeaconCommittee {
+			serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{p.RemotePeerID: true})
+		}
+		shardCommitteeList := bestState.GetShardCommittee()
+		for shardID, committees := range shardCommitteeList {
+			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1
+			if isInShardCommitee {
+				serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{p.RemotePeerID: true})
+				break
+			}
+		}
+	}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Debug("Receive a BFTMsg END")
 }
@@ -1224,11 +1250,18 @@ func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 /*
 PushMessageToPeer push msg to pbk
 */
-func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error {
+func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclusivePeerIDs map[libp2p.ID]bool) error {
 	Logger.log.Debugf("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
+	relayConns := serverObj.connManager.GetConnOfRelayNode()
+	peerConns = append(relayConns, peerConns...)
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
+			if isExcluded, ok := exclusivePeerIDs[peerConn.RemotePeerID]; ok {
+				if isExcluded {
+					continue
+				}
+			}
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
 		}
@@ -1266,12 +1299,19 @@ func (serverObj *Server) PushRawBytesToShard(p *peer.PeerConn, msgBytes *[]byte,
 /*
 PushMessageToPeer push msg to beacon node
 */
-func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
+func (serverObj *Server) PushMessageToBeacon(msg wire.Message, exclusivePeerIDs map[libp2p.ID]bool) error {
 	Logger.log.Debugf("Push msg to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
+	relayConns := serverObj.connManager.GetConnOfRelayNode()
+	peerConns = append(relayConns, peerConns...)
 	if len(peerConns) > 0 {
 		fmt.Println("BFT:", len(peerConns))
 		for _, peerConn := range peerConns {
+			if isExcluded, ok := exclusivePeerIDs[peerConn.RemotePeerID]; ok {
+				if isExcluded {
+					continue
+				}
+			}
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToBeacon, nil)
 		}
@@ -1403,7 +1443,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, to)
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1419,7 +1459,7 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1435,7 +1475,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 	msg.(*wire.MessageGetBlockShard).BlkHashes = blksHash
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1455,7 +1495,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, 
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1476,7 +1516,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, bl
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 }
@@ -1496,7 +1536,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(shardI
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetShardToBeacon from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 }
@@ -1517,7 +1557,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, fromShard)
+		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1539,7 +1579,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, fromShard)
+		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 }

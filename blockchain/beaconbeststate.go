@@ -53,9 +53,9 @@ type BestStateBeacon struct {
 	IsGetRandomNumber                      bool                 `json:"IsGetRandomNumber"`
 	Params                                 map[string]string    `json:"Params,omitempty"`
 	MaxBeaconCommitteeSize                 int                  `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize                 int                  `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize                 int                  `json:"MinBeaconCommitteeSize"`
 	MaxShardCommitteeSize                  int                  `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize                  int                  `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize                  int                  `json:"MinShardCommitteeSize"`
 	ActiveShards                           int                  `json:"ActiveShards"`
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3

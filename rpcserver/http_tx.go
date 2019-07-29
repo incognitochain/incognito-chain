@@ -410,7 +410,7 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is invalid"))
 	}
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
-	Logger.log.Debugf("Get Transaction By Hash %+v", txHash)
+	Logger.log.Infof("Get Transaction By Hash %+v", *txHash)
 	db := *(httpServer.config.Database)
 	shardID, blockHash, index, tx, err := httpServer.config.BlockChain.GetTransactionByHash(*txHash)
 	if err != nil {

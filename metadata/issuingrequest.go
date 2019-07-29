@@ -27,6 +27,15 @@ type IssuingReqAction struct {
 	TxReqID common.Hash    `json:"txReqId"`
 }
 
+type IssuingAcceptedInst struct {
+	ShardID         byte                   `json:"shardId"`
+	DepositedAmount uint64                 `json:"issuingAmount"`
+	ReceiverAddr    privacy.PaymentAddress `json:"receiverAddrStr"`
+	IncTokenID      common.Hash            `json:"incTokenId"`
+	IncTokenName    string                 `json:"incTokenName"`
+	TxReqID         common.Hash            `json:"txReqId"`
+}
+
 func ParseIssuingInstContent(instContentStr string) (*IssuingReqAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
