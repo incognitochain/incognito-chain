@@ -52,6 +52,7 @@ func (bReq *BurningRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
+	// TODO(@0xankylosaurus): accept only decentralized tokens
 	bridgeTokenExisted, err := db.IsBridgeTokenExisted(bReq.TokenID)
 	if err != nil {
 		return false, err
