@@ -425,7 +425,9 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					sendString = messageHex
 				}
 				// MONITOR OUTBOUND MESSAGE
-				StoreOutboundPeerMessage(outMsg.message, time.Now().Unix())
+				if outMsg.message != nil {
+					StoreOutboundPeerMessage(outMsg.message, time.Now().Unix())
+				}
 
 				_, err := rw.Writer.WriteString(sendString)
 				if err != nil {
