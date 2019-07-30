@@ -320,6 +320,7 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 		// -> use to make peer connection
 		err := connManager.processDiscoverPeers()
 		if err != nil {
+			Logger.log.Error(err)
 			continue
 		}
 		select {
@@ -346,9 +347,10 @@ func (connManager *ConnManager) discoverPeers(discoverPeerAddress string) {
 // other role of other peers
 func (connManager *ConnManager) processDiscoverPeers() error {
 	discoverPeerAddress := connManager.discoverPeerAddress
-	if discoverPeerAddress == "" {
+	if discoverPeerAddress == common.EmptyString {
 		// we dont have config to make discover peer
 		// so we dont need to do anything here
+		Logger.log.Debug("Not config discovery peer")
 		return nil
 	}
 
@@ -389,15 +391,15 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 				rawAddress = strings.Replace(rawAddress, fmt.Sprintf("/%s/", rawPort), fmt.Sprintf("/%s/", port), 1)
 			}
 		} else {
-			rawAddress = ""
+			rawAddress = common.EmptyString
 		}
 
 		// In case WE run a node look like  committee of shard or beacon
 		// we need TO Generate a signature with base58check format string
 		// and send to boot node like a notice from us that
 		// we live and we send info about us to bootnode(peerID, node rol, ...)
-		publicKeyInBase58CheckEncode := ""
-		signDataInBase58CheckEncode := ""
+		publicKeyInBase58CheckEncode := common.EmptyString
+		signDataInBase58CheckEncode := common.EmptyString
 		if listener.Config.UserKeySet != nil {
 			publicKeyInBase58CheckEncode = listener.Config.UserKeySet.GetPublicKeyB58()
 			Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
@@ -414,22 +416,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 			PublicKey:  publicKeyInBase58CheckEncode,
 			SignData:   signDataInBase58CheckEncode,
 		}
-		Logger.log.Infof("[Exchange Peers] Ping %+v", args)
-
-		// Write more log to debug
-		//Logger.log.Info("Dump PeerConns", len(listener.PeerConns))
-		//for pubK, info := range connManager.discoveredPeers {
-		//	var result []string
-		//	for _, peerConn := range listener.PeerConns {
-		//		if peerConn.RemotePeer.PublicKey == pubK {
-		//			result = append(result, peerConn.RemotePeer.PeerID.Pretty())
-		//		}
-		//	}
-		//	Logger.log.Infof("Public PubKey %s, %s, %s", pubK, info.PeerID.Pretty(), result)
-
-		//for _, peerConn := range listener.PeerConns {
-		//	Logger.log.Info("PeerConn state %s %s %s", peerConn.ConnState(), peerConn.GetIsOutbound(), peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
-		//}
+		Logger.log.Debugf("[Exchange Peers] Ping %+v", args)
 
 		err := client.Call("Handler.Ping", args, &response)
 		if err != nil {
@@ -464,16 +451,16 @@ func (connManager *ConnManager) getPeerIdsFromPbk(pbk string) []libpeer.ID {
 	listener := connManager.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
-		// Logger.log.Info("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 		if peerConn.RemotePeer.PublicKey == pbk {
 			exist := false
+			peerID := peerConn.RemotePeer.PeerID
 			for _, item := range result {
-				if item.Pretty() == peerConn.RemotePeer.PeerID.Pretty() {
+				if item.Pretty() == peerID.Pretty() {
 					exist = true
 				}
 			}
 			if !exist {
-				result = append(result, peerConn.RemotePeer.PeerID)
+				result = append(result, peerID)
 			}
 		}
 	}
@@ -494,16 +481,16 @@ func (connManager *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn
 }
 
 func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
-	c := 0
+	count := 0
 	listener := connManager.Config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
 		sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
 		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
-			c++
+			count++
 		}
 	}
-	return c
+	return count
 }
 
 func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool {
@@ -689,8 +676,8 @@ func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
 	bestState := blockchain.GetBestStateBeacon()
 	shardCommitteeList := bestState.GetShardCommittee()
 	for shardID, committees := range shardCommitteeList {
-		isInShardCommitee := common.IndexOfStr(publicKey, committees) != -1
-		if isInShardCommitee {
+		isInShardCommittee := common.IndexOfStr(publicKey, committees) != -1
+		if isInShardCommittee {
 			return &shardID
 		}
 	}
