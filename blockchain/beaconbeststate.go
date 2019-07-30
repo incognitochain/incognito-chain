@@ -630,6 +630,26 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 			return err
 		}
 	}
-
 	return nil
+}
+
+func (bestStateBeacon *BestStateBeacon) GetShardCandidate() []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return append(bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CandidateShardWaitingForNextRandom...)
+}
+func (bestStateBeacon *BestStateBeacon) GetBeaconCandidate() []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return append(bestStateBeacon.CandidateBeaconWaitingForCurrentRandom, bestStateBeacon.CandidateBeaconWaitingForNextRandom...)
+}
+func (bestStateBeacon *BestStateBeacon) GetBeaconCommittee() []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return bestStateBeacon.BeaconCommittee
+}
+func (bestStateBeacon *BestStateBeacon) GetBeaconPendingValidator() []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return bestStateBeacon.BeaconPendingValidator
 }
