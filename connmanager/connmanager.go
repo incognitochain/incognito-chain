@@ -31,7 +31,7 @@ type ConnManager struct {
 
 	config Config
 
-	ListeningPeer *peer.Peer
+	listeningPeer *peer.Peer
 
 	randShards []byte
 }
@@ -71,6 +71,10 @@ type Config struct {
 
 func (connManager ConnManager) GetConfig() *Config {
 	return &connManager.config
+}
+
+func (connManager ConnManager) GetListeningPeer() *peer.Peer {
+	return connManager.listeningPeer
 }
 
 func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
@@ -163,7 +167,7 @@ func New(cfg *Config) *ConnManager {
 	connManager := ConnManager{
 		config:           *cfg,
 		cQuit:            make(chan struct{}),
-		ListeningPeer:    nil,
+		listeningPeer:    nil,
 		cDiscoveredPeers: make(chan struct{}),
 	}
 	connManager.config.ConsensusState = &ConsensusState{}
@@ -269,7 +273,7 @@ func (connManager *ConnManager) Start(discoverPeerAddress string) error {
 		listenner.HandleDisconnected = connManager.handleDisconnected
 		listenner.HandleFailed = connManager.handleFailed
 		go connManager.listenHandler(listenner)
-		connManager.ListeningPeer = listenner
+		connManager.listeningPeer = listenner
 
 		if connManager.config.DiscoverPeers && connManager.config.DiscoverPeersAddress != common.EmptyString {
 			Logger.log.Debugf("DiscoverPeers: true\n----------------------------------------------------------------"+
