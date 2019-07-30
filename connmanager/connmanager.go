@@ -687,6 +687,7 @@ func (connManager *ConnManager) GetCurrentRoleShard() (string, *byte) {
 	return connManager.config.ConsensusState.role, connManager.config.ConsensusState.currentShard
 }
 
+// GetPeerConnOfShard - return peer connection of shard
 func (connManager *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
 	listener := connManager.config.ListenerPeer
