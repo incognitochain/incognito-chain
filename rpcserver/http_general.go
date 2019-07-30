@@ -1,20 +1,147 @@
 package rpcserver
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
 )
+
+/*
+handleGetInOutPeerMessageCount - return all inbound/outbound message count by peer which this node connected
+*/
+func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetInOutMessageCount by Peer params: %+v", params)
+	result := struct {
+		InboundMessages  interface{} `json:"Inbounds"`
+		OutboundMessages interface{} `json:"Outbounds"`
+	}{}
+	inboundMessageByPeers := peer.GetInboundMessagesByPeer()
+	outboundMessageByPeers := peer.GetOutboundMessagesByPeer()
+	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) == 0 {
+		result.InboundMessages = inboundMessageByPeers
+		result.OutboundMessages = outboundMessageByPeers
+		return result, nil
+	}
+
+	peerID, ok := paramsArray[0].(string)
+	if !ok {
+		peerID = ""
+	}
+	result.InboundMessages = inboundMessageByPeers[peerID]
+	result.OutboundMessages = outboundMessageByPeers[peerID]
+
+	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
+	return result, nil
+}
+
+/*
+handleGetInOutPeerMessages - return all inbound/outbound messages peer which this node connected
+*/
+func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetInOutPeerMessagess params: %+v", params)
+	paramsArray := common.InterfaceSlice(params)
+
+	inboundMessages := peer.GetInboundPeerMessages()
+	outboundMessages := peer.GetOutboundPeerMessages()
+	result := struct {
+		InboundMessages  map[string]interface{} `json:"Inbounds"`
+		OutboundMessages map[string]interface{} `json:"Outbounds"`
+	}{
+		map[string]interface{}{},
+		map[string]interface{}{},
+	}
+	if len(paramsArray) == 0 {
+		for messageType, messagePeers := range inboundMessages {
+			result.InboundMessages[messageType] = len(messagePeers)
+		}
+		for messageType, messagePeers := range outboundMessages {
+			result.OutboundMessages[messageType] = len(messagePeers)
+		}
+		return result, nil
+	}
+	peerID, ok := paramsArray[0].(string)
+	if !ok {
+		peerID = ""
+	}
+
+	for messageType, messagePeers := range inboundMessages {
+		messages := []wire.Message{}
+		for _, m := range messagePeers {
+			if m.PeerID.Pretty() != peerID {
+				continue
+			}
+			messages = append(messages, m.Message)
+		}
+		result.InboundMessages[messageType] = messages
+	}
+	for messageType, messagePeers := range outboundMessages {
+		messages := []wire.Message{}
+		for _, m := range messagePeers {
+			if m.PeerID.Pretty() != peerID {
+				continue
+			}
+			messages = append(messages, m.Message)
+		}
+		result.OutboundMessages[messageType] = messages
+	}
+	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
+	return result, nil
+}
+
+/*
+handleGetAllConnectedPeers - return all connnected peers which this node connected
+*/
+func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetAllConnectedPeers params: %+v", params)
+	// result := jsonresult.GetAllPeersResult{}
+	var result struct {
+		Peers []map[string]string `json:"Peers"`
+	}
+	peersMap := []map[string]string{}
+	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
+
+	bestState := blockchain.GetBestStateBeacon()
+	beaconCommitteeList := bestState.BeaconCommittee
+	shardCommitteeList := bestState.GetShardCommittee()
+
+	for _, peerConn := range listeningPeer.PeerConns {
+		peerItem := map[string]string{
+			"RawAddress": peerConn.RemoteRawAddress,
+			"PublicKey":  peerConn.RemotePeer.PublicKey,
+			"NodeType":   "",
+		}
+		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, beaconCommitteeList) != -1
+		if isInBeaconCommittee {
+			peerItem["NodeType"] = "Beacon"
+		}
+		for shardID, committees := range shardCommitteeList {
+			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, committees) != -1
+			if isInShardCommitee {
+				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
+				break
+			}
+		}
+		peersMap = append(peersMap, peerItem)
+	}
+	result.Peers = peersMap
+	Logger.log.Infof("handleGetAllPeers result: %+v", result)
+	return result, nil
+}
 
 /*
 handleGetAllPeers - return all peers which this node connected
@@ -45,9 +172,9 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 	result.Version = RpcServerVersion
 	result.SubVersion = ""
 	result.ProtocolVersion = httpServer.config.ProtocolVersion
-	result.NetworkActive = httpServer.config.ConnMgr.ListeningPeer != nil
+	result.NetworkActive = httpServer.config.ConnMgr.GetListeningPeer() != nil
 	result.LocalAddresses = []string{}
-	listener := httpServer.config.ConnMgr.ListeningPeer
+	listener := httpServer.config.ConnMgr.GetListeningPeer()
 	result.Connections = len(listener.PeerConns)
 	result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
 
@@ -238,11 +365,11 @@ handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetConnectionCount params: %+v", params)
-	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.ListeningPeer == nil {
+	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.GetListeningPeer() == nil {
 		return 0, nil
 	}
 	result := 0
-	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
+	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 	result += len(listeningPeer.PeerConns)
 	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil
