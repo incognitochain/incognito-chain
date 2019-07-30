@@ -12,17 +12,19 @@ const (
 	ConnectError
 	StartError
 	StopError
+	NotAcceptConnectionError
 )
 
 var ErrCodeMessage = map[int]struct {
 	code    int
 	message string
 }{
-	UnexpectedError: {-1, "Unexpected error"},
-	GetPeerIdError:  {-2, "Get peer id fail"},
-	ConnectError:    {-3, "Connect error"},
-	StartError:      {-4, "Start error"},
-	StopError:       {-5, "Stop errior"},
+	UnexpectedError:          {-1, "Unexpected error"},
+	GetPeerIdError:           {-2, "Get peer id fail"},
+	ConnectError:             {-3, "Connect error"},
+	StartError:               {-4, "Start error"},
+	StopError:                {-5, "Stop errior"},
+	NotAcceptConnectionError: {-6, "Not accept connection"},
 }
 
 type ConnManagerError struct {
