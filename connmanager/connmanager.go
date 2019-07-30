@@ -755,7 +755,7 @@ func (connManager *ConnManager) GetConnOfRelayNode() []*peer.PeerConn {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
 			pbk := peerConn.RemotePeer.PublicKey
-			if pbk != common.EmptyString && common.IndexOfStr(pbk, peer.RelayNode) != -1 {
+			if pbk != common.EmptyString && common.IndexOfStr(pbk, relayNode) != -1 {
 				peerConns = append(peerConns, peerConn)
 			}
 		}
@@ -768,7 +768,7 @@ func (connManager *ConnManager) handleRelayNode(mPeers map[string]*wire.RawPeer)
 	for _, p := range mPeers {
 		publicKey := p.PublicKey
 		if connManager.checkPeerConnOfPublicKey(publicKey) ||
-			common.IndexOfStr(publicKey, peer.RelayNode) == -1 {
+			common.IndexOfStr(publicKey, relayNode) == -1 {
 			continue
 		}
 
