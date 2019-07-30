@@ -339,7 +339,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
 
-		str, errR := peerConn.readString(rw, DelimMessageByte, SpamMessageSize)
+		str, errR := peerConn.readString(rw, delimMessageByte, spamMessageSize)
 		if errR != nil {
 			// we has an error when read stream message an can not parse to string data
 			peerConn.SetIsConnected(false)
@@ -352,7 +352,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
 			return errR
 		}
 
-		if str != DelimMessageStr {
+		if str != delimMessageStr {
 			// Get an good message, make an process to do something on it
 			if !peerConn.isUnitTest {
 				// not use for unit test -> call go routine for process
@@ -380,7 +380,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
 					Logger.log.Infof("OutMessageHandler with raw bytes")
 					message := hex.EncodeToString(*outMsg.rawBytes)
-					message += DelimMessageStr
+					message += delimMessageStr
 					sendString = message
 					Logger.log.Infof("Send a messageHex raw bytes to %s", peerConn.RemotePeer.PeerID.Pretty())
 				} else {
@@ -418,7 +418,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					messageHex := hex.EncodeToString(messageBytes)
 					//Logger.log.Infof("Content in hex encode: %s", string(messageHex))
 					// add end character to messageHex (delim '\n')
-					messageHex += DelimMessageStr
+					messageHex += delimMessageStr
 
 					// send on p2p stream
 					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.RemotePeer.PeerID.Pretty())
@@ -479,7 +479,7 @@ BeginCheckHashMessage:
 	}()
 	// set time out for check message
 	go func() {
-		_, ok := <-time.NewTimer(MaxTimeoutCheckHashMessage * time.Second).C
+		_, ok := <-time.NewTimer(maxTimeoutCheckHashMessage * time.Second).C
 		if !ok {
 			if cTimeOut != nil {
 				Logger.log.Infof("checkMessageHashBeforeSend TIMER time out %s", hash)
@@ -505,7 +505,7 @@ BeginCheckHashMessage:
 		delete(peerConn.cMsgHash, hash)
 	}
 	Logger.log.Infof("checkMessageHashBeforeSend FINISHED check hash %s %s", hash, bCheck)
-	if bTimeOut && numRetries < MaxRetriesCheckHashMessage {
+	if bTimeOut && numRetries < maxRetriesCheckHashMessage {
 		goto BeginCheckHashMessage
 	}
 	return bCheck
@@ -522,7 +522,7 @@ func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan ch
 	go func() {
 		if peerConn.GetIsConnected() {
 			data, _ := msg.JsonSerialize()
-			if len(data) >= HeavyMessageSize && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
+			if len(data) >= heavyMessageSize && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := msg.Hash()
 				Logger.log.Infof("QueueMessageWithEncoding HeavyMessageSize %s %s", hash, msg.MessageType())
 
@@ -553,7 +553,7 @@ func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<
 	}
 	go func() {
 		if peerConn.GetIsConnected() {
-			if len(*msgBytes) >= HeavyMessageSize+wire.MessageHeaderSize {
+			if len(*msgBytes) >= heavyMessageSize+wire.MessageHeaderSize {
 				hash := common.HashH(*msgBytes).String()
 				Logger.log.Infof("QueueMessageWithBytes HeavyMessageSize %s", hash)
 
