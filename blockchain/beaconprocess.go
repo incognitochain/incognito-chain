@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -311,7 +311,11 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
-	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
+	flattenInsts, err := FlattenAndConvertStringInst(block.Body.Instructions)
+	if err != nil {
+		return NewBlockChainError(HashError, err)
+	}
+
 	root := GetKeccak256MerkleRoot(flattenInsts)
 	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
