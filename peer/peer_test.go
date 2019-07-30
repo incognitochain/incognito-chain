@@ -39,7 +39,7 @@ func TestPeer_CheckHashPool(t *testing.T) {
 	peerObj.HashToPool("abc")
 	ok := peerObj.CheckHashPool("abc")
 	assert.Equal(t, ok, true)
-	time.Sleep(MessageLiveTime + 1)
+	time.Sleep(messageLiveTime + 1)
 	ok = peerObj.CheckHashPool("abc")
 	assert.Equal(t, ok, false)
 }
