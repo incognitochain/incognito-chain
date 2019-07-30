@@ -27,7 +27,7 @@ Sample Json:
 }
 ```
 ### Node Structure
-- host: ip or host to called
+- host: ip or host to called (if called by websocket, remove `ws://`)
 - port: port to called
 ### Input Structure:
 - command: name of command (ex: gettransactionbyhash)
@@ -49,9 +49,9 @@ Sample Json:
       "message": "unexpected error"
     }
 ``` 
-- Response: expected value with key value type, 
-
-Check return result and find expected value by key then compare the value
+- Response: compatible type with RPC result 
+    + Key-Value: expected value with key value type, Check return result and find expected value by key then compare the value (response must be subset of result)
+    + Number, String, Boolean, Array: must be deeply equal with RPC result 
 
 If response is `{}` then ignore expected response
 Example:
