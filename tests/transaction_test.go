@@ -15,7 +15,7 @@ func TestGetTransactionByHash(t *testing.T) {
 	}
 }
 func TestCreateAndSendNormalTransaction(t *testing.T) {
-	res, err := readfile("./testsdata/transaction/transaction.json")
+	res, err := readfile("./testsdata/transaction/normal_transaction.json")
 	if err != nil {
 		t.Fatal(err)
 	} else {
@@ -23,7 +23,7 @@ func TestCreateAndSendNormalTransaction(t *testing.T) {
 			log.Println(step)
 		}
 	}
-	testResult, err := executeTest("./testsdata/transaction/transaction.json")
+	testResult, err := executeTest("./testsdata/transaction/normal_transaction.json")
 	if err != nil {
 		if rpcError, ok := err.(*rpcserver.RPCError); ok {
 			if rpcError != nil {
@@ -36,8 +36,8 @@ func TestCreateAndSendNormalTransaction(t *testing.T) {
 		log.Println(testResult)
 	}
 }
-func TestCreateAndSendStakeShardTransaction(t *testing.T) {
-	res, err := readfile("./testsdata/transaction/stakeshard.json")
+func TestCreateAndSendCustomTokenTransaction(t *testing.T) {
+	res, err := readfile("./testsdata/transaction/normal_transaction.json")
 	if err != nil {
 		t.Fatal(err)
 	} else {
@@ -45,7 +45,7 @@ func TestCreateAndSendStakeShardTransaction(t *testing.T) {
 			log.Println(step)
 		}
 	}
-	testResult, err := executeTest("./testsdata/transaction/stakeshard.json")
+	testResult, err := executeTest("./testsdata/transaction/normal_transaction.json")
 	if err != nil {
 		if rpcError, ok := err.(*rpcserver.RPCError); ok {
 			if rpcError != nil {
@@ -58,9 +58,8 @@ func TestCreateAndSendStakeShardTransaction(t *testing.T) {
 		log.Println(testResult)
 	}
 }
-
-func TestCreateAndSendStakeBeaconTransaction(t *testing.T) {
-	res, err := readfile("./testsdata/transaction/stakebeacon.json")
+func TestCreateAndSendCustomTokenPrivacyTransaction(t *testing.T) {
+	res, err := readfile("./testsdata/transaction/normal_transaction.json")
 	if err != nil {
 		t.Fatal(err)
 	} else {
@@ -68,7 +67,7 @@ func TestCreateAndSendStakeBeaconTransaction(t *testing.T) {
 			log.Println(step)
 		}
 	}
-	testResult, err := executeTest("./testsdata/transaction/stakebeacon.json")
+	testResult, err := executeTest("./testsdata/transaction/normal_transaction.json")
 	if err != nil {
 		if rpcError, ok := err.(*rpcserver.RPCError); ok {
 			if rpcError != nil {
