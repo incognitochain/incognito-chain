@@ -385,7 +385,7 @@ func (customTokenTx *TxCustomToken) GetTxActualSize() uint64 {
 
 	for _, vin := range tx.TxTokenData.Vins {
 		tokenDataSize += uint64(len(vin.Signature))
-		tokenDataSize += uint64(len(vin.TxCustomTokenID))
+		tokenDataSize += uint64(len(vin.TxInitHash))
 		tokenDataSize += 4 // for VoutIndex
 		tokenDataSize += uint64(privacy.PaymentAddressSize)
 	}
@@ -726,7 +726,7 @@ func (txCustomToken *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	inValue := uint64(0)
 	if len(tx.listUtxo) > 0 {
 		for _, in := range tx.TxTokenData.Vins {
-			utxo := tx.listUtxo[in.TxCustomTokenID]
+			utxo := tx.listUtxo[in.TxInitHash]
 			vout := utxo.TxTokenData.Vouts[in.VoutIndex]
 			inValue += vout.Value
 		}
