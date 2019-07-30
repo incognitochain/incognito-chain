@@ -77,7 +77,7 @@ func (connManager ConnManager) GetListeningPeer() *peer.Peer {
 	return connManager.listeningPeer
 }
 
-func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
+func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) bool {
 	connManager.config.ConsensusState.Lock()
 	defer connManager.config.ConsensusState.Unlock()
 
@@ -104,8 +104,7 @@ func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string
 	}
 	if len(connManager.config.ConsensusState.committeeByShard) != len(shardCommittee) {
 		for shardID, _ := range connManager.config.ConsensusState.committeeByShard {
-			_, ok := shardCommittee[shardID]
-			if !ok {
+			if _, ok := shardCommittee[shardID]; !ok {
 				delete(connManager.config.ConsensusState.committeeByShard, shardID)
 			}
 		}
@@ -138,14 +137,14 @@ func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string
 		go connManager.processDiscoverPeers()
 	}
 
-	return
+	return bChange
 }
 
 // Stop gracefully shuts down the connection manager.
-func (connManager *ConnManager) Stop() {
+func (connManager *ConnManager) Stop() error {
 	if atomic.AddInt32(&connManager.stop, 1) != 1 {
 		Logger.log.Error("Connection manager already stopped")
-		return
+		return NewConnManagerError(StopError, errors.New("Connection manager already stopped"))
 	}
 	Logger.log.Warn("Stopping connection manager")
 
@@ -164,6 +163,7 @@ func (connManager *ConnManager) Stop() {
 		close(connManager.cQuit)
 	}
 	Logger.log.Warn("Connection manager stopped")
+	return nil
 }
 
 // New - init an object connManager and return pointer to object

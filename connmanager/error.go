@@ -11,6 +11,7 @@ const (
 	GetPeerIdError
 	ConnectError
 	StartError
+	StopError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -21,6 +22,7 @@ var ErrCodeMessage = map[int]struct {
 	GetPeerIdError:  {-2, "Get peer id fail"},
 	ConnectError:    {-3, "Connect error"},
 	StartError:      {-4, "Start error"},
+	StopError:       {-5, "Stop errior"},
 }
 
 type ConnManagerError struct {
