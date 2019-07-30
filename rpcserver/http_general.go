@@ -113,7 +113,7 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 		Peers []map[string]string `json:"Peers"`
 	}
 	peersMap := []map[string]string{}
-	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
+	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 
 	bestState := blockchain.GetBestStateBeacon()
 	beaconCommitteeList := bestState.BeaconCommittee
@@ -172,9 +172,9 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 	result.Version = RpcServerVersion
 	result.SubVersion = ""
 	result.ProtocolVersion = httpServer.config.ProtocolVersion
-	result.NetworkActive = httpServer.config.ConnMgr.ListeningPeer != nil
+	result.NetworkActive = httpServer.config.ConnMgr.GetListeningPeer() != nil
 	result.LocalAddresses = []string{}
-	listener := httpServer.config.ConnMgr.ListeningPeer
+	listener := httpServer.config.ConnMgr.GetListeningPeer()
 	result.Connections = len(listener.PeerConns)
 	result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
 
@@ -365,11 +365,11 @@ handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetConnectionCount params: %+v", params)
-	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.ListeningPeer == nil {
+	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.GetListeningPeer() == nil {
 		return 0, nil
 	}
 	result := 0
-	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
+	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 	result += len(listeningPeer.PeerConns)
 	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil

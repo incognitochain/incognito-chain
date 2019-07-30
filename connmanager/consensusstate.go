@@ -9,21 +9,21 @@ import "sync"
 
 type ConsensusState struct {
 	sync.Mutex
-	Role             string
-	CurrentShard     *byte
-	BeaconCommittee  []string          // list public key of beacon committee
-	CommitteeByShard map[byte][]string // map[shardID] = list committeePubkeyBase58CheckStr of shard
-	UserPublicKey    string            // in base58check encode format
-	ShardByCommittee map[string]byte   // store conversion of ShardCommittee data map[committeePubkeyBase58CheckStr] = shardID
-	ShardNumber      int
+	role             string
+	currentShard     *byte
+	beaconCommittee  []string          // list public key of beacon committee
+	committeeByShard map[byte][]string // map[shardID] = list committeePubkeyBase58CheckStr of shard
+	userPublicKey    string            // in base58check encode format
+	shardByCommittee map[string]byte   // store conversion of ShardCommittee data map[committeePubkeyBase58CheckStr] = shardID
+	shardNumber      int
 }
 
 // rebuild - convert CommitteeByShard to ShardByCommittee
 func (consensusState *ConsensusState) rebuild() {
-	consensusState.ShardByCommittee = make(map[string]byte)
-	for shard, committees := range consensusState.CommitteeByShard {
+	consensusState.shardByCommittee = make(map[string]byte)
+	for shard, committees := range consensusState.committeeByShard {
 		for _, committee := range committees {
-			consensusState.ShardByCommittee[committee] = shard
+			consensusState.shardByCommittee[committee] = shard
 		}
 	}
 }
@@ -32,20 +32,25 @@ func (consensusState *ConsensusState) rebuild() {
 func (consensusState *ConsensusState) getBeaconCommittee() []string {
 	consensusState.Lock()
 	defer consensusState.Unlock()
-	ret := make([]string, len(consensusState.BeaconCommittee))
-	copy(ret, consensusState.BeaconCommittee)
-	return ret
+	len := len(consensusState.beaconCommittee)
+	beaconCommittee := make([]string, len)
+	if len > 0 {
+		copy(beaconCommittee, consensusState.beaconCommittee)
+	}
+	return beaconCommittee
 }
 
 // getCommitteeByShard - return CommitteeByShard
 func (consensusState *ConsensusState) getCommitteeByShard(shard byte) []string {
 	consensusState.Lock()
 	defer consensusState.Unlock()
-	committee, ok := consensusState.CommitteeByShard[shard]
-	if ok {
-		ret := make([]string, len(committee))
-		copy(ret, committee)
-		return ret
+	if committee, ok := consensusState.committeeByShard[shard]; ok {
+		len := len(committee)
+		shardCommittee := make([]string, len)
+		if len > 0 {
+			copy(shardCommittee, shardCommittee)
+		}
+		return shardCommittee
 	}
 	return make([]string, 0)
 }
@@ -54,9 +59,9 @@ func (consensusState *ConsensusState) getCommitteeByShard(shard byte) []string {
 func (consensusState *ConsensusState) getShardByCommittee() map[string]byte {
 	consensusState.Lock()
 	defer consensusState.Unlock()
-	ret := make(map[string]byte)
-	for k, v := range consensusState.ShardByCommittee {
-		ret[k] = v
+	listCommittee := make(map[string]byte)
+	for publicKey, shardID := range consensusState.shardByCommittee {
+		listCommittee[publicKey] = shardID
 	}
-	return ret
+	return listCommittee
 }
