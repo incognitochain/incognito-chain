@@ -270,7 +270,11 @@ func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 
 // buildInstProof receives a list of instructions (as string) and returns a merkle proof for one instruction in the list
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
-	flattenInsts := blockchain.FlattenAndConvertStringInst(insts)
+	flattenInsts, err := FlattenAndConvertStringInst(insts)
+	if err != nil {
+		BLogger.log.Errorf("Cannot flatten instructions: %+v", err)
+		return nil
+	}
 	BLogger.log.Debugf("insts: %v", insts)
 	return buildProof(flattenInsts, id)
 }
