@@ -74,49 +74,49 @@ func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string
 	defer connManager.Config.ConsensusState.Unlock()
 
 	bChange := false
-	if connManager.Config.ConsensusState.Role != role {
-		connManager.Config.ConsensusState.Role = role
+	if connManager.Config.ConsensusState.role != role {
+		connManager.Config.ConsensusState.role = role
 		bChange = true
 	}
-	if (connManager.Config.ConsensusState.CurrentShard != nil && currentShard == nil) ||
-		(connManager.Config.ConsensusState.CurrentShard == nil && currentShard != nil) ||
-		(connManager.Config.ConsensusState.CurrentShard != nil && currentShard != nil && *connManager.Config.ConsensusState.CurrentShard != *currentShard) {
-		connManager.Config.ConsensusState.CurrentShard = currentShard
+	if (connManager.Config.ConsensusState.currentShard != nil && currentShard == nil) ||
+		(connManager.Config.ConsensusState.currentShard == nil && currentShard != nil) ||
+		(connManager.Config.ConsensusState.currentShard != nil && currentShard != nil && *connManager.Config.ConsensusState.currentShard != *currentShard) {
+		connManager.Config.ConsensusState.currentShard = currentShard
 		bChange = true
 	}
-	if !common.CompareStringArray(connManager.Config.ConsensusState.BeaconCommittee, beaconCommittee) {
-		connManager.Config.ConsensusState.BeaconCommittee = make([]string, len(beaconCommittee))
-		copy(connManager.Config.ConsensusState.BeaconCommittee, beaconCommittee)
+	if !common.CompareStringArray(connManager.Config.ConsensusState.beaconCommittee, beaconCommittee) {
+		connManager.Config.ConsensusState.beaconCommittee = make([]string, len(beaconCommittee))
+		copy(connManager.Config.ConsensusState.beaconCommittee, beaconCommittee)
 		bChange = true
 	}
-	if len(connManager.Config.ConsensusState.CommitteeByShard) != len(shardCommittee) {
-		for shardID, _ := range connManager.Config.ConsensusState.CommitteeByShard {
+	if len(connManager.Config.ConsensusState.committeeByShard) != len(shardCommittee) {
+		for shardID, _ := range connManager.Config.ConsensusState.committeeByShard {
 			_, ok := shardCommittee[shardID]
 			if !ok {
-				delete(connManager.Config.ConsensusState.CommitteeByShard, shardID)
+				delete(connManager.Config.ConsensusState.committeeByShard, shardID)
 			}
 		}
 		bChange = true
 	}
-	if connManager.Config.ConsensusState.CommitteeByShard == nil {
-		connManager.Config.ConsensusState.CommitteeByShard = make(map[byte][]string)
+	if connManager.Config.ConsensusState.committeeByShard == nil {
+		connManager.Config.ConsensusState.committeeByShard = make(map[byte][]string)
 	}
 	for shardID, committee := range shardCommittee {
-		_, ok := connManager.Config.ConsensusState.CommitteeByShard[shardID]
+		_, ok := connManager.Config.ConsensusState.committeeByShard[shardID]
 		if ok {
-			if !common.CompareStringArray(connManager.Config.ConsensusState.CommitteeByShard[shardID], committee) {
-				connManager.Config.ConsensusState.CommitteeByShard[shardID] = make([]string, len(committee))
-				copy(connManager.Config.ConsensusState.CommitteeByShard[shardID], committee)
+			if !common.CompareStringArray(connManager.Config.ConsensusState.committeeByShard[shardID], committee) {
+				connManager.Config.ConsensusState.committeeByShard[shardID] = make([]string, len(committee))
+				copy(connManager.Config.ConsensusState.committeeByShard[shardID], committee)
 				bChange = true
 			}
 		} else {
-			connManager.Config.ConsensusState.CommitteeByShard[shardID] = make([]string, len(committee))
-			copy(connManager.Config.ConsensusState.CommitteeByShard[shardID], committee)
+			connManager.Config.ConsensusState.committeeByShard[shardID] = make([]string, len(committee))
+			copy(connManager.Config.ConsensusState.committeeByShard[shardID], committee)
 			bChange = true
 		}
 	}
-	if connManager.Config.ConsensusState.UserPublicKey != userPbk {
-		connManager.Config.ConsensusState.UserPublicKey = userPbk
+	if connManager.Config.ConsensusState.userPublicKey != userPbk {
+		connManager.Config.ConsensusState.userPublicKey = userPbk
 		bChange = true
 	}
 
@@ -437,9 +437,9 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// connect to beacon peers
 		connManager.handleRandPeersOfBeacon(connManager.Config.MaxPeersBeacon, responsePeers)
 		// connect to same shard peers
-		connManager.handleRandPeersOfShard(connManager.Config.ConsensusState.CurrentShard, connManager.Config.MaxPeersSameShard, responsePeers)
+		connManager.handleRandPeersOfShard(connManager.Config.ConsensusState.currentShard, connManager.Config.MaxPeersSameShard, responsePeers)
 		// connect to other shard peers
-		connManager.handleRandPeersOfOtherShard(connManager.Config.ConsensusState.CurrentShard, connManager.Config.MaxPeersOtherShard, connManager.Config.MaxPeersOther, responsePeers)
+		connManager.handleRandPeersOfOtherShard(connManager.Config.ConsensusState.currentShard, connManager.Config.MaxPeersOtherShard, connManager.Config.MaxPeersOther, responsePeers)
 		// connect to no shard peers
 		connManager.handleRandPeersOfNoShard(connManager.Config.MaxPeersNoShard, responsePeers)
 	}
@@ -543,7 +543,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
 		peerI, ok := mPeers[pbk]
 		if ok {
-			cPbk := connManager.Config.ConsensusState.UserPublicKey
+			cPbk := connManager.Config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, nil)
@@ -588,7 +588,7 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 		pBKs = append(pBKs[:randN], pBKs[randN+1:]...)
 		peerI, ok := mPeers[pbk]
 		if ok {
-			cPbk := connManager.Config.ConsensusState.UserPublicKey
+			cPbk := connManager.Config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, nil)
@@ -648,7 +648,7 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) bool
 	}
 	// check max shard conn
 	shardID := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
-	currentShard := connManager.Config.ConsensusState.CurrentShard
+	currentShard := connManager.Config.ConsensusState.currentShard
 	if shardID != nil && currentShard != nil && *shardID == *currentShard {
 		//	same shard
 		countPeerShard := connManager.countPeerConnOfShard(shardID)
@@ -686,7 +686,7 @@ func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
 
 // GetCurrentRoleShard - return current role in shard of connected peer
 func (connManager *ConnManager) GetCurrentRoleShard() (string, *byte) {
-	return connManager.Config.ConsensusState.Role, connManager.Config.ConsensusState.CurrentShard
+	return connManager.Config.ConsensusState.role, connManager.Config.ConsensusState.currentShard
 }
 
 func (connManager *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn {
