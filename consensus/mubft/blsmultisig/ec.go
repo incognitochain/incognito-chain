@@ -6,7 +6,12 @@ import (
 	"golang.org/x/crypto/bn256"
 )
 
-func NewCurve() {
+// Compress is the ...
+func Compress() {
 	fmt.Println(bn256.Order.BitLen())
-	fmt.Printf("\n\n\n aaaa")
+}
+
+// Decompress is
+func Decompress() {
+	fmt.Println(bn256.Order.Bits())
 }
