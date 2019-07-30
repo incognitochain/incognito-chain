@@ -21,22 +21,70 @@ import (
 )
 
 /*
+handleGetInOutPeerMessageCount - return all inbound/outbound message count by peer which this node connected
+*/
+func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Infof("handleGetInOutMessageCount by Peer params: %+v", params)
+	result := struct {
+		InboundMessages  interface{} `json:"Inbounds"`
+		OutboundMessages interface{} `json:"Outbounds"`
+	}{}
+	inboundMessageByPeers := peer.GetInboundMessagesByPeer()
+	outboundMessageByPeers := peer.GetOutboundMessagesByPeer()
+	paramsArray := common.InterfaceSlice(params)
+	if len(paramsArray) == 0 {
+		result.InboundMessages = inboundMessageByPeers
+		result.OutboundMessages = outboundMessageByPeers
+		return result, nil
+	}
+
+	peerID, ok := paramsArray[0].(string)
+	if !ok {
+		peerID = ""
+	}
+	result.InboundMessages = inboundMessageByPeers[peerID]
+	result.OutboundMessages = outboundMessageByPeers[peerID]
+
+	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
+	return result, nil
+}
+
+/*
 handleGetInOutPeerMessages - return all inbound/outbound messages peer which this node connected
 */
-func (httpServer *HttpServer) handleGetInOutPeerMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetInOutPeerMessagess params: %+v", params)
+	paramsArray := common.InterfaceSlice(params)
+
 	inboundMessages := peer.GetInboundPeerMessages()
 	outboundMessages := peer.GetOutboundPeerMessages()
 	result := struct {
-		InboundMessages  map[string][]wire.Message `json:"Inbounds"`
-		OutboundMessages map[string][]wire.Message `json:"Outbounds"`
+		InboundMessages  map[string]interface{} `json:"Inbounds"`
+		OutboundMessages map[string]interface{} `json:"Outbounds"`
 	}{
-		map[string][]wire.Message{},
-		map[string][]wire.Message{},
+		map[string]interface{}{},
+		map[string]interface{}{},
 	}
+	if len(paramsArray) == 0 {
+		for messageType, messagePeers := range inboundMessages {
+			result.InboundMessages[messageType] = len(messagePeers)
+		}
+		for messageType, messagePeers := range outboundMessages {
+			result.OutboundMessages[messageType] = len(messagePeers)
+		}
+		return result, nil
+	}
+	peerID, ok := paramsArray[0].(string)
+	if !ok {
+		peerID = ""
+	}
+
 	for messageType, messagePeers := range inboundMessages {
 		messages := []wire.Message{}
 		for _, m := range messagePeers {
+			if m.PeerID.Pretty() != peerID {
+				continue
+			}
 			messages = append(messages, m.Message)
 		}
 		result.InboundMessages[messageType] = messages
@@ -44,6 +92,9 @@ func (httpServer *HttpServer) handleGetInOutPeerMessages(params interface{}, clo
 	for messageType, messagePeers := range outboundMessages {
 		messages := []wire.Message{}
 		for _, m := range messagePeers {
+			if m.PeerID.Pretty() != peerID {
+				continue
+			}
 			messages = append(messages, m.Message)
 		}
 		result.OutboundMessages[messageType] = messages
