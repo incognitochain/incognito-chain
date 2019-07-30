@@ -353,7 +353,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
-	serverObj.addrManager = addrmanager.New(cfg.DataDir)
+	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
 	// Init block template generator
 	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
 	if err != nil {
@@ -401,7 +401,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			return err
 		}
 	}
-	connManager := connmanager.ConnManager{}.New(&connmanager.Config{
+	isRelayNodeForConsensus := cfg.Accelerator
+	if isRelayNodeForConsensus {
+		cfg.MaxPeersSameShard = 9999
+		cfg.MaxPeersOtherShard = 9999
+		cfg.MaxPeersOther = 9999
+		cfg.MaxPeersNoShard = 0
+		cfg.MaxPeersBeacon = 9999
+	}
+	connManager := connmanager.New(&connmanager.Config{
 		OnInboundAccept:      serverObj.InboundPeerConnected,
 		OnOutboundConnection: serverObj.OutboundPeerConnected,
 		ListenerPeer:         peer,
@@ -527,7 +535,10 @@ func (serverObj *Server) WaitForShutdown() {
 */
 func (serverObj *Server) Stop() error {
 	// stop connManager
-	serverObj.connManager.Stop()
+	errStopConnManager := serverObj.connManager.Stop()
+	if errStopConnManager != nil {
+		Logger.log.Error(errStopConnManager)
+	}
 
 	// Shutdown the RPC server if it's not disabled.
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
@@ -589,8 +600,14 @@ out:
 		}
 	}
 	serverObj.netSync.Stop()
-	serverObj.addrManager.Stop()
-	serverObj.connManager.Stop()
+	errStopAddrManager := serverObj.addrManager.Stop()
+	if errStopAddrManager != nil {
+		Logger.log.Error(errStopAddrManager)
+	}
+	errStopConnManager := serverObj.connManager.Stop()
+	if errStopAddrManager != nil {
+		Logger.log.Error(errStopConnManager)
+	}
 }
 
 /*
@@ -1055,7 +1072,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		peerConn.QueueMessageWithEncoding(msgSG, dc, peer.MessageToPeer, nil)
 
 		//	broadcast addr to all peer
-		listen := serverObj.connManager.ListeningPeer
+		listen := serverObj.connManager.GetListeningPeer()
 		msgSA, err := wire.MakeEmptyMessage(wire.CmdAddr)
 		if err != nil {
 			return
@@ -1111,9 +1128,27 @@ func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) 
 	Logger.log.Debugf("Receive addr message %v", msg.RawPeers)
 }
 
-func (serverObj *Server) OnBFTMsg(_ *peer.PeerConn, msg wire.Message) {
+func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	Logger.log.Debug("Receive a BFTMsg START")
 	var txProcessed chan struct{}
+	isRelayNodeForConsensus := cfg.Accelerator
+	if isRelayNodeForConsensus {
+		senderPublicKey := p.RemotePeer.PublicKey
+		bestState := blockchain.GetBestStateBeacon()
+		beaconCommitteeList := bestState.BeaconCommittee
+		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
+		if isInBeaconCommittee {
+			serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{p.RemotePeerID: true})
+		}
+		shardCommitteeList := bestState.GetShardCommittee()
+		for shardID, committees := range shardCommitteeList {
+			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1
+			if isInShardCommitee {
+				serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{p.RemotePeerID: true})
+				break
+			}
+		}
+	}
 	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Debug("Receive a BFTMsg END")
 }
@@ -1128,7 +1163,7 @@ func (serverObj *Server) OnPeerState(_ *peer.PeerConn, msg *wire.MessagePeerStat
 func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	result := []libp2p.ID{}
 
-	listener := serverObj.connManager.Config.ListenerPeer
+	listener := serverObj.connManager.GetConfig().ListenerPeer
 	for _, peerConn := range listener.PeerConns {
 		// Logger.log.Debug("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 		if peerConn.RemotePeer.PublicKey == pubKey {
@@ -1183,8 +1218,8 @@ PushMessageToAll broadcast msg
 func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Debug("Push msg to all peers")
 	var dc chan<- struct{}
-	msg.SetSenderID(serverObj.connManager.Config.ListenerPeer.PeerID)
-	serverObj.connManager.Config.ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
+	msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.PeerID)
+	serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
 	return nil
 }
 
@@ -1194,9 +1229,9 @@ PushMessageToPeer push msg to peer
 func (serverObj *Server) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error {
 	Logger.log.Debugf("Push msg to peer %s", peerId.Pretty())
 	var dc chan<- struct{}
-	peerConn := serverObj.connManager.Config.ListenerPeer.GetPeerConnByPeerID(peerId.Pretty())
+	peerConn := serverObj.connManager.GetConfig().ListenerPeer.GetPeerConnByPeerID(peerId.Pretty())
 	if peerConn != nil {
-		msg.SetSenderID(serverObj.connManager.Config.ListenerPeer.PeerID)
+		msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.PeerID)
 		peerConn.QueueMessageWithEncoding(msg, dc, peer.MessageToPeer, nil)
 		Logger.log.Debugf("Pushed peer %s", peerId.Pretty())
 		return nil
@@ -1228,18 +1263,25 @@ func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 /*
 PushMessageToPeer push msg to pbk
 */
-func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error {
+func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclusivePeerIDs map[libp2p.ID]bool) error {
 	Logger.log.Debugf("Push msg to shard %d", shard)
 	peerConns := serverObj.connManager.GetPeerConnOfShard(shard)
+	relayConns := serverObj.connManager.GetConnOfRelayNode()
+	peerConns = append(relayConns, peerConns...)
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
+			if isExcluded, ok := exclusivePeerIDs[peerConn.RemotePeerID]; ok {
+				if isExcluded {
+					continue
+				}
+			}
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
 		}
 		Logger.log.Debugf("Pushed shard %d", shard)
 	} else {
 		Logger.log.Error("RemotePeer of shard not exist!")
-		listener := serverObj.connManager.Config.ListenerPeer
+		listener := serverObj.connManager.GetConfig().ListenerPeer
 		listener.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
 	}
 	return nil
@@ -1270,12 +1312,19 @@ func (serverObj *Server) PushRawBytesToShard(p *peer.PeerConn, msgBytes *[]byte,
 /*
 PushMessageToPeer push msg to beacon node
 */
-func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
+func (serverObj *Server) PushMessageToBeacon(msg wire.Message, exclusivePeerIDs map[libp2p.ID]bool) error {
 	Logger.log.Debugf("Push msg to beacon")
 	peerConns := serverObj.connManager.GetPeerConnOfBeacon()
+	relayConns := serverObj.connManager.GetConnOfRelayNode()
+	peerConns = append(relayConns, peerConns...)
 	if len(peerConns) > 0 {
 		fmt.Println("BFT:", len(peerConns))
 		for _, peerConn := range peerConns {
+			if isExcluded, ok := exclusivePeerIDs[peerConn.RemotePeerID]; ok {
+				if isExcluded {
+					continue
+				}
+			}
 			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToBeacon, nil)
 		}
@@ -1283,7 +1332,7 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message) error {
 		return nil
 	} else {
 		Logger.log.Error("RemotePeer of beacon not exist!")
-		listener := serverObj.connManager.Config.ListenerPeer
+		listener := serverObj.connManager.GetConfig().ListenerPeer
 		listener.QueueMessageWithEncoding(msg, nil, peer.MessageToBeacon, nil)
 	}
 	return errors.New("RemotePeer of beacon not found")
@@ -1354,7 +1403,10 @@ func (serverObj *Server) GetCurrentRoleShard() (string, *byte) {
 }
 
 func (serverObj *Server) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
-	serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
+	changed := serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
+	if changed {
+		Logger.log.Debug("UpdateConsensusState is true")
+	}
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error {
@@ -1407,7 +1459,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHeight(shardID byte, from uin
 	msg.(*wire.MessageGetBlockShard).BlkHeights = append(msg.(*wire.MessageGetBlockShard).BlkHeights, to)
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1423,7 +1475,7 @@ func (serverObj *Server) PushMessageGetBlockShardBySpecificHeight(shardID byte, 
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	msg.(*wire.MessageGetBlockShard).FromPool = getFromPool
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1439,7 +1491,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 	msg.(*wire.MessageGetBlockShard).BlkHashes = blksHash
 	msg.(*wire.MessageGetBlockShard).ShardID = shardID
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1447,7 +1499,7 @@ func (serverObj *Server) PushMessageGetBlockShardByHash(shardID byte, blksHash [
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, from uint64, to uint64, peerID libp2p.ID) error {
 	Logger.log.Debugf("Send a GetShardToBeacon")
-	listener := serverObj.connManager.Config.ListenerPeer
+	listener := serverObj.connManager.GetConfig().ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
 	if err != nil {
 		return err
@@ -1459,7 +1511,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, 
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1467,7 +1519,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, 
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
 	Logger.log.Debugf("Send a GetShardToBeacon")
-	listener := serverObj.connManager.Config.ListenerPeer
+	listener := serverObj.connManager.GetConfig().ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
 	if err != nil {
 		return err
@@ -1480,14 +1532,14 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, bl
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 }
 
 func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(shardID byte, blkHeights []uint64, getFromPool bool, peerID libp2p.ID) error {
 	Logger.log.Debugf("Send a GetShardToBeacon")
-	listener := serverObj.connManager.Config.ListenerPeer
+	listener := serverObj.connManager.GetConfig().ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetShardToBeacon)
 	if err != nil {
 		return err
@@ -1500,14 +1552,14 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(shardI
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetShardToBeacon from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, shardID)
+		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 }
 
 func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blkHashes []common.Hash, getFromPool bool, peerID libp2p.ID) error {
 	Logger.log.Debugf("Send a GetCrossShard")
-	listener := serverObj.connManager.Config.ListenerPeer
+	listener := serverObj.connManager.GetConfig().ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
 	if err != nil {
 		return err
@@ -1521,7 +1573,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, fromShard)
+		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1529,7 +1581,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 
 func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blkHeights []uint64, getFromPool bool, peerID libp2p.ID) error {
 	Logger.log.Debugf("Send a GetCrossShard")
-	listener := serverObj.connManager.Config.ListenerPeer
+	listener := serverObj.connManager.GetConfig().ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetCrossShard)
 	if err != nil {
 		return err
@@ -1543,13 +1595,13 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 	msg.SetSenderID(listener.PeerID)
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.RawAddress)
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, fromShard)
+		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 }
 
 func (serverObj *Server) BoardcastNodeState() error {
-	listener := serverObj.connManager.Config.ListenerPeer
+	listener := serverObj.connManager.GetConfig().ListenerPeer
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err

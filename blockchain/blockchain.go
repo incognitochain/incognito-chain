@@ -1317,10 +1317,11 @@ func (blockchain *BlockChain) BuildInstRewardForShards(epoch uint64, totalReward
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBody *ShardBody, blkProducerPrivateKey *privacy.PrivateKey) error {
+// @Notice: change from body.Transaction -> transactions
+func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey) ([]metadata.Transaction, error) {
 	txRequestTable := map[string]metadata.Transaction{}
 	txsRes := []metadata.Transaction{}
-	for _, tx := range blkBody.Transactions {
+	for _, tx := range transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
 			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
@@ -1330,14 +1331,14 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(blkBod
 	for _, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(&value, blkProducerPrivateKey)
 		if err != nil {
-			return err
+			return txsRes, err
 		} else {
 			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
 		}
 		txsRes = append(txsRes, txRes)
 	}
-	blkBody.Transactions = append(blkBody.Transactions, txsRes...)
-	return nil
+	//blkBody.Transactions = append(blkBody.Transactions, txsRes...)
+	return txsRes, nil
 }
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blkBody *ShardBody) error {

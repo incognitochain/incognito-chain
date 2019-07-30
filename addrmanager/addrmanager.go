@@ -3,21 +3,22 @@ package addrmanager
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"os"
 	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
 	peer2 "github.com/libp2p/go-libp2p-peer"
+	"github.com/pkg/errors"
 )
 
 type AddrManager struct {
 	mtx           sync.Mutex
 	peersFilePath string
-	key           [32]byte
+	key           common.Hash
 	started       int32
 	shutdown      int32
 	waitGroup     sync.WaitGroup
@@ -37,15 +38,18 @@ type serializedKnownAddress struct {
 // data structure of list address which need to be saving in file
 type serializedAddrManager struct {
 	Version   int                       `json:"Version"`
-	Key       [32]byte                  `json:"Key"`
+	Key       common.Hash               `json:"Key"`
 	Addresses []*serializedKnownAddress `json:"Addresses"`
 }
 
-func New(dataDir string) *AddrManager {
+// NewAddrManager - init a AddrManager object,
+// set config and return pointer to object
+func NewAddrManager(dataDir string, key common.Hash) *AddrManager {
 	addrManager := AddrManager{
-		peersFilePath: filepath.Join(dataDir, "peer.json"), // path to file which is used for storing information in add manager
+		peersFilePath: filepath.Join(dataDir, dataFile), // path to file which is used for storing information in add manager
 		cQuit:         make(chan struct{}),
 		mtx:           sync.Mutex{},
+		key:           key,
 	}
 	addrManager.reset()
 	return &addrManager
@@ -54,24 +58,30 @@ func New(dataDir string) *AddrManager {
 // savePeers saves all the known addresses to a file so they can be read back
 // in at next run.
 func (addrManager *AddrManager) savePeers() error {
-
+	// check len of addrIndex
 	if len(addrManager.addrIndex) == 0 {
+		// dont have anything to save into file data
 		return nil
 	}
 
 	storageData := new(serializedAddrManager)
-	storageData.Version = 1
+	storageData.Version = version
 	copy(storageData.Key[:], addrManager.key[:])
 
 	storageData.Addresses = []*serializedKnownAddress{}
 
 	// get all good address in list of addresses manager
 	for rawAddress, peerObj := range addrManager.addrIndex {
+		peerID := peerObj.PeerID
+		pretty := peerID.Pretty()
+		if len(pretty) > maxLengthPeerPretty {
+			continue
+		}
 		// init address data to push into storage data
 		addressData := new(serializedKnownAddress)
 		addressData.Addr = rawAddress
-		Logger.log.Info("PeerID", peerObj.PeerID.String(), len(peerObj.PeerID.String()))
-		addressData.Src = peerObj.PeerID.Pretty()
+		Logger.log.Debug("PeerID", peerID.String(), len(peerID.String()))
+		addressData.Src = pretty
 		addressData.PublicKey = peerObj.PublicKey
 
 		// push into array
@@ -82,7 +92,7 @@ func (addrManager *AddrManager) savePeers() error {
 	writerFile, err := os.Create(addrManager.peersFilePath)
 	if err != nil {
 		Logger.log.Errorf("Error opening file %s: %+peerObj", addrManager.peersFilePath, err)
-		return NewAddrManagerError(UnexpectedError, err)
+		return NewAddrManagerError(CreateDataFileError, err)
 	}
 	// encode to json format
 	enc := json.NewEncoder(writerFile)
@@ -90,7 +100,7 @@ func (addrManager *AddrManager) savePeers() error {
 	// write into file with json format
 	if err := enc.Encode(&storageData); err != nil {
 		Logger.log.Errorf("Failed to encode file %s: %+v", addrManager.peersFilePath, err)
-		return NewAddrManagerError(UnexpectedError, err)
+		return NewAddrManagerError(EncodeDataFileError, err)
 	}
 	return nil
 }
@@ -123,7 +133,7 @@ func (addrManager *AddrManager) reset() {
 }
 
 // deserializePeers - read storage data about Addresses manager and restore a object for it
-// data are read from filePath which be used when saving
+// data are read from dataFile which be used when saving
 func (addrManager *AddrManager) deserializePeers(filePath string) error {
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
@@ -131,7 +141,7 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 	}
 	r, err := os.Open(filePath)
 	if err != nil {
-		return fmt.Errorf("%s error opening file: %+v", filePath, err)
+		return NewAddrManagerError(OpenDataFileError, errors.New(fmt.Sprintf("%s error opening file: %+v", filePath, err)))
 	}
 	defer r.Close()
 
@@ -139,16 +149,16 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 	dec := json.NewDecoder(r)
 	err = dec.Decode(&storageData)
 	if err != nil {
-		return fmt.Errorf("error reading %s: %+v", filePath, err)
+		return NewAddrManagerError(DecodeDataFileError, errors.New(fmt.Sprintf("error reading %s: %+v", filePath, err)))
 	}
 
-	if storageData.Version != Version {
-		return fmt.Errorf("unknown Version %+v in serialized addrmanager", storageData.Version)
+	if storageData.Version != version {
+		return NewAddrManagerError(WrongVersionError, errors.New(fmt.Sprintf("unknown Version %+v in serialized addrmanager", storageData.Version)))
 	}
 	copy(addrManager.key[:], storageData.Key[:])
 
 	for _, storagePeer := range storageData.Addresses {
-		if len(storagePeer.Src) > 10000 {
+		if len(storagePeer.Src) > maxLengthPeerPretty {
 			continue
 		}
 		peer := new(peer.Peer)
@@ -185,7 +195,7 @@ func (addrManager *AddrManager) Stop() error {
 	if atomic.AddInt32(&addrManager.shutdown, 1) != 1 {
 		errStr := fmt.Sprint("Address manager is already in the process of shutting down")
 		Logger.log.Error(errStr)
-		return NewAddrManagerError(UnexpectedError, errors.New(errStr))
+		return NewAddrManagerError(StopError, errors.New(errStr))
 	}
 	addrManager.started = 0
 	Logger.log.Infof("Address manager shutting down")
@@ -198,13 +208,16 @@ func (addrManager *AddrManager) Stop() error {
 // addressHandler is the main handler for the address manager.  It must be run
 // as a goroutine.
 func (addrManager *AddrManager) addressHandler() {
-	dumpAddressTicker := time.NewTicker(DumpAddressInterval)
+	dumpAddressTicker := time.NewTicker(dumpAddressInterval)
 	defer dumpAddressTicker.Stop()
 out:
 	for {
 		select {
 		case <-dumpAddressTicker.C:
-			addrManager.savePeers()
+			err := addrManager.savePeers()
+			if err != nil {
+				Logger.log.Error(err)
+			}
 
 		case <-addrManager.cQuit:
 			// break out loop
@@ -212,7 +225,10 @@ out:
 		}
 	}
 	// saving before done everything
-	addrManager.savePeers()
+	err := addrManager.savePeers()
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	// Done wait group
 	addrManager.waitGroup.Done()
 	// Log to notice
@@ -237,12 +253,13 @@ func (addrManager *AddrManager) AddressCache() []*peer.Peer {
 
 	addrIndexLen := len(addrManager.addrIndex)
 	if addrIndexLen == 0 {
+		Logger.log.Debug("Address is empty")
 		return nil
 	}
 	allAddr := make([]*peer.Peer, 0, addrIndexLen)
 	// Iteration order is undefined here, but we randomise it anyway.
-	for _, v := range addrManager.addrIndex {
-		allAddr = append(allAddr, v)
+	for _, index := range addrManager.addrIndex {
+		allAddr = append(allAddr, index)
 	}
 	return allAddr
 }

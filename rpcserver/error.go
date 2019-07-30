@@ -29,6 +29,7 @@ const (
 	ErrTxNotExistedInMemAndBLock
 	ErrUnsubcribe
 	ErrSubcribe
+	ErrNetwork
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -39,6 +40,7 @@ var ErrCodeMessage = map[int]struct {
 	// general
 	ErrUnexpected:     {-1, "Unexpected error"},
 	ErrAlreadyStarted: {-2, "RPC server is already started"},
+	ErrNetwork: {-3, "Network Error, failed to send request to RPC server"},
 
 	// validate component -1xxx
 	ErrRPCInvalidRequest:             {-1001, "Invalid request"},
@@ -75,7 +77,9 @@ type RPCError struct {
 	err        error  `json:"Err"`
 	StackTrace string `json:"StackTrace"`
 }
-
+func GetErrorCode(err int) int {
+	return ErrCodeMessage[err].code
+}
 // Guarantee RPCError satisifies the builtin error interface.
 var _, _ error = RPCError{}, (*RPCError)(nil)
 
