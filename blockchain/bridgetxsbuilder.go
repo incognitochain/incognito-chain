@@ -285,6 +285,9 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		return nil, nil
 	}
 
+	c, _ := json.Marshal(issuingETHAcceptedInst)
+	fmt.Println("hahaha issuingETHAcceptedInst: ", string(c))
+
 	if shardID != issuingETHAcceptedInst.ShardID {
 		return nil, nil
 	}
