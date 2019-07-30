@@ -4,7 +4,6 @@
     "TestGetBlockChainInfo"
   ],
   "transaction": [
-    "TestGetTransactionByHash",
     "TestCreateAndSendNormalTransaction",
     "TestCreateAndSendCustomTokenTransaction",
     "TestCreateAndSendCustomTokenPrivacyTransaction"
