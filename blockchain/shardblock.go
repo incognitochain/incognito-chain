@@ -46,6 +46,43 @@ type CrossShardBlock struct {
 	CrossTxTokenPrivacyData []ContentCrossTokenPrivacyData
 }
 
+func NewShardBlock() *ShardBlock {
+	return &ShardBlock{
+		Header: ShardHeader{},
+		Body: ShardBody{
+			Instructions:      [][]string{},
+			CrossTransactions: make(map[byte][]CrossTransaction),
+			Transactions:      make([]metadata.Transaction, 0),
+		},
+	}
+}
+func NewShardBlockWithHeader(header ShardHeader) *ShardBlock {
+	return &ShardBlock{
+		Header: header,
+		Body: ShardBody{
+			Instructions:      [][]string{},
+			CrossTransactions: make(map[byte][]CrossTransaction),
+			Transactions:      make([]metadata.Transaction, 0),
+		},
+	}
+}
+func NewShardBlockWithBody(body ShardBody) *ShardBlock {
+	return &ShardBlock{
+		Header: ShardHeader{},
+		Body:   body,
+	}
+}
+func NewShardBlockFull(header ShardHeader, body ShardBody) *ShardBlock {
+	return &ShardBlock{
+		Header: header,
+		Body:   body,
+	}
+}
+func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, crossTransaction map[byte][]CrossTransaction, transactions []metadata.Transaction) {
+	shardBlock.Body.Instructions = append(shardBlock.Body.Instructions, instructions...)
+	shardBlock.Body.CrossTransactions = crossTransaction
+	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
+}
 func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
 	hash := crossShardBlock.Header.Hash()
 	return &hash
@@ -60,7 +97,6 @@ func (shardBlock *ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
 	return &hash
 }
-
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//Check Header
 	if shardBlock.Header.Height == 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 0 {

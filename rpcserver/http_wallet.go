@@ -209,7 +209,7 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 	}
 	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
-		log.Println(err)
+		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	log.Println(senderKey)
@@ -228,7 +228,10 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 		balance += out.CoinDetails.Value
 	}
 	log.Println(balance)
-
+	//return jsonresult.AccountBalanceResult{
+	//	Account: senderKey.Base58CheckSerialize(wallet.PaymentAddressType),
+	//	Balance: balance,
+	//}, nil
 	return balance, nil
 }
 

@@ -3,8 +3,10 @@ package mubft
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
+	peer "github.com/libp2p/go-libp2p-peer"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -100,10 +102,10 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestShardToBeaconPoolState())
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-			metrics.Measurement: metrics.BeaconBlock,
+			metrics.Measurement:      metrics.BeaconBlock,
 			metrics.MeasurementValue: float64(time.Since(start).Seconds()),
-			metrics.Tag: metrics.NodeIDTag,
-			metrics.TagValue: protocol.EngineCfg.UserKeySet.PaymentAddress.String(),
+			metrics.Tag:              metrics.NodeIDTag,
+			metrics.TagValue:         protocol.EngineCfg.UserKeySet.PaymentAddress.String(),
 		})
 		elasped = time.Since(start)
 		if err != nil {
@@ -137,10 +139,10 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockShard(protocol.EngineCfg.UserKeySet, protocol.RoundData.ShardID, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestCrossShardPoolState(), protocol.RoundData.MinBeaconHeight, start)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-			metrics.Measurement: metrics.ShardBlock,
+			metrics.Measurement:      metrics.ShardBlock,
 			metrics.MeasurementValue: float64(time.Since(start).Seconds()),
-			metrics.Tag: metrics.NodeIDTag,
-			metrics.TagValue: protocol.EngineCfg.UserKeySet.PaymentAddress.String(),
+			metrics.Tag:              metrics.NodeIDTag,
+			metrics.TagValue:         protocol.EngineCfg.UserKeySet.PaymentAddress.String(),
 		})
 		elasped = time.Since(start)
 		if err != nil {
@@ -183,9 +185,9 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 
 func (protocol *BFTProtocol) forwardMsg(msg wire.Message) {
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
-		go protocol.EngineCfg.Server.PushMessageToBeacon(msg)
+		go protocol.EngineCfg.Server.PushMessageToBeacon(msg, map[peer.ID]bool{})
 	} else {
-		go protocol.EngineCfg.Server.PushMessageToShard(msg, protocol.RoundData.ShardID)
+		go protocol.EngineCfg.Server.PushMessageToShard(msg, protocol.RoundData.ShardID, map[peer.ID]bool{})
 	}
 }
 
