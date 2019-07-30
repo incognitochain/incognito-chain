@@ -87,8 +87,8 @@ func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
 	consensusState := &ConsensusState{}
 	beaconCommittee := []string{"abc1", "abc2"}
 
-	consensusState.BeaconCommittee = make([]string, len(beaconCommittee))
-	copy(consensusState.BeaconCommittee, beaconCommittee)
+	consensusState.beaconCommittee = make([]string, len(beaconCommittee))
+	copy(consensusState.beaconCommittee, beaconCommittee)
 
 	peer1 := peer.Peer{
 		PeerConnsMtx: sync.Mutex{},
@@ -122,16 +122,16 @@ func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
 
 func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 	consensusState := &ConsensusState{
-		ShardByCommittee: make(map[string]byte),
-		CommitteeByShard: make(map[byte][]string),
+		shardByCommittee: make(map[string]byte),
+		committeeByShard: make(map[byte][]string),
 	}
 
 	shardCommittee := make(map[byte][]string)
 	shardCommittee[0] = []string{"abc1", "b"}
 	shardCommittee[2] = []string{"c", "abc2"}
 	for shardID, committee := range shardCommittee {
-		consensusState.CommitteeByShard[shardID] = make([]string, len(committee))
-		copy(consensusState.CommitteeByShard[shardID], committee)
+		consensusState.committeeByShard[shardID] = make([]string, len(committee))
+		copy(consensusState.committeeByShard[shardID], committee)
 	}
 	consensusState.rebuild()
 
