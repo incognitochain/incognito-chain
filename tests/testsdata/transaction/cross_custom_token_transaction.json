@@ -1,0 +1,186 @@
+[
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+    "input": {
+      "command": "createandsendcustomtokentransaction",
+      "context": false,
+      "params": [
+        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        {},
+        10,
+        0,
+        {
+          "TokenID": "",
+          "TokenName": "ABC12345",
+          "TokenSymbol": "ABC12345",
+          "TokenTxType": 0,
+          "TokenAmount": 1000,
+          "TokenReceivers": {
+            "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t": 1000
+          }
+        }
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "TokenID": "18a84cc204a174d2c972197721783ea0c11fab03b67301a31e73b93c6acbe0d7",
+        "TokenName": "ABC12345",
+        "TokenAmount": 1000
+      }
+    },
+    "store": {
+      "TxID1": "TxID"
+    }
+  },
+  {
+    "node": {
+      "host": "localhost",
+      "port": "19334"
+    },
+    "input": {
+      "command": "subcribependingtransaction",
+      "context": true,
+      "params": ["TxID1"],
+      "type": "ws",
+      "wait": 600
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  },
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+    "input": {
+      "command": "getlistcustomtokenbalance",
+      "context": false,
+      "params": ["1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t"]
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "ListCustomTokenBalance": [
+          {
+            "Name": "ABC12345",
+            "Symbol": "ABC12345",
+            "Amount": 1000,
+            "TokenID": "18a84cc204a174d2c972197721783ea0c11fab03b67301a31e73b93c6acbe0d7",
+            "TokenImage": "data:image/png;base64,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",
+            "IsPrivacy": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+    "input": {
+      "command": "createandsendcustomtokentransaction",
+      "context": false,
+      "params": [
+        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        {},
+        10,
+        0,
+        {
+          "TokenID": "18a84cc204a174d2c972197721783ea0c11fab03b67301a31e73b93c6acbe0d7",
+          "TokenName": "ABC12345",
+          "TokenSymbol": "ABC12345",
+          "TokenTxType": 1,
+          "TokenAmount": 500,
+          "TokenReceivers": {
+            "1Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn4cNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aEr": 500
+          }
+        }
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    },
+    "store": {
+      "TxID2": "TxID"
+    }
+  },
+  {
+    "node": {
+      "host": "localhost",
+      "port": "19334"
+    },
+    "input": {
+      "command": "subcribependingtransaction",
+      "context": true,
+      "params": [
+        "TxID2"
+      ],
+      "type": "ws",
+      "wait": 600
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  },
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+    "input": {
+      "command": "getlistcustomtokenbalance",
+      "context": false,
+      "params": ["1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t"]
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "ListCustomTokenBalance": [
+          {
+            "Name": "ABC12345",
+            "Symbol": "ABC12345",
+            "Amount": 500,
+            "TokenID": "18a84cc204a174d2c972197721783ea0c11fab03b67301a31e73b93c6acbe0d7",
+            "TokenImage": "data:image/png;base64,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",
+            "IsPrivacy": false
+          }
+        ]
+      }
+    }
+  },
+  {
+    "node": {
+      "host": "http://localhost",
+      "port": "9334"
+    },
+    "input": {
+      "command": "getlistcustomtokenbalance",
+      "context": false,
+      "params": ["1Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn4cNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aEr"]
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "ListCustomTokenBalance": [
+          {
+            "Name": "ABC12345",
+            "Symbol": "ABC12345",
+            "Amount": 500,
+            "TokenID": "18a84cc204a174d2c972197721783ea0c11fab03b67301a31e73b93c6acbe0d7",
+            "TokenImage": "data:image/png;base64,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",
+            "IsPrivacy": false
+          }
+        ]
+      }
+    }
+  }
+]
