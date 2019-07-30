@@ -1066,7 +1066,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		peerConn.QueueMessageWithEncoding(msgSG, dc, peer.MessageToPeer, nil)
 
 		//	broadcast addr to all peer
-		listen := serverObj.connManager.ListeningPeer
+		listen := serverObj.connManager.GetListeningPeer()
 		msgSA, err := wire.MakeEmptyMessage(wire.CmdAddr)
 		if err != nil {
 			return
