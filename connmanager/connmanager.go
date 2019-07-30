@@ -86,9 +86,14 @@ func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string
 		connManager.config.ConsensusState.role = role
 		bChange = true
 	}
-	if (connManager.config.ConsensusState.currentShard != nil && currentShard == nil) ||
-		(connManager.config.ConsensusState.currentShard == nil && currentShard != nil) ||
-		(connManager.config.ConsensusState.currentShard != nil && currentShard != nil && *connManager.config.ConsensusState.currentShard != *currentShard) {
+	// checkChangeCurrentShard
+	var checkChangeCurrentShard = func(consensusStateCurrentShard *byte, currentShard *byte) bool {
+		return (consensusStateCurrentShard != nil && currentShard == nil) ||
+			(consensusStateCurrentShard == nil && currentShard != nil) ||
+			(consensusStateCurrentShard != nil && currentShard != nil && *consensusStateCurrentShard != *currentShard)
+
+	}
+	if checkChangeCurrentShard(connManager.config.ConsensusState.currentShard, currentShard) {
 		connManager.config.ConsensusState.currentShard = currentShard
 		bChange = true
 	}
@@ -110,8 +115,7 @@ func (connManager *ConnManager) UpdateConsensusState(role string, userPbk string
 		connManager.config.ConsensusState.committeeByShard = make(map[byte][]string)
 	}
 	for shardID, committee := range shardCommittee {
-		_, ok := connManager.config.ConsensusState.committeeByShard[shardID]
-		if ok {
+		if _, ok := connManager.config.ConsensusState.committeeByShard[shardID]; ok {
 			if !common.CompareStringArray(connManager.config.ConsensusState.committeeByShard[shardID], committee) {
 				connManager.config.ConsensusState.committeeByShard[shardID] = make([]string, len(committee))
 				copy(connManager.config.ConsensusState.committeeByShard[shardID], committee)
