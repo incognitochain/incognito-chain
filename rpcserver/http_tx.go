@@ -202,7 +202,8 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 
 	txID := tx.Hash().String()
 	result := jsonresult.CreateTransactionResult{
-		TxID: txID,
+		TxID:    txID,
+		ShardID: common.GetShardIDFromLastByte(tx.PubKeyLastByteSender),
 	}
 	Logger.log.Debugf("\n\n\n\n\n\nhandleSendRawTransaction result: %+v\n\n\n\n\n", result)
 	return result, nil
@@ -523,7 +524,13 @@ func (httpServer *HttpServer) handleSendRawCustomTokenTransaction(params interfa
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	result := tx.Hash()
+	result := jsonresult.CreateTransactionCustomTokenResult{
+		TxID:        tx.Hash().String(),
+		TokenID:     tx.TxTokenData.PropertyID.String(),
+		TokenName:   tx.TxTokenData.PropertyName,
+		TokenAmount: tx.TxTokenData.Amount,
+		ShardID:     common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+	}
 	Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v", result)
 	return result, nil
 }
@@ -550,7 +557,7 @@ func (httpServer *HttpServer) handleCreateAndSendCustomTokenTransaction(params i
 		return nil, err
 	}
 	Logger.log.Debugf("handleCreateAndSendCustomTokenTransaction result: %+v", txID)
-	return txID, nil
+	return tx, nil
 }
 
 // handleGetListCustomTokenHolders - return all custom token holder
@@ -1173,7 +1180,13 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	result := tx.Hash()
+	result := jsonresult.CreateTransactionCustomTokenResult{
+		TxID:        tx.Hash().String(),
+		TokenID:     tx.TxTokenPrivacyData.PropertyID.String(),
+		TokenName:   tx.TxTokenPrivacyData.PropertyName,
+		TokenAmount: tx.TxTokenPrivacyData.Amount,
+		ShardID:     common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+	}
 	Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", result)
 	return result, nil
 }
@@ -1199,7 +1212,7 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 		return tx, nil
 	}
 	Logger.log.Debugf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v", txId)
-	return txId, nil
+	return tx, nil
 }
 
 /*
