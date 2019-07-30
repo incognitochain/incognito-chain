@@ -1024,7 +1024,9 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	}
 
 	// check for accept connection
-	if !serverObj.connManager.CheckForAcceptConn(peerConn) {
+	if accepted, e := serverObj.connManager.CheckForAcceptConn(peerConn); !accepted {
+		// not accept connection -> force close
+		Logger.log.Error(e)
 		peerConn.ForceClose()
 		return
 	}
