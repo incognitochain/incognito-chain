@@ -7,13 +7,9 @@ import (
 )
 
 func TestCreateAndSendCrossNormalTransaction(t *testing.T) {
-	res, err := readfile("./testsdata/transaction/cross_normal_transaction.json")
+	_, err := readfile("./testsdata/transaction/cross_normal_transaction.json")
 	if err != nil {
 		t.Fatal(err)
-	} else {
-		for _, step := range res.steps {
-			log.Println(step)
-		}
 	}
 	testResult, err := executeTest("./testsdata/transaction/cross_normal_transaction.json")
 	if err != nil {
@@ -29,13 +25,9 @@ func TestCreateAndSendCrossNormalTransaction(t *testing.T) {
 	}
 }
 func TestCreateAndSendCrossCustomTokenTransaction(t *testing.T) {
-	res, err := readfile("./testsdata/transaction/cross_custom_token_transaction.json")
+	_, err := readfile("./testsdata/transaction/cross_custom_token_transaction.json")
 	if err != nil {
 		t.Fatal(err)
-	} else {
-		for _, step := range res.steps {
-			log.Println(step)
-		}
 	}
 	testResult, err := executeTest("./testsdata/transaction/cross_custom_token_transaction.json")
 	if err != nil {
@@ -51,13 +43,9 @@ func TestCreateAndSendCrossCustomTokenTransaction(t *testing.T) {
 	}
 }
 func TestCreateAndSendCrossCustomTokenPrivacyTransaction(t *testing.T) {
-	res, err := readfile("./testsdata/transaction/cross_custom_token_privacy_transaction.json")
+	_, err := readfile("./testsdata/transaction/cross_custom_token_privacy_transaction.json")
 	if err != nil {
 		t.Fatal(err)
-	} else {
-		for _, step := range res.steps {
-			log.Println(step)
-		}
 	}
 	testResult, err := executeTest("./testsdata/transaction/cross_custom_token_privacy_transaction.json")
 	if err != nil {
