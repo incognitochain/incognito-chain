@@ -163,8 +163,14 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(producerKeySet *incognitokey.Key
 		return nil, NewBlockChainError(HashError, err)
 	}
 	// Instruction merkle root
-	flattenTxInsts := FlattenAndConvertStringInst(txInstructions)
-	flattenInsts := FlattenAndConvertStringInst(instructions)
+	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
+	if err != nil {
+		return nil, NewBlockChainError(HashError, err)
+	}
+	flattenInsts, err := FlattenAndConvertStringInst(instructions)
+	if err != nil {
+		return nil, NewBlockChainError(HashError, err)
+	}
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)

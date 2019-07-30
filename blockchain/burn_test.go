@@ -1,7 +1,9 @@
 package blockchain
 
 import (
+	"bytes"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -20,6 +22,237 @@ const (
 	remoteAddress = "e722D8b71DCC0152D47D2438556a45D3357d631f"
 	txid          = "16d4660274a74fe286ba3060b500f0fc698d1e3a144779149e9c7fbc512f6cd9"
 )
+
+func TestPickBurningConfirm(t *testing.T) {
+	testCases := []struct {
+		desc   string
+		insts  [][]string
+		num    int
+		height int64
+	}{
+		{
+			desc:  "No burning inst",
+			insts: [][]string{[]string{"1", "2"}, []string{"3", "4"}},
+		},
+		{
+			desc:   "Check height",
+			insts:  [][]string{setupBurningConfirmInst(123)},
+			height: 456,
+			num:    1,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			b := []*BeaconBlock{&BeaconBlock{Body: BeaconBody{Instructions: tc.insts}}}
+			insts := pickBurningConfirmInstruction(b, uint64(tc.height))
+
+			if tc.num != len(insts) {
+				t.Errorf("incorrect number of insts, expect %d, got %d", tc.num, len(insts))
+			}
+			e := encode58(big.NewInt(tc.height).Bytes())
+			for _, inst := range insts {
+				o := inst[len(inst)-1]
+				if e != o {
+					t.Errorf("incorrect shard height of inst, expect %s, got %s", e, o)
+				}
+			}
+		})
+	}
+}
+
+func setupBurningConfirmInst(height int64) []string {
+	return []string{
+		"72",
+		"1",
+		encode58(getExternalID(2)),
+		remoteAddress,
+		encode58(big.NewInt(2000).Bytes()),
+		txid,
+		encode58(big.NewInt(int64(height)).Bytes()),
+	}
+}
+
+func TestFlattenInst(t *testing.T) {
+	testCases := []struct {
+		desc  string
+		insts [][]string
+		err   bool
+	}{
+		{
+			desc:  "Generic inst",
+			insts: [][]string{[]string{"1", "2"}, []string{"3", "4"}},
+			err:   false,
+		},
+		{
+			desc:  "Corrupted BurningConfirm inst",
+			insts: [][]string{[]string{"72", "1", "2", "3", "4", "5", "6"}},
+			err:   true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			d, err := FlattenAndConvertStringInst(tc.insts)
+			ok := err != nil
+			if ok != tc.err {
+				t.Error(err)
+			}
+
+			if !tc.err && len(tc.insts) != len(d) {
+				t.Errorf("incorrect number of insts, expect %d, got %d", len(tc.insts), len(d))
+			}
+		})
+	}
+}
+
+func TestDecodeInstruction(t *testing.T) {
+	testCases := []struct {
+		desc string
+		inst []string
+		err  bool
+		leng int
+	}{
+		{
+			desc: "Generic inst",
+			inst: []string{"1", "2", "3"},
+			err:  false,
+			leng: 3,
+		},
+		{
+			desc: "Corrupted BurningConfirm inst",
+			inst: []string{"72", "1", "2", "3", "4", "5", "6"},
+			err:  true,
+		},
+		{
+			desc: "Valid BurningConfirm inst",
+			inst: setupBurningConfirmInst(123),
+			err:  false,
+			leng: 163,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			d, err := DecodeInstruction(tc.inst)
+			ok := err != nil
+			if ok != tc.err {
+				t.Error(err)
+			}
+
+			if !tc.err && tc.leng != len(d) {
+				t.Errorf("incorrect length of decoded inst, expect %d, got %d", tc.leng, len(d))
+			}
+		})
+	}
+}
+
+func TestDecodeBurningConfirmInst(t *testing.T) {
+	// Precompute result
+	token := make([]byte, 32)
+	token[31] = 2
+
+	ra, _ := hex.DecodeString(remoteAddress)
+	addr := make([]byte, 32)
+	copy(addr[12:], ra)
+
+	tx, _ := common.Hash{}.NewHashFromStr(txid)
+
+	testCases := []struct {
+		desc string
+		inst []string
+		err  bool
+		out  *confirm
+	}{
+		{
+			desc: "Invalid inst",
+			inst: []string{"72", "-1", "", "", "", "", ""},
+			err:  true,
+			out:  nil,
+		},
+		{
+			desc: "Invalid length inst",
+			inst: []string{"72", "1"},
+			err:  true,
+			out:  nil,
+		},
+		{
+			desc: "Valid inst",
+			inst: setupBurningConfirmInst(123),
+			err:  false,
+			out: &confirm{
+				meta:   []byte{byte('7'), byte('2')},
+				shard:  byte('1'),
+				token:  token,
+				addr:   addr,
+				amount: 2000,
+				txid:   tx[:],
+				height: 123,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			d, err := decodeBurningConfirmInst(tc.inst)
+			ok := err != nil
+			if ok != tc.err {
+				t.Error(err)
+			}
+
+			if !tc.err {
+				out := parseBurningConfirmInst(d)
+				checkDecodedBurningConfirmInst(t, out, tc.out)
+			}
+		})
+	}
+}
+
+type confirm struct {
+	meta   []byte
+	shard  byte
+	token  []byte
+	addr   []byte
+	amount uint64
+	txid   []byte
+	height uint64
+}
+
+func checkDecodedBurningConfirmInst(t *testing.T, a, e *confirm) {
+	if !bytes.Equal(a.meta, e.meta) {
+		t.Error(errors.Errorf("expect meta = %v, got %v", e.meta, a.meta))
+	}
+	if a.shard != e.shard {
+		t.Error(errors.Errorf("expect shard = %v, got %v", e.shard, a.shard))
+	}
+	if !bytes.Equal(a.token, e.token) {
+		t.Error(errors.Errorf("expect token = %v, got %v", e.token, a.token))
+	}
+	if !bytes.Equal(a.addr, e.addr) {
+		t.Error(errors.Errorf("expect addr = %x, got %x", e.addr, a.addr))
+	}
+	if a.amount != e.amount {
+		t.Error(errors.Errorf("expect amount = %d, got %d", e.amount, a.amount))
+	}
+	if !bytes.Equal(a.txid, e.txid) {
+		t.Error(errors.Errorf("expect txid = %x, got %x", e.txid, a.txid))
+	}
+	if a.height != e.height {
+		t.Error(errors.Errorf("expect height = %d, got %d", e.height, a.height))
+	}
+}
+
+func parseBurningConfirmInst(inst []byte) *confirm {
+	return &confirm{
+		meta:   inst[0:2],
+		shard:  inst[2],
+		token:  inst[3:35],
+		addr:   inst[35:67],
+		amount: big.NewInt(0).SetBytes(inst[67:99]).Uint64(),
+		txid:   inst[99:131],
+		height: big.NewInt(0).SetBytes(inst[131:163]).Uint64(),
+	}
+}
 
 func TestBuildBridgeInst(t *testing.T) {
 	height := uint64(123)
@@ -41,15 +274,7 @@ func TestBuildBridgeInst(t *testing.T) {
 		{
 			desc:  "ERC20",
 			insts: [][]string{setupBurningRequest(2)},
-			out: [][]string{[]string{
-				"72",
-				"1",
-				encode58(getExternalID(2)),
-				remoteAddress,
-				encode58(big.NewInt(2000).Bytes()),
-				txid,
-				encode58(big.NewInt(int64(height + 1)).Bytes()),
-			}},
+			out:   [][]string{setupBurningConfirmInst(int64(height) + 1)},
 		},
 	}
 
@@ -111,7 +336,7 @@ func TestBurnConfirmScaleAmount(t *testing.T) {
 				remoteAddress,
 				encode58(big.NewInt(tc.amount).Bytes()),
 				txid,
-				encode58(big.NewInt(height).Bytes()),
+				encode58(big.NewInt(int64(height)).Bytes()),
 			}
 			checkBurningConfirmInst(t, c, expected)
 		})
@@ -236,12 +461,9 @@ func newToken(b byte) *lvdb.BridgeTokenInfo {
 }
 
 func getExternalID(b byte) []byte {
-	var externalID []byte
+	externalID := make([]byte, 20)
 	if b != 0 {
-		externalID = make([]byte, 3)
-		externalID[0] = b
-	} else {
-		externalID = make([]byte, 20)
+		externalID[19] = b
 	}
 	return externalID
 }
