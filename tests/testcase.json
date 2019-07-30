@@ -2,5 +2,16 @@
   "client": ["TestMakeRPCRequest"],
   "blockchain": [
     "TestGetBlockChainInfo"
+  ],
+  "transaction": [
+    "TestGetTransactionByHash",
+    "TestCreateAndSendNormalTransaction",
+    "TestCreateAndSendCustomTokenTransaction",
+    "TestCreateAndSendCustomTokenPrivacyTransaction"
+  ],
+  "crossshard": [
+    "TestCreateAndSendCrossNormalTransaction",
+    "TestCreateAndSendCrossCustomTokenTransaction",
+    "TestCreateAndSendCrossCustomTokenPrivacyTransaction"
   ]
 }
