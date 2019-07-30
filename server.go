@@ -535,7 +535,10 @@ func (serverObj *Server) WaitForShutdown() {
 */
 func (serverObj *Server) Stop() error {
 	// stop connManager
-	serverObj.connManager.Stop()
+	errStopConnManager := serverObj.connManager.Stop()
+	if errStopConnManager != nil {
+		Logger.log.Error(errStopConnManager)
+	}
 
 	// Shutdown the RPC server if it's not disabled.
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
@@ -601,7 +604,10 @@ out:
 	if errStopAddrManager != nil {
 		Logger.log.Error(errStopAddrManager)
 	}
-	serverObj.connManager.Stop()
+	errStopConnManager := serverObj.connManager.Stop()
+	if errStopAddrManager != nil {
+		Logger.log.Error(errStopConnManager)
+	}
 }
 
 /*
@@ -1397,7 +1403,10 @@ func (serverObj *Server) GetCurrentRoleShard() (string, *byte) {
 }
 
 func (serverObj *Server) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
-	serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
+	changed := serverObj.connManager.UpdateConsensusState(role, userPbk, currentShard, beaconCommittee, shardCommittee)
+	if changed {
+		Logger.log.Debug("UpdateConsensusState is true")
+	}
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint64, peerID libp2p.ID) error {
