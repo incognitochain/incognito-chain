@@ -27,12 +27,12 @@ func TestPeerConn_ReadString(t *testing.T) {
 	text := "Hello World"
 	bytes := make([]byte, 0)
 	bytes = append(bytes, []byte(text)...)
-	bytes = append(bytes, DelimMessageByte)
+	bytes = append(bytes, delimMessageByte)
 	sample.Write(bytes)
 	sample.WriteTo(rw) // In reality, my "decoder" would be reading from 'sample' and writing to 'target'
 	rw.Writer.Flush()
 
-	value, err := peerConn.readString(rw, DelimMessageByte, SpamMessageSize)
+	value, err := peerConn.readString(rw, delimMessageByte, spamMessageSize)
 	if err != nil {
 		t.Error(err)
 	}
@@ -76,7 +76,7 @@ func TestPeerConn_ProcessInMessageStr(t *testing.T) {
 		t.Error(err)
 	}
 	messageHex := hex.EncodeToString(messageBytes)
-	messageHex += DelimMessageStr
+	messageHex += delimMessageStr
 
 	err = peerConn.processInMessageString(messageHex)
 	if err != nil {
@@ -122,7 +122,7 @@ func TestPeerConn_InMessageHandler(t *testing.T) {
 		t.Error(err)
 	}
 	messageHex := hex.EncodeToString(messageBytes)
-	messageHex += DelimMessageStr
+	messageHex += delimMessageStr
 
 	sample.Write([]byte(messageHex))
 	sample.WriteTo(rw)
