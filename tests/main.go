@@ -103,20 +103,20 @@ func main() {
 	case "transaction":
 		tempInitTestcase, ok := testcaseData["transaction"]
 		if !ok {
-			log.Println("Failed to get init testcase")
+			log.Println("Failed to get transaction testcase")
 			os.Exit(0)
 		}
 		var initTestcase = []string{}
 		for _, value := range tempInitTestcase.([]interface{}) {
 			temp, ok := value.(string)
 			if !ok {
-				log.Println("Failed to get init testcase")
+				log.Println("Failed to get transaction testcase")
 				os.Exit(1)
 			}
 			initTestcase = append(initTestcase, temp)
 		}
 		
-		log.Println("Begin to run Init Testcase")
+		log.Println("Begin to run Transaction Testcase")
 		for _, initTestcaseName := range initTestcase {
 			cmd := exec.Command("go", "test", "-run", initTestcaseName)
 			msg, err := cmd.Output()
@@ -129,20 +129,20 @@ func main() {
 	case "crossshard":
 		tempInitTestcase, ok := testcaseData["crossshard"]
 		if !ok {
-			log.Println("Failed to get init testcase")
+			log.Println("Failed to get crossshard testcase")
 			os.Exit(0)
 		}
 		var initTestcase = []string{}
 		for _, value := range tempInitTestcase.([]interface{}) {
 			temp, ok := value.(string)
 			if !ok {
-				log.Println("Failed to get init testcase")
+				log.Println("Failed to get crossshard testcase")
 				os.Exit(1)
 			}
 			initTestcase = append(initTestcase, temp)
 		}
 		
-		log.Println("Begin to run Init Testcase")
+		log.Println("Begin to run Crossshard Testcase")
 		for _, initTestcaseName := range initTestcase {
 			cmd := exec.Command("go", "test", "-run", initTestcaseName)
 			msg, err := cmd.Output()
