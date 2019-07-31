@@ -250,12 +250,12 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	// if we can get an pubbic key from params?
 	if publicKey != common.EmptyString {
 		// use public key to detect role in network
-		peer.PublicKey = publicKey
+		peer.SetPublicKey(publicKey)
 	}
 
 	// add remote address peer into our listening node peer
 	listeningPeer.GetHost().Peerstore().AddAddr(peer.GetPeerID(), peer.GetTargetAddress(), pstore.PermanentAddrTTL)
-	Logger.log.Debug("DEBUG Connect to RemotePeer", peer.PublicKey)
+	Logger.log.Debug("DEBUG Connect to RemotePeer", peer.GetPublicKey())
 	Logger.log.Debug(listeningPeer.GetHost().Peerstore().Addrs(peer.GetPeerID()))
 	listeningPeer.PushConn(&peer, cConn)
 	return nil
@@ -464,7 +464,7 @@ func (connManager *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn
 	listener := connManager.config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
-		sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
+		sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.GetPublicKey())
 		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 			c = append(c, peerConn)
 		}
@@ -479,7 +479,7 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
+			sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.GetPublicKey())
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				count++
 			}
@@ -494,7 +494,7 @@ func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool 
 	if listener != nil {
 		pcs := listener.GetPeerConnOfAll()
 		for _, peerConn := range pcs {
-			if peerConn.RemotePeer.PublicKey == publicKey {
+			if peerConn.RemotePeer.GetPublicKey() == publicKey {
 				return true
 			}
 		}
@@ -645,7 +645,7 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (boo
 		return false, NewConnManagerError(NotAcceptConnectionError, errors.New("peerConn is nil"))
 	}
 	// check max shard conn
-	shardID := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
+	shardID := connManager.getShardOfPublicKey(peerConn.RemotePeer.GetPublicKey())
 	currentShard := connManager.config.ConsensusState.currentShard
 	if shardID != nil && currentShard != nil && *shardID == *currentShard {
 		//	same shard
@@ -694,7 +694,7 @@ func (connManager *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn 
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			shardT := connManager.getShardOfPublicKey(peerConn.RemotePeer.PublicKey)
+			shardT := connManager.getShardOfPublicKey(peerConn.RemotePeer.GetPublicKey())
 			if shardT != nil && *shardT == shard {
 				peerConns = append(peerConns, peerConn)
 			}
@@ -710,7 +710,7 @@ func (connManager *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			pbk := peerConn.RemotePeer.PublicKey
+			pbk := peerConn.RemotePeer.GetPublicKey()
 			if pbk != common.EmptyString && connManager.checkBeaconOfPbk(pbk) {
 				peerConns = append(peerConns, peerConn)
 			}
@@ -729,7 +729,7 @@ func (connManager *ConnManager) GetPeerConnOfPublicKey(publicKey string) []*peer
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			if publicKey == peerConn.RemotePeer.PublicKey {
+			if publicKey == peerConn.RemotePeer.GetPublicKey() {
 				peerConns = append(peerConns, peerConn)
 			}
 		}
@@ -754,7 +754,7 @@ func (connManager *ConnManager) GetConnOfRelayNode() []*peer.PeerConn {
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			pbk := peerConn.RemotePeer.PublicKey
+			pbk := peerConn.RemotePeer.GetPublicKey()
 			if pbk != common.EmptyString && common.IndexOfStr(pbk, relayNode) != -1 {
 				peerConns = append(peerConns, peerConn)
 			}
