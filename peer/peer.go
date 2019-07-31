@@ -52,9 +52,9 @@ type Peer struct {
 	pendingPeersMtx  *sync.Mutex
 	publicKey        string
 	listeningAddress common.SimpleAddr
+	seed             int64
 
 	// public field
-	seed               int64
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
 	HandleFailed       func(peerConn *PeerConn)
