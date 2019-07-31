@@ -54,7 +54,7 @@ type Peer struct {
 	ListeningAddress   common.SimpleAddr
 	PublicKey          string
 	Seed               int64
-	PendingPeers       map[string]*Peer
+	pendingPeers       map[string]*Peer
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
 	HandleFailed       func(peerConn *PeerConn)
@@ -155,6 +155,18 @@ func (peerObj *Peer) SetPeerConns(data map[string]*PeerConn) {
 
 	}
 	peerObj.peerConns = data
+}
+
+func (peerObj Peer) GetPendingPeers() map[string]*Peer {
+	return peerObj.pendingPeers
+}
+
+func (peerObj *Peer) SetPendingPeers(data map[string]*Peer) {
+	if data == nil {
+		data = make(map[string]*Peer)
+
+	}
+	peerObj.pendingPeers = data
 }
 
 func (peerObj Peer) GetPeerConnsMtx() *sync.Mutex {
@@ -334,16 +346,16 @@ func (peerObj *Peer) connPending(peer *Peer) {
 	peerObj.pendingPeersMtx.Lock()
 	defer peerObj.pendingPeersMtx.Unlock()
 	peerIDStr := peer.peerID.Pretty()
-	peerObj.PendingPeers[peerIDStr] = peer
+	peerObj.pendingPeers[peerIDStr] = peer
 }
 
 func (peerObj *Peer) connEstablished(peer *Peer) {
 	peerObj.pendingPeersMtx.Lock()
 	defer peerObj.pendingPeersMtx.Unlock()
 	peerIDStr := peer.peerID.Pretty()
-	_, ok := peerObj.PendingPeers[peerIDStr]
+	_, ok := peerObj.pendingPeers[peerIDStr]
 	if ok {
-		delete(peerObj.PendingPeers, peerIDStr)
+		delete(peerObj.pendingPeers, peerIDStr)
 	}
 }
 
@@ -359,7 +371,7 @@ func (peerObj *Peer) connCanceled(peer *Peer) {
 	if ok {
 		delete(peerObj.peerConns, peerIDStr)
 	}
-	peerObj.PendingPeers[peerIDStr] = peer
+	peerObj.pendingPeers[peerIDStr] = peer
 }
 
 func (peerObj *Peer) countOfInboundConn() int {
