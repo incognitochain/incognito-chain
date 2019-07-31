@@ -100,6 +100,58 @@ func main() {
 		}
 	case "blockchain":
 		log.Println("Begin to run testcase Blockchain")
+	case "transaction":
+		tempInitTestcase, ok := testcaseData["transaction"]
+		if !ok {
+			log.Println("Failed to get transaction testcase")
+			os.Exit(0)
+		}
+		var initTestcase = []string{}
+		for _, value := range tempInitTestcase.([]interface{}) {
+			temp, ok := value.(string)
+			if !ok {
+				log.Println("Failed to get transaction testcase")
+				os.Exit(1)
+			}
+			initTestcase = append(initTestcase, temp)
+		}
+		
+		log.Println("Begin to run Transaction Testcase")
+		for _, initTestcaseName := range initTestcase {
+			cmd := exec.Command("go", "test", "-run", initTestcaseName)
+			msg, err := cmd.Output()
+			if err != nil {
+				log.Printf("Failed to run test %+v, err %+v \n", initTestcaseName, err)
+			} else {
+				log.Printf("%+v Message: %+v \n", initTestcaseName, string(msg))
+			}
+		}
+	case "crossshard":
+		tempInitTestcase, ok := testcaseData["crossshard"]
+		if !ok {
+			log.Println("Failed to get crossshard testcase")
+			os.Exit(0)
+		}
+		var initTestcase = []string{}
+		for _, value := range tempInitTestcase.([]interface{}) {
+			temp, ok := value.(string)
+			if !ok {
+				log.Println("Failed to get crossshard testcase")
+				os.Exit(1)
+			}
+			initTestcase = append(initTestcase, temp)
+		}
+		
+		log.Println("Begin to run Crossshard Testcase")
+		for _, initTestcaseName := range initTestcase {
+			cmd := exec.Command("go", "test", "-run", initTestcaseName)
+			msg, err := cmd.Output()
+			if err != nil {
+				log.Printf("Failed to run test %+v, err %+v \n", initTestcaseName, err)
+			} else {
+				log.Printf("%+v Message: %+v \n", initTestcaseName, string(msg))
+			}
+		}
 	default:
 		log.Println("Please choose the right test to run")
 	}
