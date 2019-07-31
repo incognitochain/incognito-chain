@@ -820,9 +820,8 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 		seed = seedC
 	}
 
-	peer := peer.Peer{
-		Seed: seed,
-	}
+	peer := peer.Peer{}
+	peer.SetSeed(seed)
 	peer.SetListeningAddress(*netAddr)
 	peer.SetPeerConns(nil)
 	peer.SetPendingPeers(nil)
