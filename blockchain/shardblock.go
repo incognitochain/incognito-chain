@@ -102,12 +102,12 @@ func (shardBlock *ShardBlock) Hash() *common.Hash {
 }
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	//Check Header
-	if shardBlock.Header.Height == 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 0 {
-		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block with Height 1 Producer Address have %+v bytes but get %+v bytes", 0, len(shardBlock.Header.ProducerAddress.Bytes())))
+	if shardBlock.Header.Height == 1 && len(shardBlock.ValidationData) != 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, errors.New("Expect Shard Block with Height 1 to not have validationData"))
 	}
 	// producer address must have 66 bytes: 33-byte public key, 33-byte transmission key
-	if shardBlock.Header.Height > 1 && len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
-		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Producer Address have %+v bytes but get %+v bytes", 66, len(shardBlock.Header.ProducerAddress.Bytes())))
+	if shardBlock.Header.Height > 1 && len(shardBlock.ValidationData) == 0 {
+		return false, NewBlockChainError(ShardBlockSanityError, errors.New("Expect Shard Block to have validationData"))
 	}
 	if int(shardBlock.Header.ShardID) < 0 || int(shardBlock.Header.ShardID) > 256 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block ShardID in range 0 - 255 but get %+v ", shardBlock.Header.ShardID))
@@ -259,9 +259,9 @@ func (shardBlock *ShardBlock) GetHeight() uint64 {
 	return shardBlock.Header.Height
 }
 
-func (shardBlock *ShardBlock) GetProducerPubKey() string {
-	return string(shardBlock.Header.ProducerAddress.Pk)
-}
+// func (shardBlock *ShardBlock) GetProducerPubKey() string {
+// 	return string(shardBlock.Header.ProducerAddress.Pk)
+// }
 
 // func (shardBlock *ShardBlock) VerifyBlockReward(blockchain *BlockChain) error {
 // 	hasBlockReward := false
@@ -330,7 +330,7 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		Logger.log.Error(err)
 		return nil
 	}
-	instructions, err := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, &blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks, blk.Header.BeaconHeight)
+	instructions, err := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, blk.Header.Height, beaconBlocks, blk.Header.BeaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil

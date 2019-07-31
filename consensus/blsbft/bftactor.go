@@ -7,7 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/consensus/multisigschemes"
-	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
 
 type ProposeMsg struct {
@@ -42,9 +42,10 @@ type BLSBFT struct {
 	Round      int
 	NextHeight uint64
 
-	UserKeySet        *incognitokey.KeySet
-	State             string
-	NotYetSendPrepare bool
+	// UserKeySet        *incognitokey.KeySet
+	UserKeySet      *bls.KeySet
+	State           string
+	NotYetSendAgree bool
 
 	Block chain.BlockInterface
 
@@ -57,11 +58,11 @@ type BLSBFT struct {
 	Blocks map[string]chain.BlockInterface
 
 	MultiSigScheme multisigschemes.MultiSigsSchemeInterface
-	IsRunning      bool
+	isOngoing      bool
 }
 
-func (e *BLSBFT) IsRun() bool {
-	return e.IsRunning
+func (e *BLSBFT) IsOngoing() bool {
+	return e.isOngoing
 }
 
 func (e *BLSBFT) GetInfo() string {
@@ -77,14 +78,16 @@ func (e *BLSBFT) ReceivePrepareMsg(msg interface{}) {
 }
 
 func (e *BLSBFT) Stop() {
-	if e.IsRunning {
+	select {
+	case <-e.StopCh:
+		return
+	default:
 		close(e.StopCh)
-		e.IsRunning = false
 	}
 }
 
 func (e *BLSBFT) Start() {
-	e.IsRunning = true
+	e.isOngoing = false
 	e.StopCh = make(chan int)
 	e.PrepareMsgs = map[string]map[string]SigStatus{}
 	e.Blocks = map[string]chain.BlockInterface{}
@@ -119,7 +122,7 @@ func (e *BLSBFT) Start() {
 				e.PrepareMsgs[sig.RoundKey][sig.Pubkey] = SigStatus{sig.IsOk, false, sig.ContentSig}
 
 			case <-ticker:
-				if e.Chain.GetNodePubKeyCommitteeIndex() == -1 {
+				if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPubkeyB58()) == -1 {
 					continue
 				}
 
@@ -137,12 +140,12 @@ func (e *BLSBFT) Start() {
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
 					if e.Blocks[roundKey] != nil && e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]) != nil {
 						e.Block = e.Blocks[roundKey]
-						e.enterPreparePhase()
+						e.enterAgreePhase()
 					}
 
-				case PREPARE:
+				case AGREE:
 
-					if e.NotYetSendPrepare {
+					if e.NotYetSendAgree {
 						e.validateAndSendVote()
 					}
 
@@ -175,7 +178,7 @@ func (e *BLSBFT) enterProposePhase() {
 	blockData, _ := json.Marshal(e.Block)
 	msg, _ := MakeBFTProposeMsg(string(blockData), e.ChainKey, fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
 	go e.Chain.PushMessageToValidator(msg)
-	e.enterPreparePhase()
+	e.enterAgreePhase()
 
 }
 
@@ -186,11 +189,11 @@ func (e *BLSBFT) enterListenPhase() {
 	e.setState(LISTEN)
 }
 
-func (e *BLSBFT) enterPreparePhase() {
-	if !e.isInTimeFrame() || e.State == PREPARE {
+func (e *BLSBFT) enterAgreePhase() {
+	if !e.isInTimeFrame() || e.State == AGREE {
 		return
 	}
-	e.setState(PREPARE)
+	e.setState(AGREE)
 	e.validateAndSendVote()
 }
 
@@ -219,5 +222,9 @@ func (e *BLSBFT) enterNewRound() {
 		fmt.Println("BFT: new round listen")
 		e.enterListenPhase()
 	}
+
+}
+
+func init() {
 
 }

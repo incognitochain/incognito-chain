@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/consensus/multisigschemes"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -95,7 +94,11 @@ type Config struct {
 	}
 	UserKeySet *incognitokey.KeySet
 
-	MultiSigScheme multisigschemes.MultiSigsSchemeInterface
+	ConsensusEngine interface {
+		ValidateBlockProducerSig(validationData string, blockHash common.Hash) error
+		ValidateAggSignature(committee []string, validataData string, blockHash common.Hash) error
+		GetBlockProducerPubKeyB58(validationData string) string
+	}
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -287,7 +290,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	err = blockchain.BestState.Shard[shardID].Update(&initBlock, []*BeaconBlock{genesisBeaconBlk})
+	err = blockchain.BestState.Shard[shardID].Update(&initBlock, []*BeaconBlock{genesisBeaconBlk}, blockchain)
 	if err != nil {
 		return err
 	}

@@ -1,10 +1,7 @@
 package consensus
 
 import (
-	"encoding/json"
-	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -16,6 +13,8 @@ const (
 	BEACON_CHAINKEY = "beacon"
 	SHARD_CHAINKEY  = "shard"
 )
+
+var AvailableConsensus map[string]chain.ConsensusInterface
 
 type Engine struct {
 	Node             chain.Node
@@ -39,7 +38,7 @@ func (s *Engine) Start() error {
 	go func() {
 		ticker := time.Tick(time.Millisecond * 1000)
 		for _ = range ticker {
-			if ConsensusManager.Blockchain != nil && ConsensusManager.Blockchain.Synker.IsLatest(false, 0) { //beacon synced
+			if s.Blockchain != nil && s.Blockchain.Synker.IsLatest(false, 0) { //beacon synced
 				//TODO: start chain if node is in committee
 			}
 		}
@@ -54,7 +53,7 @@ func (s *Engine) Start() error {
 	}
 
 	//start all active shard, but not run
-	for i := 0; i < blockchain.GetActiveShardNumber(); i++ {
+	for i := 0; i < s.Blockchain.GetActiveShardNumber(); i++ {
 		shardChain, ok := s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)]
 		if !ok {
 			bftcore := &bft.BFTCore{ChainKey: SHARD_CHAINKEY + "" + strconv.Itoa(i), IsRunning: false, UserKeySet: node.GetUserKeySet()}
@@ -76,59 +75,64 @@ func (s *Engine) Stop(name string) error {
 }
 
 func (s *Engine) OnBFTMsg(msg wire.Message) {
-	switch msg.MessageType() {
-	case wire.CmdBFTPropose:
-		rawProposeMsg := msg.(*wire.MessageBFTProposeV2)
-		if ConsensusManager.ChainList[rawProposeMsg.ChainKey].GetConsensusEngine().IsRun() {
-			ConsensusManager.ChainList[rawProposeMsg.ChainKey].GetConsensusEngine().ReceiveProposeMsg(convertProposeMsg(rawProposeMsg))
-		}
-	case wire.CmdBFTPrepare:
-		rawPrepareMsg := msg.(*wire.MessageBFTPrepareV2)
-		if ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().IsRun() {
-			ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().ReceivePrepareMsg(convertPrepareMsg(rawPrepareMsg))
-		}
-	}
+	// switch msg.MessageType() {
+	// case wire.CmdBFTPropose:
+	// 	rawProposeMsg := msg.(*wire.MessageBFTProposeV2)
+	// 	if ConsensusManager.ChainList[rawProposeMsg.ChainKey].GetConsensusEngine().IsRun() {
+	// 		ConsensusManager.ChainList[rawProposeMsg.ChainKey].GetConsensusEngine().ReceiveProposeMsg(convertProposeMsg(rawProposeMsg))
+	// 	}
+	// case wire.CmdBFTPrepare:
+	// 	rawPrepareMsg := msg.(*wire.MessageBFTPrepareV2)
+	// 	if ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().IsRun() {
+	// 		ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().ReceivePrepareMsg(convertPrepareMsg(rawPrepareMsg))
+	// 	}
+	// }
 }
 
-func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
-	proposeMsg := bft.ProposeMsg{
-		ChainKey:   msg.ChainKey,
-		ContentSig: msg.ContentSig,
-		Pubkey:     msg.Pubkey,
-		Timestamp:  msg.Timestamp,
-		RoundKey:   msg.RoundKey,
-	}
-	if strings.Index(msg.ChainKey, BEACON_CHAINKEY) > -1 { //beacon
-		blk := &blockchain.BeaconBlock{}
-		err := json.Unmarshal([]byte(msg.Block), &blk)
-		if err != nil {
-			fmt.Println("BFT: unmarshal beacon propose msg fail", err)
-		}
-		proposeMsg.Block = blk
-	} else { //shard
-		blk := &blockchain.ShardBlock{}
-		err := json.Unmarshal([]byte(msg.Block), &blk)
-		if err != nil {
-			fmt.Println("BFT: unmarshal shard propose msg fail", err)
-		}
-		proposeMsg.Block = blk
-	}
-	return proposeMsg
-}
+// func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
+// 	proposeMsg := bft.ProposeMsg{
+// 		ChainKey:   msg.ChainKey,
+// 		ContentSig: msg.ContentSig,
+// 		Pubkey:     msg.Pubkey,
+// 		Timestamp:  msg.Timestamp,
+// 		RoundKey:   msg.RoundKey,
+// 	}
+// 	if strings.Index(msg.ChainKey, BEACON_CHAINKEY) > -1 { //beacon
+// 		blk := &blockchain.BeaconBlock{}
+// 		err := json.Unmarshal([]byte(msg.Block), &blk)
+// 		if err != nil {
+// 			fmt.Println("BFT: unmarshal beacon propose msg fail", err)
+// 		}
+// 		proposeMsg.Block = blk
+// 	} else { //shard
+// 		blk := &blockchain.ShardBlock{}
+// 		err := json.Unmarshal([]byte(msg.Block), &blk)
+// 		if err != nil {
+// 			fmt.Println("BFT: unmarshal shard propose msg fail", err)
+// 		}
+// 		proposeMsg.Block = blk
+// 	}
+// 	return proposeMsg
+// }
 
-func convertPrepareMsg(msg *wire.MessageBFTPrepareV2) bft.PrepareMsg {
-	prepareMsg := bft.PrepareMsg{
-		ChainKey:   msg.ChainKey,
-		ContentSig: msg.ContentSig,
-		Pubkey:     msg.Pubkey,
-		Timestamp:  msg.Timestamp,
-		RoundKey:   msg.RoundKey,
-		IsOk:       msg.IsOk,
-		BlkHash:    msg.BlkHash,
-	}
-	return prepareMsg
-}
+// func convertPrepareMsg(msg *wire.MessageBFTPrepareV2) bft.PrepareMsg {
+// 	prepareMsg := bft.PrepareMsg{
+// 		ChainKey:   msg.ChainKey,
+// 		ContentSig: msg.ContentSig,
+// 		Pubkey:     msg.Pubkey,
+// 		Timestamp:  msg.Timestamp,
+// 		RoundKey:   msg.RoundKey,
+// 		IsOk:       msg.IsOk,
+// 		BlkHash:    msg.BlkHash,
+// 	}
+// 	return prepareMsg
+// }
 
 func GetShardChainKey(shardID byte) string {
 	return SHARD_CHAINKEY + "-" + string(shardID)
+}
+
+func RegisterConsensus(name string, consensus chain.ConsensusInterface) error {
+	AvailableConsensus[name] = consensus
+	return nil
 }

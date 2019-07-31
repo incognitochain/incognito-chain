@@ -53,8 +53,8 @@ func (s *BeaconChain) GetLastProposerIndex() int {
 	return common.IndexOfStr(base58.Base58Check{}.Encode(s.Blockchain.BestState.Beacon.BestBlock.Header.ProducerAddress.Pk, common.ZeroByte), s.Blockchain.BestState.Beacon.BeaconCommittee)
 }
 
-func (s *BeaconChain) CreateNewBlock() BlockInterface {
-	newBlock, err := s.BlockGen.NewBlockBeacon(s.Blockchain.Synker.GetClosestShardToBeaconPoolState())
+func (s *BeaconChain) CreateNewBlock(round int) BlockInterface {
+	newBlock, err := s.BlockGen.NewBlockBeacon(round, s.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil
 	}
