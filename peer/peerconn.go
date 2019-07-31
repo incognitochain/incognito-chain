@@ -325,7 +325,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 		Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, peerConn)
 	}
 	// MONITOR INBOUND MESSAGE
-	StoreInboundPeerMessage(message, time.Now().Unix(), peerConn.RemotePeer.PeerID)
+	StoreInboundPeerMessage(message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
 	return nil
 }
 
@@ -337,7 +337,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
 	peerConn.SetIsConnected(true)
 	for {
-		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.GetRawAddress())
+		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.GetPeerID().Pretty(), peerConn.RemotePeer.GetRawAddress())
 
 		str, errR := peerConn.readString(rw, delimMessageByte, spamMessageSize)
 		if errR != nil {
@@ -382,7 +382,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					message := hex.EncodeToString(*outMsg.rawBytes)
 					message += delimMessageStr
 					sendString = message
-					Logger.log.Infof("Send a messageHex raw bytes to %s", peerConn.RemotePeer.PeerID.Pretty())
+					Logger.log.Infof("Send a messageHex raw bytes to %s", peerConn.RemotePeer.GetPeerID().Pretty())
 				} else {
 					// Create and send messageHex
 					messageBytes, err := outMsg.message.JsonSerialize()
@@ -421,12 +421,12 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 					messageHex += delimMessageStr
 
 					// send on p2p stream
-					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.RemotePeer.PeerID.Pretty())
+					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.RemotePeer.GetPeerID().Pretty())
 					sendString = messageHex
 				}
 				// MONITOR OUTBOUND MESSAGE
 				if outMsg.message != nil {
-					StoreOutboundPeerMessage(outMsg.message, time.Now().Unix(), peerConn.RemotePeer.PeerID)
+					StoreOutboundPeerMessage(outMsg.message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
 				}
 
 				_, err := rw.Writer.WriteString(sendString)
@@ -518,7 +518,7 @@ BeginCheckHashMessage:
 //
 // This function is safe for concurrent access.
 func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, forwardType byte, forwardValue *byte) {
-	Logger.log.Infof("QueueMessageWithEncoding %s %s", peerConn.RemotePeer.PeerID.Pretty(), msg.MessageType())
+	Logger.log.Infof("QueueMessageWithEncoding %s %s", peerConn.RemotePeer.GetPeerID().Pretty(), msg.MessageType())
 	go func() {
 		if peerConn.GetIsConnected() {
 			data, _ := msg.JsonSerialize()
@@ -547,7 +547,7 @@ func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan ch
 }
 
 func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
-	Logger.log.Infof("QueueMessageWithBytes %s", peerConn.RemotePeer.PeerID.Pretty())
+	Logger.log.Infof("QueueMessageWithBytes %s", peerConn.RemotePeer.GetPeerID().Pretty())
 	if msgBytes == nil || len(*msgBytes) <= 0 {
 		return
 	}
