@@ -2,10 +2,11 @@ package addrmanager
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/peer"
 	"os"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peer"
 )
 
 var dataDir string
@@ -13,7 +14,7 @@ var addrManager *AddrManager
 var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
 	dataDir, _ = os.Getwd()
-	addrManager = New(dataDir)
+	addrManager = NewAddrManager(dataDir, common.Hash{})
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
@@ -51,7 +52,7 @@ func TestAddrManager_Good(t *testing.T) {
 }
 
 func TestAddrManager_Start(t *testing.T) {
-	addrManager = New(dataDir)
+	addrManager = NewAddrManager(dataDir, common.Hash{})
 	addrManager.Start()
 	if addrManager.started != 1 {
 		t.Error("Can not start")
@@ -60,7 +61,7 @@ func TestAddrManager_Start(t *testing.T) {
 }
 
 func TestAddrManager_Stop(t *testing.T) {
-	addrManager = New(dataDir)
+	addrManager = NewAddrManager(dataDir, common.Hash{})
 	addrManager.Start()
 	err := addrManager.Stop()
 	if err != nil {
@@ -73,7 +74,7 @@ func TestAddrManager_Stop(t *testing.T) {
 
 func TestAddrManager_AddressCache(t *testing.T) {
 	// init
-	addrManager = New(dataDir)
+	addrManager = NewAddrManager(dataDir, common.Hash{})
 	rawAddress := "localhost:9333"
 	// get cache
 	cached := addrManager.AddressCache()
@@ -92,7 +93,7 @@ func TestAddrManager_AddressCache(t *testing.T) {
 }
 
 func TestNewAddrManager_SaveAndLoadPeer(t *testing.T) {
-	addrManager = New(dataDir)
+	addrManager = NewAddrManager(dataDir, common.Hash{})
 	rawAddress := "localhost:9333"
 	// add peer into addr manager
 	addr := peer.Peer{
