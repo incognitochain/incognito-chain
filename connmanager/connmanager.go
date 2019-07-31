@@ -236,16 +236,16 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	listeningPeer.HandleFailed = connManager.handleFailed
 
 	peer := peer.Peer{
-		TargetAddress:      targetAddr,
-		PeerID:             peerId,
-		RawAddress:         addr,
-		Config:             listeningPeer.Config,
-		PeerConns:          make(map[string]*peer.PeerConn),
-		PendingPeers:       make(map[string]*peer.Peer),
 		HandleConnected:    connManager.handleConnected,
 		HandleDisconnected: connManager.handleDisconnected,
 		HandleFailed:       connManager.handleFailed,
 	}
+	peer.SetPeerConns(nil)
+	peer.SetPendingPeers(nil)
+	peer.SetPeerID(peerId)
+	peer.SetRawAddress(addr)
+	peer.SetTargetAddress(targetAddr)
+	peer.SetConfig(listeningPeer.GetConfig())
 
 	// if we can get an pubbic key from params?
 	if publicKey != common.EmptyString {
@@ -254,9 +254,9 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	}
 
 	// add remote address peer into our listening node peer
-	listeningPeer.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
+	listeningPeer.GetHost().Peerstore().AddAddr(peer.GetPeerID(), peer.GetTargetAddress(), pstore.PermanentAddrTTL)
 	Logger.log.Debug("DEBUG Connect to RemotePeer", peer.PublicKey)
-	Logger.log.Debug(listeningPeer.Host.Peerstore().Addrs(peer.PeerID))
+	Logger.log.Debug(listeningPeer.GetHost().Peerstore().Addrs(peer.GetPeerID()))
 	listeningPeer.PushConn(&peer, cConn)
 	return nil
 }
@@ -389,8 +389,8 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
 
 		// remove later
-		rawAddress := listener.RawAddress
-		rawPort := listener.Port
+		rawAddress := listener.GetRawAddress()
+		rawPort := listener.GetPort()
 		if externalAddress == common.EmptyString {
 			externalAddress = os.Getenv("EXTERNAL_ADDRESS")
 		}
@@ -412,11 +412,11 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// we live and we send info about us to bootnode(peerID, node rol, ...)
 		publicKeyInBase58CheckEncode := common.EmptyString
 		signDataInBase58CheckEncode := common.EmptyString
-		if listener.Config.UserKeySet != nil {
-			publicKeyInBase58CheckEncode = listener.Config.UserKeySet.GetPublicKeyB58()
+		if listener.GetConfig().UserKeySet != nil {
+			publicKeyInBase58CheckEncode = listener.GetConfig().UserKeySet.GetPublicKeyB58()
 			Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 			// sign data
-			signDataInBase58CheckEncode, err = listener.Config.UserKeySet.SignDataB58([]byte(rawAddress))
+			signDataInBase58CheckEncode, err = listener.GetConfig().UserKeySet.SignDataB58([]byte(rawAddress))
 			if err != nil {
 				Logger.log.Error(err)
 			}
