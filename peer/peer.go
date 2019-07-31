@@ -142,7 +142,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	// to obtain a valid Host Id.
 	priv, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, r)
 	if err != nil {
-		return &peerObj, NewPeerError(PeerGenerateKeyPairErr, err, &peerObj)
+		return &peerObj, NewPeerError(PeerGenerateKeyPairError, err, &peerObj)
 	}
 
 	ip := strings.Split(peerObj.ListeningAddress.String(), ":")[0]
@@ -160,7 +160,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 
 	basicHost, err := libp2p.New(context.Background(), opts...)
 	if err != nil {
-		return &peerObj, NewPeerError(CreateP2PNodeErr, err, &peerObj)
+		return &peerObj, NewPeerError(CreateP2PNodeError, err, &peerObj)
 	}
 
 	// Build Host multiaddress
@@ -168,7 +168,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 
 	hostAddr, err := ma.NewMultiaddr(mulAddrStr)
 	if err != nil {
-		return &peerObj, NewPeerError(CreateP2PAddressErr, err, &peerObj)
+		return &peerObj, NewPeerError(CreateP2PAddressError, err, &peerObj)
 	}
 
 	// Now we can build a full multiaddress to reach this Host
@@ -179,12 +179,12 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	Logger.log.Infof("I am listening on %s with PEER Id - %s", rawAddress, basicHost.ID().Pretty())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		return &peerObj, NewPeerError(GetPeerIdFromProtocolErr, err, &peerObj)
+		return &peerObj, NewPeerError(GetPeerIdFromProtocolError, err, &peerObj)
 	}
 	peerID, err := peer.IDB58Decode(pid)
 	if err != nil {
 		log.Print(err)
-		return &peerObj, NewPeerError(GetPeerIdFromProtocolErr, err, &peerObj)
+		return &peerObj, NewPeerError(GetPeerIdFromProtocolError, err, &peerObj)
 	}
 
 	peerObj.RawAddress = rawAddress
@@ -369,7 +369,7 @@ func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.RawAddress)
 		return nil
 	} else {
-		return NewPeerError(UnexpectedErr, errors.New(fmt.Sprintf("Can not find %+v", peerIDStr)), nil)
+		return NewPeerError(UnexpectedError, errors.New(fmt.Sprintf("Can not find %+v", peerIDStr)), nil)
 	}
 }
 
@@ -418,7 +418,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 		if cConn != nil {
 			cConn <- nil
 		}
-		return nil, NewPeerError(OpeningStreamP2PErr, err, peerObj)
+		return nil, NewPeerError(OpeningStreamP2PError, err, peerObj)
 	}
 
 	remotePeerID := stream.Conn().RemotePeer()
