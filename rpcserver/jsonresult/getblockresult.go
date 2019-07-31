@@ -34,21 +34,22 @@ type GetBlockResult struct {
 	NextBlockHash     string             `json:"NextBlockHash"`
 	TxHashes          []string           `json:"TxHashes"`
 	Txs               []GetBlockTxResult `json:"Txs"`
-	BlockProducerSign string             `json:"BlockProducerSign"`
-	BlockProducer     string             `json:"BlockProducer"`
-	Data              string             `json:"Data"`
-	BeaconHeight      uint64             `json:"BeaconHeight"`
-	BeaconBlockHash   string             `json:"BeaconBlockHash"`
-	AggregatedSig     string             `json:"AggregatedSig"`
-	R                 string             `json:"R"`
-	Round             int                `json:"Round"`
-	CrossShards       []int              `json:"CrossShards"`
-	Epoch             uint64             `json:"Epoch"`
-	Reward            uint64             `json:"Reward"`
-	RewardBeacon      uint64             `json:"RewardBeacon"`
-	Fee               uint64             `json:"Fee"`
-	Size              uint64             `json:"Size"`
-	Instruction       [][]string         `json:"Instruction"`
+	// BlockProducerSign string             `json:"BlockProducerSign"`
+	// BlockProducer     string             `json:"BlockProducer"`
+	ValidationData  string `json:"ValidationData"`
+	Data            string `json:"Data"`
+	BeaconHeight    uint64 `json:"BeaconHeight"`
+	BeaconBlockHash string `json:"BeaconBlockHash"`
+	// AggregatedSig     string             `json:"AggregatedSig"`
+	// R                 string             `json:"R"`
+	Round        int        `json:"Round"`
+	CrossShards  []int      `json:"CrossShards"`
+	Epoch        uint64     `json:"Epoch"`
+	Reward       uint64     `json:"Reward"`
+	RewardBeacon uint64     `json:"RewardBeacon"`
+	Fee          uint64     `json:"Fee"`
+	Size         uint64     `json:"Size"`
+	Instruction  [][]string `json:"Instruction"`
 }
 
 type GetBlockTxResult struct {
@@ -74,8 +75,9 @@ func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock,
 }
 
 func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size uint64) {
-	getBlockResult.BlockProducerSign = block.ProducerSig
-	getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
+	// getBlockResult.BlockProducerSign = block.ProducerSig
+	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
+	getBlockResult.ValidationData = block.ValidationData
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
 	getBlockResult.Version = block.Header.Version
@@ -92,8 +94,8 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 	}
 	getBlockResult.BeaconHeight = block.Header.BeaconHeight
 	getBlockResult.BeaconBlockHash = block.Header.BeaconHash.String()
-	getBlockResult.AggregatedSig = block.AggregatedSig
-	getBlockResult.R = block.R
+	// getBlockResult.AggregatedSig = block.AggregatedSig
+	// getBlockResult.R = block.R
 	getBlockResult.Round = block.Header.Round
 	getBlockResult.CrossShards = []int{}
 	if len(block.Header.CrossShards) > 0 {

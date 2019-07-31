@@ -65,7 +65,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 		return err
 	}
 	//========Update best state with new block
-	if err := shardBestState.Update(block, beaconBlocks); err != nil {
+	if err := shardBestState.Update(block, beaconBlocks, blockchain); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
@@ -143,7 +143,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 		}
 	}
 
-	if err := blockchain.BestState.Shard[shardID].Update(block, beaconBlocks); err != nil {
+	if err := blockchain.BestState.Shard[shardID].Update(block, beaconBlocks, blockchain); err != nil {
 		return err
 	}
 
@@ -458,7 +458,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		block.Body.Transactions,
 		blockchain,
 		shardID,
-		&block.Header.ProducerAddress,
 		block.Header.Height,
 		beaconBlocks,
 		block.Header.BeaconHeight,
@@ -656,7 +655,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 	producerPosition := (bestStateShard.ShardProposerIdx + block.Header.Round) % len(bestStateShard.ShardCommittee)
 	producerPubkey := bestStateShard.ShardCommittee[producerPosition]
 	blockHash := block.Header.Hash()
-	fmt.Println("V58", producerPubkey, block.ProducerSig, blockHash.GetBytes(), base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte))
+	// fmt.Println("V58", producerPubkey, block.ProducerSig, blockHash.GetBytes(), base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte))
 	//verify producer
 	tempProducer := bestStateShard.ShardCommittee[producerPosition]
 	if strings.Compare(tempProducer, producerPubkey) != 0 {
@@ -700,7 +699,7 @@ func (bestStateShard *BestStateShard) VerifyBestStateWithShardBlock(block *Shard
 		Add pending validator
 		Swap shard committee if detect new epoch of beacon
 */
-func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
+func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*BeaconBlock, blockchain *BlockChain) error {
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
 		err                   error
@@ -732,11 +731,12 @@ func (bestStateShard *BestStateShard) Update(block *ShardBlock, beaconBlocks []*
 		}
 	}
 	bestStateShard.TotalTxnsExcludeSalary += uint64(temp)
+	producerPubKey := blockchain.config.ConsensusEngine.GetBlockProducerPubKeyB58(block.ValidationData)
 	//======END
 	if block.Header.Height == 1 {
 		bestStateShard.ShardProposerIdx = 0
 	} else {
-		bestStateShard.ShardProposerIdx = common.IndexOfStr(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), bestStateShard.ShardCommittee)
+		bestStateShard.ShardProposerIdx = common.IndexOfStr(producerPubKey, bestStateShard.ShardCommittee)
 	}
 
 	newBeaconCandidate := []string{}

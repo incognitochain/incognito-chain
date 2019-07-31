@@ -123,7 +123,6 @@ func CreateShardInstructionsFromTransactionAndIns(
 	transactions []metadata.Transaction,
 	bc *BlockChain,
 	shardID byte,
-	producerAddress *privacy.PaymentAddress,
 	shardBlockHeight uint64,
 	beaconBlocks []*BeaconBlock,
 	beaconHeight uint64,

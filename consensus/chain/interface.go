@@ -8,17 +8,18 @@ import (
 )
 
 type ConsensusInterface interface {
+	NewInstance() ConsensusInterface
 	GetInfo() string
 
 	Start()
 	Stop()
-	IsRun() bool
+	IsOngoing() bool
 
 	ReceiveProposeMsg(interface{})
 	ReceivePrepareMsg(interface{})
 
-	ProcessBFTMsg(interface{})
-	ValidateBlock(interface{}) error
+	ProcessBFTMsg(*wire.MessageBFT)
+	ValidateBlock(BlockInterface) error
 }
 
 type BlockInterface interface {
@@ -38,7 +39,7 @@ type ChainInterface interface {
 	IsReady() bool
 	GetHeight() uint64
 	GetCommitteeSize() int
-	GetNodePubKeyCommitteeIndex() int
+	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	GetNodePubKey() string
 	CreateNewBlock(round int) BlockInterface
