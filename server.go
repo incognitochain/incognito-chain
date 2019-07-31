@@ -823,17 +823,14 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 	peer := peer.Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
-		Config:           *serverObj.NewPeerConfig(),
 		PeerConns:        make(map[string]*peer.PeerConn),
 		PendingPeers:     make(map[string]*peer.Peer),
 	}
+	peer.SetConfig(*serverObj.NewPeerConfig(maxPeers, maxOutPeers, maxInPeers))
 	err = peer.Init()
 	if err != nil {
 		return nil, err
 	}
-	peer.Config.MaxInPeers = maxInPeers
-	peer.Config.MaxOutPeers = maxOutPeers
-	peer.Config.MaxPeers = maxPeers
 
 	kc.Save()
 	return &peer, nil
@@ -842,7 +839,7 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 /*
 // newPeerConfig returns the configuration for the listening RemotePeer.
 */
-func (serverObj *Server) NewPeerConfig() *peer.Config {
+func (serverObj *Server) NewPeerConfig(maxPeers int, maxOutPeers int, maxInPeers int) *peer.Config {
 	KeySetUser := serverObj.userKeySet
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
@@ -871,6 +868,9 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
 		},
+		MaxInPeers:  maxInPeers,
+		MaxPeers:    maxPeers,
+		MaxOutPeers: maxOutPeers,
 	}
 	if KeySetUser != nil && len(KeySetUser.PrivateKey) != 0 {
 		config.UserKeySet = KeySetUser
@@ -1387,9 +1387,9 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
 
 	// ValidateTransaction Public Key from ProducerPrvKey
-	if peerConn.ListenerPeer.Config.UserKeySet != nil {
-		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.Config.UserKeySet.GetPublicKeyB58()
-		signDataB58, err := peerConn.ListenerPeer.Config.UserKeySet.SignDataB58([]byte(peerConn.RemotePeer.PeerID.Pretty()))
+	if peerConn.ListenerPeer.GetConfig().UserKeySet != nil {
+		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.GetConfig().UserKeySet.GetPublicKeyB58()
+		signDataB58, err := peerConn.ListenerPeer.GetConfig().UserKeySet.SignDataB58([]byte(peerConn.RemotePeer.PeerID.Pretty()))
 		if err == nil {
 			msg.(*wire.MessageVersion).SignDataB58 = signDataB58
 		}
