@@ -39,23 +39,22 @@ type Peer struct {
 	cNewStream      chan *newStreamMsg
 	cStopConn       chan struct{}
 
-	host   host.Host
-	port   string
-	config Config
-
-	TargetAddress    ma.Multiaddr
-	PeerID           peer.ID
-	RawAddress       string
-	ListeningAddress common.SimpleAddr
-	PublicKey        string
-
-	Seed int64
-
-	PeerConns       map[string]*PeerConn
-	PeerConnsMtx    sync.Mutex
-	PendingPeers    map[string]*Peer
+	// private field
+	host            host.Host
+	port            string
+	config          Config
 	pendingPeersMtx sync.Mutex
+	targetAddress   ma.Multiaddr
+	rawAddress      string
 
+	// public field
+	PeerID             peer.ID
+	ListeningAddress   common.SimpleAddr
+	PublicKey          string
+	Seed               int64
+	PeerConns          map[string]*PeerConn
+	PeerConnsMtx       sync.Mutex
+	PendingPeers       map[string]*Peer
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
 	HandleFailed       func(peerConn *PeerConn)
@@ -120,6 +119,22 @@ func (peerObj Peer) GetConfig() Config {
 
 func (peerObj *Peer) SetConfig(config Config) {
 	peerObj.config = config
+}
+
+func (peerObj Peer) GetTargetAddress() ma.Multiaddr {
+	return peerObj.targetAddress
+}
+
+func (peerObj *Peer) SetTargetAddress(targetAddress ma.Multiaddr) {
+	peerObj.targetAddress = targetAddress
+}
+
+func (peerObj Peer) GetRawAddress() string {
+	return peerObj.rawAddress
+}
+
+func (peerObj *Peer) SetRawAddress(rawAddress string) {
+	peerObj.rawAddress = rawAddress
 }
 
 func (peerObj *Peer) HashToPool(hash string) error {
@@ -202,10 +217,10 @@ func (peerObj *Peer) Init() error {
 		return NewPeerError(GetPeerIdFromProtocolError, err, peerObj)
 	}
 
-	peerObj.RawAddress = rawAddress
+	peerObj.rawAddress = rawAddress
 	peerObj.host = basicHost
 	peerObj.port = port
-	peerObj.TargetAddress = fullAddr
+	peerObj.SetTargetAddress(fullAddr)
 	peerObj.PeerID = peerID
 	peerObj.cStop = make(chan struct{}, 1)
 	peerObj.cDisconnectPeer = make(chan *PeerConn)
@@ -262,7 +277,7 @@ func (peerObj *Peer) processConn() {
 			Logger.log.Critical("ProcessConn QUIT")
 			return
 		case newPeerMsg := <-peerObj.cNewConn:
-			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.peer.PeerID.Pretty(), newPeerMsg.peer.RawAddress)
+			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.peer.PeerID.Pretty(), newPeerMsg.peer.rawAddress)
 			cConn := make(chan *PeerConn)
 			go func(peerObj *Peer) {
 				peerConn, err := peerObj.handleNewConnectionOut(newPeerMsg.peer, cConn)
@@ -274,7 +289,7 @@ func (peerObj *Peer) processConn() {
 			if newPeerMsg.cConn != nil {
 				newPeerMsg.cConn <- p
 			}
-			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.peer.PeerID.Pretty(), newPeerMsg.peer.RawAddress)
+			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.peer.PeerID.Pretty(), newPeerMsg.peer.rawAddress)
 			continue
 		case newStreamMsg := <-peerObj.cNewStream:
 			remotePeerID := newStreamMsg.stream.Conn().RemotePeer()
@@ -366,7 +381,7 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
-		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.RawAddress)
+		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.rawAddress)
 	}
 	peerObj.PeerConns[peerIDStr] = peerConn
 }
@@ -381,7 +396,7 @@ func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 			internalConnPeer.Close()
 		}
 		delete(peerObj.PeerConns, peerIDStr)
-		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.RawAddress)
+		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.rawAddress)
 		return nil
 	} else {
 		return NewPeerError(UnexpectedError, errors.New(fmt.Sprintf("Can not find %+v", peerIDStr)), nil)
@@ -391,13 +406,13 @@ func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 // handleNewConnectionOut - main process when receiving a new peer connection,
 // this mean we want to connect out to other peer
 func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
-	Logger.log.Infof("Opening stream to PEER Id - %s", peer.RawAddress)
+	Logger.log.Infof("Opening stream to PEER Id - %s", peer.rawAddress)
 
 	peerIDStr := peer.PeerID.Pretty()
 
 	_, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
-		Logger.log.Infof("Checked Existed PEER Id - %s", peer.RawAddress)
+		Logger.log.Infof("Checked Existed PEER Id - %s", peer.rawAddress)
 
 		if cConn != nil {
 			cConn <- nil
@@ -406,7 +421,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 	}
 
 	if peerIDStr == peerObj.PeerID.Pretty() {
-		Logger.log.Infof("Checked MypeerObj PEER Id - %s", peer.RawAddress)
+		Logger.log.Infof("Checked MypeerObj PEER Id - %s", peer.rawAddress)
 		//peerObj.newPeerConnectionMutex.Unlock()
 
 		if cConn != nil {
@@ -416,7 +431,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 	}
 
 	if peerObj.countOfOutboundConn() >= peerObj.config.MaxOutPeers && peerObj.config.MaxOutPeers > 0 && !ok {
-		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
+		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.rawAddress)
 
 		//push to pending peers
 		peerObj.connPending(peer)
@@ -444,7 +459,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 		isOutbound:         true, // we are connecting to remote peer -> this is an outbound peer
 		RemotePeer:         peer,
 		RemotePeerID:       remotePeerID,
-		RemoteRawAddress:   peer.RawAddress,
+		RemoteRawAddress:   peer.rawAddress,
 		ListenerPeer:       peerObj,
 		Config:             peerObj.config,
 		RWStream:           rw,
