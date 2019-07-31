@@ -1,8 +1,9 @@
 package blsbft
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
 
 func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
@@ -41,8 +42,7 @@ func (e *BLSBFT) getMajorityVote(votes map[string]SigStatus) int {
 	approve := 0
 	reject := 0
 	for k, v := range votes {
-
-		if !v.Verified && e.MultiSigScheme.ValidateSingleSig(e.Block.Hash(), v.SigContent, k) != nil {
+		if !v.Verified && bls.ValidateSingleSig(e.Block.Hash(), v.SigContent, k) != nil {
 			delete(votes, k)
 			continue
 		}
@@ -64,11 +64,11 @@ func (e *BLSBFT) getMajorityVote(votes map[string]SigStatus) int {
 }
 
 func (e *BLSBFT) validateAndSendVote() {
-	if e.Chain.ValidateBlock(e.Block) == nil {
-		msg, _ := MakeBFTPrepareMsg(true, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
-		go e.Chain.PushMessageToValidator(msg)
-	} else {
-		msg, _ := MakeBFTPrepareMsg(false, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
-		go e.Chain.PushMessageToValidator(msg)
-	}
+	// if e.Chain.ValidateBlock(e.Block) == nil {
+	// 	msg, _ := MakeBFTPrepareMsg(true, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
+	// 	go e.Chain.PushMessageToValidator(msg)
+	// } else {
+	// 	msg, _ := MakeBFTPrepareMsg(false, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
+	// 	go e.Chain.PushMessageToValidator(msg)
+	// }
 }

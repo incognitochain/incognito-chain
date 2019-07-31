@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 /*
@@ -14,7 +13,7 @@ import (
 	-PendingValidator Root is root hash of pending validator in beststate
 */
 type ShardHeader struct {
-	ProducerAddress      privacy.PaymentAddress `json:"ProducerAddress"`      // payment address of block producer
+	// ProducerAddress      privacy.PaymentAddress `json:"ProducerAddress"`      // payment address of block producer
 	ShardID              byte                   `json:"ShardID"`              // shard ID which block belong to
 	Version              int                    `json:"Version"`              // version of block structure
 	PrevBlockHash        common.Hash            `json:"PrevBlockHash"`        // previous block hash or Parent block hash
@@ -39,7 +38,7 @@ type ShardHeader struct {
 
 func (shardHeader *ShardHeader) String() string {
 	res := common.EmptyString
-	res += shardHeader.ProducerAddress.String()
+	// res += shardHeader.ProducerAddress.String()
 	res += string(shardHeader.ShardID)
 	res += fmt.Sprintf("%v", shardHeader.Version)
 	res += shardHeader.PrevBlockHash.String()

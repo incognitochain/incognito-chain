@@ -6,12 +6,13 @@ type GetBestBlockResult struct {
 }
 
 type GetBestBlockItem struct {
-	Height           uint64 `json:"Height"`
-	Hash             string `json:"Hash"`
-	TotalTxs         uint64 `json:"TotalTxs"`
-	BlockProducer    string `json:"BlockProducer"`
-	BlockProducerSig string `json:"BlockProducerSig"`
-	Epoch            uint64 `json:"Epoch"`
+	Height   uint64 `json:"Height"`
+	Hash     string `json:"Hash"`
+	TotalTxs uint64 `json:"TotalTxs"`
+	// BlockProducer    string `json:"BlockProducer"`
+	// BlockProducerSig string `json:"BlockProducerSig"`
+	ValidationData string `json:"ValidationData"`
+	Epoch          uint64 `json:"Epoch"`
 }
 
 type GetBestBlockHashResult struct {
