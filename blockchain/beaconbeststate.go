@@ -69,6 +69,7 @@ type BestStateBeacon struct {
 func (bestStateBeacon *BestStateBeacon) InitRandomClient(randomClient btc.RandomClient) {
 	bestStateBeacon.randomClient = randomClient
 }
+
 func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
@@ -84,6 +85,7 @@ func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
 	}
 	return b, err
 }
+
 func (bestStateBeacon *BestStateBeacon) SetBestShardHeight(shardID byte, height uint64) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
@@ -630,6 +632,26 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 			return err
 		}
 	}
-
 	return nil
+}
+
+func (bestStateBeacon *BestStateBeacon) GetShardCandidate() []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return append(bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CandidateShardWaitingForNextRandom...)
+}
+func (bestStateBeacon *BestStateBeacon) GetBeaconCandidate() []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return append(bestStateBeacon.CandidateBeaconWaitingForCurrentRandom, bestStateBeacon.CandidateBeaconWaitingForNextRandom...)
+}
+func (bestStateBeacon *BestStateBeacon) GetBeaconCommittee() []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return bestStateBeacon.BeaconCommittee
+}
+func (bestStateBeacon *BestStateBeacon) GetBeaconPendingValidator() []string {
+	bestStateBeacon.lockMu.RLock()
+	defer bestStateBeacon.lockMu.RUnlock()
+	return bestStateBeacon.BeaconPendingValidator
 }
