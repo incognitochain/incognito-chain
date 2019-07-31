@@ -40,21 +40,21 @@ type Peer struct {
 	cStopConn       chan struct{}
 
 	// private field
-	host            host.Host
-	port            string
-	config          Config
-	targetAddress   ma.Multiaddr
-	rawAddress      string
-	peerID          peer.ID
-	peerConns       map[string]*PeerConn
-	peerConnsMtx    *sync.Mutex
-	pendingPeers    map[string]*Peer
-	pendingPeersMtx *sync.Mutex
-	publicKey       string
+	host             host.Host
+	port             string
+	config           Config
+	targetAddress    ma.Multiaddr
+	rawAddress       string
+	peerID           peer.ID
+	peerConns        map[string]*PeerConn
+	peerConnsMtx     *sync.Mutex
+	pendingPeers     map[string]*Peer
+	pendingPeersMtx  *sync.Mutex
+	publicKey        string
+	listeningAddress common.SimpleAddr
 
 	// public field
-	listeningAddress   common.SimpleAddr
-	Seed               int64
+	seed               int64
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
 	HandleFailed       func(peerConn *PeerConn)
@@ -189,6 +189,10 @@ func (peerObj *Peer) SetListeningAddress(v common.SimpleAddr) {
 	peerObj.listeningAddress = v
 }
 
+func (peerObj *Peer) SetSeed(v int64) {
+	peerObj.seed = v
+}
+
 func (peerObj *Peer) HashToPool(hash string) error {
 	if peerObj.messagePoolNew == nil {
 		peerObj.messagePoolNew = cache.New(messageLiveTime, messageCleanupInterval)
@@ -214,10 +218,10 @@ func (peerObj *Peer) Init() error {
 	// deterministic randomness source to make generated keys stay the same
 	// across multiple runs
 	var r io.Reader
-	if peerObj.Seed == 0 {
+	if peerObj.seed == 0 {
 		r = rand.Reader
 	} else {
-		r = mrand.New(mrand.NewSource(peerObj.Seed))
+		r = mrand.New(mrand.NewSource(peerObj.seed))
 	}
 
 	// Generate a key pair for this Host. We will use it
