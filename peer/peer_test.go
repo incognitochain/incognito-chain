@@ -116,7 +116,7 @@ func TestPeer_PushConn(t *testing.T) {
 		select {
 		case newPeerMsg := <-peerObj.cNewConn:
 			{
-				assert.Equal(t, newPeerMsg.Peer.PublicKey, "abc1")
+				assert.Equal(t, newPeerMsg.peer.PublicKey, "abc1")
 				return
 			}
 		}
@@ -141,7 +141,7 @@ func TestPeer_PushStream(t *testing.T) {
 		select {
 		case newStream := <-peerObj.cNewStream:
 			{
-				assert.Equal(t, newStream.Stream, stream)
+				assert.Equal(t, newStream.stream, stream)
 				return
 			}
 		}
