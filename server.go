@@ -823,9 +823,9 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 	peer := peer.Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
-		PendingPeers:     make(map[string]*peer.Peer),
 	}
 	peer.SetPeerConns(nil)
+	peer.SetPendingPeers(nil)
 	peer.SetConfig(*serverObj.NewPeerConfig())
 	err = peer.Init()
 	if err != nil {
