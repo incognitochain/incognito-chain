@@ -125,12 +125,13 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.TxHashes = []string{}
-			result.BlockProducerSign = block.ProducerSig
-			result.BlockProducer = block.Header.ProducerAddress.String()
-			result.AggregatedSig = block.AggregatedSig
+			result.ValidationData = block.ValidationData
+			// result.BlockProducerSign = block.ProducerSig
+			// result.BlockProducer = block.Header.ProducerAddress.String()
+			// result.AggregatedSig = block.AggregatedSig
+			// result.R = block.R
 			result.BeaconHeight = block.Header.BeaconHeight
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
-			result.R = block.R
 			result.Round = block.Header.Round
 			result.CrossShards = []int{}
 			result.Instruction = block.Body.Instructions
@@ -168,12 +169,13 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.ShardID = block.Header.ShardID
 			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
 			result.NextBlockHash = nextHashString
-			result.BlockProducerSign = block.ProducerSig
-			result.BlockProducer = block.Header.ProducerAddress.String()
-			result.AggregatedSig = block.AggregatedSig
+			// result.BlockProducerSign = block.ProducerSig
+			// result.BlockProducer = block.Header.ProducerAddress.String()
+			// result.AggregatedSig = block.AggregatedSig
+			// result.R = block.R
+			result.ValidationData = block.ValidationData
 			result.BeaconHeight = block.Header.BeaconHeight
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
-			result.R = block.R
 			result.Round = block.Header.Round
 			result.CrossShards = []int{}
 			result.Instruction = block.Body.Instructions
@@ -345,20 +347,22 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 	beaconBestState := httpServer.config.BlockChain.BestState.Beacon
 	for shardID, bestState := range httpServer.config.BlockChain.BestState.Shard {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
-			Height:           bestState.BestBlock.Header.Height,
-			Hash:             bestState.BestBlockHash.String(),
-			TotalTxs:         bestState.TotalTxns,
-			BlockProducer:    bestState.BestBlock.Header.ProducerAddress.String(),
-			BlockProducerSig: bestState.BestBlock.ProducerSig,
+			Height:   bestState.BestBlock.Header.Height,
+			Hash:     bestState.BestBlockHash.String(),
+			TotalTxs: bestState.TotalTxns,
+			// BlockProducer:    bestState.BestBlock.Header.ProducerAddress.String(),
+			// BlockProducerSig: bestState.BestBlock.ProducerSig,
+			ValidationData: bestState.BestBlock.ValidationData,
 		}
 	}
 
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
-		Height:           beaconBestState.BestBlock.Header.Height,
-		Hash:             beaconBestState.BestBlock.Hash().String(),
-		BlockProducer:    beaconBestState.BestBlock.Header.ProducerAddress.String(),
-		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
-		Epoch:            beaconBestState.Epoch,
+		Height: beaconBestState.BestBlock.Header.Height,
+		Hash:   beaconBestState.BestBlock.Hash().String(),
+		// BlockProducer:    beaconBestState.BestBlock.Header.ProducerAddress.String(),
+		// BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
+		ValidationData: beaconBestState.BestBlock.ValidationData,
+		Epoch:          beaconBestState.Epoch,
 	}
 	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 	return result, nil

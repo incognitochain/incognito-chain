@@ -11,7 +11,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -224,12 +223,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 		return err
 	}
 
-	blkHash := block.Header.Hash()
-	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
-	if err != nil {
-		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
-	}
+	producerPk := blockchain.config.ConsensusEngine.GetBlockProducerPubKeyB58(block.ValidationData)
 	//verify producer
 	producerPosition := (shardBestState.ShardProposerIdx + block.Header.Round) % len(shardBestState.ShardCommittee)
 	tempProducer := shardBestState.ShardCommittee[producerPosition]

@@ -200,22 +200,23 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 
 	if blockchain.Synker.IsLatest(false, 0) {
 
-		blkHash := block.Header.Hash()
-		err := incognitokey.ValidateDataB58(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), block.ProducerSig, blkHash.GetBytes())
+		// blkHash := block.Header.Hash()
 
-		if err != nil {
-			Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
-			return
-		}
+		// err := incognitokey.ValidateDataB58(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), block.ProducerSig, blkHash.GetBytes())
+
+		// if err != nil {
+		// 	Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
+		// 	return
+		// }
 		if block.Header.Version != VERSION {
 			Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
 
-		if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.GetAShardCommittee(block.Header.ShardID), block.AggregatedSig, block.R, block.Hash()); err != nil {
-			Logger.log.Error(err)
-			return
-		}
+		// if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.GetAShardCommittee(block.Header.ShardID), block.AggregatedSig, block.R, block.Hash()); err != nil {
+		// 	Logger.log.Error(err)
+		// 	return
+		// }
 
 		from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
 		if err != nil {
