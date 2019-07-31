@@ -820,22 +820,23 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 		seed = seedC
 	}
 
-	peer, err := peer.Peer{
+	peer := peer.Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
 		Config:           *serverObj.NewPeerConfig(),
 		PeerConns:        make(map[string]*peer.PeerConn),
 		PendingPeers:     make(map[string]*peer.Peer),
-	}.NewPeer()
-	peer.Config.MaxInPeers = maxInPeers
-	peer.Config.MaxOutPeers = maxOutPeers
-	peer.Config.MaxPeers = maxPeers
+	}
+	err = peer.Init()
 	if err != nil {
 		return nil, err
 	}
+	peer.Config.MaxInPeers = maxInPeers
+	peer.Config.MaxOutPeers = maxOutPeers
+	peer.Config.MaxPeers = maxPeers
 
 	kc.Save()
-	return peer, nil
+	return &peer, nil
 }
 
 /*
