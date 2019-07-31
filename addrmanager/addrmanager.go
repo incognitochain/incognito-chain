@@ -163,10 +163,10 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 		}
 		peer := new(peer.Peer)
 		peer.PeerID = peer2.ID(storagePeer.Src)
-		peer.RawAddress = storagePeer.Addr
+		peer.SetRawAddress(storagePeer.Addr)
 		peer.PublicKey = storagePeer.PublicKey
 
-		addrManager.addrIndex[peer.RawAddress] = peer
+		addrManager.addrIndex[peer.GetRawAddress()] = peer
 
 	}
 	return nil
@@ -242,7 +242,7 @@ func (addrManager *AddrManager) Good(addr *peer.Peer) {
 	addrManager.mtx.Lock()
 	defer addrManager.mtx.Unlock()
 
-	addrManager.addrIndex[addr.RawAddress] = addr
+	addrManager.addrIndex[addr.GetRawAddress()] = addr
 }
 
 // AddressCache returns the current address cache.  It must be treated as

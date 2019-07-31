@@ -176,7 +176,7 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 	result.LocalAddresses = []string{}
 	listener := httpServer.config.ConnMgr.GetListeningPeer()
 	result.Connections = len(listener.PeerConns)
-	result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
+	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
