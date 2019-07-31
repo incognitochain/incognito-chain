@@ -8,6 +8,9 @@ dep ensure -v
 
 APP_NAME="incognito"
 
+cp blockchain/testparams/paramstest.go blockchain/params.go
+cp blockchain/testparams/constantstest.go blockchain/constants.go
+
 echo "go build -o $APP_NAME"
 go build -o $APP_NAME
 
