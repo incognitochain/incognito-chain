@@ -395,7 +395,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		var err error
 
 		// this is initializing our listening peer
-		peer, err = serverObj.InitListenerPeer(serverObj.addrManager, listenAddrs, cfg.MaxPeers, cfg.MaxOutPeers, cfg.MaxInPeers)
+		peer, err = serverObj.InitListenerPeer(serverObj.addrManager, listenAddrs)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -794,7 +794,7 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 // addresses to the address manager. Returns the listeners and a NAT interface,
 // which is non-nil if UPnP is in use.
 */
-func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenAddrs string, maxPeers int, maxOutPeers int, maxInPeers int) (*peer.Peer, error) {
+func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenAddrs string) (*peer.Peer, error) {
 	netAddr, err := common.ParseListener(listenAddrs, "ip")
 	if err != nil {
 		return nil, err
@@ -826,7 +826,7 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 		PeerConns:        make(map[string]*peer.PeerConn),
 		PendingPeers:     make(map[string]*peer.Peer),
 	}
-	peer.SetConfig(*serverObj.NewPeerConfig(maxPeers, maxOutPeers, maxInPeers))
+	peer.SetConfig(*serverObj.NewPeerConfig())
 	err = peer.Init()
 	if err != nil {
 		return nil, err
@@ -839,7 +839,7 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 /*
 // newPeerConfig returns the configuration for the listening RemotePeer.
 */
-func (serverObj *Server) NewPeerConfig(maxPeers int, maxOutPeers int, maxInPeers int) *peer.Config {
+func (serverObj *Server) NewPeerConfig() *peer.Config {
 	KeySetUser := serverObj.userKeySet
 	config := &peer.Config{
 		MessageListeners: peer.MessageListeners{
@@ -868,9 +868,9 @@ func (serverObj *Server) NewPeerConfig(maxPeers int, maxOutPeers int, maxInPeers
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
 		},
-		MaxInPeers:  maxInPeers,
-		MaxPeers:    maxPeers,
-		MaxOutPeers: maxOutPeers,
+		MaxInPeers:  cfg.MaxInPeers,
+		MaxPeers:    cfg.MaxPeers,
+		MaxOutPeers: cfg.MaxOutPeers,
 	}
 	if KeySetUser != nil && len(KeySetUser.PrivateKey) != 0 {
 		config.UserKeySet = KeySetUser
