@@ -8,13 +8,25 @@ import (
 
 const (
 	UnexpectedError = iota
+	StopError
+	CreateDataFileError
+	EncodeDataFileError
+	OpenDataFileError
+	DecodeDataFileError
+	WrongVersionError
 )
 
 var ErrCodeMessage = map[int]struct {
-	code    int
-	message string
+	Code    int
+	Message string
 }{
-	UnexpectedError: {-1, "Unexpected error"},
+	UnexpectedError:     {-1, "Unexpected error"},
+	StopError:           {-2, "Address manager is already in the process of shutting down"},
+	CreateDataFileError: {-3, "Error opening file"},
+	EncodeDataFileError: {-4, "Failed to encode file"},
+	OpenDataFileError:   {-5, "Error opening file"},
+	DecodeDataFileError: {-6, "Error to decode file"},
+	WrongVersionError:   {-7, "Unknown Version in serialized addrmanager"},
 }
 
 type AddrManagerError struct {
@@ -29,8 +41,8 @@ func (e AddrManagerError) Error() string {
 
 func NewAddrManagerError(key int, err error) *AddrManagerError {
 	return &AddrManagerError{
-		Code:    ErrCodeMessage[key].code,
-		Message: ErrCodeMessage[key].message,
-		err:     errors.Wrap(err, ErrCodeMessage[key].message),
+		Code:    ErrCodeMessage[key].Code,
+		Message: ErrCodeMessage[key].Message,
+		err:     errors.Wrap(err, ErrCodeMessage[key].Message),
 	}
 }
