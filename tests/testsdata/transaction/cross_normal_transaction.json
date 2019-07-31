@@ -7,7 +7,7 @@
     "input": {
       "command": "getbalancebyprivatekey",
       "context": false,
-      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe"]
+      "params": ["112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM"]
     },
     "output": {
       "error": null,
@@ -23,7 +23,7 @@
       "command": "createandsendtransaction",
       "context": false,
       "params": [
-        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM",
         {
           "1Uv2EU6NsL8bAhv286ZKQKpxVbbLbYmAAio9RfVUvf7b7pNV8EYxe9GkCQbcNAamYJiYeqxSPMhVUgxwy8R5mxP2PHW8CBTQfLYYEL5tH": 1000
         },
@@ -58,13 +58,35 @@
   },
   {
     "node": {
+      "host": "localhost",
+      "port": "19338"
+    },
+    "input": {
+      "command": "subcribecrossoutputcoinbyprivatekey",
+      "context": false,
+      "params": ["112t8rrEgLjxmpzQTh3i2SFxxV27WntXpAkoe9JbseqFvDBPpaPaudzJWXFctZorJXtivEXv1nPzggnmNfNDyj9d5PKh5S4N3UTs6fHBWgeo"],
+      "type": "ws",
+      "wait": 1000
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "SenderShardID": 0,
+        "ReceiverShardID": 1,
+        "PaymentAddress": "1Uv2EU6NsL8bAhv286ZKQKpxVbbLbYmAAio9RfVUvf7b7pNV8EYxe9GkCQbcNAamYJiYeqxSPMhVUgxwy8R5mxP2PHW8CBTQfLYYEL5tH",
+        "Value": 1000
+      }
+    }
+  },
+  {
+    "node": {
       "host": "http://localhost",
-      "port": "9334"
+      "port": "9338"
     },
     "input": {
       "command": "getbalancebyprivatekey",
       "context": false,
-      "params": ["112t8rnj1Xs9p5D6ue4fuLnVq9mJz5kKtyRMLEVBr8hxxmgd7haNFhruwezHswtEu9YKgAUWrnPrU1uvJE1gvep2pixy55ctDNc593c5pHmB"]
+      "params": ["112t8rrEgLjxmpzQTh3i2SFxxV27WntXpAkoe9JbseqFvDBPpaPaudzJWXFctZorJXtivEXv1nPzggnmNfNDyj9d5PKh5S4N3UTs6fHBWgeo"]
     },
     "output": {
       "error": null,
@@ -79,7 +101,7 @@
     "input": {
       "command": "getbalancebyprivatekey",
       "context": false,
-      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe"]
+      "params": ["112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM"]
     },
     "output": {
       "error": null,
