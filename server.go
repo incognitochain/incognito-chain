@@ -823,9 +823,9 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 	peer := peer.Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
-		PeerConns:        make(map[string]*peer.PeerConn),
 		PendingPeers:     make(map[string]*peer.Peer),
 	}
+	peer.SetPeerConns(nil)
 	peer.SetConfig(*serverObj.NewPeerConfig())
 	err = peer.Init()
 	if err != nil {
@@ -1092,7 +1092,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		msgSA.(*wire.MessageAddr).RawPeers = rawPeers
 		var doneChan chan<- struct{}
 		listen.PeerConnsMtx.Lock()
-		for _, _peerConn := range listen.PeerConns {
+		for _, _peerConn := range listen.GetPeerConns() {
 			go _peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
 		}
 		listen.PeerConnsMtx.Unlock()
@@ -1167,7 +1167,7 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	result := []libp2p.ID{}
 
 	listener := serverObj.connManager.GetConfig().ListenerPeer
-	for _, peerConn := range listener.PeerConns {
+	for _, peerConn := range listener.GetPeerConns() {
 		// Logger.log.Debug("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
 		if peerConn.RemotePeer.PublicKey == pubKey {
 			exist := false
