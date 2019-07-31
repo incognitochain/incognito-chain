@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"time"
 )
 
@@ -64,7 +63,6 @@ func readfile(filename string) (*scenarios, error) {
 		return sc, err
 	}
 	err = json.Unmarshal(data, &testcase)
-	log.Println(testcase)
 	sc, ok = parseScenarios(testcase)
 	if !ok {
 		return sc, fmt.Errorf("Parse file %+v error", filename)
