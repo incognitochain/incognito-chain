@@ -16,8 +16,8 @@ const (
 )
 
 var ErrCodeMessage = map[int]struct {
-	code    int
-	message string
+	Code    int
+	Message string
 }{
 	UnexpectedError:          {-1, "Unexpected error"},
 	GetPeerIdError:           {-2, "Get peer id fail"},
@@ -39,8 +39,8 @@ func (e ConnManagerError) Error() string {
 
 func NewConnManagerError(key int, err error) *ConnManagerError {
 	return &ConnManagerError{
-		Code:    ErrCodeMessage[key].code,
-		Message: ErrCodeMessage[key].message,
-		err:     errors.Wrap(err, ErrCodeMessage[key].message),
+		Code:    ErrCodeMessage[key].Code,
+		Message: ErrCodeMessage[key].Message,
+		err:     errors.Wrap(err, ErrCodeMessage[key].Message),
 	}
 }
