@@ -43,17 +43,17 @@ type Peer struct {
 	host            host.Host
 	port            string
 	config          Config
-	pendingPeersMtx sync.Mutex
 	targetAddress   ma.Multiaddr
 	rawAddress      string
 	peerID          peer.ID
 	peerConns       map[string]*PeerConn
+	peerConnsMtx    *sync.Mutex
+	pendingPeersMtx *sync.Mutex
 
 	// public field
 	ListeningAddress   common.SimpleAddr
 	PublicKey          string
 	Seed               int64
-	PeerConnsMtx       sync.Mutex
 	PendingPeers       map[string]*Peer
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -157,6 +157,10 @@ func (peerObj *Peer) SetPeerConns(data map[string]*PeerConn) {
 	peerObj.peerConns = data
 }
 
+func (peerObj Peer) GetPeerConnsMtx() *sync.Mutex {
+	return peerObj.peerConnsMtx
+}
+
 func (peerObj *Peer) HashToPool(hash string) error {
 	if peerObj.messagePoolNew == nil {
 		peerObj.messagePoolNew = cache.New(messageLiveTime, messageCleanupInterval)
@@ -248,8 +252,8 @@ func (peerObj *Peer) Init() error {
 	peerObj.cNewStream = make(chan *newStreamMsg)
 	peerObj.cStopConn = make(chan struct{})
 
-	peerObj.PeerConnsMtx = sync.Mutex{}
-	peerObj.pendingPeersMtx = sync.Mutex{}
+	peerObj.peerConnsMtx = &sync.Mutex{}
+	peerObj.pendingPeersMtx = &sync.Mutex{}
 	return nil
 }
 
@@ -344,10 +348,10 @@ func (peerObj *Peer) connEstablished(peer *Peer) {
 }
 
 func (peerObj *Peer) connCanceled(peer *Peer) {
-	peerObj.PeerConnsMtx.Lock()
+	peerObj.peerConnsMtx.Lock()
 	peerObj.pendingPeersMtx.Lock()
 	defer func() {
-		peerObj.PeerConnsMtx.Unlock()
+		peerObj.peerConnsMtx.Unlock()
 		peerObj.pendingPeersMtx.Unlock()
 	}()
 	peerIDStr := peer.peerID.Pretty()
@@ -359,8 +363,8 @@ func (peerObj *Peer) connCanceled(peer *Peer) {
 }
 
 func (peerObj *Peer) countOfInboundConn() int {
-	peerObj.PeerConnsMtx.Lock()
-	defer peerObj.PeerConnsMtx.Unlock()
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	ret := int(0)
 	for _, peerConn := range peerObj.peerConns {
 		if !peerConn.GetIsOutbound() {
@@ -371,8 +375,8 @@ func (peerObj *Peer) countOfInboundConn() int {
 }
 
 func (peerObj *Peer) countOfOutboundConn() int {
-	peerObj.PeerConnsMtx.Lock()
-	defer peerObj.PeerConnsMtx.Unlock()
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	ret := int(0)
 	for _, peerConn := range peerObj.peerConns {
 		if peerConn.GetIsOutbound() {
@@ -383,8 +387,8 @@ func (peerObj *Peer) countOfOutboundConn() int {
 }
 
 func (peerObj *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
-	peerObj.PeerConnsMtx.Lock()
-	defer peerObj.PeerConnsMtx.Unlock()
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	peerConn, ok := peerObj.peerConns[peerID]
 	if ok {
 		return peerConn
@@ -393,8 +397,8 @@ func (peerObj *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
 }
 
 func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
-	peerObj.PeerConnsMtx.Lock()
-	defer peerObj.PeerConnsMtx.Unlock()
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
 	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
@@ -407,8 +411,8 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 }
 
 func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
-	peerObj.PeerConnsMtx.Lock()
-	defer peerObj.PeerConnsMtx.Unlock()
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
 	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
@@ -642,8 +646,8 @@ func (peerObj *Peer) Stop() {
 	Logger.log.Warnf("Stopping PEER %s", peerObj.peerID.Pretty())
 
 	peerObj.host.Close()
-	peerObj.PeerConnsMtx.Lock()
-	defer peerObj.PeerConnsMtx.Unlock()
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	for _, peerConn := range peerObj.peerConns {
 		peerConn.SetConnState(connCanceled)
 	}
@@ -710,8 +714,8 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 
 // GetPeerConnOfAll - return all Peer connection to other peers
 func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
-	peerObj.PeerConnsMtx.Lock()
-	defer peerObj.PeerConnsMtx.Unlock()
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	peerConns := make([]*PeerConn, 0)
 	for _, peerConn := range peerObj.peerConns {
 		peerConns = append(peerConns, peerConn)
