@@ -122,15 +122,15 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 	for _, peerConn := range listeningPeer.GetPeerConns() {
 		peerItem := map[string]string{
 			"RawAddress": peerConn.RemoteRawAddress,
-			"PublicKey":  peerConn.RemotePeer.PublicKey,
+			"PublicKey":  peerConn.RemotePeer.GetPublicKey(),
 			"NodeType":   "",
 		}
-		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, beaconCommitteeList) != -1
+		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.GetPublicKey(), beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			peerItem["NodeType"] = "Beacon"
 		}
 		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, committees) != -1
+			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.GetPublicKey(), committees) != -1
 			if isInShardCommitee {
 				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
 				break
