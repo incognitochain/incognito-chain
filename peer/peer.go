@@ -39,8 +39,8 @@ type Peer struct {
 	cNewStream      chan *newStreamMsg
 	cStopConn       chan struct{}
 
-	Host host.Host
-	Port string
+	host host.Host
+	port string
 
 	TargetAddress    ma.Multiaddr
 	PeerID           peer.ID
@@ -105,6 +105,14 @@ type MessageListeners struct {
 	PushRawBytesToShard  func(p *PeerConn, msgBytes *[]byte, shard byte) error
 	PushRawBytesToBeacon func(p *PeerConn, msgBytes *[]byte) error
 	GetCurrentRoleShard  func() (string, *byte)
+}
+
+func (peerObj Peer) GetHost() host.Host {
+	return peerObj.host
+}
+
+func (peerObj Peer) GetPort() string {
+	return peerObj.port
 }
 
 func (peerObj *Peer) HashToPool(hash string) error {
@@ -188,8 +196,8 @@ func (peerObj *Peer) Init() error {
 	}
 
 	peerObj.RawAddress = rawAddress
-	peerObj.Host = basicHost
-	peerObj.Port = port
+	peerObj.host = basicHost
+	peerObj.port = port
 	peerObj.TargetAddress = fullAddr
 	peerObj.PeerID = peerID
 	peerObj.cStop = make(chan struct{}, 1)
@@ -208,7 +216,7 @@ func (peerObj *Peer) Start() {
 	Logger.log.Info("RemotePeer start")
 	// ping to bootnode for test env
 	Logger.log.Info("Set stream handler and wait for connection from other peer")
-	peerObj.Host.SetStreamHandler(protocolID, peerObj.PushStream)
+	peerObj.host.SetStreamHandler(protocolID, peerObj.PushStream)
 
 	go peerObj.processConn()
 
@@ -412,7 +420,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 		return nil, nil
 	}
 
-	stream, err := peerObj.Host.NewStream(context.Background(), peer.PeerID, protocolID)
+	stream, err := peerObj.host.NewStream(context.Background(), peer.PeerID, protocolID)
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		if cConn != nil {
@@ -499,7 +507,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 	}
 
 	remotePeerID := stream.Conn().RemotePeer()
-	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with Id %s", peerObj.Host.ID().String(), remotePeerID.Pretty())
+	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with Id %s", peerObj.host.ID().String(), remotePeerID.Pretty())
 	_, ok := peerObj.PeerConns[remotePeerID.Pretty()]
 	if ok {
 		Logger.log.Infof("Received a new stream existed PEER Id - %s", remotePeerID.Pretty())
@@ -591,7 +599,7 @@ func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- 
 func (peerObj *Peer) Stop() {
 	Logger.log.Warnf("Stopping PEER %s", peerObj.PeerID.Pretty())
 
-	peerObj.Host.Close()
+	peerObj.host.Close()
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	for _, peerConn := range peerObj.PeerConns {
