@@ -254,9 +254,9 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	}
 
 	// add remote address peer into our listening node peer
-	listeningPeer.Host.Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
+	listeningPeer.GetHost().Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
 	Logger.log.Debug("DEBUG Connect to RemotePeer", peer.PublicKey)
-	Logger.log.Debug(listeningPeer.Host.Peerstore().Addrs(peer.PeerID))
+	Logger.log.Debug(listeningPeer.GetHost().Peerstore().Addrs(peer.PeerID))
 	listeningPeer.PushConn(&peer, cConn)
 	return nil
 }
@@ -390,7 +390,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 
 		// remove later
 		rawAddress := listener.RawAddress
-		rawPort := listener.Port
+		rawPort := listener.GetPort()
 		if externalAddress == common.EmptyString {
 			externalAddress = os.Getenv("EXTERNAL_ADDRESS")
 		}
