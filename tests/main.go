@@ -101,55 +101,81 @@ func main() {
 	case "blockchain":
 		log.Println("Begin to run testcase Blockchain")
 	case "transaction":
-		tempInitTestcase, ok := testcaseData["transaction"]
+		tempTransactionTestcase, ok := testcaseData["transaction"]
 		if !ok {
 			log.Println("Failed to get transaction testcase")
 			os.Exit(0)
 		}
-		var initTestcase = []string{}
-		for _, value := range tempInitTestcase.([]interface{}) {
+		var transactionTestcase = []string{}
+		for _, value := range tempTransactionTestcase.([]interface{}) {
 			temp, ok := value.(string)
 			if !ok {
 				log.Println("Failed to get transaction testcase")
 				os.Exit(1)
 			}
-			initTestcase = append(initTestcase, temp)
+			transactionTestcase = append(transactionTestcase, temp)
 		}
 		
 		log.Println("Begin to run Transaction Testcase")
-		for _, initTestcaseName := range initTestcase {
-			cmd := exec.Command("go", "test", "-run", initTestcaseName)
+		for _, transactionTestcaseName := range transactionTestcase {
+			cmd := exec.Command("go", "test", "-run", transactionTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", initTestcaseName, err)
+				log.Printf("Failed to run test %+v, err %+v \n", transactionTestcaseName, err)
 			} else {
-				log.Printf("%+v Message: %+v \n", initTestcaseName, string(msg))
+				log.Printf("%+v Message: %+v \n", transactionTestcaseName, string(msg))
 			}
 		}
 	case "crossshard":
-		tempInitTestcase, ok := testcaseData["crossshard"]
+		tempCrossShardTestcase, ok := testcaseData["crossshard"]
 		if !ok {
 			log.Println("Failed to get crossshard testcase")
 			os.Exit(0)
 		}
-		var initTestcase = []string{}
-		for _, value := range tempInitTestcase.([]interface{}) {
+		var crossShardTestcase = []string{}
+		for _, value := range tempCrossShardTestcase.([]interface{}) {
 			temp, ok := value.(string)
 			if !ok {
 				log.Println("Failed to get crossshard testcase")
 				os.Exit(1)
 			}
-			initTestcase = append(initTestcase, temp)
+			crossShardTestcase = append(crossShardTestcase, temp)
 		}
 		
 		log.Println("Begin to run Crossshard Testcase")
-		for _, initTestcaseName := range initTestcase {
-			cmd := exec.Command("go", "test", "-run", initTestcaseName)
+		for _, crossShardTestcaseName := range crossShardTestcase {
+			cmd := exec.Command("go", "test", "-run", crossShardTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", initTestcaseName, err)
+				log.Printf("Failed to run test %+v, err %+v \n", crossShardTestcaseName, err)
 			} else {
-				log.Printf("%+v Message: %+v \n", initTestcaseName, string(msg))
+				log.Printf("%+v Message: %+v \n", crossShardTestcaseName, string(msg))
+			}
+		}
+	case "stake":
+		tempStakeTestcase, ok := testcaseData["stake"]
+		if !ok {
+			log.Println("Failed to get crossshard testcase")
+			os.Exit(0)
+		}
+		var stakeTestcase = []string{}
+		for _, value := range tempStakeTestcase.([]interface{}) {
+			temp, ok := value.(string)
+			if !ok {
+				log.Println("Failed to get crossshard testcase")
+				os.Exit(1)
+			}
+			stakeTestcase = append(stakeTestcase, temp)
+		}
+		
+		log.Println("Begin to run Stake Testcase")
+		for _, stakeTestcaseName := range stakeTestcase {
+			cmd := exec.Command("go", "test", "-run", stakeTestcaseName)
+			msg, err := cmd.Output()
+			if err != nil {
+				log.Printf("Failed to run test %+v, err %+v \n", stakeTestcaseName, err)
+			} else {
+				log.Printf("%+v Message: %+v \n", stakeTestcaseName, string(msg))
 			}
 		}
 	default:
