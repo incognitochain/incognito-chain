@@ -337,14 +337,14 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
 	peerConn.SetIsConnected(true)
 	for {
-		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.PeerID.Pretty(), peerConn.RemotePeer.GetRawAddress())
 
 		str, errR := peerConn.readString(rw, delimMessageByte, spamMessageSize)
 		if errR != nil {
 			// we has an error when read stream message an can not parse to string data
 			peerConn.SetIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
-			Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+			Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.GetRawAddress())
 			Logger.log.Error(errR)
 			Logger.log.Errorf("InMessageHandler QUIT")
 			Logger.log.Error("---------------------------------------------------------------------")
@@ -442,7 +442,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				continue
 			}
 		case <-peerConn.cWrite:
-			Logger.log.Infof("OutMessageHandler QUIT %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.RawAddress)
+			Logger.log.Infof("OutMessageHandler QUIT %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.GetRawAddress())
 
 			peerConn.SetIsConnected(false)
 

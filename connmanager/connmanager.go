@@ -236,15 +236,15 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	listeningPeer.HandleFailed = connManager.handleFailed
 
 	peer := peer.Peer{
-		TargetAddress:      targetAddr,
 		PeerID:             peerId,
-		RawAddress:         addr,
 		PeerConns:          make(map[string]*peer.PeerConn),
 		PendingPeers:       make(map[string]*peer.Peer),
 		HandleConnected:    connManager.handleConnected,
 		HandleDisconnected: connManager.handleDisconnected,
 		HandleFailed:       connManager.handleFailed,
 	}
+	peer.SetRawAddress(addr)
+	peer.SetTargetAddress(targetAddr)
 	peer.SetConfig(listeningPeer.GetConfig())
 
 	// if we can get an pubbic key from params?
@@ -254,7 +254,7 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	}
 
 	// add remote address peer into our listening node peer
-	listeningPeer.GetHost().Peerstore().AddAddr(peer.PeerID, peer.TargetAddress, pstore.PermanentAddrTTL)
+	listeningPeer.GetHost().Peerstore().AddAddr(peer.PeerID, peer.GetTargetAddress(), pstore.PermanentAddrTTL)
 	Logger.log.Debug("DEBUG Connect to RemotePeer", peer.PublicKey)
 	Logger.log.Debug(listeningPeer.GetHost().Peerstore().Addrs(peer.PeerID))
 	listeningPeer.PushConn(&peer, cConn)
@@ -389,7 +389,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
 
 		// remove later
-		rawAddress := listener.RawAddress
+		rawAddress := listener.GetRawAddress()
 		rawPort := listener.GetPort()
 		if externalAddress == common.EmptyString {
 			externalAddress = os.Getenv("EXTERNAL_ADDRESS")
