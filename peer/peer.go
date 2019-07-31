@@ -48,13 +48,13 @@ type Peer struct {
 	peerID          peer.ID
 	peerConns       map[string]*PeerConn
 	peerConnsMtx    *sync.Mutex
+	pendingPeers    map[string]*Peer
 	pendingPeersMtx *sync.Mutex
+	publicKey       string
 
 	// public field
 	ListeningAddress   common.SimpleAddr
-	PublicKey          string
 	Seed               int64
-	pendingPeers       map[string]*Peer
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
 	HandleFailed       func(peerConn *PeerConn)
@@ -171,6 +171,14 @@ func (peerObj *Peer) SetPendingPeers(data map[string]*Peer) {
 
 func (peerObj Peer) GetPeerConnsMtx() *sync.Mutex {
 	return peerObj.peerConnsMtx
+}
+
+func (peerObj Peer) GetPublicKey() string {
+	return peerObj.publicKey
+}
+
+func (peerObj *Peer) SetPublicKey(publicKey string) {
+	peerObj.publicKey = publicKey
 }
 
 func (peerObj *Peer) HashToPool(hash string) error {

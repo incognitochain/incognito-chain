@@ -582,7 +582,7 @@ func (serverObj *Server) peerHandler() {
 
 	if len(cfg.ConnectPeers) == 0 {
 		for _, addr := range serverObj.addrManager.AddressCache() {
-			go serverObj.connManager.Connect(addr.GetRawAddress(), addr.PublicKey, nil)
+			go serverObj.connManager.Connect(addr.GetRawAddress(), addr.GetPublicKey(), nil)
 		}
 	}
 
@@ -1012,11 +1012,11 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
-		PublicKey:        pbk,
 	}
+	remotePeer.SetPublicKey(pbk)
 	remotePeer.SetPeerID(msg.LocalPeerId)
 	remotePeer.SetRawAddress(msg.RawLocalAddress)
-	peerConn.RemotePeer.PublicKey = pbk
+	peerConn.RemotePeer.SetPublicKey(pbk)
 
 	serverObj.cNewPeers <- remotePeer
 	valid := false
@@ -1086,7 +1086,7 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		for _, peer := range peers {
 			getPeerId, _ := serverObj.connManager.GetPeerId(peer.GetRawAddress())
 			if peerConn.RemotePeerID.Pretty() != getPeerId {
-				rawPeers = append(rawPeers, wire.RawPeer{peer.GetRawAddress(), peer.PublicKey})
+				rawPeers = append(rawPeers, wire.RawPeer{peer.GetRawAddress(), peer.GetPublicKey()})
 			}
 		}
 		msgSA.(*wire.MessageAddr).RawPeers = rawPeers
@@ -1118,7 +1118,7 @@ func (serverObj *Server) OnGetAddr(peerConn *peer.PeerConn, msg *wire.MessageGet
 	for _, peer := range peers {
 		getPeerId, _ := serverObj.connManager.GetPeerId(peer.GetRawAddress())
 		if peerConn.RemotePeerID.Pretty() != getPeerId {
-			rawPeers = append(rawPeers, wire.RawPeer{peer.GetRawAddress(), peer.PublicKey})
+			rawPeers = append(rawPeers, wire.RawPeer{peer.GetRawAddress(), peer.GetPublicKey()})
 		}
 	}
 	msgS.(*wire.MessageAddr).RawPeers = rawPeers
@@ -1137,7 +1137,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	var txProcessed chan struct{}
 	isRelayNodeForConsensus := cfg.Accelerator
 	if isRelayNodeForConsensus {
-		senderPublicKey := p.RemotePeer.PublicKey
+		senderPublicKey := p.RemotePeer.GetPublicKey()
 		bestState := blockchain.GetBestStateBeacon()
 		beaconCommitteeList := bestState.BeaconCommittee
 		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
@@ -1170,7 +1170,7 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 	for _, peerConn := range listener.GetPeerConns() {
 		// Logger.log.Debug("Test PeerConn", peerConn.RemotePeer.PaymentAddress)
-		if peerConn.RemotePeer.PublicKey == pubKey {
+		if peerConn.RemotePeer.GetPublicKey() == pubKey {
 			exist := false
 			for _, item := range result {
 				if item.Pretty() == peerConn.RemotePeer.GetPeerID().Pretty() {
