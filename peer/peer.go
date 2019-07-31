@@ -47,12 +47,12 @@ type Peer struct {
 	targetAddress   ma.Multiaddr
 	rawAddress      string
 	peerID          peer.ID
+	peerConns       map[string]*PeerConn
 
 	// public field
 	ListeningAddress   common.SimpleAddr
 	PublicKey          string
 	Seed               int64
-	PeerConns          map[string]*PeerConn
 	PeerConnsMtx       sync.Mutex
 	PendingPeers       map[string]*Peer
 	HandleConnected    func(peerConn *PeerConn)
@@ -143,6 +143,18 @@ func (peerObj Peer) GetPeerID() peer.ID {
 
 func (peerObj *Peer) SetPeerID(peerID peer.ID) {
 	peerObj.peerID = peerID
+}
+
+func (peerObj Peer) GetPeerConns() map[string]*PeerConn {
+	return peerObj.peerConns
+}
+
+func (peerObj *Peer) SetPeerConns(data map[string]*PeerConn) {
+	if data == nil {
+		data = make(map[string]*PeerConn)
+
+	}
+	peerObj.peerConns = data
 }
 
 func (peerObj *Peer) HashToPool(hash string) error {
@@ -339,9 +351,9 @@ func (peerObj *Peer) connCanceled(peer *Peer) {
 		peerObj.pendingPeersMtx.Unlock()
 	}()
 	peerIDStr := peer.peerID.Pretty()
-	_, ok := peerObj.PeerConns[peerIDStr]
+	_, ok := peerObj.peerConns[peerIDStr]
 	if ok {
-		delete(peerObj.PeerConns, peerIDStr)
+		delete(peerObj.peerConns, peerIDStr)
 	}
 	peerObj.PendingPeers[peerIDStr] = peer
 }
@@ -350,7 +362,7 @@ func (peerObj *Peer) countOfInboundConn() int {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	ret := int(0)
-	for _, peerConn := range peerObj.PeerConns {
+	for _, peerConn := range peerObj.peerConns {
 		if !peerConn.GetIsOutbound() {
 			ret++
 		}
@@ -362,7 +374,7 @@ func (peerObj *Peer) countOfOutboundConn() int {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	ret := int(0)
-	for _, peerConn := range peerObj.PeerConns {
+	for _, peerConn := range peerObj.peerConns {
 		if peerConn.GetIsOutbound() {
 			ret++
 		}
@@ -373,7 +385,7 @@ func (peerObj *Peer) countOfOutboundConn() int {
 func (peerObj *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
-	peerConn, ok := peerObj.PeerConns[peerID]
+	peerConn, ok := peerObj.peerConns[peerID]
 	if ok {
 		return peerConn
 	}
@@ -384,26 +396,26 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
-	internalConnPeer, ok := peerObj.PeerConns[peerIDStr]
+	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
 		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.rawAddress)
 	}
-	peerObj.PeerConns[peerIDStr] = peerConn
+	peerObj.peerConns[peerIDStr] = peerConn
 }
 
 func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
-	internalConnPeer, ok := peerObj.PeerConns[peerIDStr]
+	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
 			internalConnPeer.Close()
 		}
-		delete(peerObj.PeerConns, peerIDStr)
+		delete(peerObj.peerConns, peerIDStr)
 		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.rawAddress)
 		return nil
 	} else {
@@ -418,7 +430,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 
 	peerIDStr := peer.peerID.Pretty()
 
-	_, ok := peerObj.PeerConns[peerIDStr]
+	_, ok := peerObj.peerConns[peerIDStr]
 	if ok {
 		Logger.log.Infof("Checked Existed PEER Id - %s", peer.rawAddress)
 
@@ -538,7 +550,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 
 	remotePeerID := stream.Conn().RemotePeer()
 	Logger.log.Infof("PEER %s Received a new stream from OTHER PEER with Id %s", peerObj.host.ID().String(), remotePeerID.Pretty())
-	_, ok := peerObj.PeerConns[remotePeerID.Pretty()]
+	_, ok := peerObj.peerConns[remotePeerID.Pretty()]
 	if ok {
 		Logger.log.Infof("Received a new stream existed PEER Id - %s", remotePeerID.Pretty())
 
@@ -617,7 +629,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 //
 // This function is safe for concurrent access.
 func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, msgType byte, msgShard *byte) {
-	for _, peerConnection := range peerObj.PeerConns {
+	for _, peerConnection := range peerObj.peerConns {
 		go peerConnection.QueueMessageWithEncoding(msg, doneChan, msgType, msgShard)
 	}
 }
@@ -632,7 +644,7 @@ func (peerObj *Peer) Stop() {
 	peerObj.host.Close()
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
-	for _, peerConn := range peerObj.PeerConns {
+	for _, peerConn := range peerObj.peerConns {
 		peerConn.SetConnState(connCanceled)
 	}
 
@@ -701,7 +713,7 @@ func (peerObj *Peer) GetPeerConnOfAll() []*PeerConn {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
 	peerConns := make([]*PeerConn, 0)
-	for _, peerConn := range peerObj.PeerConns {
+	for _, peerConn := range peerObj.peerConns {
 		peerConns = append(peerConns, peerConn)
 	}
 	return peerConns
