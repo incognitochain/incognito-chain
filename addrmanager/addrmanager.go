@@ -82,7 +82,7 @@ func (addrManager *AddrManager) savePeers() error {
 		addressData.Addr = rawAddress
 		Logger.log.Debug("PeerID", peerID.String(), len(peerID.String()))
 		addressData.Src = pretty
-		addressData.PublicKey = peerObj.PublicKey
+		addressData.PublicKey = peerObj.GetPublicKey()
 
 		// push into array
 		storageData.Addresses = append(storageData.Addresses, addressData)
@@ -164,7 +164,7 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 		peer := new(peer.Peer)
 		peer.SetPeerID(peer2.ID(storagePeer.Src))
 		peer.SetRawAddress(storagePeer.Addr)
-		peer.PublicKey = storagePeer.PublicKey
+		peer.SetPublicKey(storagePeer.PublicKey)
 
 		addrManager.addrIndex[peer.GetRawAddress()] = peer
 
