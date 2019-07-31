@@ -38,6 +38,7 @@ func (chain *BlockChain) buildInstructionsForIssuingReq(
 	metaType int,
 	ac *metadata.AccumulatedValues,
 ) ([][]string, error) {
+	fmt.Println("[Centralized bridge token issuance] Starting...")
 	instructions := [][]string{}
 	rejectedInst := buildInstruction(metaType, shardID, "rejected", contentStr)
 	db := chain.GetDatabase()
@@ -90,6 +91,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 	metaType int,
 	ac *metadata.AccumulatedValues,
 ) ([][]string, error) {
+	fmt.Println("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
 	rejectedInst := buildInstruction(metaType, shardID, "rejected", contentStr)
 	db := chain.GetDatabase()
@@ -132,6 +134,9 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 		fmt.Println("WARNING: could not find log map out from receipt")
 		return append(instructions, rejectedInst), nil
 	}
+
+	logMapBytes, _ := json.Marshal(logMap)
+	fmt.Println("INFO: eth logMap json - ", string(logMapBytes))
 
 	// the token might be ETH/ERC20
 	ethereumAddr, ok := logMap["_token"].(rCommon.Address)
@@ -284,6 +289,9 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		fmt.Println("WARNING: an error occured while unmarshaling ETH accepted issuance instruction: ", err)
 		return nil, nil
 	}
+
+	c, _ := json.Marshal(issuingETHAcceptedInst)
+	fmt.Println("hahaha issuingETHAcceptedInst: ", string(c))
 
 	if shardID != issuingETHAcceptedInst.ShardID {
 		return nil, nil

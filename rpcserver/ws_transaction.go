@@ -23,6 +23,17 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 		cResult <- RpcSubResult{Error: err}
 	}
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
+	// try to get transaction in database
+	_, blockHash, index, tx, err := wsServer.config.BlockChain.GetTransactionByHash(*txHash)
+	if err == nil {
+		shardBlock, _, err := wsServer.config.BlockChain.GetShardBlockByHash(blockHash)
+		if err == nil {
+			res, err := (&HttpServer{}).revertTxToResponseObject(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
+			cResult <- RpcSubResult{Result: res, Error: err}
+			return
+		}
+	}
+	// transaction not in database yet then subscribe new shard event block and watch
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)

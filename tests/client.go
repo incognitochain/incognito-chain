@@ -3,16 +3,27 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"flag"
+	"github.com/btcsuite/websocket"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"io/ioutil"
-	"net"
+	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"runtime"
 	"strings"
 	"time"
 )
 
+var (
+	flags = make(map[string]*string)
+)
+//Error
+var (
+	ErrParseFailed = errors.New("Failed to parse result")
+)
 type Client struct {
 	Host string `json:"host"`
 	Port string `json:"port"`
@@ -67,7 +78,7 @@ func makeRPCRequest(client *Client, method string, params ...interface{}) (*rpcs
 	return &response, nil
 }
 
-func makeRPCRequestV2(client *Client, method string, params ...interface{}) (map[string]interface{}, *rpcserver.RPCError) {
+func makeRPCRequestV2(client *Client, method string, params ...interface{}) (interface{}, *rpcserver.RPCError) {
 	request := rpcserver.JsonRequest{
 		Jsonrpc: "1.0",
 		Method:  method,
@@ -93,16 +104,16 @@ func makeRPCRequestV2(client *Client, method string, params ...interface{}) (map
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	result := make(map[string]interface{})
-	rpcError := json.Unmarshal(response.Result, &result)
-	if rpcError != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, rpcError)
+	result := parseResult(response.Result)
+	if result == nil {
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
 	}
 	return result, response.Error
 }
 
-func makeWsRequest(client *Client, method string, timeout time.Duration, params ...interface{}) (map[string]interface{}, *rpcserver.RPCError) {
-	var cQuit = make(chan struct{})
+func makeWsRequest(client *Client, method string, timeout time.Duration, params ...interface{}) (interface{}, *rpcserver.RPCError) {
+	var done = make(chan struct{})
+	var wsError error
 	request := rpcserver.JsonRequest{
 		Jsonrpc: "1.0",
 		Method:  method,
@@ -118,41 +129,66 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	conn, err := net.Dial("tcp", client.Host+":"+client.Port)
+	var addr string
+	if flag.Lookup("address:"+client.Host+client.Port) != nil {
+		addr = flag.Lookup("address:"+client.Host+client.Port).Value.(flag.Getter).Get().(string)
+	} else {
+		addr = *flag.String("address:"+client.Host+client.Port, client.Host+":"+client.Port, "http service address")
+	}
+	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
+		log.Fatal("dial:", err)
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
 	defer conn.Close()
-	_, err = conn.Write(subcriptionBytes)
+	err = conn.WriteMessage(websocket.BinaryMessage, subcriptionBytes)
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
 	responseBytes := []byte{}
-	go func(cQuit chan struct{}) {
-		<-time.Tick(timeout)
-		close(cQuit)
-	}(cQuit)
+	go func() {
+		defer close(done)
+		for {
+			_, reader, err := conn.NextReader()
+			wsError = err
+			if err != nil {
+				return
+			}
+			responseChunk , err := ioutil.ReadAll(reader)
+			responseBytes = append(responseBytes, responseChunk...)
+			return
+			
+		}
+	}()
+	ticker := time.NewTicker(timeout)
 	loop:
 	for {
 		select {
-			case <-cQuit:
+			case <-ticker.C: {
 				break loop
-			default:
-			_, err = conn.Read(responseBytes)
+			}
+			case <-done: {
+				break loop
+			}
 		}
 	}
-	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	if wsError != nil {
+		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, wsError)
 	}
 	response := rpcserver.JsonResponse{}
 	err = json.Unmarshal(responseBytes, &response)
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	result := make(map[string]interface{})
-	rpcError := json.Unmarshal(response.Result, &result)
-	if rpcError != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, rpcError)
+	subResult := rpcserver.SubcriptionResult{}
+	err = json.Unmarshal(response.Result, &subResult)
+	if err != nil {
+		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+	}
+	result := parseResult(subResult.Result)
+	if result == nil {
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
 	}
 	return result, response.Error
 }
