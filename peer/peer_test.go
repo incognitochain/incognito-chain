@@ -53,7 +53,7 @@ func TestPeer_NewPeer(t *testing.T) {
 	peerObj, err := Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
-	}.NewPeer()
+	}.Init()
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,7 +69,7 @@ func TestPeer_Start(t *testing.T) {
 	peerObj, err := Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
-	}.NewPeer()
+	}.Init()
 	close(peerObj.cStop)
 	peerObj.Start()
 }
@@ -83,7 +83,7 @@ func TestPeer_Stop(t *testing.T) {
 	peerObj, err := Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
-	}.NewPeer()
+	}.Init()
 	go peerObj.Start()
 	peerObj.Stop()
 }
@@ -97,7 +97,7 @@ func TestPeer_PushConn(t *testing.T) {
 	peerObj, err := Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
-	}.NewPeer()
+	}.Init()
 
 	peerConn := PeerConn{
 		cMsgHash:   make(map[string]chan bool),
@@ -132,7 +132,7 @@ func TestPeer_PushStream(t *testing.T) {
 	peerObj, err := Peer{
 		Seed:             seed,
 		ListeningAddress: *netAddr,
-	}.NewPeer()
+	}.Init()
 
 	stream := &swarm.Stream{}
 	peerObj.PushStream(stream)
@@ -158,7 +158,7 @@ func TestPeer_RemovePeerConn(t *testing.T) {
 		Seed:             seed,
 		ListeningAddress: *netAddr,
 		PeerConns:        make(map[string]*PeerConn),
-	}.NewPeer()
+	}.Init()
 
 	peerConn := &PeerConn{
 		cMsgHash:   make(map[string]chan bool),

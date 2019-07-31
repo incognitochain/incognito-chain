@@ -125,9 +125,9 @@ func (peerObj *Peer) CheckHashPool(hash string) bool {
 }
 
 /*
-NewPeer - create a new peer with go libp2p
+Init - init a peer with go libp2p
 */
-func (peerObj Peer) NewPeer() (*Peer, error) {
+func (peerObj *Peer) Init() error {
 	// If the seed is zero, use real cryptographic randomness. Otherwise, use a
 	// deterministic randomness source to make generated keys stay the same
 	// across multiple runs
@@ -142,7 +142,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	// to obtain a valid Host Id.
 	priv, _, err := crypto.GenerateKeyPairWithReader(crypto.RSA, 2048, r)
 	if err != nil {
-		return &peerObj, NewPeerError(PeerGenerateKeyPairError, err, &peerObj)
+		return NewPeerError(PeerGenerateKeyPairError, err, peerObj)
 	}
 
 	ip := strings.Split(peerObj.ListeningAddress.String(), ":")[0]
@@ -160,7 +160,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 
 	basicHost, err := libp2p.New(context.Background(), opts...)
 	if err != nil {
-		return &peerObj, NewPeerError(CreateP2PNodeError, err, &peerObj)
+		return NewPeerError(CreateP2PNodeError, err, peerObj)
 	}
 
 	// Build Host multiaddress
@@ -168,7 +168,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 
 	hostAddr, err := ma.NewMultiaddr(mulAddrStr)
 	if err != nil {
-		return &peerObj, NewPeerError(CreateP2PAddressError, err, &peerObj)
+		return NewPeerError(CreateP2PAddressError, err, peerObj)
 	}
 
 	// Now we can build a full multiaddress to reach this Host
@@ -179,12 +179,12 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 	Logger.log.Infof("I am listening on %s with PEER Id - %s", rawAddress, basicHost.ID().Pretty())
 	pid, err := fullAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
-		return &peerObj, NewPeerError(GetPeerIdFromProtocolError, err, &peerObj)
+		return NewPeerError(GetPeerIdFromProtocolError, err, peerObj)
 	}
 	peerID, err := peer.IDB58Decode(pid)
 	if err != nil {
 		log.Print(err)
-		return &peerObj, NewPeerError(GetPeerIdFromProtocolError, err, &peerObj)
+		return NewPeerError(GetPeerIdFromProtocolError, err, peerObj)
 	}
 
 	peerObj.RawAddress = rawAddress
@@ -200,7 +200,7 @@ func (peerObj Peer) NewPeer() (*Peer, error) {
 
 	peerObj.PeerConnsMtx = sync.Mutex{}
 	peerObj.pendingPeersMtx = sync.Mutex{}
-	return &peerObj, nil
+	return nil
 }
 
 // Start - start peer to begin waiting for connections from other peers
