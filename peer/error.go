@@ -18,8 +18,8 @@ const (
 )
 
 var ErrCodeMessage = map[int]struct {
-	code    int
-	message string
+	Code    int
+	Message string
 }{
 	// -1xxx for peer
 	UnexpectedError:            {-1001, "Unexpected"},
@@ -46,9 +46,9 @@ func (e PeerError) Error() string {
 
 func NewPeerError(key int, err error, peer *Peer) *PeerError {
 	return &PeerError{
-		err:     errors.Wrap(err, ErrCodeMessage[key].message),
-		Code:    ErrCodeMessage[key].code,
-		Message: ErrCodeMessage[key].message,
+		err:     errors.Wrap(err, ErrCodeMessage[key].Message),
+		Code:    ErrCodeMessage[key].Code,
+		Message: ErrCodeMessage[key].Message,
 		peer:    peer,
 	}
 }
