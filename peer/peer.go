@@ -40,21 +40,21 @@ type Peer struct {
 	cStopConn       chan struct{}
 
 	// private field
-	host            host.Host
-	port            string
-	config          Config
-	targetAddress   ma.Multiaddr
-	rawAddress      string
-	peerID          peer.ID
-	peerConns       map[string]*PeerConn
-	peerConnsMtx    *sync.Mutex
-	pendingPeersMtx *sync.Mutex
+	host             host.Host
+	port             string
+	config           Config
+	targetAddress    ma.Multiaddr
+	rawAddress       string
+	peerID           peer.ID
+	peerConns        map[string]*PeerConn
+	peerConnsMtx     *sync.Mutex
+	pendingPeers     map[string]*Peer
+	pendingPeersMtx  *sync.Mutex
+	publicKey        string
+	listeningAddress common.SimpleAddr
+	seed             int64
 
 	// public field
-	ListeningAddress   common.SimpleAddr
-	PublicKey          string
-	Seed               int64
-	pendingPeers       map[string]*Peer
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
 	HandleFailed       func(peerConn *PeerConn)
@@ -173,6 +173,26 @@ func (peerObj Peer) GetPeerConnsMtx() *sync.Mutex {
 	return peerObj.peerConnsMtx
 }
 
+func (peerObj Peer) GetPublicKey() string {
+	return peerObj.publicKey
+}
+
+func (peerObj *Peer) SetPublicKey(publicKey string) {
+	peerObj.publicKey = publicKey
+}
+
+func (peerObj Peer) GetListeningAddress() common.SimpleAddr {
+	return peerObj.listeningAddress
+}
+
+func (peerObj *Peer) SetListeningAddress(v common.SimpleAddr) {
+	peerObj.listeningAddress = v
+}
+
+func (peerObj *Peer) SetSeed(v int64) {
+	peerObj.seed = v
+}
+
 func (peerObj *Peer) HashToPool(hash string) error {
 	if peerObj.messagePoolNew == nil {
 		peerObj.messagePoolNew = cache.New(messageLiveTime, messageCleanupInterval)
@@ -198,10 +218,10 @@ func (peerObj *Peer) Init() error {
 	// deterministic randomness source to make generated keys stay the same
 	// across multiple runs
 	var r io.Reader
-	if peerObj.Seed == 0 {
+	if peerObj.seed == 0 {
 		r = rand.Reader
 	} else {
-		r = mrand.New(mrand.NewSource(peerObj.Seed))
+		r = mrand.New(mrand.NewSource(peerObj.seed))
 	}
 
 	// Generate a key pair for this Host. We will use it
@@ -211,13 +231,13 @@ func (peerObj *Peer) Init() error {
 		return NewPeerError(PeerGenerateKeyPairError, err, peerObj)
 	}
 
-	ip := strings.Split(peerObj.ListeningAddress.String(), ":")[0]
+	ip := strings.Split(peerObj.listeningAddress.String(), ":")[0]
 	if len(ip) == 0 {
 		ip = localHost
 	}
 	Logger.log.Info(ip)
-	port := strings.Split(peerObj.ListeningAddress.String(), ":")[1]
-	net := peerObj.ListeningAddress.Network()
+	port := strings.Split(peerObj.listeningAddress.String(), ":")[1]
+	net := peerObj.listeningAddress.Network()
 	listeningAddressString := fmt.Sprintf("/%s/%s/tcp/%s", net, ip, port)
 	opts := []libp2p.Option{
 		libp2p.ListenAddrStrings(listeningAddressString),
@@ -769,15 +789,9 @@ func StoreInboundPeerMessage(msg wire.Message, time int64, peerID peer.ID) {
 	}
 	inboundPeerMessage[messageType] = messages
 }
+
 func GetInboundPeerMessages() map[string][]PeerMessageInOut {
 	return inboundPeerMessage
-}
-func GetInboundPeerMessagesByType(messageType string) []PeerMessageInOut {
-	messages, ok := inboundPeerMessage[messageType]
-	if !ok {
-		return []PeerMessageInOut{}
-	}
-	return messages
 }
 
 func GetInboundMessagesByPeer() map[string]int {
@@ -812,15 +826,9 @@ func StoreOutboundPeerMessage(msg wire.Message, time int64, peerID peer.ID) {
 	}
 	outboundPeerMessage[messageType] = messages
 }
+
 func GetOutboundPeerMessages() map[string][]PeerMessageInOut {
 	return outboundPeerMessage
-}
-func GetOutboundPeerMessagesByType(messageType string) []PeerMessageInOut {
-	messages, ok := outboundPeerMessage[messageType]
-	if !ok {
-		return []PeerMessageInOut{}
-	}
-	return messages
 }
 
 func GetOutboundMessagesByPeer() map[string]int {
