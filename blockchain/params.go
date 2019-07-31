@@ -43,8 +43,8 @@ func init() {
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
 
-		//@Notice: InitTxsForBenchmark is for testing and benchmark only
-		//InitialIncognito: benchmark.GetInitTransaction(),
+		//@Notice: InitTxsForBenchmark is for testing and testparams only
+		//InitialIncognito: IntegrationTestInitPRV,
 		InitialIncognito: TestnetInitPRV,
 	}
 	ChainTestParam = Params{
