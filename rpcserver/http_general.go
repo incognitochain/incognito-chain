@@ -119,7 +119,7 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 	beaconCommitteeList := bestState.BeaconCommittee
 	shardCommitteeList := bestState.GetShardCommittee()
 
-	for _, peerConn := range listeningPeer.PeerConns {
+	for _, peerConn := range listeningPeer.GetPeerConns() {
 		peerItem := map[string]string{
 			"RawAddress": peerConn.RemoteRawAddress,
 			"PublicKey":  peerConn.RemotePeer.PublicKey,
@@ -152,7 +152,7 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 	peersMap := []string{}
 	peers := httpServer.config.AddrMgr.AddressCache()
 	for _, peer := range peers {
-		for _, peerConn := range peer.PeerConns {
+		for _, peerConn := range peer.GetPeerConns() {
 			peersMap = append(peersMap, peerConn.RemoteRawAddress)
 		}
 	}
@@ -175,8 +175,8 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 	result.NetworkActive = httpServer.config.ConnMgr.GetListeningPeer() != nil
 	result.LocalAddresses = []string{}
 	listener := httpServer.config.ConnMgr.GetListeningPeer()
-	result.Connections = len(listener.PeerConns)
-	result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
+	result.Connections = len(listener.GetPeerConns())
+	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -370,7 +370,7 @@ func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, close
 	}
 	result := 0
 	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
-	result += len(listeningPeer.PeerConns)
+	result += len(listeningPeer.GetPeerConns())
 	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil
 }

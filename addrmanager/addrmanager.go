@@ -72,7 +72,7 @@ func (addrManager *AddrManager) savePeers() error {
 
 	// get all good address in list of addresses manager
 	for rawAddress, peerObj := range addrManager.addrIndex {
-		peerID := peerObj.PeerID
+		peerID := peerObj.GetPeerID()
 		pretty := peerID.Pretty()
 		if len(pretty) > maxLengthPeerPretty {
 			continue
@@ -162,11 +162,11 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 			continue
 		}
 		peer := new(peer.Peer)
-		peer.PeerID = peer2.ID(storagePeer.Src)
-		peer.RawAddress = storagePeer.Addr
+		peer.SetPeerID(peer2.ID(storagePeer.Src))
+		peer.SetRawAddress(storagePeer.Addr)
 		peer.PublicKey = storagePeer.PublicKey
 
-		addrManager.addrIndex[peer.RawAddress] = peer
+		addrManager.addrIndex[peer.GetRawAddress()] = peer
 
 	}
 	return nil
@@ -242,7 +242,7 @@ func (addrManager *AddrManager) Good(addr *peer.Peer) {
 	addrManager.mtx.Lock()
 	defer addrManager.mtx.Unlock()
 
-	addrManager.addrIndex[addr.RawAddress] = addr
+	addrManager.addrIndex[addr.GetRawAddress()] = addr
 }
 
 // AddressCache returns the current address cache.  It must be treated as
