@@ -236,12 +236,12 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	listeningPeer.HandleFailed = connManager.handleFailed
 
 	peer := peer.Peer{
-		PeerConns:          make(map[string]*peer.PeerConn),
 		PendingPeers:       make(map[string]*peer.Peer),
 		HandleConnected:    connManager.handleConnected,
 		HandleDisconnected: connManager.handleDisconnected,
 		HandleFailed:       connManager.handleFailed,
 	}
+	peer.SetPeerConns(nil)
 	peer.SetPeerID(peerId)
 	peer.SetRawAddress(addr)
 	peer.SetTargetAddress(targetAddr)
