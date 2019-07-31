@@ -56,9 +56,13 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(bridgeInstProof.inst))
+	decodedInst, err := blockchain.DecodeInstruction(bridgeInstProof.inst)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	inst := hex.EncodeToString(decodedInst)
 
-	return buildProofResult(decodedInst, beaconInstProof, bridgeInstProof, "", ""), nil
+	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
 }
 
 // getShardAndBeaconBlocks returns a shard block (with all of its instructions) and the included beacon blocks
@@ -270,7 +274,7 @@ func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 
 // buildInstProof receives a list of instructions (as string) and returns a merkle proof for one instruction in the list
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
-	flattenInsts, err := FlattenAndConvertStringInst(insts)
+	flattenInsts, err := blockchain.FlattenAndConvertStringInst(insts)
 	if err != nil {
 		BLogger.log.Errorf("Cannot flatten instructions: %+v", err)
 		return nil
