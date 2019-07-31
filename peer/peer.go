@@ -49,8 +49,7 @@ type Peer struct {
 	PublicKey        string
 
 	Seed   int64
-	Config Config
-	Shard  byte
+	config Config
 
 	PeerConns       map[string]*PeerConn
 	PeerConnsMtx    sync.Mutex
@@ -113,6 +112,14 @@ func (peerObj Peer) GetHost() host.Host {
 
 func (peerObj Peer) GetPort() string {
 	return peerObj.port
+}
+
+func (peerObj Peer) GetConfig() Config {
+	return peerObj.config
+}
+
+func (peerObj *Peer) SetConfig(config Config) {
+	peerObj.config = config
 }
 
 func (peerObj *Peer) HashToPool(hash string) error {
@@ -408,7 +415,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 		return nil, nil
 	}
 
-	if peerObj.countOfOutboundConn() >= peerObj.Config.MaxOutPeers && peerObj.Config.MaxOutPeers > 0 && !ok {
+	if peerObj.countOfOutboundConn() >= peerObj.config.MaxOutPeers && peerObj.config.MaxOutPeers > 0 && !ok {
 		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.RawAddress)
 
 		//push to pending peers
@@ -439,7 +446,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 		RemotePeerID:       remotePeerID,
 		RemoteRawAddress:   peer.RawAddress,
 		ListenerPeer:       peerObj,
-		Config:             peerObj.Config,
+		Config:             peerObj.config,
 		RWStream:           rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
@@ -497,7 +504,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if peerObj.countOfInboundConn() >= peerObj.Config.MaxInPeers && peerObj.Config.MaxInPeers > 0 {
+	if peerObj.countOfInboundConn() >= peerObj.config.MaxInPeers && peerObj.config.MaxInPeers > 0 {
 		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {
@@ -527,7 +534,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		RemotePeer: &Peer{
 			PeerID: remotePeerID,
 		},
-		Config:             peerObj.Config,
+		Config:             peerObj.config,
 		RemotePeerID:       remotePeerID,
 		RWStream:           rw,
 		cDisconnect:        make(chan struct{}),
