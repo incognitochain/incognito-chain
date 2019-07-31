@@ -3,10 +3,16 @@ package addrmanager
 import "time"
 
 const (
-	Version = 1
+	// version of addrmanager
+	version = 1
+
+	// file to storage connected peer for reusing when restart node
+	dataFile = "peer.json"
 
 	// DumpAddressInterval is the interval used to dump the address
 	// cache to disk for future use. Every 10 second, automatically saving all
 	// connected address into file to reuse in the future
-	DumpAddressInterval = time.Second * 10
+	dumpAddressInterval = time.Second * 10
+
+	maxLengthPeerPretty = 46
 )

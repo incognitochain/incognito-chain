@@ -409,11 +409,11 @@ func (blockgen *BlkTmplGenerator) buildResponseTxsFromBeaconInstructions(
 			var newTx metadata.Transaction
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
-				if len(l) >= 4 {
+				if len(l) >= 4 && l[2] == "accepted" {
 					newTx, err = blockgen.buildETHIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.IssuingRequestMeta:
-				if len(l) >= 4 {
+				if len(l) >= 4 && l[2] == "accepted" {
 					newTx, err = blockgen.buildIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
 

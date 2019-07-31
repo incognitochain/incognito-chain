@@ -124,7 +124,7 @@ func (bestStateShard *BestStateShard) GetBytes() []byte {
 		binary.LittleEndian.PutUint64(valueBytes, value)
 		res = append(res, valueBytes...)
 	}
-	
+
 	keystr := []string{}
 	for _, k := range bestStateShard.StakingTx {
 		keystr = append(keystr, k)
@@ -826,4 +826,20 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 		}
 	}
 	return nil
+}
+
+func (bestStateShard *BestStateShard) MarshalJSON() ([]byte, error) {
+	bestStateShard.lock.RLock()
+	defer bestStateShard.lock.RUnlock()
+
+	type Alias BestStateShard
+	b, err := json.Marshal(&struct {
+		*Alias
+	}{
+		(*Alias)(bestStateShard),
+	})
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	return b, err
 }
