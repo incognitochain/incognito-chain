@@ -39,8 +39,9 @@ type Peer struct {
 	cNewStream      chan *newStreamMsg
 	cStopConn       chan struct{}
 
-	host host.Host
-	port string
+	host   host.Host
+	port   string
+	config Config
 
 	TargetAddress    ma.Multiaddr
 	PeerID           peer.ID
@@ -48,8 +49,7 @@ type Peer struct {
 	ListeningAddress common.SimpleAddr
 	PublicKey        string
 
-	Seed   int64
-	config Config
+	Seed int64
 
 	PeerConns       map[string]*PeerConn
 	PeerConnsMtx    sync.Mutex
