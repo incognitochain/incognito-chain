@@ -821,9 +821,9 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 	}
 
 	peer := peer.Peer{
-		Seed:             seed,
-		ListeningAddress: *netAddr,
+		Seed: seed,
 	}
+	peer.SetListeningAddress(*netAddr)
 	peer.SetPeerConns(nil)
 	peer.SetPendingPeers(nil)
 	peer.SetConfig(*serverObj.NewPeerConfig())
@@ -1010,9 +1010,8 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 		}
 	}
 
-	remotePeer := &peer.Peer{
-		ListeningAddress: msg.LocalAddress,
-	}
+	remotePeer := &peer.Peer{}
+	remotePeer.SetListeningAddress(msg.LocalAddress)
 	remotePeer.SetPublicKey(pbk)
 	remotePeer.SetPeerID(msg.LocalPeerId)
 	remotePeer.SetRawAddress(msg.RawLocalAddress)
@@ -1379,10 +1378,10 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	// push message version
 	msg, err := wire.MakeEmptyMessage(wire.CmdVersion)
 	msg.(*wire.MessageVersion).Timestamp = time.Now().UnixNano()
-	msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
+	msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.GetListeningAddress()
 	msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.GetRawAddress()
 	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.GetPeerID()
-	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
+	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.GetListeningAddress()
 	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.GetRawAddress()
 	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.GetPeerID()
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
