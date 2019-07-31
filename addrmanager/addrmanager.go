@@ -72,7 +72,7 @@ func (addrManager *AddrManager) savePeers() error {
 
 	// get all good address in list of addresses manager
 	for rawAddress, peerObj := range addrManager.addrIndex {
-		peerID := peerObj.PeerID
+		peerID := peerObj.GetPeerID()
 		pretty := peerID.Pretty()
 		if len(pretty) > maxLengthPeerPretty {
 			continue
@@ -162,7 +162,7 @@ func (addrManager *AddrManager) deserializePeers(filePath string) error {
 			continue
 		}
 		peer := new(peer.Peer)
-		peer.PeerID = peer2.ID(storagePeer.Src)
+		peer.SetPeerID(peer2.ID(storagePeer.Src))
 		peer.SetRawAddress(storagePeer.Addr)
 		peer.PublicKey = storagePeer.PublicKey
 

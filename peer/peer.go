@@ -46,9 +46,9 @@ type Peer struct {
 	pendingPeersMtx sync.Mutex
 	targetAddress   ma.Multiaddr
 	rawAddress      string
+	peerID          peer.ID
 
 	// public field
-	PeerID             peer.ID
 	ListeningAddress   common.SimpleAddr
 	PublicKey          string
 	Seed               int64
@@ -137,6 +137,14 @@ func (peerObj *Peer) SetRawAddress(rawAddress string) {
 	peerObj.rawAddress = rawAddress
 }
 
+func (peerObj Peer) GetPeerID() peer.ID {
+	return peerObj.peerID
+}
+
+func (peerObj *Peer) SetPeerID(peerID peer.ID) {
+	peerObj.peerID = peerID
+}
+
 func (peerObj *Peer) HashToPool(hash string) error {
 	if peerObj.messagePoolNew == nil {
 		peerObj.messagePoolNew = cache.New(messageLiveTime, messageCleanupInterval)
@@ -221,7 +229,7 @@ func (peerObj *Peer) Init() error {
 	peerObj.host = basicHost
 	peerObj.port = port
 	peerObj.SetTargetAddress(fullAddr)
-	peerObj.PeerID = peerID
+	peerObj.peerID = peerID
 	peerObj.cStop = make(chan struct{}, 1)
 	peerObj.cDisconnectPeer = make(chan *PeerConn)
 	peerObj.cNewConn = make(chan *newPeerMsg)
@@ -245,7 +253,7 @@ func (peerObj *Peer) Start() {
 	_, ok := <-peerObj.cStop
 	if !ok { // stop
 		close(peerObj.cStopConn)
-		Logger.log.Criticalf("PEER server shutdown complete %s", peerObj.PeerID)
+		Logger.log.Criticalf("PEER server shutdown complete %s", peerObj.peerID)
 	}
 }
 
@@ -277,19 +285,19 @@ func (peerObj *Peer) processConn() {
 			Logger.log.Critical("ProcessConn QUIT")
 			return
 		case newPeerMsg := <-peerObj.cNewConn:
-			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.peer.PeerID.Pretty(), newPeerMsg.peer.rawAddress)
+			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
 			cConn := make(chan *PeerConn)
 			go func(peerObj *Peer) {
 				peerConn, err := peerObj.handleNewConnectionOut(newPeerMsg.peer, cConn)
 				if err != nil && peerConn == nil {
-					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", peerObj.PeerID.Pretty(), err.Error())
+					Logger.log.Errorf("Fail in opening stream from PEER Id - %s with err: %s", peerObj.peerID.Pretty(), err.Error())
 				}
 			}(peerObj)
 			p := <-cConn
 			if newPeerMsg.cConn != nil {
 				newPeerMsg.cConn <- p
 			}
-			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.peer.PeerID.Pretty(), newPeerMsg.peer.rawAddress)
+			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
 			continue
 		case newStreamMsg := <-peerObj.cNewStream:
 			remotePeerID := newStreamMsg.stream.Conn().RemotePeer()
@@ -309,14 +317,14 @@ func (peerObj *Peer) processConn() {
 func (peerObj *Peer) connPending(peer *Peer) {
 	peerObj.pendingPeersMtx.Lock()
 	defer peerObj.pendingPeersMtx.Unlock()
-	peerIDStr := peer.PeerID.Pretty()
+	peerIDStr := peer.peerID.Pretty()
 	peerObj.PendingPeers[peerIDStr] = peer
 }
 
 func (peerObj *Peer) connEstablished(peer *Peer) {
 	peerObj.pendingPeersMtx.Lock()
 	defer peerObj.pendingPeersMtx.Unlock()
-	peerIDStr := peer.PeerID.Pretty()
+	peerIDStr := peer.peerID.Pretty()
 	_, ok := peerObj.PendingPeers[peerIDStr]
 	if ok {
 		delete(peerObj.PendingPeers, peerIDStr)
@@ -330,7 +338,7 @@ func (peerObj *Peer) connCanceled(peer *Peer) {
 		peerObj.PeerConnsMtx.Unlock()
 		peerObj.pendingPeersMtx.Unlock()
 	}()
-	peerIDStr := peer.PeerID.Pretty()
+	peerIDStr := peer.peerID.Pretty()
 	_, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
 		delete(peerObj.PeerConns, peerIDStr)
@@ -375,7 +383,7 @@ func (peerObj *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
 func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
-	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
+	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
 	internalConnPeer, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
@@ -389,7 +397,7 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 	peerObj.PeerConnsMtx.Lock()
 	defer peerObj.PeerConnsMtx.Unlock()
-	peerIDStr := peerConn.RemotePeer.PeerID.Pretty()
+	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
 	internalConnPeer, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
@@ -408,7 +416,7 @@ func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
 	Logger.log.Infof("Opening stream to PEER Id - %s", peer.rawAddress)
 
-	peerIDStr := peer.PeerID.Pretty()
+	peerIDStr := peer.peerID.Pretty()
 
 	_, ok := peerObj.PeerConns[peerIDStr]
 	if ok {
@@ -420,7 +428,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 		return nil, nil
 	}
 
-	if peerIDStr == peerObj.PeerID.Pretty() {
+	if peerIDStr == peerObj.peerID.Pretty() {
 		Logger.log.Infof("Checked MypeerObj PEER Id - %s", peer.rawAddress)
 		//peerObj.newPeerConnectionMutex.Unlock()
 
@@ -442,7 +450,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 		return nil, nil
 	}
 
-	stream, err := peerObj.host.NewStream(context.Background(), peer.PeerID, protocolID)
+	stream, err := peerObj.host.NewStream(context.Background(), peer.peerID, protocolID)
 	Logger.log.Info(peer, stream, err)
 	if err != nil {
 		if cConn != nil {
@@ -547,7 +555,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		isOutbound:   false, // we are connected from remote peer -> this is an inbound peer
 		ListenerPeer: peerObj,
 		RemotePeer: &Peer{
-			PeerID: remotePeerID,
+			peerID: remotePeerID,
 		},
 		Config:             peerObj.config,
 		RemotePeerID:       remotePeerID,
@@ -619,7 +627,7 @@ func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- 
 // not stream,
 // not read and write message on stream
 func (peerObj *Peer) Stop() {
-	Logger.log.Warnf("Stopping PEER %s", peerObj.PeerID.Pretty())
+	Logger.log.Warnf("Stopping PEER %s", peerObj.peerID.Pretty())
 
 	peerObj.host.Close()
 	peerObj.PeerConnsMtx.Lock()
@@ -629,7 +637,7 @@ func (peerObj *Peer) Stop() {
 	}
 
 	close(peerObj.cStop)
-	Logger.log.Criticalf("PEER %s stopped", peerObj.PeerID.Pretty())
+	Logger.log.Criticalf("PEER %s stopped", peerObj.peerID.Pretty())
 }
 
 // handleConnected - set established flag to a peer when being connected

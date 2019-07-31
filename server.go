@@ -1001,7 +1001,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 
 	pbk := ""
 	if msg.PublicKey != "" {
-		err := incognitokey.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.PeerID.Pretty()))
+		err := incognitokey.ValidateDataB58(msg.PublicKey, msg.SignDataB58, []byte(peerConn.ListenerPeer.GetPeerID().Pretty()))
 		if err == nil {
 			pbk = msg.PublicKey
 		} else {
@@ -1012,9 +1012,9 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 
 	remotePeer := &peer.Peer{
 		ListeningAddress: msg.LocalAddress,
-		PeerID:           msg.LocalPeerId,
 		PublicKey:        pbk,
 	}
+	remotePeer.SetPeerID(msg.LocalPeerId)
 	remotePeer.SetRawAddress(msg.RawLocalAddress)
 	peerConn.RemotePeer.PublicKey = pbk
 
@@ -1172,13 +1172,13 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 		if peerConn.RemotePeer.PublicKey == pubKey {
 			exist := false
 			for _, item := range result {
-				if item.Pretty() == peerConn.RemotePeer.PeerID.Pretty() {
+				if item.Pretty() == peerConn.RemotePeer.GetPeerID().Pretty() {
 					exist = true
 				}
 			}
 
 			if !exist {
-				result = append(result, peerConn.RemotePeer.PeerID)
+				result = append(result, peerConn.RemotePeer.GetPeerID())
 			}
 		}
 	}
@@ -1221,7 +1221,7 @@ PushMessageToAll broadcast msg
 func (serverObj *Server) PushMessageToAll(msg wire.Message) error {
 	Logger.log.Debug("Push msg to all peers")
 	var dc chan<- struct{}
-	msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.PeerID)
+	msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
 	serverObj.connManager.GetConfig().ListenerPeer.QueueMessageWithEncoding(msg, dc, peer.MessageToAll, nil)
 	return nil
 }
@@ -1234,7 +1234,7 @@ func (serverObj *Server) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) e
 	var dc chan<- struct{}
 	peerConn := serverObj.connManager.GetConfig().ListenerPeer.GetPeerConnByPeerID(peerId.Pretty())
 	if peerConn != nil {
-		msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.PeerID)
+		msg.SetSenderID(serverObj.connManager.GetConfig().ListenerPeer.GetPeerID())
 		peerConn.QueueMessageWithEncoding(msg, dc, peer.MessageToPeer, nil)
 		Logger.log.Debugf("Pushed peer %s", peerId.Pretty())
 		return nil
@@ -1252,7 +1252,7 @@ func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 	peerConns := serverObj.connManager.GetPeerConnOfPublicKey(pbk)
 	if len(peerConns) > 0 {
 		for _, peerConn := range peerConns {
-			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
+			msg.SetSenderID(peerConn.ListenerPeer.GetPeerID())
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToPeer, nil)
 		}
 		Logger.log.Debugf("Pushed pbk %s", pbk)
@@ -1278,7 +1278,7 @@ func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclus
 					continue
 				}
 			}
-			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
+			msg.SetSenderID(peerConn.ListenerPeer.GetPeerID())
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToShard, &shard)
 		}
 		Logger.log.Debugf("Pushed shard %d", shard)
@@ -1328,7 +1328,7 @@ func (serverObj *Server) PushMessageToBeacon(msg wire.Message, exclusivePeerIDs 
 					continue
 				}
 			}
-			msg.SetSenderID(peerConn.ListenerPeer.PeerID)
+			msg.SetSenderID(peerConn.ListenerPeer.GetPeerID())
 			peerConn.QueueMessageWithEncoding(msg, nil, peer.MessageToBeacon, nil)
 		}
 		Logger.log.Debugf("Pushed beacon done")
@@ -1380,16 +1380,16 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).Timestamp = time.Now().UnixNano()
 	msg.(*wire.MessageVersion).LocalAddress = peerConn.ListenerPeer.ListeningAddress
 	msg.(*wire.MessageVersion).RawLocalAddress = peerConn.ListenerPeer.GetRawAddress()
-	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.PeerID
+	msg.(*wire.MessageVersion).LocalPeerId = peerConn.ListenerPeer.GetPeerID()
 	msg.(*wire.MessageVersion).RemoteAddress = peerConn.ListenerPeer.ListeningAddress
 	msg.(*wire.MessageVersion).RawRemoteAddress = peerConn.ListenerPeer.GetRawAddress()
-	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.PeerID
+	msg.(*wire.MessageVersion).RemotePeerId = peerConn.ListenerPeer.GetPeerID()
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
 
 	// ValidateTransaction Public Key from ProducerPrvKey
 	if peerConn.ListenerPeer.GetConfig().UserKeySet != nil {
 		msg.(*wire.MessageVersion).PublicKey = peerConn.ListenerPeer.GetConfig().UserKeySet.GetPublicKeyB58()
-		signDataB58, err := peerConn.ListenerPeer.GetConfig().UserKeySet.SignDataB58([]byte(peerConn.RemotePeer.PeerID.Pretty()))
+		signDataB58, err := peerConn.ListenerPeer.GetConfig().UserKeySet.SignDataB58([]byte(peerConn.RemotePeer.GetPeerID().Pretty()))
 		if err == nil {
 			msg.(*wire.MessageVersion).SignDataB58 = signDataB58
 		}
@@ -1511,7 +1511,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHeight(shardID byte, 
 	msg.(*wire.MessageGetShardToBeacon).BlkHeights = append(msg.(*wire.MessageGetShardToBeacon).BlkHeights, from)
 	msg.(*wire.MessageGetShardToBeacon).BlkHeights = append(msg.(*wire.MessageGetShardToBeacon).BlkHeights, to)
 	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
+	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.GetRawAddress())
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
@@ -1532,7 +1532,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconByHash(shardID byte, bl
 	msg.(*wire.MessageGetShardToBeacon).ShardID = shardID
 	msg.(*wire.MessageGetShardToBeacon).BlkHashes = blkHashes
 	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
+	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.GetRawAddress())
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
@@ -1552,7 +1552,7 @@ func (serverObj *Server) PushMessageGetBlockShardToBeaconBySpecificHeight(shardI
 	msg.(*wire.MessageGetShardToBeacon).ShardID = shardID
 	msg.(*wire.MessageGetShardToBeacon).BlkHeights = blkHeights
 	msg.(*wire.MessageGetShardToBeacon).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
+	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Send a GetShardToBeacon from %s", listener.GetRawAddress())
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{})
@@ -1573,7 +1573,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
 	msg.(*wire.MessageGetCrossShard).BlkHashes = blkHashes
 	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
+	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.GetRawAddress())
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
@@ -1595,7 +1595,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 	msg.(*wire.MessageGetCrossShard).ToShardID = toShard
 	msg.(*wire.MessageGetCrossShard).BlkHeights = blkHeights
 	msg.(*wire.MessageGetCrossShard).Timestamp = time.Now().Unix()
-	msg.SetSenderID(listener.PeerID)
+	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.GetRawAddress())
 	if peerID == "" {
 		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
@@ -1631,7 +1631,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 			}
 		}
 	}
-	msg.SetSenderID(listener.PeerID)
+	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Boardcast peerstate from %s", listener.GetRawAddress())
 	serverObj.PushMessageToAll(msg)
 	return nil

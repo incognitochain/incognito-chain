@@ -236,13 +236,13 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	listeningPeer.HandleFailed = connManager.handleFailed
 
 	peer := peer.Peer{
-		PeerID:             peerId,
 		PeerConns:          make(map[string]*peer.PeerConn),
 		PendingPeers:       make(map[string]*peer.Peer),
 		HandleConnected:    connManager.handleConnected,
 		HandleDisconnected: connManager.handleDisconnected,
 		HandleFailed:       connManager.handleFailed,
 	}
+	peer.SetPeerID(peerId)
 	peer.SetRawAddress(addr)
 	peer.SetTargetAddress(targetAddr)
 	peer.SetConfig(listeningPeer.GetConfig())
@@ -254,9 +254,9 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, cConn cha
 	}
 
 	// add remote address peer into our listening node peer
-	listeningPeer.GetHost().Peerstore().AddAddr(peer.PeerID, peer.GetTargetAddress(), pstore.PermanentAddrTTL)
+	listeningPeer.GetHost().Peerstore().AddAddr(peer.GetPeerID(), peer.GetTargetAddress(), pstore.PermanentAddrTTL)
 	Logger.log.Debug("DEBUG Connect to RemotePeer", peer.PublicKey)
-	Logger.log.Debug(listeningPeer.GetHost().Peerstore().Addrs(peer.PeerID))
+	Logger.log.Debug(listeningPeer.GetHost().Peerstore().Addrs(peer.GetPeerID()))
 	listeningPeer.PushConn(&peer, cConn)
 	return nil
 }
