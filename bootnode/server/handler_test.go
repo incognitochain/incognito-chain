@@ -18,7 +18,7 @@ func TestHandler_Ping(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
 		t.Error(err)
 	}

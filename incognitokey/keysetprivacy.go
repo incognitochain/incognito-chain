@@ -41,10 +41,10 @@ func (keySet *KeySet) InitFromPrivateKeyByte(privateKey []byte) error {
 	return nil
 }
 
-// ImportFromPrivateKey receives private key in PrivateKey type,
+// InitFromPrivateKey receives private key in PrivateKey type,
 // and regenerates payment address and readonly key
 // returns error if private key is invalid
-func (keySet *KeySet) ImportFromPrivateKey(privateKey *privacy.PrivateKey) error {
+func (keySet *KeySet) InitFromPrivateKey(privateKey *privacy.PrivateKey) error {
 	if privateKey == nil || len(*privateKey) != privacy.PrivateKeySize {
 		return NewCashecError(InvalidPrivateKeyErr, nil)
 	}
