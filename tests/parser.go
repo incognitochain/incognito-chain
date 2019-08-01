@@ -227,7 +227,7 @@ func readNodeConfig(env string) (map[string]*Client, error){
 			return nil, ErrParseNodeConfigFailed
 		}
 		for nodeKey, nodeValueInterface := range shardNodeValue {
-			clientKey += nodeKey
+			clientNodeKey := clientKey + nodeKey
 			nodeValue, ok := nodeValueInterface.(map[string]interface{})
 			if !ok {
 				return nil, ErrParseFailed
@@ -245,7 +245,7 @@ func readNodeConfig(env string) (map[string]*Client, error){
 				return nil, ErrParseHost
 			}
 			c := newClientWithFullInform(host, rpcport, wsport)
-			nodeList[clientKey] = c
+			nodeList[clientNodeKey] = c
 		}
 	}
 	return nodeList, nil
