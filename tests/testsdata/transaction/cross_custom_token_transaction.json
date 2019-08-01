@@ -159,10 +159,7 @@
     }
   },
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9338"
-    },
+    "node": "shard1-0",
     "input": {
       "command": "getlistcustomtokenbalance",
       "context": false,
