@@ -87,7 +87,6 @@ func getBurnProofOnBeacon(
 		return nil, fmt.Errorf("cannot find corresponding beacon block that includes burn instruction")
 	}
 
-	fmt.Printf("[db] found burn inst id %d in beaconBlock: %d\n", instID, b.Header.Height)
 	insts := b.Body.Instructions
 	block := &beaconBlock{BeaconBlock: b}
 	return buildProofForBlock(block, insts, instID, db)
@@ -136,8 +135,8 @@ func findBurnConfirmInst(insts [][]string, txID *common.Hash) ([]string, int) {
 // splitAndDecodeInst splits BurningConfirm insts (on beacon and bridge) into 3 parts: the inst itself, bridgeHeight and beaconHeight that contains the inst
 func splitAndDecodeInst(bridgeInst, beaconInst []string) (string, string, string) {
 	// Decode instructions
-	bridgeInstFlat := blockchain.DecodeInstruction(bridgeInst)
-	beaconInstFlat := blockchain.DecodeInstruction(beaconInst)
+	bridgeInstFlat, _ := blockchain.DecodeInstruction(bridgeInst)
+	beaconInstFlat, _ := blockchain.DecodeInstruction(beaconInst)
 
 	// Split of last 32 bytes (block height)
 	bridgeHeight := hex.EncodeToString(bridgeInstFlat[len(bridgeInstFlat)-32:])
