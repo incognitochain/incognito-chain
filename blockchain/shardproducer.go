@@ -245,7 +245,7 @@ func (blockgen *BlkTmplGenerator) getTransactionForNewBlock(privatekey *privacy.
 			return nil, err
 		}
 		nilCount++
-		if nilCount == 2 {
+		if nilCount == 1 {
 			break
 		}
 	}
