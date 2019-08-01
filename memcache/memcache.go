@@ -4,13 +4,13 @@ package memcache
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
 var (
