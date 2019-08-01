@@ -63,31 +63,31 @@ func (peerConn *PeerConn) GetIsOutbound() bool {
 	return peerConn.isOutbound
 }
 
-func (peerConn *PeerConn) SetIsOutbound(isOutbound bool) {
+func (peerConn *PeerConn) setIsOutbound(isOutbound bool) {
 	peerConn.isOutboundMtx.Lock()
 	defer peerConn.isOutboundMtx.Unlock()
 	peerConn.isOutbound = isOutbound
 }
 
-func (peerConn *PeerConn) GetIsForceClose() bool {
+func (peerConn *PeerConn) getIsForceClose() bool {
 	peerConn.isForceCloseMtx.Lock()
 	defer peerConn.isForceCloseMtx.Unlock()
 	return peerConn.isForceClose
 }
 
-func (peerConn *PeerConn) SetIsForceClose(v bool) {
+func (peerConn *PeerConn) setIsForceClose(v bool) {
 	peerConn.isForceCloseMtx.Lock()
 	defer peerConn.isForceCloseMtx.Unlock()
 	peerConn.isForceClose = v
 }
 
-func (peerConn *PeerConn) GetIsConnected() bool {
+func (peerConn *PeerConn) getIsConnected() bool {
 	peerConn.isConnectedMtx.Lock()
 	defer peerConn.isConnectedMtx.Unlock()
 	return peerConn.isConnected
 }
 
-func (peerConn *PeerConn) SetIsConnected(v bool) {
+func (peerConn *PeerConn) setIsConnected(v bool) {
 	peerConn.isConnectedMtx.Lock()
 	defer peerConn.isConnectedMtx.Unlock()
 	peerConn.isConnected = v
@@ -98,18 +98,10 @@ func (p *PeerConn) VerAckReceived() bool {
 }
 
 // updateState updates the state of the connection request.
-func (p *PeerConn) SetConnState(connState ConnState) {
+func (p *PeerConn) setConnState(connState ConnState) {
 	p.stateMtx.Lock()
 	defer p.stateMtx.Unlock()
 	p.connState = connState
-}
-
-// State is the connection state of the requested connection.
-func (p *PeerConn) GetConnState() ConnState {
-	p.stateMtx.RLock()
-	defer p.stateMtx.RUnlock()
-	connState := p.connState
-	return connState
 }
 
 // end GET/SET func
@@ -123,7 +115,7 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 	for {
 		b, err := rw.ReadByte()
 		if err != nil {
-			return "", err
+			return common.EmptyString, NewPeerError(ReadStringMessageError, err, nil)
 		}
 		// break byte buf after get a delim
 		if b == delim {
@@ -133,7 +125,7 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 		buf = append(buf, b)
 		bufL++
 		if bufL > maxReadBytes {
-			return "", errors.New("limit bytes for message")
+			return common.EmptyString, NewPeerError(LimitByteForMessageError, errors.New("limit bytes for message"), nil)
 		}
 	}
 
@@ -146,14 +138,17 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 // we need analyze it and process with corresponding message type
 func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	// Parse Message header from last 24 bytes header message
-	jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
+	jsonDecodeBytesRaw, err := hex.DecodeString(msgStr)
+	if err != nil {
+		return NewPeerError(HexDecodeMessageError, err, nil)
+	}
 
 	// cache message hash
 	hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
 	if peerConn.ListenerPeer != nil {
 		if err := peerConn.ListenerPeer.HashToPool(hashMsgRaw); err != nil {
 			Logger.log.Error(err)
-			return err
+			return NewPeerError(HashToPoolError, err, nil)
 		}
 	}
 	// unzip data before process
@@ -161,10 +156,10 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	if err != nil {
 		Logger.log.Error("Can not unzip from message")
 		Logger.log.Error(err)
-		return err
+		return NewPeerError(UnzipMessageError, err, nil)
 	}
 
-	Logger.log.Infof("In message content : %s", string(jsonDecodeBytes))
+	Logger.log.Debugf("In message content : %s", string(jsonDecodeBytes))
 
 	// Parse Message body
 	messageBody := jsonDecodeBytes[:len(jsonDecodeBytes)-wire.MessageHeaderSize]
@@ -179,12 +174,12 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	if err != nil {
 		Logger.log.Error("Can not find particular message for message cmd type")
 		Logger.log.Error(err)
-		return err
+		return NewPeerError(MessageTypeError, err, nil)
 	}
 
 	if len(jsonDecodeBytes) > message.MaxPayloadLength(1) {
 		Logger.log.Errorf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
-		return err
+		return NewPeerError(MessageTypeError, err, nil)
 	}
 	// check forward
 	if peerConn.Config.MessageListeners.GetCurrentRoleShard != nil {
@@ -197,7 +192,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 					if peerConn.Config.MessageListeners.PushRawBytesToShard != nil {
 						peerConn.Config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
 					}
-					return err
+					return NewPeerError(CheckForwardError, err, nil)
 				}
 			}
 		}
@@ -207,7 +202,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 				if peerConn.Config.MessageListeners.PushRawBytesToBeacon != nil {
 					peerConn.Config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
 				}
-				return err
+				return NewPeerError(CheckForwardError, err, nil)
 			}
 		}
 	}
@@ -216,22 +211,34 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	if err != nil {
 		Logger.log.Error("Can not parse struct from json message")
 		Logger.log.Error(err)
-		return err
+		return NewPeerError(ParseJsonMessageError, err, nil)
 	}
 	realType := reflect.TypeOf(message)
-	Logger.log.Infof("Cmd message type of struct %s", realType.String())
+	Logger.log.Debugf("Cmd message type of struct %s", realType.String())
 
 	// cache message hash
 	if peerConn.ListenerPeer != nil {
 		hashMsg := message.Hash()
 		if err := peerConn.ListenerPeer.HashToPool(hashMsg); err != nil {
 			Logger.log.Error(err)
-			return err
+			return NewPeerError(CacheMessageHashError, err, nil)
 		}
 	}
 
 	// process message for each of message type
-	switch realType {
+	errProcessMessage := peerConn.processMessageForEachType(realType, message)
+	if errProcessMessage != nil {
+		Logger.log.Error(errProcessMessage)
+	}
+
+	// MONITOR INBOUND MESSAGE
+	storeInboundPeerMessage(message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
+	return nil
+}
+
+// process message for each of message type
+func (peerConn *PeerConn) processMessageForEachType(messageType reflect.Type, message wire.Message) error {
+	switch messageType {
 	case reflect.TypeOf(&wire.MessageTx{}):
 		if peerConn.Config.MessageListeners.OnTx != nil {
 			peerConn.Config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
@@ -323,10 +330,10 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
 		peerConn.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
 	default:
-		Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, peerConn)
+		errorMessage := fmt.Sprintf("InMessageHandler Received unhandled message of type % from %v", messageType, peerConn)
+		Logger.log.Error(errorMessage)
+		return NewPeerError(UnhandleMessageTypeError, errors.New(errorMessage), nil)
 	}
-	// MONITOR INBOUND MESSAGE
-	storeInboundPeerMessage(message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
 	return nil
 }
 
@@ -336,14 +343,14 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 // check type object which map with string data
 // call corresponding function to process message
 func (peerConn *PeerConn) inMessageHandler(rw *bufio.ReadWriter) error {
-	peerConn.SetIsConnected(true)
+	peerConn.setIsConnected(true)
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.GetPeerID().Pretty(), peerConn.RemotePeer.GetRawAddress())
 
 		str, errR := peerConn.readString(rw, delimMessageByte, spamMessageSize)
 		if errR != nil {
 			// we has an error when read stream message an can not parse to string data
-			peerConn.SetIsConnected(false)
+			peerConn.setIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
 			Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.GetRawAddress())
 			Logger.log.Error(errR)
@@ -445,7 +452,7 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 		case <-peerConn.cWrite:
 			Logger.log.Infof("OutMessageHandler QUIT %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.GetRawAddress())
 
-			peerConn.SetIsConnected(false)
+			peerConn.setIsConnected(false)
 
 			close(peerConn.cDisconnect)
 
@@ -521,7 +528,7 @@ BeginCheckHashMessage:
 func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, forwardType byte, forwardValue *byte) {
 	Logger.log.Debugf("QueueMessageWithEncoding %s %s", peerConn.RemotePeer.GetPeerID().Pretty(), msg.MessageType())
 	go func() {
-		if peerConn.GetIsConnected() {
+		if peerConn.getIsConnected() {
 			data, _ := msg.JsonSerialize()
 			if len(data) >= heavyMessageSize && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := msg.Hash()
@@ -554,7 +561,7 @@ func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<
 		return
 	}
 	go func() {
-		if peerConn.GetIsConnected() {
+		if peerConn.getIsConnected() {
 			if len(*msgBytes) >= heavyMessageSize+wire.MessageHeaderSize {
 				hash := common.HashH(*msgBytes).String()
 				Logger.log.Debugf("QueueMessageWithBytes HeavyMessageSize %s", hash)
@@ -618,6 +625,6 @@ func (p *PeerConn) close() {
 
 // ForceClose - set flag and close channel
 func (p *PeerConn) ForceClose() {
-	p.SetIsForceClose(true)
+	p.setIsForceClose(true)
 	close(p.cClose)
 }

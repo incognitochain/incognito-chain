@@ -18,6 +18,16 @@ const (
 	// PeerConn err
 	HandleMessageCheckResponse
 	HandleMessageCheck
+	LimitByteForMessageError
+	ReadStringMessageError
+	HexDecodeMessageError
+	UnzipMessageError
+	HashToPoolError
+	MessageTypeError
+	CheckForwardError
+	ParseJsonMessageError
+	CacheMessageHashError
+	UnhandleMessageTypeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -36,6 +46,16 @@ var ErrCodeMessage = map[int]struct {
 	// -2xxx for peer connection
 	HandleMessageCheckResponse: {-2001, "Handle message check response error"},
 	HandleMessageCheck:         {-2002, "Handle message check error"},
+	LimitByteForMessageError:   {-2003, "Limit byte for message"},
+	ReadStringMessageError:     {-2004, "Read message error"},
+	HexDecodeMessageError:      {-2005, "Hex decode message error"},
+	UnzipMessageError:          {-2006, "Unzip message error"},
+	HashToPoolError:            {-2007, "Insert hash of message to pool error"},
+	MessageTypeError:           {-2008, "Can not find particular message for message cmd type"},
+	CheckForwardError:          {-2009, "Check forward error"},
+	ParseJsonMessageError:      {-2010, "Can not parse struct from json message"},
+	CacheMessageHashError:      {-2011, "Cache messagse hash error"},
+	UnhandleMessageTypeError:   {-2012, "Received unhandled message of type"},
 }
 
 type PeerError struct {
