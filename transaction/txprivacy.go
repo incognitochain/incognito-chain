@@ -103,7 +103,7 @@ func (tx *Tx) Init(
 
 	// create sender's key set from sender's spending key
 	senderFullKey := incognitokey.KeySet{}
-	err = senderFullKey.ImportFromPrivateKey(senderSK)
+	err = senderFullKey.InitFromPrivateKey(senderSK)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewTransactionErr(UnexpectedErr, err)
