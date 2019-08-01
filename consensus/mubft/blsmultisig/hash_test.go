@@ -1,68 +1,82 @@
 package blsmultisig
 
 import (
-	"math/big"
-	"reflect"
+	"crypto/rand"
 	"testing"
+	"time"
 
-	"golang.org/x/crypto/bn256"
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
-func TestHash4Block(t *testing.T) {
+func testAvgTimeP2I(loop int64) int64 {
+	sum := int64(0)
+	for i := int64(0); i < loop; i++ {
+		_, randPoint, _ := bn256.RandomG1(rand.Reader)
+		start := time.Now()
+		P2I(randPoint)
+		sum += -(start.Sub(time.Now())).Nanoseconds()
+	}
+	return sum / loop
+}
+
+func testAvgTimeI2P(loop int64) int64 {
+	sum := int64(0)
+	for i := int64(0); i < loop; i++ {
+		_, randPoint, _ := bn256.RandomG1(rand.Reader)
+		start := time.Now()
+		P2I(randPoint)
+		sum += -(start.Sub(time.Now())).Nanoseconds()
+	}
+	return sum / loop
+}
+
+func Test_testAvgTimeP2I(t *testing.T) {
 	type args struct {
-		data []byte
+		loop int64
 	}
 	tests := []struct {
 		name string
 		args args
-		want []byte
+		want int64
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Test 10000 loop and UpperBound for function execution time is 0.0001s",
+			args: args{
+				loop: 10000,
+			},
+			want: 100000,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Hash4Block(tt.args.data); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Hash4Block() = %v, want %v", got, tt.want)
+			if got := testAvgTimeP2I(tt.args.loop); got > tt.want {
+				t.Errorf("Execution time of testAvgTimeP2I() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestI2P(t *testing.T) {
+func Test_testAvgTimeI2P(t *testing.T) {
 	type args struct {
-		bigInt *big.Int
+		loop int64
 	}
 	tests := []struct {
 		name string
 		args args
-		want *bn256.G1
+		want int64
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Test 10000 loop and UpperBound for function execution time is 0.0001s",
+			args: args{
+				loop: 10000,
+			},
+			want: 100000,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := I2P(tt.args.bigInt); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("I2P() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestP2I(t *testing.T) {
-	type args struct {
-		point *bn256.G1
-	}
-	tests := []struct {
-		name string
-		args args
-		want *big.Int
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := P2I(tt.args.point); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("P2I() = %v, want %v", got, tt.want)
+			if got := testAvgTimeI2P(tt.args.loop); got > tt.want {
+				t.Errorf("Execution time of testAvgTimeI2P() = %v, want %v", got, tt.want)
 			}
 		})
 	}
