@@ -121,16 +121,16 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 
 	for _, peerConn := range listeningPeer.GetPeerConns() {
 		peerItem := map[string]string{
-			"RawAddress": peerConn.RemoteRawAddress,
-			"PublicKey":  peerConn.RemotePeer.GetPublicKey(),
+			"RawAddress": peerConn.GetRemoteRawAddress(),
+			"PublicKey":  peerConn.GetRemotePeer().GetPublicKey(),
 			"NodeType":   "",
 		}
-		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.GetPublicKey(), beaconCommitteeList) != -1
+		isInBeaconCommittee := common.IndexOfStr(peerConn.GetRemotePeer().GetPublicKey(), beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			peerItem["NodeType"] = "Beacon"
 		}
 		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.GetPublicKey(), committees) != -1
+			isInShardCommitee := common.IndexOfStr(peerConn.GetRemotePeer().GetPublicKey(), committees) != -1
 			if isInShardCommitee {
 				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
 				break
@@ -153,7 +153,7 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 	peers := httpServer.config.AddrMgr.AddressCache()
 	for _, peer := range peers {
 		for _, peerConn := range peer.GetPeerConns() {
-			peersMap = append(peersMap, peerConn.RemoteRawAddress)
+			peersMap = append(peersMap, peerConn.GetRemoteRawAddress())
 		}
 	}
 	result.Peers = peersMap
