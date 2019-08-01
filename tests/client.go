@@ -97,7 +97,7 @@ func makeRPCRequestV2(client *Client, method string, params ...interface{}) (int
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	resp, err := http.Post(client.host+":"+client.port, "application/json", bytes.NewBuffer(requestBytes))
+	resp, err := http.Post("http://"+client.host+":"+client.port, "application/json", bytes.NewBuffer(requestBytes))
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
@@ -138,10 +138,10 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
 	var addr string
-	if flag.Lookup("address:"+client.host+client.port) != nil {
-		addr = flag.Lookup("address:"+client.host +client.port).Value.(flag.Getter).Get().(string)
+	if flag.Lookup("address:"+client.host+client.ws) != nil {
+		addr = flag.Lookup("address:"+client.host +client.ws).Value.(flag.Getter).Get().(string)
 	} else {
-		addr = *flag.String("address:"+client.host+client.port, client.host+":"+client.port, "http service address")
+		addr = *flag.String("address:"+client.host+client.ws, client.host+":"+client.ws, "http service address")
 	}
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
