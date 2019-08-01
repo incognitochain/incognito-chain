@@ -325,7 +325,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 		Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, peerConn)
 	}
 	// MONITOR INBOUND MESSAGE
-	StoreInboundPeerMessage(message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
+	storeInboundPeerMessage(message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
 	return nil
 }
 
@@ -426,7 +426,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				}
 				// MONITOR OUTBOUND MESSAGE
 				if outMsg.message != nil {
-					StoreOutboundPeerMessage(outMsg.message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
+					storeOutboundPeerMessage(outMsg.message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
 				}
 
 				_, err := rw.Writer.WriteString(sendString)
