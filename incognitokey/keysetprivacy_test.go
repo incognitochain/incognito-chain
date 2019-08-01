@@ -181,80 +181,6 @@ func TestKeySetVerifyWithUnmatchedPubKey(t *testing.T) {
 }
 
 /*
-	Unit test for EncodeToString function
-*/
-
-func TestKeySetEncodeToString(t *testing.T) {
-	data := [][]byte{
-		{},
-		{1},
-		{1, 2, 3},
-		{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, // 32 bytes
-	}
-
-	keySet := new(KeySet)
-
-	for _, item := range data {
-		keySet = keySet.GenerateKey(item)
-		keySetEncoded := keySet.EncodeToString()
-
-		assert.Greater(t, len(keySetEncoded), 0)
-	}
-}
-
-/*
-	Unit test for DecodeToKeySet function
-*/
-
-func TestKeySetDecodeToKeySet(t *testing.T) {
-	data := [][]byte{
-		{},
-		{1},
-		{1, 2, 3},
-		{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, // 32 bytes
-	}
-
-	keySet := new(KeySet)
-
-	for _, item := range data {
-		keySet = keySet.GenerateKey(item)
-		keySetEncoded := keySet.EncodeToString()
-
-		keySet2 := new(KeySet)
-		keySet2, err := keySet2.DecodeToKeySet(keySetEncoded)
-
-		assert.Equal(t, nil, err)
-		assert.Equal(t, keySet, keySet2)
-	}
-}
-
-func TestKeySetDecodeToKeySetWithWrongString(t *testing.T) {
-	data := [][]byte{
-		{},
-		{1},
-		{1, 2, 3},
-		{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, // 32 bytes
-	}
-
-	keySet := new(KeySet)
-
-	for _, item := range data {
-		// encode
-		keySet = keySet.GenerateKey(item)
-		keySetEncoded := keySet.EncodeToString()
-
-		// edit encoded key set string
-		keySetEncoded = keySetEncoded + "abc"
-
-		// decode
-		keySet2 := new(KeySet)
-		keySet2, err := keySet2.DecodeToKeySet(keySetEncoded)
-
-		assert.Equal(t, NewCashecError(DecodeFromStringErr, nil), err)
-	}
-}
-
-/*
 	Unit test for SignDataB58 function
 */
 func TestKeySetSignDataB58(t *testing.T) {
@@ -269,7 +195,7 @@ func TestKeySetSignDataB58(t *testing.T) {
 	keySet.GenerateKey([]byte{1})
 
 	for _, item := range data {
-		sig, err := keySet.SignDataB58(item)
+		sig, err := keySet.SignDataInBase58CheckEncode(item)
 		assert.Equal(t, nil, err)
 		assert.Greater(t, len(sig), 0)
 	}
@@ -280,7 +206,7 @@ func TestKeySetSignDataB58WithEmptyData(t *testing.T) {
 	keySet := new(KeySet)
 	keySet.GenerateKey([]byte{1})
 
-	_, err := keySet.SignDataB58([]byte{})
+	_, err := keySet.SignDataInBase58CheckEncode([]byte{})
 	assert.Equal(t, ErrCodeMessage[SignDataB58Err].Code, err.(*CashecError).GetCode())
 }
 
@@ -294,10 +220,10 @@ func TestKeySetValidateDataB58(t *testing.T) {
 
 	// sign data
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-	sigB58, _ := keySet.SignDataB58(data)
+	sigB58, _ := keySet.SignDataInBase58CheckEncode(data)
 
 	// get pubB58
-	pubB58 := keySet.GetPublicKeyB58()
+	pubB58 := keySet.GetPublicKeyInBase58CheckEncode()
 
 	// validate
 	err := ValidateDataB58(pubB58, sigB58, data)
@@ -312,10 +238,10 @@ func TestKeySetValidateDataB58WithUnmatchedData(t *testing.T) {
 	// sign data
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 	data2 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	sigB58, _ := keySet.SignDataB58(data)
+	sigB58, _ := keySet.SignDataInBase58CheckEncode(data)
 
 	// get pubB58
-	pubB58 := keySet.GetPublicKeyB58()
+	pubB58 := keySet.GetPublicKeyInBase58CheckEncode()
 
 	// validate
 	err := ValidateDataB58(pubB58, sigB58, data2)
@@ -329,12 +255,12 @@ func TestKeySetValidateDataB58WithWrongSig(t *testing.T) {
 
 	// sign data
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-	sigB58, _ := keySet.SignDataB58(data)
+	sigB58, _ := keySet.SignDataInBase58CheckEncode(data)
 	// edit the signature
 	sigB58 += "abc"
 
 	// get pubB58
-	pubB58 := keySet.GetPublicKeyB58()
+	pubB58 := keySet.GetPublicKeyInBase58CheckEncode()
 
 	// validate
 	err := ValidateDataB58(pubB58, sigB58, data)
@@ -348,10 +274,10 @@ func TestKeySetValidateDataB58WithWrongPub(t *testing.T) {
 
 	// sign data
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-	sigB58, _ := keySet.SignDataB58(data)
+	sigB58, _ := keySet.SignDataInBase58CheckEncode(data)
 
 	// get pubB58
-	pubB58 := keySet.GetPublicKeyB58()
+	pubB58 := keySet.GetPublicKeyInBase58CheckEncode()
 	// edit the public key
 	pubB58 += "abc"
 

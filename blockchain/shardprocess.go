@@ -83,7 +83,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bool) error {
 	// force non-committee member not to validate blk
 	if blockchain.config.UserKeySet != nil && (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) {
-		userRole := blockchain.BestState.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		userRole := blockchain.BestState.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 		fmt.Println("Shard block received 1", userRole)
 
 		if userRole != common.PROPOSER_ROLE && userRole != common.VALIDATOR_ROLE && userRole != common.PENDING_ROLE {
@@ -133,7 +133,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	}
 	// Backup beststate
 	if blockchain.config.UserKeySet != nil {
-		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 			blockchain.config.DataBase.CleanBackup(true, block.Header.ShardID)
 			err = blockchain.BackupCurrentShardState(block, beaconBlocks)
