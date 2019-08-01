@@ -30,14 +30,14 @@ func TestKeySetGenerateKey(t *testing.T) {
 }
 
 /*
-	Unit test for ImportFromPrivateKeyByte function
+	Unit test for InitFromPrivateKeyByte function
 */
 
 func TestKeySetImportFromPrivateKeyByte(t *testing.T) {
 	privateKey := privacy.RandBytes(privacy.PrivateKeySize)
 
 	keySet := new(KeySet)
-	err := keySet.ImportFromPrivateKeyByte(privateKey)
+	err := keySet.InitFromPrivateKeyByte(privateKey)
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, privacy.PrivateKeySize, len(keySet.PrivateKey[:]))
@@ -48,10 +48,10 @@ func TestKeySetImportFromPrivateKeyByte(t *testing.T) {
 
 func TestKeySetImportFromPrivateKeyByteWithInvalidPrivKey(t *testing.T) {
 	keySet := new(KeySet)
-	err := keySet.ImportFromPrivateKeyByte(nil)
+	err := keySet.InitFromPrivateKeyByte(nil)
 	assert.Equal(t, NewCashecError(InvalidPrivateKeyErr, nil), err)
 
-	err2 := keySet.ImportFromPrivateKeyByte([]byte{1, 2, 3})
+	err2 := keySet.InitFromPrivateKeyByte([]byte{1, 2, 3})
 	assert.Equal(t, NewCashecError(InvalidPrivateKeyErr, nil), err2)
 }
 
