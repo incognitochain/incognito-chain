@@ -296,7 +296,6 @@ func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock, blockchain)
-	// blockchain.BestState.Beacon.BeaconPendingValidator = []string{"15rFxN6UMV7d66D4A7d1PjxLC4FBUjQVbHVF6Wd1JfnMLpGwFYe"}
 
 	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
