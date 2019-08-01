@@ -100,6 +100,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"TRAN": transactionLogger,
 	"PRIV": privacyLogger,
 	"DBMP": dbmpLogger,
+	"DEBR": bridgeLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
