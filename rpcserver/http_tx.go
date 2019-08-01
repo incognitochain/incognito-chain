@@ -640,7 +640,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	err = account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
+	err = account.KeySet.InitFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -850,7 +850,7 @@ func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interf
 	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -1239,7 +1239,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
 	}
-	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
 	}
