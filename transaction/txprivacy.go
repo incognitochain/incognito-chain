@@ -19,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
+	errors2 "github.com/pkg/errors"
 )
 
 type Tx struct {
@@ -401,7 +402,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Errorf("Error verifying signature of tx: %+v \n", err)
 		}
 		//Logger.log.Error("FAILED VERIFICATION SIGNATURE")
-		return false, nil
+		return false, errors2.Wrap(err, "signature invalid")
 	}
 
 	if tx.Proof != nil {

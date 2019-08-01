@@ -343,10 +343,10 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 ) error {
 	db := blockchain.config.DataBase
 	for _, inst := range beaconBlock.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+		if len(inst) <= 2 {
 			continue
 		}
-		if len(inst) <= 2 {
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
 		}
 		metaType, err := strconv.Atoi(inst[0])

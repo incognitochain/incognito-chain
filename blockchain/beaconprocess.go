@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -227,7 +227,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	})
 	Logger.log.Infof("Finish Insert new block %+v, with hash %+v \n", block.Header.Height, *block.Hash())
 	if block.Header.Height%50 == 0 {
-		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
+		BLogger.log.Debugf("Inserted beacon height: %d", block.Header.Height)
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, blockchain.BestState.Beacon))
@@ -311,7 +311,11 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
-	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
+	flattenInsts, err := FlattenAndConvertStringInst(block.Body.Instructions)
+	if err != nil {
+		return NewBlockChainError(HashError, err)
+	}
+
 	root := GetKeccak256MerkleRoot(flattenInsts)
 	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
@@ -331,7 +335,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		tempShardStates := make(map[byte][]ShardState)
 		validStakers := [][]string{}
 		validSwappers := make(map[byte][][]string)
-		stabilityInstructions := [][]string{}
+		bridgeInstructions := [][]string{}
 		acceptedBlockRewardInstructions := [][]string{}
 		tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
 		err = json.Unmarshal(tempMarshal, &beaconBestState)
@@ -390,11 +394,11 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					}
 				}
 				for _, shardBlock := range shardBlocks {
-					tempShardState, validStaker, validSwapper, stabilityInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
+					tempShardState, validStaker, validSwapper, bridgeInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
 					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 					validStakers = append(validStakers, validStaker...)
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
-					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
+					bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 					acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				}
 			} else {
@@ -402,7 +406,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			}
 		}
 		beaconBestState.InitRandomClient(blockchain.config.RandomClient)
-		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions, acceptedBlockRewardInstructions)
+		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions)
 		if len(rewardByEpochInstruction) != 0 {
 			tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 		}

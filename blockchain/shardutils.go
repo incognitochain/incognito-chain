@@ -133,7 +133,7 @@ func CreateShardInstructionsFromTransactionAndIns(
 	stakeBeaconPubKey := []string{}
 	stakeShardTxID := []string{}
 	stakeBeaconTxID := []string{}
-	instructions, err = buildStabilityActions(transactions, bc, shardID)
+	instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -160,6 +160,26 @@ func CreateShardInstructionsFromTransactionAndIns(
 		instructions = append(instructions, instruction)
 	}
 	return instructions, nil
+}
+
+// build actions from txs and ins at shard
+func buildActionsFromMetadata(
+	txs []metadata.Transaction,
+	bc *BlockChain,
+	shardID byte,
+) ([][]string, error) {
+	actions := [][]string{}
+	for _, tx := range txs {
+		meta := tx.GetMetadata()
+		if meta != nil {
+			actionPairs, err := meta.BuildReqActions(tx, bc, shardID)
+			if err != nil {
+				continue
+			}
+			actions = append(actions, actionPairs...)
+		}
+	}
+	return actions, nil
 }
 
 //=======================================END SHARD BLOCK UTIL
