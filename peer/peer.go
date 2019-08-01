@@ -293,19 +293,20 @@ func (peerObj *Peer) Init() error {
 func (peerObj *Peer) Start() {
 	Logger.log.Info("RemotePeer start")
 	// ping to bootnode for test env
-	Logger.log.Info("Set stream handler and wait for connection from other peer")
-	peerObj.host.SetStreamHandler(protocolID, peerObj.PushStream)
+	Logger.log.Debug("Set stream handler and wait for connection from other peer")
+	peerObj.host.SetStreamHandler(protocolID, peerObj.pushStream)
 
 	go peerObj.processConn()
 
 	_, ok := <-peerObj.cStop
 	if !ok { // stop
 		close(peerObj.cStopConn)
-		Logger.log.Criticalf("PEER server shutdown complete %s", peerObj.peerID)
+		Logger.log.Warnf("PEER server shutdown complete %s", peerObj.peerID)
 	}
 }
 
-func (peerObj *Peer) PushStream(stream net.Stream) {
+// pushStream - handle function for peer to process a new stream  from connection of other peer
+func (peerObj *Peer) pushStream(stream net.Stream) {
 	go func(stream net.Stream) {
 		newStreamMsg := newStreamMsg{
 			stream: stream,
@@ -333,7 +334,7 @@ func (peerObj *Peer) processConn() {
 			Logger.log.Critical("ProcessConn QUIT")
 			return
 		case newPeerMsg := <-peerObj.cNewConn:
-			Logger.log.Infof("ProcessConn START CONN %s %s", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
+			Logger.log.Debugf("ProcessConn START CONN %s %s", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
 			cConn := make(chan *PeerConn)
 			go func(peerObj *Peer) {
 				peerConn, err := peerObj.handleNewConnectionOut(newPeerMsg.peer, cConn)
@@ -345,18 +346,18 @@ func (peerObj *Peer) processConn() {
 			if newPeerMsg.cConn != nil {
 				newPeerMsg.cConn <- p
 			}
-			Logger.log.Infof("ProcessConn END CONN %s %s", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
+			Logger.log.Debugf("ProcessConn END CONN %s %s", newPeerMsg.peer.peerID.Pretty(), newPeerMsg.peer.rawAddress)
 			continue
 		case newStreamMsg := <-peerObj.cNewStream:
 			remotePeerID := newStreamMsg.stream.Conn().RemotePeer()
-			Logger.log.Infof("ProcessConn START STREAM %s", remotePeerID.Pretty())
+			Logger.log.Debugf("ProcessConn START STREAM %s", remotePeerID.Pretty())
 			cConn := make(chan *PeerConn)
 			go peerObj.handleNewStreamIn(newStreamMsg.stream, cConn)
 			p := <-cConn
 			if newStreamMsg.cConn != nil {
 				newStreamMsg.cConn <- p
 			}
-			Logger.log.Infof("ProcessConn END STREAM %s", remotePeerID.Pretty())
+			Logger.log.Debugf("ProcessConn END STREAM %s", remotePeerID.Pretty())
 			continue
 		}
 	}
@@ -397,7 +398,7 @@ func (peerObj *Peer) connCanceled(peer *Peer) {
 func (peerObj *Peer) countOfInboundConn() int {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
-	ret := int(0)
+	ret := 0
 	for _, peerConn := range peerObj.peerConns {
 		if !peerConn.GetIsOutbound() {
 			ret++
@@ -409,7 +410,7 @@ func (peerObj *Peer) countOfInboundConn() int {
 func (peerObj *Peer) countOfOutboundConn() int {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
-	ret := int(0)
+	ret := 0
 	for _, peerConn := range peerObj.peerConns {
 		if peerConn.GetIsOutbound() {
 			ret++
@@ -461,14 +462,15 @@ func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 
 // handleNewConnectionOut - main process when receiving a new peer connection,
 // this mean we want to connect out to other peer
-func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
-	Logger.log.Infof("Opening stream to PEER Id - %s", peer.rawAddress)
+func (peerObj *Peer) handleNewConnectionOut(otherPeer *Peer, cConn chan *PeerConn) (*PeerConn, error) {
+	Logger.log.Infof("Opening stream to PEER Id - %s", otherPeer.rawAddress)
 
-	peerIDStr := peer.peerID.Pretty()
+	otherPeerID := otherPeer.peerID
+	peerIDStr := otherPeerID.Pretty()
 
 	_, ok := peerObj.peerConns[peerIDStr]
 	if ok {
-		Logger.log.Infof("Checked Existed PEER Id - %s", peer.rawAddress)
+		Logger.log.Debugf("Checked Existed PEER Id - %s", otherPeer.rawAddress)
 
 		if cConn != nil {
 			cConn <- nil
@@ -477,7 +479,7 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 	}
 
 	if peerIDStr == peerObj.peerID.Pretty() {
-		Logger.log.Infof("Checked MypeerObj PEER Id - %s", peer.rawAddress)
+		Logger.log.Debugf("Checked My peerObj PEER Id - %s", otherPeer.rawAddress)
 		//peerObj.newPeerConnectionMutex.Unlock()
 
 		if cConn != nil {
@@ -487,10 +489,10 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 	}
 
 	if peerObj.countOfOutboundConn() >= peerObj.config.MaxOutPeers && peerObj.config.MaxOutPeers > 0 && !ok {
-		Logger.log.Infof("Checked Max Outbound Connection PEER Id - %s", peer.rawAddress)
+		Logger.log.Debugf("Checked Max Outbound Connection PEER Id - %s", otherPeer.rawAddress)
 
 		//push to pending peers
-		peerObj.connPending(peer)
+		peerObj.connPending(otherPeer)
 
 		if cConn != nil {
 			cConn <- nil
@@ -498,8 +500,8 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 		return nil, nil
 	}
 
-	stream, err := peerObj.host.NewStream(context.Background(), peer.peerID, protocolID)
-	Logger.log.Info(peer, stream, err)
+	stream, err := peerObj.host.NewStream(context.Background(), otherPeerID, protocolID)
+	Logger.log.Debug(otherPeer, stream, err)
 	if err != nil {
 		if cConn != nil {
 			cConn <- nil
@@ -513,9 +515,9 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 
 	peerConn := PeerConn{
 		isOutbound:         true, // we are connecting to remote peer -> this is an outbound peer
-		RemotePeer:         peer,
+		RemotePeer:         otherPeer,
 		RemotePeerID:       remotePeerID,
-		RemoteRawAddress:   peer.rawAddress,
+		RemoteRawAddress:   otherPeer.rawAddress,
 		ListenerPeer:       peerObj,
 		Config:             peerObj.config,
 		RWStream:           rw,
@@ -552,10 +554,10 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 	for {
 		select {
 		case <-peerConn.cDisconnect:
-			Logger.log.Infof("NewPeerConnection Disconnected Stream PEER Id %s", peerConn.RemotePeerID.Pretty())
+			Logger.log.Warnf("NewPeerConnection Disconnected Stream PEER Id %s", peerConn.RemotePeerID.Pretty())
 			return &peerConn, nil
 		case <-peerConn.cClose:
-			Logger.log.Infof("NewPeerConnection closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
+			Logger.log.Warnf("NewPeerConnection closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
 			go func() {
 				_, ok := <-peerConn.cDisconnect
 				if !ok {
@@ -571,17 +573,18 @@ func (peerObj *Peer) handleNewConnectionOut(peer *Peer, cConn chan *PeerConn) (*
 
 // handleNewStreamIn - this mean we have other peer want to be connect to us(an inbound peer)
 // we need to create data about this inbound peer and handle our inbound stream
-func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) {
+func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) error {
 	// Remember to close the stream when we are done.
 	defer stream.Close()
 
-	if peerObj.countOfInboundConn() >= peerObj.config.MaxInPeers && peerObj.config.MaxInPeers > 0 {
+	peerConfig := peerObj.config
+	if peerObj.countOfInboundConn() >= peerConfig.MaxInPeers && peerConfig.MaxInPeers > 0 {
 		Logger.log.Infof("Max RemotePeer Inbound Connection")
 
 		if cDone != nil {
 			close(cDone)
 		}
-		return
+		return NewPeerError(HandleNewStreamError, errors.New("Max RemotePeer Inbound Connection"), peerObj)
 	}
 
 	remotePeerID := stream.Conn().RemotePeer()
@@ -593,7 +596,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		if cDone != nil {
 			close(cDone)
 		}
-		return
+		return NewPeerError(HandleNewStreamError, errors.New(fmt.Sprintf("Received a new stream existed PEER Id", remotePeerID.Pretty())), nil)
 	}
 
 	// Create a buffer stream for non blocking read and write.
@@ -605,7 +608,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		RemotePeer: &Peer{
 			peerID: remotePeerID,
 		},
-		Config:             peerObj.config,
+		Config:             peerConfig,
 		RemotePeerID:       remotePeerID,
 		RWStream:           rw,
 		cDisconnect:        make(chan struct{}),
@@ -643,7 +646,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		select {
 		case <-peerConn.cDisconnect:
 			Logger.log.Infof("HandleStream disconnected stream PEER Id %s", peerConn.RemotePeerID.Pretty())
-			return
+			return nil
 		case <-peerConn.cClose:
 			Logger.log.Infof("HandleStream closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
 			go func() {
@@ -653,7 +656,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 					return
 				}
 			}()
-			return
+			return nil
 		}
 	}
 }
