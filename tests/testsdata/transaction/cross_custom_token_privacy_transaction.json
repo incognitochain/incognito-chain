@@ -1,9 +1,6 @@
 [
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "createandsendprivacycustomtokentransaction",
       "context": false,
@@ -38,10 +35,7 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "subcribependingtransaction",
       "context": true,
@@ -55,10 +49,7 @@
     }
   },
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "getlistprivacycustomtokenbalance",
       "context": false,
@@ -81,10 +72,7 @@
     }
   },
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "createandsendprivacycustomtokentransaction",
       "context": false,
@@ -115,10 +103,7 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "subcribependingtransaction",
       "context": true,
@@ -134,10 +119,7 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19338"
-    },
+    "node": "shard1-0",
     "input": {
       "command": "subcribecrosscustomtokenprivacybyprivatekey",
       "context": false,
@@ -156,10 +138,7 @@
     }
   },
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "getlistprivacycustomtokenbalance",
       "context": false,
@@ -182,10 +161,7 @@
     }
   },
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9338"
-    },
+    "node": "shard1-0",
     "input": {
       "command": "getlistprivacycustomtokenbalance",
       "context": false,
