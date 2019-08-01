@@ -2,35 +2,40 @@ package blsmultisig
 
 import (
 	"crypto/rand"
+	"errors"
 	"reflect"
 	"testing"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
-// func TestDecompress(t *testing.T) {
-// 	tests := []struct {
-// 		name string
-// 		bn   *big.Int
-// 	}{}
-// 	j := 0
-// 	for i := 0; i < 10000; i++ {
-// 		bn := privacy.RandScalar()
-// 		x := bn.Mod(bn, bn256.Order)
-// 		if I2Bytes(x, 32)[0] >= 0x8F {
-// 			// if (x.Bit(255) == 1) && (x.Bit(254) == 1) {
-// 			fmt.Println(I2Bytes(x, 32))
-// 			j++
-// 		}
-// 	}
-// 	Decompress()
-// 	fmt.Println(bn256.Order.String())
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			Decompress()
-// 		})
-// 	}
-// }
+func TestDecmprG1(t *testing.T) {
+	type args struct {
+		bytes []byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *bn256.G1
+		wantErr bool
+	}{
+		// {
+		// 	name: "Decompre"
+		// },
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DecmprG1(tt.args.bytes)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DecmprG1() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DecmprG1() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
 func TestCmprG1(t *testing.T) {
 	type args struct {
@@ -41,97 +46,83 @@ func TestCmprG1(t *testing.T) {
 		args args
 		want []byte
 	}{
-		// TODO: Add test cases.
+		// {
+		// 	name: "Compress generator element of G1",
+		// 	args: args{
+		// 		pn: new(bn256.G1).ScalarBaseMult(big.NewInt(1)),
+		// 	},
+		// },
 	}
-	_, p, _ := bn256.RandomG1(rand.Reader)
-	CmprG1(p)
-	CmprG1(p.Neg(p))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := CmprG1(tt.args.pn); (!reflect.DeepEqual(got, tt.want)) && (len(got) != CCmprPnSz) {
+			if got := CmprG1(tt.args.pn); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CmprG1() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDecmprG1(t *testing.T) {
-	type args struct {
-		bytes []byte
-	}
-	tests := []struct {
-		name string
-		args args
-		want *bn256.G1
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := DecmprG1(tt.args.bytes); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DecmprG1() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func cmptPnG1(oddPoint byte, loop int) (bool, *bn256.G1) {
+func cmptPnG1(oddPoint byte, loop int) (*bn256.G1, error) {
 	tests := make([]*bn256.G1, loop)
+	var err error
 	for i := 0; i < loop; i++ {
-		_, tests[i], _ = bn256.RandomG1(rand.Reader)
+		_, tests[i], err = bn256.RandomG1(rand.Reader)
+		if err != nil {
+			return tests[i], err
+		}
 		for ; tests[i].Marshal()[63]&1 != oddPoint; _, tests[i], _ = bn256.RandomG1(rand.Reader) {
 		}
 		cmprBytesArr := CmprG1(tests[i])
-		pnDeCmpr := DecmprG1(cmprBytesArr)
+		pnDeCmpr, err := DecmprG1(cmprBytesArr)
+		if err != nil {
+			return tests[i], err
+		}
 		if !reflect.DeepEqual(pnDeCmpr.Marshal(), tests[i].Marshal()) {
-			return false, tests[i]
+			return tests[i], errors.New("Not equal")
 		}
 	}
-	return true, nil
+	return nil, nil
 }
 
-//Test compute point in G1 group
 func Test_cmptPnG1(t *testing.T) {
 	type args struct {
 		oddPoint byte
 		loop     int
 	}
-	type res struct {
-		success bool
-		cause   *bn256.G1
-	}
 	tests := []struct {
-		name string
-		args args
-		want res
+		name    string
+		args    args
+		want    *bn256.G1
+		wantErr bool
 	}{
 		{
-			name: "Test with 1000 odd point",
+			name: "Test with 10000 odd point",
 			args: args{
 				oddPoint: 1,
-				loop:     1000,
+				loop:     10000,
 			},
-			want: res{
-				success: true,
-				cause:   nil,
-			},
+			want:    nil,
+			wantErr: false,
 		},
 		{
-			name: "Test with 1000 even point",
+			name: "Test with 10000 even point",
 			args: args{
 				oddPoint: 0,
-				loop:     1000,
+				loop:     10000,
 			},
-			want: res{
-				success: true,
-				cause:   nil,
-			},
+			want:    nil,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if success, cause := cmptPnG1(tt.args.oddPoint, tt.args.loop); !success {
-				t.Errorf("cmptPnG1(%v, %v) failed because %v", tt.args.oddPoint, tt.args.loop, cause.Marshal())
+			got, err := cmptPnG1(tt.args.oddPoint, tt.args.loop)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("cmptPnG1() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("cmptPnG1() = %v, want %v", got, tt.want)
 			}
 		})
 	}
