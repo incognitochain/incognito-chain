@@ -436,7 +436,7 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
-			internalConnPeer.Close()
+			internalConnPeer.close()
 		}
 		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.rawAddress)
 	}
@@ -450,7 +450,7 @@ func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.GetIsConnected() {
-			internalConnPeer.Close()
+			internalConnPeer.close()
 		}
 		delete(peerObj.peerConns, peerIDStr)
 		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.rawAddress)
@@ -532,8 +532,8 @@ func (peerObj *Peer) handleNewConnectionOut(otherPeer *Peer, cConn chan *PeerCon
 		HandleFailed:       peerObj.handleFailed,
 	}
 
-	go peerConn.InMessageHandler(rw)
-	go peerConn.OutMessageHandler(rw)
+	go peerConn.inMessageHandler(rw)
+	go peerConn.outMessageHandler(rw)
 
 	peerObj.setPeerConn(&peerConn)
 	defer func() {
@@ -624,8 +624,8 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 
 	peerObj.setPeerConn(&peerConn)
 
-	go peerConn.InMessageHandler(rw)
-	go peerConn.OutMessageHandler(rw)
+	go peerConn.inMessageHandler(rw)
+	go peerConn.outMessageHandler(rw)
 
 	peerConn.RetryCount = 0
 	peerConn.SetConnState(connEstablished)

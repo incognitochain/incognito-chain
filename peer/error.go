@@ -16,6 +16,8 @@ const (
 	HandleNewStreamError
 
 	// PeerConn err
+	HandleMessageCheckResponse
+	HandleMessageCheck
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -32,6 +34,8 @@ var ErrCodeMessage = map[int]struct {
 	HandleNewStreamError:       {-1006, "Handle new stream error"},
 
 	// -2xxx for peer connection
+	HandleMessageCheckResponse: {-2001, "Handle message check response error"},
+	HandleMessageCheck:         {-2002, "Handle message check error"},
 }
 
 type PeerError struct {
