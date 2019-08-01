@@ -2,11 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"time"
 )
 
+var (
+	ErrParseNodeConfigFailed = errors.New("Failed To Parse Node Data From Config")
+	ErrParseHost = errors.New("Failed To Parse host Data From Config")
+	ErrParsePort = errors.New("Failed To Parse port Data From Config")
+	ErrParseWs = errors.New("Failed To Parse Websocket Data From Config")
+)
 type step struct {
 	client *Client
 	input  struct {
@@ -170,6 +177,63 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 		sc.steps = append(sc.steps, step)
 	}
 	return sc, true
+
+}
+func readNodeConfig(env string) (map[string]*Client, error){
+	var nodeList = make(map[string]*Client)
+	var fileNodeInterface = make(map[string]interface{})
+	var fileName = ""
+	switch env {
+	case "testnet":
+		fileName = "./testsconfig/testnet-config.json"
+	default:
+		fileName = "./testsconfig/sample-config.json"
+	}
+	fileNodeData, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(fileNodeData, &fileNodeInterface)
+	if err != nil {
+		return nil, err
+	}
+	for shardNodeKey, shardNodeValueInterface := range fileNodeInterface {
+		clientKey := ""
+		switch shardNodeKey {
+		case "-1":
+			clientKey="beacon"
+		case "0":
+			clientKey="shard0-"
+		case "1":
+			clientKey="shard1-"
+		}
+		shardNodeValue, ok := shardNodeValueInterface.(map[string]interface{})
+		if !ok {
+			return nil, ErrParseNodeConfigFailed
+		}
+		for nodeKey, nodeValueInterface := range shardNodeValue {
+			clientKey += nodeKey
+			nodeValue, ok := nodeValueInterface.(map[string]interface{})
+			if !ok {
+				return nil, ErrParseFailed
+			}
+			host, ok := nodeValue["host"].(string)
+			if !ok {
+				return nil, ErrParseHost
+			}
+			rpcport, ok := nodeValue["port"].(string)
+			if !ok {
+				return nil, ErrParsePort
+			}
+			wsport, ok := nodeValue["ws"].(string)
+			if !ok {
+				return nil, ErrParseHost
+			}
+			c := newClientWithFullInform(host, rpcport, wsport)
+			nodeList[clientKey] = c
+		}
+	}
+	return nodeList, nil
 }
 /*
 	Type
