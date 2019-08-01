@@ -829,9 +829,7 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 }
 
 func (bestStateShard *BestStateShard) MarshalJSON() ([]byte, error) {
-	bestStateShard.lock.RLock()
-	defer bestStateShard.lock.RUnlock()
-
+	//TODO: Add Mutex Lock Later
 	type Alias BestStateShard
 	b, err := json.Marshal(&struct {
 		*Alias
