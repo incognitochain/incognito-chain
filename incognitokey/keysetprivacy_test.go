@@ -7,8 +7,8 @@ import (
 )
 
 /*
-		Unit test for GenerateKey function
- */
+	Unit test for GenerateKey function
+*/
 
 func TestKeySetGenerateKey(t *testing.T) {
 	data := [][]byte{
@@ -30,8 +30,8 @@ func TestKeySetGenerateKey(t *testing.T) {
 }
 
 /*
-		Unit test for ImportFromPrivateKeyByte function
- */
+	Unit test for ImportFromPrivateKeyByte function
+*/
 
 func TestKeySetImportFromPrivateKeyByte(t *testing.T) {
 	privateKey := privacy.RandBytes(privacy.PrivateKeySize)
@@ -56,8 +56,8 @@ func TestKeySetImportFromPrivateKeyByteWithInvalidPrivKey(t *testing.T) {
 }
 
 /*
-		Unit test for ImportFromPrivateKey function
- */
+	Unit test for ImportFromPrivateKey function
+*/
 
 func TestKeySetImportFromPrivateKey(t *testing.T) {
 	privateKey := privacy.GeneratePrivateKey([]byte{1, 2, 3})
@@ -86,8 +86,8 @@ func TestKeySetImportFromPrivateKeyWithInvalidPrivKey(t *testing.T) {
 }
 
 /*
-		Unit test for Sign function
- */
+	Unit test for Sign function
+*/
 
 func TestKeySetSign(t *testing.T) {
 	data := [][]byte{
@@ -111,13 +111,13 @@ func TestKeySetSignWithEmptyData(t *testing.T) {
 	keySet.GenerateKey([]byte{1, 2, 2})
 
 	sig, err := keySet.Sign([]byte{})
-	assert.Equal(t, NewCashecError(InvalidDataSignErr, nil), err)
+	assert.Equal(t, ErrCodeMessage[InvalidDataSignErr].Code, err.(*CashecError).Code)
 	assert.Equal(t, 0, len(sig))
 }
 
 /*
-		Unit test for Verify function
- */
+	Unit test for Verify function
+*/
 
 func TestKeySetVerify(t *testing.T) {
 	data := [][]byte{
@@ -181,8 +181,8 @@ func TestKeySetVerifyWithUnmatchedPubKey(t *testing.T) {
 }
 
 /*
-		Unit test for EncodeToString function
- */
+	Unit test for EncodeToString function
+*/
 
 func TestKeySetEncodeToString(t *testing.T) {
 	data := [][]byte{
@@ -203,8 +203,8 @@ func TestKeySetEncodeToString(t *testing.T) {
 }
 
 /*
-		Unit test for DecodeToKeySet function
- */
+	Unit test for DecodeToKeySet function
+*/
 
 func TestKeySetDecodeToKeySet(t *testing.T) {
 	data := [][]byte{
@@ -255,8 +255,8 @@ func TestKeySetDecodeToKeySetWithWrongString(t *testing.T) {
 }
 
 /*
-		Unit test for SignDataB58 function
- */
+	Unit test for SignDataB58 function
+*/
 func TestKeySetSignDataB58(t *testing.T) {
 	data := [][]byte{
 		{1},
@@ -281,12 +281,12 @@ func TestKeySetSignDataB58WithEmptyData(t *testing.T) {
 	keySet.GenerateKey([]byte{1})
 
 	_, err := keySet.SignDataB58([]byte{})
-	assert.Equal(t, ErrCodeMessage[SignDataB58Err].code, err.(*CashecError).GetCode())
+	assert.Equal(t, ErrCodeMessage[SignDataB58Err].Code, err.(*CashecError).GetCode())
 }
 
 /*
-		Unit test for ValidateDataB58 function
- */
+	Unit test for ValidateDataB58 function
+*/
 func TestKeySetValidateDataB58(t *testing.T) {
 	// generate key set
 	keySet := new(KeySet)
