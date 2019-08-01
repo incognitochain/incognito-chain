@@ -819,7 +819,7 @@ func (httpServer *HttpServer) handleListUnspentCustomToken(params interface{}, c
 		item := jsonresult.UnspentCustomToken{
 			PaymentAddress: senderKeyParam,
 			Index:          temp.GetIndex(),
-			TxHash:     temp.GetTxCustomTokenID().String(),
+			TxHash:         temp.GetTxCustomTokenID().String(),
 			Value:          temp.Value,
 		}
 		result = append(result, item)
