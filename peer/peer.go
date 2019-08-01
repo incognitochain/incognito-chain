@@ -432,13 +432,13 @@ func (peerObj *Peer) GetPeerConnByPeerID(peerID string) *PeerConn {
 func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
-	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
+	peerIDStr := peerConn.remotePeer.peerID.Pretty()
 	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.getIsConnected() {
 			internalConnPeer.close()
 		}
-		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.rawAddress)
+		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.remotePeer.rawAddress)
 	}
 	peerObj.peerConns[peerIDStr] = peerConn
 }
@@ -446,14 +446,14 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
-	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
+	peerIDStr := peerConn.remotePeer.peerID.Pretty()
 	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
 		if internalConnPeer.getIsConnected() {
 			internalConnPeer.close()
 		}
 		delete(peerObj.peerConns, peerIDStr)
-		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.RemotePeer.rawAddress)
+		Logger.log.Infof("RemovePeerConn %s %s", peerIDStr, peerConn.remotePeer.rawAddress)
 		return nil
 	} else {
 		return NewPeerError(UnexpectedError, errors.New(fmt.Sprintf("Can not find %+v", peerIDStr)), nil)
@@ -515,12 +515,12 @@ func (peerObj *Peer) handleNewConnectionOut(otherPeer *Peer, cConn chan *PeerCon
 
 	peerConn := PeerConn{
 		isOutbound:         true, // we are connecting to remote peer -> this is an outbound peer
-		RemotePeer:         otherPeer,
-		RemotePeerID:       remotePeerID,
-		RemoteRawAddress:   otherPeer.rawAddress,
-		ListenerPeer:       peerObj,
-		Config:             peerObj.config,
-		RWStream:           rw,
+		remotePeer:         otherPeer,
+		remotePeerID:       remotePeerID,
+		remoteRawAddress:   otherPeer.rawAddress,
+		listenerPeer:       peerObj,
+		config:             peerObj.config,
+		readWriteStream:    rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
@@ -542,7 +542,7 @@ func (peerObj *Peer) handleNewConnectionOut(otherPeer *Peer, cConn chan *PeerCon
 		Logger.log.Error(err)
 	}()
 
-	peerConn.RetryCount = 0
+	peerConn.retryCount = 0
 	peerConn.setConnState(connEstablished)
 
 	go peerObj.handleConnected(&peerConn)
@@ -554,14 +554,14 @@ func (peerObj *Peer) handleNewConnectionOut(otherPeer *Peer, cConn chan *PeerCon
 	for {
 		select {
 		case <-peerConn.cDisconnect:
-			Logger.log.Warnf("NewPeerConnection Disconnected Stream PEER Id %s", peerConn.RemotePeerID.Pretty())
+			Logger.log.Warnf("NewPeerConnection Disconnected Stream PEER Id %s", peerConn.remotePeerID.Pretty())
 			return &peerConn, nil
 		case <-peerConn.cClose:
-			Logger.log.Warnf("NewPeerConnection closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
+			Logger.log.Warnf("NewPeerConnection closed stream PEER Id %s", peerConn.remotePeerID.Pretty())
 			go func() {
 				_, ok := <-peerConn.cDisconnect
 				if !ok {
-					Logger.log.Infof("NewPeerConnection disconnected after closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
+					Logger.log.Infof("NewPeerConnection disconnected after closed stream PEER Id %s", peerConn.remotePeerID.Pretty())
 					return
 				}
 			}()
@@ -604,13 +604,13 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 
 	peerConn := PeerConn{
 		isOutbound:   false, // we are connected from remote peer -> this is an inbound peer
-		ListenerPeer: peerObj,
-		RemotePeer: &Peer{
+		listenerPeer: peerObj,
+		remotePeer: &Peer{
 			peerID: remotePeerID,
 		},
-		Config:             peerConfig,
-		RemotePeerID:       remotePeerID,
-		RWStream:           rw,
+		config:             peerConfig,
+		remotePeerID:       remotePeerID,
+		readWriteStream:    rw,
 		cDisconnect:        make(chan struct{}),
 		cClose:             make(chan struct{}),
 		cRead:              make(chan struct{}),
@@ -627,7 +627,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 	go peerConn.inMessageHandler(rw)
 	go peerConn.outMessageHandler(rw)
 
-	peerConn.RetryCount = 0
+	peerConn.retryCount = 0
 	peerConn.setConnState(connEstablished)
 
 	go peerObj.handleConnected(&peerConn)
@@ -645,14 +645,14 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 	for {
 		select {
 		case <-peerConn.cDisconnect:
-			Logger.log.Infof("HandleStream disconnected stream PEER Id %s", peerConn.RemotePeerID.Pretty())
+			Logger.log.Infof("HandleStream disconnected stream PEER Id %s", peerConn.remotePeerID.Pretty())
 			return nil
 		case <-peerConn.cClose:
-			Logger.log.Infof("HandleStream closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
+			Logger.log.Infof("HandleStream closed stream PEER Id %s", peerConn.remotePeerID.Pretty())
 			go func() {
 				_, ok := <-peerConn.cDisconnect
 				if !ok {
-					Logger.log.Infof("HandleStream disconnected after closed stream PEER Id %s", peerConn.RemotePeerID.Pretty())
+					Logger.log.Infof("HandleStream disconnected after closed stream PEER Id %s", peerConn.remotePeerID.Pretty())
 					return
 				}
 			}()
@@ -693,11 +693,11 @@ func (peerObj *Peer) Stop() {
 
 // handleConnected - set established flag to a peer when being connected
 func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
-	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
-	peerConn.RetryCount = 0
+	Logger.log.Infof("handleConnected %s", peerConn.remotePeerID.Pretty())
+	peerConn.retryCount = 0
 	peerConn.setConnState(connEstablished)
 
-	peerObj.connEstablished(peerConn.RemotePeer)
+	peerObj.connEstablished(peerConn.remotePeer)
 
 	if peerObj.HandleConnected != nil {
 		peerObj.HandleConnected(peerConn)
@@ -706,7 +706,7 @@ func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 
 // handleDisconnected - handle connected peer when it is disconnected, remove and retry connection
 func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
-	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
+	Logger.log.Infof("handleDisconnected %s", peerConn.remotePeerID.Pretty())
 	peerConn.setConnState(connCanceled)
 	if peerConn.GetIsOutbound() && !peerConn.getIsForceClose() {
 		go peerObj.retryPeerConnection(peerConn)
@@ -719,9 +719,9 @@ func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
 
 // handleFailed - handle when connecting peer failure
 func (peerObj *Peer) handleFailed(peerConn *PeerConn) {
-	Logger.log.Infof("handleFailed %s", peerConn.RemotePeerID.String())
+	Logger.log.Infof("handleFailed %s", peerConn.remotePeerID.String())
 
-	peerObj.connCanceled(peerConn.RemotePeer)
+	peerObj.connCanceled(peerConn.remotePeer)
 
 	if peerObj.HandleFailed != nil {
 		peerObj.HandleFailed(peerConn)
@@ -731,16 +731,16 @@ func (peerObj *Peer) handleFailed(peerConn *PeerConn) {
 // retryPeerConnection - retry to connect to peer when being disconnected
 func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 	time.AfterFunc(retryConnDuration, func() {
-		Logger.log.Infof("Retry Zero RemotePeer Connection %s", peerConn.RemoteRawAddress)
-		peerConn.RetryCount += 1
+		Logger.log.Infof("Retry Zero RemotePeer Connection %s", peerConn.remoteRawAddress)
+		peerConn.retryCount += 1
 
-		if peerConn.RetryCount < maxRetryConn {
+		if peerConn.retryCount < maxRetryConn {
 			peerConn.setConnState(connPending)
 			cConn := make(chan *PeerConn)
-			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, cConn)
+			peerConn.listenerPeer.PushConn(peerConn.remotePeer, cConn)
 			p := <-cConn
 			if p == nil {
-				peerConn.RetryCount++
+				peerConn.retryCount++
 				go peerObj.retryPeerConnection(peerConn)
 			}
 		}
