@@ -127,7 +127,7 @@ func TestPeerConn_InMessageHandler(t *testing.T) {
 	sample.Write([]byte(messageHex))
 	sample.WriteTo(rw)
 	rw.Writer.Flush()
-	err = peerConn.InMessageHandler(rw)
+	err = peerConn.inMessageHandler(rw)
 	if err != nil {
 		t.Error(err)
 	}
