@@ -27,10 +27,10 @@ func (keySet *KeySet) GenerateKey(seed []byte) *KeySet {
 	return keySet
 }
 
-// ImportFromPrivateKeyByte receives private key in bytes array,
+// InitFromPrivateKeyByte receives private key in bytes array,
 // and regenerates payment address and readonly key
 // returns error if private key is invalid
-func (keySet *KeySet) ImportFromPrivateKeyByte(privateKey []byte) error {
+func (keySet *KeySet) InitFromPrivateKeyByte(privateKey []byte) error {
 	if len(privateKey) != privacy.PrivateKeySize {
 		return NewCashecError(InvalidPrivateKeyErr, nil)
 	}
