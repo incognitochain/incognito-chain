@@ -3,6 +3,8 @@ package blsmultisig
 import (
 	"fmt"
 	"math/big"
+	"reflect"
+	"runtime"
 )
 
 func printBit(bn *big.Int) {
@@ -26,3 +28,7 @@ func I2Bytes(bn *big.Int, length int) []byte {
 // 	}
 // 	return res
 // }
+
+func GetFunctionName(i interface{}) string {
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+}
