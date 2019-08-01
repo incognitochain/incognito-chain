@@ -39,13 +39,12 @@ func TestConnManager_GetPeerId(t *testing.T) {
 }
 
 func TestConnManager_GetPeerConnOfAll(t *testing.T) {
-	peer1 := peer.Peer{
-		PeerConnsMtx: sync.Mutex{},
-	}
+	peer1 := peer.Peer{}
+	peer1.SetPeerConnsMtx(&sync.Mutex{})
 	mapPeerConnection := make(map[string]*peer.PeerConn)
 	peerConn := peer.PeerConn{}
-	mapPeerConnection[peerConn.RemotePeerID.String()] = &peerConn
-	peer1.PeerConns = mapPeerConnection
+	mapPeerConnection[peerConn.GetRemotePeerID().String()] = &peerConn
+	peer1.SetPeerConns(mapPeerConnection)
 	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
@@ -57,21 +56,25 @@ func TestConnManager_GetPeerConnOfAll(t *testing.T) {
 }
 
 func TestConnManager_GetPeerConnOfPublicKey(t *testing.T) {
-	peer1 := peer.Peer{
-		PeerConnsMtx: sync.Mutex{},
-	}
+	peer1 := peer.Peer{}
+	peer1.SetPeerConnsMtx(&sync.Mutex{})
 	mapPeerConnection := make(map[string]*peer.PeerConn)
-	peerConn1 := peer.PeerConn{RemotePeer: &peer.Peer{
-		PublicKey: "abc1",
-	},
-		RemotePeerID: "a"}
-	peerConn2 := peer.PeerConn{RemotePeer: &peer.Peer{
-		PublicKey: "abc2",
-	},
-		RemotePeerID: "b"}
-	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
-	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
-	peer1.PeerConns = mapPeerConnection
+
+	peerConn1 := peer.PeerConn{}
+	p1 := &peer.Peer{}
+	p1.SetPublicKey("abc1")
+	peerConn1.SetRemotePeer(p1)
+	peerConn1.SetRemotePeerID("a")
+
+	peerConn2 := peer.PeerConn{}
+	p2 := &peer.Peer{}
+	p2.SetPublicKey("abc2")
+	peerConn2.SetRemotePeer(p2)
+	peerConn2.SetRemotePeerID("b")
+
+	mapPeerConnection[peerConn1.GetRemotePeerID().String()] = &peerConn1
+	mapPeerConnection[peerConn2.GetRemotePeerID().String()] = &peerConn2
+	peer1.SetPeerConns(mapPeerConnection)
 	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
@@ -90,21 +93,25 @@ func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
 	consensusState.beaconCommittee = make([]string, len(beaconCommittee))
 	copy(consensusState.beaconCommittee, beaconCommittee)
 
-	peer1 := peer.Peer{
-		PeerConnsMtx: sync.Mutex{},
-	}
+	peer1 := peer.Peer{}
+	peer1.SetPeerConnsMtx(&sync.Mutex{})
 	mapPeerConnection := make(map[string]*peer.PeerConn)
-	peerConn1 := peer.PeerConn{RemotePeer: &peer.Peer{
-		PublicKey: "abc1",
-	},
-		RemotePeerID: "a"}
-	peerConn2 := peer.PeerConn{RemotePeer: &peer.Peer{
-		PublicKey: "abc2",
-	},
-		RemotePeerID: "b"}
-	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
-	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
-	peer1.PeerConns = mapPeerConnection
+
+	peerConn1 := peer.PeerConn{}
+	p1 := &peer.Peer{}
+	p1.SetPublicKey("abc1")
+	peerConn1.SetRemotePeer(p1)
+	peerConn1.SetRemotePeerID("a")
+
+	peerConn2 := peer.PeerConn{}
+	p2 := &peer.Peer{}
+	p2.SetPublicKey("abc2")
+	peerConn2.SetRemotePeer(p2)
+	peerConn2.SetRemotePeerID("b")
+
+	mapPeerConnection[peerConn1.GetRemotePeerID().String()] = &peerConn1
+	mapPeerConnection[peerConn2.GetRemotePeerID().String()] = &peerConn2
+	peer1.SetPeerConns(mapPeerConnection)
 	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
@@ -135,21 +142,24 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 	}
 	consensusState.rebuild()
 
-	peer1 := peer.Peer{
-		PeerConnsMtx: sync.Mutex{},
-	}
+	peer1 := peer.Peer{}
+	peer1.SetPeerConnsMtx(&sync.Mutex{})
 	mapPeerConnection := make(map[string]*peer.PeerConn)
-	peerConn1 := peer.PeerConn{RemotePeer: &peer.Peer{
-		PublicKey: "abc1",
-	},
-		RemotePeerID: "a"}
-	peerConn2 := peer.PeerConn{RemotePeer: &peer.Peer{
-		PublicKey: "abc2",
-	},
-		RemotePeerID: "b"}
-	mapPeerConnection[peerConn1.RemotePeerID.String()] = &peerConn1
-	mapPeerConnection[peerConn2.RemotePeerID.String()] = &peerConn2
-	peer1.PeerConns = mapPeerConnection
+	peerConn1 := peer.PeerConn{}
+	p1 := &peer.Peer{}
+	p1.SetPublicKey("abc1")
+	peerConn1.SetRemotePeer(p1)
+	peerConn1.SetRemotePeerID("a")
+
+	peerConn2 := peer.PeerConn{}
+	p2 := &peer.Peer{}
+	p2.SetPublicKey("abc2")
+	peerConn2.SetRemotePeer(p2)
+	peerConn2.SetRemotePeerID("b")
+
+	mapPeerConnection[peerConn1.GetRemotePeerID().String()] = &peerConn1
+	mapPeerConnection[peerConn2.GetRemotePeerID().String()] = &peerConn2
+	peer1.SetPeerConns(mapPeerConnection)
 	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})

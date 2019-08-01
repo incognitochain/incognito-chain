@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -28,25 +29,21 @@ type PeerConn struct {
 	cClose           chan struct{}
 	cMsgHash         map[string]chan bool
 
-	RetryCount int32
-
+	isOutbound      bool
+	isOutboundMtx   sync.Mutex
+	isForceClose    bool
+	isForceCloseMtx sync.Mutex
+	readWriteStream *bufio.ReadWriter
+	isConnected     bool
+	isConnectedMtx  sync.Mutex
+	retryCount      int32
+	config          Config
 	// remote peer info
-	RemotePeer       *Peer
-	RemotePeerID     peer.ID
-	RemoteRawAddress string
-	isOutbound       bool
-	isOutboundMtx    sync.Mutex
-	isForceClose     bool
-	isForceCloseMtx  sync.Mutex
-
-	RWStream       *bufio.ReadWriter
-	VerValid       bool
-	isConnected    bool
-	isConnectedMtx sync.Mutex
-
-	Config Config
-
-	ListenerPeer *Peer
+	remotePeer       *Peer
+	remotePeerID     peer.ID
+	remoteRawAddress string
+	listenerPeer     *Peer
+	verValid         bool
 
 	HandleConnected    func(peerConn *PeerConn)
 	HandleDisconnected func(peerConn *PeerConn)
@@ -62,31 +59,31 @@ func (peerConn *PeerConn) GetIsOutbound() bool {
 	return peerConn.isOutbound
 }
 
-func (peerConn *PeerConn) SetIsOutbound(isOutbound bool) {
+func (peerConn *PeerConn) setIsOutbound(isOutbound bool) {
 	peerConn.isOutboundMtx.Lock()
 	defer peerConn.isOutboundMtx.Unlock()
 	peerConn.isOutbound = isOutbound
 }
 
-func (peerConn *PeerConn) GetIsForceClose() bool {
+func (peerConn *PeerConn) getIsForceClose() bool {
 	peerConn.isForceCloseMtx.Lock()
 	defer peerConn.isForceCloseMtx.Unlock()
 	return peerConn.isForceClose
 }
 
-func (peerConn *PeerConn) SetIsForceClose(v bool) {
+func (peerConn *PeerConn) setIsForceClose(v bool) {
 	peerConn.isForceCloseMtx.Lock()
 	defer peerConn.isForceCloseMtx.Unlock()
 	peerConn.isForceClose = v
 }
 
-func (peerConn *PeerConn) GetIsConnected() bool {
+func (peerConn *PeerConn) getIsConnected() bool {
 	peerConn.isConnectedMtx.Lock()
 	defer peerConn.isConnectedMtx.Unlock()
 	return peerConn.isConnected
 }
 
-func (peerConn *PeerConn) SetIsConnected(v bool) {
+func (peerConn *PeerConn) setIsConnected(v bool) {
 	peerConn.isConnectedMtx.Lock()
 	defer peerConn.isConnectedMtx.Unlock()
 	peerConn.isConnected = v
@@ -97,18 +94,42 @@ func (p *PeerConn) VerAckReceived() bool {
 }
 
 // updateState updates the state of the connection request.
-func (p *PeerConn) SetConnState(connState ConnState) {
+func (p *PeerConn) setConnState(connState ConnState) {
 	p.stateMtx.Lock()
 	defer p.stateMtx.Unlock()
 	p.connState = connState
 }
 
-// State is the connection state of the requested connection.
-func (p *PeerConn) GetConnState() ConnState {
-	p.stateMtx.RLock()
-	defer p.stateMtx.RUnlock()
-	connState := p.connState
-	return connState
+func (p PeerConn) GetRemoteRawAddress() string {
+	return p.remoteRawAddress
+}
+
+func (p PeerConn) GetRemotePeer() *Peer {
+	return p.remotePeer
+}
+
+func (p *PeerConn) SetRemotePeer(v *Peer) {
+	p.remotePeer = v
+}
+
+func (p PeerConn) GetRemotePeerID() peer.ID {
+	return p.remotePeerID
+}
+
+func (p *PeerConn) SetRemotePeerID(v peer.ID) {
+	p.remotePeerID = v
+}
+
+func (p PeerConn) GetListenerPeer() *Peer {
+	return p.listenerPeer
+}
+
+func (p *PeerConn) SetListenerPeer(v *Peer) {
+	p.listenerPeer = v
+}
+
+func (p *PeerConn) SetVerValid(v bool) {
+	p.verValid = v
 }
 
 // end GET/SET func
@@ -122,7 +143,7 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 	for {
 		b, err := rw.ReadByte()
 		if err != nil {
-			return "", err
+			return common.EmptyString, NewPeerError(ReadStringMessageError, err, nil)
 		}
 		// break byte buf after get a delim
 		if b == delim {
@@ -132,7 +153,7 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 		buf = append(buf, b)
 		bufL++
 		if bufL > maxReadBytes {
-			return "", errors.New("limit bytes for message")
+			return common.EmptyString, NewPeerError(LimitByteForMessageError, errors.New("limit bytes for message"), nil)
 		}
 	}
 
@@ -145,14 +166,17 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 // we need analyze it and process with corresponding message type
 func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	// Parse Message header from last 24 bytes header message
-	jsonDecodeBytesRaw, _ := hex.DecodeString(msgStr)
+	jsonDecodeBytesRaw, err := hex.DecodeString(msgStr)
+	if err != nil {
+		return NewPeerError(HexDecodeMessageError, err, nil)
+	}
 
 	// cache message hash
 	hashMsgRaw := common.HashH(jsonDecodeBytesRaw).String()
-	if peerConn.ListenerPeer != nil {
-		if err := peerConn.ListenerPeer.HashToPool(hashMsgRaw); err != nil {
+	if peerConn.listenerPeer != nil {
+		if err := peerConn.listenerPeer.HashToPool(hashMsgRaw); err != nil {
 			Logger.log.Error(err)
-			return err
+			return NewPeerError(HashToPoolError, err, nil)
 		}
 	}
 	// unzip data before process
@@ -160,10 +184,10 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	if err != nil {
 		Logger.log.Error("Can not unzip from message")
 		Logger.log.Error(err)
-		return err
+		return NewPeerError(UnzipMessageError, err, nil)
 	}
 
-	Logger.log.Infof("In message content : %s", string(jsonDecodeBytes))
+	Logger.log.Debugf("In message content : %s", string(jsonDecodeBytes))
 
 	// Parse Message body
 	messageBody := jsonDecodeBytes[:len(jsonDecodeBytes)-wire.MessageHeaderSize]
@@ -178,35 +202,35 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	if err != nil {
 		Logger.log.Error("Can not find particular message for message cmd type")
 		Logger.log.Error(err)
-		return err
+		return NewPeerError(MessageTypeError, err, nil)
 	}
 
 	if len(jsonDecodeBytes) > message.MaxPayloadLength(1) {
 		Logger.log.Errorf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
-		return err
+		return NewPeerError(MessageTypeError, err, nil)
 	}
 	// check forward
-	if peerConn.Config.MessageListeners.GetCurrentRoleShard != nil {
-		cRole, cShard := peerConn.Config.MessageListeners.GetCurrentRoleShard()
+	if peerConn.config.MessageListeners.GetCurrentRoleShard != nil {
+		cRole, cShard := peerConn.config.MessageListeners.GetCurrentRoleShard()
 		if cShard != nil {
 			fT := messageHeader[wire.MessageCmdTypeSize]
 			if fT == MessageToShard {
 				fS := messageHeader[wire.MessageCmdTypeSize+1]
 				if *cShard != fS {
-					if peerConn.Config.MessageListeners.PushRawBytesToShard != nil {
-						peerConn.Config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
+					if peerConn.config.MessageListeners.PushRawBytesToShard != nil {
+						peerConn.config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
 					}
-					return err
+					return NewPeerError(CheckForwardError, err, nil)
 				}
 			}
 		}
 		if cRole != "" {
 			fT := messageHeader[wire.MessageCmdTypeSize]
 			if fT == MessageToBeacon && cRole != "beacon" {
-				if peerConn.Config.MessageListeners.PushRawBytesToBeacon != nil {
-					peerConn.Config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
+				if peerConn.config.MessageListeners.PushRawBytesToBeacon != nil {
+					peerConn.config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
 				}
-				return err
+				return NewPeerError(CheckForwardError, err, nil)
 			}
 		}
 	}
@@ -215,117 +239,129 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	if err != nil {
 		Logger.log.Error("Can not parse struct from json message")
 		Logger.log.Error(err)
-		return err
+		return NewPeerError(ParseJsonMessageError, err, nil)
 	}
 	realType := reflect.TypeOf(message)
-	Logger.log.Infof("Cmd message type of struct %s", realType.String())
+	Logger.log.Debugf("Cmd message type of struct %s", realType.String())
 
 	// cache message hash
-	if peerConn.ListenerPeer != nil {
+	if peerConn.listenerPeer != nil {
 		hashMsg := message.Hash()
-		if err := peerConn.ListenerPeer.HashToPool(hashMsg); err != nil {
+		if err := peerConn.listenerPeer.HashToPool(hashMsg); err != nil {
 			Logger.log.Error(err)
-			return err
+			return NewPeerError(CacheMessageHashError, err, nil)
 		}
 	}
 
 	// process message for each of message type
-	switch realType {
+	errProcessMessage := peerConn.processMessageForEachType(realType, message)
+	if errProcessMessage != nil {
+		Logger.log.Error(errProcessMessage)
+	}
+
+	// MONITOR INBOUND MESSAGE
+	storeInboundPeerMessage(message, time.Now().Unix(), peerConn.remotePeer.GetPeerID())
+	return nil
+}
+
+// process message for each of message type
+func (peerConn *PeerConn) processMessageForEachType(messageType reflect.Type, message wire.Message) error {
+	switch messageType {
 	case reflect.TypeOf(&wire.MessageTx{}):
-		if peerConn.Config.MessageListeners.OnTx != nil {
-			peerConn.Config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
+		if peerConn.config.MessageListeners.OnTx != nil {
+			peerConn.config.MessageListeners.OnTx(peerConn, message.(*wire.MessageTx))
 		}
 	case reflect.TypeOf(&wire.MessageTxToken{}):
-		if peerConn.Config.MessageListeners.OnTxToken != nil {
-			peerConn.Config.MessageListeners.OnTxToken(peerConn, message.(*wire.MessageTxToken))
+		if peerConn.config.MessageListeners.OnTxToken != nil {
+			peerConn.config.MessageListeners.OnTxToken(peerConn, message.(*wire.MessageTxToken))
 		}
 	case reflect.TypeOf(&wire.MessageTxPrivacyToken{}):
-		if peerConn.Config.MessageListeners.OnTxPrivacyToken != nil {
-			peerConn.Config.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
+		if peerConn.config.MessageListeners.OnTxPrivacyToken != nil {
+			peerConn.config.MessageListeners.OnTxPrivacyToken(peerConn, message.(*wire.MessageTxPrivacyToken))
 		}
 	case reflect.TypeOf(&wire.MessageBlockShard{}):
-		if peerConn.Config.MessageListeners.OnBlockShard != nil {
-			peerConn.Config.MessageListeners.OnBlockShard(peerConn, message.(*wire.MessageBlockShard))
+		if peerConn.config.MessageListeners.OnBlockShard != nil {
+			peerConn.config.MessageListeners.OnBlockShard(peerConn, message.(*wire.MessageBlockShard))
 		}
 	case reflect.TypeOf(&wire.MessageBlockBeacon{}):
-		if peerConn.Config.MessageListeners.OnBlockBeacon != nil {
-			peerConn.Config.MessageListeners.OnBlockBeacon(peerConn, message.(*wire.MessageBlockBeacon))
+		if peerConn.config.MessageListeners.OnBlockBeacon != nil {
+			peerConn.config.MessageListeners.OnBlockBeacon(peerConn, message.(*wire.MessageBlockBeacon))
 		}
 	case reflect.TypeOf(&wire.MessageCrossShard{}):
-		if peerConn.Config.MessageListeners.OnCrossShard != nil {
-			peerConn.Config.MessageListeners.OnCrossShard(peerConn, message.(*wire.MessageCrossShard))
+		if peerConn.config.MessageListeners.OnCrossShard != nil {
+			peerConn.config.MessageListeners.OnCrossShard(peerConn, message.(*wire.MessageCrossShard))
 		}
 	case reflect.TypeOf(&wire.MessageShardToBeacon{}):
-		if peerConn.Config.MessageListeners.OnShardToBeacon != nil {
-			peerConn.Config.MessageListeners.OnShardToBeacon(peerConn, message.(*wire.MessageShardToBeacon))
+		if peerConn.config.MessageListeners.OnShardToBeacon != nil {
+			peerConn.config.MessageListeners.OnShardToBeacon(peerConn, message.(*wire.MessageShardToBeacon))
 		}
 	case reflect.TypeOf(&wire.MessageGetBlockBeacon{}):
-		if peerConn.Config.MessageListeners.OnGetBlockBeacon != nil {
-			peerConn.Config.MessageListeners.OnGetBlockBeacon(peerConn, message.(*wire.MessageGetBlockBeacon))
+		if peerConn.config.MessageListeners.OnGetBlockBeacon != nil {
+			peerConn.config.MessageListeners.OnGetBlockBeacon(peerConn, message.(*wire.MessageGetBlockBeacon))
 		}
 	case reflect.TypeOf(&wire.MessageGetBlockShard{}):
-		if peerConn.Config.MessageListeners.OnGetBlockShard != nil {
-			peerConn.Config.MessageListeners.OnGetBlockShard(peerConn, message.(*wire.MessageGetBlockShard))
+		if peerConn.config.MessageListeners.OnGetBlockShard != nil {
+			peerConn.config.MessageListeners.OnGetBlockShard(peerConn, message.(*wire.MessageGetBlockShard))
 		}
 	case reflect.TypeOf(&wire.MessageGetCrossShard{}):
-		if peerConn.Config.MessageListeners.OnGetCrossShard != nil {
-			peerConn.Config.MessageListeners.OnGetCrossShard(peerConn, message.(*wire.MessageGetCrossShard))
+		if peerConn.config.MessageListeners.OnGetCrossShard != nil {
+			peerConn.config.MessageListeners.OnGetCrossShard(peerConn, message.(*wire.MessageGetCrossShard))
 		}
 	case reflect.TypeOf(&wire.MessageGetShardToBeacon{}):
-		if peerConn.Config.MessageListeners.OnGetShardToBeacon != nil {
-			peerConn.Config.MessageListeners.OnGetShardToBeacon(peerConn, message.(*wire.MessageGetShardToBeacon))
+		if peerConn.config.MessageListeners.OnGetShardToBeacon != nil {
+			peerConn.config.MessageListeners.OnGetShardToBeacon(peerConn, message.(*wire.MessageGetShardToBeacon))
 		}
 	case reflect.TypeOf(&wire.MessageVersion{}):
-		if peerConn.Config.MessageListeners.OnVersion != nil {
+		if peerConn.config.MessageListeners.OnVersion != nil {
 			versionMessage := message.(*wire.MessageVersion)
-			peerConn.Config.MessageListeners.OnVersion(peerConn, versionMessage)
+			peerConn.config.MessageListeners.OnVersion(peerConn, versionMessage)
 		}
 	case reflect.TypeOf(&wire.MessageVerAck{}):
 		peerConn.verAckReceived = true
-		if peerConn.Config.MessageListeners.OnVerAck != nil {
-			peerConn.Config.MessageListeners.OnVerAck(peerConn, message.(*wire.MessageVerAck))
+		if peerConn.config.MessageListeners.OnVerAck != nil {
+			peerConn.config.MessageListeners.OnVerAck(peerConn, message.(*wire.MessageVerAck))
 		}
 	case reflect.TypeOf(&wire.MessageGetAddr{}):
-		if peerConn.Config.MessageListeners.OnGetAddr != nil {
-			peerConn.Config.MessageListeners.OnGetAddr(peerConn, message.(*wire.MessageGetAddr))
+		if peerConn.config.MessageListeners.OnGetAddr != nil {
+			peerConn.config.MessageListeners.OnGetAddr(peerConn, message.(*wire.MessageGetAddr))
 		}
 	case reflect.TypeOf(&wire.MessageAddr{}):
-		if peerConn.Config.MessageListeners.OnGetAddr != nil {
-			peerConn.Config.MessageListeners.OnAddr(peerConn, message.(*wire.MessageAddr))
+		if peerConn.config.MessageListeners.OnGetAddr != nil {
+			peerConn.config.MessageListeners.OnAddr(peerConn, message.(*wire.MessageAddr))
 		}
 	case reflect.TypeOf(&wire.MessageBFTPropose{}):
-		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
+		if peerConn.config.MessageListeners.OnBFTMsg != nil {
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
 		}
 	case reflect.TypeOf(&wire.MessageBFTAgree{}):
-		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTAgree))
+		if peerConn.config.MessageListeners.OnBFTMsg != nil {
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTAgree))
 		}
 	case reflect.TypeOf(&wire.MessageBFTCommit{}):
-		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTCommit))
+		if peerConn.config.MessageListeners.OnBFTMsg != nil {
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTCommit))
 		}
 	case reflect.TypeOf(&wire.MessageBFTReady{}):
-		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
+		if peerConn.config.MessageListeners.OnBFTMsg != nil {
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
 		}
 	case reflect.TypeOf(&wire.MessageBFTReq{}):
-		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReq))
+		if peerConn.config.MessageListeners.OnBFTMsg != nil {
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReq))
 		}
 	case reflect.TypeOf(&wire.MessagePeerState{}):
-		if peerConn.Config.MessageListeners.OnPeerState != nil {
-			peerConn.Config.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
+		if peerConn.config.MessageListeners.OnPeerState != nil {
+			peerConn.config.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
 		}
 	case reflect.TypeOf(&wire.MessageMsgCheck{}):
 		peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
 	case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
 		peerConn.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
 	default:
-		Logger.log.Warnf("InMessageHandler Received unhandled message of type % from %v", realType, peerConn)
+		errorMessage := fmt.Sprintf("InMessageHandler Received unhandled message of type % from %v", messageType, peerConn)
+		Logger.log.Error(errorMessage)
+		return NewPeerError(UnhandleMessageTypeError, errors.New(errorMessage), nil)
 	}
-	// MONITOR INBOUND MESSAGE
-	StoreInboundPeerMessage(message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
 	return nil
 }
 
@@ -334,17 +370,17 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 // convert to string data
 // check type object which map with string data
 // call corresponding function to process message
-func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
-	peerConn.SetIsConnected(true)
+func (peerConn *PeerConn) inMessageHandler(rw *bufio.ReadWriter) error {
+	peerConn.setIsConnected(true)
 	for {
-		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.GetPeerID().Pretty(), peerConn.RemotePeer.GetRawAddress())
+		Logger.log.Debugf("PEER %s (address: %s) Reading stream", peerConn.remotePeer.GetPeerID().Pretty(), peerConn.remotePeer.GetRawAddress())
 
 		str, errR := peerConn.readString(rw, delimMessageByte, spamMessageSize)
 		if errR != nil {
 			// we has an error when read stream message an can not parse to string data
-			peerConn.SetIsConnected(false)
+			peerConn.setIsConnected(false)
 			Logger.log.Error("---------------------------------------------------------------------")
-			Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.GetRawAddress())
+			Logger.log.Errorf("InMessageHandler ERROR %s %s", peerConn.remotePeerID.Pretty(), peerConn.remotePeer.GetRawAddress())
 			Logger.log.Error(errR)
 			Logger.log.Errorf("InMessageHandler QUIT")
 			Logger.log.Error("---------------------------------------------------------------------")
@@ -371,18 +407,18 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
 // a muxer for various sources of input so we can ensure that server and peer
 // handlers will not block on us sending a message.  That data is then passed on
 // to outHandler to be actually written.
-func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
+func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		select {
 		case outMsg := <-peerConn.sendMessageQueue:
 			{
 				var sendString string
 				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
-					Logger.log.Infof("OutMessageHandler with raw bytes")
+					Logger.log.Debugf("OutMessageHandler with raw bytes")
 					message := hex.EncodeToString(*outMsg.rawBytes)
 					message += delimMessageStr
 					sendString = message
-					Logger.log.Infof("Send a messageHex raw bytes to %s", peerConn.RemotePeer.GetPeerID().Pretty())
+					Logger.log.Debugf("Send a messageHex raw bytes to %s", peerConn.remotePeer.GetPeerID().Pretty())
 				} else {
 					// Create and send messageHex
 					messageBytes, err := outMsg.message.JsonSerialize()
@@ -406,7 +442,7 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 						copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 					}
 					messageBytes = append(messageBytes, headerBytes...)
-					Logger.log.Infof("OutMessageHandler TYPE %s CONTENT %s", cmdType, string(messageBytes))
+					Logger.log.Debugf("OutMessageHandler TYPE %s CONTENT %s", cmdType, string(messageBytes))
 
 					// zip data before send
 					messageBytes, err = common.GZipFromBytes(messageBytes)
@@ -416,17 +452,17 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 						continue
 					}
 					messageHex := hex.EncodeToString(messageBytes)
-					//Logger.log.Infof("Content in hex encode: %s", string(messageHex))
+					//Logger.log.Debugf("Content in hex encode: %s", string(messageHex))
 					// add end character to messageHex (delim '\n')
 					messageHex += delimMessageStr
 
 					// send on p2p stream
-					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.RemotePeer.GetPeerID().Pretty())
+					Logger.log.Debugf("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.remotePeer.GetPeerID().Pretty())
 					sendString = messageHex
 				}
 				// MONITOR OUTBOUND MESSAGE
 				if outMsg.message != nil {
-					StoreOutboundPeerMessage(outMsg.message, time.Now().Unix(), peerConn.RemotePeer.GetPeerID())
+					storeOutboundPeerMessage(outMsg.message, time.Now().Unix(), peerConn.remotePeer.GetPeerID())
 				}
 
 				_, err := rw.Writer.WriteString(sendString)
@@ -442,9 +478,9 @@ func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
 				continue
 			}
 		case <-peerConn.cWrite:
-			Logger.log.Infof("OutMessageHandler QUIT %s %s", peerConn.RemotePeerID.Pretty(), peerConn.RemotePeer.GetRawAddress())
+			Logger.log.Debugf("OutMessageHandler QUIT %s %s", peerConn.remotePeerID.Pretty(), peerConn.remotePeer.GetRawAddress())
 
-			peerConn.SetIsConnected(false)
+			peerConn.setIsConnected(false)
 
 			close(peerConn.cDisconnect)
 
@@ -482,21 +518,21 @@ BeginCheckHashMessage:
 		_, ok := <-time.NewTimer(maxTimeoutCheckHashMessage * time.Second).C
 		if !ok {
 			if cTimeOut != nil {
-				Logger.log.Infof("checkMessageHashBeforeSend TIMER time out %s", hash)
+				Logger.log.Debugf("checkMessageHashBeforeSend TIMER time out %s", hash)
 				bTimeOut = true
 				close(cTimeOut)
 			}
 			return
 		}
 	}()
-	Logger.log.Infof("checkMessageHashBeforeSend WAIT result check hash %s", hash)
+	Logger.log.Debugf("checkMessageHashBeforeSend WAIT result check hash %s", hash)
 	select {
 	case bCheck = <-peerConn.cMsgHash[hash]:
-		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED hash %s bAccept %s", hash, bCheck)
+		Logger.log.Debugf("checkMessageHashBeforeSend RECEIVED hash %s bAccept %s", hash, bCheck)
 		cTimeOut = nil
 		break
 	case <-cTimeOut:
-		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED time out %d", numRetries)
+		Logger.log.Debugf("checkMessageHashBeforeSend RECEIVED time out %d", numRetries)
 		cTimeOut = nil
 		bTimeOut = true
 		break
@@ -504,7 +540,7 @@ BeginCheckHashMessage:
 	if cTimeOut == nil {
 		delete(peerConn.cMsgHash, hash)
 	}
-	Logger.log.Infof("checkMessageHashBeforeSend FINISHED check hash %s %s", hash, bCheck)
+	Logger.log.Debugf("checkMessageHashBeforeSend FINISHED check hash %s %s", hash, bCheck)
 	if bTimeOut && numRetries < maxRetriesCheckHashMessage {
 		goto BeginCheckHashMessage
 	}
@@ -518,13 +554,13 @@ BeginCheckHashMessage:
 //
 // This function is safe for concurrent access.
 func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, forwardType byte, forwardValue *byte) {
-	Logger.log.Infof("QueueMessageWithEncoding %s %s", peerConn.RemotePeer.GetPeerID().Pretty(), msg.MessageType())
+	Logger.log.Debugf("QueueMessageWithEncoding %s %s", peerConn.remotePeer.GetPeerID().Pretty(), msg.MessageType())
 	go func() {
-		if peerConn.GetIsConnected() {
+		if peerConn.getIsConnected() {
 			data, _ := msg.JsonSerialize()
 			if len(data) >= heavyMessageSize && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := msg.Hash()
-				Logger.log.Infof("QueueMessageWithEncoding HeavyMessageSize %s %s", hash, msg.MessageType())
+				Logger.log.Debugf("QueueMessageWithEncoding HeavyMessageSize %s %s", hash, msg.MessageType())
 
 				if peerConn.checkMessageHashBeforeSend(hash) {
 					peerConn.sendMessageQueue <- outMsg{
@@ -546,16 +582,17 @@ func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan ch
 	}()
 }
 
+// QueueMessageWithBytes -
 func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
-	Logger.log.Infof("QueueMessageWithBytes %s", peerConn.RemotePeer.GetPeerID().Pretty())
+	Logger.log.Debugf("QueueMessageWithBytes from %s", peerConn.remotePeer.GetPeerID().Pretty())
 	if msgBytes == nil || len(*msgBytes) <= 0 {
 		return
 	}
 	go func() {
-		if peerConn.GetIsConnected() {
+		if peerConn.getIsConnected() {
 			if len(*msgBytes) >= heavyMessageSize+wire.MessageHeaderSize {
 				hash := common.HashH(*msgBytes).String()
-				Logger.log.Infof("QueueMessageWithBytes HeavyMessageSize %s", hash)
+				Logger.log.Debugf("QueueMessageWithBytes HeavyMessageSize %s", hash)
 
 				if peerConn.checkMessageHashBeforeSend(hash) {
 					peerConn.sendMessageQueue <- outMsg{
@@ -573,14 +610,15 @@ func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<
 	}()
 }
 
+// handleMsgCheck -
 func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) error {
-	Logger.log.Infof("handleMsgCheck %s", msg.HashStr)
+	Logger.log.Debugf("handleMsgCheck %s", msg.HashStr)
 	msgResp, err := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
 	if err != nil {
 		Logger.log.Error("handleMsgCheck error", err)
-		return err
+		return NewPeerError(HandleMessageCheck, err, nil)
 	}
-	if p.ListenerPeer.CheckHashPool(msg.HashStr) {
+	if p.listenerPeer.CheckHashPool(msg.HashStr) {
 		msgResp.(*wire.MessageMsgCheckResp).HashStr = msg.HashStr
 		msgResp.(*wire.MessageMsgCheckResp).Accept = false
 	} else {
@@ -591,8 +629,9 @@ func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) error {
 	return nil
 }
 
+// handleMsgCheckResp - check cMsgHash contain hash of message
 func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
-	Logger.log.Infof("handleMsgCheckResp %s", msg.HashStr)
+	Logger.log.Debugf("handleMsgCheckResp %s", msg.HashStr)
 	m, ok := p.cMsgHash[msg.HashStr]
 	if ok {
 		if !p.isUnitTest {
@@ -601,12 +640,12 @@ func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
 		}
 		return nil
 	} else {
-		return errors.New("not ok")
+		return NewPeerError(HandleMessageCheckResponse, errors.New(fmt.Sprintf("p.cMsgHash not contain %s", msg.HashStr)), nil)
 	}
 }
 
 // Close - close peer connection by close channel
-func (p *PeerConn) Close() {
+func (p *PeerConn) close() {
 	if _, ok := <-p.cClose; ok {
 		close(p.cClose)
 	}
@@ -614,6 +653,6 @@ func (p *PeerConn) Close() {
 
 // ForceClose - set flag and close channel
 func (p *PeerConn) ForceClose() {
-	p.SetIsForceClose(true)
+	p.setIsForceClose(true)
 	close(p.cClose)
 }
