@@ -435,7 +435,7 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
 	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
-		if internalConnPeer.GetIsConnected() {
+		if internalConnPeer.getIsConnected() {
 			internalConnPeer.close()
 		}
 		Logger.log.Infof("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.RemotePeer.rawAddress)
@@ -449,7 +449,7 @@ func (peerObj *Peer) removePeerConn(peerConn *PeerConn) error {
 	peerIDStr := peerConn.RemotePeer.peerID.Pretty()
 	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
 	if ok {
-		if internalConnPeer.GetIsConnected() {
+		if internalConnPeer.getIsConnected() {
 			internalConnPeer.close()
 		}
 		delete(peerObj.peerConns, peerIDStr)
@@ -543,7 +543,7 @@ func (peerObj *Peer) handleNewConnectionOut(otherPeer *Peer, cConn chan *PeerCon
 	}()
 
 	peerConn.RetryCount = 0
-	peerConn.SetConnState(connEstablished)
+	peerConn.setConnState(connEstablished)
 
 	go peerObj.handleConnected(&peerConn)
 
@@ -628,7 +628,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 	go peerConn.outMessageHandler(rw)
 
 	peerConn.RetryCount = 0
-	peerConn.SetConnState(connEstablished)
+	peerConn.setConnState(connEstablished)
 
 	go peerObj.handleConnected(&peerConn)
 
@@ -684,7 +684,7 @@ func (peerObj *Peer) Stop() {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
 	for _, peerConn := range peerObj.peerConns {
-		peerConn.SetConnState(connCanceled)
+		peerConn.setConnState(connCanceled)
 	}
 
 	close(peerObj.cStop)
@@ -695,7 +695,7 @@ func (peerObj *Peer) Stop() {
 func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
 	peerConn.RetryCount = 0
-	peerConn.SetConnState(connEstablished)
+	peerConn.setConnState(connEstablished)
 
 	peerObj.connEstablished(peerConn.RemotePeer)
 
@@ -707,8 +707,8 @@ func (peerObj *Peer) handleConnected(peerConn *PeerConn) {
 // handleDisconnected - handle connected peer when it is disconnected, remove and retry connection
 func (peerObj *Peer) handleDisconnected(peerConn *PeerConn) {
 	Logger.log.Infof("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
-	peerConn.SetConnState(connCanceled)
-	if peerConn.GetIsOutbound() && !peerConn.GetIsForceClose() {
+	peerConn.setConnState(connCanceled)
+	if peerConn.GetIsOutbound() && !peerConn.getIsForceClose() {
 		go peerObj.retryPeerConnection(peerConn)
 	}
 
@@ -735,7 +735,7 @@ func (peerObj *Peer) retryPeerConnection(peerConn *PeerConn) {
 		peerConn.RetryCount += 1
 
 		if peerConn.RetryCount < maxRetryConn {
-			peerConn.SetConnState(connPending)
+			peerConn.setConnState(connPending)
 			cConn := make(chan *PeerConn)
 			peerConn.ListenerPeer.PushConn(peerConn.RemotePeer, cConn)
 			p := <-cConn
