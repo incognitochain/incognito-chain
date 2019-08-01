@@ -113,24 +113,24 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 		Peers []map[string]string `json:"Peers"`
 	}
 	peersMap := []map[string]string{}
-	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
+	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 
 	bestState := blockchain.GetBestStateBeacon()
 	beaconCommitteeList := bestState.BeaconCommittee
 	shardCommitteeList := bestState.GetShardCommittee()
 
-	for _, peerConn := range listeningPeer.PeerConns {
+	for _, peerConn := range listeningPeer.GetPeerConns() {
 		peerItem := map[string]string{
 			"RawAddress": peerConn.RemoteRawAddress,
-			"PublicKey":  peerConn.RemotePeer.PublicKey,
+			"PublicKey":  peerConn.RemotePeer.GetPublicKey(),
 			"NodeType":   "",
 		}
-		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, beaconCommitteeList) != -1
+		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.GetPublicKey(), beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			peerItem["NodeType"] = "Beacon"
 		}
 		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, committees) != -1
+			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.GetPublicKey(), committees) != -1
 			if isInShardCommitee {
 				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
 				break
@@ -152,7 +152,7 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 	peersMap := []string{}
 	peers := httpServer.config.AddrMgr.AddressCache()
 	for _, peer := range peers {
-		for _, peerConn := range peer.PeerConns {
+		for _, peerConn := range peer.GetPeerConns() {
 			peersMap = append(peersMap, peerConn.RemoteRawAddress)
 		}
 	}
@@ -172,11 +172,11 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 	result.Version = RpcServerVersion
 	result.SubVersion = ""
 	result.ProtocolVersion = httpServer.config.ProtocolVersion
-	result.NetworkActive = httpServer.config.ConnMgr.ListeningPeer != nil
+	result.NetworkActive = httpServer.config.ConnMgr.GetListeningPeer() != nil
 	result.LocalAddresses = []string{}
-	listener := httpServer.config.ConnMgr.ListeningPeer
-	result.Connections = len(listener.PeerConns)
-	result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
+	listener := httpServer.config.ConnMgr.GetListeningPeer()
+	result.Connections = len(listener.GetPeerConns())
+	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -365,12 +365,12 @@ handleGetConnectionCount - RPC returns the number of connections to other nodes.
 */
 func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetConnectionCount params: %+v", params)
-	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.ListeningPeer == nil {
+	if httpServer.config.ConnMgr == nil || httpServer.config.ConnMgr.GetListeningPeer() == nil {
 		return 0, nil
 	}
 	result := 0
-	listeningPeer := httpServer.config.ConnMgr.ListeningPeer
-	result += len(listeningPeer.PeerConns)
+	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
+	result += len(listeningPeer.GetPeerConns())
 	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil
 }
