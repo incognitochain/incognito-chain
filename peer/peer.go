@@ -173,6 +173,10 @@ func (peerObj Peer) GetPeerConnsMtx() *sync.Mutex {
 	return peerObj.peerConnsMtx
 }
 
+func (peerObj *Peer) SetPeerConnsMtx(v *sync.Mutex) {
+	peerObj.peerConnsMtx = v
+}
+
 func (peerObj Peer) GetPublicKey() string {
 	return peerObj.publicKey
 }
