@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -79,18 +80,32 @@ func readfile(filename string) (*scenarios, error) {
 
 func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 	sc := newScenarios()
+	env := os.Getenv("ENV")
+	nodeList, err := readNodeConfig(env)
+	if err != nil {
+		return sc, false
+	}
 	for _, tests := range tests {
 		step := newStep()
 		if nodeData, ok := tests["node"]; !ok {
 			return sc, false
 		} else {
-			if node, ok := nodeData.(map[string]interface{}); !ok {
+			//if node, ok := nodeData.(map[string]interface{}); !ok {
+			//	return sc, false
+			//} else {
+			//	host := node["host"].(string)
+			//	port := node["port"].(string)
+			//	step.client = newClientWithHost(host, port)
+			//}
+			node, ok := nodeData.(string)
+			if !ok {
 				return sc, false
-			} else {
-				host := node["host"].(string)
-				port := node["port"].(string)
-				step.client = newClientWithHost(host, port)
 			}
+			c, ok := nodeList[node]
+			if !ok {
+				return sc, false
+			}
+			step.client = c
 		}
 		if inputData, ok := tests["input"]; !ok {
 			return sc, false
