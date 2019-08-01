@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -334,7 +335,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 // convert to string data
 // check type object which map with string data
 // call corresponding function to process message
-func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
+func (peerConn *PeerConn) inMessageHandler(rw *bufio.ReadWriter) error {
 	peerConn.SetIsConnected(true)
 	for {
 		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.RemotePeer.GetPeerID().Pretty(), peerConn.RemotePeer.GetRawAddress())
@@ -371,7 +372,7 @@ func (peerConn *PeerConn) InMessageHandler(rw *bufio.ReadWriter) error {
 // a muxer for various sources of input so we can ensure that server and peer
 // handlers will not block on us sending a message.  That data is then passed on
 // to outHandler to be actually written.
-func (peerConn *PeerConn) OutMessageHandler(rw *bufio.ReadWriter) {
+func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 	for {
 		select {
 		case outMsg := <-peerConn.sendMessageQueue:
@@ -482,21 +483,21 @@ BeginCheckHashMessage:
 		_, ok := <-time.NewTimer(maxTimeoutCheckHashMessage * time.Second).C
 		if !ok {
 			if cTimeOut != nil {
-				Logger.log.Infof("checkMessageHashBeforeSend TIMER time out %s", hash)
+				Logger.log.Debugf("checkMessageHashBeforeSend TIMER time out %s", hash)
 				bTimeOut = true
 				close(cTimeOut)
 			}
 			return
 		}
 	}()
-	Logger.log.Infof("checkMessageHashBeforeSend WAIT result check hash %s", hash)
+	Logger.log.Debugf("checkMessageHashBeforeSend WAIT result check hash %s", hash)
 	select {
 	case bCheck = <-peerConn.cMsgHash[hash]:
-		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED hash %s bAccept %s", hash, bCheck)
+		Logger.log.Debugf("checkMessageHashBeforeSend RECEIVED hash %s bAccept %s", hash, bCheck)
 		cTimeOut = nil
 		break
 	case <-cTimeOut:
-		Logger.log.Infof("checkMessageHashBeforeSend RECEIVED time out %d", numRetries)
+		Logger.log.Debugf("checkMessageHashBeforeSend RECEIVED time out %d", numRetries)
 		cTimeOut = nil
 		bTimeOut = true
 		break
@@ -504,7 +505,7 @@ BeginCheckHashMessage:
 	if cTimeOut == nil {
 		delete(peerConn.cMsgHash, hash)
 	}
-	Logger.log.Infof("checkMessageHashBeforeSend FINISHED check hash %s %s", hash, bCheck)
+	Logger.log.Debugf("checkMessageHashBeforeSend FINISHED check hash %s %s", hash, bCheck)
 	if bTimeOut && numRetries < maxRetriesCheckHashMessage {
 		goto BeginCheckHashMessage
 	}
@@ -518,13 +519,13 @@ BeginCheckHashMessage:
 //
 // This function is safe for concurrent access.
 func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, forwardType byte, forwardValue *byte) {
-	Logger.log.Infof("QueueMessageWithEncoding %s %s", peerConn.RemotePeer.GetPeerID().Pretty(), msg.MessageType())
+	Logger.log.Debugf("QueueMessageWithEncoding %s %s", peerConn.RemotePeer.GetPeerID().Pretty(), msg.MessageType())
 	go func() {
 		if peerConn.GetIsConnected() {
 			data, _ := msg.JsonSerialize()
 			if len(data) >= heavyMessageSize && msg.MessageType() != wire.CmdMsgCheck && msg.MessageType() != wire.CmdMsgCheckResp {
 				hash := msg.Hash()
-				Logger.log.Infof("QueueMessageWithEncoding HeavyMessageSize %s %s", hash, msg.MessageType())
+				Logger.log.Debugf("QueueMessageWithEncoding HeavyMessageSize %s %s", hash, msg.MessageType())
 
 				if peerConn.checkMessageHashBeforeSend(hash) {
 					peerConn.sendMessageQueue <- outMsg{
@@ -546,8 +547,9 @@ func (peerConn *PeerConn) QueueMessageWithEncoding(msg wire.Message, doneChan ch
 	}()
 }
 
+// QueueMessageWithBytes -
 func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<- struct{}) {
-	Logger.log.Infof("QueueMessageWithBytes %s", peerConn.RemotePeer.GetPeerID().Pretty())
+	Logger.log.Debugf("QueueMessageWithBytes from %s", peerConn.RemotePeer.GetPeerID().Pretty())
 	if msgBytes == nil || len(*msgBytes) <= 0 {
 		return
 	}
@@ -555,7 +557,7 @@ func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<
 		if peerConn.GetIsConnected() {
 			if len(*msgBytes) >= heavyMessageSize+wire.MessageHeaderSize {
 				hash := common.HashH(*msgBytes).String()
-				Logger.log.Infof("QueueMessageWithBytes HeavyMessageSize %s", hash)
+				Logger.log.Debugf("QueueMessageWithBytes HeavyMessageSize %s", hash)
 
 				if peerConn.checkMessageHashBeforeSend(hash) {
 					peerConn.sendMessageQueue <- outMsg{
@@ -573,12 +575,13 @@ func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<
 	}()
 }
 
+// handleMsgCheck -
 func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) error {
 	Logger.log.Infof("handleMsgCheck %s", msg.HashStr)
 	msgResp, err := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
 	if err != nil {
 		Logger.log.Error("handleMsgCheck error", err)
-		return err
+		return NewPeerError(HandleMessageCheck, err, nil)
 	}
 	if p.ListenerPeer.CheckHashPool(msg.HashStr) {
 		msgResp.(*wire.MessageMsgCheckResp).HashStr = msg.HashStr
@@ -591,8 +594,9 @@ func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) error {
 	return nil
 }
 
+// handleMsgCheckResp - check cMsgHash contain hash of message
 func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
-	Logger.log.Infof("handleMsgCheckResp %s", msg.HashStr)
+	Logger.log.Debugf("handleMsgCheckResp %s", msg.HashStr)
 	m, ok := p.cMsgHash[msg.HashStr]
 	if ok {
 		if !p.isUnitTest {
@@ -601,12 +605,12 @@ func (p *PeerConn) handleMsgCheckResp(msg *wire.MessageMsgCheckResp) error {
 		}
 		return nil
 	} else {
-		return errors.New("not ok")
+		return NewPeerError(HandleMessageCheckResponse, errors.New(fmt.Sprintf("p.cMsgHash not contain %s", msg.HashStr)), nil)
 	}
 }
 
 // Close - close peer connection by close channel
-func (p *PeerConn) Close() {
+func (p *PeerConn) close() {
 	if _, ok := <-p.cClose; ok {
 		close(p.cClose)
 	}
