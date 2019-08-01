@@ -13,6 +13,7 @@ func KeyGen(seed []byte) (*big.Int, *bn256.G1) {
 	return sk, PKGen(sk)
 }
 
+// SKGen take a seed and return BLS secret key
 func SKGen(seed []byte) *big.Int {
 	sk := big.NewInt(0)
 	sk.SetBytes(common.HashB(seed))
@@ -20,15 +21,28 @@ func SKGen(seed []byte) *big.Int {
 		if sk.Cmp(bn256.Order) == -1 {
 			break
 		}
-		sk.SetBytes(common.HashB(sk.Bytes()))
+		sk.SetBytes(Hash4Bls(sk.Bytes()))
 	}
 	return sk
 }
 
+// PKGen take a secret key and return BLS public key
 func PKGen(sk *big.Int) *bn256.G1 {
 	pk := new(bn256.G1)
 	pk = pk.ScalarBaseMult(sk)
 	return pk
+}
+
+// AKGen take a seed and return BLS secret key
+func AKGen(listPKPn []*bn256.G1, id int) *bn256.G1 {
+	akByte := CmprG1(listPKPn[id])
+	for i := 0; i < len(listPKPn); i++ {
+		akByte = Hash4Bls(append(akByte, CmprG1(listPKPn[i])...))
+	}
+	akBInt := B2I(akByte)
+	res := new(bn256.G1)
+	res = res.ScalarMult(listPKPn[id], akBInt)
+	return res
 }
 
 // SKBytes take input secretkey integer and return secretkey bytes
