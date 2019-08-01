@@ -1,7 +1,7 @@
 package incognitokey
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
