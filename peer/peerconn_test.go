@@ -174,14 +174,6 @@ func TestPeerConn_UpdateConnectionState(t *testing.T) {
 	peerConn := PeerConn{
 		stateMtx: sync.RWMutex{},
 	}
-	peerConn.SetConnState(1)
+	peerConn.setConnState(1)
 	assert.Equal(t, uint8(1), uint8(peerConn.connState))
-}
-
-func TestPeerConn_ConnState(t *testing.T) {
-	peerConn := PeerConn{
-		stateMtx: sync.RWMutex{},
-	}
-	peerConn.SetConnState(1)
-	assert.Equal(t, uint8(peerConn.GetConnState()), uint8(peerConn.connState))
 }
