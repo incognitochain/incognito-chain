@@ -17,7 +17,7 @@ var (
 )
 
 func main() {
-	var nodefile = "sample-config.json"
+	//var nodefile = "sample-config.json"
 	var testcase = "testcase.json"
 	var err error
 	// -1: beacon
@@ -25,23 +25,23 @@ func main() {
 	var shardIndex = []int{-1, 0, 1}
 	var nodeFileData = make(map[string]interface{})
 	var testcaseData = make(map[string]interface{})
-	if len(os.Args) == 3 {
-		nodefile = os.Args[2]
-	}
+	//if len(os.Args) == 3 {
+	//	nodefile = os.Args[2]
+	//}
 	testcaseBytes, err := ioutil.ReadFile(testcase)
 	if err != nil {
 		panic("Failed to get config file")
 	}
 	err = json.Unmarshal(testcaseBytes, &testcaseData)
-	nodefileBytes, err := ioutil.ReadFile(nodefile)
-	if err != nil {
-		panic("Failed to get config file")
-	}
-
-	err = json.Unmarshal(nodefileBytes, &nodeFileData)
-	if err != nil {
-		panic("Failed to marshal config file")
-	}
+	//nodefileBytes, err := ioutil.ReadFile(nodefile)
+	//if err != nil {
+	//	panic("Failed to get config file")
+	//}
+	//
+	//err = json.Unmarshal(nodefileBytes, &nodeFileData)
+	//if err != nil {
+	//	panic("Failed to marshal config file")
+	//}
 	for _, shard := range shardIndex {
 		if nodes, ok := nodeFileData[strconv.Itoa(shard)]; ok {
 			nodeInfos, ok := nodes.(map[string]interface{})
