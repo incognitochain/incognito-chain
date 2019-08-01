@@ -373,7 +373,7 @@ func (peerConn *PeerConn) processMessageForEachType(messageType reflect.Type, me
 func (peerConn *PeerConn) inMessageHandler(rw *bufio.ReadWriter) error {
 	peerConn.setIsConnected(true)
 	for {
-		Logger.log.Infof("PEER %s (address: %s) Reading stream", peerConn.remotePeer.GetPeerID().Pretty(), peerConn.remotePeer.GetRawAddress())
+		Logger.log.Debugf("PEER %s (address: %s) Reading stream", peerConn.remotePeer.GetPeerID().Pretty(), peerConn.remotePeer.GetRawAddress())
 
 		str, errR := peerConn.readString(rw, delimMessageByte, spamMessageSize)
 		if errR != nil {
@@ -414,11 +414,11 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 			{
 				var sendString string
 				if outMsg.rawBytes != nil && len(*outMsg.rawBytes) > 0 {
-					Logger.log.Infof("OutMessageHandler with raw bytes")
+					Logger.log.Debugf("OutMessageHandler with raw bytes")
 					message := hex.EncodeToString(*outMsg.rawBytes)
 					message += delimMessageStr
 					sendString = message
-					Logger.log.Infof("Send a messageHex raw bytes to %s", peerConn.remotePeer.GetPeerID().Pretty())
+					Logger.log.Debugf("Send a messageHex raw bytes to %s", peerConn.remotePeer.GetPeerID().Pretty())
 				} else {
 					// Create and send messageHex
 					messageBytes, err := outMsg.message.JsonSerialize()
@@ -442,7 +442,7 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 						copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 					}
 					messageBytes = append(messageBytes, headerBytes...)
-					Logger.log.Infof("OutMessageHandler TYPE %s CONTENT %s", cmdType, string(messageBytes))
+					Logger.log.Debugf("OutMessageHandler TYPE %s CONTENT %s", cmdType, string(messageBytes))
 
 					// zip data before send
 					messageBytes, err = common.GZipFromBytes(messageBytes)
@@ -452,12 +452,12 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 						continue
 					}
 					messageHex := hex.EncodeToString(messageBytes)
-					//Logger.log.Infof("Content in hex encode: %s", string(messageHex))
+					//Logger.log.Debugf("Content in hex encode: %s", string(messageHex))
 					// add end character to messageHex (delim '\n')
 					messageHex += delimMessageStr
 
 					// send on p2p stream
-					Logger.log.Infof("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.remotePeer.GetPeerID().Pretty())
+					Logger.log.Debugf("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.remotePeer.GetPeerID().Pretty())
 					sendString = messageHex
 				}
 				// MONITOR OUTBOUND MESSAGE
@@ -478,7 +478,7 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 				continue
 			}
 		case <-peerConn.cWrite:
-			Logger.log.Infof("OutMessageHandler QUIT %s %s", peerConn.remotePeerID.Pretty(), peerConn.remotePeer.GetRawAddress())
+			Logger.log.Debugf("OutMessageHandler QUIT %s %s", peerConn.remotePeerID.Pretty(), peerConn.remotePeer.GetRawAddress())
 
 			peerConn.setIsConnected(false)
 
@@ -612,7 +612,7 @@ func (peerConn *PeerConn) QueueMessageWithBytes(msgBytes *[]byte, doneChan chan<
 
 // handleMsgCheck -
 func (p *PeerConn) handleMsgCheck(msg *wire.MessageMsgCheck) error {
-	Logger.log.Infof("handleMsgCheck %s", msg.HashStr)
+	Logger.log.Debugf("handleMsgCheck %s", msg.HashStr)
 	msgResp, err := wire.MakeEmptyMessage(wire.CmdMsgCheckResp)
 	if err != nil {
 		Logger.log.Error("handleMsgCheck error", err)
