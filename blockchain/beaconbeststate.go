@@ -69,6 +69,7 @@ type BestStateBeacon struct {
 func (bestStateBeacon *BestStateBeacon) InitRandomClient(randomClient btc.RandomClient) {
 	bestStateBeacon.randomClient = randomClient
 }
+
 func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
@@ -84,6 +85,7 @@ func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
 	}
 	return b, err
 }
+
 func (bestStateBeacon *BestStateBeacon) SetBestShardHeight(shardID byte, height uint64) {
 	bestStateBeacon.lockMu.RLock()
 	defer bestStateBeacon.lockMu.RUnlock()
