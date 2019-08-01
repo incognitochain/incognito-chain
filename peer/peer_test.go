@@ -107,11 +107,11 @@ func TestPeer_PushConn(t *testing.T) {
 	peerConn := PeerConn{
 		cMsgHash:     make(map[string]chan bool),
 		isUnitTest:   true,
-		ListenerPeer: p1,
-		RemotePeer:   p2,
+		listenerPeer: p1,
+		remotePeer:   p2,
 	}
 	cConn := make(chan *PeerConn)
-	peerObj.PushConn(peerConn.ListenerPeer, cConn)
+	peerObj.PushConn(peerConn.listenerPeer, cConn)
 	for {
 		fmt.Print(111)
 		select {
@@ -168,8 +168,8 @@ func TestPeer_RemovePeerConn(t *testing.T) {
 	peerConn := &PeerConn{
 		cMsgHash:     make(map[string]chan bool),
 		isUnitTest:   true,
-		ListenerPeer: p1,
-		RemotePeer:   p2,
+		listenerPeer: p1,
+		remotePeer:   p2,
 	}
 	peerObj.setPeerConn(peerConn)
 	assert.Equal(t, len(peerObj.GetPeerConns()), 1)

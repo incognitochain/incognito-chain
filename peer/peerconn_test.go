@@ -43,11 +43,11 @@ func TestPeerConn_ProcessInMessageStr(t *testing.T) {
 	p1 := &Peer{}
 	p1.SetPublicKey("abc1")
 	peerConn := PeerConn{
-		RemotePeer:  p1,
 		cWrite:      make(chan struct{}),
 		cDisconnect: make(chan struct{}),
 		cClose:      make(chan struct{}),
 		isUnitTest:  true,
+		remotePeer:  p1,
 	}
 
 	outMsg := outMsg{
@@ -71,12 +71,13 @@ func TestPeerConn_ProcessInMessageStr(t *testing.T) {
 		copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 	}
 	messageBytes = append(messageBytes, headerBytes...)
+	//messageBytes = append(messageBytes, []byte(delimMessageStr)...)
 	messageBytes, err = common.GZipFromBytes(messageBytes)
 	if err != nil {
 		t.Error(err)
 	}
 	messageHex := hex.EncodeToString(messageBytes)
-	messageHex += delimMessageStr
+	//messageHex += delimMessageStr
 
 	err = peerConn.processInMessageString(messageHex)
 	if err != nil {
@@ -88,11 +89,11 @@ func TestPeerConn_InMessageHandler(t *testing.T) {
 	p1 := &Peer{}
 	p1.SetPublicKey("abc1")
 	peerConn := PeerConn{
-		RemotePeer:  p1,
 		cWrite:      make(chan struct{}),
 		cDisconnect: make(chan struct{}),
 		cClose:      make(chan struct{}),
 		isUnitTest:  true,
+		remotePeer:  p1,
 	}
 	sample := bytes.NewBuffer(nil)
 	rw := bufio.NewReadWriter(bufio.NewReader(sample), bufio.NewWriter(sample))
@@ -156,14 +157,14 @@ func TestPeerConn_HandleMsgCheck(t *testing.T) {
 	peerConn := PeerConn{
 		cMsgHash:     make(map[string]chan bool),
 		isUnitTest:   true,
-		ListenerPeer: p1,
-		RemotePeer:   p2,
+		listenerPeer: p1,
+		remotePeer:   p2,
 	}
 	peerConn.cMsgHash["abc"] = make(chan bool)
 	message := &wire.MessageMsgCheck{
 		HashStr: "abc",
 	}
-	peerConn.ListenerPeer.HashToPool(message.HashStr)
+	peerConn.listenerPeer.HashToPool(message.HashStr)
 	err := peerConn.handleMsgCheck(message)
 	if err != nil {
 		t.Error(err)
