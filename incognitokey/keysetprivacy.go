@@ -2,6 +2,7 @@ package incognitokey
 
 import (
 	"encoding/json"
+	"github.com/pkg/errors"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -60,15 +61,18 @@ func (keySet *KeySet) ImportFromPrivateKey(privateKey *privacy.PrivateKey) error
 // returns the signature of that data using Schnorr Signature Scheme with signing key is private key in ketSet
 func (keySet *KeySet) Sign(data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return []byte{}, NewCashecError(InvalidDataSignErr, nil)
+		return []byte{}, NewCashecError(InvalidDataSignErr, errors.New("Data is empty to sign"))
 	}
 
 	hash := common.HashB(data)
-	privKeySig := new(privacy.SchnPrivKey)
-	privKeySig.Set(new(big.Int).SetBytes(keySet.PrivateKey), big.NewInt(0))
+	privateKeySig := new(privacy.SchnPrivKey)
+	privateKeySig.Set(new(big.Int).SetBytes(keySet.PrivateKey), big.NewInt(0))
 
-	signature, err := privKeySig.Sign(hash)
-	return signature.Bytes(), err
+	signature, err := privateKeySig.Sign(hash)
+	if err != nil {
+		return []byte{}, NewCashecError(SignError, err)
+	}
+	return signature.Bytes(), nil
 }
 
 // Verify receives data and signature
@@ -120,7 +124,7 @@ func (keySet *KeySet) GetPublicKeyB58() string {
 func (keySet *KeySet) SignDataB58(data []byte) (string, error) {
 	signatureByte, err := keySet.Sign(data)
 	if err != nil {
-		return "", NewCashecError(SignDataB58Err, err)
+		return common.EmptyString, NewCashecError(SignDataB58Err, err)
 	}
 	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }
@@ -129,9 +133,9 @@ func (keySet *KeySet) SignDataB58(data []byte) (string, error) {
 // and a base58 check encoded public key (pbkB58)
 // It decodes pbkB58 and sigB58
 // after that, it verifies the given signature is corresponding to data using verification key is pbkB58
-func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
+func ValidateDataB58(publicKeyInBase58CheckEncode string, signatureInBase58CheckEncode string, data []byte) error {
 	// decode public key (verification key)
-	decodedPubKey, _, err := base58.Base58Check{}.Decode(pbkB58)
+	decodedPubKey, _, err := base58.Base58Check{}.Decode(publicKeyInBase58CheckEncode)
 	if err != nil {
 		return NewCashecError(B58DecodePubKeyErr, nil)
 	}
@@ -140,7 +144,7 @@ func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
 	copy(validatorKeySet.PaymentAddress.Pk[:], decodedPubKey)
 
 	// decode the signature
-	decodedSig, _, err := base58.Base58Check{}.Decode(sigB58)
+	decodedSig, _, err := base58.Base58Check{}.Decode(signatureInBase58CheckEncode)
 	if err != nil {
 		return NewCashecError(B58DecodeSigErr, nil)
 	}
