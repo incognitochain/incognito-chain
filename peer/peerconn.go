@@ -116,7 +116,7 @@ func (p PeerConn) GetRemotePeerID() peer.ID {
 	return p.remotePeerID
 }
 
-func (p PeerConn) SetRemotePeerID(v peer.ID) {
+func (p *PeerConn) SetRemotePeerID(v peer.ID) {
 	p.remotePeerID = v
 }
 
