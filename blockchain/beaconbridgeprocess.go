@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/pkg/errors"
 )
 
 // NOTE: for whole bridge's deposit process, anytime an error occurs an error will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
@@ -106,23 +107,18 @@ func decodeContent(content string, action interface{}) error {
 }
 
 func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
-	if len(block.Body.Instructions) > 0 {
-		fmt.Printf("[db] storeBurningConfirm for block %d %v\n", block.Header.Height, block.Body.Instructions)
-	}
 	for _, inst := range block.Body.Instructions {
 		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
 			continue
 		}
-		fmt.Printf("[db] storeBurning: %s\n", inst)
+		BLogger.log.Infof("storeBurningConfirm for block %d, inst %v", block.Header.Height, inst)
 
 		txID, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
-			fmt.Printf("[db] storeBurning err: %v\n", err)
-			return err
+			return errors.Wrap(err, "txid invalid")
 		}
-		fmt.Printf("[db] storing BurningConfirm inst with txID: %x\n", txID)
 		if err := bc.config.DataBase.StoreBurningConfirm(txID[:], block.Header.Height); err != nil {
-			return err
+			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}
 	return nil
