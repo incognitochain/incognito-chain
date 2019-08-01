@@ -413,10 +413,10 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		publicKeyInBase58CheckEncode := common.EmptyString
 		signDataInBase58CheckEncode := common.EmptyString
 		if listener.GetConfig().UserKeySet != nil {
-			publicKeyInBase58CheckEncode = listener.GetConfig().UserKeySet.GetPublicKeyB58()
+			publicKeyInBase58CheckEncode = listener.GetConfig().UserKeySet.GetPublicKeyInBase58CheckEncode()
 			Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 			// sign data
-			signDataInBase58CheckEncode, err = listener.GetConfig().UserKeySet.SignDataB58([]byte(rawAddress))
+			signDataInBase58CheckEncode, err = listener.GetConfig().UserKeySet.SignDataInBase58CheckEncode([]byte(rawAddress))
 			if err != nil {
 				Logger.log.Error(err)
 			}

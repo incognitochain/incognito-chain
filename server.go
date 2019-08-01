@@ -450,7 +450,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 		miningPubkeyB58 := ""
 		if serverObj.userKeySet != nil {
-			miningPubkeyB58 = serverObj.userKeySet.GetPublicKeyB58()
+			miningPubkeyB58 = serverObj.userKeySet.GetPublicKeyInBase58CheckEncode()
 		}
 		rpcConfig := rpcserver.RpcServerConfig{
 			HttpListenters:  httpListeners,
@@ -1189,7 +1189,7 @@ func (serverObj *Server) GetNodeRole() string {
 	if serverObj.userKeySet == nil {
 		return ""
 	}
-	pubkey := serverObj.userKeySet.GetPublicKeyB58()
+	pubkey := serverObj.userKeySet.GetPublicKeyInBase58CheckEncode()
 	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconCommittee) > -1 {
 		return "BEACON_VALIDATOR"
 	}
@@ -1387,8 +1387,8 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 
 	// ValidateTransaction Public Key from ProducerPrvKey
 	if peerConn.GetListenerPeer().GetConfig().UserKeySet != nil {
-		msg.(*wire.MessageVersion).PublicKey = peerConn.GetListenerPeer().GetConfig().UserKeySet.GetPublicKeyB58()
-		signDataB58, err := peerConn.GetListenerPeer().GetConfig().UserKeySet.SignDataB58([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
+		msg.(*wire.MessageVersion).PublicKey = peerConn.GetListenerPeer().GetConfig().UserKeySet.GetPublicKeyInBase58CheckEncode()
+		signDataB58, err := peerConn.GetListenerPeer().GetConfig().UserKeySet.SignDataInBase58CheckEncode([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
 		if err == nil {
 			msg.(*wire.MessageVersion).SignDataB58 = signDataB58
 		}
@@ -1622,9 +1622,9 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
 	if serverObj.userKeySet != nil {
-		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
+		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyInBase58CheckEncode(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
 		if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && userRole == common.NODEMODE_SHARD {
-			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
+			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyInBase58CheckEncode(), serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
 			if userRole == "shard-proposer" || userRole == "shard-validator" {
 				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
 			}
@@ -1658,7 +1658,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	}
 	if serverObj.userKeySet != nil {
 		//Beacon: chain = -1
-		role, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), 0)
+		role, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 		if chain == -1 {
 			if cfg.NodeMode != common.NODEMODE_AUTO && cfg.NodeMode != common.NODEMODE_BEACON {
 				return offline
@@ -1685,7 +1685,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 			}
 			if serverObj.blockChain.Synker.IsLatest(true, byte(chain)) {
 				if serverObj.isEnableMining {
-					role = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyB58(), 0)
+					role = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 					if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE {
 						return mining
 					}

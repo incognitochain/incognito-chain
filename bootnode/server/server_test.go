@@ -26,7 +26,7 @@ func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
 	}
-	signDataB58, err := keyWallet.KeySet.SignDataB58([]byte(args.RawAddress))
+	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.RawAddress))
 	if err != nil {
 		t.Error(err)
 	}
@@ -56,7 +56,7 @@ func TestRpcServer_RemovePeerByPbk(t *testing.T) {
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
 	}
-	signDataB58, err := keyWallet.KeySet.SignDataB58([]byte(args.RawAddress))
+	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.RawAddress))
 	if err != nil {
 		t.Error(err)
 	}
@@ -91,7 +91,7 @@ func TestRpcServer_PeerHeartBeat(t *testing.T) {
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
 	}
-	signDataB58, err := keyWallet.KeySet.SignDataB58([]byte(args.RawAddress))
+	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.RawAddress))
 	if err != nil {
 		t.Error(err)
 	}

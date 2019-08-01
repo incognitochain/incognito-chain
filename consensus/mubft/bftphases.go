@@ -216,7 +216,7 @@ func (protocol *BFTProtocol) phaseAgree() error {
 
 	//map of members and their Ri
 	collectedRiList := make(map[string][]byte)
-	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = protocol.multiSigScheme.personal.Ri
+	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyInBase58CheckEncode()] = protocol.multiSigScheme.personal.Ri
 phase:
 	for {
 		select {
@@ -280,7 +280,7 @@ func (protocol *BFTProtocol) phaseCommit() error {
 
 	phaseData.Sigs = make(map[string]map[string]bftCommittedSig)
 	phaseData.Sigs[protocol.multiSigScheme.combine.R] = make(map[string]bftCommittedSig)
-	phaseData.Sigs[protocol.multiSigScheme.combine.R][protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = bftCommittedSig{
+	phaseData.Sigs[protocol.multiSigScheme.combine.R][protocol.EngineCfg.UserKeySet.GetPublicKeyInBase58CheckEncode()] = bftCommittedSig{
 		Sig:            protocol.multiSigScheme.combine.CommitSig,
 		ValidatorsIdxR: protocol.multiSigScheme.combine.ValidatorsIdxR,
 	}
