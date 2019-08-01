@@ -54,8 +54,8 @@ func main() {
 					panic("Failed to read data from config file")
 				}
 				client := &Client{
-					Host: nodeInfoData["host"].(string),
-					Port: nodeInfoData["port"].(string),
+					host: nodeInfoData["host"].(string),
+					port: nodeInfoData["port"].(string),
 				}
 				if shard == -1 {
 					beacon = append(beacon, client)

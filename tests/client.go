@@ -25,8 +25,9 @@ var (
 	ErrParseFailed = errors.New("Failed to parse result")
 )
 type Client struct {
-	Host string `json:"host"`
-	Port string `json:"port"`
+	host string
+	port string
+	ws string
 }
 
 func newClient() *Client {
@@ -34,8 +35,15 @@ func newClient() *Client {
 }
 func newClientWithHost(host, port string) *Client {
 	return &Client{
-		Host: host,
-		Port: port,
+		host: host,
+		port: port,
+	}
+}
+func newClientWithFullInform(host, port, ws string) *Client {
+	return &Client{
+		host: host,
+		port: port,
+		ws: ws,
 	}
 }
 func getMethodName(depthList ...int) string {
@@ -60,7 +68,7 @@ func makeRPCRequest(client *Client, method string, params ...interface{}) (*rpcs
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	resp, err := http.Post(client.Host+":"+client.Port, "application/json", bytes.NewBuffer(requestBytes))
+	resp, err := http.Post(client.host+":"+client.port, "application/json", bytes.NewBuffer(requestBytes))
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
@@ -89,7 +97,7 @@ func makeRPCRequestV2(client *Client, method string, params ...interface{}) (int
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	resp, err := http.Post(client.Host+":"+client.Port, "application/json", bytes.NewBuffer(requestBytes))
+	resp, err := http.Post(client.host+":"+client.port, "application/json", bytes.NewBuffer(requestBytes))
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
@@ -130,10 +138,10 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
 	var addr string
-	if flag.Lookup("address:"+client.Host+client.Port) != nil {
-		addr = flag.Lookup("address:"+client.Host+client.Port).Value.(flag.Getter).Get().(string)
+	if flag.Lookup("address:"+client.host+client.port) != nil {
+		addr = flag.Lookup("address:"+client.host +client.port).Value.(flag.Getter).Get().(string)
 	} else {
-		addr = *flag.String("address:"+client.Host+client.Port, client.Host+":"+client.Port, "http service address")
+		addr = *flag.String("address:"+client.host+client.port, client.host+":"+client.port, "http service address")
 	}
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
