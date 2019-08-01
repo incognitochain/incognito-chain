@@ -13,6 +13,7 @@ const (
 	CreateP2PAddressError
 	GetPeerIdFromProtocolError
 	OpeningStreamP2PError
+	HandleNewStreamError
 
 	// PeerConn err
 )
@@ -28,6 +29,7 @@ var ErrCodeMessage = map[int]struct {
 	CreateP2PAddressError:      {-1003, "Can not create libp2p address for node"},
 	GetPeerIdFromProtocolError: {-1004, "Can not get peer id from protocol"},
 	OpeningStreamP2PError:      {-1005, "Fail in opening stream "},
+	HandleNewStreamError:       {-1006, "Handle new stream error"},
 
 	// -2xxx for peer connection
 }

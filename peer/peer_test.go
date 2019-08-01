@@ -141,7 +141,7 @@ func TestPeer_PushStream(t *testing.T) {
 	err = peerObj.Init()
 
 	stream := &swarm.Stream{}
-	peerObj.PushStream(stream)
+	peerObj.pushStream(stream)
 	for {
 		fmt.Print(111)
 		select {
