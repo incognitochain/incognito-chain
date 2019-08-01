@@ -1,6 +1,7 @@
 package lvdb
 
 import (
+	"fmt"
 	"bytes"
 	"encoding/json"
 
@@ -79,6 +80,7 @@ func (db *db) CanProcessTokenPair(
 		return false, err
 	}
 	if cBridgeTokenExisted {
+		fmt.Println("WARNING: inc token was existed in centralized token set")
 		return false, nil
 	}
 
@@ -86,9 +88,11 @@ func (db *db) CanProcessTokenPair(
 	if err != nil {
 		return false, err
 	}
+	fmt.Println("INFO: whether inc token was existed in decentralized token set: ", dBridgeTokenExisted)
 	privacyCustomTokenExisted := db.PrivacyCustomTokenIDExisted(incTokenID)
 	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(incTokenID)
 	if !dBridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
+		fmt.Println("WARNING: failed at condition 1: ", dBridgeTokenExisted, privacyCustomTokenExisted, privacyCustomTokenCrossShardExisted)
 		return false, nil
 	}
 
@@ -106,6 +110,7 @@ func (db *db) CanProcessTokenPair(
 		if bytes.Equal(bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:]) {
 			return true, nil
 		}
+		fmt.Println("WARNING: failed at condition 2:", bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:])
 		return false, nil
 	}
 	// else: could not find incTokenID out
@@ -122,6 +127,8 @@ func (db *db) CanProcessTokenPair(
 		if !bytes.Equal(bridgeTokenInfo.ExternalTokenID, externalTokenID) {
 			continue
 		}
+		
+		fmt.Println("WARNING: failed at condition 3:", bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:])
 		return false, nil
 	}
 

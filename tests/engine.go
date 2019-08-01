@@ -32,7 +32,6 @@ func executeTest(filename string) (interface{}, error) {
 		return nil, err
 	}
 	for index, step := range scenarios.steps {
-		//command := Command[step.input.name]
 		var params []interface{}
 		if step.input.fromContext {
 			for _, value := range step.input.params {
