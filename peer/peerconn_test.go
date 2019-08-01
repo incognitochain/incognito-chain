@@ -40,10 +40,10 @@ func TestPeerConn_ReadString(t *testing.T) {
 }
 
 func TestPeerConn_ProcessInMessageStr(t *testing.T) {
+	p1 := &Peer{}
+	p1.SetPublicKey("abc1")
 	peerConn := PeerConn{
-		RemotePeer: &Peer{
-			PublicKey: "abc1",
-		},
+		RemotePeer:  p1,
 		cWrite:      make(chan struct{}),
 		cDisconnect: make(chan struct{}),
 		cClose:      make(chan struct{}),
@@ -85,10 +85,10 @@ func TestPeerConn_ProcessInMessageStr(t *testing.T) {
 }
 
 func TestPeerConn_InMessageHandler(t *testing.T) {
+	p1 := &Peer{}
+	p1.SetPublicKey("abc1")
 	peerConn := PeerConn{
-		RemotePeer: &Peer{
-			PublicKey: "abc1",
-		},
+		RemotePeer:  p1,
 		cWrite:      make(chan struct{}),
 		cDisconnect: make(chan struct{}),
 		cClose:      make(chan struct{}),
@@ -149,15 +149,15 @@ func TestPeerConn_HandleMsgCheckResp(t *testing.T) {
 }
 
 func TestPeerConn_HandleMsgCheck(t *testing.T) {
+	p1 := &Peer{}
+	p1.SetPublicKey("abc1")
+	p2 := &Peer{}
+	p2.SetPublicKey("abc1")
 	peerConn := PeerConn{
-		cMsgHash:   make(map[string]chan bool),
-		isUnitTest: true,
-		ListenerPeer: &Peer{
-			PublicKey: "abc1",
-		},
-		RemotePeer: &Peer{
-			PublicKey: "abc1",
-		},
+		cMsgHash:     make(map[string]chan bool),
+		isUnitTest:   true,
+		ListenerPeer: p1,
+		RemotePeer:   p2,
 	}
 	peerConn.cMsgHash["abc"] = make(chan bool)
 	message := &wire.MessageMsgCheck{

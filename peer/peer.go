@@ -596,7 +596,7 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		if cDone != nil {
 			close(cDone)
 		}
-		return NewPeerError(HandleNewStreamError, errors.New(fmt.Sprintf("Received a new stream existed PEER Id", remotePeerID.Pretty())), nil)
+		return NewPeerError(HandleNewStreamError, errors.New(fmt.Sprintf("Received a new stream existed PEER Id - %s", remotePeerID.Pretty())), nil)
 	}
 
 	// Create a buffer stream for non blocking read and write.
