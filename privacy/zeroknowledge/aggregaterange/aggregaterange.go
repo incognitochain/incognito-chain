@@ -116,7 +116,7 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	res = append(res, privacy.AddPaddingBigInt(proof.mu, common.BigIntSize)...)
 	res = append(res, proof.innerProductProof.Bytes()...)
 
-	privacy.Logger.Log.Debugf("BYTES ------------ %v\n", res)
+	//privacy.Logger.Log.Debugf("BYTES ------------ %v\n", res)
 	return res
 
 }
@@ -126,7 +126,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 		return nil
 	}
 
-	privacy.Logger.Log.Debugf("BEFORE SETBYTES ------------ %v\n", bytes)
+	//privacy.Logger.Log.Debugf("BEFORE SETBYTES ------------ %v\n", bytes)
 
 	lenValues := int(bytes[0])
 	offset := 1
@@ -181,7 +181,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	proof.innerProductProof = new(InnerProductProof)
 	proof.innerProductProof.SetBytes(bytes[offset:])
 
-	privacy.Logger.Log.Debugf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
+	//privacy.Logger.Log.Debugf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
 	return nil
 }
 
@@ -550,9 +550,9 @@ func (proof AggregatedRangeProof) Verify() bool {
 	}
 
 	if !left1.IsEqual(right1) {
-		privacy.Logger.Log.Error("Statement 1 failed:")
-		privacy.Logger.Log.Error("Left 1: %v\n", left1)
-		privacy.Logger.Log.Error("Right 1: %v\n", right1)
+		//privacy.Logger.Log.Error("Statement 1 failed:")
+		//privacy.Logger.Log.Error("Left 1: %v\n", left1)
+		//privacy.Logger.Log.Error("Right 1: %v\n", right1)
 		return false
 	}
 
