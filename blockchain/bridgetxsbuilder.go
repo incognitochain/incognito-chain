@@ -204,7 +204,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 	return append(instructions, acceptedInst), nil
 }
 
-func (blockgen *BlkTmplGenerator) buildIssuanceTx(
+func (blockGenerator *BlockGenerator) buildIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -256,7 +256,7 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 		nil,
 		0,
 		tokenParams,
-		blockgen.chain.config.DataBase,
+		blockGenerator.chain.config.DataBase,
 		issuingRes,
 		false,
 		false,
@@ -272,7 +272,7 @@ func (blockgen *BlkTmplGenerator) buildIssuanceTx(
 	return resTx, nil
 }
 
-func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
+func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
@@ -334,7 +334,7 @@ func (blockgen *BlkTmplGenerator) buildETHIssuanceTx(
 		nil,
 		0,
 		tokenParams,
-		blockgen.chain.config.DataBase,
+		blockGenerator.chain.config.DataBase,
 		issuingETHRes,
 		false,
 		false,
