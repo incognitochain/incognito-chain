@@ -2,13 +2,13 @@ package aggregaterange
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"io/ioutil"
 	"log"
 	"math/big"
 	"testing"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 )
