@@ -20,38 +20,38 @@ var (
 	}
 	beaconBlock3 = &blockchain.BeaconBlock{
 		Header: blockchain.BeaconHeader{
-			Height:        3,
-			PrevBlockHash: beaconBlock2.Header.Hash(),
+			Height:            3,
+			PreviousBlockHash: beaconBlock2.Header.Hash(),
 		},
 	}
 	beaconBlock3Forked = &blockchain.BeaconBlock{
 		Header: blockchain.BeaconHeader{
-			Height:        3,
-			PrevBlockHash: common.HashH([]byte{0}),
+			Height:            3,
+			PreviousBlockHash: common.HashH([]byte{0}),
 		},
 	}
 	beaconBlock4 = &blockchain.BeaconBlock{
 		Header: blockchain.BeaconHeader{
-			Height:        4,
-			PrevBlockHash: beaconBlock3.Header.Hash(),
+			Height:            4,
+			PreviousBlockHash: beaconBlock3.Header.Hash(),
 		},
 	}
 	beaconBlock5 = &blockchain.BeaconBlock{
 		Header: blockchain.BeaconHeader{
-			Height:        5,
-			PrevBlockHash: beaconBlock4.Header.Hash(),
+			Height:            5,
+			PreviousBlockHash: beaconBlock4.Header.Hash(),
 		},
 	}
 	beaconBlock6 = &blockchain.BeaconBlock{
 		Header: blockchain.BeaconHeader{
-			Height:        6,
-			PrevBlockHash: beaconBlock5.Header.Hash(),
+			Height:            6,
+			PreviousBlockHash: beaconBlock5.Header.Hash(),
 		},
 	}
 	beaconBlock7 = &blockchain.BeaconBlock{
 		Header: blockchain.BeaconHeader{
-			Height:        7,
-			PrevBlockHash: beaconBlock6.Header.Hash(),
+			Height:            7,
+			PreviousBlockHash: beaconBlock6.Header.Hash(),
 		},
 	}
 	pendingBeaconBlocks      = []*blockchain.BeaconBlock{}
@@ -90,7 +90,7 @@ var _ = func() (_ struct{}) {
 			},
 		}
 		if i != 0 {
-			beaconBlock.Header.PrevBlockHash = oldBlockHash
+			beaconBlock.Header.PreviousBlockHash = oldBlockHash
 		}
 		oldBlockHash = beaconBlock.Header.Hash()
 		validBeaconBlocks = append(validBeaconBlocks, beaconBlock)
@@ -102,7 +102,7 @@ var _ = func() (_ struct{}) {
 			},
 		}
 		if i != 0 {
-			beaconBlock.Header.PrevBlockHash = oldBlockHash
+			beaconBlock.Header.PreviousBlockHash = oldBlockHash
 		}
 		oldBlockHash = beaconBlock.Header.Hash()
 		pendingBeaconBlocks = append(pendingBeaconBlocks, beaconBlock)
