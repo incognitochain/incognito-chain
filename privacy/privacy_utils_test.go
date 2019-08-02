@@ -34,7 +34,7 @@ func TestUtilsRandScalar(t *testing.T) {
 		scalar := RandScalar()
 		isLessThanN := scalar.Cmp(Curve.Params().N)
 		assert.Equal(t, -1, isLessThanN)
-		assert.Equal(t, common.BigIntSize, len(scalar.Bytes()))
+		assert.GreaterOrEqual(t, common.BigIntSize, len(scalar.Bytes()))
 	}
 }
 
