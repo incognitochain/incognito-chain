@@ -29,7 +29,7 @@
       "context": true,
       "params": ["TxIDStake"],
       "type": "ws",
-      "wait": 60
+      "wait": 600
     },
     "output": {
       "error": null,
@@ -43,7 +43,7 @@
       "context": false,
       "params": ["16T8q1ysZitUgSknnYD2WLTyRkr7vntAEmtWV6sXFxyG21sTJ11"],
       "type": "ws",
-      "wait": 1000
+      "wait": 10000
     },
     "output": {
       "error": null,
@@ -57,7 +57,7 @@
       "context": false,
       "params": ["16T8q1ysZitUgSknnYD2WLTyRkr7vntAEmtWV6sXFxyG21sTJ11"],
       "type": "ws",
-      "wait": 1000
+      "wait": 10000
     },
     "output": {
       "error": null,
@@ -71,7 +71,7 @@
       "context": false,
       "params": ["16T8q1ysZitUgSknnYD2WLTyRkr7vntAEmtWV6sXFxyG21sTJ11"],
       "type": "ws",
-      "wait": 1000
+      "wait": 10000
     },
     "output": {
       "error": null,
