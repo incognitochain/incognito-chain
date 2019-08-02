@@ -33,7 +33,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 
 	// convert proof to bytes array
 	proofBytes := proof.Bytes()
-	assert.Equal(t, privacy.SNNoPrivacyProofSize, len(proofBytes))
+	assert.Equal(t, snNoPrivacyProofSize, len(proofBytes))
 
 	// new SNPrivacyProof to set bytes array
 	proof2 := new(SNNoPrivacyProof).Init()

@@ -17,6 +17,15 @@ const (
 	MaxHashStringSize = HashSize * 2
 )
 
+// for incognito key
+const (
+	PrivateKeySize      = 32 // bytes
+	PublicKeySize       = 33 // bytes
+	TransmissionKeySize = 33 //bytes
+	ReceivingKeySize    = 32 // bytes
+	PaymentAddressSize  = 66 // bytes
+)
+
 // for exit code
 const (
 	ExitCodeUnknow = iota
