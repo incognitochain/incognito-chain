@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"math/big"
 )
@@ -176,10 +177,10 @@ func (proof *SNPrivacyProof) Bytes() []byte {
 	bytes = append(bytes, proof.tInput.Compress()...)
 	bytes = append(bytes, proof.tSN.Compress()...)
 
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zSK, privacy.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zRSK, privacy.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zInput, privacy.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zRInput, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zSK, common.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zRSK, common.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zInput, common.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zRInput, common.BigIntSize)...)
 
 	return bytes
 }
@@ -234,29 +235,29 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	}
 	offset += privacy.CompressedPointSize
 
-	proof.zSK.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zSK.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.BigIntSize
+	offset += common.BigIntSize
 
-	proof.zRSK.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zRSK.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.BigIntSize
+	offset += common.BigIntSize
 
-	proof.zInput.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zInput.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.BigIntSize
+	offset += common.BigIntSize
 
-	proof.zRInput.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zRInput.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.BigIntSize
+	offset += common.BigIntSize
 	return nil
 }
 

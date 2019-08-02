@@ -128,7 +128,7 @@ func (point EllipticPoint) Compress() []byte {
 			format |= 0x1
 		}
 		b = append(b, format)
-		return paddedAppend(BigIntSize, b, point.X.Bytes())
+		return paddedAppend(common.BigIntSize, b, point.X.Bytes())
 	}
 	return nil
 }
@@ -161,7 +161,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
 func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
-	tmp := AddPaddingBigInt(point.X, BigIntSize)
+	tmp := AddPaddingBigInt(point.X, common.BigIntSize)
 	if index == 0 {
 		tmp = append(tmp, byte(0))
 	} else {
