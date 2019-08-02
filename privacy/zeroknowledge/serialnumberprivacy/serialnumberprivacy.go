@@ -1,20 +1,22 @@
-package zkp
+package serialnumberprivacy
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"math/big"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
-type SNPrivacyStatement struct {
+type SerialNumberPrivacyStatement struct {
 	sn       *privacy.EllipticPoint // serial number
 	comSK    *privacy.EllipticPoint // commitment to private key
 	comInput *privacy.EllipticPoint // commitment to input of the pseudo-random function
 }
 
 type SNPrivacyWitness struct {
-	stmt *SNPrivacyStatement // statement to be proved
+	stmt *SerialNumberPrivacyStatement // statement to be proved
 
 	sk     *big.Int // private key
 	rSK    *big.Int // blinding factor in the commitment to private key
@@ -23,7 +25,7 @@ type SNPrivacyWitness struct {
 }
 
 type SNPrivacyProof struct {
-	stmt *SNPrivacyStatement // statement to be proved
+	stmt *SerialNumberPrivacyStatement // statement to be proved
 
 	tSK    *privacy.EllipticPoint // random commitment related to private key
 	tInput *privacy.EllipticPoint // random commitment related to input
@@ -102,7 +104,7 @@ func (proof *SNPrivacyProof) isNil() bool {
 
 // Init inits Proof
 func (proof *SNPrivacyProof) Init() *SNPrivacyProof {
-	proof.stmt = new(SNPrivacyStatement)
+	proof.stmt = new(SerialNumberPrivacyStatement)
 
 	proof.tSK = new(privacy.EllipticPoint)
 	proof.tInput = new(privacy.EllipticPoint)
@@ -117,7 +119,7 @@ func (proof *SNPrivacyProof) Init() *SNPrivacyProof {
 }
 
 // Set sets Statement
-func (stmt *SNPrivacyStatement) Set(
+func (stmt *SerialNumberPrivacyStatement) Set(
 	SN *privacy.EllipticPoint,
 	comSK *privacy.EllipticPoint,
 	comInput *privacy.EllipticPoint) {
@@ -128,7 +130,7 @@ func (stmt *SNPrivacyStatement) Set(
 
 // Set sets Witness
 func (wit *SNPrivacyWitness) Set(
-	stmt *SNPrivacyStatement,
+	stmt *SerialNumberPrivacyStatement,
 	SK *big.Int,
 	rSK *big.Int,
 	input *big.Int,
@@ -143,7 +145,7 @@ func (wit *SNPrivacyWitness) Set(
 
 // Set sets Proof
 func (proof *SNPrivacyProof) Set(
-	stmt *SNPrivacyStatement,
+	stmt *SerialNumberPrivacyStatement,
 	tSK *privacy.EllipticPoint,
 	tInput *privacy.EllipticPoint,
 	tSN *privacy.EllipticPoint,
@@ -280,7 +282,7 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	var x *big.Int
 	if mess == nil {
-		x = generateChallenge([][]byte{tSeed.Compress(), tInput.Compress(), tOutput.Compress()})
+		x = utils.GenerateChallenge([][]byte{tSeed.Compress(), tInput.Compress(), tOutput.Compress()})
 	} else {
 		x = big.NewInt(0).SetBytes(mess)
 	}
@@ -314,7 +316,7 @@ func (proof *SNPrivacyProof) Verify(mess []byte) bool {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	var x *big.Int
 	if mess == nil {
-		x = generateChallenge([][]byte{proof.tSK.Compress(), proof.tInput.Compress(), proof.tSN.Compress()})
+		x = utils.GenerateChallenge([][]byte{proof.tSK.Compress(), proof.tInput.Compress(), proof.tSN.Compress()})
 	} else {
 		x = big.NewInt(0).SetBytes(mess)
 	}

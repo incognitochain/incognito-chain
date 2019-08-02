@@ -17,13 +17,15 @@ const (
 	MaxHashStringSize = HashSize * 2
 )
 
-// for incognito key
+// size data for incognito key and signature
 const (
+	// for key size
 	PrivateKeySize      = 32 // bytes
 	PublicKeySize       = 33 // bytes
 	TransmissionKeySize = 33 //bytes
 	ReceivingKeySize    = 32 // bytes
 	PaymentAddressSize  = 66 // bytes
+	// for signature size
 	// it is used for both privacy and no privacy
 	SigPubKeySize    = 33
 	SigNoPrivacySize = 64
