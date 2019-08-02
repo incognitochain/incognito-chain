@@ -10,14 +10,13 @@ type BeaconBody struct {
 	// Shard State extract from shard to beacon block
 	// Store all shard state == store content of all shard to beacon block
 	ShardState   map[byte][]ShardState
-	Instructions [][]string // Random here
+	Instructions [][]string
 }
 
 type ShardState struct {
-	Height uint64
-	Hash   common.Hash
-	//In this state, shard i send cross shard tx to which shard
-	CrossShard []byte
+	Height     uint64
+	Hash       common.Hash
+	CrossShard []byte //In this state, shard i send cross shard tx to which shard
 }
 
 func (beaconBlock *BeaconBody) toString() string {
@@ -31,7 +30,6 @@ func (beaconBlock *BeaconBody) toString() string {
 
 		}
 	}
-
 	for _, l := range beaconBlock.Instructions {
 		for _, r := range l {
 			res += r
