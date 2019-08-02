@@ -103,7 +103,7 @@ func TestKeySetSign(t *testing.T) {
 	for _, item := range data {
 		sig, err := keySet.Sign(item)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, privacy.SigNoPrivacySize, len(sig))
+		assert.Equal(t, common.SigNoPrivacySize, len(sig))
 	}
 }
 
