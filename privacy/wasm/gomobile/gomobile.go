@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 	"math/big"
 	"time"
 )
@@ -51,7 +52,7 @@ func AggregatedRangeProve(args string) string {
 		rands[i], _ = new(big.Int).SetString(temp["rands"][i], 10)
 	}
 
-	wit := new(zkp.AggregatedRangeWitness)
+	wit := new(aggregaterange.AggregatedRangeWitness)
 	wit.Set(values, rands)
 
 	start := time.Now()

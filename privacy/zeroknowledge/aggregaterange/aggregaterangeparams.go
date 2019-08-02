@@ -1,4 +1,4 @@
-package zkp
+package aggregaterange
 
 import (
 	"math/big"
@@ -12,44 +12,44 @@ import (
 
 // bulletproofParams includes all generator for aggregated range proof
 type bulletproofParams struct {
-	G []*privacy.EllipticPoint
-	H []*privacy.EllipticPoint
-	U *privacy.EllipticPoint
+	g []*privacy.EllipticPoint
+	h []*privacy.EllipticPoint
+	u *privacy.EllipticPoint
 }
 
 func newBulletproofParams(m int) *bulletproofParams {
 	gen := new(bulletproofParams)
 	capacity := 64 * m // fixed value
-	gen.G = make([]*privacy.EllipticPoint, capacity)
-	gen.H = make([]*privacy.EllipticPoint, capacity)
+	gen.g = make([]*privacy.EllipticPoint, capacity)
+	gen.h = make([]*privacy.EllipticPoint, capacity)
 
 	var wg sync.WaitGroup
 	wg.Add(capacity)
 	for i := 0; i < capacity; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			gen.G[i] = privacy.PedCom.G[0].Hash(int64(5 + i))
-			gen.H[i] = privacy.PedCom.G[0].Hash(int64(5 + i + capacity))
+			gen.g[i] = privacy.PedCom.G[0].Hash(int64(5 + i))
+			gen.h[i] = privacy.PedCom.G[0].Hash(int64(5 + i + capacity))
 		}(i, &wg)
 	}
 	wg.Wait()
-	gen.U = new(privacy.EllipticPoint)
-	gen.U = gen.H[0].Hash(int64(5 + 2*capacity))
+	gen.u = new(privacy.EllipticPoint)
+	gen.u = gen.h[0].Hash(int64(5 + 2*capacity))
 
 	return gen
 }
 
 func generateChallengeForAggRange(AggParam *bulletproofParams, values [][]byte) *big.Int {
-	bytes := AggParam.G[0].Compress()
-	for i := 1; i < len(AggParam.G); i++ {
-		bytes = append(bytes, AggParam.G[i].Compress()...)
+	bytes := AggParam.g[0].Compress()
+	for i := 1; i < len(AggParam.g); i++ {
+		bytes = append(bytes, AggParam.g[i].Compress()...)
 	}
 
-	for i := 0; i < len(AggParam.H); i++ {
-		bytes = append(bytes, AggParam.H[i].Compress()...)
+	for i := 0; i < len(AggParam.h); i++ {
+		bytes = append(bytes, AggParam.h[i].Compress()...)
 	}
 
-	bytes = append(bytes, AggParam.U.Compress()...)
+	bytes = append(bytes, AggParam.u.Compress()...)
 
 	for i := 0; i < len(values); i++ {
 		bytes = append(bytes, values[i]...)
