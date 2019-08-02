@@ -194,46 +194,46 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	var err error
 
 	proof.stmt.sn = new(privacy.EllipticPoint)
-	err = proof.stmt.sn.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = proof.stmt.sn.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	proof.stmt.comSK = new(privacy.EllipticPoint)
-	err = proof.stmt.comSK.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = proof.stmt.comSK.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	proof.stmt.comInput = new(privacy.EllipticPoint)
-	err = proof.stmt.comInput.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = proof.stmt.comInput.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	proof.tSK = new(privacy.EllipticPoint)
-	err = proof.tSK.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = proof.tSK.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	proof.tInput = new(privacy.EllipticPoint)
-	err = proof.tInput.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = proof.tInput.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	proof.tSN = new(privacy.EllipticPoint)
-	err = proof.tSN.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = proof.tSN.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	proof.zSK.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
