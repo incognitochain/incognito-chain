@@ -27,44 +27,44 @@ var (
 	}
 	shardToBeaconBlock3 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        3,
-			PrevBlockHash: shardToBeaconBlock2.Header.Hash(),
+			ShardID:           0,
+			Height:            3,
+			PreviousBlockHash: shardToBeaconBlock2.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock3Forked = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        3,
-			PrevBlockHash: shardToBeaconBlock2Forked.Header.Hash(),
+			ShardID:           0,
+			Height:            3,
+			PreviousBlockHash: shardToBeaconBlock2Forked.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock4 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        4,
-			PrevBlockHash: shardToBeaconBlock3.Header.Hash(),
+			ShardID:           0,
+			Height:            4,
+			PreviousBlockHash: shardToBeaconBlock3.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock5 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        5,
-			PrevBlockHash: shardToBeaconBlock4.Header.Hash(),
+			ShardID:           0,
+			Height:            5,
+			PreviousBlockHash: shardToBeaconBlock4.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock6 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        6,
-			PrevBlockHash: shardToBeaconBlock5.Header.Hash(),
+			ShardID:           0,
+			Height:            6,
+			PreviousBlockHash: shardToBeaconBlock5.Header.Hash(),
 		},
 	}
 	shardToBeaconBlock7 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        7,
-			PrevBlockHash: shardToBeaconBlock6.Header.Hash(),
+			ShardID:           0,
+			Height:            7,
+			PreviousBlockHash: shardToBeaconBlock6.Header.Hash(),
 		},
 	}
 	validShardToBeaconBlocks   = []*blockchain.ShardToBeaconBlock{}
@@ -113,7 +113,7 @@ var _ = func() (_ struct{}) {
 			},
 		}
 		if i != 0 {
-			shardToBeaconBlock.Header.PrevBlockHash = oldBlockHash
+			shardToBeaconBlock.Header.PreviousBlockHash = oldBlockHash
 		}
 		oldBlockHash = shardToBeaconBlock.Header.Hash()
 		validShardToBeaconBlocks = append(validShardToBeaconBlocks, shardToBeaconBlock)
@@ -126,7 +126,7 @@ var _ = func() (_ struct{}) {
 			},
 		}
 		if i != 0 {
-			shardToBeaconBlock.Header.PrevBlockHash = oldBlockHash
+			shardToBeaconBlock.Header.PreviousBlockHash = oldBlockHash
 		}
 		oldBlockHash = shardToBeaconBlock.Header.Hash()
 		pendingShardToBeaconBlocks = append(pendingShardToBeaconBlocks, shardToBeaconBlock)

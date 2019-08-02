@@ -2,18 +2,10 @@ package main
 
 import (
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
-
-//type command func(*Client, ...interface{}) (interface{}, *rpcserver.RPCError)
-//
-//var Command = map[string]command{
-//	createAndSendTransaction: (*Client).createAndSendTransaction,
-//	getBalanceByPrivatekey:   (*Client).getBalanceByPrivatekey,
-//	getTransactionByHash:     (*Client).getTransactionByHash,
-//	getBlockChainInfo:        (*Client).getBlockChainInfo,
-//}
 
 func (client *Client) getBlockChainInfo() (*jsonresult.GetBlockChainInfoResult, *rpcserver.RPCError) {
 	result := &jsonresult.GetBlockChainInfoResult{}
