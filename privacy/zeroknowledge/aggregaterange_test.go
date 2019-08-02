@@ -76,7 +76,7 @@ func TestEncodeVectors(t *testing.T) {
 func TestInnerProductProve(t *testing.T) {
 	var AggParam = newBulletproofParams(1)
 	wit := new(InnerProductWitness)
-	n := privacy.MaxExp
+	n := maxExp
 	wit.a = make([]*big.Int, n)
 	wit.b = make([]*big.Int, n)
 
