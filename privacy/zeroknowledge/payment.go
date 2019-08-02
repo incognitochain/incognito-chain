@@ -64,10 +64,12 @@ type PaymentProof struct {
 }
 
 func (proof *PaymentProof) Init() *PaymentProof {
+	aggregatedRangeProof := &AggregatedRangeProof{}
+	aggregatedRangeProof.Init()
 	proof = &PaymentProof{
 		OneOfManyProof:       []*OneOutOfManyProof{},
 		SerialNumberProof:    []*SNPrivacyProof{},
-		AggregatedRangeProof: new(AggregatedRangeProof).Init(),
+		AggregatedRangeProof: aggregatedRangeProof,
 		InputCoins:           []*privacy.InputCoin{},
 		OutputCoins:          []*privacy.OutputCoin{},
 		ComOutputValue:       []*privacy.EllipticPoint{},
@@ -276,7 +278,9 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 	offset += 2
 	if lenComOutputMultiRangeProof > 0 {
-		proof.AggregatedRangeProof = new(AggregatedRangeProof).Init()
+		aggregatedRangeProof := &AggregatedRangeProof{}
+		aggregatedRangeProof.Init()
+		proof.AggregatedRangeProof = aggregatedRangeProof
 		err := proof.AggregatedRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)

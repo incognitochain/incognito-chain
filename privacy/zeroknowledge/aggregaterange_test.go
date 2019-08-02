@@ -2,11 +2,12 @@ package zkp
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/stretchr/testify/assert"
 )
 
 //TestInnerProduct test inner product calculation
@@ -54,7 +55,7 @@ func TestEncodeVectors(t *testing.T) {
 		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
 	}
 	start := time.Now()
-	actualRes, err := EncodeVectors(a, b, G, H)
+	actualRes, err := encodeVectors(a, b, G, H)
 	end := time.Since(start)
 	privacy.Logger.Log.Info("Time encode vector: %v\n", end)
 	if err != nil {
