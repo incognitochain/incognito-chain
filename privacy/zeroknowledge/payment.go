@@ -110,7 +110,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.OneOfManyProof)))
 	for i := 0; i < len(proof.OneOfManyProof); i++ {
 		oneOfManyProof := proof.OneOfManyProof[i].Bytes()
-		bytes = append(bytes, privacy.IntToByteArr(privacy.OneOfManyProofSize)...)
+		bytes = append(bytes, privacy.IntToByteArr(oneOfManyProofSize)...)
 		bytes = append(bytes, oneOfManyProof...)
 	}
 
@@ -118,7 +118,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.SerialNumberProof)))
 	for i := 0; i < len(proof.SerialNumberProof); i++ {
 		serialNumberProof := proof.SerialNumberProof[i].Bytes()
-		bytes = append(bytes, privacy.IntToByteArr(privacy.SNPrivacyProofSize)...)
+		bytes = append(bytes, privacy.IntToByteArr(snPrivacyProofSize)...)
 		bytes = append(bytes, serialNumberProof...)
 	}
 
@@ -126,7 +126,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.SNNoPrivacyProof)))
 	for i := 0; i < len(proof.SNNoPrivacyProof); i++ {
 		snNoPrivacyProof := proof.SNNoPrivacyProof[i].Bytes()
-		bytes = append(bytes, byte(privacy.SNNoPrivacyProofSize))
+		bytes = append(bytes, byte(snNoPrivacyProofSize))
 		bytes = append(bytes, snNoPrivacyProof...)
 	}
 
@@ -216,7 +216,7 @@ func (proof *PaymentProof) Bytes() []byte {
 
 	// convert commitment index to bytes array
 	for i := 0; i < len(proof.CommitmentIndices); i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(big.NewInt(int64(proof.CommitmentIndices[i])), privacy.Uint64Size)...)
+		bytes = append(bytes, privacy.AddPaddingBigInt(big.NewInt(int64(proof.CommitmentIndices[i])), common.Uint64Size)...)
 	}
 	//fmt.Printf("BYTES ------------------ %v\n", bytes)
 	//fmt.Printf("LEN BYTES ------------------ %v\n", len(bytes))
@@ -410,8 +410,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	// get commitments list
 	proof.CommitmentIndices = make([]uint64, len(proof.OneOfManyProof)*privacy.CMRingSize)
 	for i := 0; i < len(proof.OneOfManyProof)*privacy.CMRingSize; i++ {
-		proof.CommitmentIndices[i] = new(big.Int).SetBytes(proofbytes[offset : offset+privacy.Uint64Size]).Uint64()
-		offset = offset + privacy.Uint64Size
+		proof.CommitmentIndices[i] = new(big.Int).SetBytes(proofbytes[offset : offset+common.Uint64Size]).Uint64()
+		offset = offset + common.Uint64Size
 	}
 
 	//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())

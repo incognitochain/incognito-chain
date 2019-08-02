@@ -15,9 +15,9 @@ var _ = func() (_ struct{}) {
 
 /*
 	Unit test for MarshalJSON/UnmarshalJSON EllipticPoint
- */
+*/
 
-func TestECMarshalJSON(t *testing.T){
+func TestECMarshalJSON(t *testing.T) {
 	// random a elliptic point
 	point := new(EllipticPoint)
 	point.Randomize()
@@ -36,17 +36,17 @@ func TestECMarshalJSON(t *testing.T){
 
 /*
 	Unit test for ComputeYCoord EllipticPoint
- */
-func TestECComputeYCoord(t *testing.T){
+*/
+func TestECComputeYCoord(t *testing.T) {
 	points := make([]*EllipticPoint, 4)
-	for i:=0;i<len(points); i++{
+	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
 		points[i].Randomize()
 	}
 
-	data := []struct{
-		X *big.Int
-		Y *big.Int
+	data := []struct {
+		X   *big.Int
+		Y   *big.Int
 		err error
 	}{
 		{points[0].X, points[0].Y, nil},
@@ -57,7 +57,7 @@ func TestECComputeYCoord(t *testing.T){
 		{new(big.Int).SetBytes([]byte("96168539034483116404758217466223875298688790819305130644610716258571307712734")), nil, InvalidXCoordErr},
 	}
 
-	for _, item := range data{
+	for _, item := range data {
 		pointTmp := new(EllipticPoint)
 		pointTmp.X = item.X
 
@@ -69,16 +69,16 @@ func TestECComputeYCoord(t *testing.T){
 
 /*
 	Unit test for Inverse EllipticPoint
- */
+*/
 
-func TestECInverse(t *testing.T){
+func TestECInverse(t *testing.T) {
 	points := make([]*EllipticPoint, 10)
-	for i:=0;i<len(points); i++{
+	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
 		points[i].Randomize()
 	}
 
-	for _, item := range points{
+	for _, item := range points {
 		itemInv, err := item.Inverse()
 
 		invY := new(big.Int).Sub(Curve.Params().P, item.Y)
@@ -90,15 +90,15 @@ func TestECInverse(t *testing.T){
 	}
 }
 
-func TestECInverseWithInvalidPoint(t *testing.T){
+func TestECInverseWithInvalidPoint(t *testing.T) {
 	points := make([]*EllipticPoint, 10)
-	for i:=0;i<len(points); i++{
+	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
 		points[i].Randomize()
 	}
 
-	for _, item := range points{
-		item.X = new(big.Int).SetBytes(RandBytes(BigIntSize))
+	for _, item := range points {
+		item.X = new(big.Int).SetBytes(RandBytes(common.BigIntSize))
 		itemInv, err := item.Inverse()
 
 		assert.Equal(t, IsNotAnEllipticPointErr, err)
@@ -108,10 +108,10 @@ func TestECInverseWithInvalidPoint(t *testing.T){
 
 /*
 	Unit test for Randomize EllipticPoint
- */
+*/
 
-func TestECRandomize(t *testing.T){
-	for i := 0; i<10; i++{
+func TestECRandomize(t *testing.T) {
+	for i := 0; i < 10; i++ {
 		point := new(EllipticPoint)
 		point.Randomize()
 
@@ -121,19 +121,19 @@ func TestECRandomize(t *testing.T){
 
 /*
 	Unit test for IsSafe EllipticPoint
- */
+*/
 
-func TestECIsSafeWithZeroPoint(t *testing.T){
+func TestECIsSafeWithZeroPoint(t *testing.T) {
 	point := new(EllipticPoint).Zero()
 	assert.Equal(t, false, point.IsSafe())
 }
 
 /*
 	Unit test for Compress/Decompress EllipticPoint
- */
+*/
 
-func TestECCompressDecompress(t *testing.T){
-	for i := 0; i<10; i++{
+func TestECCompressDecompress(t *testing.T) {
+	for i := 0; i < 10; i++ {
 		// random elliptic point
 		point := new(EllipticPoint)
 		point.Randomize()
@@ -150,8 +150,8 @@ func TestECCompressDecompress(t *testing.T){
 	}
 }
 
-func TestECCompressWithInvalidPoint(t *testing.T){
-	for i := 0; i<10; i++{
+func TestECCompressWithInvalidPoint(t *testing.T) {
+	for i := 0; i < 10; i++ {
 		point := new(EllipticPoint)
 		point.Randomize()
 

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"errors"
 )
 
 var InvalidXCoordErr = errors.New("X is not an abscissa of a point on the elliptic curve")
@@ -123,12 +123,12 @@ func (point EllipticPoint) IsSafe() bool {
 func (point EllipticPoint) Compress() []byte {
 	if Curve.IsOnCurve(point.X, point.Y) {
 		b := make([]byte, 0, CompressedPointSize)
-		format := PointCompressed
+		format := pointCompressed
 		if isOdd(point.Y) {
 			format |= 0x1
 		}
 		b = append(b, format)
-		return paddedAppend(BigIntSize, b, point.X.Bytes())
+		return paddedAppend(common.BigIntSize, b, point.X.Bytes())
 	}
 	return nil
 }
@@ -140,7 +140,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	yBit := (format & 0x1) == 0x1
 	format &= ^byte(0x1)
 
-	if format != PointCompressed {
+	if format != pointCompressed {
 		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
 
@@ -161,7 +161,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
 func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
-	tmp := AddPaddingBigInt(point.X, BigIntSize)
+	tmp := AddPaddingBigInt(point.X, common.BigIntSize)
 	if index == 0 {
 		tmp = append(tmp, byte(0))
 	} else {

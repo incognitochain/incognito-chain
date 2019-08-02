@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"math/big"
 )
@@ -135,12 +136,12 @@ func (pro *SNNoPrivacyProof) Bytes() []byte {
 	var bytes []byte
 	bytes = append(bytes, pro.stmt.output.Compress()...)
 	bytes = append(bytes, pro.stmt.vKey.Compress()...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(pro.stmt.input, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(pro.stmt.input, common.BigIntSize)...)
 
 	bytes = append(bytes, pro.tSeed.Compress()...)
 	bytes = append(bytes, pro.tOutput.Compress()...)
 
-	bytes = append(bytes, privacy.AddPaddingBigInt(pro.zSeed, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(pro.zSeed, common.BigIntSize)...)
 
 	return bytes
 }
@@ -167,11 +168,11 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.stmt.input.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	pro.stmt.input.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.BigIntSize
+	offset += common.BigIntSize
 
 	pro.tSeed = new(privacy.EllipticPoint)
 
@@ -188,7 +189,7 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 	}
 	offset += privacy.CompressedPointSize
 
-	pro.zSeed.SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	pro.zSeed.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
 		return err
 	}
