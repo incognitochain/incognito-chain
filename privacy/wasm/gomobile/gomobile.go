@@ -92,7 +92,7 @@ func OneOutOfManyProve(args string) (string, error) {
 	commitmentStrs := temp["commitments"]
 	//fmt.Printf("commitmentStrs: %v\n", commitmentStrs)
 
-	if len(commitmentStrs) != privacy.CMRingSize {
+	if len(commitmentStrs) != privacy.CommitmentRingSize {
 		println(err)
 		return "", errors.New("the number of Commitment list's elements must be equal to CMRingSize")
 	}

@@ -31,11 +31,11 @@ func TestPKOneOfMany(t *testing.T) {
 	indexIsZero := 2
 
 	// list of commitments
-	commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
-	snDerivators := make([]*big.Int, privacy.CMRingSize)
-	randoms := make([]*big.Int, privacy.CMRingSize)
+	commitments := make([]*privacy.EllipticPoint, privacy.CommitmentRingSize)
+	snDerivators := make([]*big.Int, privacy.CommitmentRingSize)
+	randoms := make([]*big.Int, privacy.CommitmentRingSize)
 
-	for i := 0; i < privacy.CMRingSize; i++ {
+	for i := 0; i < privacy.CommitmentRingSize; i++ {
 		snDerivators[i] = privacy.RandScalar()
 		randoms[i] = privacy.RandScalar()
 		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.SND)
