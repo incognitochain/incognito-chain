@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 	"sync"
 
@@ -111,9 +112,9 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	res = append(res, proof.t1.Compress()...)
 	res = append(res, proof.t2.Compress()...)
 
-	res = append(res, privacy.AddPaddingBigInt(proof.tauX, privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.tHat, privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.mu, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.tauX, common.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.tHat, common.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.mu, common.BigIntSize)...)
 	res = append(res, proof.innerProductProof.Bytes()...)
 
 	//fmt.Printf("BYTES ------------ %v\n", res)
@@ -169,14 +170,14 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	}
 	offset += privacy.CompressedPointSize
 
-	proof.tauX = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset += privacy.BigIntSize
+	proof.tauX = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+	offset += common.BigIntSize
 
-	proof.tHat = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset += privacy.BigIntSize
+	proof.tHat = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+	offset += common.BigIntSize
 
-	proof.mu = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset += privacy.BigIntSize
+	proof.mu = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+	offset += common.BigIntSize
 
 	proof.innerProductProof = new(InnerProductProof)
 	proof.innerProductProof.SetBytes(bytes[offset:])
