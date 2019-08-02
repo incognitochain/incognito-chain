@@ -2,19 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
 )
 
-var (
-	ErrParseNodeConfigFailed = errors.New("Failed To Parse Node Data From Config")
-	ErrParseHost = errors.New("Failed To Parse host Data From Config")
-	ErrParsePort = errors.New("Failed To Parse port Data From Config")
-	ErrParseWs = errors.New("Failed To Parse Websocket Data From Config")
-)
 type step struct {
 	client *Client
 	input  struct {
@@ -187,7 +180,7 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 	return sc, true
 
 }
-func readNodeConfig(env string) (map[string]*Client, error){
+func readNodeConfig(env string) (map[string]*Client, error) {
 	var nodeList = make(map[string]*Client)
 	var fileNodeInterface = make(map[string]interface{})
 	var fileName = ""
@@ -209,33 +202,33 @@ func readNodeConfig(env string) (map[string]*Client, error){
 		clientKey := ""
 		switch shardNodeKey {
 		case "-1":
-			clientKey="beacon"
+			clientKey = "beacon"
 		case "0":
-			clientKey="shard0-"
+			clientKey = "shard0-"
 		case "1":
-			clientKey="shard1-"
+			clientKey = "shard1-"
 		}
 		shardNodeValue, ok := shardNodeValueInterface.(map[string]interface{})
 		if !ok {
-			return nil, ErrParseNodeConfigFailed
+			return nil, ParseNodeConfigFailedError
 		}
 		for nodeKey, nodeValueInterface := range shardNodeValue {
 			clientNodeKey := clientKey + nodeKey
 			nodeValue, ok := nodeValueInterface.(map[string]interface{})
 			if !ok {
-				return nil, ErrParseFailed
+				return nil, ParseFailedError
 			}
 			host, ok := nodeValue["host"].(string)
 			if !ok {
-				return nil, ErrParseHost
+				return nil, ParseHostError
 			}
 			rpcport, ok := nodeValue["port"].(string)
 			if !ok {
-				return nil, ErrParsePort
+				return nil, ParsePortError
 			}
 			wsport, ok := nodeValue["ws"].(string)
 			if !ok {
-				return nil, ErrParseHost
+				return nil, ParseHostError
 			}
 			c := newClientWithFullInform(host, rpcport, wsport)
 			nodeList[clientNodeKey] = c
@@ -243,6 +236,7 @@ func readNodeConfig(env string) (map[string]*Client, error){
 	}
 	return nodeList, nil
 }
+
 /*
 	Type
 	- Number: float64
@@ -253,11 +247,11 @@ func readNodeConfig(env string) (map[string]*Client, error){
 */
 func parseResult(responseResult json.RawMessage) interface{} {
 	var (
-		number float64
-		str string
+		number  float64
+		str     string
 		boolean bool
-		array []interface{}
-		obj = make(map[string]interface{})
+		array   []interface{}
+		obj     = make(map[string]interface{})
 	)
 	if err := json.Unmarshal(responseResult, &number); err == nil {
 		return number
