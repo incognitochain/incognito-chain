@@ -1,26 +1,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/rpcserver"
 	"log"
 	"reflect"
 	"time"
-)
 
-var (
-	ErrExpectNoError         = errors.New("Expect Error is null")
-	ErrExpectError           = errors.New("Expect Error is not null")
-	ErrWrongCode             = errors.New("Wrong Error Code")
-	ErrWrongMessage          = errors.New("Wrong Error Message")
-	ErrResponseNotFound      = errors.New("Expected Response Not Found")
-	ErrWrongExpectedResponse = errors.New("Wrong Expected Response")
-	ErrNetworkError          = errors.New("No Error and Response from Server")
-	ErrAssertionData         = errors.New("Assertion type failure")
-	ErrContextNotFound       = errors.New("Key in context not found")
-	ErrWantedKeyNotFound     = errors.New("Wanted Key Not Found in Response")
-	ErrResultAndResponseType = errors.New("RPC Result And Response Type are Not Compatible")
+	"github.com/incognitochain/incognito-chain/rpcserver"
 )
 
 func executeTest(filename string) (interface{}, error) {
@@ -66,17 +52,17 @@ func executeTest(filename string) (interface{}, error) {
 		// check error
 		if step.output.error.isNil {
 			if rpcError != nil {
-				return rpcResult, fmt.Errorf("%+v, get %+v, %+v", ErrExpectNoError, rpcError.Code, rpcError.Message)
+				return rpcResult, fmt.Errorf("%+v, get %+v, %+v", UnexpectedError, rpcError.Code, rpcError.Message)
 			}
 		} else {
 			if rpcError == nil {
-				return rpcResult, fmt.Errorf("%+v, but null", ErrExpectError)
+				return rpcResult, fmt.Errorf("%+v, but null", ExpectedError)
 			}
 			if step.output.error.code != rpcError.Code {
-				return rpcResult, fmt.Errorf("%+v, get %+v", ErrWrongCode, rpcError.Code)
+				return rpcResult, fmt.Errorf("%+v, get %+v", WrongReturnedErrorCodeError, rpcError.Code)
 			}
 			if step.output.error.message != rpcError.Message {
-				return rpcResult, fmt.Errorf("%+v, get %+v", ErrWrongMessage, rpcError.Message)
+				return rpcResult, fmt.Errorf("%+v, get %+v", WrongReturnedErrorMessageError, rpcError.Message)
 			}
 		}
 		// check output
@@ -85,10 +71,10 @@ func executeTest(filename string) (interface{}, error) {
 			if response, ok := step.output.response.(map[string]interface{}); ok {
 				for key, expectedResponse := range response {
 					if returnedResponse, ok := result[key]; !ok {
-						return rpcResult, ErrResponseNotFound
+						return rpcResult, ResponseNotFoundError
 					} else {
 						if !reflect.DeepEqual(expectedResponse, returnedResponse) {
-							return rpcResult, fmt.Errorf("%+v, get %+v", ErrWrongExpectedResponse, returnedResponse)
+							return rpcResult, fmt.Errorf("%+v, get %+v", WrongExpectedResponseError, returnedResponse)
 						}
 					}
 				}
@@ -104,10 +90,10 @@ func executeTest(filename string) (interface{}, error) {
 			}
 		} else {
 			if !reflect.DeepEqual(rpcResult, step.output.response) {
-				return rpcResult, fmt.Errorf("%+v, result %+v, type %+v; response %+v, type %+v", ErrWrongExpectedResponse, rpcResult, reflect.TypeOf(rpcResult), step.output.response, reflect.TypeOf(step.output.response))
+				return rpcResult, fmt.Errorf("%+v, result %+v, type %+v; response %+v, type %+v", WrongExpectedResponseError, rpcResult, reflect.TypeOf(rpcResult), step.output.response, reflect.TypeOf(step.output.response))
 			}
 		}
-		log.Printf("Testcase %+v, pass step %+v, command %+v", filename, index + 1, step.input.name)
+		log.Printf("Testcase %+v, pass step %+v, command %+v", filename, index+1, step.input.name)
 	}
 	return rpcResult, rpcError
 }
