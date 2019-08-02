@@ -170,7 +170,7 @@ func (blkTmplGenerator *BlkTmplGenerator) FinalizeBeaconBlock(blk *BeaconBlock, 
 	// Signature of producer, sign on hash of header
 	blk.Header.Timestamp = time.Now().Unix()
 	blockHash := blk.Header.Hash()
-	producerSig, err := producerKeyset.SignDataB58(blockHash.GetBytes())
+	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
 	if err != nil {
 		Logger.log.Error(err)
 		return err
