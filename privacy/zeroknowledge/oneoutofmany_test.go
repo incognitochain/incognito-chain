@@ -58,7 +58,7 @@ func TestPKOneOfMany(t *testing.T) {
 
 	//Convert proof to bytes array
 	proofBytes := proof.Bytes()
-	assert.Equal(t, privacy.OneOfManyProofSize, len(proofBytes))
+	assert.Equal(t, oneOfManyProofSize, len(proofBytes))
 
 	// revert bytes array to proof
 	proof2 := new(OneOutOfManyProof).Init()

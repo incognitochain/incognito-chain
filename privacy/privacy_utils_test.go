@@ -30,17 +30,17 @@ func TestUtilsRandBytes(t *testing.T) {
 }
 
 func TestUtilsRandScalar(t *testing.T) {
-	for i:= 0;i<100; i++{
+	for i := 0; i < 100; i++ {
 		scalar := RandScalar()
 		isLessThanN := scalar.Cmp(Curve.Params().N)
 		assert.Equal(t, -1, isLessThanN)
-		assert.Equal(t, BigIntSize, len(scalar.Bytes()))
+		assert.Equal(t, common.BigIntSize, len(scalar.Bytes()))
 	}
 }
 
 func TestUtilsIsPowerOfTwo(t *testing.T) {
-	data := []struct{
-		number int
+	data := []struct {
+		number     int
 		isPowerOf2 bool
 	}{
 		{64, true},
@@ -56,13 +56,13 @@ func TestUtilsIsPowerOfTwo(t *testing.T) {
 }
 
 func TestUtilsConvertIntToBinary(t *testing.T) {
-	data := []struct{
+	data := []struct {
 		number int
-		size int
+		size   int
 		binary []byte
 	}{
-		{64, 8, []byte{0,0,0,0,0,0,1,0}},
-		{100, 10, []byte{0,0,1,0,0,1,1,0,0,0}},
+		{64, 8, []byte{0, 0, 0, 0, 0, 0, 1, 0}},
+		{100, 10, []byte{0, 0, 1, 0, 0, 1, 1, 0, 0, 0}},
 	}
 
 	for _, item := range data {
@@ -72,13 +72,13 @@ func TestUtilsConvertIntToBinary(t *testing.T) {
 }
 
 func TestUtilsConvertBigIntToBinary(t *testing.T) {
-	data := []struct{
+	data := []struct {
 		number *big.Int
-		size int
+		size   int
 		binary []*big.Int
 	}{
-		{new(big.Int).SetUint64(uint64(64)), 8, []*big.Int{new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(1),new(big.Int).SetInt64(0)}},
-		{new(big.Int).SetUint64(uint64(100)), 10, []*big.Int{new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(1),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(1),new(big.Int).SetInt64(1),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0),new(big.Int).SetInt64(0)}},
+		{new(big.Int).SetUint64(uint64(64)), 8, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0)}},
+		{new(big.Int).SetUint64(uint64(100)), 10, []*big.Int{new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(1), new(big.Int).SetInt64(1), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0), new(big.Int).SetInt64(0)}},
 	}
 
 	for _, item := range data {
@@ -88,11 +88,11 @@ func TestUtilsConvertBigIntToBinary(t *testing.T) {
 }
 
 func TestUtilsAddPaddingBigInt(t *testing.T) {
-	data := []struct{
+	data := []struct {
 		number *big.Int
-		size int
+		size   int
 	}{
-		{new(big.Int).SetBytes(RandBytes(12)), BigIntSize},
+		{new(big.Int).SetBytes(RandBytes(12)), common.BigIntSize},
 		{new(big.Int).SetBytes(RandBytes(42)), 50},
 		{new(big.Int).SetBytes(RandBytes(0)), 10},
 	}
@@ -104,13 +104,13 @@ func TestUtilsAddPaddingBigInt(t *testing.T) {
 }
 
 func TestUtilsIntToByteArr(t *testing.T) {
-	data := []struct{
+	data := []struct {
 		number int
-		bytes []byte
+		bytes  []byte
 	}{
 		{12345, []byte{48, 57}},
 		{123, []byte{0, 123}},
-		{0, []byte{0,0}},
+		{0, []byte{0, 0}},
 	}
 
 	for _, item := range data {

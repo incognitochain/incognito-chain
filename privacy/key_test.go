@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"encoding/hex"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -13,11 +14,11 @@ func TestKey(t *testing.T) {
 
 	// generate private key from seed
 	privateKey := GeneratePrivateKey(seed)
-	assert.Equal(t, PrivateKeySize, len(privateKey))
+	assert.Equal(t, common.PrivateKeySize, len(privateKey))
 
 	// generate public key from private key
 	publicKey := GeneratePublicKey(privateKey)
-	assert.Equal(t, PublicKeySize, len(publicKey))
+	assert.Equal(t, common.PublicKeySize, len(publicKey))
 
 	// decompress public key to publicKeyPoint
 	publicKeyPoint := new(EllipticPoint)
@@ -29,11 +30,11 @@ func TestKey(t *testing.T) {
 
 	// generate receiving key from private key
 	receivingKey := GenerateReceivingKey(privateKey)
-	assert.Equal(t, ReceivingKeySize, len(receivingKey))
+	assert.Equal(t, common.ReceivingKeySize, len(receivingKey))
 
 	// generate transmission key from receiving key
 	transmissionKey := GenerateTransmissionKey(receivingKey)
-	assert.Equal(t, TransmissionKeySize, len(transmissionKey))
+	assert.Equal(t, common.TransmissionKeySize, len(transmissionKey))
 
 	// decompress transmission key to transmissionKeyPoint
 	transmissionKeyPoint := new(EllipticPoint)
@@ -50,7 +51,7 @@ func TestKey(t *testing.T) {
 
 	// convert payment address to bytes array
 	paymentAddrBytes := paymentAddress.Bytes()
-	assert.Equal(t, PaymentAddressSize, len(paymentAddrBytes))
+	assert.Equal(t, common.PaymentAddressSize, len(paymentAddrBytes))
 
 	// new payment address to set bytes
 	paymentAddress2 := new(PaymentAddress)
@@ -61,6 +62,6 @@ func TestKey(t *testing.T) {
 
 	// convert payment address to hex encode string
 	paymentAddrStr := paymentAddress2.String()
-	assert.Equal(t, hex.EncodedLen(PaymentAddressSize), len(paymentAddrStr))
+	assert.Equal(t, hex.EncodedLen(common.PaymentAddressSize), len(paymentAddrStr))
 
 }
