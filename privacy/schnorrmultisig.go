@@ -34,16 +34,16 @@ type SchnMultiSig struct {
 
 // SetBytes - Constructing multiSig from byte array
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
-	if len(sigByte) < CompressedPointSize+common.BigIntSize {
+	if len(sigByte) < CompressedEllipticPointSize+common.BigIntSize {
 		return errors.New("Invalid sig length")
 	}
 	multiSig.R = new(EllipticPoint)
-	err := multiSig.R.Decompress(sigByte[0:CompressedPointSize])
+	err := multiSig.R.Decompress(sigByte[0:CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
 	multiSig.S = big.NewInt(0)
-	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+common.BigIntSize])
+	multiSig.S.SetBytes(sigByte[CompressedEllipticPointSize : CompressedEllipticPointSize+common.BigIntSize])
 	return nil
 }
 
@@ -137,7 +137,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	selfR = selfR.ScalarMult(r)
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
-	if len(res.Bytes()) != (common.BigIntSize + CompressedPointSize) {
+	if len(res.Bytes()) != (common.BigIntSize + CompressedEllipticPointSize) {
 		panic("can not sign multi sig")
 	}
 
@@ -155,7 +155,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	return: true or false
 */
 func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
-	if len(multiSig.Bytes()) != (common.BigIntSize + CompressedPointSize) {
+	if len(multiSig.Bytes()) != (common.BigIntSize + CompressedEllipticPointSize) {
 		panic("Wrong length")
 	}
 	//Calculate common params:

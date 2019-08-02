@@ -36,7 +36,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	commitments = [][]byte{}
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	if randNum == 0 {
-		randNum = privacy.CMRingSize // default
+		randNum = privacy.CommitmentRingSize // default
 	}
 
 	// loop to create list usable commitments from usableInputCoins
