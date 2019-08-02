@@ -16,6 +16,7 @@ import (
 var (
 	ErrParseTransaction = errors.New("Parse transaction failed")
 )
+
 func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
@@ -31,7 +32,7 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -58,7 +59,7 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 					continue
 				}
 				m := make(map[byte]uint64)
-				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions{
+				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
 							proccessedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin, &keyWallet.KeySet, senderShardID, &common.PRVCoinID)
@@ -74,12 +75,12 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 				if len(m) != 0 {
 					for senderShardID, value := range m {
 						cResult <- RpcSubResult{Result: jsonresult.CrossOutputCoinResult{
-							SenderShardID:  senderShardID,
-							ReceiverShardID:  shardBlock.Header.ShardID,
-							BlockHeight:    shardBlock.Header.Height,
-							BlockHash:      shardBlock.Header.Hash().String(),
-							PaymentAddress: keyWallet.Base58CheckSerialize(wallet.PaymentAddressType),
-							Value:          value,
+							SenderShardID:   senderShardID,
+							ReceiverShardID: shardBlock.Header.ShardID,
+							BlockHeight:     shardBlock.Header.Height,
+							BlockHash:       shardBlock.Header.Hash().String(),
+							PaymentAddress:  keyWallet.Base58CheckSerialize(wallet.PaymentAddressType),
+							Value:           value,
 						}, Error: nil}
 					}
 				}
@@ -107,7 +108,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -160,12 +161,12 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 					for tokenID, value := range m {
 						cResult <- RpcSubResult{Result: jsonresult.CrossCustomTokenResult{
 							ReceiverShardID: shardBlock.Header.ShardID,
-							BlockHeight: shardBlock.Header.Height,
-							BlockHash: shardBlock.Header.Hash().String(),
-							PaymentAddress: keyWallet.Base58CheckSerialize(wallet.PaymentAddressType),
-							TokenID: tokenID.String(),
-							Value: value,
-						}, Error:nil}
+							BlockHeight:     shardBlock.Header.Height,
+							BlockHash:       shardBlock.Header.Hash().String(),
+							PaymentAddress:  keyWallet.Base58CheckSerialize(wallet.PaymentAddressType),
+							TokenID:         tokenID.String(),
+							Value:           value,
+						}, Error: nil}
 					}
 				}
 			}
@@ -193,7 +194,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
-	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
 		err := NewRPCError(ErrSubcribe, err)
 		cResult <- RpcSubResult{Error: err}
@@ -244,7 +245,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 					for senderShardID, tokenIDValue := range m {
 						for tokenID, value := range tokenIDValue {
 							cResult <- RpcSubResult{Result: jsonresult.CrossCustomTokenPrivacyResult{
-								SenderShardID: senderShardID,
+								SenderShardID:   senderShardID,
 								ReceiverShardID: shardBlock.Header.ShardID,
 								BlockHeight:     shardBlock.Header.Height,
 								BlockHash:       shardBlock.Header.Hash().String(),

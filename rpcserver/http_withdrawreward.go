@@ -19,7 +19,7 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 	if err != nil {
 		return []byte{}, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
 	}
-	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
+	keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
 	param["TokenID"] = arrayParams[4].(map[string]interface{})["TokenID"]
 	arrayParams[4] = interface{}(param)
