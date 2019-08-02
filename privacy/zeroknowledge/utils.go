@@ -48,16 +48,16 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	sizeInputCoins := nInput * inputCoinsPrivacySize
 	sizeOutputCoins := nOutput * outputCoinsPrivacySize
 
-	sizeComOutputValue := nOutput * privacy.CompressedPointSize
-	sizeComOutputSND := nOutput * privacy.CompressedPointSize
-	sizeComOutputShardID := nOutput * privacy.CompressedPointSize
+	sizeComOutputValue := nOutput * privacy.CompressedEllipticPointSize
+	sizeComOutputSND := nOutput * privacy.CompressedEllipticPointSize
+	sizeComOutputShardID := nOutput * privacy.CompressedEllipticPointSize
 
-	sizeComInputSK := privacy.CompressedPointSize
-	sizeComInputValue := nInput * privacy.CompressedPointSize
-	sizeComInputSND := nInput * privacy.CompressedPointSize
-	sizeComInputShardID := privacy.CompressedPointSize
+	sizeComInputSK := privacy.CompressedEllipticPointSize
+	sizeComInputValue := nInput * privacy.CompressedEllipticPointSize
+	sizeComInputSND := nInput * privacy.CompressedEllipticPointSize
+	sizeComInputShardID := privacy.CompressedEllipticPointSize
 
-	sizeCommitmentIndices := nInput * privacy.CMRingSize * common.Uint64Size
+	sizeCommitmentIndices := nInput * privacy.CommitmentRingSize * common.Uint64Size
 
 	sizeProof := sizeOneOfManyProof + sizeSNPrivacyProof +
 		sizeComOutputMultiRangeProof + sizeInputCoins + sizeOutputCoins +

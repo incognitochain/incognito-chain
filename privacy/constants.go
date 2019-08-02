@@ -7,8 +7,8 @@ const (
 )
 
 const (
-	CompressedPointSize = 33
+	CompressedEllipticPointSize = 33 // EllipticPoint compress size
 
-	CMRingSize    = 8 // 2^3
-	CMRingSizeExp = 3
+	CommitmentRingSize    = 8
+	CommitmentRingSizeExp = 3
 )
