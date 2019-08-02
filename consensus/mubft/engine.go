@@ -33,7 +33,7 @@ type Engine struct {
 type EngineConfig struct {
 	BlockChain                  *blockchain.BlockChain
 	ChainParams                 *blockchain.Params
-	BlockGen                    *blockchain.BlkTmplGenerator
+	BlockGen                    *blockchain.BlockGenerator
 	UserKeySet                  *incognitokey.KeySet
 	NodeMode                    string
 	Server                      serverInterface
