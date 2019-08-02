@@ -3,10 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"flag"
-	"github.com/gorilla/websocket"
-	"github.com/incognitochain/incognito-chain/rpcserver"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,19 +12,19 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/incognitochain/incognito-chain/rpcserver"
 )
 
 var (
 	flags = make(map[string]*string)
 )
-//Error
-var (
-	ErrParseFailed = errors.New("Failed to parse result")
-)
+
 type Client struct {
 	host string
 	port string
-	ws string
+	ws   string
 }
 
 func newClient() *Client {
@@ -43,7 +40,7 @@ func newClientWithFullInform(host, port, ws string) *Client {
 	return &Client{
 		host: host,
 		port: port,
-		ws: ws,
+		ws:   ws,
 	}
 }
 func getMethodName(depthList ...int) string {
@@ -114,7 +111,7 @@ func makeRPCRequestJson(client *Client, method string, params ...interface{}) (i
 	}
 	result := parseResult(response.Result)
 	if result == nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ParseFailedError)
 	}
 	return result, response.Error
 }
@@ -131,7 +128,7 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	subcription := rpcserver.SubcriptionRequest{
 		JsonRequest: request,
 		Subcription: "0",
-		Type: 0,
+		Type:        0,
 	}
 	subcriptionBytes, err := json.Marshal(&subcription)
 	if err != nil {
@@ -139,7 +136,7 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	}
 	var addr string
 	if flag.Lookup("address:"+client.host+client.ws) != nil {
-		addr = flag.Lookup("address:"+client.host +client.ws).Value.(flag.Getter).Get().(string)
+		addr = flag.Lookup("address:" + client.host + client.ws).Value.(flag.Getter).Get().(string)
 	} else {
 		addr = *flag.String("address:"+client.host+client.ws, client.host+":"+client.ws, "http service address")
 	}
@@ -163,20 +160,22 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 			if err != nil {
 				return
 			}
-			responseChunk , err := ioutil.ReadAll(reader)
+			responseChunk, err := ioutil.ReadAll(reader)
 			responseBytes = append(responseBytes, responseChunk...)
 			return
-			
+
 		}
 	}()
 	ticker := time.NewTicker(timeout)
-	loop:
+loop:
 	for {
 		select {
-			case <-ticker.C: {
+		case <-ticker.C:
+			{
 				break loop
 			}
-			case <-done: {
+		case <-done:
+			{
 				break loop
 			}
 		}
@@ -196,7 +195,7 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	}
 	result := parseResult(subResult.Result)
 	if result == nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ParseFailedError)
 	}
 	return result, response.Error
 }
