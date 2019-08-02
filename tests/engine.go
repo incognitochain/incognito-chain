@@ -57,7 +57,7 @@ func executeTest(filename string) (interface{}, error) {
 			if step.input.isWait {
 				<-time.Tick(step.input.wait)
 			}
-			rpcResult, rpcError = makeRPCRequestV2(step.client, step.input.name, params...)
+			rpcResult, rpcError = makeRPCRequestJson(step.client, step.input.name, params...)
 		}
 		//data, err := command(step.client, step.input.params)
 		if rpcError != nil && rpcError.Code == rpcserver.GetErrorCode(rpcserver.ErrNetwork) {
