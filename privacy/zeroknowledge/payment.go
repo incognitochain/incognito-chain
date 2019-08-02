@@ -3,6 +3,7 @@ package zkp
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -24,7 +25,7 @@ type PaymentWitness struct {
 	SerialNumberWitness []*SNPrivacyWitness
 	SNNoPrivacyWitness  []*SNNoPrivacyWitness
 
-	AggregatedRangeWitness *AggregatedRangeWitness
+	AggregatedRangeWitness *aggregaterange.AggregatedRangeWitness
 
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
@@ -46,7 +47,7 @@ type PaymentProof struct {
 
 	// for output coins
 	// for proving each value and sum of them are less than a threshold value
-	AggregatedRangeProof *AggregatedRangeProof
+	AggregatedRangeProof *aggregaterange.AggregatedRangeProof
 
 	InputCoins  []*privacy.InputCoin
 	OutputCoins []*privacy.OutputCoin
@@ -64,7 +65,7 @@ type PaymentProof struct {
 }
 
 func (proof *PaymentProof) Init() *PaymentProof {
-	aggregatedRangeProof := &AggregatedRangeProof{}
+	aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
 	proof = &PaymentProof{
 		OneOfManyProof:       []*OneOutOfManyProof{},
@@ -278,7 +279,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 	offset += 2
 	if lenComOutputMultiRangeProof > 0 {
-		aggregatedRangeProof := &AggregatedRangeProof{}
+		aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}
 		aggregatedRangeProof.Init()
 		proof.AggregatedRangeProof = aggregatedRangeProof
 		err := proof.AggregatedRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
@@ -633,7 +634,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		}
 	}
 	if wit.AggregatedRangeWitness == nil {
-		wit.AggregatedRangeWitness = new(AggregatedRangeWitness)
+		wit.AggregatedRangeWitness = new(aggregaterange.AggregatedRangeWitness)
 	}
 	wit.AggregatedRangeWitness.Set(outputValue, randOutputValue)
 	// ---------------------------------------------------

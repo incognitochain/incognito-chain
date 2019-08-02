@@ -1,4 +1,4 @@
-package zkp
+package aggregaterange
 
 import (
 	"errors"
@@ -153,7 +153,7 @@ func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
 }
 
 // estimateMultiRangeProofSize estimate multi range proof size
-func estimateMultiRangeProofSize(nOutput int) uint64 {
+func EstimateMultiRangeProofSize(nOutput int) uint64 {
 	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*privacy.CompressedEllipticPointSize + 5*common.BigIntSize + 2)
 }
 
