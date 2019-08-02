@@ -140,7 +140,7 @@ func TestECCompressDecompress(t *testing.T) {
 
 		// compress the point
 		pointBytes := point.Compress()
-		assert.Equal(t, CompressedPointSize, len(pointBytes))
+		assert.Equal(t, CompressedEllipticPointSize, len(pointBytes))
 
 		// decompress from bytes array
 		point2 := new(EllipticPoint)
