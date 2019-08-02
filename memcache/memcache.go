@@ -4,6 +4,7 @@ package memcache
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -11,18 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-)
-
-var (
-	// errMemorydbClosed is returned if a memory database was already closed at the
-	// invocation of a data access operation.
-	errMemorydbClosed = errors.New("database closed")
-
-	// errMemorydbNotFound is returned if a key is requested that is not found in
-	// the provided memory database.
-	errMemorydbNotFound = errors.New("not found")
-
-	errExpired = errors.New("expired time")
 )
 
 // MemoryCache is an ephemeral key-value store. Apart from basic data storage
@@ -67,7 +56,7 @@ func (db *MemoryCache) Has(key []byte) (bool, error) {
 	defer db.lock.RUnlock()
 
 	if db.db == nil {
-		return false, errMemorydbClosed
+		return false, NewMemCacheError(MemCacheClosedError, nil)
 	}
 	keyStr := base58.Base58Check{}.Encode(key, 0x0)
 	_, ok := db.db[keyStr]
@@ -81,7 +70,7 @@ func (db *MemoryCache) Get(key []byte) ([]byte, error) {
 
 	if db.db == nil {
 		db.lock.RUnlock()
-		return nil, errMemorydbClosed
+		return nil, NewMemCacheError(MemCacheClosedError, nil)
 	}
 	keyStr := base58.Base58Check{}.Encode(key, 0x0)
 	if entry, ok := db.db[keyStr]; ok {
@@ -91,14 +80,14 @@ func (db *MemoryCache) Get(key []byte) ([]byte, error) {
 				// is expired
 				db.lock.RUnlock()
 				db.Delete(key)
-				return nil, errExpired
+				return nil, NewMemCacheError(ExpiredError, errors.New(fmt.Sprintf("Key %s expired", keyStr)))
 			}
 		}
 		db.lock.RUnlock()
 		return common.CopyBytes(entry), nil
 	}
 	db.lock.RUnlock()
-	return nil, errMemorydbNotFound
+	return nil, NewMemCacheError(MemCacheNotFoundError, errors.New(fmt.Sprintf("Key %s not found", keyStr)))
 }
 
 // Put inserts the given value into the key-value store.
@@ -107,7 +96,7 @@ func (db *MemoryCache) Put(key []byte, value []byte) error {
 	defer db.lock.Unlock()
 
 	if db.db == nil {
-		return errMemorydbClosed
+		return NewMemCacheError(MemCacheClosedError, nil)
 	}
 	keyStr := base58.Base58Check{}.Encode(key, 0x0)
 	db.db[keyStr] = common.CopyBytes(value)
@@ -120,7 +109,7 @@ func (db *MemoryCache) PutExpired(key []byte, value []byte, expired time.Duratio
 	defer db.lock.Unlock()
 
 	if db.db == nil {
-		return errMemorydbClosed
+		return NewMemCacheError(MemCacheClosedError, nil)
 	}
 	keyStr := base58.Base58Check{}.Encode(key, 0x0)
 	db.db[keyStr] = common.CopyBytes(value)
@@ -134,7 +123,7 @@ func (db *MemoryCache) Delete(key []byte) error {
 	defer db.lock.Unlock()
 
 	if db.db == nil {
-		return errMemorydbClosed
+		return NewMemCacheError(MemCacheClosedError, nil)
 	}
 	keyStr := base58.Base58Check{}.Encode(key, 0x0)
 	delete(db.db, keyStr)
