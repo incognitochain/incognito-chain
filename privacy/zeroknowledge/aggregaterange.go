@@ -1,6 +1,7 @@
 package zkp
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 	"sync"
 
@@ -111,9 +112,9 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	res = append(res, proof.t1.Compress()...)
 	res = append(res, proof.t2.Compress()...)
 
-	res = append(res, privacy.AddPaddingBigInt(proof.tauX, privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.tHat, privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.mu, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.tauX, common.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.tHat, common.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.mu, common.BigIntSize)...)
 	res = append(res, proof.innerProductProof.Bytes()...)
 
 	//fmt.Printf("BYTES ------------ %v\n", res)
@@ -169,14 +170,14 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	}
 	offset += privacy.CompressedPointSize
 
-	proof.tauX = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset += privacy.BigIntSize
+	proof.tauX = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+	offset += common.BigIntSize
 
-	proof.tHat = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset += privacy.BigIntSize
+	proof.tHat = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+	offset += common.BigIntSize
 
-	proof.mu = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset += privacy.BigIntSize
+	proof.mu = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+	offset += common.BigIntSize
 
 	proof.innerProductProof = new(InnerProductProof)
 	proof.innerProductProof.SetBytes(bytes[offset:])
@@ -221,7 +222,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
 	}
 
-	n := privacy.MaxExp
+	n := maxExp
 	// Convert values to binary array
 	aL := make([]*big.Int, numValuePad*n)
 	for i, value := range values {
@@ -479,7 +480,7 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	}
 
 	AggParam := newBulletproofParams(numValuePad)
-	n := privacy.MaxExp
+	n := maxExp
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
 	oneVector := powerVector(oneNumber, n*numValuePad)
