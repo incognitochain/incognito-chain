@@ -33,10 +33,10 @@ type OneOutOfManyProof struct {
 }
 
 func (proof *OneOutOfManyProof) ValidateSanity() bool {
-	if len(proof.cl) != privacy.CMRingSizeExp || len(proof.ca) != privacy.CMRingSizeExp ||
-		len(proof.cb) != privacy.CMRingSizeExp || len(proof.cd) != privacy.CMRingSizeExp ||
-		len(proof.f) != privacy.CMRingSizeExp || len(proof.za) != privacy.CMRingSizeExp ||
-		len(proof.zb) != privacy.CMRingSizeExp {
+	if len(proof.cl) != privacy.CommitmentRingSizeExp || len(proof.ca) != privacy.CommitmentRingSizeExp ||
+		len(proof.cb) != privacy.CommitmentRingSizeExp || len(proof.cd) != privacy.CommitmentRingSizeExp ||
+		len(proof.f) != privacy.CommitmentRingSizeExp || len(proof.za) != privacy.CommitmentRingSizeExp ||
+		len(proof.zb) != privacy.CommitmentRingSizeExp {
 		return false
 	}
 
@@ -144,7 +144,7 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 	}
 
 	// N = 2^n
-	n := privacy.CMRingSizeExp
+	n := privacy.CommitmentRingSizeExp
 
 	var bytes []byte
 
@@ -196,7 +196,7 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 		return nil
 	}
 
-	n := privacy.CMRingSizeExp
+	n := privacy.CommitmentRingSizeExp
 
 	offset := 0
 
@@ -204,45 +204,45 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	proof.cl = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		proof.cl[i] = new(privacy.EllipticPoint)
-		err := proof.cl[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+		err := proof.cl[i].Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 		if err != nil {
 			return err
 		}
-		offset = offset + privacy.CompressedPointSize
+		offset = offset + privacy.CompressedEllipticPointSize
 	}
 
 	// get ca array
 	proof.ca = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		proof.ca[i] = new(privacy.EllipticPoint)
-		err := proof.ca[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+		err := proof.ca[i].Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 		if err != nil {
 			return err
 		}
-		offset = offset + privacy.CompressedPointSize
+		offset = offset + privacy.CompressedEllipticPointSize
 	}
 
 	// get cb array
 	proof.cb = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		proof.cb[i] = new(privacy.EllipticPoint)
-		err := proof.cb[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+		err := proof.cb[i].Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 
 		if err != nil {
 			return err
 		}
-		offset = offset + privacy.CompressedPointSize
+		offset = offset + privacy.CompressedEllipticPointSize
 	}
 
 	// get cd array
 	proof.cd = make([]*privacy.EllipticPoint, n)
 	for i := 0; i < n; i++ {
 		proof.cd[i] = new(privacy.EllipticPoint)
-		err := proof.cd[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+		err := proof.cd[i].Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 		if err != nil {
 			return err
 		}
-		offset = offset + privacy.CompressedPointSize
+		offset = offset + privacy.CompressedEllipticPointSize
 	}
 
 	// get f array
@@ -276,11 +276,11 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Check the number of Commitment list's elements
 	N := len(wit.stmt.commitments)
-	if N != privacy.CMRingSize {
+	if N != privacy.CommitmentRingSize {
 		return nil, errors.New("the number of Commitment list's elements must be equal to CMRingSize")
 	}
 
-	n := privacy.CMRingSizeExp
+	n := privacy.CommitmentRingSizeExp
 
 	// Check indexIsZero
 	if wit.indexIsZero > uint64(N) {
@@ -397,10 +397,10 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	N := len(proof.stmt.commitments)
 
 	// the number of Commitment list's elements must be equal to CMRingSize
-	if N != privacy.CMRingSize {
+	if N != privacy.CommitmentRingSize {
 		return false
 	}
-	n := privacy.CMRingSizeExp
+	n := privacy.CommitmentRingSizeExp
 
 	//Calculate x
 	x := big.NewInt(0)

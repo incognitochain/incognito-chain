@@ -140,10 +140,10 @@ func (tx *Tx) Init(
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	if hasPrivacy {
-		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(inputCoins, privacy.CMRingSize, db, shardID, tokenID)
+		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(inputCoins, privacy.CommitmentRingSize, db, shardID, tokenID)
 
 		// Check number of list of random commitments, list of random commitment indices
-		if len(commitmentIndexs) != len(inputCoins)*privacy.CMRingSize {
+		if len(commitmentIndexs) != len(inputCoins)*privacy.CommitmentRingSize {
 			return NewTransactionErr(RandomCommitmentErr, nil)
 		}
 
@@ -849,7 +849,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 					return false, errors.New("validate sanity ComOutputValue of proof failed")
 				}
 			}
-			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CMRingSize {
+			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CommitmentRingSize {
 				return false, errors.New("validate sanity CommitmentIndices of proof failed")
 
 			}
