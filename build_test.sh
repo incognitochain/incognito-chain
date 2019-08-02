@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 echo "Start build Incognito"
-
+if [ "$1" == "y" ]; then
+  rm -rfv data/*
+fi
 git pull
 
 echo "Package install"
@@ -24,6 +26,7 @@ cp ./$APP_NAME $GOPATH/bin/$APP_NAME
 cp blockchain/testparams/params blockchain/params.go
 cp blockchain/testparams/constants blockchain/constants.go
 cp blockchain/testparams/commonconstants common/constants.go
+
 rm blockchain/testparams/params
 rm blockchain/testparams/constants
 rm blockchain/testparams/commonconstants
