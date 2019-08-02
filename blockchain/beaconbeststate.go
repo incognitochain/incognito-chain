@@ -281,7 +281,7 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	res = append(res, bestStateBeacon.BestBlockHash.GetBytes()...)
 	res = append(res, bestStateBeacon.PrevBestBlockHash.GetBytes()...)
 	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
-	res = append(res, bestStateBeacon.BestBlock.Header.PrevBlockHash.GetBytes()...)
+	res = append(res, bestStateBeacon.BestBlock.Header.PreviousBlockHash.GetBytes()...)
 	for k := range bestStateBeacon.BestShardHash {
 		keys = append(keys, int(k))
 	}
@@ -472,7 +472,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	if block.Header.Version != VERSION {
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
-	prevBlockHash := block.Header.PrevBlockHash
+	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
 	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
 	if err != nil {
