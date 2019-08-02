@@ -108,7 +108,7 @@ func (blkTmplGenerator *BlkTmplGenerator) NewBlockBeacon(producerAddress *privac
 	if len(beaconBlock.Body.Instructions) != 0 {
 		Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
 	}
-	beaconBestState.Update(beaconBlock, blkTmplGenerator.chain)
+	beaconBestState.Update(beaconBlock)
 	//============End Process new block with beststate
 	//==========Create Hash in Header
 	// BeaconValidator root: beacon committee + beacon pending committee
