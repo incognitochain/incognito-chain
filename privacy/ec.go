@@ -122,7 +122,7 @@ func (point EllipticPoint) IsSafe() bool {
 // Compress compresses point from 64 bytes to CompressedPointSize bytes (33 bytes)
 func (point EllipticPoint) Compress() []byte {
 	if Curve.IsOnCurve(point.X, point.Y) {
-		b := make([]byte, 0, CompressedPointSize)
+		b := make([]byte, 0, CompressedEllipticPointSize)
 		format := pointCompressed
 		if isOdd(point.Y) {
 			format |= 0x1

@@ -80,15 +80,15 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 	proof.l = make([]*privacy.EllipticPoint, lenLArray)
 	for i := 0; i < lenLArray; i++ {
 		proof.l[i] = new(privacy.EllipticPoint)
-		proof.l[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
-		offset += privacy.CompressedPointSize
+		proof.l[i].Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
+		offset += privacy.CompressedEllipticPointSize
 	}
 
 	proof.r = make([]*privacy.EllipticPoint, lenLArray)
 	for i := 0; i < lenLArray; i++ {
 		proof.r[i] = new(privacy.EllipticPoint)
-		proof.r[i].Decompress(bytes[offset : offset+privacy.CompressedPointSize])
-		offset += privacy.CompressedPointSize
+		proof.r[i].Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
+		offset += privacy.CompressedEllipticPointSize
 	}
 
 	proof.a = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
@@ -98,7 +98,7 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 	offset += common.BigIntSize
 
 	proof.p = new(privacy.EllipticPoint)
-	proof.p.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	proof.p.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 
 	return nil
 }
@@ -438,5 +438,5 @@ func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func estimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*privacy.CompressedPointSize + 5*common.BigIntSize + 2)
+	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*privacy.CompressedEllipticPointSize + 5*common.BigIntSize + 2)
 }
