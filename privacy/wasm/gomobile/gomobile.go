@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
 	"math/big"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 )
 
 func Add(a int, b int) int {
@@ -51,7 +53,7 @@ func AggregatedRangeProve(args string) string {
 		rands[i], _ = new(big.Int).SetString(temp["rands"][i], 10)
 	}
 
-	wit := new(zkp.AggregatedRangeWitness)
+	wit := new(aggregaterange.AggregatedRangeWitness)
 	wit.Set(values, rands)
 
 	start := time.Now()
@@ -123,7 +125,7 @@ func OneOutOfManyProve(args string) (string, error) {
 	//println("indexIsZeroUint64: ", indexIsZeroUint64)
 
 	// set witness for One out of many protocol
-	wit := new(zkp.OneOutOfManyWitness)
+	wit := new(oneoutofmany.OneOutOfManyWitness)
 	wit.Set(commitmentPoints, randBN, indexIsZeroUint64)
 	println("Wit: ", wit)
 

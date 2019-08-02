@@ -1,15 +1,17 @@
-package zkp
+package oneoutofmany
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -58,12 +60,12 @@ func TestPKOneOfMany(t *testing.T) {
 
 	//Convert proof to bytes array
 	proofBytes := proof.Bytes()
-	assert.Equal(t, oneOfManyProofSize, len(proofBytes))
+	assert.Equal(t, utils.OneOfManyProofSize, len(proofBytes))
 
 	// revert bytes array to proof
 	proof2 := new(OneOutOfManyProof).Init()
 	proof2.SetBytes(proofBytes)
-	proof2.stmt.commitments = commitments
+	proof2.Statement.Commitments = commitments
 	assert.Equal(t, proof, proof2)
 
 	// verify the proof

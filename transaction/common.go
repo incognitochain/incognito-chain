@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"math"
 	"math/big"
 	"math/rand"
@@ -136,10 +136,10 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	sizeProof := uint64(0)
 	if len(inputCoins) != 0 || len(payments) != 0 {
-		sizeProof = zkp.EstimateProofSize(len(inputCoins), len(payments), hasPrivacy)
+		sizeProof = utils.EstimateProofSize(len(inputCoins), len(payments), hasPrivacy)
 	} else {
 		if limitFee > 0 {
-			sizeProof = zkp.EstimateProofSize(1, 1, hasPrivacy)
+			sizeProof = utils.EstimateProofSize(1, 1, hasPrivacy)
 		}
 	}
 
@@ -199,7 +199,7 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 		customTokenDataSize += uint64(common.SigPrivacySize) // sig
 
 		// Proof
-		customTokenDataSize += zkp.EstimateProofSize(len(privacyCustomTokenParams.TokenInput), len(privacyCustomTokenParams.Receiver), true)
+		customTokenDataSize += utils.EstimateProofSize(len(privacyCustomTokenParams.TokenInput), len(privacyCustomTokenParams.Receiver), true)
 
 		customTokenDataSize += uint64(1) //PubKeyLastByte
 

@@ -1,13 +1,15 @@
-package zkp
+package serialnumbernoprivacy
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"math/big"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 )
 
-type SNNoPrivacyStatement struct {
+type SerialNumberNoPrivacyStatement struct {
 	output *privacy.EllipticPoint
 	vKey   *privacy.EllipticPoint
 	input  *big.Int
@@ -16,14 +18,14 @@ type SNNoPrivacyStatement struct {
 // SNNoPrivacyWitness is a protocol for Zero-knowledge Proof of Knowledge of one out of many commitments containing 0
 // include Witness: CommitedValue, r []byte
 type SNNoPrivacyWitness struct {
-	stmt SNNoPrivacyStatement
+	stmt SerialNumberNoPrivacyStatement
 	seed *big.Int
 }
 
 // SNNoPrivacyProof contains Proof's value
 type SNNoPrivacyProof struct {
 	// general info
-	stmt SNNoPrivacyStatement
+	stmt SerialNumberNoPrivacyStatement
 
 	tSeed   *privacy.EllipticPoint
 	tOutput *privacy.EllipticPoint
@@ -210,7 +212,7 @@ func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	x := big.NewInt(0)
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-		x.Set(generateChallenge([][]byte{tSK.Compress(), tE.Compress()}))
+		x.Set(utils.GenerateChallenge([][]byte{tSK.Compress(), tE.Compress()}))
 	} else {
 		x.SetBytes(mess)
 	}
@@ -230,7 +232,7 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	x := big.NewInt(0)
 	if mess == nil {
 		// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-		x.Set(generateChallenge([][]byte{pro.tSeed.Compress(), pro.tOutput.Compress()}))
+		x.Set(utils.GenerateChallenge([][]byte{pro.tSeed.Compress(), pro.tOutput.Compress()}))
 	} else {
 		x.SetBytes(mess)
 	}
@@ -242,7 +244,7 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	rightPoint1 = rightPoint1.Add(pro.tSeed)
 
 	if !leftPoint1.IsEqual(rightPoint1) {
-		privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
+		//privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
 		return false
 	}
 
@@ -253,7 +255,7 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	rightPoint2 = rightPoint2.Add(pro.tOutput)
 
 	if !leftPoint2.IsEqual(rightPoint2) {
-		privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
+		//privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
 		return false
 	}
 
