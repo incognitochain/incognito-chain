@@ -25,7 +25,7 @@ var (
 
 func executeTest(filename string) (interface{}, error) {
 	var rpcError *rpcserver.RPCError
-	var result = make(map[string]interface{})
+	//var result = make(map[string]interface{})
 	var rpcResult interface{}
 	scenarios, err := readfile(filename)
 	if err != nil {
@@ -109,5 +109,5 @@ func executeTest(filename string) (interface{}, error) {
 		}
 		log.Printf("Testcase %+v, pass step %+v, command %+v", filename, index + 1, step.input.name)
 	}
-	return result, rpcError
+	return rpcResult, rpcError
 }
