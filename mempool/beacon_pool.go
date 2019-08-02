@@ -117,7 +117,7 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 	//If receive old block, it will ignore
 	if _, ok := self.cache.Get(block.Header.Hash()); ok {
 		if nextBlock, ok := self.pendingPool[block.Header.Height+1]; ok {
-			self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, nextBlock.Header.PrevBlockHash))
+			self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, nextBlock.Header.PreviousBlockHash))
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
@@ -164,7 +164,7 @@ func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock
 			nextHeight := block.Header.Height + 1
 			// Condition 3: check next block
 			if nextBlock, ok := self.pendingPool[nextHeight]; ok {
-				preHash := &nextBlock.Header.PrevBlockHash
+				preHash := &nextBlock.Header.PreviousBlockHash
 				blockHeader := block.Header.Hash()
 				// Condition 4: next block should point to this block
 				if preHash.IsEqual(&blockHeader) {

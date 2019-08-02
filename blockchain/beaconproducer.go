@@ -91,7 +91,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 		}
 		beaconBlock.Header.Epoch++
 	}
-	beaconBlock.Header.PrevBlockHash = beaconBestState.BestBlockHash
+	beaconBlock.Header.PreviousBlockHash = beaconBestState.BestBlockHash
 	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(&beaconBestState, shardsToBeacon)
 	bestStateBeacon.InitRandomClient(blockGenerator.chain.config.RandomClient)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions)

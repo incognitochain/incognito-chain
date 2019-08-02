@@ -43,7 +43,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(block *ShardBlock, shardID
 	// check with current final best state
 	// New block must be compatible with current best state
 	bestBlockHash := &blockchain.BestState.Shard[shardID].BestBlockHash
-	if bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
+	if bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
 		tempMarshal, err := json.Marshal(blockchain.BestState.Shard[shardID])
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
@@ -120,7 +120,7 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	// check with current final best state
 	// block can only be insert if it match the current best state
 	bestBlockHash := &blockchain.BestState.Shard[shardID].BestBlockHash
-	if !bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
+	if !bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 
@@ -362,7 +362,7 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
 	// Verify parent hash exist or not
-	prevBlockHash := block.Header.PrevBlockHash
+	prevBlockHash := block.Header.PreviousBlockHash
 	parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	if err != nil {
 		return NewBlockChainError(DatabaseError, err)
@@ -467,7 +467,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 		Logger.log.Error(err)
 		return nil
 	}
-	//TODO: validator create instruction again (ONLY validator need to do that)
 	if !isPresig {
 		totalInstructions := []string{}
 		for _, value := range txInstructions {
@@ -518,7 +517,6 @@ func (blockchain *BlockChain) VerifyPreProcessingShardBlock(block *ShardBlock, s
 			}
 		}
 	}
-
 	// Verify response transactions
 	instsForValidations := [][]string{}
 	instsForValidations = append(instsForValidations, block.Body.Instructions...)
