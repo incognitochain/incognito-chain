@@ -257,7 +257,7 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 			continue
 		}
 
-		err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}

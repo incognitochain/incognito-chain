@@ -12,7 +12,7 @@ import (
 func TestTxCustomToken(t *testing.T) {
 	key, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
 	assert.Equal(t, nil, err)
-	err = key.KeySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
+	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
 
