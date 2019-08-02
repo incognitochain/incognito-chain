@@ -31,9 +31,9 @@ func generateChallenge(values [][]byte) *big.Int {
 func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	if !hasPrivacy {
 		FlagSize := 14 + 2*nInput + nOutput
-		sizeSNNoPrivacyProof := nInput * privacy.SNNoPrivacyProofSize
-		sizeInputCoins := nInput * privacy.InputCoinsNoPrivacySize
-		sizeOutputCoins := nOutput * privacy.OutputCoinsNoPrivacySize
+		sizeSNNoPrivacyProof := nInput * snNoPrivacyProofSize
+		sizeInputCoins := nInput * inputCoinsNoPrivacySize
+		sizeOutputCoins := nOutput * outputCoinsNoPrivacySize
 
 		sizeProof := uint64(FlagSize + sizeSNNoPrivacyProof + sizeInputCoins + sizeOutputCoins)
 		return uint64(sizeProof)
@@ -41,12 +41,12 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 
 	FlagSize := 14 + 7*nInput + 4*nOutput
 
-	sizeOneOfManyProof := nInput * privacy.OneOfManyProofSize
-	sizeSNPrivacyProof := nInput * privacy.SNPrivacyProofSize
+	sizeOneOfManyProof := nInput * oneOfManyProofSize
+	sizeSNPrivacyProof := nInput * snPrivacyProofSize
 	sizeComOutputMultiRangeProof := int(estimateMultiRangeProofSize(nOutput))
 
-	sizeInputCoins := nInput * privacy.InputCoinsPrivacySize
-	sizeOutputCoins := nOutput * privacy.OutputCoinsPrivacySize
+	sizeInputCoins := nInput * inputCoinsPrivacySize
+	sizeOutputCoins := nOutput * outputCoinsPrivacySize
 
 	sizeComOutputValue := nOutput * privacy.CompressedPointSize
 	sizeComOutputSND := nOutput * privacy.CompressedPointSize
@@ -57,7 +57,7 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	sizeComInputSND := nInput * privacy.CompressedPointSize
 	sizeComInputShardID := privacy.CompressedPointSize
 
-	sizeCommitmentIndices := nInput * privacy.CMRingSize * privacy.Uint64Size
+	sizeCommitmentIndices := nInput * privacy.CMRingSize * common.Uint64Size
 
 	sizeProof := sizeOneOfManyProof + sizeSNPrivacyProof +
 		sizeComOutputMultiRangeProof + sizeInputCoins + sizeOutputCoins +

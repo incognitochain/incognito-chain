@@ -31,7 +31,7 @@ func (keySet *KeySet) GenerateKey(seed []byte) *KeySet {
 // and regenerates payment address and readonly key
 // returns error if private key is invalid
 func (keySet *KeySet) InitFromPrivateKeyByte(privateKey []byte) error {
-	if len(privateKey) != privacy.PrivateKeySize {
+	if len(privateKey) != common.PrivateKeySize {
 		return NewCashecError(InvalidPrivateKeyErr, nil)
 	}
 
@@ -45,7 +45,7 @@ func (keySet *KeySet) InitFromPrivateKeyByte(privateKey []byte) error {
 // and regenerates payment address and readonly key
 // returns error if private key is invalid
 func (keySet *KeySet) InitFromPrivateKey(privateKey *privacy.PrivateKey) error {
-	if privateKey == nil || len(*privateKey) != privacy.PrivateKeySize {
+	if privateKey == nil || len(*privateKey) != common.PrivateKeySize {
 		return NewCashecError(InvalidPrivateKeyErr, nil)
 	}
 
