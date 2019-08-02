@@ -2,12 +2,12 @@ package serialnumberprivacy
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -2,10 +2,11 @@ package serialnumberprivacy
 
 import (
 	"errors"
+	"math/big"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
-	"math/big"
 )
 
 type SerialNumberPrivacyStatement struct {

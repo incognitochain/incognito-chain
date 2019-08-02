@@ -1,11 +1,11 @@
 package utils
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 	"math/big"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 )
 
 // GenerateChallengeFromByte get hash of n points in G append with input values
