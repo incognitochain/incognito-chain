@@ -3,7 +3,7 @@
 package main
 
 // Uncomment before build
-import (
+/*import (
 	"strconv"
 	"syscall/js"
 
@@ -41,4 +41,4 @@ func main() {
 	js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
 	js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
 	<-c
-}
+}*/
