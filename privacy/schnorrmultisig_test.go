@@ -81,7 +81,7 @@ func TestSchnorrMultiSignature(t *testing.T) {
 		sigs[i] = keySets[i].SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
 
 		assert.Equal(t, nil, err)
-		assert.Equal(t, SchnMultiSigSize, len(sigs[i].Bytes()))
+		assert.Equal(t, schnMultiSigSize, len(sigs[i].Bytes()))
 	}
 
 	//end1 := time.Since(start1)
