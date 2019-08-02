@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"errors"
 )
 
 var InvalidXCoordErr = errors.New("X is not an abscissa of a point on the elliptic curve")
@@ -123,7 +123,7 @@ func (point EllipticPoint) IsSafe() bool {
 func (point EllipticPoint) Compress() []byte {
 	if Curve.IsOnCurve(point.X, point.Y) {
 		b := make([]byte, 0, CompressedPointSize)
-		format := PointCompressed
+		format := pointCompressed
 		if isOdd(point.Y) {
 			format |= 0x1
 		}
@@ -140,7 +140,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 	yBit := (format & 0x1) == 0x1
 	format &= ^byte(0x1)
 
-	if format != PointCompressed {
+	if format != pointCompressed {
 		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
 
