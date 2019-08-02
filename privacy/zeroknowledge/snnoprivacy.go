@@ -155,18 +155,18 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 	var err error
 
 	pro.stmt.output = new(privacy.EllipticPoint)
-	err = pro.stmt.output.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = pro.stmt.output.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	pro.stmt.vKey = new(privacy.EllipticPoint)
-	err = pro.stmt.vKey.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = pro.stmt.vKey.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	pro.stmt.input.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
@@ -176,18 +176,18 @@ func (pro *SNNoPrivacyProof) SetBytes(bytes []byte) error {
 
 	pro.tSeed = new(privacy.EllipticPoint)
 
-	err = pro.tSeed.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = pro.tSeed.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	pro.tOutput = new(privacy.EllipticPoint)
-	err = pro.tOutput.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
+	err = pro.tOutput.Decompress(bytes[offset : offset+privacy.CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	offset += privacy.CompressedPointSize
+	offset += privacy.CompressedEllipticPointSize
 
 	pro.zSeed.SetBytes(bytes[offset : offset+common.BigIntSize])
 	if err != nil {
