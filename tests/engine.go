@@ -22,10 +22,10 @@ func executeTest(filename string) (interface{}, error) {
 		if step.input.fromContext {
 			for _, value := range step.input.params {
 				if contextKey, ok := value.(string); !ok {
-					return nil, fmt.Errorf("%+v, expect %+v is %+v", ErrAssertionData, value, "string")
+					return nil, fmt.Errorf("%+v, expect %+v is %+v", DataAssertionError, value, "string")
 				} else {
 					if contextValue, ok := scenarios.context[contextKey]; !ok {
-						return nil, fmt.Errorf("%+v, key %+v", ErrContextNotFound, contextKey)
+						return nil, fmt.Errorf("%+v, key %+v", ContextNotFoundError, contextKey)
 					} else {
 						params = append(params, contextValue)
 					}
@@ -80,13 +80,13 @@ func executeTest(filename string) (interface{}, error) {
 				}
 				for contextKey, resultKey := range step.store {
 					if resultValue, ok := result[resultKey]; !ok {
-						return rpcResult, fmt.Errorf("%+v, key %+v", ErrWantedKeyNotFound, resultKey)
+						return rpcResult, fmt.Errorf("%+v, key %+v", WantedKeyNotFoundError, resultKey)
 					} else {
 						scenarios.context[contextKey] = resultValue
 					}
 				}
 			} else {
-				return rpcResult, fmt.Errorf("%+v, result %+v, response %+v", ErrResultAndResponseType, reflect.TypeOf(rpcResult), reflect.TypeOf(response))
+				return rpcResult, fmt.Errorf("%+v, result %+v, response %+v", ResultAndResponseTypeError, reflect.TypeOf(rpcResult), reflect.TypeOf(response))
 			}
 		} else {
 			if !reflect.DeepEqual(rpcResult, step.output.response) {
