@@ -54,11 +54,11 @@ func (ciphertext *ElGamalCiphertext) SetBytes(bytes []byte) error {
 	ciphertext.C1 = new(EllipticPoint)
 	ciphertext.C2 = new(EllipticPoint)
 
-	err := ciphertext.C1.Decompress(bytes[:CompressedPointSize])
+	err := ciphertext.C1.Decompress(bytes[:CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	err = ciphertext.C2.Decompress(bytes[CompressedPointSize:])
+	err = ciphertext.C2.Decompress(bytes[CompressedEllipticPointSize:])
 	if err != nil {
 		return err
 	}

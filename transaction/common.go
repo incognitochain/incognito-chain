@@ -36,7 +36,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	commitments = [][]byte{}
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	if randNum == 0 {
-		randNum = privacy.CMRingSize // default
+		randNum = privacy.CommitmentRingSize // default
 	}
 
 	// loop to create list usable commitments from usableInputCoins
@@ -128,10 +128,10 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	sizeInfo := uint64(512)
 
-	sizeSigPubKey := uint64(privacy.SigPubKeySize)
-	sizeSig := uint64(privacy.SigNoPrivacySize)
+	sizeSigPubKey := uint64(common.SigPubKeySize)
+	sizeSig := uint64(common.SigNoPrivacySize)
 	if hasPrivacy {
-		sizeSig = uint64(privacy.SigPrivacySize)
+		sizeSig = uint64(common.SigPrivacySize)
 	}
 
 	sizeProof := uint64(0)
@@ -195,8 +195,8 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 		customTokenDataSize += uint64(64) // info
 
-		customTokenDataSize += uint64(privacy.SigPubKeySize)  // sig pubkey
-		customTokenDataSize += uint64(privacy.SigPrivacySize) // sig
+		customTokenDataSize += uint64(common.SigPubKeySize)  // sig pubkey
+		customTokenDataSize += uint64(common.SigPrivacySize) // sig
 
 		// Proof
 		customTokenDataSize += zkp.EstimateProofSize(len(privacyCustomTokenParams.TokenInput), len(privacyCustomTokenParams.Receiver), true)
