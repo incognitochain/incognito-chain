@@ -70,7 +70,7 @@ type Server struct {
 	userKeySet        *incognitokey.KeySet
 	wallet            *wallet.Wallet
 	consensusEngine   *mubft.Engine
-	blockgen          *blockchain.BlkTmplGenerator
+	blockgen          *blockchain.BlockGenerator
 	pusubManager      *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
@@ -355,7 +355,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//===============
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
 	// Init block template generator
-	serverObj.blockgen, err = blockchain.BlkTmplGenerator{}.Init(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
+	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
 	if err != nil {
 		return err
 	}
