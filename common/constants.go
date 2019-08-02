@@ -24,6 +24,10 @@ const (
 	TransmissionKeySize = 33 //bytes
 	ReceivingKeySize    = 32 // bytes
 	PaymentAddressSize  = 66 // bytes
+	// it is used for both privacy and no privacy
+	SigPubKeySize    = 33
+	SigNoPrivacySize = 64
+	SigPrivacySize   = 96
 )
 
 // for exit code

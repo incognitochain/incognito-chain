@@ -736,7 +736,7 @@ func (tx Tx) validateNormalTxSanityData() (bool, error) {
 		return false, err
 	}
 
-	if len(tx.SigPubKey) != privacy.SigPubKeySize {
+	if len(tx.SigPubKey) != common.SigPubKeySize {
 		return false, errors.New("wrong tx Sig PK")
 	}
 	// check Type is normal or salary tx

@@ -42,8 +42,8 @@ func (ciphertext *Ciphertext) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return errors.New("SetBytes ciphertext encryption: invalid input")
 	}
-	ciphertext.SymKeyEncrypted = bytes[0:ElGamalCiphertextSize]
-	ciphertext.MsgEncrypted = bytes[ElGamalCiphertextSize:]
+	ciphertext.SymKeyEncrypted = bytes[0:elGamalCiphertextSize]
+	ciphertext.MsgEncrypted = bytes[elGamalCiphertextSize:]
 	return nil
 }
 

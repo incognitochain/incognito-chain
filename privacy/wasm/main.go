@@ -2,6 +2,7 @@
 
 package main
 
+// Uncomment before build
 /*import (
 	"github.com/incognitochain/incognito-chain/privacy/wasm/gomobile"
 	"strconv"
