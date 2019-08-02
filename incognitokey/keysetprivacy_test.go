@@ -1,6 +1,7 @@
 package incognitokey
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -22,10 +23,10 @@ func TestKeySetGenerateKey(t *testing.T) {
 
 	for _, item := range data {
 		keySet = keySet.GenerateKey(item)
-		assert.Equal(t, privacy.PrivateKeySize, len(keySet.PrivateKey))
-		assert.Equal(t, privacy.PublicKeySize, len(keySet.PaymentAddress.Pk))
-		assert.Equal(t, privacy.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
-		assert.Equal(t, privacy.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
+		assert.Equal(t, common.PrivateKeySize, len(keySet.PrivateKey))
+		assert.Equal(t, common.PublicKeySize, len(keySet.PaymentAddress.Pk))
+		assert.Equal(t, common.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
+		assert.Equal(t, common.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
 	}
 }
 
@@ -34,16 +35,16 @@ func TestKeySetGenerateKey(t *testing.T) {
 */
 
 func TestKeySetImportFromPrivateKeyByte(t *testing.T) {
-	privateKey := privacy.RandBytes(privacy.PrivateKeySize)
+	privateKey := privacy.RandBytes(common.PrivateKeySize)
 
 	keySet := new(KeySet)
 	err := keySet.InitFromPrivateKeyByte(privateKey)
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, privacy.PrivateKeySize, len(keySet.PrivateKey[:]))
-	assert.Equal(t, privacy.PublicKeySize, len(keySet.PaymentAddress.Pk))
-	assert.Equal(t, privacy.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
-	assert.Equal(t, privacy.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
+	assert.Equal(t, common.PrivateKeySize, len(keySet.PrivateKey[:]))
+	assert.Equal(t, common.PublicKeySize, len(keySet.PaymentAddress.Pk))
+	assert.Equal(t, common.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
+	assert.Equal(t, common.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
 }
 
 func TestKeySetImportFromPrivateKeyByteWithInvalidPrivKey(t *testing.T) {
@@ -67,9 +68,9 @@ func TestKeySetImportFromPrivateKey(t *testing.T) {
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, privateKey, keySet.PrivateKey[:])
-	assert.Equal(t, privacy.PublicKeySize, len(keySet.PaymentAddress.Pk))
-	assert.Equal(t, privacy.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
-	assert.Equal(t, privacy.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
+	assert.Equal(t, common.PublicKeySize, len(keySet.PaymentAddress.Pk))
+	assert.Equal(t, common.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
+	assert.Equal(t, common.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
 }
 
 func TestKeySetImportFromPrivateKeyWithInvalidPrivKey(t *testing.T) {
