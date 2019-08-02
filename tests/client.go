@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
-	"github.com/btcsuite/websocket"
+	"github.com/gorilla/websocket"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"io/ioutil"
 	"log"
