@@ -1,24 +1,24 @@
 package zkp
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/pkg/errors"
 	"math/big"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 /***** Bullet proof component *****/
 
-// BulletproofParams includes all generator for aggregated range proof
-type BulletproofParams struct {
+// bulletproofParams includes all generator for aggregated range proof
+type bulletproofParams struct {
 	G []*privacy.EllipticPoint
 	H []*privacy.EllipticPoint
 	U *privacy.EllipticPoint
 }
 
-func newBulletproofParams(m int) *BulletproofParams {
-	gen := new(BulletproofParams)
+func newBulletproofParams(m int) *bulletproofParams {
+	gen := new(bulletproofParams)
 	capacity := 64 * m // fixed value
 	gen.G = make([]*privacy.EllipticPoint, capacity)
 	gen.H = make([]*privacy.EllipticPoint, capacity)
@@ -39,36 +39,7 @@ func newBulletproofParams(m int) *BulletproofParams {
 	return gen
 }
 
-// CommitAll commits a list of PCM_CAPACITY value(s)
-func EncodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
-	if len(a) != len(b) || len(g) != len(h) || len(a) != len(g) {
-		return nil, errors.New("invalid input")
-	}
-
-	res := new(privacy.EllipticPoint).Zero()
-	var wg sync.WaitGroup
-	var tmp1, tmp2 *privacy.EllipticPoint
-
-	for i := 0; i < len(a); i++ {
-		wg.Add(2)
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			tmp1 = g[i].ScalarMult(a[i])
-		}(i, &wg)
-
-		go func(i int, wg *sync.WaitGroup) {
-			defer wg.Done()
-			tmp2 = h[i].ScalarMult(b[i])
-		}(i, &wg)
-
-		wg.Wait()
-
-		res = res.Add(tmp1).Add(tmp2)
-	}
-	return res, nil
-}
-
-func generateChallengeForAggRange(AggParam *BulletproofParams, values [][]byte) *big.Int {
+func generateChallengeForAggRange(AggParam *bulletproofParams, values [][]byte) *big.Int {
 	bytes := AggParam.G[0].Compress()
 	for i := 1; i < len(AggParam.G); i++ {
 		bytes = append(bytes, AggParam.G[i].Compress()...)
