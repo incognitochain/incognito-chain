@@ -86,7 +86,7 @@ func makeRPCRequest(client *Client, method string, params ...interface{}) (*rpcs
 	return &response, nil
 }
 
-func makeRPCRequestV2(client *Client, method string, params ...interface{}) (interface{}, *rpcserver.RPCError) {
+func makeRPCRequestJson(client *Client, method string, params ...interface{}) (interface{}, *rpcserver.RPCError) {
 	request := rpcserver.JsonRequest{
 		Jsonrpc: "1.0",
 		Method:  method,
@@ -199,57 +199,4 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
 	}
 	return result, response.Error
-}
-
-func (client *Client) getBlockChainInfo(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	//result := &jsonresult.GetBlockChainInfoResult{}
-	result := make(map[string]interface{})
-	res, rpcError := makeRPCRequest(client, getBlockChainInfo, []string{})
-	if rpcError != nil {
-		return result, rpcError
-	}
-	err := json.Unmarshal(res.Result, &result)
-	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
-	}
-	return result, res.Error
-}
-
-func (client *Client) createAndSendTransaction(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	//result := &jsonresult.CreateTransactionResult{}
-	result := make(map[string]interface{})
-	res, rpcError := makeRPCRequest(client, createAndSendTransaction, params)
-	if rpcError != nil {
-		return result, rpcError
-	}
-	err := json.Unmarshal(res.Result, &result)
-	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
-	}
-	return result, nil
-}
-
-func (client *Client) getBalanceByPrivatekey(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	result := make(map[string]interface{})
-	res, rpcError := makeRPCRequest(client, getBalanceByPrivatekey, params)
-	if rpcError != nil {
-		return result, rpcError
-	}
-	err := json.Unmarshal(res.Result, &result)
-	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
-	}
-	return result, nil
-}
-func (client *Client) getTransactionByHash(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	result := make(map[string]interface{})
-	res, rpcError := makeRPCRequest(client, getTransactionByHash, params)
-	if rpcError != nil {
-		return result, rpcError
-	}
-	err := json.Unmarshal(res.Result, &result)
-	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
-	}
-	return result, nil
 }
