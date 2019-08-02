@@ -221,7 +221,7 @@ func (wit *AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
 	}
 
-	n := privacy.MaxExp
+	n := maxExp
 	// Convert values to binary array
 	aL := make([]*big.Int, numValuePad*n)
 	for i, value := range values {
@@ -479,7 +479,7 @@ func (proof *AggregatedRangeProof) Verify() bool {
 	}
 
 	AggParam := newBulletproofParams(numValuePad)
-	n := privacy.MaxExp
+	n := maxExp
 	oneNumber := big.NewInt(1)
 	twoNumber := big.NewInt(2)
 	oneVector := powerVector(oneNumber, n*numValuePad)
