@@ -1,4 +1,4 @@
-package zkp
+package aggregaterange
 
 import (
 	"math/big"
@@ -245,7 +245,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	alpha := privacy.RandScalar()
 
 	// Commitment to aL, aR: A = h^alpha * G^aL * H^aR
-	A, err := encodeVectors(aL, aR, AggParam.G, AggParam.H)
+	A, err := encodeVectors(aL, aR, AggParam.g, AggParam.h)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	rho := privacy.RandScalar()
 
 	// Commitment to sL, sR : S = h^rho * G^sL * H^sR
-	S, err := encodeVectors(sL, sR, AggParam.G, AggParam.H)
+	S, err := encodeVectors(sL, sR, AggParam.g, AggParam.h)
 	if err != nil {
 		return nil, err
 	}
@@ -437,11 +437,11 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	innerProductWit := new(InnerProductWitness)
 	innerProductWit.a = lVector
 	innerProductWit.b = rVector
-	innerProductWit.p, err = encodeVectors(lVector, rVector, AggParam.G, AggParam.H)
+	innerProductWit.p, err = encodeVectors(lVector, rVector, AggParam.g, AggParam.h)
 	if err != nil {
 		return nil, err
 	}
-	innerProductWit.p = innerProductWit.p.Add(AggParam.U.ScalarMult(proof.tHat))
+	innerProductWit.p = innerProductWit.p.Add(AggParam.u.ScalarMult(proof.tHat))
 
 	proof.innerProductProof, err = innerProductWit.Prove(AggParam)
 	if err != nil {
@@ -490,7 +490,7 @@ func (proof AggregatedRangeProof) Verify() bool {
 	for i := 0; i < n*numValuePad; i++ {
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			HPrime[i] = AggParam.H[i].ScalarMult(new(big.Int).Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
+			HPrime[i] = AggParam.h[i].ScalarMult(new(big.Int).Exp(y, big.NewInt(int64(-i)), privacy.Curve.Params().N))
 		}(i, &wg)
 	}
 	wg.Wait()
