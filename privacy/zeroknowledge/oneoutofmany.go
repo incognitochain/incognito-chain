@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 	"math/big"
@@ -170,21 +171,21 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 
 	// convert array f to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.f[i], privacy.BigIntSize)...)
+		bytes = append(bytes, privacy.AddPaddingBigInt(proof.f[i], common.BigIntSize)...)
 	}
 
 	// convert array za to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.za[i], privacy.BigIntSize)...)
+		bytes = append(bytes, privacy.AddPaddingBigInt(proof.za[i], common.BigIntSize)...)
 	}
 
 	// convert array zb to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.zb[i], privacy.BigIntSize)...)
+		bytes = append(bytes, privacy.AddPaddingBigInt(proof.zb[i], common.BigIntSize)...)
 	}
 
 	// convert array zd to bytes array
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zd, privacy.BigIntSize)...)
+	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zd, common.BigIntSize)...)
 
 	return bytes
 }
@@ -247,26 +248,26 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 	// get f array
 	proof.f = make([]*big.Int, n)
 	for i := 0; i < n; i++ {
-		proof.f[i] = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-		offset = offset + privacy.BigIntSize
+		proof.f[i] = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+		offset = offset + common.BigIntSize
 	}
 
 	// get za array
 	proof.za = make([]*big.Int, n)
 	for i := 0; i < n; i++ {
-		proof.za[i] = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-		offset = offset + privacy.BigIntSize
+		proof.za[i] = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+		offset = offset + common.BigIntSize
 	}
 
 	// get zb array
 	proof.zb = make([]*big.Int, n)
 	for i := 0; i < n; i++ {
-		proof.zb[i] = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-		offset = offset + privacy.BigIntSize
+		proof.zb[i] = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+		offset = offset + common.BigIntSize
 	}
 
 	// get zd
-	proof.zd = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
+	proof.zd = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
 
 	return nil
 }
@@ -342,7 +343,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Calculate x
 	x := big.NewInt(0)
 	for j := 0; j < n; j++ {
-		x = generateChallenge([][]byte{privacy.AddPaddingBigInt(x, privacy.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		x = generateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 	}
 
 	// Calculate za, zb zd
@@ -405,7 +406,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	x := big.NewInt(0)
 
 	for j := 0; j < n; j++ {
-		x = generateChallenge([][]byte{privacy.AddPaddingBigInt(x, privacy.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
+		x = generateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
 	}
 
 	for i := 0; i < n; i++ {
