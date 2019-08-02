@@ -1,7 +1,8 @@
-package zkp
+package serialnumberprivacy
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"math/big"
 	"testing"
 	"time"
@@ -24,7 +25,7 @@ func TestPKSNPrivacy(t *testing.T) {
 	comSK := privacy.PedCom.CommitAtIndex(skInt, rSK, privacy.SK)
 	comSND := privacy.PedCom.CommitAtIndex(SND, rSND, privacy.SND)
 
-	stmt := new(SNPrivacyStatement)
+	stmt := new(SerialNumberPrivacyStatement)
 	stmt.Set(serialNumber, comSK, comSND)
 
 	witness := new(SNPrivacyWitness)
@@ -44,7 +45,7 @@ func TestPKSNPrivacy(t *testing.T) {
 
 	// convert proof to bytes array
 	proofBytes := proof.Bytes()
-	assert.Equal(t, snPrivacyProofSize, len(proofBytes))
+	assert.Equal(t, utils.SnPrivacyProofSize, len(proofBytes))
 
 	// new SNPrivacyProof to set bytes array
 	proof2 := new(SNPrivacyProof).Init()

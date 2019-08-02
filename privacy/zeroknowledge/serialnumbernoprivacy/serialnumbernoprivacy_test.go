@@ -1,7 +1,8 @@
-package zkp
+package serialnumbernoprivacy
 
 import (
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -33,7 +34,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 
 	// convert proof to bytes array
 	proofBytes := proof.Bytes()
-	assert.Equal(t, snNoPrivacyProofSize, len(proofBytes))
+	assert.Equal(t, utils.SnNoPrivacyProofSize, len(proofBytes))
 
 	// new SNPrivacyProof to set bytes array
 	proof2 := new(SNNoPrivacyProof).Init()

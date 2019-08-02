@@ -1,9 +1,10 @@
-package zkp
+package oneoutofmany
 
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/pkg/errors"
 	"math/big"
 )
@@ -12,7 +13,7 @@ import (
 
 // Statement to be proved
 type OneOutOfManyStatement struct {
-	commitments []*privacy.EllipticPoint
+	Commitments []*privacy.EllipticPoint
 }
 
 // Statement's witness
@@ -25,7 +26,7 @@ type OneOutOfManyWitness struct {
 
 // Statement's proof
 type OneOutOfManyProof struct {
-	stmt *OneOutOfManyStatement
+	Statement *OneOutOfManyStatement
 
 	cl, ca, cb, cd []*privacy.EllipticPoint
 	f, za, zb      []*big.Int
@@ -98,7 +99,7 @@ func (proof *OneOutOfManyProof) isNil() bool {
 
 func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
 	proof.zd = new(big.Int)
-	proof.stmt = new(OneOutOfManyStatement)
+	proof.Statement = new(OneOutOfManyStatement)
 
 	return proof
 }
@@ -106,7 +107,7 @@ func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
 // Set sets Statement
 func (stmt *OneOutOfManyStatement) Set(
 	commitments []*privacy.EllipticPoint) {
-	stmt.commitments = commitments
+	stmt.Commitments = commitments
 }
 
 // Set sets Witness
@@ -128,8 +129,8 @@ func (proof *OneOutOfManyProof) Set(
 	f, za, zb []*big.Int,
 	zd *big.Int) {
 
-	proof.stmt = new(OneOutOfManyStatement)
-	proof.stmt.Set(commitments)
+	proof.Statement = new(OneOutOfManyStatement)
+	proof.Statement.Set(commitments)
 
 	proof.cl, proof.ca, proof.cb, proof.cd = cl, ca, cb, cd
 	proof.f, proof.za, proof.zb = f, za, zb
@@ -275,7 +276,7 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 // Prove produces a proof for the statement
 func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Check the number of Commitment list's elements
-	N := len(wit.stmt.commitments)
+	N := len(wit.stmt.Commitments)
 	if N != privacy.CommitmentRingSize {
 		return nil, errors.New("the number of Commitment list's elements must be equal to CMRingSize")
 	}
@@ -334,7 +335,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
 			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
-			cd[k] = cd[k].Add(wit.stmt.commitments[i].ScalarMult(pik))
+			cd[k] = cd[k].Add(wit.stmt.Commitments[i].ScalarMult(pik))
 		}
 
 		cd[k] = cd[k].Add(privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], privacy.SK))
@@ -343,7 +344,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Calculate x
 	x := big.NewInt(0)
 	for j := 0; j < n; j++ {
-		x = generateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		x = utils.GenerateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 	}
 
 	// Calculate za, zb zd
@@ -387,14 +388,14 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	zd.Mod(zd, privacy.Curve.Params().N)
 
 	proof := new(OneOutOfManyProof).Init()
-	proof.Set(wit.stmt.commitments, cl, ca, cb, cd, f, za, zb, zd)
+	proof.Set(wit.stmt.Commitments, cl, ca, cb, cd, f, za, zb, zd)
 
 	return proof, nil
 }
 
 // Verify verifies a proof output by Prove
 func (proof *OneOutOfManyProof) Verify() bool {
-	N := len(proof.stmt.commitments)
+	N := len(proof.Statement.Commitments)
 
 	// the number of Commitment list's elements must be equal to CMRingSize
 	if N != privacy.CommitmentRingSize {
@@ -406,7 +407,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	x := big.NewInt(0)
 
 	for j := 0; j < n; j++ {
-		x = generateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
+		x = utils.GenerateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
 	}
 
 	for i := 0; i < n; i++ {
@@ -452,7 +453,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 			exp.Mod(exp, privacy.Curve.Params().N)
 		}
 
-		leftPoint3 = leftPoint3.Add(proof.stmt.commitments[i].ScalarMult(exp))
+		leftPoint3 = leftPoint3.Add(proof.Statement.Commitments[i].ScalarMult(exp))
 	}
 
 	for k := 0; k < n; k++ {

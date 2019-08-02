@@ -1,4 +1,4 @@
-package zkp
+package utils
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
@@ -11,7 +11,7 @@ import (
 // GenerateChallengeFromByte get hash of n points in G append with input values
 // return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 // G[i] is list of all generator point of Curve
-func generateChallenge(values [][]byte) *big.Int {
+func GenerateChallenge(values [][]byte) *big.Int {
 	bytes := privacy.PedCom.G[0].Compress()
 	for i := 1; i < len(privacy.PedCom.G); i++ {
 		bytes = append(bytes, privacy.PedCom.G[i].Compress()...)
@@ -32,7 +32,7 @@ func generateChallenge(values [][]byte) *big.Int {
 func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	if !hasPrivacy {
 		FlagSize := 14 + 2*nInput + nOutput
-		sizeSNNoPrivacyProof := nInput * snNoPrivacyProofSize
+		sizeSNNoPrivacyProof := nInput * SnNoPrivacyProofSize
 		sizeInputCoins := nInput * inputCoinsNoPrivacySize
 		sizeOutputCoins := nOutput * outputCoinsNoPrivacySize
 
@@ -42,8 +42,8 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 
 	FlagSize := 14 + 7*nInput + 4*nOutput
 
-	sizeOneOfManyProof := nInput * oneOfManyProofSize
-	sizeSNPrivacyProof := nInput * snPrivacyProofSize
+	sizeOneOfManyProof := nInput * OneOfManyProofSize
+	sizeSNPrivacyProof := nInput * SnPrivacyProofSize
 	sizeComOutputMultiRangeProof := int(aggregaterange.EstimateMultiRangeProofSize(nOutput))
 
 	sizeInputCoins := nInput * inputCoinsPrivacySize
