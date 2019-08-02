@@ -1560,3 +1560,29 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 	}
 	return nil
 }
+
+func (blockchain *BlockChain) StoreIncomingCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			err := blockchain.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, crossBlk)
+			if err != nil {
+				return NewBlockChainError(StoreIncomingCrossShardError, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) DeleteIncomingCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			err := blockchain.config.DataBase.DeleteIncomingCrossShard(block.Header.ShardID, crossShard, crossBlk)
+			if err != nil {
+				return NewBlockChainError(DeleteIncomingCrossShardError, err)
+			}
+		}
+	}
+	return nil
+}

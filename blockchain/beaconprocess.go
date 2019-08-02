@@ -48,7 +48,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	// check with current final best state
 	// New block must be compatible with current best state
 	bestBlockHash := &blockchain.BestState.Beacon.BestBlockHash
-	if bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
+	if bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
 		tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
@@ -100,7 +100,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	// check with current final best state
 	// block can only be insert if it match the current best state
 	bestBlockHash := &blockchain.BestState.Beacon.BestBlockHash
-	if !bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
+	if !bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	if !isValidated {
@@ -267,7 +267,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	if block.Header.Version != VERSION {
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
-	prevBlockHash := block.Header.PrevBlockHash
+	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
 	parentBlock, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
 	if err != nil {
@@ -461,7 +461,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *Be
 	if bestStateBeacon.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
-	if !bytes.Equal(bestStateBeacon.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) {
+	if !bytes.Equal(bestStateBeacon.BestBlockHash.GetBytes(), block.Header.PreviousBlockHash.GetBytes()) {
 		return NewBlockChainError(BlockHeightError, errors.New("previous us block should be :"+bestStateBeacon.BestBlockHash.String()))
 	}
 	if block.Header.Height%common.EPOCH == 1 && bestStateBeacon.Epoch+1 != block.Header.Epoch {

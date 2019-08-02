@@ -31,44 +31,44 @@ var (
 	}
 	shardBlock3 = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        3,
-			PrevBlockHash: shardBlock2.Header.Hash(),
+			ShardID:           0,
+			Height:            3,
+			PreviousBlockHash: shardBlock2.Header.Hash(),
 		},
 	}
 	shardBlock3Forked = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        3,
-			PrevBlockHash: shardBlock2Forked.Header.Hash(),
+			ShardID:           0,
+			Height:            3,
+			PreviousBlockHash: shardBlock2Forked.Header.Hash(),
 		},
 	}
 	shardBlock4 = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        4,
-			PrevBlockHash: shardBlock3.Header.Hash(),
+			ShardID:           0,
+			Height:            4,
+			PreviousBlockHash: shardBlock3.Header.Hash(),
 		},
 	}
 	shardBlock5 = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        5,
-			PrevBlockHash: shardBlock4.Header.Hash(),
+			ShardID:           0,
+			Height:            5,
+			PreviousBlockHash: shardBlock4.Header.Hash(),
 		},
 	}
 	shardBlock6 = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        6,
-			PrevBlockHash: shardBlock5.Header.Hash(),
+			ShardID:           0,
+			Height:            6,
+			PreviousBlockHash: shardBlock5.Header.Hash(),
 		},
 	}
 	shardBlock7 = &blockchain.ShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        7,
-			PrevBlockHash: shardBlock6.Header.Hash(),
+			ShardID:           0,
+			Height:            7,
+			PreviousBlockHash: shardBlock6.Header.Hash(),
 		},
 	}
 	pendingShardBlocks = []*blockchain.ShardBlock{}
@@ -116,7 +116,7 @@ var _ = func() (_ struct{}) {
 			},
 		}
 		if i != 0 {
-			shardBlock.Header.PrevBlockHash = oldBlockHash
+			shardBlock.Header.PreviousBlockHash = oldBlockHash
 		}
 		oldBlockHash = shardBlock.Header.Hash()
 		validShardBlocks = append(validShardBlocks, shardBlock)
@@ -129,7 +129,7 @@ var _ = func() (_ struct{}) {
 			},
 		}
 		if i != 0 {
-			shardBlock.Header.PrevBlockHash = oldBlockHash
+			shardBlock.Header.PreviousBlockHash = oldBlockHash
 		}
 		oldBlockHash = shardBlock.Header.Hash()
 		pendingShardBlocks = append(pendingShardBlocks, shardBlock)
@@ -574,7 +574,7 @@ func TestShardPoolPromotePendingPool(t *testing.T) {
 			shardPoolTest.latestValidHeight = shardBlock.Header.Height
 		}
 	}
-	validShardBlocks[len(validShardBlocks)-1].Header.PrevBlockHash = common.HashH([]byte{0})
+	validShardBlocks[len(validShardBlocks)-1].Header.PreviousBlockHash = common.HashH([]byte{0})
 	shardPoolTest.pendingPool[validShardBlocks[len(validShardBlocks)-1].Header.Height] = validShardBlocks[len(validShardBlocks)-2]
 	shardPoolTest.promotePendingPool()
 	if len(shardPoolTest.validPool) != len(validShardBlocks)-1 {
