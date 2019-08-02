@@ -2,15 +2,16 @@ package oneoutofmany
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {

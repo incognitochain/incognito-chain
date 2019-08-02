@@ -2,11 +2,12 @@ package oneoutofmany
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"github.com/pkg/errors"
-	"math/big"
 )
 
 // This protocol proves in zero-knowledge that one-out-of-N commitments contains 0
