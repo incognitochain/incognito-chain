@@ -3,6 +3,11 @@ package zkp
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/oneoutofmany"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/serialnumbernoprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/serialnumberprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -20,11 +25,11 @@ type PaymentWitness struct {
 	commitmentIndexs   []uint64
 	myCommitmentIndexs []uint64
 
-	OneOfManyWitness    []*OneOutOfManyWitness
-	SerialNumberWitness []*SNPrivacyWitness
-	SNNoPrivacyWitness  []*SNNoPrivacyWitness
+	OneOfManyWitness    []*oneoutofmany.OneOutOfManyWitness
+	SerialNumberWitness []*serialnumberprivacy.SNPrivacyWitness
+	SNNoPrivacyWitness  []*serialnumbernoprivacy.SNNoPrivacyWitness
 
-	AggregatedRangeWitness *AggregatedRangeWitness
+	AggregatedRangeWitness *aggregaterange.AggregatedRangeWitness
 
 	ComOutputValue   []*privacy.EllipticPoint
 	ComOutputSND     []*privacy.EllipticPoint
@@ -39,14 +44,14 @@ type PaymentWitness struct {
 // PaymentProof contains all of PoK for spending coin
 type PaymentProof struct {
 	// for input coins
-	OneOfManyProof    []*OneOutOfManyProof
-	SerialNumberProof []*SNPrivacyProof
+	OneOfManyProof    []*oneoutofmany.OneOutOfManyProof
+	SerialNumberProof []*serialnumberprivacy.SNPrivacyProof
 	// it is exits when tx has no privacy
-	SNNoPrivacyProof []*SNNoPrivacyProof
+	SNNoPrivacyProof []*serialnumbernoprivacy.SNNoPrivacyProof
 
 	// for output coins
 	// for proving each value and sum of them are less than a threshold value
-	AggregatedRangeProof *AggregatedRangeProof
+	AggregatedRangeProof *aggregaterange.AggregatedRangeProof
 
 	InputCoins  []*privacy.InputCoin
 	OutputCoins []*privacy.OutputCoin
@@ -64,10 +69,12 @@ type PaymentProof struct {
 }
 
 func (proof *PaymentProof) Init() *PaymentProof {
+	aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}
+	aggregatedRangeProof.Init()
 	proof = &PaymentProof{
-		OneOfManyProof:       []*OneOutOfManyProof{},
-		SerialNumberProof:    []*SNPrivacyProof{},
-		AggregatedRangeProof: new(AggregatedRangeProof).Init(),
+		OneOfManyProof:       []*oneoutofmany.OneOutOfManyProof{},
+		SerialNumberProof:    []*serialnumberprivacy.SNPrivacyProof{},
+		AggregatedRangeProof: aggregatedRangeProof,
 		InputCoins:           []*privacy.InputCoin{},
 		OutputCoins:          []*privacy.OutputCoin{},
 		ComOutputValue:       []*privacy.EllipticPoint{},
@@ -110,7 +117,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.OneOfManyProof)))
 	for i := 0; i < len(proof.OneOfManyProof); i++ {
 		oneOfManyProof := proof.OneOfManyProof[i].Bytes()
-		bytes = append(bytes, privacy.IntToByteArr(oneOfManyProofSize)...)
+		bytes = append(bytes, privacy.IntToByteArr(utils.OneOfManyProofSize)...)
 		bytes = append(bytes, oneOfManyProof...)
 	}
 
@@ -118,7 +125,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.SerialNumberProof)))
 	for i := 0; i < len(proof.SerialNumberProof); i++ {
 		serialNumberProof := proof.SerialNumberProof[i].Bytes()
-		bytes = append(bytes, privacy.IntToByteArr(snPrivacyProofSize)...)
+		bytes = append(bytes, privacy.IntToByteArr(utils.SnPrivacyProofSize)...)
 		bytes = append(bytes, serialNumberProof...)
 	}
 
@@ -126,7 +133,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.SNNoPrivacyProof)))
 	for i := 0; i < len(proof.SNNoPrivacyProof); i++ {
 		snNoPrivacyProof := proof.SNNoPrivacyProof[i].Bytes()
-		bytes = append(bytes, byte(snNoPrivacyProofSize))
+		bytes = append(bytes, byte(utils.SnNoPrivacyProofSize))
 		bytes = append(bytes, snNoPrivacyProof...)
 	}
 
@@ -230,11 +237,11 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	// Set OneOfManyProofSize
 	lenOneOfManyProofArray := int(proofbytes[offset])
 	offset += 1
-	proof.OneOfManyProof = make([]*OneOutOfManyProof, lenOneOfManyProofArray)
+	proof.OneOfManyProof = make([]*oneoutofmany.OneOutOfManyProof, lenOneOfManyProofArray)
 	for i := 0; i < lenOneOfManyProofArray; i++ {
 		lenOneOfManyProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 		offset += 2
-		proof.OneOfManyProof[i] = new(OneOutOfManyProof).Init()
+		proof.OneOfManyProof[i] = new(oneoutofmany.OneOutOfManyProof).Init()
 		err := proof.OneOfManyProof[i].SetBytes(proofbytes[offset : offset+lenOneOfManyProof])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
@@ -245,11 +252,11 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	// Set serialNumberProofSize
 	lenSerialNumberProofArray := int(proofbytes[offset])
 	offset += 1
-	proof.SerialNumberProof = make([]*SNPrivacyProof, lenSerialNumberProofArray)
+	proof.SerialNumberProof = make([]*serialnumberprivacy.SNPrivacyProof, lenSerialNumberProofArray)
 	for i := 0; i < lenSerialNumberProofArray; i++ {
 		lenSerialNumberProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 		offset += 2
-		proof.SerialNumberProof[i] = new(SNPrivacyProof).Init()
+		proof.SerialNumberProof[i] = new(serialnumberprivacy.SNPrivacyProof).Init()
 		err := proof.SerialNumberProof[i].SetBytes(proofbytes[offset : offset+lenSerialNumberProof])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
@@ -260,11 +267,11 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	// Set SNNoPrivacyProofSize
 	lenSNNoPrivacyProofArray := int(proofbytes[offset])
 	offset += 1
-	proof.SNNoPrivacyProof = make([]*SNNoPrivacyProof, lenSNNoPrivacyProofArray)
+	proof.SNNoPrivacyProof = make([]*serialnumbernoprivacy.SNNoPrivacyProof, lenSNNoPrivacyProofArray)
 	for i := 0; i < lenSNNoPrivacyProofArray; i++ {
 		lenSNNoPrivacyProof := int(proofbytes[offset])
 		offset += 1
-		proof.SNNoPrivacyProof[i] = new(SNNoPrivacyProof).Init()
+		proof.SNNoPrivacyProof[i] = new(serialnumbernoprivacy.SNNoPrivacyProof).Init()
 		err := proof.SNNoPrivacyProof[i].SetBytes(proofbytes[offset : offset+lenSNNoPrivacyProof])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
@@ -276,7 +283,9 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
 	offset += 2
 	if lenComOutputMultiRangeProof > 0 {
-		proof.AggregatedRangeProof = new(AggregatedRangeProof).Init()
+		aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}
+		aggregatedRangeProof.Init()
+		proof.AggregatedRangeProof = aggregatedRangeProof
 		err := proof.AggregatedRangeProof.SetBytes(proofbytes[offset : offset+lenComOutputMultiRangeProof])
 		if err != nil {
 			return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
@@ -441,11 +450,11 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		publicKey := inputCoins[0].CoinDetails.PublicKey
 
-		wit.SNNoPrivacyWitness = make([]*SNNoPrivacyWitness, len(inputCoins))
+		wit.SNNoPrivacyWitness = make([]*serialnumbernoprivacy.SNNoPrivacyWitness, len(inputCoins))
 		for i := 0; i < len(inputCoins); i++ {
 			/***** Build witness for proving that serial number is derived from the committed derivator *****/
 			if wit.SNNoPrivacyWitness[i] == nil {
-				wit.SNNoPrivacyWitness[i] = new(SNNoPrivacyWitness)
+				wit.SNNoPrivacyWitness[i] = new(serialnumbernoprivacy.SNNoPrivacyWitness)
 			}
 			wit.SNNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.SerialNumber, publicKey, inputCoins[i].CoinDetails.SNDerivator, wit.privateKey)
 		}
@@ -491,8 +500,8 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 	// randInputSumAll is sum of all randomess of coin commitments
 	randInputSumAll := big.NewInt(0)
 
-	wit.OneOfManyWitness = make([]*OneOutOfManyWitness, numInputCoin)
-	wit.SerialNumberWitness = make([]*SNPrivacyWitness, numInputCoin)
+	wit.OneOfManyWitness = make([]*oneoutofmany.OneOutOfManyWitness, numInputCoin)
+	wit.SerialNumberWitness = make([]*serialnumberprivacy.SNPrivacyWitness, numInputCoin)
 
 	commitmentTemps := make([][]*privacy.EllipticPoint, numInputCoin)
 	randInputIsZero := make([]*big.Int, numInputCoin)
@@ -542,7 +551,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		}
 
 		if wit.OneOfManyWitness[i] == nil {
-			wit.OneOfManyWitness[i] = new(OneOutOfManyWitness)
+			wit.OneOfManyWitness[i] = new(oneoutofmany.OneOutOfManyWitness)
 		}
 		indexIsZero := myCommitmentIndices[i] % privacy.CommitmentRingSize
 
@@ -552,9 +561,9 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 		/***** Build witness for proving that serial number is derived from the committed derivator *****/
 		if wit.SerialNumberWitness[i] == nil {
-			wit.SerialNumberWitness[i] = new(SNPrivacyWitness)
+			wit.SerialNumberWitness[i] = new(serialnumberprivacy.SNPrivacyWitness)
 		}
-		stmt := new(SNPrivacyStatement)
+		stmt := new(serialnumberprivacy.SerialNumberPrivacyStatement)
 		stmt.Set(inputCoin.CoinDetails.SerialNumber, cmInputSK, wit.ComInputSND[i])
 		wit.SerialNumberWitness[i].Set(stmt, privateKey, randInputSK, inputCoin.CoinDetails.SNDerivator, randInputSND[i])
 		// ---------------------------------------------------
@@ -629,7 +638,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 		}
 	}
 	if wit.AggregatedRangeWitness == nil {
-		wit.AggregatedRangeWitness = new(AggregatedRangeWitness)
+		wit.AggregatedRangeWitness = new(aggregaterange.AggregatedRangeWitness)
 	}
 	wit.AggregatedRangeWitness.Set(outputValue, randOutputValue)
 	// ---------------------------------------------------
@@ -799,7 +808,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 			}
 		}
 
-		proof.OneOfManyProof[i].stmt.commitments = commitments
+		proof.OneOfManyProof[i].Statement.Commitments = commitments
 
 		if !proof.OneOfManyProof[i].Verify() {
 			privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: One out of many failed")
