@@ -318,8 +318,8 @@ func (tx *Tx) signTx() error {
 	/****** using Schnorr signature *******/
 	// sign with sigPrivKey
 	// prepare private key for Schnorr
-	sk := new(big.Int).SetBytes(tx.sigPrivKey[:privacy.BigIntSize])
-	r := new(big.Int).SetBytes(tx.sigPrivKey[privacy.BigIntSize:])
+	sk := new(big.Int).SetBytes(tx.sigPrivKey[:common.BigIntSize])
+	r := new(big.Int).SetBytes(tx.sigPrivKey[common.BigIntSize:])
 	sigKey := new(privacy.SchnPrivKey)
 	sigKey.Set(sk, r)
 
@@ -806,7 +806,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.OutputCoins[i].CoinDetails.CoinCommitment.IsSafe() {
 					return false, errors.New("validate sanity Coin commitment of output coin failed")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity SNDerivator of output coin failed")
 				}
 			}
@@ -872,10 +872,10 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.InputCoins[i].CoinDetails.SerialNumber.IsSafe() {
 					return false, errors.New("validate sanity Serial number of input coin failed")
 				}
-				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
+				if len(txN.Proof.InputCoins[i].CoinDetails.Randomness.Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity Randomness of input coin failed")
 				}
-				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
+				if len(txN.Proof.InputCoins[i].CoinDetails.SNDerivator.Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity SNDerivator of input coin failed")
 				}
 
@@ -889,10 +889,10 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.OutputCoins[i].CoinDetails.PublicKey.IsSafe() {
 					return false, errors.New("validate sanity PublicKey of output coin failed")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) > privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.Randomness.Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity Randomness of output coin failed")
 				}
-				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > privacy.BigIntSize {
+				if len(txN.Proof.OutputCoins[i].CoinDetails.SNDerivator.Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity SNDerivator of output coin failed")
 				}
 			}
