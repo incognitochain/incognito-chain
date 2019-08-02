@@ -4,9 +4,10 @@ package main
 
 // Uncomment before build
 /*import (
-	"github.com/incognitochain/incognito-chain/privacy/wasm/gomobile"
 	"strconv"
 	"syscall/js"
+
+	"github.com/incognitochain/incognito-chain/privacy/wasm/gomobile"
 )
 
 func add(_ js.Value, args []js.Value) interface{} {
