@@ -1,7 +1,10 @@
-package zkp
+package aggregaterange
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"io/ioutil"
+	"log"
 	"math/big"
 	"testing"
 	"time"
@@ -9,6 +12,17 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	m.Run()
+}
+
+var _ = func() (_ struct{}) {
+	fmt.Println("This runs before init()!")
+	privacy.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	return
+}()
 
 //TestInnerProduct test inner product calculation
 func TestInnerProduct(t *testing.T) {
@@ -49,10 +63,10 @@ func TestEncodeVectors(t *testing.T) {
 		b[i] = big.NewInt(10)
 
 		G[i] = new(privacy.EllipticPoint)
-		G[i].Set(AggParam.G[i].X, AggParam.G[i].Y)
+		G[i].Set(AggParam.g[i].X, AggParam.g[i].Y)
 
 		H[i] = new(privacy.EllipticPoint)
-		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
+		H[i].Set(AggParam.h[i].X, AggParam.h[i].Y)
 	}
 	start := time.Now()
 	actualRes, err := encodeVectors(a, b, G, H)
@@ -97,10 +111,10 @@ func TestInnerProductProve(t *testing.T) {
 	}
 
 	for i := range wit.a {
-		wit.p = wit.p.Add(AggParam.G[i].ScalarMult(wit.a[i]))
-		wit.p = wit.p.Add(AggParam.H[i].ScalarMult(wit.b[i]))
+		wit.p = wit.p.Add(AggParam.g[i].ScalarMult(wit.a[i]))
+		wit.p = wit.p.Add(AggParam.h[i].ScalarMult(wit.b[i]))
 	}
-	wit.p = wit.p.Add(AggParam.U.ScalarMult(c))
+	wit.p = wit.p.Add(AggParam.u.ScalarMult(c))
 
 	proof, err := wit.Prove(AggParam)
 	if err != nil {
@@ -144,7 +158,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 
 	// convert proof to bytes array
 	bytes := proof.Bytes()
-	expectProofSize := estimateMultiRangeProofSize(numValue)
+	expectProofSize := EstimateMultiRangeProofSize(numValue)
 	assert.Equal(t, int(expectProofSize), len(bytes))
 	fmt.Printf("Aggregated range proof size: %v\n", len(bytes))
 

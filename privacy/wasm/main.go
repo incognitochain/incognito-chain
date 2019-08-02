@@ -3,7 +3,7 @@
 package main
 
 // Uncomment before build
-/*import (
+import (
 	"github.com/incognitochain/incognito-chain/privacy/wasm/gomobile"
 	"strconv"
 	"syscall/js"
@@ -40,4 +40,4 @@ func main() {
 	js.Global().Set("aggregatedRangeProve", js.FuncOf(aggregatedRangeProve))
 	js.Global().Set("oneOutOfManyProve", js.FuncOf(oneOutOfManyProve))
 	<-c
-}*/
+}

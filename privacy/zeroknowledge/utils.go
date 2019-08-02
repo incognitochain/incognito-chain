@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -43,7 +44,7 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 
 	sizeOneOfManyProof := nInput * oneOfManyProofSize
 	sizeSNPrivacyProof := nInput * snPrivacyProofSize
-	sizeComOutputMultiRangeProof := int(estimateMultiRangeProofSize(nOutput))
+	sizeComOutputMultiRangeProof := int(aggregaterange.EstimateMultiRangeProofSize(nOutput))
 
 	sizeInputCoins := nInput * inputCoinsPrivacySize
 	sizeOutputCoins := nOutput * outputCoinsPrivacySize

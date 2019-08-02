@@ -1,7 +1,7 @@
 package zkp
 
 const (
-	maxExp = 64
+
 	// size of zero knowledge proof corresponding one input
 	oneOfManyProofSize     = 716
 	snPrivacyProofSize     = 326

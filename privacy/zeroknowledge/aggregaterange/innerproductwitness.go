@@ -1,4 +1,4 @@
-package zkp
+package aggregaterange
 
 import (
 	"errors"
@@ -129,10 +129,10 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 	H := make([]*privacy.EllipticPoint, n)
 	for i := range G {
 		G[i] = new(privacy.EllipticPoint)
-		G[i].Set(AggParam.G[i].X, AggParam.G[i].Y)
+		G[i].Set(AggParam.g[i].X, AggParam.g[i].Y)
 
 		H[i] = new(privacy.EllipticPoint)
-		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
+		H[i].Set(AggParam.h[i].X, AggParam.h[i].Y)
 	}
 
 	proof := new(InnerProductProof)
@@ -157,14 +157,14 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 		if err != nil {
 			return nil, err
 		}
-		L = L.Add(AggParam.U.ScalarMult(cL))
+		L = L.Add(AggParam.u.ScalarMult(cL))
 		proof.l = append(proof.l, L)
 
 		R, err := encodeVectors(a[nPrime:], b[:nPrime], G[:nPrime], H[nPrime:])
 		if err != nil {
 			return nil, err
 		}
-		R = R.Add(AggParam.U.ScalarMult(cR))
+		R = R.Add(AggParam.u.ScalarMult(cR))
 		proof.r = append(proof.r, R)
 
 		// calculate challenge x = hash(G || H || u || p ||  l || r)
@@ -219,16 +219,16 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	p := new(privacy.EllipticPoint)
 	p.Set(proof.p.X, proof.p.Y)
 
-	n := len(AggParam.G)
+	n := len(AggParam.g)
 
 	G := make([]*privacy.EllipticPoint, n)
 	H := make([]*privacy.EllipticPoint, n)
 	for i := range G {
 		G[i] = new(privacy.EllipticPoint)
-		G[i].Set(AggParam.G[i].X, AggParam.G[i].Y)
+		G[i].Set(AggParam.g[i].X, AggParam.g[i].Y)
 
 		H[i] = new(privacy.EllipticPoint)
-		H[i].Set(AggParam.H[i].X, AggParam.H[i].Y)
+		H[i].Set(AggParam.h[i].X, AggParam.h[i].Y)
 	}
 
 	for i := range proof.l {
@@ -282,7 +282,7 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 
 	rightPoint := G[0].ScalarMult(proof.a)
 	rightPoint = rightPoint.Add(H[0].ScalarMult(proof.b))
-	rightPoint = rightPoint.Add(AggParam.U.ScalarMult(c))
+	rightPoint = rightPoint.Add(AggParam.u.ScalarMult(c))
 
 	res := rightPoint.IsEqual(p)
 	if !res {
