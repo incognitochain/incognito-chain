@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
-	"time"
-
-	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -41,16 +38,16 @@ func TestSchnorrMultiSignature(t *testing.T) {
 		listPkPoints[i].Decompress(*listPKs[i])
 	}
 
-	fmt.Println("X Coor point")
-	for i := 0; i < n; i++ {
+	//fmt.Println("X Coor point")
+	/*for i := 0; i < n; i++ {
 		printHex(listPkPoints[i].X.Bytes())
-	}
-	fmt.Printf("\n")
-	fmt.Println("Y Coor point")
-	for i := 0; i < n; i++ {
-		printHex(listPkPoints[i].Y.Bytes())
-	}
-	fmt.Printf("\n")
+	}*/
+	//fmt.Printf("\n")
+	//fmt.Println("Y Coor point")
+	//for i := 0; i < n; i++ {
+	//	printHex(listPkPoints[i].Y.Bytes())
+	//}
+	//fmt.Printf("\n")
 
 	// random message to sign
 	data := []byte{50, 30, 179, 190, 122, 161, 29, 184, 20, 123, 94, 62, 60, 134, 200, 20, 250, 211, 152, 16, 131, 222, 168, 160, 188, 237, 76, 113, 44, 220, 78, 42}
@@ -67,19 +64,19 @@ func TestSchnorrMultiSignature(t *testing.T) {
 		combinedPublicRandomness = combinedPublicRandomness.Add(publicRandomness[i])
 	}
 
-	fmt.Printf("XR: ")
-	printHex(combinedPublicRandomness.X.Bytes())
-	fmt.Println()
-	fmt.Printf("YR: ")
-	printHex(combinedPublicRandomness.Y.Bytes())
-	fmt.Println()
+	//fmt.Printf("XR: ")
+	//printHex(combinedPublicRandomness.X.Bytes())
+	//fmt.Println()
+	//fmt.Printf("YR: ")
+	//printHex(combinedPublicRandomness.Y.Bytes())
+	//fmt.Println()
 
-	fmt.Printf("R: %+v\n", combinedPublicRandomness.Compress())
+	//fmt.Printf("R: %+v\n", combinedPublicRandomness.Compress())
 
 	// each members sign on data
 	sigs := make([]*SchnMultiSig, n)
 	var err error
-	start1 := time.Now()
+	//start1 := time.Now()
 	for i := 0; i < n; i++ {
 		sigs[i] = keySets[i].SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
 
@@ -87,26 +84,26 @@ func TestSchnorrMultiSignature(t *testing.T) {
 		assert.Equal(t, SchnMultiSigSize, len(sigs[i].Bytes()))
 	}
 
-	end1 := time.Since(start1)
-	fmt.Printf("Time1: %v\n", end1)
+	//end1 := time.Since(start1)
+	//fmt.Printf("Time1: %v\n", end1)
 
 	// combine all of signatures
-	start2 := time.Now()
+	//start2 := time.Now()
 	combinedSig := multiSigScheme.CombineMultiSig(sigs)
-	fmt.Println("Sig:")
-	printHex(combinedSig.S.Bytes())
-	fmt.Println("---")
+	//fmt.Println("Sig:")
+	//printHex(combinedSig.S.Bytes())
+	//fmt.Println("---")
 
-	end2 := time.Since(start2)
-	fmt.Printf("Time2: %v\n", end2)
+	//end2 := time.Since(start2)
+	//fmt.Printf("Time2: %v\n", end2)
 
 	// verify combined signature
-	start3 := time.Now()
+	//start3 := time.Now()
 	listCombinedPKs := listPKs[:n]
 	isValid := combinedSig.VerifyMultiSig(data, listPKs, listCombinedPKs, combinedPublicRandomness)
-	end3 := time.Since(start3)
-	fmt.Printf("Time3: %v\n", end3)
+	/*end3 := time.Since(start3)
+	fmt.Printf("Time3: %v\n", end3)*/
 	assert.Equal(t, true, isValid)
 
-	printHex(common.HashB(data))
+	//printHex(common.HashB(data))
 }
