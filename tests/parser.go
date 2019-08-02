@@ -210,7 +210,7 @@ func readNodeConfig(env string) (map[string]*Client, error) {
 		}
 		shardNodeValue, ok := shardNodeValueInterface.(map[string]interface{})
 		if !ok {
-			return nil, ErrParseNodeConfigFailed
+			return nil, ParseNodeConfigFailedError
 		}
 		for nodeKey, nodeValueInterface := range shardNodeValue {
 			clientNodeKey := clientKey + nodeKey
@@ -220,15 +220,15 @@ func readNodeConfig(env string) (map[string]*Client, error) {
 			}
 			host, ok := nodeValue["host"].(string)
 			if !ok {
-				return nil, ErrParseHost
+				return nil, ParseHostError
 			}
 			rpcport, ok := nodeValue["port"].(string)
 			if !ok {
-				return nil, ErrParsePort
+				return nil, ParsePortError
 			}
 			wsport, ok := nodeValue["ws"].(string)
 			if !ok {
-				return nil, ErrParseHost
+				return nil, ParseHostError
 			}
 			c := newClientWithFullInform(host, rpcport, wsport)
 			nodeList[clientNodeKey] = c
