@@ -50,7 +50,7 @@ func TestPKOneOfMany(t *testing.T) {
 	proof, err := witness.Prove()
 	assert.Equal(t, nil, err)
 	end := time.Since(start)
-	fmt.Printf("One out of many proving time: %v\n", end)
+	//fmt.Printf("One out of many proving time: %v\n", end)
 
 	// validate sanity for proof
 	isValidSanity := proof.ValidateSanity()
