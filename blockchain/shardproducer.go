@@ -43,7 +43,7 @@ import (
 		b. Get Transactions for New Block
 		c. Process Assign Instructions from Beacon Blocks
 		c. Generate Instructions
-
+	//TODO: write more document
 */
 func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
 	var (
@@ -178,7 +178,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 		ProducerAddress:      producerKeySet.PaymentAddress,
 		ShardID:              shardID,
 		Version:              BlockVersion,
-		PrevBlockHash:        *prevBlockHash,
+		PreviousBlockHash:    *prevBlockHash,
 		Height:               prevBlock.Header.Height + 1,
 		TxRoot:               *merkleRoot,
 		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
@@ -207,7 +207,7 @@ func (blockGenerator *BlockGenerator) FinalizeShardBlock(blk *ShardBlock, produc
 		return err
 	}
 	blk.ProducerSig = producerSig
-	//================End Generate Signature
+	//End Generate Signature
 	return nil
 }
 
@@ -274,26 +274,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				}
 
 			}
-			// shardToProcess, err := strconv.Atoi(l[1])
-			// if err != nil {
-			// 	continue
-			// }
-			// if shardToProcess == int(shardID) {
-			// 	// metaType, err := strconv.Atoi(l[0])
-			// 	// if err != nil {
-			// 	// 	return nil, err
-			// 	// }
-			// 	// var newIns []string
-			// 	// switch metaType {
-			// 	// case metadata.BeaconSalaryRequestMeta:
-			// 	// 	txs, err := blockGenerator.buildBeaconSalaryRes(l[0], l[3], producerPrivateKey)
-			// 	// 	if err != nil {
-			// 	// 		return nil, err
-			// 	// 	}
-			// 	// 	resTxs = append(resTxs, txs...)
-			// 	// }
-
-			// }
 			if l[0] == StakeAction || l[0] == RandomAction || l[0] == AssignAction || l[0] == SwapAction {
 				continue
 			}
@@ -510,21 +490,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 }
 
 /*
-	Verify Transaction with these condition:
-	1. Validate tx version
-	2. Validate fee with tx size
-	3. Validate type of tx
-	4. Validate with other txs in block:
- 	- Normal Transaction:
- 	- Custom Tx:
-	4.1 Validate Init Custom Token
-	5. Validate sanity data of tx
-	6. Validate data in tx: privacy proof, metadata,...
-	7. Validate tx with blockchain: douple spend, ...
-	8. Check tx existed in block
-	9. Not accept a salary tx
-	10. Check duplicate staker public key in block
-	11. Check duplicate Init Custom Token in block
+	Verify Transaction with these condition: defined in mempool.go
 */
 func (blockGenerator *BlockGenerator) getPendingTransaction(
 	shardID byte,
@@ -534,7 +500,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	startTime := time.Now()
 	sourceTxns := blockGenerator.GetPendingTxsV2()
 	txsProcessTimeInBlockCreation := int64(common.MinShardBlkInterval.Nanoseconds())
-	//txsProcessTimeInBlockCreation := int64(float64(common.MinShardBlkInterval.Nanoseconds()) * MaxTxsProcessTimeInBlockCreation)
 	var elasped int64
 	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
@@ -554,7 +519,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
-		//Logger.log.Criticalf("Tx index %+v value %+v", i, txDesc)
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if txShardID != shardID {
 			continue
@@ -566,7 +530,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		}
 		tempTx := tempTxDesc.Tx
 		totalFee += tx.GetTxFee()
-
 		tempSize := tempTx.GetTxActualSize()
 		if currentSize+tempSize >= common.MaxBlockSize {
 			break
@@ -574,7 +537,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		currentSize += tempSize
 		txsToAdd = append(txsToAdd, tempTx)
 	}
-	//Logger.log.Info("Max Transaction In Block ⚡︎ ", MaxTxsInBlock)
 	Logger.log.Criticalf(" 🔎 %+v transactions for New Block from pool \n", len(txsToAdd))
 	blockGenerator.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
@@ -597,7 +559,6 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
-
 	//	0xmerman optimize using waitgroup
 	// var wg sync.WaitGroup
 	for _, fromShardID := range keys {
