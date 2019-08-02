@@ -90,13 +90,6 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 		if nodeData, ok := tests["node"]; !ok {
 			return sc, false
 		} else {
-			//if node, ok := nodeData.(map[string]interface{}); !ok {
-			//	return sc, false
-			//} else {
-			//	host := node["host"].(string)
-			//	port := node["port"].(string)
-			//	step.client = newClientWithHost(host, port)
-			//}
 			node, ok := nodeData.(string)
 			if !ok {
 				return sc, false
