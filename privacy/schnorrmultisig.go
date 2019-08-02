@@ -2,6 +2,7 @@ package privacy
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 
 	"golang.org/x/crypto/sha3"
@@ -33,7 +34,7 @@ type SchnMultiSig struct {
 
 // SetBytes - Constructing multiSig from byte array
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
-	if len(sigByte) < CompressedPointSize+BigIntSize {
+	if len(sigByte) < CompressedPointSize+common.BigIntSize {
 		return errors.New("Invalid sig length")
 	}
 	multiSig.R = new(EllipticPoint)
@@ -42,7 +43,7 @@ func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
 		return err
 	}
 	multiSig.S = big.NewInt(0)
-	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+BigIntSize])
+	multiSig.S.SetBytes(sigByte[CompressedPointSize : CompressedPointSize+common.BigIntSize])
 	return nil
 }
 
@@ -68,7 +69,7 @@ func (multiSig *SchnMultiSig) Bytes() []byte {
 		panic("Throw Error from Byte() method")
 	}
 	temp := multiSig.S.Bytes()
-	diff := BigIntSize - len(temp)
+	diff := common.BigIntSize - len(temp)
 	for j := 0; j < diff; j++ {
 		temp = append([]byte{0}, temp...)
 	}
@@ -136,7 +137,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	selfR = selfR.ScalarMult(r)
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
-	if len(res.Bytes()) != (BigIntSize + CompressedPointSize) {
+	if len(res.Bytes()) != (common.BigIntSize + CompressedPointSize) {
 		panic("can not sign multi sig")
 	}
 
@@ -154,7 +155,7 @@ func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*Public
 	return: true or false
 */
 func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
-	if len(multiSig.Bytes()) != (BigIntSize + CompressedPointSize) {
+	if len(multiSig.Bytes()) != (common.BigIntSize + CompressedPointSize) {
 		panic("Wrong length")
 	}
 	//Calculate common params:

@@ -2,6 +2,7 @@ package zkp
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"math"
 	"math/big"
@@ -61,8 +62,8 @@ func (proof *InnerProductProof) Bytes() []byte {
 		res = append(res, r.Compress()...)
 	}
 
-	res = append(res, privacy.AddPaddingBigInt(proof.a, privacy.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.b, privacy.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.a, common.BigIntSize)...)
+	res = append(res, privacy.AddPaddingBigInt(proof.b, common.BigIntSize)...)
 	res = append(res, proof.p.Compress()...)
 
 	return res
@@ -90,11 +91,11 @@ func (proof *InnerProductProof) SetBytes(bytes []byte) error {
 		offset += privacy.CompressedPointSize
 	}
 
-	proof.a = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset += privacy.BigIntSize
+	proof.a = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+	offset += common.BigIntSize
 
-	proof.b = new(big.Int).SetBytes(bytes[offset : offset+privacy.BigIntSize])
-	offset += privacy.BigIntSize
+	proof.b = new(big.Int).SetBytes(bytes[offset : offset+common.BigIntSize])
+	offset += common.BigIntSize
 
 	proof.p = new(privacy.EllipticPoint)
 	proof.p.Decompress(bytes[offset : offset+privacy.CompressedPointSize])
@@ -437,5 +438,5 @@ func vectorMulScalar(v []*big.Int, s *big.Int) []*big.Int {
 
 // estimateMultiRangeProofSize estimate multi range proof size
 func estimateMultiRangeProofSize(nOutput int) uint64 {
-	return uint64((nOutput+2*int(math.Log2(float64(privacy.MaxExp*pad(nOutput))))+5)*privacy.CompressedPointSize + 5*privacy.BigIntSize + 2)
+	return uint64((nOutput+2*int(math.Log2(float64(maxExp*pad(nOutput))))+5)*privacy.CompressedPointSize + 5*common.BigIntSize + 2)
 }
