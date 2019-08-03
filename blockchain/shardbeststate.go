@@ -237,7 +237,7 @@ func (shardBestState *ShardBestState) cloneShardBestState(target *ShardBestState
 	if err != nil {
 		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.ShardHeight, err))
 	}
-	err = json.Unmarshal(tempMarshal, &shardBestState)
+	err = json.Unmarshal(tempMarshal, shardBestState)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", target.ShardHeight, err))
 	}
