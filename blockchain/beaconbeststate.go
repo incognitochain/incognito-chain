@@ -470,7 +470,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	}
 	//verify version
 	if block.Header.Version != VERSION {
-		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
 	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
@@ -482,7 +482,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	json.Unmarshal(parentBlockBytes, &parentBlock)
 	// Verify block height with parent block
 	if parentBlock.Header.Height+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 
 	return nil
