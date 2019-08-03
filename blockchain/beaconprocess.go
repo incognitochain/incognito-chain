@@ -51,7 +51,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	if bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
 		tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
 		if err != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, err)
+			return NewBlockChainError(UnmashallJsonShardBlockError, err)
 		}
 		json.Unmarshal(tempMarshal, &beaconBestState)
 	}
