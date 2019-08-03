@@ -285,11 +285,11 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(UnExpectedError, err)
 	}
-	err = blockchain.BestState.Shard[shardID].Update(&initBlock, []*BeaconBlock{genesisBeaconBlk})
+	err = blockchain.BestState.Shard[shardID].updateShardBestState(&initBlock, []*BeaconBlock{genesisBeaconBlk})
 	if err != nil {
 		return err
 	}
-	blockchain.ProcessStoreShardBlock(&initBlock)
+	blockchain.processStoreShardBlockAndUpdateDatabase(&initBlock)
 	return nil
 }
 
@@ -720,7 +720,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		}
 	}
 
-	// Update the list serialNumber and commitment, snd set using the state of the used tx view point. This
+	// updateShardBestState the list serialNumber and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
 	err = blockchain.StoreSerialNumbersFromTxViewPoint(*view)
@@ -807,7 +807,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 		}
 	}
 
-	// Update the list serialNumber and commitment, snd set using the state of the used tx view point. This
+	// updateShardBestState the list serialNumber and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
 	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
