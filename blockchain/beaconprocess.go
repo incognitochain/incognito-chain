@@ -85,7 +85,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	Logger.log.Infof("BEACON | Check block existence for insert process %d, with hash %+v", block.Header.Height, blockHash)
 	isExist, _ := blockchain.config.DataBase.HasBeaconBlock(block.Header.Hash())
 	if isExist {
-		return NewBlockChainError(DuplicateBlockError, errors.New("This block has been stored already"))
+		return NewBlockChainError(DuplicateShardBlockError, errors.New("This block has been stored already"))
 	}
 	Logger.log.Infof("BEACON | Begin Insert new block %d, with hash %+v \n", block.Header.Height, blockHash)
 	if !isValidated {
@@ -265,7 +265,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	//verify version
 	if block.Header.Version != VERSION {
-		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
 	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
@@ -277,7 +277,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	json.Unmarshal(parentBlock, &parentBlockInterface)
 	// Verify block height with parent block
 	if parentBlockInterface.Header.Height+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	// Verify epoch with parent block
 	if (block.Header.Height != 1) && (block.Header.Height%common.EPOCH == 1) && (parentBlockInterface.Header.Epoch != block.Header.Epoch-1) {
@@ -286,7 +286,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	// Verify timestamp with parent block
 	//jackalope: temporary commment for debug purpose
 	//if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
-	//	return NewBlockChainError(TimestampError, errors.New("timestamp of new block can't equal to parent block"))
+	//	return NewBlockChainError(WrongTimestampError, errors.New("timestamp of new block can't equal to parent block"))
 	//}
 
 	if !VerifyHashFromShardState(block.Body.ShardState, block.Header.ShardStateHash) {
@@ -459,10 +459,10 @@ func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *Be
 	}
 	//=============End Verify Aggegrate signature
 	if bestStateBeacon.BeaconHeight+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 	if !bytes.Equal(bestStateBeacon.BestBlockHash.GetBytes(), block.Header.PreviousBlockHash.GetBytes()) {
-		return NewBlockChainError(BlockHeightError, errors.New("previous us block should be :"+bestStateBeacon.BestBlockHash.String()))
+		return NewBlockChainError(WrongBlockHeightError, errors.New("previous us block should be :"+bestStateBeacon.BestBlockHash.String()))
 	}
 	if block.Header.Height%common.EPOCH == 1 && bestStateBeacon.Epoch+1 != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))

@@ -1611,7 +1611,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
 	//if block.Header.Version != VERSION {
-	//	return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+	//	return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	//}
 	// Verify parent hash exist or not
 	//prevBlockHash := block.Header.PreviousBlockHash
@@ -1623,7 +1623,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	//json.Unmarshal(parentBlockData, &parentBlock)
 	//// Verify block height with parent block
 	//if parentBlock.Header.Height+1 != block.Header.Height {
-	//	return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	//	return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	//}
 	return nil
 }
