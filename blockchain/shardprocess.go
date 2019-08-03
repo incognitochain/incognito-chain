@@ -31,9 +31,15 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	}
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
+	// fetch beacon blocks
+	previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
+	if err != nil {
+		return err
+	}
 	//========Verify shardBlock only
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
-	if err := blockchain.verifyPreProcessingShardBlock(shardBlock, shardID, true); err != nil {
+	if err := blockchain.verifyPreProcessingShardBlock(shardBlock, beaconBlocks, shardID, true); err != nil {
 		return err
 	}
 	//========Verify shardBlock with previous best state
@@ -56,11 +62,6 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	//}
 	// Verify shardBlock with previous best state
 	// DO NOT verify agg signature in this function
-	previousBeaconHeight := shardBestState.BeaconHeight
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
-	if err != nil {
-		return err
-	}
 	if err := shardBestState.verifyBestStateWithShardBlock(shardBlock, false, shardID); err != nil {
 		return err
 	}
@@ -101,9 +102,15 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	if isExist {
 		return NewBlockChainError(DuplicateShardBlockError, fmt.Errorf("SHARD %+v, block height %+v wit hash %+v has been stored already", block.Header.ShardID, block.Header.Height, blockHash))
 	}
+	// fetch beacon blocks
+	previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, block.Header.BeaconHeight)
+	if err != nil {
+		return NewBlockChainError(FetchBeaconBlocksError, err)
+	}
 	if !isValidated {
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v \n", block.Header.ShardID, block.Header.Height, blockHash)
-		if err := blockchain.verifyPreProcessingShardBlock(block, shardID, false); err != nil {
+		if err := blockchain.verifyPreProcessingShardBlock(block, beaconBlocks, shardID, false); err != nil {
 			return err
 		}
 	} else {
@@ -123,11 +130,11 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", block.Header.ShardID, block.Header.Height, blockHash)
 	//========updateShardBestState best state with new block
-	previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, block.Header.BeaconHeight)
-	if err != nil {
-		return err
-	}
+	//previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
+	//beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, block.Header.BeaconHeight)
+	//if err != nil {
+	//	return err
+	//}
 	// Backup beststate
 	if blockchain.config.UserKeySet != nil {
 		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
@@ -199,33 +206,33 @@ DO NOT USE THIS with GENESIS BLOCK
 	- Swap instruction
 	- ALL Transaction in block: see in verifyTransactionFromNewBlock
 */
-func (blockchain *BlockChain) verifyPreProcessingShardBlock(block *ShardBlock, shardID byte, isPresig bool) error {
+func (blockchain *BlockChain) verifyPreProcessingShardBlock(block *ShardBlock, beaconBlocks []*BeaconBlock, shardID byte, isPresig bool) error {
 	//verify producer sig
 	Logger.log.Debugf("SHARD %+v | Begin verifyPreProcessingShardBlock Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	if block.Header.ShardID != shardID {
-		return NewBlockChainError(ShardIDError, errors.New("Shard should be :"+strconv.Itoa(int(shardID))))
+		return NewBlockChainError(WrongShardIDError, fmt.Errorf("Expect receive block from Shard ID %+v but get %+v", shardID, block.Header.ShardID))
 	}
 	if block.Header.Version != VERSION {
-		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect block version %+v but get %+v", VERSION, block.Header.Version))
 	}
 	// Verify parent hash exist or not
-	prevBlockHash := block.Header.PreviousBlockHash
-	parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
+	previousBlockHash := block.Header.PreviousBlockHash
+	previousShardBlockData, err := blockchain.config.DataBase.FetchBlock(previousBlockHash)
 	if err != nil {
-		return NewBlockChainError(DatabaseError, err)
+		return NewBlockChainError(FetchPreviousBlockError, err)
 	}
-	parentBlock := ShardBlock{}
-	err = json.Unmarshal(parentBlockData, &parentBlock)
+	previousShardBlock := ShardBlock{}
+	err = json.Unmarshal(previousShardBlockData, &previousShardBlock)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	// Verify block height with parent block
-	if parentBlock.Header.Height+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	if previousShardBlock.Header.Height+1 != block.Header.Height {
+		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive block height %+v but get %+v", previousShardBlock.Header.Height+1, block.Header.Height))
 	}
 	// Verify timestamp with parent block
-	if block.Header.Timestamp <= parentBlock.Header.Timestamp {
-		return NewBlockChainError(TimestampError, errors.New("timestamp of new block can't equal to parent block"))
+	if block.Header.Timestamp <= previousShardBlock.Header.Timestamp {
+		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive block has timestamp must be greater than %+v but get %+v", previousShardBlock.Header.Timestamp, block.Header.Timestamp))
 	}
 	// Verify transaction root
 	txMerkle := Merkle{}.BuildMerkleTreeStore(block.Body.Transactions)
@@ -233,32 +240,31 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(block *ShardBlock, s
 	if len(txMerkle) > 0 {
 		txRoot = txMerkle[len(txMerkle)-1]
 	}
-
 	if !bytes.Equal(block.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
-		return NewBlockChainError(HashError, errors.New("can't Verify Transaction Root"))
+		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", block.Header.TxRoot, txRoot))
 	}
 	// Verify ShardTx Root
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
 	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]
 	if !bytes.Equal(block.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
-		return NewBlockChainError(HashError, errors.New("can't Verify CrossShardTransaction Root"))
+		return NewBlockChainError(ShardTransactionRootHashError, fmt.Errorf("Expect shard transaction root hash %+v but get %+v", block.Header.ShardTxRoot, shardTxRoot))
 	}
 	// Verify crossTransaction coin
 	if !VerifyMerkleCrossTransaction(block.Body.CrossTransactions, block.Header.CrossTransactionRoot) {
-		return NewBlockChainError(HashError, errors.New("can't Verify CrossOutputCoin Root"))
+		return NewBlockChainError(CrossShardTransactionRootHashError, fmt.Errorf("Expect cross shard transaction root hash %+v", block.Header.CrossTransactionRoot))
 	}
 	// Verify Action
-	beaconBlocks, err := FetchBeaconBlockFromHeight(
-		blockchain.config.DataBase,
-		blockchain.BestState.Shard[block.Header.ShardID].BeaconHeight+1,
-		block.Header.BeaconHeight,
-	)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
+	//beaconBlocks, err := FetchBeaconBlockFromHeight(
+	//	blockchain.config.DataBase,
+	//	blockchain.BestState.Shard[block.Header.ShardID].BeaconHeight+1,
+	//	block.Header.BeaconHeight,
+	//)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return err
+	//}
 
-	wrongTxsFee := errors.New("Wrong blockheader totalTxs fee")
+	//wrongTxsFee := errors.New("Wrong blockheader totalTxs fee")
 
 	totalTxsFee := make(map[common.Hash]uint64)
 	for _, tx := range block.Body.Transactions {
@@ -269,7 +275,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(block *ShardBlock, s
 			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
 		}
 	}
-
 	tokenIDsfromTxs := make([]common.Hash, 0)
 	for tokenID, _ := range totalTxsFee {
 		tokenIDsfromTxs = append(tokenIDsfromTxs, tokenID)
@@ -278,7 +283,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(block *ShardBlock, s
 		res, _ := tokenIDsfromTxs[i].Cmp(&tokenIDsfromTxs[j])
 		return res == -1
 	})
-
 	tokenIDsfromBlock := make([]common.Hash, 0)
 	for tokenID, _ := range block.Header.TotalTxsFee {
 		tokenIDsfromBlock = append(tokenIDsfromBlock, tokenID)
@@ -287,20 +291,17 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(block *ShardBlock, s
 		res, _ := tokenIDsfromBlock[i].Cmp(&tokenIDsfromBlock[j])
 		return res == -1
 	})
-
 	if len(tokenIDsfromTxs) != len(tokenIDsfromBlock) {
-		return wrongTxsFee
+		return NewBlockChainError(WrongBlockTotalFeeError, fmt.Errorf("Expect Total Fee to be equal, From Txs %+v, From Block %+v", len(tokenIDsfromTxs), len(tokenIDsfromBlock)))
 	}
-
 	for i, tokenID := range tokenIDsfromTxs {
 		if !tokenIDsfromTxs[i].IsEqual(&tokenIDsfromBlock[i]) {
-			return wrongTxsFee
+			return NewBlockChainError(WrongBlockTotalFeeError, fmt.Errorf("Expect Total Fee to be equal, From Txs %+v, From Block %+v", tokenIDsfromTxs[i], tokenIDsfromBlock[i]))
 		}
 		if totalTxsFee[tokenID] != block.Header.TotalTxsFee[tokenID] {
-			return wrongTxsFee
+			return NewBlockChainError(WrongBlockTotalFeeError, fmt.Errorf("Expect Total Fee to be equal, From Txs %+v, From Block Header %+v", totalTxsFee[tokenID], block.Header.TotalTxsFee[tokenID]))
 		}
 	}
-
 	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(
 		block.Body.Transactions,
 		blockchain,
@@ -312,7 +313,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(block *ShardBlock, s
 	)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil
+		return NewBlockChainError(ShardIntructionFromTransactionAndInsError, err)
 	}
 	if !isPresig {
 		totalInstructions := []string{}
@@ -324,24 +325,23 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(block *ShardBlock, s
 		}
 		isOk := VerifyHashFromStringArray(totalInstructions, block.Header.InstructionsRoot)
 		if !isOk {
-			return NewBlockChainError(HashError, errors.New("Error verify action root"))
+			return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v", block.Header.InstructionsRoot))
 		}
 	}
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
 	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
 	if err != nil {
-		return err
+		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from Tx: %+v", err))
 	}
 	flattenInsts, err := FlattenAndConvertStringInst(block.Body.Instructions)
 	if err != nil {
-		return err
+		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from block body: %+v", err))
 	}
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be the same as when creating new shard block
 	root := GetKeccak256MerkleRoot(insts)
 	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
-		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
+		return NewBlockChainError(InstructionMerkleRootError, fmt.Errorf("Expect transaction merkle root to be %+v but get %+v", block.Header.InstructionMerkleRoot, string(root)))
 	}
-
 	//Get beacon hash by height in db
 	//If hash not found then fail to verify
 	beaconHash, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(block.Header.BeaconHeight)
@@ -535,10 +535,10 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 		return NewBlockChainError(ShardBestStateNotCompatibleError, fmt.Errorf("Current Best Block Hash %+v, New Shard Block %+v, Previous Block Hash of New Block %+v", bestBlockHash, shardBlock.Header.Height, shardBlock.Header.PreviousBlockHash))
 	}
 	if shardBestState.ShardHeight+1 != shardBlock.Header.Height {
-		return NewBlockChainError(BlockHeightError, fmt.Errorf("Shard Block height of new Shard Block should be %+v, but get %+v", shardBestState.ShardHeight+1, shardBlock.Header.Height))
+		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Shard Block height of new Shard Block should be %+v, but get %+v", shardBestState.ShardHeight+1, shardBlock.Header.Height))
 	}
 	if shardBlock.Header.BeaconHeight < shardBestState.BeaconHeight {
-		return NewBlockChainError(BlockHeightError, fmt.Errorf("Shard Block contain invalid beacon height, current beacon height %+v but get %+v ", shardBestState.BeaconHeight, shardBlock.Header.BeaconHeight))
+		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Shard Block contain invalid beacon height, current beacon height %+v but get %+v ", shardBestState.BeaconHeight, shardBlock.Header.BeaconHeight))
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	return nil
