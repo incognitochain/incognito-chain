@@ -40,7 +40,7 @@ const (
 	TransactionError
 	InstructionError
 	SwapError
-	DuplicateBlockError
+	DuplicateShardBlockError
 	CommitteeOrValidatorError
 	ShardBlockSanityError
 	StoreIncomingCrossShardError
@@ -48,6 +48,7 @@ const (
 	WrongShardIDError
 	CloneShardBestStateError
 	ShardBestStateNotCompatibleError
+	RegisterEstimatorFeeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -55,7 +56,7 @@ var ErrCodeMessage = map[int]struct {
 	message string
 }{
 	UnExpectedError:                  {-1000, "Unexpected error"},
-	UpdateMerkleTreeForBlockError:    {-1001, "Update Merkle Commitments Tree For Block is failed"},
+	UpdateMerkleTreeForBlockError:    {-1001, "updateShardBestState Merkle Commitments Tree For Block is failed"},
 	UnmashallJsonShardBlockError:     {-1002, "Unmarshall Json Shard Block Is Failed"},
 	MashallJsonShardBlockError:       {-1003, "Marshall Json Shard Block Is Failed"},
 	UnmashallJsonShardBestStateError: {-1004, "Unmarshall Json Shard Best State Is Failed"},
@@ -82,7 +83,7 @@ var ErrCodeMessage = map[int]struct {
 	InstructionError:                 {-1025, "Instruction Error"},
 	SwapError:                        {-1026, "Swap Error"},
 	MashallJsonError:                 {-1027, "MashallJson Error"},
-	DuplicateBlockError:              {-1028, "Duplicate Block Error"},
+	DuplicateShardBlockError:         {-1028, "Duplicate Shard Block Error"},
 	CommitteeOrValidatorError:        {-1029, "Committee or Validator Error"},
 	ShardBlockSanityError:            {-1030, "Shard Block Sanity Data Error"},
 	StoreIncomingCrossShardError:     {-1031, "Store Incoming Cross Shard Block Error"},
@@ -90,6 +91,7 @@ var ErrCodeMessage = map[int]struct {
 	WrongShardIDError:                {-1033, "Wrong Shard ID Error"},
 	CloneShardBestStateError:         {-1034, "Clone Shard Best State Error"},
 	ShardBestStateNotCompatibleError: {-1035, "New Block and Shard Best State Is NOT Compatible"},
+	RegisterEstimatorFeeError:        {-1036, "Register Fee Estimator Error"},
 }
 
 type BlockChainError struct {
