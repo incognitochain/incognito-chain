@@ -37,8 +37,8 @@ const (
 	ShardIDError
 	ProducerError
 	ShardStateError
-	TransactionError
-	InstructionError
+	TransactionFromNewBlockError
+	GenerateInstructionError
 	SwapError
 	DuplicateShardBlockError
 	CommitteeOrValidatorError
@@ -59,6 +59,26 @@ const (
 	InstructionsHashError
 	FlattenAndConvertStringInstError
 	InstructionMerkleRootError
+	FetchBeaconBlockHashError
+	BeaconBlockNotCompatibleError
+	SwapInstructionError
+	TransactionCreatedByMinerError
+	ResponsedTransactionWithMetadataError
+	UnmashallJsonShardCommitteesError
+	MashallJsonShardCommitteesError
+	VerifyCrossShardBlockError
+	NextCrossShardBlockError
+	FetchShardCommitteeError
+	CrossTransactionHashError
+	VerifyCrossShardCustomTokenError
+	ShardCommitteeRootHashError
+	ShardPendingValidatorRootHashError
+	StoreShardBlockError
+	StoreBestStateError
+	FetchAndStoreTransactionError
+	FetchAndStoreCrossTransactionError
+	RemoveCommitteeRewardError
+	StoreBurningConfirmError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -89,8 +109,8 @@ var ErrCodeMessage = map[int]struct {
 	ShardIDError:                              {-1021, "ShardID Error"},
 	ProducerError:                             {-1022, "Producer Error"},
 	ShardStateError:                           {-1023, "Shard State Error"},
-	TransactionError:                          {-1024, "Transaction invalid"},
-	InstructionError:                          {-1025, "Instruction Error"},
+	TransactionFromNewBlockError:              {-1024, "Transaction invalid"},
+	GenerateInstructionError:                  {-1025, "Instruction Error"},
 	SwapError:                                 {-1026, "Swap Error"},
 	MashallJsonError:                          {-1027, "MashallJson Error"},
 	DuplicateShardBlockError:                  {-1028, "Duplicate Shard Block Error"},
@@ -112,6 +132,26 @@ var ErrCodeMessage = map[int]struct {
 	InstructionsHashError:                     {-1044, "Instruction Hash Error"},
 	FlattenAndConvertStringInstError:          {-1045, "Flatten And Convert String Instruction Error"},
 	InstructionMerkleRootError:                {-1046, "Instruction Merkle Root Error"},
+	FetchBeaconBlockHashError:                 {-1047, "Fetch Beacon Block Hash Error"},
+	BeaconBlockNotCompatibleError:             {-1048, "Beacon Block Not Compatible Error"},
+	SwapInstructionError:                      {-1049, "Swap Instruction Error"},
+	TransactionCreatedByMinerError:            {-1050, "Transaction Created By Miner Error"},
+	ResponsedTransactionWithMetadataError:     {-1051, "Responsed Transaction With Metadata Error"},
+	UnmashallJsonShardCommitteesError:         {-1052, "Unmashall Json Shard Committees Error"},
+	MashallJsonShardCommitteesError:           {-1053, "Mashall Json Shard Committees Error"},
+	VerifyCrossShardBlockError:                {-1054, "Verify Cross Shard Block Error"},
+	NextCrossShardBlockError:                  {-1055, "Next Cross Shard Block Error"},
+	FetchShardCommitteeError:                  {-1056, "Fetch Shard Committee Error"},
+	CrossTransactionHashError:                 {-1057, "Cross Transaction Hash Error"},
+	VerifyCrossShardCustomTokenError:          {-1058, "Verify Cross Shard Custom Token Error"},
+	ShardCommitteeRootHashError:               {-1059, "Shard Committee Root Hash Error"},
+	ShardPendingValidatorRootHashError:        {-1060, "Shard Pending Validator Root Hash Error"},
+	StoreShardBlockError:                      {-1061, "Store Shard Block Error"},
+	StoreBestStateError:                       {-1062, "Store Shard Shard Best State Error"},
+	FetchAndStoreTransactionError:             {-1063, "Fetch And Store Transaction Error"},
+	FetchAndStoreCrossTransactionError:        {-1064, "Fetch And Store Cross Transaction Error"},
+	RemoveCommitteeRewardError:                {-1065, "Remove Committee Reward Error"},
+	StoreBurningConfirmError:                  {-1066, "Store Burning Confirm Error"},
 }
 
 type BlockChainError struct {

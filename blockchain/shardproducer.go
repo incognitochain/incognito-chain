@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -111,7 +112,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	// Create Instruction
 	instructions, shardPendingValidator, shardCommittee, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
 	if err != nil {
-		return nil, NewBlockChainError(InstructionError, err)
+		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
 	if len(instructions) != 0 {
 		Logger.log.Info("Shard Producer: Instruction", instructions)
@@ -152,7 +153,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	}
 	instructionsHash, err := GenerateHashFromStringArray(totalInstructions)
 	if err != nil {
-		return nil, NewBlockChainError(HashError, err)
+		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
 	committeeRoot, err := GenerateHashFromStringArray(shardCommittee)
 	if err != nil {
@@ -165,11 +166,11 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	// Instruction merkle root
 	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
 	if err != nil {
-		return nil, NewBlockChainError(HashError, err)
+		return nil, NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from Tx: %+v", err))
 	}
 	flattenInsts, err := FlattenAndConvertStringInst(instructions)
 	if err != nil {
-		return nil, NewBlockChainError(HashError, err)
+		return nil, NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from block body: %+v", err))
 	}
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
