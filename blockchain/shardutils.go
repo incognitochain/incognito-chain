@@ -44,7 +44,7 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 		beaconBlock := BeaconBlock{}
 		err = json.Unmarshal(beaconBlockByte, &beaconBlock)
 		if err != nil {
-			return beaconBlocks, NewBlockChainError(UnmashallJsonBlockError, err)
+			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)
 		}
 		beaconBlocks = append(beaconBlocks, &beaconBlock)
 	}

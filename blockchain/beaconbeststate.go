@@ -584,7 +584,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 	// 1. Backup beststate
 	tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 
 	if err := blockchain.config.DataBase.StorePrevBestState(tempMarshal, true, 0); err != nil {
