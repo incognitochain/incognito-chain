@@ -321,9 +321,9 @@ func TestDb_StorePrevBestState(t *testing.T) {
 func TestDb_StoreShardBestState(t *testing.T) {
 	if db != nil {
 		besState := blockchain.BestState{
-			Shard: make(map[byte]*blockchain.BestStateShard),
+			Shard: make(map[byte]*blockchain.ShardBestState),
 		}
-		bestStateShard := blockchain.BestStateShard{
+		bestStateShard := blockchain.ShardBestState{
 			Epoch: 100,
 		}
 		besState.Shard[0] = &bestStateShard
@@ -332,7 +332,7 @@ func TestDb_StoreShardBestState(t *testing.T) {
 
 		temp, err := db.FetchShardBestState(0)
 		assert.Equal(t, err, nil)
-		tempObject := blockchain.BestStateShard{}
+		tempObject := blockchain.ShardBestState{}
 		err = json.Unmarshal(temp, &tempObject)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, tempObject.Epoch, bestStateShard.Epoch)

@@ -13,7 +13,10 @@ import (
 const (
 	UnExpectedError = iota
 	UpdateMerkleTreeForBlockError
-	UnmashallJsonBlockError
+	UnmashallJsonShardBlockError
+	MashallJsonShardBlockError
+	UnmashallJsonShardBestStateError
+	MashallJsonShardBestStateError
 	MashallJsonError
 	CanNotCheckDoubleSpendError
 	HashError
@@ -42,42 +45,51 @@ const (
 	ShardBlockSanityError
 	StoreIncomingCrossShardError
 	DeleteIncomingCrossShardError
+	WrongShardIDError
+	CloneShardBestStateError
+	ShardBestStateNotCompatibleError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	message string
 }{
-	UnExpectedError:               {-1000, "Unexpected error"},
-	UpdateMerkleTreeForBlockError: {-1001, "Update Merkle Commitments Tree For Block is failed"},
-	UnmashallJsonBlockError:       {-1002, "Unmarshall json block is failed"},
-	CanNotCheckDoubleSpendError:   {-1003, "CanNotCheckDoubleSpend Error"},
-	HashError:                     {-1004, "Hash error"},
-	VersionError:                  {-1005, "Version error"},
-	BlockHeightError:              {-1006, "Block height error"},
-	DatabaseError:                 {-1007, "Database Error"},
-	EpochError:                    {-1008, "Epoch Error"},
-	TimestampError:                {-1009, "Timestamp Error"},
-	InstructionHashError:          {-1010, "Instruction Hash Error"},
-	ShardStateHashError:           {-1011, "ShardState Hash Error"},
-	RandomError:                   {-1012, "Random Number Error"},
-	VerificationError:             {-1013, "Verify Block Error"},
-	BeaconError:                   {-1014, "Beacon Error"},
-	CrossShardBlockError:          {-1015, "CrossShardBlockError"},
-	SignatureError:                {-1016, "Signature Error"},
-	CandidateError:                {-1017, "Candidate Error"},
-	ShardIDError:                  {-1018, "ShardID Error"},
-	ProducerError:                 {-1019, "Producer Error"},
-	ShardStateError:               {-1020, "Shard State Error"},
-	TransactionError:              {-1021, "Transaction invalid"},
-	InstructionError:              {-1022, "Instruction Error"},
-	SwapError:                     {-1023, "Swap Error"},
-	MashallJsonError:              {-1024, "MashallJson Error"},
-	DuplicateBlockError:           {-1025, "Duplicate Block Error"},
-	CommitteeOrValidatorError:     {-1026, "Committee or Validator Error"},
-	ShardBlockSanityError:         {-1027, "Shard Block Sanity Data Error"},
-	StoreIncomingCrossShardError:  {-1028, "Store Incoming Cross Shard Block Error"},
-	DeleteIncomingCrossShardError: {-1029, "Delete Incoming Cross Shard Block Error"},
+	UnExpectedError:                  {-1000, "Unexpected error"},
+	UpdateMerkleTreeForBlockError:    {-1001, "Update Merkle Commitments Tree For Block is failed"},
+	UnmashallJsonShardBlockError:     {-1002, "Unmarshall Json Shard Block Is Failed"},
+	MashallJsonShardBlockError:       {-1003, "Marshall Json Shard Block Is Failed"},
+	UnmashallJsonShardBestStateError: {-1004, "Unmarshall Json Shard Best State Is Failed"},
+	MashallJsonShardBestStateError:   {-1005, "Marshall Json Shard Best State Is Failed"},
+	CanNotCheckDoubleSpendError:      {-1006, "CanNotCheckDoubleSpend Error"},
+	HashError:                        {-1007, "Hash error"},
+	VersionError:                     {-1008, "Version error"},
+	BlockHeightError:                 {-1009, "Block height error"},
+	DatabaseError:                    {-1010, "Database Error"},
+	EpochError:                       {-1011, "Epoch Error"},
+	TimestampError:                   {-1012, "Timestamp Error"},
+	InstructionHashError:             {-1013, "Instruction Hash Error"},
+	ShardStateHashError:              {-1014, "ShardState Hash Error"},
+	RandomError:                      {-1015, "Random Number Error"},
+	VerificationError:                {-1016, "Verify Block Error"},
+	BeaconError:                      {-1017, "Beacon Error"},
+	CrossShardBlockError:             {-1018, "CrossShardBlockError"},
+	SignatureError:                   {-1019, "Signature Error"},
+	CandidateError:                   {-1020, "Candidate Error"},
+	ShardIDError:                     {-1021, "ShardID Error"},
+	ProducerError:                    {-1022, "Producer Error"},
+	ShardStateError:                  {-1023, "Shard State Error"},
+	TransactionError:                 {-1024, "Transaction invalid"},
+	InstructionError:                 {-1025, "Instruction Error"},
+	SwapError:                        {-1026, "Swap Error"},
+	MashallJsonError:                 {-1027, "MashallJson Error"},
+	DuplicateBlockError:              {-1028, "Duplicate Block Error"},
+	CommitteeOrValidatorError:        {-1029, "Committee or Validator Error"},
+	ShardBlockSanityError:            {-1030, "Shard Block Sanity Data Error"},
+	StoreIncomingCrossShardError:     {-1031, "Store Incoming Cross Shard Block Error"},
+	DeleteIncomingCrossShardError:    {-1032, "Delete Incoming Cross Shard Block Error"},
+	WrongShardIDError:                {-1033, "Wrong Shard ID Error"},
+	CloneShardBestStateError:         {-1034, "Clone Shard Best State Error"},
+	ShardBestStateNotCompatibleError: {-1035, "New Block and Shard Best State Is NOT Compatible"},
 }
 
 type BlockChainError struct {

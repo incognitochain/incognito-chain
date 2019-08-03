@@ -252,8 +252,8 @@ func (synker *synker) UpdateState() {
 	synker.States.Lock()
 	synker.GetPoolsState()
 	synker.Status.CurrentlySyncBlks.DeleteExpired()
-	var shardsStateClone map[byte]BestStateShard
-	shardsStateClone = make(map[byte]BestStateShard)
+	var shardsStateClone map[byte]ShardBestState
+	shardsStateClone = make(map[byte]ShardBestState)
 	beaconStateCloneBytes, err := synker.blockchain.BestState.Beacon.MarshalJSON()
 	if err != nil {
 		panic(err)
@@ -301,7 +301,7 @@ func (synker *synker) UpdateState() {
 	}
 
 	for shardID := range synker.Status.Shards {
-		cloneState := BestStateShard{}
+		cloneState := ShardBestState{}
 		shardStateCloneBytes, err := synker.blockchain.BestState.Shard[shardID].MarshalJSON()
 		if err != nil {
 			panic(err)

@@ -39,7 +39,7 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	}{}
 	err := json.Unmarshal(data, &tempBlk)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	beaconBlock.AggregatedSig = tempBlk.AggregatedSig
 	beaconBlock.R = tempBlk.R
@@ -48,12 +48,12 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	// blkBody := BeaconBody{}
 	// err = blkBody.UnmarshalJSON(tempBlk.Body)
 	// if err != nil {
-	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
+	// 	return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	// }
 	// blkHeader := BeaconHeader{}
 	// err = blkBody.UnmarshalJSON(tempBlk.Header)
 	// if err != nil {
-	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
+	// 	return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	// }
 	beaconBlock.Header = tempBlk.Header
 	beaconBlock.Body = tempBlk.Body
