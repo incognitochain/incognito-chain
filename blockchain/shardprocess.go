@@ -510,11 +510,11 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 	producerPubkey := shardBestState.ShardCommittee[producerPosition]
 	blockHash := shardBlock.Header.Hash()
-	fmt.Println("V58", producerPubkey, shardBlock.ProducerSig, blockHash.GetBytes(), base58.Base58Check{}.Encode(shardBlock.Header.ProducerAddress.Pk, common.ZeroByte))
+	Logger.log.Infof("SHARD %+v | Producer public key %+v and signature %+v, block hash to be signed %+v and encoded public key %+v", shardBlock.Header.ShardID, producerPubkey, shardBlock.ProducerSig, blockHash.GetBytes(), base58.Base58Check{}.Encode(shardBlock.Header.ProducerAddress.Pk, common.ZeroByte))
 	//verify producer
 	tempProducer := shardBestState.ShardCommittee[producerPosition]
 	if strings.Compare(tempProducer, producerPubkey) != 0 {
-		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+		return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tempProducer))
 	}
 	if err := incognitokey.ValidateDataB58(producerPubkey, shardBlock.ProducerSig, blockHash.GetBytes()); err != nil {
 		return NewBlockChainError(SignatureError, err)
@@ -523,7 +523,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		if len(shardBestState.ShardCommittee) > 3 && len(shardBlock.ValidatorsIdx[1]) < (len(shardBestState.ShardCommittee)>>1) {
-			return NewBlockChainError(SignatureError, errors.New("shardBlock validators and Shard committee is not compatible"))
+			return NewBlockChainError(SignatureError, fmt.Errorf("Expect Number of Committee Size greater than 3 but get %+v", len(shardBestState.ShardCommittee)))
 		}
 		err := ValidateAggSignature(shardBlock.ValidatorsIdx, shardBestState.ShardCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Hash())
 		if err != nil {
