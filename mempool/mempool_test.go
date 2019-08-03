@@ -85,11 +85,11 @@ var _ = func() (_ struct{}) {
 	}, true)
 	bc.BestState = &blockchain.BestState{
 		Beacon: &blockchain.BestStateBeacon{},
-		Shard:  make(map[byte]*blockchain.BestStateShard),
+		Shard:  make(map[byte]*blockchain.ShardBestState),
 	}
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
-		bc.BestState.Shard[shardID] = &blockchain.BestStateShard{
+		bc.BestState.Shard[shardID] = &blockchain.ShardBestState{
 			BestBlock: &blockchain.ShardBlock{
 				Header: blockchain.ShardHeader{
 					Height: 1,

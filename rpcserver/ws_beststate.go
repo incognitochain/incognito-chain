@@ -33,9 +33,9 @@ func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subc
 		select {
 		case msg := <-subChan:
 			{
-				bestStateShard, ok := msg.Value.(*blockchain.BestStateShard)
+				bestStateShard, ok := msg.Value.(*blockchain.ShardBestState)
 				if !ok {
-					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BestStateShard, have %+v", reflect.TypeOf(msg.Value))
+					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.ShardBestState, have %+v", reflect.TypeOf(msg.Value))
 					continue
 				}
 				if bestStateShard.ShardID != shardID {

@@ -60,7 +60,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	err = json.Unmarshal(tempMarshal, &beaconBestState)
 	if err != nil {
 		blockGenerator.chain.chainLock.Unlock()
-		return nil, NewBlockChainError(UnmashallJsonBlockError, err)
+		return nil, NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	beaconBestState.CandidateShardWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
 	beaconBestState.CandidateShardWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForNextRandom

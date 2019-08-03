@@ -95,7 +95,7 @@ var _ = func() (_ struct{}) {
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		bestShardHeight[shardID] = 1
-		blockchain.SetBestStateShard(shardID, &blockchain.BestStateShard{
+		blockchain.SetBestStateShard(shardID, &blockchain.ShardBestState{
 			ShardHeight: 1,
 		})
 	}
