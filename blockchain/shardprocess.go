@@ -47,22 +47,10 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 		if err := shardBestState.cloneShardBestState(blockchain.BestState.Shard[shardID]); err != nil {
 			return err
 		}
-		//tempMarshal, err := json.Marshal(blockchain.BestState.Shard[shardID])
-		//if err != nil {
-		//	return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", blockchain.BestState.Shard[shardID].ShardHeight, err))
-		//}
-		//err = json.Unmarshal(tempMarshal, &shardBestState)
-		//if err != nil {
-		//	return NewBlockChainError(UnmashallJsonShardBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", blockchain.BestState.Shard[shardID].ShardHeight, err))
-		//}
 	} else {
 		// if no match best state found then shardBlock is unknown
 		return NewBlockChainError(ShardBestStateNotCompatibleError, fmt.Errorf("Current Best Block Hash %+v, Previous Block Hash of New Block %+v", *bestBlockHash, shardBlock.Header.PreviousBlockHash))
 	}
-	//if reflect.DeepEqual(shardBestState, ShardBestState{}) {
-	//	return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", blockchain.BestState.Shard[shardID].ShardHeight))
-	//}
-
 	// Verify shardBlock with previous best state
 	// DO NOT verify agg signature in this function
 	previousBeaconHeight := shardBestState.BeaconHeight
