@@ -60,7 +60,7 @@ func (msg *MessageBFTCommit) SignMsg(keySet *incognitokey.KeySet) error {
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.ValidatorsIdx))...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
 	var err error
-	msg.ContentSig, err = keySet.SignDataB58(dataBytes)
+	msg.ContentSig, err = keySet.SignDataInBase58CheckEncode(dataBytes)
 	return err
 }
 

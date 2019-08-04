@@ -33,7 +33,7 @@ type Engine struct {
 type EngineConfig struct {
 	BlockChain                  *blockchain.BlockChain
 	ChainParams                 *blockchain.Params
-	BlockGen                    *blockchain.BlkTmplGenerator
+	BlockGen                    *blockchain.BlockGenerator
 	UserKeySet                  *incognitokey.KeySet
 	NodeMode                    string
 	Server                      serverInterface
@@ -67,7 +67,7 @@ func (engine *Engine) Start() error {
 	go engine.config.BlockGen.Start(engine.cQuit)
 	engine.cBFTMsg = make(chan wire.Message)
 	engine.started = true
-	engine.userPk = engine.config.UserKeySet.GetPublicKeyB58()
+	engine.userPk = engine.config.UserKeySet.GetPublicKeyInBase58CheckEncode()
 	engine.currentBFTRound = 1
 	Logger.log.Info("Start consensus with key", engine.userPk)
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
@@ -176,7 +176,6 @@ func (engine *Engine) execBeaconRole() {
 	case common.PROPOSER_ROLE:
 		bftProtocol.RoundData.IsProposer = true
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
-		//fmt.Println("[db] bftProtocol.Start() beacon proposer_role")
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++
@@ -186,7 +185,6 @@ func (engine *Engine) execBeaconRole() {
 	case common.VALIDATOR_ROLE:
 		bftProtocol.RoundData.IsProposer = false
 		engine.currentBFTBlkHeight = engine.config.BlockChain.BestState.Beacon.BeaconHeight + 1
-		//fmt.Println("[db] bftProtocol.Start() beacon validator_role")
 		resBlk, err = bftProtocol.Start()
 		if err != nil {
 			engine.currentBFTRound++

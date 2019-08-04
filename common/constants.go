@@ -7,6 +7,7 @@ const (
 	EmptyString       = ""
 	ZeroByte          = byte(0x00)
 	DateOutputFormat  = "2006-01-02T15:04:05.999999"
+	BigIntSize        = 32 // bytes
 	CheckSumLen       = 4  // bytes
 	AESKeySize        = 32 // bytes
 	Int32Size         = 4  // bytes
@@ -14,6 +15,21 @@ const (
 	Uint64Size        = 8  // bytes
 	HashSize          = 32 // bytes
 	MaxHashStringSize = HashSize * 2
+)
+
+// size data for incognito key and signature
+const (
+	// for key size
+	PrivateKeySize      = 32 // bytes
+	PublicKeySize       = 33 // bytes
+	TransmissionKeySize = 33 //bytes
+	ReceivingKeySize    = 32 // bytes
+	PaymentAddressSize  = 66 // bytes
+	// for signature size
+	// it is used for both privacy and no privacy
+	SigPubKeySize    = 33
+	SigNoPrivacySize = 64
+	SigPrivacySize   = 96
 )
 
 // for exit code

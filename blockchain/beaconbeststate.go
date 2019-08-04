@@ -282,7 +282,7 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	res = append(res, bestStateBeacon.BestBlockHash.GetBytes()...)
 	res = append(res, bestStateBeacon.PrevBestBlockHash.GetBytes()...)
 	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
-	res = append(res, bestStateBeacon.BestBlock.Header.PrevBlockHash.GetBytes()...)
+	res = append(res, bestStateBeacon.BestBlock.Header.PreviousBlockHash.GetBytes()...)
 	for k := range bestStateBeacon.BestShardHash {
 		keys = append(keys, int(k))
 	}
@@ -473,7 +473,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	if block.Header.Version != VERSION {
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
-	prevBlockHash := block.Header.PrevBlockHash
+	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
 	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
 	if err != nil {
@@ -532,16 +532,16 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 	}
 
 	for _, inst := range currentBestStateBlk.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
-			continue
-		}
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
+		}
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+			continue
 		}
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
-			return err
+			continue
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:
@@ -593,13 +593,13 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 	}
 
 	for _, inst := range block.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
-			continue
-		}
-
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
 		}
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+			continue
+		}
+
 		var err error
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {

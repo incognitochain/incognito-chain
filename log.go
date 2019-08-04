@@ -45,6 +45,7 @@ var (
 	transactionLogger = backendLog.Logger("Transaction log", false)
 	privacyLogger     = backendLog.Logger("Privacy log", false)
 	randomLogger      = backendLog.Logger("RandomAPI log", false)
+	bridgeLogger      = backendLog.Logger("DeBridge log", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -76,6 +77,8 @@ func init() {
 	transaction.Logger.Init(transactionLogger)
 	privacy.Logger.Init(privacyLogger)
 	databasemp.Logger.Init(dbmpLogger)
+	blockchain.BLogger.Init(bridgeLogger)
+	rpcserver.BLogger.Init(bridgeLogger)
 
 }
 
@@ -97,6 +100,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"TRAN": transactionLogger,
 	"PRIV": privacyLogger,
 	"DBMP": dbmpLogger,
+	"DEBR": bridgeLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

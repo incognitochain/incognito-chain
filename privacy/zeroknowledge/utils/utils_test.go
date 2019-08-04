@@ -1,4 +1,4 @@
-package zkp
+package utils
 
 import (
 	"fmt"

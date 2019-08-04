@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 	rand2 "math/rand"
 	"time"
@@ -27,7 +28,7 @@ func RandBytes(length int) []byte {
 func RandScalar() *big.Int {
 	randNum := new(big.Int)
 	for {
-		randNum.SetBytes(RandBytes(BigIntSize))
+		randNum.SetBytes(RandBytes(common.BigIntSize))
 		if randNum.Cmp(Curve.Params().N) == -1 {
 			return randNum
 		}

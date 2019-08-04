@@ -235,7 +235,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	//	return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	//}
 	// Verify parent hash exist or not
-	//prevBlockHash := block.Header.PrevBlockHash
+	//prevBlockHash := block.Header.PreviousBlockHash
 	//parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
 	//if err != nil {
 	//	return NewBlockChainError(DatabaseError, err)
