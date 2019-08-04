@@ -383,8 +383,8 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	}
 	//Get Shard State from Block
 	shardState := ShardState{}
-	shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShards))
-	copy(shardState.CrossShard, shardBlock.Header.CrossShards)
+	shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShardBitMap))
+	copy(shardState.CrossShard, shardBlock.Header.CrossShardBitMap)
 	shardState.Hash = shardBlock.Header.Hash()
 	shardState.Height = shardBlock.Header.Height
 	shardStates[shardID] = shardState

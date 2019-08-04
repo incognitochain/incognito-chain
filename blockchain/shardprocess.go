@@ -311,12 +311,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	}
 	// Verify Cross Shards
 	crossShards := CreateCrossShardByteArray(shardBlock.Body.Transactions, shardID)
-	if len(crossShards) != len(shardBlock.Header.CrossShards) {
-		return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect number of cross shardID is %+v but get %+v", len(shardBlock.Header.CrossShards), len(crossShards)))
+	if len(crossShards) != len(shardBlock.Header.CrossShardBitMap) {
+		return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect number of cross shardID is %+v but get %+v", len(shardBlock.Header.CrossShardBitMap), len(crossShards)))
 	}
 	for index, _ := range crossShards {
-		if crossShards[index] != shardBlock.Header.CrossShards[index] {
-			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is but get %+v", index, shardBlock.Header.CrossShards[index], crossShards[index]))
+		if crossShards[index] != shardBlock.Header.CrossShardBitMap[index] {
+			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is but get %+v", index, shardBlock.Header.CrossShardBitMap[index], crossShards[index]))
 		}
 	}
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this shardBlock
@@ -504,16 +504,16 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	- Producer
 	- committee length and validatorIndex length
 	- Producer + sig
-	- Has parent hash is current best state best blockshard hash (compatible with current beststate)
-	- Block Height
-	- Beacon Height
-	- Action root
+	- New Shard Block has parent (previous) hash is current shard state best block hash (compatible with current beststate)
+	- New Shard Block Height must be compatible with best shard state
+	- New Shard Block has beacon must higher or equal to beacon height of shard best state
 */
 func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *ShardBlock, isVerifySig bool, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	// Cal next producer
 	// Verify next producer
 	//=============Verify producer signature
+	// TODO: check producer condition
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 	producerPubkey := shardBestState.ShardCommittee[producerPosition]
 	blockHash := shardBlock.Header.Hash()
@@ -529,8 +529,9 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
 	if isVerifySig {
+		// TODO: validator index condition
 		if len(shardBestState.ShardCommittee) > 3 && len(shardBlock.ValidatorsIdx[1]) < (len(shardBestState.ShardCommittee)>>1) {
-			return NewBlockChainError(SignatureError, fmt.Errorf("Expect Number of Committee Size greater than 3 but get %+v", len(shardBestState.ShardCommittee)))
+			return NewBlockChainError(ShardCommitteeLengthAndCommitteeIndexError, fmt.Errorf("Expect Number of Committee Size greater than 3 but get %+v", len(shardBestState.ShardCommittee)))
 		}
 		err := ValidateAggSignature(shardBlock.ValidatorsIdx, shardBestState.ShardCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Hash())
 		if err != nil {
@@ -555,16 +556,17 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 }
 
 /*
-	updateShardBestState beststate with new block
-		PrevShardBlockHash
-		BestShardBlockHash
-		BestBeaconHash
-		BestShardBlock
-		ShardHeight
-		BeaconHeight
-		ShardProposerIdx
-		Add pending validator
-		Swap shard committee if detect new epoch of beacon
+	updateShardBestState beststate with new shard block:
+	- New Previous Shard BlockHash
+	- New BestShardBlockHash
+	- New BestBeaconHash
+	- New Best Shard Block
+	- New Best Shard Height
+	- New Beacon Height
+	- ShardProposerIdx of new shard block
+	- Execute stake instruction, store staking transaction (if exist)
+	- Execute assign instruction, add new pending validator (if exist)
+	- Execute swap instruction, swap pending validator and committee (if exist)
 */
 func (shardBestState *ShardBestState) updateShardBestState(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
@@ -580,16 +582,6 @@ func (shardBestState *ShardBestState) updateShardBestState(block *ShardBlock, be
 	shardBestState.BeaconHeight = block.Header.BeaconHeight
 	shardBestState.TotalTxns += uint64(len(block.Body.Transactions))
 	shardBestState.NumTxns = uint64(len(block.Body.Transactions))
-	//======BEGIN For testing and benchmark
-	temp := 0
-	for _, tx := range block.Body.Transactions {
-		//detect transaction that's not salary
-		if !tx.IsSalaryTx() {
-			temp++
-		}
-	}
-	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
-	//======END
 	shardBestState.ShardProposerIdx = common.IndexOfStr(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), shardBestState.ShardCommittee)
 	shardBestState.processBeaconBlocks(block, beaconBlocks)
 	err = shardBestState.processShardBlockInstruction(block)
@@ -600,6 +592,16 @@ func (shardBestState *ShardBestState) updateShardBestState(block *ShardBlock, be
 	for shardID, crossShardBlock := range block.Body.CrossTransactions {
 		shardBestState.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
 	}
+	//======BEGIN For testing and benchmark
+	temp := 0
+	for _, tx := range block.Body.Transactions {
+		//detect transaction that's not salary
+		if !tx.IsSalaryTx() {
+			temp++
+		}
+	}
+	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
+	//======END
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
