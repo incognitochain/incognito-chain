@@ -10,8 +10,11 @@ import (
 
 //Network fixed params
 const (
-	// BlockVersion is the current latest supported block version.
-	BlockVersion              = 1
+	// SHARD_BLOCK_VERSION is the current latest supported block version.
+	VERSION                   = 1
+	RANDOM_NUMBER             = 3
+	SHARD_BLOCK_VERSION       = 1
+	BEACON_BLOCK_VERSION      = 1
 	DefaultMaxBlkReqPerPeer   = 600
 	DefaultMaxBlkReqPerTime   = 1200
 	MinCommitteeSize          = 3                // min size to run bft
