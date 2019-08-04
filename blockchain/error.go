@@ -60,6 +60,7 @@ const (
 	FlattenAndConvertStringInstError
 	InstructionMerkleRootError
 	FetchBeaconBlockHashError
+	FetchBeaconBlockError
 	BeaconBlockNotCompatibleError
 	SwapInstructionError
 	TransactionCreatedByMinerError
@@ -79,6 +80,7 @@ const (
 	FetchAndStoreCrossTransactionError
 	RemoveCommitteeRewardError
 	StoreBurningConfirmError
+	SwapValidatorError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -127,12 +129,13 @@ var ErrCodeMessage = map[int]struct {
 	ShardTransactionRootHashError:             {-1039, "Shard Transaction Root Hash Error"},
 	CrossShardTransactionRootHashError:        {-1040, "Cross Shard Transaction Root Hash Error"},
 	FetchBeaconBlocksError:                    {-1041, "Fetch Beacon Blocks Error"},
+	FetchBeaconBlockHashError:                 {-1047, "Fetch Beacon Block Hash Error"},
+	FetchBeaconBlockError:                     {-1068, "Fetch Beacon Block Error"},
 	WrongBlockTotalFeeError:                   {-1042, "Wrong Block Total Fee Error"},
 	ShardIntructionFromTransactionAndInsError: {-1043, "Shard Instruction From Transaction And Instruction Error"},
 	InstructionsHashError:                     {-1044, "Instruction Hash Error"},
 	FlattenAndConvertStringInstError:          {-1045, "Flatten And Convert String Instruction Error"},
 	InstructionMerkleRootError:                {-1046, "Instruction Merkle Root Error"},
-	FetchBeaconBlockHashError:                 {-1047, "Fetch Beacon Block Hash Error"},
 	BeaconBlockNotCompatibleError:             {-1048, "Beacon Block Not Compatible Error"},
 	SwapInstructionError:                      {-1049, "Swap Instruction Error"},
 	TransactionCreatedByMinerError:            {-1050, "Transaction Created By Miner Error"},
@@ -152,6 +155,7 @@ var ErrCodeMessage = map[int]struct {
 	FetchAndStoreCrossTransactionError:        {-1064, "Fetch And Store Cross Transaction Error"},
 	RemoveCommitteeRewardError:                {-1065, "Remove Committee Reward Error"},
 	StoreBurningConfirmError:                  {-1066, "Store Burning Confirm Error"},
+	SwapValidatorError:                        {-1067, "Swap Validator Error"},
 }
 
 type BlockChainError struct {

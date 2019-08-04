@@ -556,26 +556,25 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 		ShardHeight
 		BeaconHeight
 		ShardProposerIdx
-
 		Add pending validator
 		Swap shard committee if detect new epoch of beacon
 */
 func (shardBestState *ShardBestState) updateShardBestState(block *ShardBlock, beaconBlocks []*BeaconBlock) error {
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	var (
-		err                   error
-		shardSwapedCommittees []string
-		shardNewCommittees    []string
+		err error
+		//shardSwapedCommittees []string
+		//shardNewCommittees    []string
 	)
 	shardBestState.BestBlockHash = *block.Hash()
-	if block.Header.BeaconHeight == 1 {
-		shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
-	} else {
-		shardBestState.BestBeaconHash = block.Header.BeaconHash
-	}
-	if block.Header.Height == 1 {
-		shardBestState.BestCrossShard = make(map[byte]uint64)
-	}
+	//if block.Header.BeaconHeight == 1 {
+	//shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
+	//} else {
+	shardBestState.BestBeaconHash = block.Header.BeaconHash
+	//}
+	//if block.Header.Height == 1 {
+	//	shardBestState.BestCrossShard = make(map[byte]uint64)
+	//}
 	shardBestState.BestBlock = block
 	shardBestState.BestBlockHash = *block.Hash()
 	shardBestState.ShardHeight = block.Header.Height
@@ -593,18 +592,110 @@ func (shardBestState *ShardBestState) updateShardBestState(block *ShardBlock, be
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
 	//======END
-	if block.Header.Height == 1 {
-		shardBestState.ShardProposerIdx = 0
-	} else {
-		shardBestState.ShardProposerIdx = common.IndexOfStr(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), shardBestState.ShardCommittee)
-	}
+	//if block.Header.Height == 1 {
+	//	shardBestState.ShardProposerIdx = 0
+	//} else {
+	shardBestState.ShardProposerIdx = common.IndexOfStr(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), shardBestState.ShardCommittee)
+	//}
 
+	shardBestState.processBeaconBlocks(block, beaconBlocks)
+	//newBeaconCandidate := []string{}
+	//newShardCandidate := []string{}
+	//// Add pending validator
+	//for _, beaconBlock := range beaconBlocks {
+	//	for _, l := range beaconBlock.Body.Instructions {
+	//		if l[0] == StakeAction && l[2] == "beacon" {
+	//			beacon := strings.Split(l[1], ",")
+	//			newBeaconCandidate = append(newBeaconCandidate, beacon...)
+	//			if len(l) == 4 {
+	//				for i, v := range strings.Split(l[3], ",") {
+	//					GetBestStateShard(shardBestState.ShardID).StakingTx[newBeaconCandidate[i]] = v
+	//				}
+	//			}
+	//		}
+	//		if l[0] == StakeAction && l[2] == "shard" {
+	//			shard := strings.Split(l[1], ",")
+	//			newShardCandidate = append(newShardCandidate, shard...)
+	//			if len(l) == 4 {
+	//				for i, v := range strings.Split(l[3], ",") {
+	//					GetBestStateShard(shardBestState.ShardID).StakingTx[newShardCandidate[i]] = v
+	//				}
+	//			}
+	//		}
+	//		if l[0] == "assign" && l[2] == "shard" {
+	//			if l[3] == strconv.Itoa(int(block.Header.ShardID)) {
+	//				Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", block.Header.ShardID, shardBestState.ShardPendingValidator)
+	//				shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, strings.Split(l[1], ",")...)
+	//				Logger.log.Infof("SHARD %+v | New ShardPendingValidatorList %+v", block.Header.ShardID, shardBestState.ShardPendingValidator)
+	//			}
+	//		}
+	//	}
+	//}
+	err = shardBestState.processShardBlockInstruction(block)
+	if err != nil {
+		return err
+	}
+	//if len(block.Body.Instructions) != 0 {
+	//	Logger.log.Critical("Shard Process/updateShardBestState: ALL Instruction", block.Body.Instructions)
+	//}
+	//// Swap committee
+	//for _, l := range block.Body.Instructions {
+	//	if l[0] == "swap" {
+	//		// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
+	//		shardBestState.ShardPendingValidator, shardBestState.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(shardBestState.ShardPendingValidator, shardBestState.ShardCommittee, shardBestState.MaxShardCommitteeSize, common.OFFSET)
+	//		if err != nil {
+	//			Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
+	//			return NewBlockChainError(SwapValidatorError, err)
+	//		}
+	//		swapedCommittees := []string{}
+	//		if len(l[2]) != 0 && l[2] != "" {
+	//			swapedCommittees = strings.Split(l[2], ",")
+	//		}
+	//		newCommittees := strings.Split(l[1], ",")
+	//
+	//		for _, v := range swapedCommittees {
+	//			delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
+	//		}
+	//		if !reflect.DeepEqual(swapedCommittees, shardSwapedCommittees) {
+	//			return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwapedCommittees))
+	//		}
+	//		if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
+	//			return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect new committees to be %+v but get %+v", newCommittees, shardNewCommittees))
+	//		}
+	//		Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", block.Header.ShardID, shardSwapedCommittees)
+	//		Logger.log.Infof("SHARD %+v | Swap: In committee %+v", block.Header.ShardID, shardNewCommittees)
+	//	}
+	//}
+	//updateShardBestState best cross shard
+	for shardID, crossShardBlock := range block.Body.CrossTransactions {
+		shardBestState.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
+	}
+	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
+	return nil
+}
+func (shardBestState *ShardBestState) initShardBestState(genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {
+	shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
+	shardBestState.BestBlock = genesisShardBlock
+	shardBestState.BestBlockHash = *genesisShardBlock.Hash()
+	shardBestState.ShardHeight = genesisShardBlock.Header.Height
+	shardBestState.Epoch = genesisShardBlock.Header.Epoch
+	shardBestState.BeaconHeight = genesisShardBlock.Header.BeaconHeight
+	shardBestState.TotalTxns += uint64(len(genesisShardBlock.Body.Transactions))
+	shardBestState.NumTxns = uint64(len(genesisShardBlock.Body.Transactions))
+	shardBestState.ShardProposerIdx = 0
+	shardBestState.processBeaconBlocks(genesisShardBlock, []*BeaconBlock{genesisBeaconBlock})
+	err := shardBestState.processShardBlockInstruction(genesisShardBlock)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock) {
 	newBeaconCandidate := []string{}
 	newShardCandidate := []string{}
 	// Add pending validator
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-
 			if l[0] == StakeAction && l[2] == "beacon" {
 				beacon := strings.Split(l[1], ",")
 				newBeaconCandidate = append(newBeaconCandidate, beacon...)
@@ -623,28 +714,31 @@ func (shardBestState *ShardBestState) updateShardBestState(block *ShardBlock, be
 					}
 				}
 			}
-
 			if l[0] == "assign" && l[2] == "shard" {
-				if l[3] == strconv.Itoa(int(block.Header.ShardID)) {
-					Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", block.Header.ShardID, shardBestState.ShardPendingValidator)
+				if l[3] == strconv.Itoa(int(shardBlock.Header.ShardID)) {
+					Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", shardBlock.Header.ShardID, shardBestState.ShardPendingValidator)
 					shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, strings.Split(l[1], ",")...)
-					Logger.log.Infof("SHARD %+v | New ShardPendingValidatorList %+v", block.Header.ShardID, shardBestState.ShardPendingValidator)
+					Logger.log.Infof("SHARD %+v | New ShardPendingValidatorList %+v", shardBlock.Header.ShardID, shardBestState.ShardPendingValidator)
 				}
 			}
 		}
 	}
-	if len(block.Body.Instructions) != 0 {
-		Logger.log.Critical("Shard Process/updateShardBestState: ALL Instruction", block.Body.Instructions)
+}
+func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *ShardBlock) error {
+	var err error
+	shardSwappedCommittees := []string{}
+	shardNewCommittees := []string{}
+	if len(shardBlock.Body.Instructions) != 0 {
+		Logger.log.Info("Shard Process/updateShardBestState: Shard Instruction", shardBlock.Body.Instructions)
 	}
-
 	// Swap committee
-	for _, l := range block.Body.Instructions {
-
+	for _, l := range shardBlock.Body.Instructions {
 		if l[0] == "swap" {
-			shardBestState.ShardPendingValidator, shardBestState.ShardCommittee, shardSwapedCommittees, shardNewCommittees, err = SwapValidator(shardBestState.ShardPendingValidator, shardBestState.ShardCommittee, shardBestState.MaxShardCommitteeSize, common.OFFSET)
+			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
+			shardBestState.ShardPendingValidator, shardBestState.ShardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardBestState.ShardPendingValidator, shardBestState.ShardCommittee, shardBestState.MaxShardCommitteeSize, common.OFFSET)
 			if err != nil {
-				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err)
+				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
+				return NewBlockChainError(SwapValidatorError, err)
 			}
 			swapedCommittees := []string{}
 			if len(l[2]) != 0 && l[2] != "" {
@@ -655,23 +749,16 @@ func (shardBestState *ShardBestState) updateShardBestState(block *ShardBlock, be
 			for _, v := range swapedCommittees {
 				delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
 			}
-
-			if !reflect.DeepEqual(swapedCommittees, shardSwapedCommittees) {
-				return NewBlockChainError(SwapError, errors.New("invalid shard swapped committees"))
+			if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
+				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees))
 			}
 			if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
-				return NewBlockChainError(SwapError, errors.New("invalid shard new committees"))
+				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect new committees to be %+v but get %+v", newCommittees, shardNewCommittees))
 			}
-			Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", block.Header.ShardID, shardSwapedCommittees)
-			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", block.Header.ShardID, shardNewCommittees)
+			Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", shardBlock.Header.ShardID, shardSwappedCommittees)
+			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", shardBlock.Header.ShardID, shardNewCommittees)
 		}
 	}
-	//updateShardBestState best cross shard
-	for shardID, crossShardBlock := range block.Body.CrossTransactions {
-		shardBestState.BestCrossShard[shardID] = crossShardBlock[len(crossShardBlock)-1].BlockHeight
-	}
-
-	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", block.Header.ShardID, block.Header.Height, block.Hash())
 	return nil
 }
 
