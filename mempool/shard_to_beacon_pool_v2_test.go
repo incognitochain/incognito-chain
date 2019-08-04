@@ -99,7 +99,7 @@ var _ = func() (_ struct{}) {
 			ShardHeight: 1,
 		})
 	}
-	blockchain.SetBestStateBeacon(&blockchain.BestStateBeacon{
+	blockchain.SetBeaconBestState(&blockchain.BeaconBestState{
 		BestShardHeight: bestShardHeight,
 	})
 	InitShardToBeaconPool()

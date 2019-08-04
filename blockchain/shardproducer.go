@@ -47,6 +47,8 @@ import (
 	3. Build Shard Block Header
 */
 func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey.KeySet, shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
+	blockGenerator.chain.chainLock.Lock()
+	defer blockGenerator.chain.chainLock.Unlock()
 	var (
 		transactionsForNewBlock = make([]metadata.Transaction, 0)
 		totalTxsFee             = make(map[common.Hash]uint64)
@@ -178,7 +180,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	block.Header = ShardHeader{
 		ProducerAddress:      producerKeySet.PaymentAddress,
 		ShardID:              shardID,
-		Version:              BlockVersion,
+		Version:              SHARD_BLOCK_VERSION,
 		PreviousBlockHash:    *previousBlockHash,
 		Height:               previousBlock.Header.Height + 1,
 		TxRoot:               *merkleRoot,
