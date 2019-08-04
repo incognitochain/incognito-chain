@@ -81,6 +81,7 @@ var HttpHandler = map[string]httpHandler{
 	sendRawCustomTokenTransaction:       (*HttpServer).handleSendRawCustomTokenTransaction,
 	createAndSendCustomTokenTransaction: (*HttpServer).handleCreateAndSendCustomTokenTransaction,
 	listUnspentCustomToken:              (*HttpServer).handleListUnspentCustomToken,
+	getBalanceCustomToken:              (*HttpServer).handleGetBalanceCustomToken,
 	listCustomToken:                     (*HttpServer).handleListCustomToken,
 	customTokenTxs:                      (*HttpServer).handleCustomTokenDetail,
 	listCustomTokenHolders:              (*HttpServer).handleGetListCustomTokenHolders,
@@ -92,6 +93,7 @@ var HttpHandler = map[string]httpHandler{
 	listPrivacyCustomToken:                     (*HttpServer).handleListPrivacyCustomToken,
 	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
+	getBalancePrivacyCustomToken:           (*HttpServer).handleGetBalancePrivacyCustomToken,
 	// Bridge
 	createIssuingRequest:            (*HttpServer).handleCreateIssuingRequest,
 	sendIssuingRequest:              (*HttpServer).handleSendIssuingRequest,

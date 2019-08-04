@@ -7,8 +7,8 @@ import (
 
 /*
 	Unit test for Hybrid encryption
- */
-func TestHybridEncryption (t*testing.T){
+*/
+func TestHybridEncryption(t *testing.T) {
 	// random message
 	msg := RandBytes(100)
 
@@ -20,13 +20,13 @@ func TestHybridEncryption (t*testing.T){
 	ciphertext, err := HybridEncrypt(msg, publicKey)
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, ElGamalCiphertextSize, len(ciphertext.SymKeyEncrypted))
+	assert.Equal(t, elGamalCiphertextSize, len(ciphertext.SymKeyEncrypted))
 	assert.Greater(t, len(ciphertext.MsgEncrypted), 0)
 
 	// convert Ciphertext to bytes array
 	ciphertextBytes := ciphertext.Bytes()
 
-	assert.Greater(t, len(ciphertextBytes), ElGamalCiphertextSize)
+	assert.Greater(t, len(ciphertextBytes), elGamalCiphertextSize)
 
 	// new Ciphertext to set bytes array
 	ciphertext2 := new(Ciphertext)

@@ -232,7 +232,7 @@ func (synker *Synker) stopSyncUnnecessaryShard() {
 
 func (synker *Synker) stopSyncShard(shardID byte) error {
 	if synker.blockchain.config.NodeMode == common.NODEMODE_AUTO || synker.blockchain.config.NodeMode == common.NODEMODE_SHARD {
-		userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(synker.blockchain.config.UserKeySet.GetPublicKeyB58(), synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
+		userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(synker.blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
 		if userRole == common.SHARD_ROLE && shardID == userShardID {
 			return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
 		}
@@ -270,7 +270,7 @@ func (synker *Synker) UpdateState() {
 		userPK        string
 	)
 	if synker.blockchain.config.UserKeySet != nil {
-		userPK = synker.blockchain.config.UserKeySet.GetPublicKeyB58()
+		userPK = synker.blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode()
 		userRole, userShardID = beaconStateClone.GetPubkeyRole(userPK, beaconStateClone.BestBlock.Header.Round)
 		synker.syncShard(userShardID)
 		synker.stopSyncUnnecessaryShard()
@@ -734,7 +734,7 @@ func (synker *Synker) GetPoolsState() {
 	)
 
 	if synker.blockchain.config.UserKeySet != nil {
-		userPK = synker.blockchain.config.UserKeySet.GetPublicKeyB58()
+		userPK = synker.blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode()
 		userRole, userShardID = synker.blockchain.BestState.Beacon.GetPubkeyRole(userPK, synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
 		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userPK, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 	}

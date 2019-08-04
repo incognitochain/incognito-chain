@@ -1,15 +1,17 @@
-package zkp
+package oneoutofmany
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
 	"math/big"
 	"testing"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -31,11 +33,11 @@ func TestPKOneOfMany(t *testing.T) {
 	indexIsZero := 2
 
 	// list of commitments
-	commitments := make([]*privacy.EllipticPoint, privacy.CMRingSize)
-	snDerivators := make([]*big.Int, privacy.CMRingSize)
-	randoms := make([]*big.Int, privacy.CMRingSize)
+	commitments := make([]*privacy.EllipticPoint, privacy.CommitmentRingSize)
+	snDerivators := make([]*big.Int, privacy.CommitmentRingSize)
+	randoms := make([]*big.Int, privacy.CommitmentRingSize)
 
-	for i := 0; i < privacy.CMRingSize; i++ {
+	for i := 0; i < privacy.CommitmentRingSize; i++ {
 		snDerivators[i] = privacy.RandScalar()
 		randoms[i] = privacy.RandScalar()
 		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.SND)
@@ -50,7 +52,7 @@ func TestPKOneOfMany(t *testing.T) {
 	proof, err := witness.Prove()
 	assert.Equal(t, nil, err)
 	end := time.Since(start)
-	fmt.Printf("One out of many proving time: %v\n", end)
+	//fmt.Printf("One out of many proving time: %v\n", end)
 
 	// validate sanity for proof
 	isValidSanity := proof.ValidateSanity()
@@ -58,12 +60,12 @@ func TestPKOneOfMany(t *testing.T) {
 
 	//Convert proof to bytes array
 	proofBytes := proof.Bytes()
-	assert.Equal(t, privacy.OneOfManyProofSize, len(proofBytes))
+	assert.Equal(t, utils.OneOfManyProofSize, len(proofBytes))
 
 	// revert bytes array to proof
 	proof2 := new(OneOutOfManyProof).Init()
 	proof2.SetBytes(proofBytes)
-	proof2.stmt.commitments = commitments
+	proof2.Statement.Commitments = commitments
 	assert.Equal(t, proof, proof2)
 
 	// verify the proof

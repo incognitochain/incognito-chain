@@ -56,9 +56,13 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(bridgeInstProof.inst))
+	decodedInst, err := blockchain.DecodeInstruction(bridgeInstProof.inst)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	inst := hex.EncodeToString(decodedInst)
 
-	return buildProofResult(decodedInst, beaconInstProof, bridgeInstProof, "", ""), nil
+	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
 }
 
 // getShardAndBeaconBlocks returns a shard block (with all of its instructions) and the included beacon blocks
@@ -232,7 +236,7 @@ func extractInstsFromShardBlock(
 func findCommSwapInst(insts [][]string, meta int) ([]string, int) {
 	for i, inst := range insts {
 		if strconv.Itoa(meta) == inst[0] {
-			fmt.Println("[db] CommSwap inst:", inst)
+			BLogger.log.Debug("CommSwap inst:", inst)
 			return inst, i
 		}
 	}
@@ -262,14 +266,19 @@ func buildProofFromTree(merkles [][]byte, id int) *keccak256MerkleProof {
 // buildProof receives a list of data (as bytes) and returns a merkle proof for one element in the list
 func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 	merkles := blockchain.BuildKeccak256MerkleTree(data)
+	BLogger.log.Debugf("BuildProof: %x", merkles[id])
+	BLogger.log.Debugf("BuildProof merkles: %x", merkles)
 	return buildProofFromTree(merkles, id)
 }
 
 // buildInstProof receives a list of instructions (as string) and returns a merkle proof for one instruction in the list
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
-	flattenInsts := blockchain.FlattenAndConvertStringInst(insts)
-	fmt.Printf("[db] insts: %v\n", insts)
-	// fmt.Printf("[db] flattenInsts: %x\n", flattenInsts)
+	flattenInsts, err := blockchain.FlattenAndConvertStringInst(insts)
+	if err != nil {
+		BLogger.log.Errorf("Cannot flatten instructions: %+v", err)
+		return nil
+	}
+	BLogger.log.Debugf("insts: %v", insts)
 	return buildProof(flattenInsts, id)
 }
 
@@ -391,8 +400,8 @@ func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []
 // buildSignersProof builds the merkle proofs for some elements in a list of pubkeys
 func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
 	merkles := blockchain.BuildKeccak256MerkleTree(pubkeys)
-	fmt.Printf("[db] pubkeys: %x\n", pubkeys)
-	fmt.Printf("[db] merkles: %x\n", merkles)
+	BLogger.log.Debugf("pubkeys: %x", pubkeys)
+	BLogger.log.Debugf("merkles: %x", merkles)
 	proofs := make([]*keccak256MerkleProof, len(pubkeys))
 	for i, pid := range idxs {
 		proofs[i] = buildProofFromTree(merkles, pid)

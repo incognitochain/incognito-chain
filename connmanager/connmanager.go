@@ -297,25 +297,25 @@ func (connManager *ConnManager) listenHandler(listen *peer.Peer) {
 }
 
 func (connManager *ConnManager) handleConnected(peerConn *peer.PeerConn) {
-	Logger.log.Infof("handleConnected %s", peerConn.RemotePeerID.Pretty())
+	Logger.log.Infof("handleConnected %s", peerConn.GetRemotePeerID().Pretty())
 	if peerConn.GetIsOutbound() {
-		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.RemotePeerID.Pretty())
+		Logger.log.Infof("handleConnected OUTBOUND %s", peerConn.GetRemotePeerID().Pretty())
 
 		if connManager.config.OnOutboundConnection != nil {
 			connManager.config.OnOutboundConnection(peerConn)
 		}
 
 	} else {
-		Logger.log.Infof("handleConnected INBOUND %s", peerConn.RemotePeerID.Pretty())
+		Logger.log.Infof("handleConnected INBOUND %s", peerConn.GetRemotePeerID().Pretty())
 	}
 }
 
 func (connManager *ConnManager) handleDisconnected(peerConn *peer.PeerConn) {
-	Logger.log.Warnf("handleDisconnected %s", peerConn.RemotePeerID.Pretty())
+	Logger.log.Warnf("handleDisconnected %s", peerConn.GetRemotePeerID().Pretty())
 }
 
 func (connManager *ConnManager) handleFailed(peerConn *peer.PeerConn) {
-	Logger.log.Warnf("handleFailed %s", peerConn.RemotePeerID.Pretty())
+	Logger.log.Warnf("handleFailed %s", peerConn.GetRemotePeerID().Pretty())
 }
 
 // DiscoverPeers - connect to bootnode
@@ -413,10 +413,10 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		publicKeyInBase58CheckEncode := common.EmptyString
 		signDataInBase58CheckEncode := common.EmptyString
 		if listener.GetConfig().UserKeySet != nil {
-			publicKeyInBase58CheckEncode = listener.GetConfig().UserKeySet.GetPublicKeyB58()
+			publicKeyInBase58CheckEncode = listener.GetConfig().UserKeySet.GetPublicKeyInBase58CheckEncode()
 			Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 			// sign data
-			signDataInBase58CheckEncode, err = listener.GetConfig().UserKeySet.SignDataB58([]byte(rawAddress))
+			signDataInBase58CheckEncode, err = listener.GetConfig().UserKeySet.SignDataInBase58CheckEncode([]byte(rawAddress))
 			if err != nil {
 				Logger.log.Error(err)
 			}
@@ -464,7 +464,7 @@ func (connManager *ConnManager) getPeerConnOfShard(shard *byte) []*peer.PeerConn
 	listener := connManager.config.ListenerPeer
 	allPeers := listener.GetPeerConnOfAll()
 	for _, peerConn := range allPeers {
-		sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.GetPublicKey())
+		sh := connManager.getShardOfPublicKey(peerConn.GetRemotePeer().GetPublicKey())
 		if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 			c = append(c, peerConn)
 		}
@@ -479,7 +479,7 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			sh := connManager.getShardOfPublicKey(peerConn.RemotePeer.GetPublicKey())
+			sh := connManager.getShardOfPublicKey(peerConn.GetRemotePeer().GetPublicKey())
 			if (shard == nil && sh == nil) || (sh != nil && shard != nil && *sh == *shard) {
 				count++
 			}
@@ -494,7 +494,7 @@ func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool 
 	if listener != nil {
 		pcs := listener.GetPeerConnOfAll()
 		for _, peerConn := range pcs {
-			if peerConn.RemotePeer.GetPublicKey() == publicKey {
+			if peerConn.GetRemotePeer().GetPublicKey() == publicKey {
 				return true
 			}
 		}
@@ -645,7 +645,7 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (boo
 		return false, NewConnManagerError(NotAcceptConnectionError, errors.New("peerConn is nil"))
 	}
 	// check max shard conn
-	shardID := connManager.getShardOfPublicKey(peerConn.RemotePeer.GetPublicKey())
+	shardID := connManager.getShardOfPublicKey(peerConn.GetRemotePeer().GetPublicKey())
 	currentShard := connManager.config.ConsensusState.currentShard
 	if shardID != nil && currentShard != nil && *shardID == *currentShard {
 		//	same shard
@@ -694,7 +694,7 @@ func (connManager *ConnManager) GetPeerConnOfShard(shard byte) []*peer.PeerConn 
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			shardT := connManager.getShardOfPublicKey(peerConn.RemotePeer.GetPublicKey())
+			shardT := connManager.getShardOfPublicKey(peerConn.GetRemotePeer().GetPublicKey())
 			if shardT != nil && *shardT == shard {
 				peerConns = append(peerConns, peerConn)
 			}
@@ -710,7 +710,7 @@ func (connManager *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			pbk := peerConn.RemotePeer.GetPublicKey()
+			pbk := peerConn.GetRemotePeer().GetPublicKey()
 			if pbk != common.EmptyString && connManager.checkBeaconOfPbk(pbk) {
 				peerConns = append(peerConns, peerConn)
 			}
@@ -729,7 +729,7 @@ func (connManager *ConnManager) GetPeerConnOfPublicKey(publicKey string) []*peer
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			if publicKey == peerConn.RemotePeer.GetPublicKey() {
+			if publicKey == peerConn.GetRemotePeer().GetPublicKey() {
 				peerConns = append(peerConns, peerConn)
 			}
 		}
@@ -754,7 +754,7 @@ func (connManager *ConnManager) GetConnOfRelayNode() []*peer.PeerConn {
 	if listener != nil {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
-			pbk := peerConn.RemotePeer.GetPublicKey()
+			pbk := peerConn.GetRemotePeer().GetPublicKey()
 			if pbk != common.EmptyString && common.IndexOfStr(pbk, relayNode) != -1 {
 				peerConns = append(peerConns, peerConn)
 			}

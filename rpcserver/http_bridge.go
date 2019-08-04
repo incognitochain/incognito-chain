@@ -49,7 +49,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddr := senderKey.KeySet.PaymentAddress
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
 	_, voutsAmount, err := transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
@@ -102,12 +102,7 @@ func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params inter
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
-	txID := sendResult.(*common.Hash)
-	result := jsonresult.CreateTransactionResult{
-		// TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
-		TxID: txID.String(),
-	}
-	return result, nil
+	return sendResult, nil
 }
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -125,7 +120,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
 	tokenParamsRaw := arrayParams[4].(map[string]interface{})
@@ -183,12 +178,7 @@ func (httpServer *HttpServer) handleCreateAndSendBurningRequest(params interface
 		return nil, NewRPCError(ErrUnexpected, err1)
 	}
 
-	txID := sendResult.(*common.Hash)
-	result := jsonresult.CreateTransactionResult{
-		// TxID: sendResult.(jsonresult.CreateTransactionResult).TxID,
-		TxID: txID.String(),
-	}
-	return result, nil
+	return sendResult, nil
 }
 
 func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {

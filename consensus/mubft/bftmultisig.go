@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -47,7 +47,7 @@ func (multiSig *multiSigScheme) Prepare() error {
 	myRiECCPoint, myrBigInt := multiSig.scheme.GenerateRandom()
 	myRi := myRiECCPoint.Compress()
 	myr := myrBigInt.Bytes()
-	for len(myr) < privacy.BigIntSize {
+	for len(myr) < common.BigIntSize {
 		myr = append([]byte{0}, myr...)
 	}
 
