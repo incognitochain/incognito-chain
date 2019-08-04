@@ -295,7 +295,7 @@ func TestDb_StoreTxIndex(t *testing.T) {
 func TestDb_StorePrevBestState(t *testing.T) {
 	if db != nil {
 		bestState := blockchain.BestState{
-			Beacon: &blockchain.BestStateBeacon{
+			Beacon: &blockchain.BeaconBestState{
 				Epoch: 100,
 			},
 		}
@@ -306,7 +306,7 @@ func TestDb_StorePrevBestState(t *testing.T) {
 
 		beaconInBytes, err := db.FetchPrevBestState(true, 0)
 		assert.Equal(t, err, nil)
-		temp := blockchain.BestStateBeacon{}
+		temp := blockchain.BeaconBestState{}
 		json.Unmarshal(beaconInBytes, &temp)
 		assert.Equal(t, bestState.Beacon.Epoch, temp.Epoch)
 		err = db.CleanBackup(true, 0)
@@ -350,7 +350,7 @@ func TestDb_StoreShardBestState(t *testing.T) {
 func TestDb_StoreBeaconBestState(t *testing.T) {
 	if db != nil {
 		bestState := blockchain.BestState{
-			Beacon: &blockchain.BestStateBeacon{
+			Beacon: &blockchain.BeaconBestState{
 				Epoch: 100,
 			},
 		}
@@ -381,7 +381,7 @@ func TestDb_StoreCommitteeByHeight(t *testing.T) {
 			},
 		}
 		bestState := blockchain.BestState{
-			Beacon: &blockchain.BestStateBeacon{
+			Beacon: &blockchain.BeaconBestState{
 				Epoch:          100,
 				ShardCommittee: make(map[byte][]string),
 			},

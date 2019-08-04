@@ -84,7 +84,7 @@ var _ = func() (_ struct{}) {
 		MemCache:      memcache.New(),
 	}, true)
 	bc.BestState = &blockchain.BestState{
-		Beacon: &blockchain.BestStateBeacon{},
+		Beacon: &blockchain.BeaconBestState{},
 		Shard:  make(map[byte]*blockchain.ShardBestState),
 	}
 	for i := 0; i < 255; i++ {
