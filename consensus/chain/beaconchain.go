@@ -11,7 +11,7 @@ import (
 
 type BeaconChain struct {
 	Node            Node
-	BlockGen        *blockchain.BlkTmplGenerator
+	BlockGen        *blockchain.BlockGenerator
 	Blockchain      *blockchain.BlockChain
 	Consensus       ConsensusInterface
 	ConsensusEngine ConsensusEngineInterface

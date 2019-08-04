@@ -19,9 +19,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		userShardID   byte
 		userShardRole string
 	)
-	if blockchain.config.UserKeySet != nil {
-		userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), blockchain.BestState.Beacon.BestBlock.Header.Round)
-	}
+	// if blockchain.config .UserKeySet != nil {
+	// 	userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), blockchain.BestState.Beacon.BestBlock.Header.Round)
+	// }
 	pState := &peerState{
 		Shard:  make(map[byte]*ChainState),
 		Beacon: beacon,
