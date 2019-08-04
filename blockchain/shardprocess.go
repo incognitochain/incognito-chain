@@ -49,17 +49,6 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	if err := shardBestState.cloneShardBestState(blockchain.BestState.Shard[shardID]); err != nil {
 		return err
 	}
-	//// check with current final best state
-	//// New shardBlock must be compatible with current best state
-	//bestBlockHash := &blockchain.BestState.Shard[shardID].BestBlockHash
-	//if bestBlockHash.IsEqual(&shardBlock.Header.PreviousBlockHash) {
-	//if err := shardBestState.cloneShardBestState(blockchain.BestState.Shard[shardID]); err != nil {
-	//	return err
-	//}
-	//} else {
-	//	// if no match best state found then shardBlock is unknown
-	//	return NewBlockChainError(ShardBestStateNotCompatibleError, fmt.Errorf("Current Best Block Hash %+v, New Shard Block %+v, Previous Block Hash of New Block %+v", *bestBlockHash, shardBlock.Header.Height, shardBlock.Header.PreviousBlockHash))
-	//}
 	// Verify shardBlock with previous best state
 	// DO NOT verify agg signature in this function
 	if err := shardBestState.verifyBestStateWithShardBlock(shardBlock, false, shardID); err != nil {
@@ -205,7 +194,8 @@ DO NOT USE THIS with GENESIS BLOCK
 	- InstructionRoot: rebuild instruction root from instructions and txs in block and compare with instruction root in header
 		+ instructions must be re-created (from beacon block and instruction) if verify block for signing
 	- InstructionMerkleRoot: rebuild instruction root from instructions and txs in block and compare with instruction root in header
-	- TotalTxFee
+	- TotalTxFee: calculate tx token fee from all transaction in block then compare with header
+	- CrossShars: Verify Cross Shard Bitmap
 	- BeaconHeight: fetch beacon hash using beacon height in current shard block
 	- BeaconHash: compare beacon hash in database with beacon hash in shard block
 	- Verify swap instruction
@@ -317,6 +307,16 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		}
 		if totalTxsFee[tokenID] != shardBlock.Header.TotalTxsFee[tokenID] {
 			return NewBlockChainError(WrongBlockTotalFeeError, fmt.Errorf("Expect Total Fee to be equal, From Txs %+v, From Block Header %+v", totalTxsFee[tokenID], shardBlock.Header.TotalTxsFee[tokenID]))
+		}
+	}
+	// Verify Cross Shards
+	crossShards := CreateCrossShardByteArray(shardBlock.Body.Transactions, shardID)
+	if len(crossShards) != len(shardBlock.Header.CrossShards) {
+		return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect number of cross shardID is %+v but get %+v", len(shardBlock.Header.CrossShards), len(crossShards)))
+	}
+	for index, _ := range crossShards {
+		if crossShards[index] != shardBlock.Header.CrossShards[index] {
+			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is but get %+v", index, shardBlock.Header.CrossShards[index], crossShards[index]))
 		}
 	}
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this shardBlock
