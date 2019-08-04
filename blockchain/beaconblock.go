@@ -5,11 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-const (
-	VERSION       = 1
-	RANDOM_NUMBER = 3
-)
-
 type BeaconBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
 	R             string  `json:"R"`
