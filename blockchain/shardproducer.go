@@ -140,7 +140,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockGenerator.chain, shardID, &producerKeySet.PaymentAddress, previousBlock.Header.Height+1, beaconBlocks, beaconHeight)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(block.Body.Transactions, blockGenerator.chain, shardID)
 	if err != nil {
 		return nil, err
 	}
