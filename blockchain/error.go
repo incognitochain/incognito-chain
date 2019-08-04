@@ -81,6 +81,7 @@ const (
 	RemoveCommitteeRewardError
 	StoreBurningConfirmError
 	SwapValidatorError
+	CrossShardBitMapError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -156,6 +157,7 @@ var ErrCodeMessage = map[int]struct {
 	RemoveCommitteeRewardError:                        {-1065, "Remove Committee Reward Error"},
 	StoreBurningConfirmError:                          {-1066, "Store Burning Confirm Error"},
 	SwapValidatorError:                                {-1067, "Swap Validator Error"},
+	CrossShardBitMapError:                             {-1069, "Cross Shard Bitmap Error"},
 }
 
 type BlockChainError struct {
