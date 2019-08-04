@@ -119,14 +119,10 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardInstructionsFromTransactionAndIns(
+func CreateShardInstructionsFromTransactionAndInstruction(
 	transactions []metadata.Transaction,
 	bc *BlockChain,
 	shardID byte,
-	producerAddress *privacy.PaymentAddress,
-	shardBlockHeight uint64,
-	beaconBlocks []*BeaconBlock,
-	beaconHeight uint64,
 ) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
