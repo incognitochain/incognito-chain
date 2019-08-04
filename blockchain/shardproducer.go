@@ -185,7 +185,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
 		CrossTransactionRoot: *crossTransactionRoot,
 		InstructionsRoot:     instructionsHash,
-		CrossShards:          CreateCrossShardByteArray(block.Body.Transactions, shardID),
+		CrossShardBitMap:     CreateCrossShardByteArray(block.Body.Transactions, shardID),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,

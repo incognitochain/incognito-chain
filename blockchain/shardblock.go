@@ -157,7 +157,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if len(shardBlock.Header.PendingValidatorRoot[:]) != common.HashSize {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Committee Root in the right format"))
 	}
-	if len(shardBlock.Header.CrossShards) > 254 {
+	if len(shardBlock.Header.CrossShardBitMap) > 254 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Shard Length Less Than 255"))
 	}
 	if shardBlock.Header.BeaconHeight < 1 {
