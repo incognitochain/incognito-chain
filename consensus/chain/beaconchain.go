@@ -13,10 +13,11 @@ type BeaconChain struct {
 	Node            Node
 	BlockGen        *blockchain.BlkTmplGenerator
 	Blockchain      *blockchain.BlockChain
-	ConsensusEngine ConsensusInterface
+	Consensus       ConsensusInterface
+	ConsensusEngine ConsensusEngineInterface
 }
 
-func (s *BeaconChain) GetConsensusEngine() ConsensusInterface {
+func (s *BeaconChain) GetConsensusEngine() ConsensusEngineInterface {
 	return s.ConsensusEngine
 }
 
@@ -29,7 +30,7 @@ func (s *BeaconChain) GetLastBlockTimeStamp() uint64 {
 }
 
 func (s *BeaconChain) GetBlkMinTime() time.Duration {
-	return time.Second * 5
+	return common.MinShardBlkInterval
 
 }
 

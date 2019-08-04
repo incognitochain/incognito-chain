@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/transaction"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -58,8 +57,8 @@ type Message interface {
 	JsonDeserialize(string) error
 	SetSenderID(peer.ID) error
 
-	//SignMsg sig this msg with a keyset
-	SignMsg(*incognitokey.KeySet) error
+	// //SignMsg sig this msg with a keyset
+	// SignMsg(*incognitokey.KeySet) error
 
 	//VerifyMsgSanity verify msg before push it to final handler
 	VerifyMsgSanity() error
