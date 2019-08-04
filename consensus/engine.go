@@ -1,7 +1,8 @@
 package consensus
 
 import (
-	"strconv"
+	"errors"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -17,11 +18,13 @@ const (
 var AvailableConsensus map[string]chain.ConsensusInterface
 
 type Engine struct {
-	Node             chain.Node
-	ChainList        map[string]chain.ChainInterface
-	Blockchain       *blockchain.BlockChain
-	BlockGen         *blockchain.BlkTmplGenerator
-	ConsensusOnGoing bool
+	sync.Mutex
+	cQuit              chan struct{}
+	started            bool
+	Node               chain.Node
+	ChainConsensusList map[string]chain.ConsensusInterface
+	Blockchain         *blockchain.BlockChain
+	BlockGen           *blockchain.BlkTmplGenerator
 }
 
 func New(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlkTmplGenerator) *Engine {
@@ -33,45 +36,177 @@ func New(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchai
 	return &engine
 }
 
-func (s *Engine) Start() error {
-	//start beacon and run consensus engine
+func (engine *Engine) watchConsensusState() {
+
+}
+
+func (engine *Engine) Start() error {
+	engine.Lock()
+	defer engine.Unlock()
+	if engine.started {
+		return errors.New("Consensus engine is already started")
+	}
+	if engine.Node.GetMiningKey() == "" {
+		return errors.New("MiningKey can't be empty")
+	}
+	engine.cQuit = make(chan struct{})
 	go func() {
-		ticker := time.Tick(time.Millisecond * 1000)
-		for _ = range ticker {
-			if s.Blockchain != nil && s.Blockchain.Synker.IsLatest(false, 0) { //beacon synced
-				//TODO: start chain if node is in committee
+		for {
+			select {
+			case <-engine.cQuit:
+				return
+			default:
+				time.Sleep(time.Millisecond * 100)
+
+				// if !engine.config.BlockChain.Synker.IsLatest(false, 0) {
+				// 	userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, 0)
+				// 	if userRole == common.SHARD_ROLE {
+				// 		go engine.NotifyShardRole(int(shardID))
+				// 		go engine.NotifyBeaconRole(false)
+				// 	} else {
+				// 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+				// 			go engine.NotifyBeaconRole(true)
+				// 			go engine.NotifyShardRole(-1)
+				// 		}
+				// 	}
+				// } else {
+				// 	if !engine.config.Server.IsEnableMining() {
+				// 		time.Sleep(time.Second * 1)
+				// 		continue
+				// 	}
+				// 	userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, engine.currentBFTRound)
+				// 	if engine.config.NodeMode == common.NODEMODE_BEACON && userRole == common.SHARD_ROLE {
+				// 		userRole = common.EmptyString
+				// 	}
+				// 	if engine.config.NodeMode == common.NODEMODE_SHARD && userRole != common.SHARD_ROLE {
+				// 		userRole = common.EmptyString
+				// 	}
+				// 	engine.userLayer = userRole
+				// 	switch userRole {
+				// 	case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
+				// 		engine.userLayer = common.BEACON_ROLE
+				// 	}
+				// 	engine.config.Server.UpdateConsensusState(engine.userLayer, engine.userPk, nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.GetShardCommittee())
+				// 	switch engine.userLayer {
+				// 	case common.BEACON_ROLE:
+				// 		if engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO {
+				// 			engine.config.BlockChain.ConsensusOngoing = true
+				// 			engine.execBeaconRole()
+				// 			engine.config.BlockChain.ConsensusOngoing = false
+				// 		}
+				// 	case common.SHARD_ROLE:
+				// 		if engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO {
+				// 			if engine.config.BlockChain.Synker.IsLatest(true, shardID) {
+				// 				engine.config.BlockChain.ConsensusOngoing = true
+				// 				engine.execShardRole(shardID)
+				// 				engine.config.BlockChain.ConsensusOngoing = false
+				// 			}
+				// 		}
+				// 	case common.EmptyString:
+				// 		time.Sleep(time.Second * 1)
+				// 	}
+				// }
 			}
 		}
 	}()
-	beaconChain, ok := s.ChainList[BEACON_CHAINKEY]
-	if !ok {
-		bftcore := &bft.BFTCore{ChainKey: BEACON_CHAINKEY, IsRunning: false, UserKeySet: node.GetUserKeySet()}
-		beaconChain = &chain.BeaconChain{Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
-		bftcore.Chain = beaconChain
-		s.ChainList[BEACON_CHAINKEY] = beaconChain
-		bftcore.Start()
+	return nil
+}
+
+// func (s *Engine) Start() error {
+// 	//start beacon and run consensus engine
+// 	go func() {
+// 		ticker := time.Tick(time.Millisecond * 1000)
+// 		for _ = range ticker {
+// 			if s.Blockchain != nil && s.Blockchain.Synker.IsLatest(false, 0) { //beacon synced
+// 				//TODO: start chain if node is in committee
+// 			}
+// 		}
+// 	}()
+// 	beaconChain, ok := s.ChainList[BEACON_CHAINKEY]
+// 	if !ok {
+// 		bftcore := &bft.BFTCore{ChainKey: BEACON_CHAINKEY, IsRunning: false, UserKeySet: node.GetUserKeySet()}
+// 		beaconChain = &chain.BeaconChain{Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
+// 		bftcore.Chain = beaconChain
+// 		s.ChainList[BEACON_CHAINKEY] = beaconChain
+// 		bftcore.Start()
+// 	}
+
+// 	//start all active shard, but not run
+// 	for i := 0; i < s.Blockchain.GetActiveShardNumber(); i++ {
+// 		shardChain, ok := s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)]
+// 		if !ok {
+// 			bftcore := &bft.BFTCore{ChainKey: SHARD_CHAINKEY + "" + strconv.Itoa(i), IsRunning: false, UserKeySet: node.GetUserKeySet()}
+// 			shardChain = &chain.ShardChain{ShardID: byte(i), Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
+// 			bftcore.Chain = shardChain
+
+// 			s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)] = shardChain
+// 		}
+// 	}
+// 	return nil
+// }
+
+func (engine *Engine) Stop(name string) error {
+	engine.Lock()
+	defer engine.Unlock()
+	if !engine.started {
+		return errors.New("Consensus engine is already stopped")
 	}
+	engine.started = false
+	close(engine.cQuit)
+	return nil
+}
 
-	//start all active shard, but not run
-	for i := 0; i < s.Blockchain.GetActiveShardNumber(); i++ {
-		shardChain, ok := s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)]
-		if !ok {
-			bftcore := &bft.BFTCore{ChainKey: SHARD_CHAINKEY + "" + strconv.Itoa(i), IsRunning: false, UserKeySet: node.GetUserKeySet()}
-			shardChain = &chain.ShardChain{ShardID: byte(i), Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
-			bftcore.Chain = shardChain
-
-			s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)] = shardChain
+func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
+	if engine.ChainConsensusList[BEACON_CHAINKEY].GetConsensusName() != engine.Blockchain.BestState.Beacon.ConsensusAlgorithm {
+		consensus, ok := AvailableConsensus[engine.ChainConsensusList[BEACON_CHAINKEY].GetConsensusName()]
+		if ok {
+			engine.ChainConsensusList[BEACON_CHAINKEY] = consensus.NewInstance()
+		} else {
+			panic("Update code please")
+		}
+	}
+	for idx := 0; idx < engine.Blockchain.BestState.Beacon.ActiveShards; idx++ {
+		shard, ok := engine.Blockchain.BestState.Shard[byte(idx)]
+		if ok {
+			chainKey := GetShardChainKey(byte(idx))
+			if shard.ConsensusAlgorithm != engine.ChainConsensusList[chainKey].GetConsensusName() {
+				consensus, ok := AvailableConsensus[engine.ChainConsensusList[chainKey].GetConsensusName()]
+				if ok {
+					engine.ChainConsensusList[chainKey] = consensus.NewInstance()
+				} else {
+					panic("Update code please")
+				}
+			}
+		} else {
+			panic("Oops... Maybe a bug cause this, please update code")
 		}
 	}
 	return nil
 }
 
-func (s *Engine) Stop(name string) error {
-	consensusModule, ok := s.ChainList[name]
-	if ok && consensusModule.GetConsensusEngine().IsRun() {
-		consensusModule.GetConsensusEngine().Stop()
+func GetShardChainKey(shardID byte) string {
+	return SHARD_CHAINKEY + "-" + string(shardID)
+}
+
+func RegisterConsensus(name string, consensus chain.ConsensusInterface) error {
+	AvailableConsensus[name] = consensus
+	return nil
+}
+
+func (engine *Engine) ValidateBlockWithConsensus(block chain.BlockInterface, chainName string, consensusType string) error {
+	consensusModule, ok := engine.ChainConsensusList[chainName]
+	if ok && !consensusModule.IsOngoing() {
+		consensusModule.ValidateBlock(block)
 	}
 	return nil
+}
+
+func (engine *Engine) IsOngoing(chainName string) bool {
+	consensusModule, ok := engine.ChainConsensusList[chainName]
+	if ok {
+		return consensusModule.IsOngoing()
+	}
+	return false
 }
 
 func (s *Engine) OnBFTMsg(msg wire.Message) {
@@ -127,12 +262,3 @@ func (s *Engine) OnBFTMsg(msg wire.Message) {
 // 	}
 // 	return prepareMsg
 // }
-
-func GetShardChainKey(shardID byte) string {
-	return SHARD_CHAINKEY + "-" + string(shardID)
-}
-
-func RegisterConsensus(name string, consensus chain.ConsensusInterface) error {
-	AvailableConsensus[name] = consensus
-	return nil
-}
