@@ -42,7 +42,7 @@ type GetBlockResult struct {
 	AggregatedSig     string             `json:"AggregatedSig"`
 	R                 string             `json:"R"`
 	Round             int                `json:"Round"`
-	CrossShards       []int              `json:"CrossShardBitMap"`
+	CrossShardBitMap  []int              `json:"CrossShardBitMap"`
 	Epoch             uint64             `json:"Epoch"`
 	Reward            uint64             `json:"Reward"`
 	RewardBeacon      uint64             `json:"RewardBeacon"`
@@ -95,10 +95,10 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 	getBlockResult.AggregatedSig = block.AggregatedSig
 	getBlockResult.R = block.R
 	getBlockResult.Round = block.Header.Round
-	getBlockResult.CrossShards = []int{}
+	getBlockResult.CrossShardBitMap = []int{}
 	if len(block.Header.CrossShardBitMap) > 0 {
 		for _, shardID := range block.Header.CrossShardBitMap {
-			getBlockResult.CrossShards = append(getBlockResult.CrossShards, int(shardID))
+			getBlockResult.CrossShardBitMap = append(getBlockResult.CrossShardBitMap, int(shardID))
 		}
 	}
 	getBlockResult.Epoch = block.Header.Epoch

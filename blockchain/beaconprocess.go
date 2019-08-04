@@ -523,7 +523,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 	//=============End Verify producer signature
 	strs = append(strs, bestStateBeacon.BeaconCommittee...)
 	strs = append(strs, bestStateBeacon.BeaconPendingValidator...)
-	isOk = VerifyHashFromStringArray(strs, block.Header.ValidatorsRoot)
+	isOk = VerifyHashFromStringArray(strs, block.Header.BeaconCommitteeAndValidatorsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify Beacon Validator root"))
 	}
@@ -544,7 +544,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 		return NewBlockChainError(HashError, errors.New("error verify Shard Candidate root"))
 	}
 
-	isOk = VerifyHashFromMapByteString(bestStateBeacon.ShardPendingValidator, bestStateBeacon.ShardCommittee, block.Header.ShardValidatorsRoot)
+	isOk = VerifyHashFromMapByteString(bestStateBeacon.ShardPendingValidator, bestStateBeacon.ShardCommittee, block.Header.ShardCommitteeAndValidatorsRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify shard validator root"))
 	}
