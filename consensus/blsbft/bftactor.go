@@ -5,9 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
-	"github.com/incognitochain/incognito-chain/consensus/multisigschemes"
 	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
+)
+
+const (
+	CONSENSUSNAME = "BLSBFT"
 )
 
 type ProposeMsg struct {
@@ -57,16 +62,15 @@ type BLSBFT struct {
 
 	Blocks map[string]chain.BlockInterface
 
-	MultiSigScheme multisigschemes.MultiSigsSchemeInterface
-	isOngoing      bool
+	isOngoing bool
 }
 
 func (e *BLSBFT) IsOngoing() bool {
 	return e.isOngoing
 }
 
-func (e *BLSBFT) GetInfo() string {
-	return ""
+func (e *BLSBFT) GetConsensusName() string {
+	return CONSENSUSNAME
 }
 
 func (e *BLSBFT) ReceiveProposeMsg(msg interface{}) {
@@ -176,7 +180,7 @@ func (e *BLSBFT) enterProposePhase() {
 	e.Block = block
 
 	blockData, _ := json.Marshal(e.Block)
-	msg, _ := MakeBFTProposeMsg(string(blockData), e.ChainKey, fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
+	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
 	go e.Chain.PushMessageToValidator(msg)
 	e.enterAgreePhase()
 
@@ -215,16 +219,16 @@ func (e *BLSBFT) enterNewRound() {
 	e.NextHeight = e.Chain.GetHeight() + 1
 	e.Block = nil
 
-	if e.Chain.GetNodePubKeyCommitteeIndex() == (e.Chain.GetLastProposerIndex()+1+int(e.Round))%e.Chain.GetCommitteeSize() {
-		fmt.Println("BFT: new round propose")
-		e.enterProposePhase()
-	} else {
-		fmt.Println("BFT: new round listen")
-		e.enterListenPhase()
-	}
+	// if e.Chain.GetNodePubKeyCommitteeIndex() == (e.Chain.GetLastProposerIndex()+1+int(e.Round))%e.Chain.GetCommitteeSize() {
+	// 	fmt.Println("BFT: new round propose")
+	// 	e.enterProposePhase()
+	// } else {
+	// 	fmt.Println("BFT: new round listen")
+	// 	e.enterListenPhase()
+	// }
 
 }
 
 func init() {
-
+	consensus.RegisterConsensus(common.BLSBFT, BLSBFT{})
 }

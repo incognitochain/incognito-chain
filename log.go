@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
-	main2 "github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/databasemp"
 	"os"
 	"path/filepath"
+
+	main2 "github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/databasemp"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/consensus/mubft"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
@@ -69,7 +70,7 @@ func init() {
 	database.Logger.Init(dbLogger)
 	wallet.Logger.Init(walletLogger)
 	blockchain.Logger.Init(blockchainLogger)
-	mubft.Logger.Init(consensusLogger)
+	consensus.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
