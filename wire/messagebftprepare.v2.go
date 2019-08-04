@@ -3,9 +3,10 @@ package wire
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/ninjadotorg/constant/wire"
 )
 
@@ -50,7 +51,7 @@ func (msg *MessageBFTPrepareV2) SetSenderID(senderID peer.ID) error {
 }
 
 func (msg *MessageBFTPrepareV2) SignMsg(keySet *incognitokey.KeySet) (err error) {
-	msg.ContentSig, err = keySet.SignDataB58(msg.GetBytes())
+	msg.ContentSig, err = keySet.SignDataInBase58CheckEncode(msg.GetBytes())
 	return err
 }
 

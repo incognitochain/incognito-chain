@@ -269,12 +269,12 @@ func (synker *Synker) UpdateState() {
 		userShardRole string
 		userPK        string
 	)
-	if synker.blockchain.config.UserKeySet != nil {
-		userPK = synker.blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode()
-		userRole, userShardID = beaconStateClone.GetPubkeyRole(userPK, beaconStateClone.BestBlock.Header.Round)
+	userMiningKey := synker.blockchain.config.ConsensusEngine.GetUserMiningKey()
+	if userMiningKey != "" {
+		userRole, userShardID = beaconStateClone.GetPubkeyRole(userMiningKey, beaconStateClone.BestBlock.Header.Round)
 		synker.syncShard(userShardID)
 		synker.stopSyncUnnecessaryShard()
-		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userPK, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userMiningKey, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 	}
 
 	synker.States.ClosestState.ClosestBeaconState = beaconStateClone.BeaconHeight
