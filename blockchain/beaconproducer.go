@@ -223,7 +223,6 @@ func (blockGenerator *BlockGenerator) GetShardState(
 			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 			acceptedRewardInstructions = append(acceptedRewardInstructions, acceptedRewardInstruction)
 		}
-
 	}
 	return shardStates, validStakers, validSwappers, bridgeInstructions, acceptedRewardInstructions
 }
