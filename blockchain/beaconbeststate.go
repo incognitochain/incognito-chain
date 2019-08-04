@@ -489,7 +489,10 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlock := NewBeaconBlock()
-	json.Unmarshal(parentBlockBytes, &parentBlock)
+	err = json.Unmarshal(parentBlockBytes, &parentBlock)
+	if err != nil {
+
+	}
 	// Verify block height with parent block
 	if parentBlock.Header.Height+1 != block.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
