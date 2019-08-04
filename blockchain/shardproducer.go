@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -47,15 +46,15 @@ import (
 		c. Generate Instructions
 	//TODO: write more document
 */
-func (blockgen *BlkTmplGenerator) NewBlockShard(shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
+func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
 	var (
 		transactionsForNewBlock = make([]metadata.Transaction, 0)
 		totalTxsFee             = make(map[common.Hash]uint64)
 		block                   = NewShardBlock()
 		instructions            = [][]string{}
-		shardPendingValidator   = blockgen.chain.BestState.Shard[shardID].ShardPendingValidator
-		shardCommittee          = blockgen.chain.BestState.Shard[shardID].ShardCommittee
-		tempPrivateKey          = blockgen.createTempKeyset()
+		shardPendingValidator   = blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator
+		shardCommittee          = blockGenerator.chain.BestState.Shard[shardID].ShardCommittee
+		tempPrivateKey          = blockGenerator.createTempKeyset()
 	)
 	//============Build body=============
 	// Fetch Beacon information
@@ -92,19 +91,19 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(shardID byte, round int, crossSh
 	}
 	//======Get Transaction For new Block================
 	// Get Cross output coin from other shard && produce cross shard transaction
-	crossTransactions, crossTxTokenData := blockgen.getCrossShardData(shardID, blockgen.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
-	crossTxTokenTransactions, _ := blockgen.chain.createCustomTokenTxForCrossShard(&tempPrivateKey, crossTxTokenData, shardID)
+	crossTransactions, crossTxTokenData := blockGenerator.getCrossShardData(shardID, blockGenerator.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
+	crossTxTokenTransactions, _ := blockGenerator.chain.createCustomTokenTxForCrossShard(&tempPrivateKey, crossTxTokenData, shardID)
 	transactionsForNewBlock = append(transactionsForNewBlock, crossTxTokenTransactions...)
 	// Get Transaction for new block
 	blockCreationLeftOver := common.MinShardBlkCreation.Nanoseconds() - time.Since(start).Nanoseconds()
-	txsToAddFromBlock, err := blockgen.getTransactionForNewBlock(&tempPrivateKey, shardID, blockgen.chain.config.DataBase, beaconBlocks, blockCreationLeftOver)
+	txsToAddFromBlock, err := blockGenerator.getTransactionForNewBlock(&tempPrivateKey, shardID, blockGenerator.chain.config.DataBase, beaconBlocks, blockCreationLeftOver)
 	if err != nil {
 		Logger.log.Error(err, reflect.TypeOf(err), reflect.ValueOf(err))
 		return nil, err
 	}
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
-	txsWithMetadata, err := blockgen.chain.BuildResponseTransactionFromTxsWithMetadata(transactionsForNewBlock, &tempPrivateKey)
+	txsWithMetadata, err := blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadata(transactionsForNewBlock, &tempPrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +141,7 @@ func (blockgen *BlkTmplGenerator) NewBlockShard(shardID byte, round int, crossSh
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockgen.chain, shardID, prevBlock.Header.Height+1, beaconBlocks, beaconHeight)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockGenerator.chain, shardID, prevBlock.Header.Height+1, beaconBlocks, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -609,7 +608,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 	return txs, txTokenDataList
 }
 
-func (blockgen *BlkTmplGenerator) createTempKeyset() privacy.PrivateKey {
+func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
 	rand.Seed(time.Now().UnixNano())
 	seed := make([]byte, 16)
 	rand.Read(seed)

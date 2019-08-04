@@ -24,10 +24,10 @@ type Engine struct {
 	Node               chain.Node
 	ChainConsensusList map[string]chain.ConsensusInterface
 	Blockchain         *blockchain.BlockChain
-	BlockGen           *blockchain.BlkTmplGenerator
+	BlockGen           *blockchain.BlockGenerator
 }
 
-func New(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlkTmplGenerator) *Engine {
+func New(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlockGenerator) *Engine {
 	engine := Engine{
 		Node:       node,
 		Blockchain: blockchain,
@@ -36,6 +36,7 @@ func New(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchai
 	return &engine
 }
 
+//watchConsensusState will watch MiningKey Role as well as chain consensus type
 func (engine *Engine) watchConsensusState() {
 
 }
@@ -111,39 +112,6 @@ func (engine *Engine) Start() error {
 	}()
 	return nil
 }
-
-// func (s *Engine) Start() error {
-// 	//start beacon and run consensus engine
-// 	go func() {
-// 		ticker := time.Tick(time.Millisecond * 1000)
-// 		for _ = range ticker {
-// 			if s.Blockchain != nil && s.Blockchain.Synker.IsLatest(false, 0) { //beacon synced
-// 				//TODO: start chain if node is in committee
-// 			}
-// 		}
-// 	}()
-// 	beaconChain, ok := s.ChainList[BEACON_CHAINKEY]
-// 	if !ok {
-// 		bftcore := &bft.BFTCore{ChainKey: BEACON_CHAINKEY, IsRunning: false, UserKeySet: node.GetUserKeySet()}
-// 		beaconChain = &chain.BeaconChain{Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
-// 		bftcore.Chain = beaconChain
-// 		s.ChainList[BEACON_CHAINKEY] = beaconChain
-// 		bftcore.Start()
-// 	}
-
-// 	//start all active shard, but not run
-// 	for i := 0; i < s.Blockchain.GetActiveShardNumber(); i++ {
-// 		shardChain, ok := s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)]
-// 		if !ok {
-// 			bftcore := &bft.BFTCore{ChainKey: SHARD_CHAINKEY + "" + strconv.Itoa(i), IsRunning: false, UserKeySet: node.GetUserKeySet()}
-// 			shardChain = &chain.ShardChain{ShardID: byte(i), Blockchain: blockchain, Node: node, BlockGen: blockgen, ConsensusEngine: bftcore}
-// 			bftcore.Chain = shardChain
-
-// 			s.ChainList[SHARD_CHAINKEY+""+strconv.Itoa(i)] = shardChain
-// 		}
-// 	}
-// 	return nil
-// }
 
 func (engine *Engine) Stop(name string) error {
 	engine.Lock()
