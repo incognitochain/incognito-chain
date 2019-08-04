@@ -97,7 +97,6 @@ func (protocol *BFTProtocol) CreateBlockMsg() {
 	start := time.Now()
 	var elasped time.Duration
 	var msg wire.Message
-	//fmt.Println("[db] CreateBlockMsg")
 	if protocol.RoundData.Layer == common.BEACON_ROLE {
 
 		newBlock, err := protocol.EngineCfg.BlockGen.NewBlockBeacon(&protocol.EngineCfg.UserKeySet.PaymentAddress, protocol.RoundData.Round, protocol.EngineCfg.BlockChain.Synker.GetClosestShardToBeaconPoolState())

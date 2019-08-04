@@ -1,5 +1,7 @@
 {
-  "client": ["TestMakeRPCRequest"],
+  "client": [
+    "TestMakeRPCRequest"
+  ],
   "blockchain": [
     "TestGetBlockChainInfo"
   ],

@@ -16,7 +16,7 @@ type ShardHeader struct {
 	// ProducerAddress      privacy.PaymentAddress `json:"ProducerAddress"`      // payment address of block producer
 	ShardID              byte                   `json:"ShardID"`              // shard ID which block belong to
 	Version              int                    `json:"Version"`              // version of block structure
-	PrevBlockHash        common.Hash            `json:"PrevBlockHash"`        // previous block hash or Parent block hash
+	PreviousBlockHash    common.Hash            `json:"PreviousBlockHash"`    // previous block hash or Parent block hash
 	Height               uint64                 `json:"Height"`               // block height
 	Round                int                    `json:"Round"`                // bpft consensus round
 	Epoch                uint64                 `json:"Epoch"`                // epoch of block (according to current beacon height)
@@ -41,7 +41,7 @@ func (shardHeader *ShardHeader) String() string {
 	// res += shardHeader.ProducerAddress.String()
 	res += string(shardHeader.ShardID)
 	res += fmt.Sprintf("%v", shardHeader.Version)
-	res += shardHeader.PrevBlockHash.String()
+	res += shardHeader.PreviousBlockHash.String()
 	res += fmt.Sprintf("%v", shardHeader.Height)
 	res += fmt.Sprintf("%v", shardHeader.Round)
 	res += fmt.Sprintf("%v", shardHeader.Epoch)
@@ -54,7 +54,6 @@ func (shardHeader *ShardHeader) String() string {
 	res += shardHeader.PendingValidatorRoot.String()
 	res += shardHeader.BeaconHash.String()
 	res += fmt.Sprintf("%v", shardHeader.BeaconHeight)
-
 	tokenIDs := make([]common.Hash, 0)
 	for tokenID, _ := range shardHeader.TotalTxsFee {
 		tokenIDs = append(tokenIDs, tokenID)

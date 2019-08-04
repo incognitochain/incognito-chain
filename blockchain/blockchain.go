@@ -301,7 +301,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 func (blockchain *BlockChain) initBeaconState() error {
 	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
-	blockchain.BestState.Beacon.Update(initBlock, blockchain)
+	blockchain.BestState.Beacon.Update(initBlock)
 
 	// Insert new block into beacon chain
 	if err := blockchain.StoreBeaconBestState(); err != nil {
@@ -312,10 +312,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 		Logger.log.Error("Error store beacon block", blockchain.BestState.Beacon.BestBlockHash, "in beacon chain")
 		return err
 	}
-	if err := blockchain.config.DataBase.StoreCommitteeByHeight(initBlock.Header.Epoch, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
+	if err := blockchain.config.DataBase.StoreCommitteeByHeight(initBlock.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
 		return err
 	}
-	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(initBlock.Header.Epoch, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(initBlock.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
 		return err
 	}
 	blockHash := initBlock.Hash()
@@ -1562,6 +1562,32 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 		}
 		if i == bestBeaconHeight-1 {
 			log.Printf("Finish Backup Beacon with Block %+v", i)
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) StoreIncomingCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			err := blockchain.config.DataBase.StoreIncomingCrossShard(block.Header.ShardID, crossShard, block.Header.Height, crossBlk)
+			if err != nil {
+				return NewBlockChainError(StoreIncomingCrossShardError, err)
+			}
+		}
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) DeleteIncomingCrossShard(block *ShardBlock) error {
+	crossShardMap, _ := block.Body.ExtractIncomingCrossShardMap()
+	for crossShard, crossBlks := range crossShardMap {
+		for _, crossBlk := range crossBlks {
+			err := blockchain.config.DataBase.DeleteIncomingCrossShard(block.Header.ShardID, crossShard, crossBlk)
+			if err != nil {
+				return NewBlockChainError(DeleteIncomingCrossShardError, err)
+			}
 		}
 	}
 	return nil

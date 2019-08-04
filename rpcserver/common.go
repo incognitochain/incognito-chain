@@ -616,7 +616,7 @@ func (rpcServer HttpServer) GetKeySetFromPrivateKeyParams(privateKeyWalletStr st
 		return nil, err
 	}
 	// fill paymentaddress and readonly key with privatekey
-	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
 		return nil, err
 	}

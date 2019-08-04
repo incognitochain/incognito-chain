@@ -12,7 +12,7 @@ import (
 func TestConvertOutputCoinToInputCoin(t *testing.T) {
 	key, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
 	assert.Equal(t, nil, err)
-	err = key.KeySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
+	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
 	tx, err := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
@@ -25,7 +25,7 @@ func TestConvertOutputCoinToInputCoin(t *testing.T) {
 func TestEstimateTxSize(t *testing.T) {
 	key, err := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
 	assert.Equal(t, nil, err)
-	err = key.KeySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
+	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
 	tx, err := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
@@ -56,7 +56,7 @@ func TestEstimateTxSize(t *testing.T) {
 
 func TestRandomCommitmentsProcess(t *testing.T) {
 	key, _ := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
-	_ = key.KeySet.ImportFromPrivateKey(&key.KeySet.PrivateKey)
+	_ = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	paymentAddress := key.KeySet.PaymentAddress
 	tx1, _ := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
 	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
