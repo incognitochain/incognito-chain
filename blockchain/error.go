@@ -82,6 +82,7 @@ const (
 	StoreBurningConfirmError
 	SwapValidatorError
 	CrossShardBitMapError
+	ShardCommitteeLengthAndCommitteeIndexError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -158,6 +159,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreBurningConfirmError:                          {-1066, "Store Burning Confirm Error"},
 	SwapValidatorError:                                {-1067, "Swap Validator Error"},
 	CrossShardBitMapError:                             {-1069, "Cross Shard Bitmap Error"},
+	ShardCommitteeLengthAndCommitteeIndexError:        {-1070, "Shard Committee Length And Committee Index Error"},
 }
 
 type BlockChainError struct {
