@@ -23,6 +23,7 @@ const (
 	DefaultMaxBlockSyncTime   = 1 * time.Second  // in second
 	DefaultCacheCleanupTime   = 30 * time.Second // in second
 	WorkerNumber              = 5
+	MAX_S2B_BLOCK             = 50
 )
 
 // CONSTANT for network MAINNET
