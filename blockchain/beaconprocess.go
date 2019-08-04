@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -48,7 +48,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	// check with current final best state
 	// New block must be compatible with current best state
 	bestBlockHash := &blockchain.BestState.Beacon.BestBlockHash
-	if bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
+	if bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
 		tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
 		if err != nil {
 			return NewBlockChainError(UnmashallJsonBlockError, err)
@@ -66,7 +66,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	}
 	//========Update best state with new block
 	snapShotBeaconCommittee := beaconBestState.BeaconCommittee
-	if err := beaconBestState.Update(block, blockchain); err != nil {
+	if err := beaconBestState.Update(block); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
@@ -100,7 +100,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	// check with current final best state
 	// block can only be insert if it match the current best state
 	bestBlockHash := &blockchain.BestState.Beacon.BestBlockHash
-	if !bestBlockHash.IsEqual(&block.Header.PrevBlockHash) {
+	if !bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
 		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	}
 	if !isValidated {
@@ -114,7 +114,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	}
 	// Backup beststate
 	if blockchain.config.UserKeySet != nil {
-		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 			blockchain.config.DataBase.CleanBackup(false, 0)
 			err := blockchain.BackupCurrentBeaconState(block)
@@ -126,7 +126,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	Logger.log.Infof("BEACON | Update BestState with Beacon Block %+v \n", blockHash)
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee
-	if err := blockchain.BestState.Beacon.Update(block, blockchain); err != nil {
+	if err := blockchain.BestState.Beacon.Update(block); err != nil {
 		return err
 	}
 	if !isValidated {
@@ -227,7 +227,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	})
 	Logger.log.Infof("Finish Insert new block %+v, with hash %+v \n", block.Header.Height, *block.Hash())
 	if block.Header.Height%50 == 0 {
-		fmt.Printf("[db] inserted beacon height: %d\n", block.Header.Height)
+		BLogger.log.Debugf("Inserted beacon height: %d", block.Header.Height)
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, blockchain.BestState.Beacon))
@@ -267,7 +267,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	if block.Header.Version != VERSION {
 		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
 	}
-	prevBlockHash := block.Header.PrevBlockHash
+	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
 	parentBlock, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
 	if err != nil {
@@ -311,7 +311,11 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
-	flattenInsts := FlattenAndConvertStringInst(block.Body.Instructions)
+	flattenInsts, err := FlattenAndConvertStringInst(block.Body.Instructions)
+	if err != nil {
+		return NewBlockChainError(HashError, err)
+	}
+
 	root := GetKeccak256MerkleRoot(flattenInsts)
 	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
@@ -331,7 +335,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		tempShardStates := make(map[byte][]ShardState)
 		validStakers := [][]string{}
 		validSwappers := make(map[byte][][]string)
-		stabilityInstructions := [][]string{}
+		bridgeInstructions := [][]string{}
 		acceptedBlockRewardInstructions := [][]string{}
 		tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
 		err = json.Unmarshal(tempMarshal, &beaconBestState)
@@ -390,11 +394,11 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					}
 				}
 				for _, shardBlock := range shardBlocks {
-					tempShardState, validStaker, validSwapper, stabilityInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
+					tempShardState, validStaker, validSwapper, bridgeInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(&beaconBestState, shardBlock, shardID)
 					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 					validStakers = append(validStakers, validStaker...)
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
-					stabilityInstructions = append(stabilityInstructions, stabilityInstruction...)
+					bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 					acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 				}
 			} else {
@@ -402,7 +406,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			}
 		}
 		beaconBestState.InitRandomClient(blockchain.config.RandomClient)
-		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, stabilityInstructions, acceptedBlockRewardInstructions)
+		tempInstruction := beaconBestState.GenerateInstruction(block, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions)
 		if len(rewardByEpochInstruction) != 0 {
 			tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 		}
@@ -457,7 +461,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyBestStateWithBeaconBlock(block *Be
 	if bestStateBeacon.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
-	if !bytes.Equal(bestStateBeacon.BestBlockHash.GetBytes(), block.Header.PrevBlockHash.GetBytes()) {
+	if !bytes.Equal(bestStateBeacon.BestBlockHash.GetBytes(), block.Header.PreviousBlockHash.GetBytes()) {
 		return NewBlockChainError(BlockHeightError, errors.New("previous us block should be :"+bestStateBeacon.BestBlockHash.String()))
 	}
 	if block.Header.Height%common.EPOCH == 1 && bestStateBeacon.Epoch+1 != block.Header.Epoch {
@@ -571,7 +575,7 @@ func (bestStateBeacon *BestStateBeacon) VerifyPostProcessingBeaconBlock(block *B
 /*
 	Update Beststate with new Block
 */
-func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock, chain *BlockChain) error {
+func (bestStateBeacon *BestStateBeacon) Update(newBlock *BeaconBlock) error {
 
 	bestStateBeacon.lockMu.Lock()
 	defer bestStateBeacon.lockMu.Unlock()

@@ -98,9 +98,9 @@ func (addr *PaymentAddress) Bytes() []byte {
 // SetBytes reverts bytes array to payment address
 func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
 	// the first 33 bytes are public key
-	addr.Pk = bytes[:CompressedPointSize]
+	addr.Pk = bytes[:CompressedEllipticPointSize]
 	// the last 33 bytes are transmission key
-	addr.Tk = bytes[CompressedPointSize:]
+	addr.Tk = bytes[CompressedEllipticPointSize:]
 	return addr
 }
 

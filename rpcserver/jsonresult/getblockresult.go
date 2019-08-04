@@ -69,7 +69,7 @@ func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock,
 	getBlockResult.Epoch = block.Header.Epoch
 	getBlockResult.Round = block.Header.Round
 	getBlockResult.Time = block.Header.Timestamp
-	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
+	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Instructions = block.Body.Instructions
 	getBlockResult.Size = size
 }
@@ -79,7 +79,7 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
 	getBlockResult.ValidationData = block.ValidationData
 	getBlockResult.Hash = block.Hash().String()
-	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
+	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Height = block.Header.Height
 	getBlockResult.Time = block.Header.Timestamp

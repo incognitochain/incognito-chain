@@ -22,13 +22,13 @@ const (
 // 	return 0
 // }
 
-func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
+func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	swaperPubKey string,
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) (metadata.Transaction, error) {
-	addressBytes := blockgen.chain.config.UserKeySet.PaymentAddress.Pk
+	addressBytes := blockGenerator.chain.config.UserKeySet.PaymentAddress.Pk
 	//shardID := common.GetShardIDFromLastByte(addressBytes[len(addressBytes)-1])
-	_, committeeShardID := blockgen.chain.BestState.Beacon.GetPubkeyRole(base58.Base58Check{}.Encode(addressBytes, 0x00), 0)
+	_, committeeShardID := blockGenerator.chain.BestState.Beacon.GetPubkeyRole(base58.Base58Check{}.Encode(addressBytes, 0x00), 0)
 
 	fmt.Println("SA: get tx for ", swaperPubKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
 	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swaperPubKey]
@@ -39,13 +39,13 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 	var txHash = &common.Hash{}
 	(&common.Hash{}).Decode(txHash, tx)
 
-	blockHash, index, err := blockgen.chain.config.DataBase.GetTransactionIndexById(*txHash)
+	blockHash, index, err := blockGenerator.chain.config.DataBase.GetTransactionIndexById(*txHash)
 	if err != nil {
 		abc := NewBlockChainError(UnExpectedError, err)
 		Logger.log.Error(abc)
 		return nil, abc
 	}
-	block, _, err1 := blockgen.chain.GetShardBlockByHash(blockHash)
+	block, _, err1 := blockGenerator.chain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
 		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return nil, NewBlockChainError(UnExpectedError, err1)
@@ -77,7 +77,7 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 		txData.CalculateTxValue(),
 		&keyWallet.KeySet.PaymentAddress,
 		blkProducerPrivateKey,
-		blockgen.chain.config.DataBase,
+		blockGenerator.chain.config.DataBase,
 		returnStakingMeta,
 	)
 	//modify the type of the salary transaction
@@ -89,7 +89,7 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 	return returnStakingTx, nil
 }
 
-// func (blockgen *BlkTmplGenerator) buildBeaconSalaryRes(
+// func (blockgen *BlockGenerator) buildBeaconSalaryRes(
 // 	instType string,
 // 	contentStr string,
 // 	blkProducerPrivateKey *privacy.PrivateKey,
@@ -126,7 +126,7 @@ func (blockgen *BlkTmplGenerator) buildReturnStakingAmountTx(
 // 	return []metadata.Transaction{salaryResTx}, nil
 // }
 
-// func (blockgen *BlkTmplGenerator) buildBeaconRewardTx(inst metadata.BeaconSalaryInfo, producerPriKey *privacy.PrivateKey) error {
+// func (blockgen *BlockGenerator) buildBeaconRewardTx(inst metadata.BeaconSalaryInfo, producerPriKey *privacy.PrivateKey) error {
 // 	n := inst.BeaconBlockHeight / blockgen.chain.config.ChainParams.RewardHalflife
 // 	reward := blockgen.chain.config.ChainParams.BasicReward
 // 	for ; n > 0; n-- {
@@ -343,10 +343,10 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 ) error {
 	db := blockchain.config.DataBase
 	for _, inst := range beaconBlock.Body.Instructions {
-		if inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+		if len(inst) <= 2 {
 			continue
 		}
-		if len(inst) <= 2 {
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
 			continue
 		}
 		metaType, err := strconv.Atoi(inst[0])

@@ -207,7 +207,7 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 		log.Println(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)

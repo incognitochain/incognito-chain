@@ -2,56 +2,13 @@ package blockchain
 
 import (
 	"encoding/json"
-	"fmt"
-	"strconv"
-
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 const (
 	VERSION       = 1
 	RANDOM_NUMBER = 3
 )
-
-type ShardState struct {
-	Height uint64
-	Hash   common.Hash
-	//In this state, shard i send cross shard tx to which shard
-	CrossShard []byte
-}
-type BeaconBody struct {
-	// Shard State extract from shard to beacon block
-	// Store all shard state == store content of all shard to beacon block
-	ShardState   map[byte][]ShardState
-	Instructions [][]string // Random here
-}
-
-type BeaconHeader struct {
-	ProducerAddress privacy.PaymentAddress
-	Version         int    `json:"Version"`
-	Height          uint64 `json:"Height"`
-	//epoch length should be config in consensus
-	Epoch         uint64      `json:"Epoch"`
-	Round         int         `json:"Round"`
-	Timestamp     int64       `json:"Timestamp"`
-	PrevBlockHash common.Hash `json:"PrevBlockHash"`
-	//Validator list will be store in database/memory (locally)
-	//Build from two list: BeaconCommittee + BeaconPendingValidator
-	ValidatorsRoot common.Hash `json:"CurrentValidatorRootHash"`
-	//Candidate = unassigned_validator list will be store in database/memory (locally)
-	//Build from two list: CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
-	// infer from history
-	// Candidate public key for beacon chain
-	BeaconCandidateRoot common.Hash `json:"BeaconCandidateRoot"` // Candidate public key for all shard
-	ShardCandidateRoot  common.Hash `json:"ShardCandidateRoot"`  // Shard validator build from ShardCommittee and ShardPendingValidator
-	ShardValidatorsRoot common.Hash `json:"ShardValidatorRoot"`
-	ShardStateHash      common.Hash `json:"ShardListRootHash"` // each shard will have a list of blockHash, shardRoot is hash of all list
-	InstructionHash     common.Hash `json:"InstructionHash"`   // hash of all parameters == hash of instruction
-	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
-	// This obsoletes InstructionHash but for simplicity, we keep it for now
-	InstructionMerkleRoot common.Hash
-}
 
 type BeaconBlock struct {
 	AggregatedSig string  `json:"AggregatedSig"`
@@ -112,9 +69,7 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	// if err != nil {
 	// 	return NewBlockChainError(UnmashallJsonBlockError, err)
 	// }
-
 	beaconBlock.Header = tempBlk.Header
-
 	beaconBlock.Body = tempBlk.Body
 	return nil
 }
