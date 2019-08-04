@@ -56,6 +56,7 @@ type ChainInterface interface {
 	ValidateBlockSanity(interface{}) error
 	ValidateBlockWithBlockChain(interface{}) error
 	GetActiveShardNumber() int
+	GetPubkeyRole(pubkey string, round int) (string, byte)
 }
 
 type Node interface {

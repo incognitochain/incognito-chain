@@ -92,12 +92,13 @@ type Config struct {
 		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	}
-	UserKeySet *incognitokey.KeySet
+	// UserKeySet *incognitokey.KeySet
 
 	ConsensusEngine interface {
 		ValidateBlockProducerSig(validationData string, blockHash common.Hash) error
 		ValidateAggSignature(committee []string, validataData string, blockHash common.Hash) error
 		GetBlockProducerPubKeyB58(validationData string) string
+		GetUserMiningKey() string
 	}
 }
 

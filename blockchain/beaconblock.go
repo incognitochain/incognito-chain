@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -72,60 +74,6 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	beaconBlock.Header = tempBlk.Header
 	beaconBlock.Body = tempBlk.Body
 	return nil
-}
-
-func (beaconBlock *BeaconBody) toString() string {
-	res := ""
-	for _, l := range beaconBlock.ShardState {
-		for _, r := range l {
-			res += strconv.Itoa(int(r.Height))
-			res += r.Hash.String()
-			crossShard, _ := json.Marshal(r.CrossShard)
-			res += string(crossShard)
-
-		}
-	}
-
-	for _, l := range beaconBlock.Instructions {
-		for _, r := range l {
-			res += r
-		}
-	}
-	return res
-}
-
-func (beaconBody *BeaconBody) Hash() common.Hash {
-	return common.HashH([]byte(beaconBody.toString()))
-}
-
-func (beaconHeader *BeaconHeader) toString() string {
-	res := ""
-	res += beaconHeader.ProducerAddress.String()
-	res += fmt.Sprintf("%v", beaconHeader.Version)
-	res += fmt.Sprintf("%v", beaconHeader.Height)
-	res += fmt.Sprintf("%v", beaconHeader.Epoch)
-	res += fmt.Sprintf("%v", beaconHeader.Round)
-	res += fmt.Sprintf("%v", beaconHeader.Timestamp)
-	res += beaconHeader.PrevBlockHash.String()
-	res += beaconHeader.ValidatorsRoot.String()
-	res += beaconHeader.BeaconCandidateRoot.String()
-	res += beaconHeader.ShardCandidateRoot.String()
-	res += beaconHeader.ShardValidatorsRoot.String()
-	res += beaconHeader.ShardStateHash.String()
-	res += beaconHeader.InstructionHash.String()
-	return res
-}
-
-func (beaconBlock *BeaconHeader) MetaHash() common.Hash {
-	return common.Keccak256([]byte(beaconBlock.toString()))
-}
-
-func (beaconBlock *BeaconHeader) Hash() common.Hash {
-	// Block header of beacon uses Keccak256 as a hash func to check on Ethereum when relaying blocks
-	blkMetaHash := beaconBlock.MetaHash()
-	blkInstHash := beaconBlock.InstructionMerkleRoot
-	combined := append(blkMetaHash[:], blkInstHash[:]...)
-	return common.Keccak256(combined)
 }
 
 func (beaconBlock *BeaconBlock) AddValidationField(validateData string) error {

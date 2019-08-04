@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -72,7 +71,7 @@ type RpcServerConfig struct {
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 		GetNodeRole() string
-		GetUserKeySet() *incognitokey.KeySet
+		// GetUserKeySet() *incognitokey.KeySet
 		EnableMining(enable bool) error
 		IsEnableMining() bool
 		GetChainMiningStatus(chain int) string

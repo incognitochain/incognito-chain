@@ -11,7 +11,7 @@ import (
 type ShardChain struct {
 	ShardID         byte
 	Node            Node
-	BlockGen        *blockchain.BlkTmplGenerator
+	BlockGen        *blockchain.BlockGenerator
 	Blockchain      *blockchain.BlockChain
 	ConsensusEngine ConsensusInterface
 }

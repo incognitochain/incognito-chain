@@ -112,17 +112,17 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	} else {
 		Logger.log.Infof("BEACON | SKIP Verify BestState with Block %+v \n", blockHash)
 	}
-	// Backup beststate
-	if blockchain.config.UserKeySet != nil {
-		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
-		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-			blockchain.config.DataBase.CleanBackup(false, 0)
-			err := blockchain.BackupCurrentBeaconState(block)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	// Backup beststate @Bahamoot
+	// if blockchain.config.UserKeySet != nil {
+	// 	userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
+	// 	if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+	// 		blockchain.config.DataBase.CleanBackup(false, 0)
+	// 		err := blockchain.BackupCurrentBeaconState(block)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	}
+	// }
 	Logger.log.Infof("BEACON | Update BestState with Beacon Block %+v \n", blockHash)
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee

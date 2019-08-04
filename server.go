@@ -67,11 +67,12 @@ type Server struct {
 	waitGroup         sync.WaitGroup
 	netSync           *netsync.NetSync
 	addrManager       *addrmanager.AddrManager
-	userKeySet        *incognitokey.KeySet
-	wallet            *wallet.Wallet
-	consensusEngine   *consensus.Engine
-	blockgen          *blockchain.BlkTmplGenerator
-	pusubManager      *pubsub.PubSubManager
+	// userKeySet        *incognitokey.KeySet
+	miningKeys      string
+	wallet          *wallet.Wallet
+	consensusEngine *consensus.Engine
+	blockgen        *blockchain.BlockGenerator
+	pusubManager    *pubsub.PubSubManager
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
@@ -197,8 +198,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	var err error
 	// init an pubsub manager
 	var pubsub = pubsub.NewPubSubManager()
-	serverObj.userKeySet, err = cfg.GetUserKeySet()
-	if err != nil {
+	serverObj.miningKeys = cfg.MiningKeys
+	if serverObj.miningKeys != "" {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
 			Logger.log.Critical(err)
 			return err
@@ -251,11 +252,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ShardToBeaconPool: serverObj.shardToBeaconPool,
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
-		UserKeySet:        serverObj.userKeySet,
-		NodeMode:          cfg.NodeMode,
-		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:     pubsub,
-		RandomClient:      randomClient,
+		// UserKeySet:        serverObj.userKeySet,
+		NodeMode:      cfg.NodeMode,
+		FeeEstimator:  make(map[byte]blockchain.FeeEstimator),
+		PubSubManager: pubsub,
+		RandomClient:  randomClient,
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
@@ -660,13 +661,13 @@ func (serverObj *Server) GetActiveShardNumber() int {
 	return serverObj.blockChain.BestState.Beacon.ActiveShards
 }
 
-func (serverObj *Server) GetNodePubKey() string {
-	return serverObj.userKeySet.GetPublicKeyB58()
-}
+// func (serverObj *Server) GetNodePubKey() string {
+// 	return serverObj.userKeySet.GetPublicKeyInBase58CheckEncode()
+// }
 
-func (serverObj *Server) GetUserKeySet() *incognitokey.KeySet {
-	return serverObj.userKeySet
-}
+// func (serverObj *Server) GetUserKeySet() *incognitokey.KeySet {
+// 	return serverObj.userKeySet
+// }
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	<-time.Tick(serverObj.memPool.ScanTime)

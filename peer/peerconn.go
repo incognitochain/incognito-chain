@@ -13,7 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
-	"github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 type PeerConn struct {
@@ -334,12 +334,12 @@ func (peerConn *PeerConn) processMessageForEachType(messageType reflect.Type, me
 			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
 		}
 	case reflect.TypeOf(&wire.MessageBFTProposeV2{}):
-		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTProposeV2))
+		if peerConn.config.MessageListeners.OnBFTMsg != nil {
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTProposeV2))
 		}
 	case reflect.TypeOf(&wire.MessageBFTPrepareV2{}):
-		if peerConn.Config.MessageListeners.OnBFTMsg != nil {
-			peerConn.Config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPrepareV2))
+		if peerConn.config.MessageListeners.OnBFTMsg != nil {
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPrepareV2))
 		}
 	case reflect.TypeOf(&wire.MessageBFTAgree{}):
 		if peerConn.config.MessageListeners.OnBFTMsg != nil {
