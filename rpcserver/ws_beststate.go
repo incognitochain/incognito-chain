@@ -75,9 +75,9 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 		select {
 		case msg := <-subChan:
 			{
-				bestStateBeacon, ok := msg.Value.(*blockchain.BestStateBeacon)
+				bestStateBeacon, ok := msg.Value.(*blockchain.BeaconBestState)
 				if !ok {
-					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BestStateBeacon, have %+v", reflect.TypeOf(msg.Value))
+					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBestState, have %+v", reflect.TypeOf(msg.Value))
 					continue
 				}
 				cResult <- RpcSubResult{Result: *bestStateBeacon, Error: nil}

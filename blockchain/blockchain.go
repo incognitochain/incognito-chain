@@ -51,7 +51,7 @@ type BlockChain struct {
 }
 
 type BestState struct {
-	Beacon *BestStateBeacon
+	Beacon *BeaconBestState
 	Shard  map[byte]*ShardBestState
 }
 
@@ -103,7 +103,7 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.IsTest = isTest
 	bc.cQuitSync = make(chan struct{})
 	bc.BestState = &BestState{
-		Beacon: &BestStateBeacon{},
+		Beacon: &BeaconBestState{},
 		Shard:  make(map[byte]*ShardBestState),
 	}
 	for i := 0; i < 255; i++ {
@@ -204,12 +204,12 @@ func (blockchain *BlockChain) initChainState() error {
 
 	bestStateBeaconBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err == nil {
-		beacon := &BestStateBeacon{}
+		beacon := &BeaconBestState{}
 		err = json.Unmarshal(bestStateBeaconBytes, beacon)
 		//update singleton object
-		SetBestStateBeacon(beacon)
+		SetBeaconBestState(beacon)
 		//update beacon field in blockchain Beststate
-		blockchain.BestState.Beacon = GetBestStateBeacon()
+		blockchain.BestState.Beacon = GetBeaconBestState()
 
 		if err != nil {
 			initialized = false
@@ -297,7 +297,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 }
 
 func (blockchain *BlockChain) initBeaconState() error {
-	blockchain.BestState.Beacon = InitBestStateBeacon(blockchain.config.ChainParams)
+	blockchain.BestState.Beacon = NewBeaconBestStateWithConfig(blockchain.config.ChainParams)
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	blockchain.BestState.Beacon.Update(initBlock)
 
@@ -1328,6 +1328,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 	for _, tx := range transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			//TODO: check why using encode version with block version value
 			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
 			txRequestTable[requester] = tx
 		}
@@ -1350,6 +1351,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			//TODO: check why using encode version with block version value
 			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
 			txRequestTable[requester] = tx
 		}
@@ -1361,7 +1363,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			//fmt.Printf("[ndh] -  %+v\n", tx)
-
+			//TODO: check why using encode version with block version value
 			requester := base58.Base58Check{}.Encode(requesterRes, VERSION)
 			if txRequestTable[requester] == nil {
 				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
@@ -1533,7 +1535,7 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 	if err != nil {
 		return err
 	}
-	beaconBestState := &BestStateBeacon{}
+	beaconBestState := &BeaconBestState{}
 	err = json.Unmarshal(bestStateBytes, beaconBestState)
 	bestBeaconHeight := beaconBestState.BeaconHeight
 	var i uint64
