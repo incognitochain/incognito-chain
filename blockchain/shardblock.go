@@ -314,12 +314,12 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		Logger.log.Error(err)
 		return nil
 	}
-	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
-	instructions, err := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, &blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks, blk.Header.BeaconHeight)
+	//beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return nil
+	//}
+	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(blk.Body.Transactions, bc, blk.Header.ShardID)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
