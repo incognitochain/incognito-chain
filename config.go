@@ -16,8 +16,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -319,7 +317,7 @@ func loadConfig() (*config, []string, error) {
 		TestNet:              true,
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             DefaultNodeMode,
-		PrivateKey:           common.EmptyString,
+		MiningKeys:           common.EmptyString,
 		FastStartup:          DefaultFastStartup,
 		TxPoolTTL:            DefaultTxPoolTTL,
 		TxPoolMaxTx:          DefaultTxPoolMaxTx,
@@ -720,20 +718,4 @@ func parseAndSetDebugLevels(debugLevel string) error {
 		setLogLevel(subsysID, logLevel)
 	}
 	return nil
-}
-
-func (conf *config) GetUserKeySet() (*incognitokey.KeySet, error) {
-	if conf.PrivateKey == common.EmptyString {
-		return nil, errors.New("user key set cant be empty")
-	}
-	KeySetUser := &incognitokey.KeySet{}
-	temp, err := wallet.Base58CheckDeserialize(conf.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	err = KeySetUser.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	return KeySetUser, nil
 }

@@ -1697,3 +1697,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	}
 	return offline
 }
+
+func (serverObj *Server) GetMiningKey() string {
+	return cfg.MiningKeys
+}

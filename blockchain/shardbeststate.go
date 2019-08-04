@@ -45,6 +45,7 @@ type BestStateShard struct {
 	TotalTxns              uint64            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
+	ConsensusAlgorithm     string            `json:"ConsensusAlgorithm"`
 
 	MetricBlockHeight uint64
 	lock              sync.RWMutex
