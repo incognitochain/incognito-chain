@@ -274,7 +274,10 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlockInterface := NewBeaconBlock()
-	json.Unmarshal(parentBlock, &parentBlockInterface)
+	err = json.Unmarshal(parentBlock, parentBlockInterface)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBeaconBlockError, fmt.Errorf("Failed To Unmarshall parent block of block height %+v", block.Header.Height))
+	}
 	// Verify block height with parent block
 	if parentBlockInterface.Header.Height+1 != block.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
