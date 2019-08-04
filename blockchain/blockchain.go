@@ -281,15 +281,18 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 
 	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
 
-	genesisBeaconBlk, err := blockchain.GetBeaconBlockByHeight(1)
+	genesisBeaconBlock, err := blockchain.GetBeaconBlockByHeight(1)
 	if err != nil {
-		return NewBlockChainError(UnExpectedError, err)
+		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
-	err = blockchain.BestState.Shard[shardID].updateShardBestState(&initBlock, []*BeaconBlock{genesisBeaconBlk})
+	err = blockchain.BestState.Shard[shardID].initShardBestState(&initBlock, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
-	blockchain.processStoreShardBlockAndUpdateDatabase(&initBlock)
+	err = blockchain.processStoreShardBlockAndUpdateDatabase(&initBlock)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
