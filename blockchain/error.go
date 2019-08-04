@@ -51,6 +51,7 @@ const (
 	DeleteIncomingCrossShardError
 	WrongShardIDError
 	CloneShardBestStateError
+	CloneBeaconBestStateError
 	ShardBestStateNotCompatibleError
 	RegisterEstimatorFeeError
 	FetchPreviousBlockError
@@ -132,7 +133,8 @@ var ErrCodeMessage = map[int]struct {
 	DeleteIncomingCrossShardError:                     {-1036, "Delete Incoming Cross Shard Block Error"},
 	WrongShardIDError:                                 {-1037, "Wrong Shard ID Error"},
 	CloneShardBestStateError:                          {-1038, "Clone Shard Best State Error"},
-	ShardBestStateNotCompatibleError:                  {-1039, "New Block and Shard Best State Is NOT Compatible"},
+	CloneBeaconBestStateError:                         {-1039, "Clone Beacon Best State Error"},
+	ShardBestStateNotCompatibleError:                  {-1075, "New Block and Shard Best State Is NOT Compatible"},
 	RegisterEstimatorFeeError:                         {-1040, "Register Fee Estimator Error"},
 	FetchPreviousBlockError:                           {-1041, "Failed To Fetch Previous Block Error"},
 	TransactionRootHashError:                          {-1042, "Transaction Root Hash Error"},

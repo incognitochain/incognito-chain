@@ -68,14 +68,7 @@ type BeaconBestState struct {
 var beaconBestState *BeaconBestState
 
 func NewBeaconBestState() *BeaconBestState {
-	return &BeaconBestState{
-		BestShardHash:         make(map[byte]common.Hash),
-		BestShardHeight:       make(map[byte]uint64),
-		ShardCommittee:        make(map[byte][]string),
-		ShardPendingValidator: make(map[byte][]string),
-		Params:                make(map[string]string),
-		LastCrossShardState:   make(map[byte]map[byte]uint64),
-	}
+	return &BeaconBestState{}
 }
 func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	if beaconBestState == nil {
@@ -489,7 +482,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlock := NewBeaconBlock()
-	err = json.Unmarshal(parentBlockBytes, &parentBlock)
+	err = json.Unmarshal(parentBlockBytes, parentBlock)
 	if err != nil {
 
 	}
@@ -668,17 +661,22 @@ func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []string {
 	defer beaconBestState.lockMu.RUnlock()
 	return beaconBestState.BeaconPendingValidator
 }
-func (shardBestState *ShardBestState) cloneBeaconBestState(target *ShardBestState) error {
-	tempMarshal, err := json.Marshal(target)
+func (beaconBestState *BeaconBestState) cloneBeaconBestState(target *BeaconBestState) error {
+	tempMarshal, err := target.MarshalJSON()
 	if err != nil {
-		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.ShardHeight, err))
+		return NewBlockChainError(MashallJsonBeaconBestStateError, fmt.Errorf("Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))
 	}
-	err = json.Unmarshal(tempMarshal, shardBestState)
+	err = json.Unmarshal(tempMarshal, beaconBestState)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonShardBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", target.ShardHeight, err))
+		return NewBlockChainError(UnmashallJsonBeaconBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))
 	}
-	if reflect.DeepEqual(*shardBestState, ShardBestState{}) {
-		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.ShardHeight))
+	plainBeaconBestState := NewBeaconBestState()
+	if reflect.DeepEqual(*beaconBestState, plainBeaconBestState) {
+		return NewBlockChainError(CloneBeaconBestStateError, fmt.Errorf("Shard Best State %+v clone failed", beaconBestState.BeaconHeight))
 	}
+	//beaconBestState.CandidateShardWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
+	//beaconBestState.CandidateShardWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForNextRandom
+	//beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
+	//beaconBestState.CandidateBeaconWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
 	return nil
 }

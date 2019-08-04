@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"sort"
@@ -46,35 +44,17 @@ import (
 		Sign block and update validator index, agg sig
 */
 func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.PaymentAddress, round int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
-	beaconBlock := &BeaconBlock{}
-	beaconBestState := BeaconBestState{}
 	// lock blockchain
 	blockGenerator.chain.chainLock.Lock()
-	// fmt.Printf("Beacon Produce: BeaconBestState Original %+v \n", blockGenerator.chain.BestState.Beacon)
+	defer blockGenerator.chain.chainLock.Unlock()
+	beaconBlock := &BeaconBlock{}
+	beaconBestState := NewBeaconBestState()
+	var err error
 	// produce new block with current beststate
-	tempMarshal, err := blockGenerator.chain.BestState.Beacon.MarshalJSON()
+	err = beaconBestState.cloneBeaconBestState(blockGenerator.chain.BestState.Beacon)
 	if err != nil {
-		blockGenerator.chain.chainLock.Unlock()
-		return nil, NewBlockChainError(MashallJsonError, err)
+		return nil, err
 	}
-	err = json.Unmarshal(tempMarshal, &beaconBestState)
-	if err != nil {
-		blockGenerator.chain.chainLock.Unlock()
-		return nil, NewBlockChainError(UnmashallJsonShardBlockError, err)
-	}
-	beaconBestState.CandidateShardWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
-	beaconBestState.CandidateShardWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForNextRandom
-	beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
-	beaconBestState.CandidateBeaconWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
-
-	if reflect.DeepEqual(beaconBestState, BeaconBestState{}) {
-		blockGenerator.chain.chainLock.Unlock()
-		panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
-	}
-
-	// unlock blockchain
-	blockGenerator.chain.chainLock.Unlock()
-
 	//==========Create header
 	beaconBlock.Header.ProducerAddress = *producerAddress
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
@@ -92,19 +72,17 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 		beaconBlock.Header.Epoch++
 	}
 	beaconBlock.Header.PreviousBlockHash = beaconBestState.BestBlockHash
-	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(&beaconBestState, shardsToBeacon)
+	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeacon)
 	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions)
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
-	//fmt.Println("BeaconProducer/tempInstruction", tempInstruction)
 	//==========Create Body
 	beaconBlock.Body.Instructions = tempInstruction
 	beaconBlock.Body.ShardState = tempShardState
 	//==========End Create Body
 	//============Process new block with beststate
-	fmt.Println("Beacon Candidate", beaconBestState.CandidateBeaconWaitingForCurrentRandom)
 	if len(beaconBlock.Body.Instructions) != 0 {
 		Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
 	}
@@ -117,7 +95,6 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	// BeaconValidator root: beacon committee + beacon pending committee
 	validatorArr := append(beaconBestState.BeaconCommittee, beaconBestState.BeaconPendingValidator...)
 	beaconBlock.Header.BeaconCommitteeAndValidatorsRoot, err = GenerateHashFromStringArray(validatorArr)
-	// fmt.Printf("Beacon Produce/AfterUpdate: Beacon Pending Validator %+v , Beacon Committee %+v, Beacon Validator Root %+v \n", beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBlock.Header.BeaconCommitteeAndValidatorsRoot)
 	if err != nil {
 		panic(err)
 	}
@@ -135,7 +112,6 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	}
 	// Shard Validator root
 	beaconBlock.Header.ShardCommitteeAndValidatorsRoot, err = GenerateHashFromMapByteString(beaconBestState.GetShardPendingValidator(), beaconBestState.GetShardCommittee())
-	// fmt.Printf("Beacon Produce/AfterUpdate: Shard Pending Validator %+v , ShardCommitee %+v, Shard Validator Root %+v \n", beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, beaconBlock.Header.ShardCommitteeAndValidatorsRoot)
 	if err != nil {
 		panic(err)
 	}
@@ -202,9 +178,7 @@ func (blockGenerator *BlockGenerator) GetShardState(
 	validStakers := [][]string{}
 	validSwappers := make(map[byte][][]string)
 	//Get shard to beacon block from pool
-	fmt.Println("S2B: limit", shardsToBeacon)
 	allShardBlocks := blockGenerator.shardToBeaconPool.GetValidBlock(shardsToBeacon)
-	fmt.Println("S2B: valid", allShardBlocks)
 	//Shard block is a map ShardId -> array of shard block
 	bridgeInstructions := [][]string{}
 	acceptedRewardInstructions := [][]string{}
@@ -219,28 +193,27 @@ func (blockGenerator *BlockGenerator) GetShardState(
 		// Only accept block in one epoch
 		totalBlock := 0
 		//UNCOMMENT FOR TESTING
-		fmt.Println("Beacon Producer/ Got These Block from pool", shardID)
+		Logger.log.Info("Beacon Producer Got These Block from pool", shardID)
 		for _, shardBlocks := range shardBlocks {
-			fmt.Printf(" %+v ", shardBlocks.Header.Height)
+			Logger.log.Infof(" %+v ", shardBlocks.Header.Height)
 		}
 		//=======
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 			hash := shardBlock.Header.Hash()
 			err1 := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-			fmt.Println("Beacon Producer/ Validate Agg Signature for shard", shardID, err1 == nil)
-			if err1 != nil {
+			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err1 == nil)
+			if index != 0 && err1 != nil {
 				break
 			}
-			if index != 0 && err1 != nil {
+			if err1 != nil {
 				break
 			}
 			totalBlock = index
 		}
-		fmt.Printf("Beacon Producer/ AFTER FILTER, ONLY GET %+v block \n", totalBlock)
-		fmt.Println("Beacon Producer/ FILTER and ONLY GET These Block from pool")
-		if totalBlock > 49 {
-			totalBlock = 49
+		Logger.log.Infof("Beacon Producer/ AFTER FILTER, Shard %+v ONLY GET %+v block", shardID, totalBlock+1)
+		if totalBlock > MAX_S2B_BLOCK {
+			totalBlock = MAX_S2B_BLOCK
 		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
 			shardState, validStaker, validSwapper, bridgeInstruction, acceptedRewardInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState, shardBlock, shardID)

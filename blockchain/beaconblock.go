@@ -14,8 +14,8 @@ type BeaconBlock struct {
 	Body          BeaconBody
 }
 
-func NewBeaconBlock() BeaconBlock {
-	return BeaconBlock{}
+func NewBeaconBlock() *BeaconBlock {
+	return &BeaconBlock{}
 }
 
 func (beaconBlock *BeaconBlock) Hash() *common.Hash {
