@@ -103,7 +103,7 @@ func getBeaconSwapProofOnBridge(
 	insts := bridgeBlock.Body.Instructions
 	_, instID := findCommSwapInst(insts, metadata.BeaconSwapConfirmMeta)
 	if instID < 0 {
-		return nil, fmt.Errorf("cannot find beacon swap instruction in brinstIDge block")
+		return nil, fmt.Errorf("cannot find beacon swap instruction in bridge block")
 	}
 
 	block := &shardBlock{ShardBlock: bridgeBlock}
@@ -370,7 +370,7 @@ func (sb *shardBlock) ValidatorsIdx(idx int) []int {
 
 // SignerPubkeys finds the pubkeys of all signers of a shard block
 func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	commsRaw, err := db.FetchCommitteeByHeight(sb.Header.Height)
+	commsRaw, err := db.FetchCommitteeByHeight(sb.Header.BeaconHeight)
 	if err != nil {
 		return nil, nil, err
 	}

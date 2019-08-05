@@ -504,7 +504,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	confirmInsts := pickBridgeSwapConfirmInst(shardBlock)
 	if len(confirmInsts) > 0 {
 		bridgeInstructionForBlock = append(bridgeInstructionForBlock, confirmInsts...)
-		BLogger.log.Infof("Found bridge swap confirm inst: %s", confirmInsts)
+		BLogger.log.Infof("Found bridge swap confirm inst in shard block %d: %s", shardBlock.Header.Height, confirmInsts)
 	}
 
 	bridgeInstructions = append(bridgeInstructions, bridgeInstructionForBlock...)
