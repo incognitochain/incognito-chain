@@ -306,7 +306,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		for i := 0; i < len(wit.inputCoins); i++ {
 			snNoPrivacyProof, err := wit.serialNumberNoPrivacyWitness[i].Prove(nil)
 			if err != nil {
-				return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
+				return nil, privacy.NewPrivacyErr(privacy.ProveSerialNumberNoPrivacyErr, err)
 			}
 			proof.serialNumberNoPrivacyProof = append(proof.serialNumberNoPrivacyProof, snNoPrivacyProof)
 		}
@@ -320,14 +320,14 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		// Proving one-out-of-N commitments is a commitment to the coins being spent
 		oneOfManyProof, err := wit.oneOfManyWitness[i].Prove()
 		if err != nil {
-			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
+			return nil, privacy.NewPrivacyErr(privacy.ProveOneOutOfManyErr, err)
 		}
 		proof.oneOfManyProof = append(proof.oneOfManyProof, oneOfManyProof)
 
 		// Proving that serial number is derived from the committed derivator
 		serialNumberProof, err := wit.serialNumberWitness[i].Prove(nil)
 		if err != nil {
-			return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
+			return nil, privacy.NewPrivacyErr(privacy.ProveSerialNumberPrivacyErr, err)
 		}
 		proof.serialNumberProof = append(proof.serialNumberProof, serialNumberProof)
 	}
@@ -336,7 +336,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	// Proving that each output values and sum of them does not exceed v_max
 	proof.aggregatedRangeProof, err = wit.aggregatedRangeWitness.Prove()
 	if err != nil {
-		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
+		return nil, privacy.NewPrivacyErr(privacy.ProveAggregatedRangeErr, err)
 	}
 
 	privacy.Logger.Log.Debug("Privacy log: PROVING DONE!!!")

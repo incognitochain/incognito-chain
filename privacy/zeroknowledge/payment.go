@@ -2,7 +2,6 @@ package zkp
 
 import (
 	"encoding/json"
-	"errors"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -564,7 +563,6 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 			commitments[j], err = commitments[j].Sub(cmInputSum[i])
 			if err != nil {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs", index, err)
-				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
 				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 			}
 		}
