@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,9 +30,7 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-var bestStateBeacon *BestStateBeacon
-
-type BestStateBeacon struct {
+type BeaconBestState struct {
 	BestBlockHash                          common.Hash          `json:"BestBlockHash"`     // The hash of the block.
 	PrevBestBlockHash                      common.Hash          `json:"PrevBestBlockHash"` // The hash of the block.
 	BestBlock                              BeaconBlock          `json:"BestBlock"`         // The block.
@@ -66,19 +65,63 @@ type BestStateBeacon struct {
 	randomClient        btc.RandomClient
 }
 
-func (bestStateBeacon *BestStateBeacon) InitRandomClient(randomClient btc.RandomClient) {
-	bestStateBeacon.randomClient = randomClient
+var beaconBestState *BeaconBestState
+
+func NewBeaconBestState() *BeaconBestState {
+	return &BeaconBestState{}
+}
+func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
+	if beaconBestState == nil {
+		beaconBestState = GetBeaconBestState()
+	}
+	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
+	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
+	beaconBestState.BestShardHash = make(map[byte]common.Hash)
+	beaconBestState.BestShardHeight = make(map[byte]uint64)
+	beaconBestState.BeaconHeight = 0
+	beaconBestState.BeaconCommittee = []string{}
+	beaconBestState.BeaconPendingValidator = []string{}
+	beaconBestState.CandidateShardWaitingForCurrentRandom = []string{}
+	beaconBestState.CandidateBeaconWaitingForCurrentRandom = []string{}
+	beaconBestState.CandidateShardWaitingForNextRandom = []string{}
+	beaconBestState.CandidateBeaconWaitingForNextRandom = []string{}
+	beaconBestState.ShardCommittee = make(map[byte][]string)
+	beaconBestState.ShardPendingValidator = make(map[byte][]string)
+	beaconBestState.Params = make(map[string]string)
+	beaconBestState.CurrentRandomNumber = -1
+	beaconBestState.MaxBeaconCommitteeSize = netparam.MaxBeaconCommitteeSize
+	beaconBestState.MinBeaconCommitteeSize = netparam.MinBeaconCommitteeSize
+	beaconBestState.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
+	beaconBestState.MinShardCommitteeSize = netparam.MinShardCommitteeSize
+	beaconBestState.ActiveShards = netparam.ActiveShards
+	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
+	return beaconBestState
+}
+func SetBeaconBestState(beacon *BeaconBestState) {
+	beaconBestState = beacon
 }
 
-func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
+func GetBeaconBestState() *BeaconBestState {
+	if beaconBestState != nil {
+		return beaconBestState
+	}
+	beaconBestState = NewBeaconBestState()
+	return beaconBestState
+}
 
-	type Alias BestStateBeacon
+func (beaconBestState *BeaconBestState) InitRandomClient(randomClient btc.RandomClient) {
+	beaconBestState.randomClient = randomClient
+}
+
+func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+
+	type Alias BeaconBestState
 	b, err := json.Marshal(&struct {
 		*Alias
 	}{
-		(*Alias)(bestStateBeacon),
+		(*Alias)(beaconBestState),
 	})
 	if err != nil {
 		Logger.log.Error(err)
@@ -86,64 +129,64 @@ func (bestStateBeacon *BestStateBeacon) MarshalJSON() ([]byte, error) {
 	return b, err
 }
 
-func (bestStateBeacon *BestStateBeacon) SetBestShardHeight(shardID byte, height uint64) {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	bestStateBeacon.BestShardHeight[shardID] = height
+func (beaconBestState *BeaconBestState) SetBestShardHeight(shardID byte, height uint64) {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	beaconBestState.BestShardHeight[shardID] = height
 }
 
-func (bestStateBeacon *BestStateBeacon) GetBestShardHeight() map[byte]uint64 {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
+func (beaconBestState *BeaconBestState) GetBestShardHeight() map[byte]uint64 {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
 	res := make(map[byte]uint64)
-	for index, element := range bestStateBeacon.BestShardHeight {
+	for index, element := range beaconBestState.BestShardHeight {
 		res[index] = element
 	}
 	return res
 }
 
-func (bestStateBeacon *BestStateBeacon) GetBestHeightOfShard(shardID byte) uint64 {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	return bestStateBeacon.BestShardHeight[shardID]
+func (beaconBestState *BeaconBestState) GetBestHeightOfShard(shardID byte) uint64 {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	return beaconBestState.BestShardHeight[shardID]
 }
 
-func (bestStateBeacon *BestStateBeacon) GetAShardCommittee(shardID byte) []string {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	return bestStateBeacon.ShardCommittee[shardID]
+func (beaconBestState *BeaconBestState) GetAShardCommittee(shardID byte) []string {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	return beaconBestState.ShardCommittee[shardID]
 }
 
-func (bestStateBeacon *BestStateBeacon) GetShardCommittee() (res map[byte][]string) {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
+func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]string) {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
 	res = make(map[byte][]string)
-	for index, element := range bestStateBeacon.ShardCommittee {
+	for index, element := range beaconBestState.ShardCommittee {
 		res[index] = element
 	}
 	return res
 }
 
-func (bestStateBeacon *BestStateBeacon) GetAShardPendingValidator(shardID byte) []string {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	return bestStateBeacon.ShardPendingValidator[shardID]
+func (beaconBestState *BeaconBestState) GetAShardPendingValidator(shardID byte) []string {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	return beaconBestState.ShardPendingValidator[shardID]
 }
 
-func (bestStateBeacon *BestStateBeacon) GetShardPendingValidator() (res map[byte][]string) {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
+func (beaconBestState *BeaconBestState) GetShardPendingValidator() (res map[byte][]string) {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
 	res = make(map[byte][]string)
-	for index, element := range bestStateBeacon.ShardPendingValidator {
+	for index, element := range beaconBestState.ShardPendingValidator {
 		res[index] = element
 	}
 	return res
 }
 
-func (bsb *BestStateBeacon) GetCurrentShard() byte {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	for shardID, isCurrent := range bsb.ShardHandle {
+func (beaconBestState *BeaconBestState) GetCurrentShard() byte {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	for shardID, isCurrent := range beaconBestState.ShardHandle {
 		if isCurrent {
 			return shardID
 		}
@@ -151,247 +194,207 @@ func (bsb *BestStateBeacon) GetCurrentShard() byte {
 	return 0
 }
 
-func SetBestStateBeacon(beacon *BestStateBeacon) {
-	bestStateBeacon = beacon
-}
-
-func GetBestStateBeacon() *BestStateBeacon {
-	if bestStateBeacon != nil {
-		return bestStateBeacon
-	}
-	bestStateBeacon = &BestStateBeacon{}
-	return bestStateBeacon
-}
-
-func InitBestStateBeacon(netparam *Params) *BestStateBeacon {
-	if bestStateBeacon == nil {
-		bestStateBeacon = GetBestStateBeacon()
-	}
-	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
-	bestStateBeacon.BestBlockHash.SetBytes(make([]byte, 32))
-	bestStateBeacon.BestShardHash = make(map[byte]common.Hash)
-	bestStateBeacon.BestShardHeight = make(map[byte]uint64)
-	bestStateBeacon.BeaconHeight = 0
-	bestStateBeacon.BeaconCommittee = []string{}
-	bestStateBeacon.BeaconPendingValidator = []string{}
-	bestStateBeacon.CandidateShardWaitingForCurrentRandom = []string{}
-	bestStateBeacon.CandidateBeaconWaitingForCurrentRandom = []string{}
-	bestStateBeacon.CandidateShardWaitingForNextRandom = []string{}
-	bestStateBeacon.CandidateBeaconWaitingForNextRandom = []string{}
-	bestStateBeacon.ShardCommittee = make(map[byte][]string)
-	bestStateBeacon.ShardPendingValidator = make(map[byte][]string)
-	bestStateBeacon.Params = make(map[string]string)
-	bestStateBeacon.CurrentRandomNumber = -1
-	bestStateBeacon.MaxBeaconCommitteeSize = netparam.MaxBeaconCommitteeSize
-	bestStateBeacon.MinBeaconCommitteeSize = netparam.MinBeaconCommitteeSize
-	bestStateBeacon.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
-	bestStateBeacon.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	bestStateBeacon.ActiveShards = netparam.ActiveShards
-	bestStateBeacon.LastCrossShardState = make(map[byte]map[byte]uint64)
-	return bestStateBeacon
-}
-
-func (bestStateBeacon *BestStateBeacon) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
-	bestStateBeacon.lockMu.Lock()
-	defer bestStateBeacon.lockMu.Unlock()
+func (beaconBestState *BeaconBestState) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
+	beaconBestState.lockMu.Lock()
+	defer beaconBestState.lockMu.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if maxShardCommitteeSize < MinCommitteeSize {
 		return false
 	}
 	// max committee size can't be lower than current min committee size
-	if maxShardCommitteeSize >= bestStateBeacon.MinShardCommitteeSize {
-		bestStateBeacon.MaxShardCommitteeSize = maxShardCommitteeSize
+	if maxShardCommitteeSize >= beaconBestState.MinShardCommitteeSize {
+		beaconBestState.MaxShardCommitteeSize = maxShardCommitteeSize
 		return true
 	}
 	return false
 }
 
-func (bestStateBeacon *BestStateBeacon) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
-	bestStateBeacon.lockMu.Lock()
-	defer bestStateBeacon.lockMu.Unlock()
+func (beaconBestState *BeaconBestState) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
+	beaconBestState.lockMu.Lock()
+	defer beaconBestState.lockMu.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if minShardCommitteeSize < MinCommitteeSize {
 		return false
 	}
 	// min committee size can't be greater than current min committee size
-	if minShardCommitteeSize <= bestStateBeacon.MaxShardCommitteeSize {
-		bestStateBeacon.MinShardCommitteeSize = minShardCommitteeSize
+	if minShardCommitteeSize <= beaconBestState.MaxShardCommitteeSize {
+		beaconBestState.MinShardCommitteeSize = minShardCommitteeSize
 		return true
 	}
 	return false
 }
 
-func (bestStateBeacon *BestStateBeacon) SetMaxBeaconCommitteeSize(maxBeaconCommitteeSize int) bool {
-	bestStateBeacon.lockMu.Lock()
-	defer bestStateBeacon.lockMu.Unlock()
+func (beaconBestState *BeaconBestState) SetMaxBeaconCommitteeSize(maxBeaconCommitteeSize int) bool {
+	beaconBestState.lockMu.Lock()
+	defer beaconBestState.lockMu.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if maxBeaconCommitteeSize < MinCommitteeSize {
 		return false
 	}
 	// max committee size can't be lower than current min committee size
-	if maxBeaconCommitteeSize >= bestStateBeacon.MinBeaconCommitteeSize {
-		bestStateBeacon.MaxBeaconCommitteeSize = maxBeaconCommitteeSize
+	if maxBeaconCommitteeSize >= beaconBestState.MinBeaconCommitteeSize {
+		beaconBestState.MaxBeaconCommitteeSize = maxBeaconCommitteeSize
 		return true
 	}
 	return false
 }
 
-func (bestStateBeacon *BestStateBeacon) SetMinBeaconCommitteeSize(minBeaconCommitteeSize int) bool {
-	bestStateBeacon.lockMu.Lock()
-	defer bestStateBeacon.lockMu.Unlock()
+func (beaconBestState *BeaconBestState) SetMinBeaconCommitteeSize(minBeaconCommitteeSize int) bool {
+	beaconBestState.lockMu.Lock()
+	defer beaconBestState.lockMu.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if minBeaconCommitteeSize < MinCommitteeSize {
 		return false
 	}
 	// min committee size can't be greater than current min committee size
-	if minBeaconCommitteeSize <= bestStateBeacon.MaxBeaconCommitteeSize {
-		bestStateBeacon.MinBeaconCommitteeSize = minBeaconCommitteeSize
+	if minBeaconCommitteeSize <= beaconBestState.MaxBeaconCommitteeSize {
+		beaconBestState.MinBeaconCommitteeSize = minBeaconCommitteeSize
 		return true
 	}
 	return false
 }
-func (bestStateBeacon *BestStateBeacon) CheckCommitteeSize() error {
-	if bestStateBeacon.MaxBeaconCommitteeSize < MinCommitteeSize {
-		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect max beacon size %+v equal or greater than min size %+v", bestStateBeacon.MaxBeaconCommitteeSize, MinCommitteeSize))
+func (beaconBestState *BeaconBestState) CheckCommitteeSize() error {
+	if beaconBestState.MaxBeaconCommitteeSize < MinCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect max beacon size %+v equal or greater than min size %+v", beaconBestState.MaxBeaconCommitteeSize, MinCommitteeSize))
 	}
-	if bestStateBeacon.MinBeaconCommitteeSize < MinCommitteeSize {
-		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect min beacon size %+v equal or greater than min size %+v", bestStateBeacon.MinBeaconCommitteeSize, MinCommitteeSize))
+	if beaconBestState.MinBeaconCommitteeSize < MinCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect min beacon size %+v equal or greater than min size %+v", beaconBestState.MinBeaconCommitteeSize, MinCommitteeSize))
 	}
-	if bestStateBeacon.MaxShardCommitteeSize < MinCommitteeSize {
-		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect max shard size %+v equal or greater than min size %+v", bestStateBeacon.MaxShardCommitteeSize, MinCommitteeSize))
+	if beaconBestState.MaxShardCommitteeSize < MinCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect max shard size %+v equal or greater than min size %+v", beaconBestState.MaxShardCommitteeSize, MinCommitteeSize))
 	}
-	if bestStateBeacon.MinShardCommitteeSize < MinCommitteeSize {
-		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect min shard size %+v equal or greater than min size %+v", bestStateBeacon.MinShardCommitteeSize, MinCommitteeSize))
+	if beaconBestState.MinShardCommitteeSize < MinCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect min shard size %+v equal or greater than min size %+v", beaconBestState.MinShardCommitteeSize, MinCommitteeSize))
 	}
-	if bestStateBeacon.MaxBeaconCommitteeSize < bestStateBeacon.MinBeaconCommitteeSize {
-		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect Max beacon size is higher than min beacon size but max is %+v and min is %+v", bestStateBeacon.MaxBeaconCommitteeSize, bestStateBeacon.MinBeaconCommitteeSize))
+	if beaconBestState.MaxBeaconCommitteeSize < beaconBestState.MinBeaconCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect Max beacon size is higher than min beacon size but max is %+v and min is %+v", beaconBestState.MaxBeaconCommitteeSize, beaconBestState.MinBeaconCommitteeSize))
 	}
-	if bestStateBeacon.MaxShardCommitteeSize < bestStateBeacon.MinShardCommitteeSize {
-		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect Max beacon size is higher than min beacon size but max is %+v and min is %+v", bestStateBeacon.MaxBeaconCommitteeSize, bestStateBeacon.MinBeaconCommitteeSize))
+	if beaconBestState.MaxShardCommitteeSize < beaconBestState.MinShardCommitteeSize {
+		return NewBlockChainError(CommitteeOrValidatorError, fmt.Errorf("Expect Max beacon size is higher than min beacon size but max is %+v and min is %+v", beaconBestState.MaxBeaconCommitteeSize, beaconBestState.MinBeaconCommitteeSize))
 	}
 	return nil
 }
 
-func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
+func (beaconBestState *BeaconBestState) GetBytes() []byte {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
 	var keys []int
 	var keyStrs []string
 	res := []byte{}
-	res = append(res, bestStateBeacon.BestBlockHash.GetBytes()...)
-	res = append(res, bestStateBeacon.PrevBestBlockHash.GetBytes()...)
-	res = append(res, bestStateBeacon.BestBlock.Hash().GetBytes()...)
-	res = append(res, bestStateBeacon.BestBlock.Header.PreviousBlockHash.GetBytes()...)
-	for k := range bestStateBeacon.BestShardHash {
+	res = append(res, beaconBestState.BestBlockHash.GetBytes()...)
+	res = append(res, beaconBestState.PrevBestBlockHash.GetBytes()...)
+	res = append(res, beaconBestState.BestBlock.Hash().GetBytes()...)
+	res = append(res, beaconBestState.BestBlock.Header.PreviousBlockHash.GetBytes()...)
+	for k := range beaconBestState.BestShardHash {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		hash := bestStateBeacon.BestShardHash[byte(shardID)]
+		hash := beaconBestState.BestShardHash[byte(shardID)]
 		res = append(res, hash.GetBytes()...)
 	}
 	keys = []int{}
-	for k := range bestStateBeacon.BestShardHeight {
+	for k := range beaconBestState.BestShardHeight {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		height := bestStateBeacon.BestShardHeight[byte(shardID)]
+		height := beaconBestState.BestShardHeight[byte(shardID)]
 		res = append(res, byte(height))
 	}
 	EpochBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(EpochBytes, bestStateBeacon.Epoch)
+	binary.LittleEndian.PutUint64(EpochBytes, beaconBestState.Epoch)
 	res = append(res, EpochBytes...)
 	heightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(heightBytes, bestStateBeacon.BeaconHeight)
+	binary.LittleEndian.PutUint64(heightBytes, beaconBestState.BeaconHeight)
 	res = append(res, heightBytes...)
-	res = append(res, []byte(strconv.Itoa(bestStateBeacon.BeaconProposerIdx))...)
-	for _, value := range bestStateBeacon.BeaconCommittee {
+	res = append(res, []byte(strconv.Itoa(beaconBestState.BeaconProposerIdx))...)
+	for _, value := range beaconBestState.BeaconCommittee {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range bestStateBeacon.BeaconPendingValidator {
+	for _, value := range beaconBestState.BeaconPendingValidator {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range bestStateBeacon.CandidateBeaconWaitingForCurrentRandom {
+	for _, value := range beaconBestState.CandidateBeaconWaitingForCurrentRandom {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range bestStateBeacon.CandidateBeaconWaitingForNextRandom {
+	for _, value := range beaconBestState.CandidateBeaconWaitingForNextRandom {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range bestStateBeacon.CandidateShardWaitingForCurrentRandom {
+	for _, value := range beaconBestState.CandidateShardWaitingForCurrentRandom {
 		res = append(res, []byte(value)...)
 	}
-	for _, value := range bestStateBeacon.CandidateShardWaitingForNextRandom {
+	for _, value := range beaconBestState.CandidateShardWaitingForNextRandom {
 		res = append(res, []byte(value)...)
 	}
 	keys = []int{}
-	for k := range bestStateBeacon.ShardCommittee {
+	for k := range beaconBestState.ShardCommittee {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		for _, value := range bestStateBeacon.ShardCommittee[byte(shardID)] {
+		for _, value := range beaconBestState.ShardCommittee[byte(shardID)] {
 			res = append(res, []byte(value)...)
 		}
 	}
 	keys = []int{}
-	for k := range bestStateBeacon.ShardPendingValidator {
+	for k := range beaconBestState.ShardPendingValidator {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		for _, value := range bestStateBeacon.ShardPendingValidator[byte(shardID)] {
+		for _, value := range beaconBestState.ShardPendingValidator[byte(shardID)] {
 			res = append(res, []byte(value)...)
 		}
 	}
 
 	randomNumBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(randomNumBytes, uint64(bestStateBeacon.CurrentRandomNumber))
+	binary.LittleEndian.PutUint64(randomNumBytes, uint64(beaconBestState.CurrentRandomNumber))
 	res = append(res, randomNumBytes...)
 
 	randomTimeBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(randomTimeBytes, uint64(bestStateBeacon.CurrentRandomTimeStamp))
+	binary.LittleEndian.PutUint64(randomTimeBytes, uint64(beaconBestState.CurrentRandomTimeStamp))
 	res = append(res, randomTimeBytes...)
 
-	if bestStateBeacon.IsGetRandomNumber {
+	if beaconBestState.IsGetRandomNumber {
 		res = append(res, []byte("true")...)
 	} else {
 		res = append(res, []byte("false")...)
 	}
-	for k := range bestStateBeacon.Params {
+	for k := range beaconBestState.Params {
 		keyStrs = append(keyStrs, k)
 	}
 	sort.Strings(keyStrs)
 	for _, key := range keyStrs {
-		res = append(res, []byte(bestStateBeacon.Params[key])...)
+		res = append(res, []byte(beaconBestState.Params[key])...)
 	}
 
 	keys = []int{}
-	for k := range bestStateBeacon.ShardHandle {
+	for k := range beaconBestState.ShardHandle {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		shardHandleItem := bestStateBeacon.ShardHandle[byte(shardID)]
+		shardHandleItem := beaconBestState.ShardHandle[byte(shardID)]
 		if shardHandleItem {
 			res = append(res, []byte("true")...)
 		} else {
 			res = append(res, []byte("false")...)
 		}
 	}
-	res = append(res, []byte(strconv.Itoa(bestStateBeacon.MaxBeaconCommitteeSize))...)
-	res = append(res, []byte(strconv.Itoa(bestStateBeacon.MinBeaconCommitteeSize))...)
-	res = append(res, []byte(strconv.Itoa(bestStateBeacon.MaxShardCommitteeSize))...)
-	res = append(res, []byte(strconv.Itoa(bestStateBeacon.MinShardCommitteeSize))...)
-	res = append(res, []byte(strconv.Itoa(bestStateBeacon.ActiveShards))...)
+	res = append(res, []byte(strconv.Itoa(beaconBestState.MaxBeaconCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(beaconBestState.MinBeaconCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(beaconBestState.MaxShardCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(beaconBestState.MinShardCommitteeSize))...)
+	res = append(res, []byte(strconv.Itoa(beaconBestState.ActiveShards))...)
 
 	keys = []int{}
-	for k := range bestStateBeacon.LastCrossShardState {
+	for k := range beaconBestState.LastCrossShardState {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, fromShard := range keys {
-		fromShardMap := bestStateBeacon.LastCrossShardState[byte(fromShard)]
+		fromShardMap := beaconBestState.LastCrossShardState[byte(fromShard)]
 		newKeys := []int{}
 		for k := range fromShardMap {
 			newKeys = append(newKeys, int(k))
@@ -406,39 +409,39 @@ func (bestStateBeacon *BestStateBeacon) GetBytes() []byte {
 	}
 	return res
 }
-func (bestStateBeacon *BestStateBeacon) Hash() common.Hash {
-	return common.HashH(bestStateBeacon.GetBytes())
+func (beaconBestState *BeaconBestState) Hash() common.Hash {
+	return common.HashH(beaconBestState.GetBytes())
 }
 
 // Get role of a public key base on best state beacond
 // return node-role, <shardID>
-func (bestStateBeacon *BestStateBeacon) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	for shardID, pubkeyArr := range bestStateBeacon.ShardPendingValidator {
+func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
 			return common.SHARD_ROLE, shardID
 		}
 	}
 
-	for shardID, pubkeyArr := range bestStateBeacon.ShardCommittee {
+	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
 		found := common.IndexOfStr(pubkey, pubkeyArr)
 		if found > -1 {
 			return common.SHARD_ROLE, shardID
 		}
 	}
 
-	found := common.IndexOfStr(pubkey, bestStateBeacon.BeaconCommittee)
+	found := common.IndexOfStr(pubkey, beaconBestState.BeaconCommittee)
 	if found > -1 {
-		tmpID := (bestStateBeacon.BeaconProposerIdx + round) % len(bestStateBeacon.BeaconCommittee)
+		tmpID := (beaconBestState.BeaconProposerIdx + round) % len(beaconBestState.BeaconCommittee)
 		if found == tmpID {
 			return common.PROPOSER_ROLE, 0
 		}
 		return common.VALIDATOR_ROLE, 0
 	}
 
-	found = common.IndexOfStr(pubkey, bestStateBeacon.BeaconPendingValidator)
+	found = common.IndexOfStr(pubkey, beaconBestState.BeaconPendingValidator)
 	if found > -1 {
 		return common.PENDING_ROLE, 0
 	}
@@ -451,7 +454,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	if err != nil {
 		return err
 	}
-	beaconBestState := BestStateBeacon{}
+	beaconBestState := BeaconBestState{}
 	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
 		return err
 	}
@@ -469,8 +472,8 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
 	//verify version
-	if block.Header.Version != VERSION {
-		return NewBlockChainError(VersionError, errors.New("Version should be :"+strconv.Itoa(VERSION)))
+	if block.Header.Version != BEACON_BLOCK_VERSION {
+		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(BEACON_BLOCK_VERSION)))
 	}
 	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
@@ -479,10 +482,13 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 		return NewBlockChainError(DatabaseError, err)
 	}
 	parentBlock := NewBeaconBlock()
-	json.Unmarshal(parentBlockBytes, &parentBlock)
+	err = json.Unmarshal(parentBlockBytes, parentBlock)
+	if err != nil {
+
+	}
 	// Verify block height with parent block
 	if parentBlock.Header.Height+1 != block.Header.Height {
-		return NewBlockChainError(BlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
 
 	return nil
@@ -504,7 +510,7 @@ func (blockchain *BlockChain) RevertBeaconState() error {
 	if err != nil {
 		return err
 	}
-	beaconBestState := BestStateBeacon{}
+	beaconBestState := BeaconBestState{}
 	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
 		return err
 	}
@@ -584,7 +590,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 	// 1. Backup beststate
 	tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 
 	if err := blockchain.config.DataBase.StorePrevBestState(tempMarshal, true, 0); err != nil {
@@ -635,23 +641,42 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 	return nil
 }
 
-func (bestStateBeacon *BestStateBeacon) GetShardCandidate() []string {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	return append(bestStateBeacon.CandidateShardWaitingForCurrentRandom, bestStateBeacon.CandidateShardWaitingForNextRandom...)
+func (beaconBestState *BeaconBestState) GetShardCandidate() []string {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	return append(beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CandidateShardWaitingForNextRandom...)
 }
-func (bestStateBeacon *BestStateBeacon) GetBeaconCandidate() []string {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	return append(bestStateBeacon.CandidateBeaconWaitingForCurrentRandom, bestStateBeacon.CandidateBeaconWaitingForNextRandom...)
+func (beaconBestState *BeaconBestState) GetBeaconCandidate() []string {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	return append(beaconBestState.CandidateBeaconWaitingForCurrentRandom, beaconBestState.CandidateBeaconWaitingForNextRandom...)
 }
-func (bestStateBeacon *BestStateBeacon) GetBeaconCommittee() []string {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	return bestStateBeacon.BeaconCommittee
+func (beaconBestState *BeaconBestState) GetBeaconCommittee() []string {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	return beaconBestState.BeaconCommittee
 }
-func (bestStateBeacon *BestStateBeacon) GetBeaconPendingValidator() []string {
-	bestStateBeacon.lockMu.RLock()
-	defer bestStateBeacon.lockMu.RUnlock()
-	return bestStateBeacon.BeaconPendingValidator
+func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []string {
+	beaconBestState.lockMu.RLock()
+	defer beaconBestState.lockMu.RUnlock()
+	return beaconBestState.BeaconPendingValidator
+}
+func (beaconBestState *BeaconBestState) cloneBeaconBestState(target *BeaconBestState) error {
+	tempMarshal, err := target.MarshalJSON()
+	if err != nil {
+		return NewBlockChainError(MashallJsonBeaconBestStateError, fmt.Errorf("Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))
+	}
+	err = json.Unmarshal(tempMarshal, beaconBestState)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonBeaconBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))
+	}
+	plainBeaconBestState := NewBeaconBestState()
+	if reflect.DeepEqual(*beaconBestState, plainBeaconBestState) {
+		return NewBlockChainError(CloneBeaconBestStateError, fmt.Errorf("Shard Best State %+v clone failed", beaconBestState.BeaconHeight))
+	}
+	//beaconBestState.CandidateShardWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
+	//beaconBestState.CandidateShardWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForNextRandom
+	//beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
+	//beaconBestState.CandidateBeaconWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
+	return nil
 }
