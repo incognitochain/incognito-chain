@@ -1111,7 +1111,10 @@ func (tx *Tx) InitTxSalary(
 	tx.Proof.GetOutputCoins()[0].CoinDetails.SNDerivator = sndOut
 
 	// create coin commitment
-	tx.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
+	err = tx.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
+	if err != nil {
+		return err
+	}
 	// get last byte
 	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
 
