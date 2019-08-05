@@ -20,7 +20,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		userShardRole string
 	)
 	if blockchain.config.UserKeySet != nil {
-		userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Beacon.BestBlock.Header.Round)
+		userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), blockchain.BestState.Beacon.BestBlock.Header.Round)
 	}
 	pState := &peerState{
 		Shard:  make(map[byte]*ChainState),
@@ -32,14 +32,14 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		pState.ShardToBeaconPool = shardToBeaconPool
 		for shardID := byte(0); shardID < byte(common.MAX_SHARD_NUMBER); shardID++ {
 			if shardState, ok := (*shard)[shardID]; ok {
-				if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) {
+				if shardState.Height > GetBeaconBestState().GetBestHeightOfShard(shardID) {
 					pState.Shard[shardID] = &shardState
 				}
 			}
 		}
 	}
 	if userRole == common.SHARD_ROLE && (nodeMode == common.NODEMODE_AUTO || nodeMode == common.NODEMODE_BEACON) {
-		userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
+		userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 		if userShardRole == common.PROPOSER_ROLE || userShardRole == common.VALIDATOR_ROLE {
 			if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
 				pState.Shard[userShardID] = &shardState
@@ -96,7 +96,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 					fmt.Println("REVERTED SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
 				}
 
-				userRole := currentShardBestState.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+				userRole := currentShardBestState.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 				fmt.Println("Shard block received 1", userRole)
 
 				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
@@ -160,7 +160,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 						fmt.Println("REVERTED BEACON", newBlk.Header.Height)
 					}
 
-					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 						if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
 							if !blockchain.ConsensusOngoing {
@@ -189,7 +189,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 		return
 	}
 	if blockchain.config.NodeMode == common.NODEMODE_BEACON || blockchain.config.NodeMode == common.NODEMODE_AUTO {
-		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		beaconRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 		if beaconRole != common.PROPOSER_ROLE && beaconRole != common.VALIDATOR_ROLE {
 			return
 		}
@@ -207,7 +207,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
-		if block.Header.Version != VERSION {
+		if block.Header.Version != SHARD_BLOCK_VERSION {
 			Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
@@ -237,7 +237,7 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 	}
 	Logger.log.Info("Received CrossShardBlock", block.Header.Height, block.Header.ShardID)
 	if blockchain.config.NodeMode == common.NODEMODE_SHARD || blockchain.config.NodeMode == common.NODEMODE_AUTO {
-		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyB58(), 0)
+		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
 		if shardRole != common.PROPOSER_ROLE && shardRole != common.VALIDATOR_ROLE {
 			return
 		}

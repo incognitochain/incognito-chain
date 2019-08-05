@@ -1,7 +1,7 @@
 package incognitokey
 
 import (
-	"encoding/json"
+	"errors"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -27,11 +27,11 @@ func (keySet *KeySet) GenerateKey(seed []byte) *KeySet {
 	return keySet
 }
 
-// ImportFromPrivateKeyByte receives private key in bytes array,
+// InitFromPrivateKeyByte receives private key in bytes array,
 // and regenerates payment address and readonly key
 // returns error if private key is invalid
-func (keySet *KeySet) ImportFromPrivateKeyByte(privateKey []byte) error {
-	if len(privateKey) != privacy.PrivateKeySize {
+func (keySet *KeySet) InitFromPrivateKeyByte(privateKey []byte) error {
+	if len(privateKey) != common.PrivateKeySize {
 		return NewCashecError(InvalidPrivateKeyErr, nil)
 	}
 
@@ -41,11 +41,11 @@ func (keySet *KeySet) ImportFromPrivateKeyByte(privateKey []byte) error {
 	return nil
 }
 
-// ImportFromPrivateKey receives private key in PrivateKey type,
+// InitFromPrivateKey receives private key in PrivateKey type,
 // and regenerates payment address and readonly key
 // returns error if private key is invalid
-func (keySet *KeySet) ImportFromPrivateKey(privateKey *privacy.PrivateKey) error {
-	if privateKey == nil || len(*privateKey) != privacy.PrivateKeySize {
+func (keySet *KeySet) InitFromPrivateKey(privateKey *privacy.PrivateKey) error {
+	if privateKey == nil || len(*privateKey) != common.PrivateKeySize {
 		return NewCashecError(InvalidPrivateKeyErr, nil)
 	}
 
@@ -58,23 +58,26 @@ func (keySet *KeySet) ImportFromPrivateKey(privateKey *privacy.PrivateKey) error
 
 // Sign receives data in bytes array and
 // returns the signature of that data using Schnorr Signature Scheme with signing key is private key in ketSet
-func (keySet *KeySet) Sign(data []byte) ([]byte, error) {
+func (keySet KeySet) Sign(data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		return []byte{}, NewCashecError(InvalidDataSignErr, nil)
+		return []byte{}, NewCashecError(InvalidDataSignErr, errors.New("Data is empty to sign"))
 	}
 
 	hash := common.HashB(data)
-	privKeySig := new(privacy.SchnPrivKey)
-	privKeySig.Set(new(big.Int).SetBytes(keySet.PrivateKey), big.NewInt(0))
+	privateKeySig := new(privacy.SchnPrivKey)
+	privateKeySig.Set(new(big.Int).SetBytes(keySet.PrivateKey), big.NewInt(0))
 
-	signature, err := privKeySig.Sign(hash)
-	return signature.Bytes(), err
+	signature, err := privateKeySig.Sign(hash)
+	if err != nil {
+		return []byte{}, NewCashecError(SignError, err)
+	}
+	return signature.Bytes(), nil
 }
 
 // Verify receives data and signature
 // It checks whether the given signature is the signature of data
 // and was signed by private key corresponding to public key in keySet or not
-func (keySet *KeySet) Verify(data, signature []byte) (bool, error) {
+func (keySet KeySet) Verify(data, signature []byte) (bool, error) {
 	hash := common.HashB(data)
 	isValid := false
 
@@ -93,34 +96,17 @@ func (keySet *KeySet) Verify(data, signature []byte) (bool, error) {
 	return isValid, nil
 }
 
-// EncodeToString encodes keySet to base58 check encode string
-func (keySet *KeySet) EncodeToString() string {
-	val, _ := json.Marshal(keySet)
-	result := base58.Base58Check{}.Encode(val, common.ZeroByte)
-	return result
-}
-
-// DecodeToKeySet decodes keySet from base58 check encode string
-func (keySet *KeySet) DecodeToKeySet(keystring string) (*KeySet, error) {
-	keyBytes, _, err := base58.Base58Check{}.Decode(keystring)
-	if err != nil {
-		return nil, NewCashecError(DecodeFromStringErr, nil)
-	}
-	json.Unmarshal(keyBytes, keySet)
-	return keySet, nil
-}
-
-// GetPublicKeyB58 returns the public key which is base58 check encoded
-func (keySet *KeySet) GetPublicKeyB58() string {
+// GetPublicKeyInBase58CheckEncode returns the public key which is base58 check encoded
+func (keySet KeySet) GetPublicKeyInBase58CheckEncode() string {
 	return base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, common.ZeroByte)
 }
 
-// SignDataB58 receives data and
+// SignDataInBase58CheckEncode receives data and
 // returns the signature that is base58 check encoded and is signed by private key in keySet
-func (keySet *KeySet) SignDataB58(data []byte) (string, error) {
+func (keySet KeySet) SignDataInBase58CheckEncode(data []byte) (string, error) {
 	signatureByte, err := keySet.Sign(data)
 	if err != nil {
-		return "", NewCashecError(SignDataB58Err, err)
+		return common.EmptyString, NewCashecError(SignDataB58Err, err)
 	}
 	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }
@@ -129,9 +115,9 @@ func (keySet *KeySet) SignDataB58(data []byte) (string, error) {
 // and a base58 check encoded public key (pbkB58)
 // It decodes pbkB58 and sigB58
 // after that, it verifies the given signature is corresponding to data using verification key is pbkB58
-func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
+func ValidateDataB58(publicKeyInBase58CheckEncode string, signatureInBase58CheckEncode string, data []byte) error {
 	// decode public key (verification key)
-	decodedPubKey, _, err := base58.Base58Check{}.Decode(pbkB58)
+	decodedPubKey, _, err := base58.Base58Check{}.Decode(publicKeyInBase58CheckEncode)
 	if err != nil {
 		return NewCashecError(B58DecodePubKeyErr, nil)
 	}
@@ -140,7 +126,7 @@ func ValidateDataB58(pbkB58 string, sigB58 string, data []byte) error {
 	copy(validatorKeySet.PaymentAddress.Pk[:], decodedPubKey)
 
 	// decode the signature
-	decodedSig, _, err := base58.Base58Check{}.Decode(sigB58)
+	decodedSig, _, err := base58.Base58Check{}.Decode(signatureInBase58CheckEncode)
 	if err != nil {
 		return NewCashecError(B58DecodeSigErr, nil)
 	}

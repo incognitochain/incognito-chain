@@ -1,9 +1,6 @@
 [
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "getbalancebyprivatekey",
       "context": false,
@@ -15,10 +12,7 @@
     }
   },
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "createandsendtransaction",
       "context": false,
@@ -40,10 +34,7 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "subcribependingtransaction",
       "context": true,
@@ -57,10 +48,7 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19338"
-    },
+    "node": "shard1-0",
     "input": {
       "command": "subcribecrossoutputcoinbyprivatekey",
       "context": false,
@@ -79,10 +67,7 @@
     }
   },
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9338"
-    },
+    "node": "shard1-0",
     "input": {
       "command": "getbalancebyprivatekey",
       "context": false,
@@ -94,10 +79,7 @@
     }
   },
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "getbalancebyprivatekey",
       "context": false,

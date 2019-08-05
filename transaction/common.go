@@ -8,7 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
 	"math"
 	"math/big"
 	"math/rand"
@@ -36,7 +36,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	commitments = [][]byte{}
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
 	if randNum == 0 {
-		randNum = privacy.CMRingSize // default
+		randNum = privacy.CommitmentRingSize // default
 	}
 
 	// loop to create list usable commitments from usableInputCoins
@@ -107,7 +107,7 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
 func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte, db database.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(snd, privacy.BigIntSize), shardID)
+	ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(snd, common.BigIntSize), shardID)
 	if err != nil {
 		return false, err
 	}
@@ -128,18 +128,18 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	sizeInfo := uint64(512)
 
-	sizeSigPubKey := uint64(privacy.SigPubKeySize)
-	sizeSig := uint64(privacy.SigNoPrivacySize)
+	sizeSigPubKey := uint64(common.SigPubKeySize)
+	sizeSig := uint64(common.SigNoPrivacySize)
 	if hasPrivacy {
-		sizeSig = uint64(privacy.SigPrivacySize)
+		sizeSig = uint64(common.SigPrivacySize)
 	}
 
 	sizeProof := uint64(0)
 	if len(inputCoins) != 0 || len(payments) != 0 {
-		sizeProof = zkp.EstimateProofSize(len(inputCoins), len(payments), hasPrivacy)
+		sizeProof = utils.EstimateProofSize(len(inputCoins), len(payments), hasPrivacy)
 	} else {
 		if limitFee > 0 {
-			sizeProof = zkp.EstimateProofSize(1, 1, hasPrivacy)
+			sizeProof = utils.EstimateProofSize(1, 1, hasPrivacy)
 		}
 	}
 
@@ -195,11 +195,11 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 		customTokenDataSize += uint64(64) // info
 
-		customTokenDataSize += uint64(privacy.SigPubKeySize)  // sig pubkey
-		customTokenDataSize += uint64(privacy.SigPrivacySize) // sig
+		customTokenDataSize += uint64(common.SigPubKeySize)  // sig pubkey
+		customTokenDataSize += uint64(common.SigPrivacySize) // sig
 
 		// Proof
-		customTokenDataSize += zkp.EstimateProofSize(len(privacyCustomTokenParams.TokenInput), len(privacyCustomTokenParams.Receiver), true)
+		customTokenDataSize += utils.EstimateProofSize(len(privacyCustomTokenParams.TokenInput), len(privacyCustomTokenParams.Receiver), true)
 
 		customTokenDataSize += uint64(1) //PubKeyLastByte
 

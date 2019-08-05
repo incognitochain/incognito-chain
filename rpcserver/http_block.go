@@ -122,7 +122,7 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.TxRoot = block.Header.TxRoot.String()
 			result.Time = block.Header.Timestamp
 			result.ShardID = block.Header.ShardID
-			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
+			result.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.TxHashes = []string{}
 			result.BlockProducerSign = block.ProducerSig
@@ -132,11 +132,11 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
 			result.R = block.R
 			result.Round = block.Header.Round
-			result.CrossShards = []int{}
+			result.CrossShardBitMap = []int{}
 			result.Instruction = block.Body.Instructions
-			if len(block.Header.CrossShards) > 0 {
-				for _, shardID := range block.Header.CrossShards {
-					result.CrossShards = append(result.CrossShards, int(shardID))
+			if len(block.Header.CrossShardBitMap) > 0 {
+				for _, shardID := range block.Header.CrossShardBitMap {
+					result.CrossShardBitMap = append(result.CrossShardBitMap, int(shardID))
 				}
 			}
 			result.Epoch = block.Header.Epoch
@@ -166,7 +166,7 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.TxRoot = block.Header.TxRoot.String()
 			result.Time = block.Header.Timestamp
 			result.ShardID = block.Header.ShardID
-			result.PreviousBlockHash = block.Header.PrevBlockHash.String()
+			result.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 			result.NextBlockHash = nextHashString
 			result.BlockProducerSign = block.ProducerSig
 			result.BlockProducer = block.Header.ProducerAddress.String()
@@ -175,11 +175,11 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
 			result.R = block.R
 			result.Round = block.Header.Round
-			result.CrossShards = []int{}
+			result.CrossShardBitMap = []int{}
 			result.Instruction = block.Body.Instructions
-			if len(block.Header.CrossShards) > 0 {
-				for _, shardID := range block.Header.CrossShards {
-					result.CrossShards = append(result.CrossShards, int(shardID))
+			if len(block.Header.CrossShardBitMap) > 0 {
+				for _, shardID := range block.Header.CrossShardBitMap {
+					result.CrossShardBitMap = append(result.CrossShardBitMap, int(shardID))
 				}
 			}
 			result.Epoch = block.Header.Epoch
@@ -259,7 +259,7 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 			BlockProducer:     block.Header.ProducerAddress.String(),
 			AggregatedSig:     block.AggregatedSig,
 			R:                 block.R,
-			PreviousBlockHash: block.Header.PrevBlockHash.String(),
+			PreviousBlockHash: block.Header.PreviousBlockHash.String(),
 			NextBlockHash:     nextHashString,
 		}
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, errD)
@@ -301,7 +301,7 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 			blockResult := jsonresult.GetBlockResult{}
 			blockResult.Init(block, size)
 			result = append(result, blockResult)
-			previousHash = &block.Header.PrevBlockHash
+			previousHash = &block.Header.PreviousBlockHash
 			if previousHash.String() == (common.Hash{}).String() {
 				break
 			}
@@ -322,7 +322,7 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 			blockResult := jsonresult.GetBlocksBeaconResult{}
 			blockResult.Init(block, size)
 			result = append(result, blockResult)
-			previousHash = &block.Header.PrevBlockHash
+			previousHash = &block.Header.PreviousBlockHash
 			if previousHash.String() == (common.Hash{}).String() {
 				break
 			}
