@@ -90,7 +90,10 @@ func (keySet KeySet) Verify(data, signature []byte) (bool, error) {
 	pubKeySig.Set(PK)
 
 	signatureSetBytes := new(privacy.SchnSignature)
-	signatureSetBytes.SetBytes(signature)
+	err = signatureSetBytes.SetBytes(signature)
+	if err != nil{
+		return false, err
+	}
 
 	isValid = pubKeySig.Verify(signatureSetBytes, hash)
 	return isValid, nil

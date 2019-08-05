@@ -275,6 +275,10 @@ func (proof *PaymentProof) Bytes() []byte {
 }
 
 func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
+	if len(proofbytes) == 0 {
+		return privacy.NewPrivacyErr(privacy.InvalidInputToSetBytesErr, nil)
+	}
+
 	offset := 0
 
 	// Set OneOfManyProofSize
