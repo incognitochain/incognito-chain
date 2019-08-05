@@ -10,7 +10,8 @@ import (
 // SchnorrPublicKey represents Schnorr Publickey
 // PK = G^SK + H^R
 type SchnorrPublicKey struct {
-	publicKey, g, h *EllipticPoint
+	publicKey *EllipticPoint
+	g, h      *EllipticPoint
 }
 
 func (schnorrPubKey SchnorrPublicKey) GetPublicKey() *EllipticPoint {
@@ -19,8 +20,9 @@ func (schnorrPubKey SchnorrPublicKey) GetPublicKey() *EllipticPoint {
 
 // SchnorrPrivateKey represents Schnorr Privatekey
 type SchnorrPrivateKey struct {
-	secretKey, r *big.Int
-	publicKey    *SchnorrPublicKey
+	privateKey *big.Int
+	randomness *big.Int
+	publicKey  *SchnorrPublicKey
 }
 
 func (schnPrivKey SchnorrPrivateKey) GetPublicKey() *SchnorrPublicKey {
@@ -34,8 +36,8 @@ type SchnSignature struct {
 
 // Set sets Schnorr private key
 func (privateKey *SchnorrPrivateKey) Set(sk *big.Int, r *big.Int) {
-	privateKey.secretKey = sk
-	privateKey.r = r
+	privateKey.privateKey = sk
+	privateKey.randomness = r
 	privateKey.publicKey = new(SchnorrPublicKey)
 	privateKey.publicKey.g = new(EllipticPoint)
 	privateKey.publicKey.g.Set(PedCom.G[SK].X, PedCom.G[SK].Y)
@@ -66,7 +68,7 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 	signature := new(SchnSignature)
 
 	// has privacy
-	if privateKey.r.Cmp(big.NewInt(0)) != 0 {
+	if privateKey.randomness.Cmp(big.NewInt(0)) != 0 {
 		// generates random numbers s1, s2 in [0, Curve.Params().N - 1]
 		s1 := RandScalar()
 		s2 := RandScalar()
@@ -77,10 +79,10 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 		// E is the hash of elliptic point t and data need to be signed
 		signature.e = Hash(*t, data)
 
-		signature.z1 = new(big.Int).Sub(s1, new(big.Int).Mul(privateKey.secretKey, signature.e))
+		signature.z1 = new(big.Int).Sub(s1, new(big.Int).Mul(privateKey.privateKey, signature.e))
 		signature.z1.Mod(signature.z1, Curve.Params().N)
 
-		signature.z2 = new(big.Int).Sub(s2, new(big.Int).Mul(privateKey.r, signature.e))
+		signature.z2 = new(big.Int).Sub(s2, new(big.Int).Mul(privateKey.randomness, signature.e))
 		signature.z2.Mod(signature.z2, Curve.Params().N)
 
 		return signature, nil
@@ -96,7 +98,7 @@ func (privateKey SchnorrPrivateKey) Sign(data []byte) (*SchnSignature, error) {
 	signature.e = Hash(*t, data)
 
 	// Z1 = s - e*sk
-	signature.z1 = new(big.Int).Sub(s, new(big.Int).Mul(privateKey.secretKey, signature.e))
+	signature.z1 = new(big.Int).Sub(s, new(big.Int).Mul(privateKey.privateKey, signature.e))
 	signature.z1.Mod(signature.z1, Curve.Params().N)
 
 	return signature, nil

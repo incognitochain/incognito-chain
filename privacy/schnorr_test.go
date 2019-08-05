@@ -10,8 +10,8 @@ import (
 func TestSchnorrSignature(t *testing.T) {
 	// generate Schnorr Private Key
 	privKey := new(SchnorrPrivateKey)
-	privKey.secretKey = RandScalar()
-	privKey.r = RandScalar()
+	privKey.privateKey = RandScalar()
+	privKey.randomness = RandScalar()
 
 	// generate Schnorr Public Key
 	privKey.publicKey = new(SchnorrPublicKey)
@@ -24,7 +24,7 @@ func TestSchnorrSignature(t *testing.T) {
 	privKey.publicKey.h = privKey.publicKey.g.ScalarMult(RandScalar())
 
 	// PK = G^SK * H^R
-	privKey.publicKey.publicKey = privKey.publicKey.g.ScalarMult(privKey.secretKey).Add(privKey.publicKey.h.ScalarMult(privKey.r))
+	privKey.publicKey.publicKey = privKey.publicKey.g.ScalarMult(privKey.privateKey).Add(privKey.publicKey.h.ScalarMult(privKey.randomness))
 
 	// random message to sign
 	data := RandScalar()
