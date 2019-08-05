@@ -1328,8 +1328,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 	for _, tx := range transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			//TODO: check why using encode version with block version value
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58_Version)
 			txRequestTable[requester] = tx
 		}
 	}
@@ -1351,8 +1350,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			//TODO: check why using encode version with block version value
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58_Version)
 			txRequestTable[requester] = tx
 		}
 	}
@@ -1364,7 +1362,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			//fmt.Printf("[ndh] -  %+v\n", tx)
 			//TODO: check why using encode version with block version value
-			requester := base58.Base58Check{}.Encode(requesterRes, VERSION)
+			requester := base58.Base58Check{}.Encode(requesterRes, common.Base58_Version)
 			if txRequestTable[requester] == nil {
 				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
 				return errors.New("This response dont match with any request")
