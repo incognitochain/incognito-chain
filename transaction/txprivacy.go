@@ -451,10 +451,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		// Verify the payment proof
-		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
+		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
 		if !valid {
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			return false, errors.New("FAILED VERIFICATION PAYMENT PROOF")
+			return false, err
 		} else {
 			//Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
