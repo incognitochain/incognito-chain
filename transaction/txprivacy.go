@@ -249,7 +249,18 @@ func (tx *Tx) Init(
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	err = witness.Init(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
+	paymentWitnessParam := zkp.PaymentWitnessParam{
+		HasPrivacy:              hasPrivacy,
+		PrivateKey:              new(big.Int).SetBytes(*senderSK),
+		InputCoins:              inputCoins,
+		OutputCoins:             outputCoins,
+		PublicKeyLastByteSender: pkLastByteSender,
+		Commitments:             commitmentProving,
+		CommitmentIndices:       commitmentIndexs,
+		MyCommitmentIndices:     myCommitmentIndexs,
+		Fee:                     fee,
+	}
+	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
