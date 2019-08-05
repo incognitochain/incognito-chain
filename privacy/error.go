@@ -16,6 +16,14 @@ const (
 	EncryptOutputCoinErr
 	DecryptOutputCoinErr
 	DecompressTransmissionKeyErr
+	VerifySerialNumberNoPrivacyProofFailedErr
+	VerifyCoinCommitmentInputFailedErr
+	VerifyCoinCommitmentOutputFailedErr
+	VerifyAmountNoPrivacyFailedErr
+	VerifyOneOutOfManyProofFailedErr
+	VerifySerialNumberPrivacyProofFailedErr
+	VerifyAggregatedProofFailedErr
+	VerifyAmountPrivacyFailedErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -33,6 +41,14 @@ var ErrCodeMessage = map[int]struct {
 	EncryptOutputCoinErr:         {-7, "Encrypt output coins error"},
 	DecryptOutputCoinErr:         {-8, "Decrypt output coins error"},
 	DecompressTransmissionKeyErr: {-7, "Can not decompress transmission key error"},
+	VerifySerialNumberNoPrivacyProofFailedErr: {-7, "Verify serial number no privacy proof failed"},
+	VerifyCoinCommitmentInputFailedErr: {-7, "Verify coin commitment of input coin failed"},
+	VerifyCoinCommitmentOutputFailedErr: {-7, "Verify coin commitment of output coin failed"},
+	VerifyAmountNoPrivacyFailedErr: {-7, "Sum of input coins' amount is not equal sum of output coins' amount"},
+	VerifyOneOutOfManyProofFailedErr: {-7, "Verify one out of many proof failed"},
+	VerifySerialNumberPrivacyProofFailedErr: {-7, "Verify serial number privacy proof failed"},
+	VerifyAggregatedProofFailedErr: {-7, "Verify aggregated proof failed"},
+	VerifyAmountPrivacyFailedErr: {-7, "Sum of input coins' amount is not equal sum of output coins' amount when creating private tx"},
 }
 
 type PrivacyError struct {
