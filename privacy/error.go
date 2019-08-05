@@ -8,10 +8,8 @@ import (
 const (
 	UnexpectedErr = iota
 	InvalidOutputValue
-	ProvingErr
-	VerificationErr
-	MarshalErr
-	UnmarshalErr
+	MarshalPaymentProofErr
+	UnmarshalPaymentProofErr
 	SetBytesProofErr
 	EncryptOutputCoinErr
 	DecryptOutputCoinErr
@@ -25,33 +23,40 @@ const (
 	VerifyAggregatedProofFailedErr
 	VerifyAmountPrivacyFailedErr
 	CalInnerProductErr
+	ProveSerialNumberNoPrivacyErr
+	ProveOneOutOfManyErr
+	ProveSerialNumberPrivacyErr
+	ProveAggregatedRangeErr
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	Message string
 }{
-	UnexpectedErr: {-1, "Unexpected error"},
+	UnexpectedErr: {-9000, "Unexpected error"},
 
-	InvalidOutputValue:           {-2, "Invalid output value"},
-	ProvingErr:                   {-3, "Zero knowledge proving error"},
-	VerificationErr:              {-4, "Zero knowledge verification error"},
-	MarshalErr:                   {-5, "Marshal payment proof error"},
-	UnmarshalErr:                 {-6, "Unmarshal payment proof error"},
-	SetBytesProofErr:             {-6, "Set bytes payment proof error"},
-	EncryptOutputCoinErr:         {-7, "Encrypt output coins error"},
-	DecryptOutputCoinErr:         {-8, "Decrypt output coins error"},
-	DecompressTransmissionKeyErr: {-7, "Can not decompress transmission key error"},
-	VerifySerialNumberNoPrivacyProofFailedErr: {-7, "Verify serial number no privacy proof failed"},
-	VerifyCoinCommitmentInputFailedErr: {-7, "Verify coin commitment of input coin failed"},
-	VerifyCoinCommitmentOutputFailedErr: {-7, "Verify coin commitment of output coin failed"},
-	VerifyAmountNoPrivacyFailedErr: {-7, "Sum of input coins' amount is not equal sum of output coins' amount"},
-	VerifyOneOutOfManyProofFailedErr: {-7, "Verify one out of many proof failed"},
-	VerifySerialNumberPrivacyProofFailedErr: {-7, "Verify serial number privacy proof failed"},
-	VerifyAggregatedProofFailedErr: {-7, "Verify aggregated proof failed"},
-	VerifyAmountPrivacyFailedErr: {-7, "Sum of input coins' amount is not equal sum of output coins' amount when creating private tx"},
-	CalInnerProductErr: {-7, "Calculate inner product between two vectors error"},
+	InvalidOutputValue:                        {-9001, "Invalid output value"},
+	MarshalPaymentProofErr:                    {-9002, "Marshal payment proof error"},
+	UnmarshalPaymentProofErr:                  {-9003, "Unmarshal payment proof error"},
+	SetBytesProofErr:                          {-9004, "Set bytes payment proof error"},
+	EncryptOutputCoinErr:                      {-9005, "Encrypt output coins error"},
+	DecryptOutputCoinErr:                      {-9006, "Decrypt output coins error"},
+	DecompressTransmissionKeyErr:              {-9007, "Can not decompress transmission key error"},
+	CalInnerProductErr:                        {-9008, "Calculate inner product between two vectors error"},
 
+	ProveSerialNumberNoPrivacyErr:             {-9100, "Proving serial number no privacy proof error"},
+	ProveOneOutOfManyErr:                      {-9101, "Proving one out of many proof error"},
+	ProveSerialNumberPrivacyErr:               {-9102, "Proving serial number privacy proof error"},
+	ProveAggregatedRangeErr:                   {-9103, "Proving aggregated range proof error"},
+
+	VerifySerialNumberNoPrivacyProofFailedErr: {-9201, "Verify serial number no privacy proof failed"},
+	VerifyCoinCommitmentInputFailedErr:        {-9202, "Verify coin commitment of input coin failed"},
+	VerifyCoinCommitmentOutputFailedErr:       {-9203, "Verify coin commitment of output coin failed"},
+	VerifyAmountNoPrivacyFailedErr:            {-9204, "Sum of input coins' amount is not equal sum of output coins' amount"},
+	VerifyOneOutOfManyProofFailedErr:          {-9205, "Verify one out of many proof failed"},
+	VerifySerialNumberPrivacyProofFailedErr:   {-9206, "Verify serial number privacy proof failed"},
+	VerifyAggregatedProofFailedErr:            {-9207, "Verify aggregated proof failed"},
+	VerifyAmountPrivacyFailedErr:              {-9208, "Sum of input coins' amount is not equal sum of output coins' amount when creating private tx"},
 }
 
 type PrivacyError struct {
