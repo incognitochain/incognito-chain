@@ -39,7 +39,15 @@ type PaymentWitness struct {
 	comInputSerialNumberDerivator []*privacy.EllipticPoint
 	comInputShardID               *privacy.EllipticPoint
 
-	RandSecretKey *big.Int
+	randSecretKey *big.Int
+}
+
+func (paymentWitness PaymentWitness) GetRandSecretKey() *big.Int {
+	return paymentWitness.randSecretKey
+}
+
+func (paymentWitness *PaymentWitness) SetRandSecretKey(v *big.Int) {
+	paymentWitness.randSecretKey = v
 }
 
 // PaymentProof contains all of PoK for spending coin
@@ -472,7 +480,7 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 	randInputSK := privacy.RandScalar()
 	// set rand sk for Schnorr signature
-	wit.RandSecretKey = new(big.Int).Set(randInputSK)
+	wit.SetRandSecretKey(new(big.Int).Set(randInputSK))
 
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.privateKey, randInputSK, privacy.SK)
 	wit.comInputSecretKey = new(privacy.EllipticPoint)
