@@ -1,8 +1,10 @@
 package privacy
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSchnorrSignature(t *testing.T) {
@@ -33,7 +35,7 @@ func TestSchnorrSignature(t *testing.T) {
 
 	// convert signature to bytes array
 	signatureBytes := signature.Bytes()
-	assert.Equal(t, SigPrivacySize, len(signatureBytes))
+	assert.Equal(t, common.SigPrivacySize, len(signatureBytes))
 
 	// revert bytes array to signature
 	signature2 := new(SchnSignature)

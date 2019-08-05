@@ -10,8 +10,11 @@ import (
 
 //Network fixed params
 const (
-	// BlockVersion is the current latest supported block version.
-	BlockVersion              = 1
+	// SHARD_BLOCK_VERSION is the current latest supported block version.
+	VERSION                   = 1
+	RANDOM_NUMBER             = 3
+	SHARD_BLOCK_VERSION       = 1
+	BEACON_BLOCK_VERSION      = 1
 	DefaultMaxBlkReqPerPeer   = 600
 	DefaultMaxBlkReqPerTime   = 1200
 	MinCommitteeSize          = 3                // min size to run bft
@@ -20,6 +23,7 @@ const (
 	DefaultMaxBlockSyncTime   = 1 * time.Second  // in second
 	DefaultCacheCleanupTime   = 30 * time.Second // in second
 	WorkerNumber              = 5
+	MAX_S2B_BLOCK             = 50
 )
 
 // CONSTANT for network MAINNET
@@ -68,7 +72,7 @@ const (
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
@@ -152,4 +156,4 @@ var TestnetInitPRV = []string{
 }
 var IntegrationTestInitPRV = []string{`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"f+JDTKpO7+veF6DVYobNp6l0l6rAYxCZjYCNRrsFN0lx7aOMOwXhZK0OGrKiDLfqSIMX7CXr9ProBz7TIx3yqg==","Proof":"1111111dP9RnNnGCD9afUsg4bvrBHNWfjZijttFU2bkFYLYFGqCoK6i6RCeSEk2NUmv7p8B4kyhi1qaoMjvYCotjhDogGiuYrEqUT4NQLXatq2xqkfxgX8DURcv9xCgrgqVceQ2DrBR5NcgbMQHHBnW1xV3Dte2kmq837EeufP3KoQpz3m5N3oN6x1UssfWSeHAuw4t2dUinKDTe7SgRnFFhfF59dvy","PubKeyLastByteSender":0,"Metadata":null}`,
 	`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"As3StzeOJhR5qheXo9stChC6WqQJChZNqmPqdgNOFtkA","Sig":"ccWpvPZjitORv6+9WOWv7K5e8purHA4sX7mfBNE9m9YYFyPJ2awx5+1iHuWKD7BH9oum64XCiLYtW9iihVGlDw==","Proof":"1111111dP9RnNmZen93jhEW3eXaKkne72tbWVGtcdfAEfnbdf7fPDQmwYaTve2a9MBA56HHWXzXCbDxx79KCrtrArUqQKnxgun69qQpCjDZhaBdpKNZAAvYf7uBHrnxpm7qxRA4XLGSKbuLS6mBtrCUFPnit9BDbSAu9ZxQsPnr7XPPyHdbBofrBzFLqf2zTPMrqCAZqBqapA5AMtd8J8yknUHX6hWJ","PubKeyLastByteSender":0,"Metadata":null}`,
-	`{"Version":1,"Type":"s","LockTime":1564502136,"Fee":0,"Info":null,"SigPubKey":"AmusT4yw6LoipXRBH10JL7D1I9B2jwN5gVsQA6SexgoB","Sig":"1aZeIjgrFhe9P16J9vd0V4pCOemknsJ/Ljy/a0fhqimyZL+YUpo+Q+rD0T2Tan9e8StbXQi944VD4EItqYhuWw==","Proof":"1111111dP9RnNmFpBcsd8WSQtTxPB9QfuMN8YS39CkSCi7zvR9pRxSNgVgXADCBjkCdMDH9K9VC3SQ1DstvsTSGuJ1XkjHghTWtMbGEeedBai4f4DjByeLzStJagXtuwQAxoia7Gowg7rutuJVLThVEHFDNVjdgmy8h7NCYZrL4YQiy3QLqeLqKwzoBULxEW2rw62HM2xsFjCsk7twTJCpHW1kc9ThT","PubKeyLastByteSender":1,"Metadata":null}`,}
+	`{"Version":1,"Type":"s","LockTime":1564502136,"Fee":0,"Info":null,"SigPubKey":"AmusT4yw6LoipXRBH10JL7D1I9B2jwN5gVsQA6SexgoB","Sig":"1aZeIjgrFhe9P16J9vd0V4pCOemknsJ/Ljy/a0fhqimyZL+YUpo+Q+rD0T2Tan9e8StbXQi944VD4EItqYhuWw==","Proof":"1111111dP9RnNmFpBcsd8WSQtTxPB9QfuMN8YS39CkSCi7zvR9pRxSNgVgXADCBjkCdMDH9K9VC3SQ1DstvsTSGuJ1XkjHghTWtMbGEeedBai4f4DjByeLzStJagXtuwQAxoia7Gowg7rutuJVLThVEHFDNVjdgmy8h7NCYZrL4YQiy3QLqeLqKwzoBULxEW2rw62HM2xsFjCsk7twTJCpHW1kc9ThT","PubKeyLastByteSender":1,"Metadata":null}`}

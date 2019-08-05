@@ -33,7 +33,7 @@ type Engine struct {
 type EngineConfig struct {
 	BlockChain                  *blockchain.BlockChain
 	ChainParams                 *blockchain.Params
-	BlockGen                    *blockchain.BlkTmplGenerator
+	BlockGen                    *blockchain.BlockGenerator
 	UserKeySet                  *incognitokey.KeySet
 	NodeMode                    string
 	Server                      serverInterface
@@ -67,7 +67,7 @@ func (engine *Engine) Start() error {
 	go engine.config.BlockGen.Start(engine.cQuit)
 	engine.cBFTMsg = make(chan wire.Message)
 	engine.started = true
-	engine.userPk = engine.config.UserKeySet.GetPublicKeyB58()
+	engine.userPk = engine.config.UserKeySet.GetPublicKeyInBase58CheckEncode()
 	engine.currentBFTRound = 1
 	Logger.log.Info("Start consensus with key", engine.userPk)
 	fmt.Println(engine.config.BlockChain.BestState.Beacon.BeaconCommittee)
@@ -291,7 +291,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 			//fmt.Println("Create and Push all Cross Shard Block")
 			//PUSH CROSS-SHARD
 			newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock(engine.config.BlockChain.BestState.Beacon.ActiveShards)
-			//fmt.Println("New Cross Shard Blocks ", newCrossShardBlocks, shardBlk.Header.Height, shardBlk.Header.CrossShards)
+			//fmt.Println("New Cross Shard Blocks ", newCrossShardBlocks, shardBlk.Header.Height, shardBlk.Header.CrossShardBitMap)
 
 			for sID, newCrossShardBlock := range newCrossShardBlocks {
 				newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)

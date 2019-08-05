@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -72,18 +73,25 @@ func readfile(filename string) (*scenarios, error) {
 
 func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 	sc := newScenarios()
+	env := os.Getenv("ENV")
+	nodeList, err := readNodeConfig(env)
+	if err != nil {
+		return sc, false
+	}
 	for _, tests := range tests {
 		step := newStep()
 		if nodeData, ok := tests["node"]; !ok {
 			return sc, false
 		} else {
-			if node, ok := nodeData.(map[string]interface{}); !ok {
+			node, ok := nodeData.(string)
+			if !ok {
 				return sc, false
-			} else {
-				host := node["host"].(string)
-				port := node["port"].(string)
-				step.client = newClientWithHost(host, port)
 			}
+			c, ok := nodeList[node]
+			if !ok {
+				return sc, false
+			}
+			step.client = c
 		}
 		if inputData, ok := tests["input"]; !ok {
 			return sc, false
@@ -170,7 +178,65 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 		sc.steps = append(sc.steps, step)
 	}
 	return sc, true
+
 }
+func readNodeConfig(env string) (map[string]*Client, error) {
+	var nodeList = make(map[string]*Client)
+	var fileNodeInterface = make(map[string]interface{})
+	var fileName = ""
+	switch env {
+	case "testnet":
+		fileName = "./testsconfig/testnet-config.json"
+	default:
+		fileName = "./testsconfig/sample-config.json"
+	}
+	fileNodeData, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(fileNodeData, &fileNodeInterface)
+	if err != nil {
+		return nil, err
+	}
+	for shardNodeKey, shardNodeValueInterface := range fileNodeInterface {
+		clientKey := ""
+		switch shardNodeKey {
+		case "-1":
+			clientKey = "beacon"
+		case "0":
+			clientKey = "shard0-"
+		case "1":
+			clientKey = "shard1-"
+		}
+		shardNodeValue, ok := shardNodeValueInterface.(map[string]interface{})
+		if !ok {
+			return nil, ParseNodeConfigFailedError
+		}
+		for nodeKey, nodeValueInterface := range shardNodeValue {
+			clientNodeKey := clientKey + nodeKey
+			nodeValue, ok := nodeValueInterface.(map[string]interface{})
+			if !ok {
+				return nil, ParseFailedError
+			}
+			host, ok := nodeValue["host"].(string)
+			if !ok {
+				return nil, ParseHostError
+			}
+			rpcport, ok := nodeValue["port"].(string)
+			if !ok {
+				return nil, ParsePortError
+			}
+			wsport, ok := nodeValue["ws"].(string)
+			if !ok {
+				return nil, ParseHostError
+			}
+			c := newClientWithFullInform(host, rpcport, wsport)
+			nodeList[clientNodeKey] = c
+		}
+	}
+	return nodeList, nil
+}
+
 /*
 	Type
 	- Number: float64
@@ -181,11 +247,11 @@ func parseScenarios(tests []map[string]interface{}) (*scenarios, bool) {
 */
 func parseResult(responseResult json.RawMessage) interface{} {
 	var (
-		number float64
-		str string
+		number  float64
+		str     string
 		boolean bool
-		array []interface{}
-		obj = make(map[string]interface{})
+		array   []interface{}
+		obj     = make(map[string]interface{})
 	)
 	if err := json.Unmarshal(responseResult, &number); err == nil {
 		return number
