@@ -24,6 +24,7 @@ var (
 	blockKeyIdxPrefix       = []byte("i-")
 	crossShardKeyPrefix     = []byte("csh-")
 	nextCrossShardKeyPrefix = []byte("ncsh-")
+	shardPrefix             = []byte("shd-")
 
 	shardToBeaconKeyPrefix       = []byte("stb-")
 	transactionKeyPrefix         = []byte("tx-")
