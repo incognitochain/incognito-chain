@@ -43,6 +43,7 @@ type PaymentProof struct {
 	commitmentIndices []uint64
 }
 
+// GET/SET function
 func (paymentProof PaymentProof) GetOneOfManyProof() []*oneoutofmany.OneOutOfManyProof {
 	return paymentProof.oneOfManyProof
 }
@@ -103,6 +104,9 @@ func (paymentProof *PaymentProof) SetOutputCoins(v []*privacy.OutputCoin) {
 	paymentProof.outputCoins = v
 }
 
+// End GET/SET function
+
+// Init
 func (proof *PaymentProof) Init() {
 	aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
@@ -123,12 +127,14 @@ func (proof *PaymentProof) Init() {
 
 }
 
+// MarshalJSON - override function
 func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
 	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	return json.Marshal(temp)
 }
 
+// UnmarshalJSON - override function
 func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
 	dataStr := common.EmptyString
 	errJson := json.Unmarshal(data, &dataStr)
