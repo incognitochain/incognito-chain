@@ -32,6 +32,15 @@ func buildInstruction(
 	}
 }
 
+func (chain *BlockChain) buildInstructionsForContractingReq(
+	contentStr string,
+	shardID byte,
+	metaType int,
+) ([][]string, error) {
+	inst := buildInstruction(metaType, shardID, "accepted", contentStr)
+	return [][]string{inst}, nil
+}
+
 func (chain *BlockChain) buildInstructionsForIssuingReq(
 	contentStr string,
 	shardID byte,
@@ -289,9 +298,6 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 		fmt.Println("WARNING: an error occured while unmarshaling ETH accepted issuance instruction: ", err)
 		return nil, nil
 	}
-
-	c, _ := json.Marshal(issuingETHAcceptedInst)
-	fmt.Println("hahaha issuingETHAcceptedInst: ", string(c))
 
 	if shardID != issuingETHAcceptedInst.ShardID {
 		return nil, nil

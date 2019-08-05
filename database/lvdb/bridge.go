@@ -1,9 +1,9 @@
 package lvdb
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -17,6 +17,7 @@ type BridgeTokenInfo struct {
 	Amount          uint64       `json:"amount"`
 	ExternalTokenID []byte       `json:"externalTokenId"`
 	Network         string       `json:"network"`
+	IsCentralized   bool         `json:"isCentralized"`
 }
 
 func (db *db) InsertETHTxHashIssued(
@@ -127,7 +128,7 @@ func (db *db) CanProcessTokenPair(
 		if !bytes.Equal(bridgeTokenInfo.ExternalTokenID, externalTokenID) {
 			continue
 		}
-		
+
 		fmt.Println("WARNING: failed at condition 3:", bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:])
 		return false, nil
 	}
@@ -152,24 +153,82 @@ func (db *db) UpdateBridgeTokenInfo(
 	incTokenID common.Hash,
 	externalTokenID []byte,
 	isCentralized bool,
+	updatingAmt uint64,
+	updateType string,
 ) error {
 	prefix := getBridgePrefix(isCentralized)
 	key := append(prefix, incTokenID[:]...)
-	bridgeTokenInfo := BridgeTokenInfo{
-		TokenID:         &incTokenID,
-		ExternalTokenID: externalTokenID,
-	}
-	bridgeTokenInfoBytes, err := json.Marshal(bridgeTokenInfo)
-	if err != nil {
-		return err
+	bridgeTokenInfoBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
 	}
 
-	dbErr := db.Put(key, bridgeTokenInfoBytes)
+	var newBridgeTokenInfo BridgeTokenInfo
+	if len(bridgeTokenInfoBytes) == 0 {
+		newBridgeTokenInfo = BridgeTokenInfo{
+			TokenID:         &incTokenID,
+			ExternalTokenID: externalTokenID,
+			IsCentralized:   isCentralized,
+		}
+		if updateType == "-" {
+			newBridgeTokenInfo.Amount = 0
+		} else {
+			newBridgeTokenInfo.Amount = updatingAmt
+		}
+	} else { // found existing bridge token info
+		var existingBridgeTokenInfo BridgeTokenInfo
+		unmarshalErr := json.Unmarshal(bridgeTokenInfoBytes, &existingBridgeTokenInfo)
+		if unmarshalErr != nil {
+			return unmarshalErr
+		}
+		newBridgeTokenInfo = BridgeTokenInfo{
+			TokenID:         existingBridgeTokenInfo.TokenID,
+			ExternalTokenID: existingBridgeTokenInfo.ExternalTokenID,
+			IsCentralized:   existingBridgeTokenInfo.IsCentralized,
+		}
+		if updateType == "+" {
+			newBridgeTokenInfo.Amount = existingBridgeTokenInfo.Amount + updatingAmt
+		} else if existingBridgeTokenInfo.Amount <= updatingAmt {
+			newBridgeTokenInfo.Amount = 0
+		} else {
+			newBridgeTokenInfo.Amount = existingBridgeTokenInfo.Amount - updatingAmt
+		}
+	}
+
+	contentBytes, marshalErr := json.Marshal(newBridgeTokenInfo)
+	if marshalErr != nil {
+		return marshalErr
+	}
+
+	dbErr = db.Put(key, contentBytes)
 	if dbErr != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.put"))
 	}
 	return nil
 }
+
+// func (db *db) UpdateBridgeTokenInfo(
+// 	incTokenID common.Hash,
+// 	externalTokenID []byte,
+// 	isCentralized bool,
+// ) error {
+// 	prefix := getBridgePrefix(isCentralized)
+// 	key := append(prefix, incTokenID[:]...)
+// 	bridgeTokenInfo := BridgeTokenInfo{
+// 		TokenID:         &incTokenID,
+// 		ExternalTokenID: externalTokenID,
+// 	}
+// 	bridgeTokenInfoBytes, err := json.Marshal(bridgeTokenInfo)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	dbErr := db.Put(key, bridgeTokenInfoBytes)
+// 	if dbErr != nil {
+// 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.put"))
+// 	}
+// 	return nil
+// }
 
 func (db *db) IsBridgeTokenExistedByType(
 	incTokenID common.Hash,

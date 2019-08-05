@@ -165,7 +165,7 @@ type DatabaseInterface interface {
 	IsETHTxHashIssued([]byte) (bool, error)
 	CanProcessTokenPair([]byte, common.Hash) (bool, error)
 	CanProcessCIncToken(common.Hash) (bool, error)
-	UpdateBridgeTokenInfo(common.Hash, []byte, bool) error
+	UpdateBridgeTokenInfo(common.Hash, []byte, bool, uint64, string) error
 	GetAllBridgeTokens() ([]byte, error)
 
 	// Block reward
