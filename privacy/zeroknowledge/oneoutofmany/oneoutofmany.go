@@ -1,7 +1,6 @@
 package oneoutofmany
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -395,12 +394,12 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 }
 
 // Verify verifies a proof output by Prove
-func (proof *OneOutOfManyProof) Verify() bool {
+func (proof *OneOutOfManyProof) Verify() (bool, error) {
 	N := len(proof.Statement.Commitments)
 
 	// the number of Commitment list's elements must be equal to CMRingSize
 	if N != privacy.CommitmentRingSize {
-		return false
+		return false, errors.New("Invalid length of commitments list in one out of many proof")
 	}
 	n := privacy.CommitmentRingSizeExp
 
@@ -417,8 +416,8 @@ func (proof *OneOutOfManyProof) Verify() bool {
 		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.SK)
 
 		if !leftPoint1.IsEqual(rightPoint1) {
-			fmt.Printf("ERR1\n")
-			return false
+			privacy.Logger.Log.Errorf("verify one out of many proof statement 1 failed")
+			return false, errors.New("verify one out of many proof statement 1 failed")
 		}
 
 		//Check cl^(x-f) * cb = Com(0, zb)
@@ -429,8 +428,8 @@ func (proof *OneOutOfManyProof) Verify() bool {
 		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb[i], privacy.SK)
 
 		if !leftPoint2.IsEqual(rightPoint2) {
-			fmt.Printf("ERR1\n")
-			return false
+			privacy.Logger.Log.Errorf("verify one out of many proof statement 2 failed")
+			return false, errors.New("verify one out of many proof statement 2 failed")
 		}
 	}
 
@@ -468,12 +467,12 @@ func (proof *OneOutOfManyProof) Verify() bool {
 
 	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, privacy.SK)
 
-	//fmt.Printf("Leftpoint3: %v\n", leftPoint3.Compress())
-	//fmt.Printf("RightPoint3: %v\n", rightPoint3.Compress())
-	//fmt.Printf("Leftpoint32: %v\n", leftPoint32.Compress())
-	//fmt.Printf("ERR3\n")
+	if  !leftPoint3.IsEqual(rightPoint3) {
+		privacy.Logger.Log.Errorf("verify one out of many proof statement 3 failed")
+		return false, errors.New("verify one out of many proof statement 3 failed")
+	}
 
-	return leftPoint3.IsEqual(rightPoint3)
+	return true, nil
 }
 
 // Get coefficient of x^k in the polynomial p_i(x)
