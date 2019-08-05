@@ -74,6 +74,8 @@ type DatabaseInterface interface {
 	StoreShardBestState(interface{}, byte) error
 	FetchShardBestState(byte) ([]byte, error)
 	CleanShardBestState() error
+	StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error
+	FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error)
 
 	// Best state of beacon chain
 	StoreBeaconBestState(interface{}) error

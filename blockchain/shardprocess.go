@@ -117,6 +117,13 @@ func (blockchain *BlockChain) InsertShardBlock(block *ShardBlock, isValidated bo
 	//	return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
 	//}
 
+	// Store shard committee in ShardBestState
+	// This might be different from the committee observed from BeaconBestState when a swap instruction is being process on beacon
+	// Note: we must store before updating ShardBestState because this block is still signed by the old committee
+	if err := blockchain.config.DataBase.StoreCommitteeFromShardBestState(shardID, block.Header.Height, blockchain.BestState.Shard[shardID].ShardCommittee); err != nil {
+		return NewBlockChainError(DatabaseError, err)
+	}
+
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", block.Header.ShardID, block.Header.Height, blockHash)
 	//========updateShardBestState best state with new block
 	//previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
@@ -316,7 +323,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	}
 	for index, _ := range crossShards {
 		if crossShards[index] != shardBlock.Header.CrossShardBitMap[index] {
-			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is but get %+v", index, shardBlock.Header.CrossShardBitMap[index], crossShards[index]))
+			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is %+v but get %+v", index, shardBlock.Header.CrossShardBitMap[index], crossShards[index]))
 		}
 	}
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this shardBlock
