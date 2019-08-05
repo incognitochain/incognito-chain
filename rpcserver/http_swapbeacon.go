@@ -312,7 +312,8 @@ func (bb *beaconBlock) Sig() string {
 
 // SignerPubkeys finds the pubkeys of all signers of a beacon block
 func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	commsRaw, err := db.FetchBeaconCommitteeByHeight(bb.Header.Height)
+	// Fetch with height-1 because BestStateBeacon is updated before saving committee to database => new committee is saved instead of the one signing this block
+	commsRaw, err := db.FetchBeaconCommitteeByHeight(bb.Header.Height - 1)
 	if err != nil {
 		return nil, nil, err
 	}
