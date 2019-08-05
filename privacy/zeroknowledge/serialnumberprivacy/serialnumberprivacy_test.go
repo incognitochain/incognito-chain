@@ -20,10 +20,10 @@ func TestPKSNPrivacy(t *testing.T) {
 	rSK := privacy.RandScalar()
 	rSND := privacy.RandScalar()
 
-	serialNumber := privacy.PedCom.G[privacy.SK].Derive(skInt, SND)
+	serialNumber := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(skInt, SND)
 
-	comSK := privacy.PedCom.CommitAtIndex(skInt, rSK, privacy.SK)
-	comSND := privacy.PedCom.CommitAtIndex(SND, rSND, privacy.SND)
+	comSK := privacy.PedCom.CommitAtIndex(skInt, rSK, privacy.PedersenPrivateKeyIndex)
+	comSND := privacy.PedCom.CommitAtIndex(SND, rSND, privacy.PedersenSndIndex)
 
 	stmt := new(SerialNumberPrivacyStatement)
 	stmt.Set(serialNumber, comSK, comSND)

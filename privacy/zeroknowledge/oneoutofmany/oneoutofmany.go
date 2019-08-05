@@ -316,15 +316,15 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 		// Calculate cl, ca, cb, cd
 		// cl = Com(l, r)
-		cl[j] = privacy.PedCom.CommitAtIndex(indexInt, r[j], privacy.SK)
+		cl[j] = privacy.PedCom.CommitAtIndex(indexInt, r[j], privacy.PedersenPrivateKeyIndex)
 
 		// ca = Com(a, s)
-		ca[j] = privacy.PedCom.CommitAtIndex(a[j], s[j], privacy.SK)
+		ca[j] = privacy.PedCom.CommitAtIndex(a[j], s[j], privacy.PedersenPrivateKeyIndex)
 
 		// cb = Com(la, t)
 		la := new(big.Int).Mul(indexInt, a[j])
 		//la.Mod(la, privacy.Curve.Params().N)
-		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], privacy.SK)
+		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], privacy.PedersenPrivateKeyIndex)
 	}
 
 	// Calculate: cd_k = ci^pi,k
@@ -338,7 +338,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 			cd[k] = cd[k].Add(wit.stmt.Commitments[i].ScalarMult(pik))
 		}
 
-		cd[k] = cd[k].Add(privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], privacy.SK))
+		cd[k] = cd[k].Add(privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], privacy.PedersenPrivateKeyIndex))
 	}
 
 	// Calculate x
@@ -413,7 +413,7 @@ func (proof *OneOutOfManyProof) Verify() (bool, error) {
 	for i := 0; i < n; i++ {
 		//Check cl^x * ca = Com(f, za)
 		leftPoint1 := proof.cl[i].ScalarMult(x).Add(proof.ca[i])
-		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.SK)
+		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.PedersenPrivateKeyIndex)
 
 		if !leftPoint1.IsEqual(rightPoint1) {
 			privacy.Logger.Log.Errorf("verify one out of many proof statement 1 failed")
@@ -425,7 +425,7 @@ func (proof *OneOutOfManyProof) Verify() (bool, error) {
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
 		leftPoint2 := proof.cl[i].ScalarMult(xSubF).Add(proof.cb[i])
-		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb[i], privacy.SK)
+		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb[i], privacy.PedersenPrivateKeyIndex)
 
 		if !leftPoint2.IsEqual(rightPoint2) {
 			privacy.Logger.Log.Errorf("verify one out of many proof statement 2 failed")
@@ -465,9 +465,9 @@ func (proof *OneOutOfManyProof) Verify() (bool, error) {
 
 	leftPoint3 = leftPoint3.Add(leftPoint32)
 
-	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, privacy.SK)
+	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, privacy.PedersenPrivateKeyIndex)
 
-	if  !leftPoint3.IsEqual(rightPoint3) {
+	if !leftPoint3.IsEqual(rightPoint3) {
 		privacy.Logger.Log.Errorf("verify one out of many proof statement 3 failed")
 		return false, errors.New("verify one out of many proof statement 3 failed")
 	}
