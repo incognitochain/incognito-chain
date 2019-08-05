@@ -312,7 +312,7 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	return proof, nil
 }
 
-func (proof *SNPrivacyProof) Verify(mess []byte) bool {
+func (proof *SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	var x *big.Int
 	if mess == nil {
@@ -328,7 +328,8 @@ func (proof *SNPrivacyProof) Verify(mess []byte) bool {
 	rightPoint1 = rightPoint1.Add(proof.tInput)
 
 	if !leftPoint1.IsEqual(rightPoint1) {
-		return false
+		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 1 failed")
+		return false, errors.New("verify serial number privacy proof statement 1 failed")
 	}
 
 	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
@@ -338,7 +339,8 @@ func (proof *SNPrivacyProof) Verify(mess []byte) bool {
 	rightPoint2 = rightPoint2.Add(proof.tSK)
 
 	if !leftPoint2.IsEqual(rightPoint2) {
-		return false
+		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 2 failed")
+		return false, errors.New("verify serial number privacy proof statement 2 failed")
 	}
 
 	// Check sn^(zSeed + zInput) = gSK^x * tOutput
@@ -347,5 +349,10 @@ func (proof *SNPrivacyProof) Verify(mess []byte) bool {
 	rightPoint3 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
 	rightPoint3 = rightPoint3.Add(proof.tSN)
 
-	return leftPoint3.IsEqual(rightPoint3)
+	if !leftPoint3.IsEqual(rightPoint3){
+		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 3 failed")
+		return false, errors.New("verify serial number privacy proof statement 3 failed")
+	}
+
+	return true, nil
 }

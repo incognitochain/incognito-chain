@@ -1,6 +1,7 @@
 package aggregaterange
 
 import (
+	"github.com/pkg/errors"
 	"math/big"
 	"sync"
 
@@ -451,7 +452,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	return proof, nil
 }
 
-func (proof AggregatedRangeProof) Verify() bool {
+func (proof AggregatedRangeProof) Verify() (bool, error) {
 	numValue := len(proof.cmsValue)
 	numValuePad := pad(numValue)
 
@@ -501,7 +502,7 @@ func (proof AggregatedRangeProof) Verify() bool {
 	// innerProduct1 = <1^(n*m), y^(n*m)>
 	innerProduct1, err := innerProduct(oneVector, yVector)
 	if err != nil {
-		return false
+		return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
 	}
 
 	deltaYZ.Mul(deltaYZ, innerProduct1)
@@ -509,7 +510,7 @@ func (proof AggregatedRangeProof) Verify() bool {
 	// innerProduct2 = <1^n, 2^n>
 	innerProduct2, err := innerProduct(oneVectorN, twoVectorN)
 	if err != nil {
-		return false
+		return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
 	}
 
 	sum := big.NewInt(0)
@@ -550,11 +551,15 @@ func (proof AggregatedRangeProof) Verify() bool {
 	}
 
 	if !left1.IsEqual(right1) {
-		//privacy.Logger.Log.Error("Statement 1 failed:")
-		//privacy.Logger.Log.Error("Left 1: %v\n", left1)
-		//privacy.Logger.Log.Error("Right 1: %v\n", right1)
-		return false
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
+		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
-	return proof.innerProductProof.Verify(AggParam)
+	innerProductArgValid := proof.innerProductProof.Verify(AggParam)
+	if !innerProductArgValid {
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
+		return false, errors.New("verify aggregated range proof statement 2 failed")
+	}
+
+	return true, nil
 }

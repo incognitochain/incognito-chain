@@ -227,7 +227,7 @@ func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	return proof, nil
 }
 
-func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
+func (pro *SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tOutput)
 	x := big.NewInt(0)
 	if mess == nil {
@@ -244,8 +244,8 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	rightPoint1 = rightPoint1.Add(pro.tSeed)
 
 	if !leftPoint1.IsEqual(rightPoint1) {
-		//privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
-		return false
+		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 1 failed")
+		return false, errors.New("verify serial number no privacy proof statement 1 failed")
 	}
 
 	// Check sn^(zSeed + x*input) = gSK^x * tOutput
@@ -255,9 +255,9 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) bool {
 	rightPoint2 = rightPoint2.Add(pro.tOutput)
 
 	if !leftPoint2.IsEqual(rightPoint2) {
-		//privacy.Logger.Log.Errorf("Failed verify serial number no privacy 1")
-		return false
+		privacy.Logger.Log.Errorf("verify serial number no privacy proof statement 2 failed")
+		return false, errors.New("verify serial number no privacy proof statement 2 failed")
 	}
 
-	return true
+	return true, nil
 }
