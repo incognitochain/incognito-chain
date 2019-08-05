@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"reflect"
 	"sort"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 /*
@@ -47,26 +47,41 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	// lock blockchain
 	blockGenerator.chain.chainLock.Lock()
 	defer blockGenerator.chain.chainLock.Unlock()
-	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Beacon.BeaconHeight+1)
+	Logger.log.Infof("⛏ Creating Beacon Block %+v", blockGenerator.chain.BestState.Beacon.BeaconHeight+1)
 	//============Init Variable============
 	beaconBlock := NewBeaconBlock()
 	beaconBestState := NewBeaconBestState()
 	var err error
+	var epoch uint64
 	// produce new block with current beststate
 	err = beaconBestState.cloneBeaconBestState(blockGenerator.chain.BestState.Beacon)
 	if err != nil {
 		return nil, err
 	}
+	//if !reflect.DeepEqual(*blockGenerator.chain.BestState.Beacon, *beaconBestState) {
+	//	panic("abc")
+	//}
 	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
-	//============Build body===============
+	//======Build Header Essential Data=======
 	rewardByEpochInstruction := [][]string{}
 	if beaconBestState.BeaconHeight+1%common.EPOCH == 1 {
-		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch)
+		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBestState.Epoch)
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
-		beaconBestState.Epoch += 1
+		epoch = beaconBestState.Epoch + 1
+	} else {
+		epoch = beaconBestState.Epoch
 	}
+	beaconBlock.Header.ProducerAddress = *producerAddress
+	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
+	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
+	beaconBlock.Header.Epoch = epoch
+	beaconBlock.Header.Round = round
+	beaconBlock.Header.PreviousBlockHash = beaconBestState.BestBlockHash
+	BLogger.log.Infof("Producing block: %d", beaconBlock.Header.Height)
+	//=====END Build Header Essential Data=====
+	//============Build body===================
 	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions)
 	if len(rewardByEpochInstruction) != 0 {
@@ -77,15 +92,8 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	if len(beaconBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
 	}
-	//============End Build Body===========
-	//============Build Header=============
-	beaconBlock.Header.ProducerAddress = *producerAddress
-	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
-	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
-	beaconBlock.Header.Epoch = beaconBestState.Epoch
-	beaconBlock.Header.Round = round
-	beaconBlock.Header.PreviousBlockHash = beaconBestState.BestBlockHash
-	BLogger.log.Infof("Producing block: %d", beaconBlock.Header.Height)
+	//============End Build Body================
+	//============Build Header Hash=============
 	// Process new block with beststate
 	err = beaconBestState.updateBeaconBestState(beaconBlock)
 	if err != nil {
@@ -144,7 +152,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	beaconBlock.Header.ShardStateHash = tempShardStateHash
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
-	//===============End Create Header
+	//============END Build Header Hash=========
 	return beaconBlock, nil
 }
 
@@ -292,12 +300,12 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		if chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
 			randomInstruction, rand := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp)
 			instructions = append(instructions, randomInstruction)
-			Logger.log.Critical("RandomNumber", randomInstruction)
+			Logger.log.Info("RandomNumber", randomInstruction)
 			for _, candidate := range shardCandidates {
 				shardID := calculateCandidateShardID(candidate, rand, beaconBestState.ActiveShards)
 				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
 			}
-			Logger.log.Criticalf("assignedCandidates %+v", assignedCandidates)
+			Logger.log.Infof("assignedCandidates %+v", assignedCandidates)
 			for shardId, candidates := range assignedCandidates {
 				shardAssingInstruction := []string{"assign"}
 				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidates, ","))
@@ -368,7 +376,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	shardStates[shardID] = shardState
 
 	instructions := shardBlock.Instructions
-	Logger.log.Critical(instructions)
+	Logger.log.Info(instructions)
 	// Validate swap instruction => for testing
 	for _, l := range shardBlock.Instructions {
 		if len(l) > 0 {
@@ -381,7 +389,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	}
 
 	if len(instructions) != 0 {
-		Logger.log.Criticalf("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
+		Logger.log.Infof("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
 	}
 	for _, l := range instructions {
 		if len(l) > 0 {
@@ -399,10 +407,10 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	stakeBeaconTx := []string{}
 	stakeShardTx := []string{}
 	if len(stakers) != 0 {
-		Logger.log.Critical("Beacon Producer/ Process Stakers List", stakers)
+		Logger.log.Info("Beacon Producer/ Process Stakers List", stakers)
 	}
 	if len(swapers) != 0 {
-		Logger.log.Critical("Beacon Producer/ Process Stakers List", swapers)
+		Logger.log.Info("Beacon Producer/ Process Stakers List", swapers)
 	}
 	// Validate stake instruction => extract only valid stake instruction
 	for _, staker := range stakers {
