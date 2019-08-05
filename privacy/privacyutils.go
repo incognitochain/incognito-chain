@@ -1,10 +1,11 @@
 package privacy
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 	rand2 "math/rand"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 // RandBytes generates random bytes with length
@@ -94,52 +95,13 @@ func ConvertBigIntToBinary(number *big.Int, n int) []*big.Int {
 	return binary
 }
 
-// AddPaddingBigInt adds padding to big int to it is fixed size
-// and returns bytes array
-func AddPaddingBigInt(numInt *big.Int, fixedSize int) []byte {
-	numBytes := numInt.Bytes()
-	lenNumBytes := len(numBytes)
-	zeroBytes := make([]byte, fixedSize-lenNumBytes)
-	numBytes = append(zeroBytes, numBytes...)
-	return numBytes
-}
-
-// IntToByteArr converts an integer number to 2-byte array in big endian
-func IntToByteArr(n int) []byte {
-	if n == 0 {
-		return []byte{0, 0}
-	}
-
-	a := big.NewInt(int64(n))
-
-	if len(a.Bytes()) > 2 {
-		return []byte{}
-	}
-
-	if len(a.Bytes()) == 1 {
-		return []byte{0, a.Bytes()[0]}
-	}
-
-	return a.Bytes()
-}
-
-// ByteArrToInt reverts an integer number from 2-byte array
-func ByteArrToInt(bytesArr []byte) int {
-	if len(bytesArr) != 2 {
-		return 0
-	}
-
-	numInt := new(big.Int).SetBytes(bytesArr)
-	return int(numInt.Int64())
-}
-
 // isOdd check a big int is odd or not
 func isOdd(a *big.Int) bool {
 	return a.Bit(0) == 1
 }
 
-// PAdd1Div4 computes (p + 1) / 4
-func PAdd1Div4(p *big.Int) (res *big.Int) {
+// padd1Div4 computes (p + 1) / 4
+func padd1Div4(p *big.Int) (res *big.Int) {
 	res = new(big.Int).Add(p, big.NewInt(1))
 	res.Div(res, big.NewInt(4))
 	return

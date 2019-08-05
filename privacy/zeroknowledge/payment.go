@@ -161,7 +161,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.oneOfManyProof)))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
 		oneOfManyProof := proof.oneOfManyProof[i].Bytes()
-		bytes = append(bytes, privacy.IntToByteArr(utils.OneOfManyProofSize)...)
+		bytes = append(bytes, common.IntToBytes(utils.OneOfManyProofSize)...)
 		bytes = append(bytes, oneOfManyProof...)
 	}
 
@@ -169,7 +169,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	bytes = append(bytes, byte(len(proof.serialNumberProof)))
 	for i := 0; i < len(proof.serialNumberProof); i++ {
 		serialNumberProof := proof.serialNumberProof[i].Bytes()
-		bytes = append(bytes, privacy.IntToByteArr(utils.SnPrivacyProofSize)...)
+		bytes = append(bytes, common.IntToBytes(utils.SnPrivacyProofSize)...)
 		bytes = append(bytes, serialNumberProof...)
 	}
 
@@ -184,7 +184,7 @@ func (proof *PaymentProof) Bytes() []byte {
 	//ComOutputMultiRangeProofSize
 	if hasPrivacy {
 		comOutputMultiRangeProof := proof.aggregatedRangeProof.Bytes()
-		bytes = append(bytes, privacy.IntToByteArr(len(comOutputMultiRangeProof))...)
+		bytes = append(bytes, common.IntToBytes(len(comOutputMultiRangeProof))...)
 		bytes = append(bytes, comOutputMultiRangeProof...)
 	} else {
 		bytes = append(bytes, []byte{0, 0}...)
@@ -267,7 +267,7 @@ func (proof *PaymentProof) Bytes() []byte {
 
 	// convert commitment index to bytes array
 	for i := 0; i < len(proof.commitmentIndices); i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(big.NewInt(int64(proof.commitmentIndices[i])), common.Uint64Size)...)
+		bytes = append(bytes, common.AddPaddingBigInt(big.NewInt(int64(proof.commitmentIndices[i])), common.Uint64Size)...)
 	}
 	//fmt.Printf("BYTES ------------------ %v\n", bytes)
 	//fmt.Printf("LEN BYTES ------------------ %v\n", len(bytes))
@@ -283,7 +283,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	offset += 1
 	proof.oneOfManyProof = make([]*oneoutofmany.OneOutOfManyProof, lenOneOfManyProofArray)
 	for i := 0; i < lenOneOfManyProofArray; i++ {
-		lenOneOfManyProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
+		lenOneOfManyProof := common.BytesToInt(proofbytes[offset : offset+2])
 		offset += 2
 		proof.oneOfManyProof[i] = new(oneoutofmany.OneOutOfManyProof).Init()
 		err := proof.oneOfManyProof[i].SetBytes(proofbytes[offset : offset+lenOneOfManyProof])
@@ -298,7 +298,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	offset += 1
 	proof.serialNumberProof = make([]*serialnumberprivacy.SNPrivacyProof, lenSerialNumberProofArray)
 	for i := 0; i < lenSerialNumberProofArray; i++ {
-		lenSerialNumberProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
+		lenSerialNumberProof := common.BytesToInt(proofbytes[offset : offset+2])
 		offset += 2
 		proof.serialNumberProof[i] = new(serialnumberprivacy.SNPrivacyProof).Init()
 		err := proof.serialNumberProof[i].SetBytes(proofbytes[offset : offset+lenSerialNumberProof])
@@ -324,7 +324,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	}
 
 	//ComOutputMultiRangeProofSize *aggregatedRangeProof
-	lenComOutputMultiRangeProof := privacy.ByteArrToInt(proofbytes[offset : offset+2])
+	lenComOutputMultiRangeProof := common.BytesToInt(proofbytes[offset : offset+2])
 	offset += 2
 	if lenComOutputMultiRangeProof > 0 {
 		aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}

@@ -179,10 +179,10 @@ func (proof *SNPrivacyProof) Bytes() []byte {
 	bytes = append(bytes, proof.tInput.Compress()...)
 	bytes = append(bytes, proof.tSN.Compress()...)
 
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zSK, common.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zRSK, common.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zInput, common.BigIntSize)...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zRInput, common.BigIntSize)...)
+	bytes = append(bytes, common.AddPaddingBigInt(proof.zSK, common.BigIntSize)...)
+	bytes = append(bytes, common.AddPaddingBigInt(proof.zRSK, common.BigIntSize)...)
+	bytes = append(bytes, common.AddPaddingBigInt(proof.zInput, common.BigIntSize)...)
+	bytes = append(bytes, common.AddPaddingBigInt(proof.zRInput, common.BigIntSize)...)
 
 	return bytes
 }

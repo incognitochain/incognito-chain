@@ -108,10 +108,10 @@ func (pubKey SchnPubKey) Verify(signature *SchnSignature, data []byte) bool {
 }
 
 func (sig *SchnSignature) Bytes() []byte {
-	bytes := append(AddPaddingBigInt(sig.E, common.BigIntSize), AddPaddingBigInt(sig.Z1, common.BigIntSize)...)
+	bytes := append(common.AddPaddingBigInt(sig.E, common.BigIntSize), common.AddPaddingBigInt(sig.Z1, common.BigIntSize)...)
 	// Z2 is nil when has no privacy
 	if sig.Z2 != nil {
-		bytes = append(bytes, AddPaddingBigInt(sig.Z2, common.BigIntSize)...)
+		bytes = append(bytes, common.AddPaddingBigInt(sig.Z2, common.BigIntSize)...)
 	}
 	return bytes
 }
@@ -124,7 +124,7 @@ func (sig *SchnSignature) SetBytes(bytes []byte) {
 
 // Hash calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)
 func Hash(p EllipticPoint, m []byte) *big.Int {
-	b := append(AddPaddingBigInt(p.X, common.BigIntSize), AddPaddingBigInt(p.Y, common.BigIntSize)...)
+	b := append(common.AddPaddingBigInt(p.X, common.BigIntSize), common.AddPaddingBigInt(p.Y, common.BigIntSize)...)
 	b = append(b, m...)
 
 	return new(big.Int).SetBytes(common.HashB(b))
