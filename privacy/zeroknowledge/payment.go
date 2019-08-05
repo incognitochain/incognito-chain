@@ -472,7 +472,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	return nil
 }
 
-func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+
+func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	var sumInputValue, sumOutputValue uint64
 	sumInputValue = 0
 	sumOutputValue = 0
@@ -484,8 +485,8 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	for i := 0; i < len(proof.inputCoins); i++ {
 		// Check input coins' Serial number is created from input coins' input and sender's spending key
 		if !proof.serialNumberNoPrivacyProof[i].Verify(nil) {
-			privacy.Logger.Log.Errorf("Failed verify serial number no privacy\n")
-			return false
+			privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
+			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, nil)
 		}
 
 		// Check input coins' cm is calculated correctly
@@ -496,7 +497,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.inputCoins[i].CoinDetails.Randomness))
 		if !cmTmp.IsEqual(proof.inputCoins[i].CoinDetails.CoinCommitment) {
 			privacy.Logger.Log.Errorf("Input coins %v commitment wrong!\n", i)
-			return false
+			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentInputFailedErr, nil)
 		}
 
 		// Calculate sum of input values
@@ -513,7 +514,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(proof.outputCoins[i].CoinDetails.Randomness))
 		if !cmTmp.IsEqual(proof.outputCoins[i].CoinDetails.CoinCommitment) {
 			privacy.Logger.Log.Errorf("Output coins %v commitment wrong!\n", i)
-			return false
+			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
 
 		// Calculate sum of output values
@@ -521,17 +522,17 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	}
 
 	// check if sum of input values equal sum of output values
-	if sumInputValue != sumOutputValue+fee {
+	if sumInputValue != sumOutputValue + fee {
 		privacy.Logger.Log.Debugf("sumInputValue: %v\n", sumInputValue)
 		privacy.Logger.Log.Debugf("sumOutputValue: %v\n", sumOutputValue)
 		privacy.Logger.Log.Debugf("fee: %v\n", fee)
-		privacy.Logger.Log.Errorf("Sum of inputs is not equal sum of output!\n")
-		return false
+		privacy.Logger.Log.Debugf("Sum of inputs is not equal sum of output!\n")
+		return false, privacy.NewPrivacyErr(privacy.VerifyAmountNoPrivacyFailedErr, nil)
 	}
-	return true
+	return true, nil
 }
 
-func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// verify for input coins
 	cmInputSum := make([]*privacy.EllipticPoint, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
@@ -549,36 +550,34 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, index, shardID)
 
 			if err != nil {
-				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database", index, err)
-				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
-				return false
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database", index, err)
+				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 			}
 			commitments[j] = new(privacy.EllipticPoint)
 			err = commitments[j].Decompress(commitmentBytes)
 			if err != nil {
-				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
-				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
-				return false
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
+				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 			}
 
 			commitments[j], err = commitments[j].Sub(cmInputSum[i])
 			if err != nil {
-				privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs", index, err)
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs", index, err)
 				privacy.NewPrivacyErr(privacy.VerificationErr, errors.New("zero knowledge verification error"))
-				return false
+				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 			}
 		}
 
 		proof.oneOfManyProof[i].Statement.Commitments = commitments
 
 		if !proof.oneOfManyProof[i].Verify() {
-			privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: One out of many failed")
-			return false
+			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
+			return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, nil)
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
 		if !proof.serialNumberProof[i].Verify(nil) {
-			privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
-			return false
+			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
+			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, nil)
 		}
 	}
 
@@ -589,15 +588,15 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		cmTmp = cmTmp.Add(proof.commitmentOutputShardID[i])
 
 		if !cmTmp.IsEqual(proof.outputCoins[i].CoinDetails.CoinCommitment) {
-			privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Commitment for output coins are not computed correctly")
-			return false
+			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Commitment for output coins are not computed correctly")
+			return false, privacy.NewPrivacyErr(privacy.VerifyCoinCommitmentOutputFailedErr, nil)
 		}
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
 	if !proof.aggregatedRangeProof.Verify() {
-		privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Multi-range failed")
-		return false
+		privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
+		return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, nil)
 	}
 
 	// Verify the proof that sum of all input values is equal to sum of all output values
@@ -622,13 +621,13 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		privacy.Logger.Log.Debugf("comInputValueSum: ", comInputValueSum)
 		privacy.Logger.Log.Debugf("comOutputValueSum: ", comOutputValueSum)
 		privacy.Logger.Log.Error("VERIFICATION PAYMENT PROOF: Sum of input coins' value is not equal to sum of output coins' value")
-		return false
+		return false, privacy.NewPrivacyErr(privacy.VerifyAmountPrivacyFailedErr, nil)
 	}
 
-	return true
+	return true, nil
 }
 
-func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) bool {
+func (proof PaymentProof) Verify(hasPrivacy bool, pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// has no privacy
 	if !hasPrivacy {
 		return proof.verifyNoPrivacy(pubKey, fee, db, shardID, tokenID)
