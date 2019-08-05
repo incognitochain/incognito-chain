@@ -376,9 +376,11 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 	// Also, pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BRIDGE_SHARD_ID)
 	if shardID == bridgeID {
+		prevBlock := blockchain.BestState.Shard[shardID].BestBlock
 		commPubkeyInst := pickBeaconSwapConfirmInst(beaconBlocks)
 		if len(commPubkeyInst) > 0 {
 			instructions = append(instructions, commPubkeyInst...)
+			BLogger.log.Infof("Found beacon swap confirm inst and add to bridge block %d: %s", prevBlock.Header.Height+1, commPubkeyInst)
 		}
 		height := blockchain.BestState.Shard[shardID].ShardHeight + 1
 		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
@@ -387,7 +389,6 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			for _, b := range beaconBlocks {
 				bid = append(bid, b.Header.Height)
 			}
-			prevBlock := blockchain.BestState.Shard[shardID].BestBlock
 			Logger.log.Infof("Picked burning confirm inst: %s %d %v\n", confirmInsts, prevBlock.Header.Height+1, bid)
 			instructions = append(instructions, confirmInsts...)
 		}
