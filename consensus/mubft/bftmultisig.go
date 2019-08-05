@@ -40,7 +40,7 @@ func (multiSig *multiSigScheme) Init(userKeySet *incognitokey.KeySet, committee 
 	copy(multiSig.combine.SigningCommittee, committee)
 	multiSig.scheme = new(privacy.MultiSigScheme)
 	multiSig.scheme.Init()
-	multiSig.scheme.Keyset.Set(&userKeySet.PrivateKey, &userKeySet.PaymentAddress.Pk)
+	multiSig.scheme.GetKeyset().Set(&userKeySet.PrivateKey, &userKeySet.PaymentAddress.Pk)
 }
 
 func (multiSig *multiSigScheme) Prepare() error {
@@ -82,7 +82,7 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 	}
 	sort.Ints(multiSig.combine.ValidatorsIdxR)
 
-	commitSig := multiSig.scheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
+	commitSig := multiSig.scheme.GetKeyset().SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
 
 	multiSig.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), common.ZeroByte)
 	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), common.ZeroByte)
