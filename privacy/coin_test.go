@@ -23,13 +23,13 @@ func TestMain(m *testing.M) {
 
 /*
 	Unit test for CommitAll Coin
- */
+*/
 
 func TestCoinCommitAll(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(Coin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -53,12 +53,12 @@ func TestCoinCommitAll(t *testing.T) {
 
 /*
 	Unit test for MarshalJSON/UnmarshalJSON Coin
- */
+*/
 func TestCoinMarshalJSON(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(Coin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -83,13 +83,13 @@ func TestCoinMarshalJSON(t *testing.T) {
 
 /*
 	Unit test for Bytes/SetBytes Coin function
- */
+*/
 
 func TestCoinBytesSetBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(Coin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -119,7 +119,7 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(Coin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -149,7 +149,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(Coin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -167,7 +167,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	assert.Greater(t, len(coinBytes), 0)
 
 	// edit coinBytes
-	coinBytes[len(coinBytes) - 1] = byte(123)
+	coinBytes[len(coinBytes)-1] = byte(123)
 
 	// new coin object and set bytes from bytes array
 	coin2 := new(Coin).Init()
@@ -187,13 +187,13 @@ func TestCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 
 /*
 	Unit test for HashH Coin function
- */
+*/
 
 func TestCoinHashH(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(Coin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -212,13 +212,13 @@ func TestCoinHashH(t *testing.T) {
 
 /*
 	Unit test for Bytes/SetBytes InputCoin function
- */
+*/
 
 func TestInputCoinBytesSetBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(InputCoin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -248,7 +248,7 @@ func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(InputCoin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -277,7 +277,7 @@ func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(InputCoin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -295,7 +295,7 @@ func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	assert.Greater(t, len(coinBytes), 0)
 
 	// edit coinBytes
-	coinBytes[len(coinBytes) - 1] = byte(123)
+	coinBytes[len(coinBytes)-1] = byte(123)
 
 	// new coin object and set bytes from bytes array
 	coin2 := new(InputCoin).Init()
@@ -313,16 +313,15 @@ func TestInputCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 	assert.Equal(t, errors.New("coinBytes is empty"), err)
 }
 
-
 /*
 	Unit test for Bytes/SetBytes OutputCoin function
- */
+*/
 
 func TestOutputCoinBytesSetBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(OutputCoin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 	//receivingKey := GenerateReceivingKey(privateKey)
@@ -355,7 +354,7 @@ func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(OutputCoin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -384,7 +383,7 @@ func TestOutputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	// init coin with fully fields
 	// init public key
 	coin := new(OutputCoin).Init()
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -402,7 +401,7 @@ func TestOutputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	assert.Greater(t, len(coinBytes), 0)
 
 	// edit coinBytes
-	coinBytes[len(coinBytes) - 1] = byte(123)
+	coinBytes[len(coinBytes)-1] = byte(123)
 
 	// new coin object and set bytes from bytes array
 	coin2 := new(OutputCoin).Init()
@@ -422,10 +421,10 @@ func TestOutputCoinBytesSetBytesWithEmptyBytes(t *testing.T) {
 
 /*
 	Unit test for Encrypt/Decrypt OutputCoin
- */
+*/
 func TestOutputCoinEncryptDecrypt(t *testing.T) {
 	// prepare key
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	paymentAddress := GeneratePaymentAddress(privateKey)
 	viewingKey := GenerateViewingKey(privateKey)
@@ -459,7 +458,7 @@ func TestOutputCoinEncryptDecrypt(t *testing.T) {
 
 func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 	// prepare key
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	paymentAddress := GeneratePaymentAddress(privateKey)
 	viewingKey := GenerateViewingKey(privateKey)
@@ -483,7 +482,7 @@ func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 	assert.Equal(t, nil, err2)
 
 	// edit receiving key to be unmatched with transmission key
-	viewingKey.Rk[len(viewingKey.Rk) -1] = 123
+	viewingKey.Rk[len(viewingKey.Rk)-1] = 123
 
 	err3 := coin2.Decrypt(viewingKey)
 	assert.Equal(t, (*PrivacyError)(nil), err3)
@@ -493,7 +492,7 @@ func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 
 func TestOutputCoinEncryptWithInvalidKey(t *testing.T) {
 	// prepare key
-	seedKey := []byte{1,2,3}
+	seedKey := []byte{1, 2, 3}
 	privateKey := GeneratePrivateKey(seedKey)
 	publicKey := GeneratePublicKey(privateKey)
 
@@ -504,13 +503,12 @@ func TestOutputCoinEncryptWithInvalidKey(t *testing.T) {
 	coin.CoinDetails.PublicKey.Decompress(publicKey)
 
 	dataKey := [][]byte{
-		{1,2,3},		// 3 bytes
+		{1, 2, 3}, // 3 bytes
 		{16, 223, 34, 4, 35, 63, 73, 48, 69, 10, 11, 182, 183, 144, 150, 160, 17, 183, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33}, // 33 bytes, but not is on curve P256
 	}
 
 	for _, item := range dataKey {
 		err := coin.Encrypt(item)
-		assert.Equal(t, ErrCodeMessage[DecompressTransmissionKeyErr].code, err.GetCode())
+		assert.Equal(t, ErrCodeMessage[DecompressTransmissionKeyErr].Code, err.GetCode())
 	}
 }
-
