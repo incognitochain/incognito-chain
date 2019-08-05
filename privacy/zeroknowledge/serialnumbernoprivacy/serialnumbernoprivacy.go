@@ -22,7 +22,7 @@ type SNNoPrivacyWitness struct {
 	seed *big.Int
 }
 
-// SNNoPrivacyProof contains Proof's value
+// serialNumberNNoPrivacyProof contains Proof's value
 type SNNoPrivacyProof struct {
 	// general info
 	stmt SerialNumberNoPrivacyStatement

@@ -162,7 +162,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 	assert.Equal(t, int(expectProofSize), len(bytes))
 	fmt.Printf("Aggregated range proof size: %v\n", len(bytes))
 
-	// new AggregatedRangeProof from bytes array
+	// new aggregatedRangeProof from bytes array
 	proof2 := new(AggregatedRangeProof)
 	proof2.SetBytes(bytes)
 
