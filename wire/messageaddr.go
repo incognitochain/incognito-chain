@@ -16,8 +16,9 @@ const (
 )
 
 type RawPeer struct {
-	RawAddress string
-	PublicKey  string
+	RawAddress    string
+	PublicKeyType string
+	PublicKey     string
 }
 
 type MessageAddr struct {
