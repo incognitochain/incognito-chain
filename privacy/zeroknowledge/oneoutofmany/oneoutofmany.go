@@ -173,21 +173,21 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 
 	// convert array f to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.f[i], common.BigIntSize)...)
+		bytes = append(bytes, common.AddPaddingBigInt(proof.f[i], common.BigIntSize)...)
 	}
 
 	// convert array za to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.za[i], common.BigIntSize)...)
+		bytes = append(bytes, common.AddPaddingBigInt(proof.za[i], common.BigIntSize)...)
 	}
 
 	// convert array zb to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.zb[i], common.BigIntSize)...)
+		bytes = append(bytes, common.AddPaddingBigInt(proof.zb[i], common.BigIntSize)...)
 	}
 
 	// convert array zd to bytes array
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zd, common.BigIntSize)...)
+	bytes = append(bytes, common.AddPaddingBigInt(proof.zd, common.BigIntSize)...)
 
 	return bytes
 }
@@ -345,7 +345,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Calculate x
 	x := big.NewInt(0)
 	for j := 0; j < n; j++ {
-		x = utils.GenerateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		x = utils.GenerateChallenge([][]byte{common.AddPaddingBigInt(x, common.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 	}
 
 	// Calculate za, zb zd
@@ -408,7 +408,7 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	x := big.NewInt(0)
 
 	for j := 0; j < n; j++ {
-		x = utils.GenerateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
+		x = utils.GenerateChallenge([][]byte{common.AddPaddingBigInt(x, common.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
 	}
 
 	for i := 0; i < n; i++ {

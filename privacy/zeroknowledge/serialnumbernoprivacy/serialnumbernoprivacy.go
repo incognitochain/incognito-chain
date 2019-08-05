@@ -138,12 +138,12 @@ func (pro *SNNoPrivacyProof) Bytes() []byte {
 	var bytes []byte
 	bytes = append(bytes, pro.stmt.output.Compress()...)
 	bytes = append(bytes, pro.stmt.vKey.Compress()...)
-	bytes = append(bytes, privacy.AddPaddingBigInt(pro.stmt.input, common.BigIntSize)...)
+	bytes = append(bytes, common.AddPaddingBigInt(pro.stmt.input, common.BigIntSize)...)
 
 	bytes = append(bytes, pro.tSeed.Compress()...)
 	bytes = append(bytes, pro.tOutput.Compress()...)
 
-	bytes = append(bytes, privacy.AddPaddingBigInt(pro.zSeed, common.BigIntSize)...)
+	bytes = append(bytes, common.AddPaddingBigInt(pro.zSeed, common.BigIntSize)...)
 
 	return bytes
 }
