@@ -133,24 +133,24 @@ func (paymentProof *PaymentProof) SetOutputCoins(v []*privacy.OutputCoin) {
 	paymentProof.outputCoins = v
 }
 
-func (proof *PaymentProof) Init() *PaymentProof {
+func (proof *PaymentProof) Init() {
 	aggregatedRangeProof := &aggregaterange.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
-	proof = &PaymentProof{
-		oneOfManyProof:           []*oneoutofmany.OneOutOfManyProof{},
-		serialNumberProof:        []*serialnumberprivacy.SNPrivacyProof{},
-		aggregatedRangeProof:     aggregatedRangeProof,
-		inputCoins:               []*privacy.InputCoin{},
-		outputCoins:              []*privacy.OutputCoin{},
-		commitmentOutputValue:    []*privacy.EllipticPoint{},
-		commitmentOutputSND:      []*privacy.EllipticPoint{},
-		commitmentOutputShardID:  []*privacy.EllipticPoint{},
-		commitmentInputSecretKey: new(privacy.EllipticPoint),
-		commitmentInputValue:     []*privacy.EllipticPoint{},
-		commitmentInputSND:       []*privacy.EllipticPoint{},
-		commitmentInputShardID:   new(privacy.EllipticPoint),
-	}
-	return proof
+	proof.oneOfManyProof = []*oneoutofmany.OneOutOfManyProof{}
+	proof.serialNumberProof = []*serialnumberprivacy.SNPrivacyProof{}
+	proof.aggregatedRangeProof = aggregatedRangeProof
+	proof.inputCoins = []*privacy.InputCoin{}
+	proof.outputCoins = []*privacy.OutputCoin{}
+
+	proof.commitmentOutputValue = []*privacy.EllipticPoint{}
+	proof.commitmentOutputSND = []*privacy.EllipticPoint{}
+	proof.commitmentOutputShardID = []*privacy.EllipticPoint{}
+
+	proof.commitmentInputSecretKey = new(privacy.EllipticPoint)
+	proof.commitmentInputValue = []*privacy.EllipticPoint{}
+	proof.commitmentInputSND = []*privacy.EllipticPoint{}
+	proof.commitmentInputShardID = new(privacy.EllipticPoint)
+
 }
 
 func (proof PaymentProof) MarshalJSON() ([]byte, error) {
@@ -717,7 +717,8 @@ func (wit *PaymentWitness) Init(hasPrivacy bool,
 
 // Prove creates big proof
 func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.PrivacyError) {
-	proof := new(PaymentProof).Init()
+	proof := new(PaymentProof)
+	proof.Init()
 
 	proof.inputCoins = wit.inputCoins
 	proof.outputCoins = wit.outputCoins
