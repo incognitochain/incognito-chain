@@ -87,7 +87,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	// Process input of transaction
 	// Get Serial numbers of input
 	// Append into accepttedSerialNumbers if this serial number haven't exist yet
-	for _, item := range proof.InputCoins {
+	for _, item := range proof.GetInputCoins() {
 		serialNum := item.CoinDetails.SerialNumber.Compress()
 		ok, err := db.HasSerialNumber(*tokenID, serialNum, shardID)
 		if err != nil {
@@ -102,7 +102,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	// Proccessed variable: commitment, snd, outputcoins
 	// Commitment and SND must not exist before in db
 	// Outputcoins will be stored as new utxo for next transaction
-	for _, item := range proof.OutputCoins {
+	for _, item := range proof.GetOutputCoins() {
 		commitment := item.CoinDetails.CoinCommitment.Compress()
 		pubkey := item.CoinDetails.PublicKey.Compress()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
