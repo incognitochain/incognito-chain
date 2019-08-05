@@ -287,8 +287,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.PublicKey != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -318,8 +318,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.PublicKey != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -347,8 +347,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.PublicKey != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
