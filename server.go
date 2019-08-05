@@ -1136,7 +1136,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	isRelayNodeForConsensus := cfg.Accelerator
 	if isRelayNodeForConsensus {
 		senderPublicKey := p.GetRemotePeer().GetPublicKey()
-		bestState := blockchain.GetBestStateBeacon()
+		bestState := blockchain.GetBeaconBestState()
 		beaconCommitteeList := bestState.BeaconCommittee
 		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
 		if isInBeaconCommittee {
@@ -1190,19 +1190,19 @@ func (serverObj *Server) GetNodeRole() string {
 		return ""
 	}
 	pubkey := serverObj.userKeySet.GetPublicKeyInBase58CheckEncode()
-	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconCommittee) > -1 {
+	if common.IndexOfStr(pubkey, blockchain.GetBeaconBestState().BeaconCommittee) > -1 {
 		return "BEACON_VALIDATOR"
 	}
-	if common.IndexOfStr(pubkey, blockchain.GetBestStateBeacon().BeaconPendingValidator) > -1 {
+	if common.IndexOfStr(pubkey, blockchain.GetBeaconBestState().BeaconPendingValidator) > -1 {
 		return "BEACON_WAITING"
 	}
-	shardCommittee := blockchain.GetBestStateBeacon().GetShardCommittee()
+	shardCommittee := blockchain.GetBeaconBestState().GetShardCommittee()
 	for _, s := range shardCommittee {
 		if common.IndexOfStr(pubkey, s) > -1 {
 			return "SHARD_VALIDATOR"
 		}
 	}
-	shardPendingCommittee := blockchain.GetBestStateBeacon().GetShardPendingValidator()
+	shardPendingCommittee := blockchain.GetBeaconBestState().GetShardPendingValidator()
 	for _, s := range shardPendingCommittee {
 		if common.IndexOfStr(pubkey, s) > -1 {
 			return "SHARD_VALIDATOR"

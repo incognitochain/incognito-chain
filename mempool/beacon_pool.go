@@ -37,8 +37,8 @@ func init() {
 		mainLoopTime := time.Duration(BEACON_POOL_MAIN_LOOP_TIME) * time.Millisecond
 		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
-			GetBeaconPool().RemoveBlock(blockchain.GetBestStateBeacon().BeaconHeight)
-			GetBeaconPool().CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
+			GetBeaconPool().RemoveBlock(blockchain.GetBeaconBestState().BeaconHeight)
+			GetBeaconPool().CleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
 			GetBeaconPool().PromotePendingPool()
 		}
 	}()
@@ -47,7 +47,7 @@ func init() {
 func InitBeaconPool(pubsubManager *pubsub.PubSubManager) {
 	//do nothing
 	beaconPool := GetBeaconPool()
-	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
+	beaconPool.SetBeaconState(blockchain.GetBeaconBestState().BeaconHeight)
 	beaconPool.PubSubManager = pubsubManager
 	_, subChanRole, _ := beaconPool.PubSubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
 	beaconPool.RoleInCommitteesEvent = subChanRole
@@ -109,7 +109,7 @@ func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	}
 	self.insertNewBeaconBlockToPool(block)
 	self.promotePendingPool()
-	//self.CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
+	//self.CleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
 	return nil
 }
 
@@ -193,7 +193,7 @@ func (self *BeaconPool) updateLatestBeaconState() {
 	if len(self.validPool) > 0 {
 		self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
 	} else {
-		self.latestValidHeight = blockchain.GetBestStateBeacon().BeaconHeight
+		self.latestValidHeight = blockchain.GetBeaconBestState().BeaconHeight
 	}
 }
 
