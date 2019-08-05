@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"errors"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -39,7 +38,7 @@ type SchnMultiSig struct {
 // SetBytes - Constructing multiSig from byte array
 func (multiSig *SchnMultiSig) SetBytes(sigByte []byte) error {
 	if len(sigByte) < CompressedEllipticPointSize+common.BigIntSize {
-		return errors.New("Invalid sig length")
+		return NewPrivacyErr(InvalidLengthMultiSigErr, nil)
 	}
 	multiSig.r = new(EllipticPoint)
 	err := multiSig.r.Decompress(sigByte[0:CompressedEllipticPointSize])
@@ -66,11 +65,11 @@ func (multiSigKeyset *MultiSigKeyset) Set(priKey *PrivateKey, pubKey *PublicKey)
 // Bytes - Converting SchnorrMultiSig to byte array
 func (multiSig SchnMultiSig) Bytes() ([]byte, error) {
 	if !Curve.IsOnCurve(multiSig.r.X, multiSig.r.Y) {
-		return nil, errors.New("Invalid multiSig for converting to bytes array")
+		return nil, NewPrivacyErr(InvalidMultiSigErr, nil)
 	}
 	res := multiSig.r.Compress()
 	if multiSig.s == nil {
-		return nil, errors.New("Invalid multiSig for converting to bytes array")
+		return nil, NewPrivacyErr(InvalidMultiSigErr, nil)
 	}
 	temp := multiSig.s.Bytes()
 	diff := common.BigIntSize - len(temp)
@@ -143,11 +142,12 @@ func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicK
 	res.Set(selfR, sig)
 	sigInBytes, err := res.Bytes()
 	if err != nil {
-		Logger.Log.Error("SignMultiSig", err)
-		return nil, err
+		Logger.Log.Error("Convert multisig to bytes array error when signing", err)
+		return nil, NewPrivacyErr(ConvertMultiSigToBytesErr, err)
 	}
+
 	if len(sigInBytes) != (common.BigIntSize + CompressedEllipticPointSize) {
-		return nil, errors.New("can not sign multi sig")
+		return nil, NewPrivacyErr(SignMultiSigErr, nil)
 	}
 
 	return res, nil
@@ -166,11 +166,12 @@ func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicK
 func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) (bool, error) {
 	multiSigInByte, err := multiSig.Bytes()
 	if err != nil {
-		Logger.Log.Error("VerifyMultiSig", err)
-		return false, err
+		Logger.Log.Error("Convert multisig to bytes array error when verifying", err)
+		return false, NewPrivacyErr(ConvertMultiSigToBytesErr, err)
 	}
+
 	if len(multiSigInByte) != (common.BigIntSize + CompressedEllipticPointSize) {
-		return false, errors.New("Wrong length")
+		return false, NewPrivacyErr(InvalidLengthMultiSigErr, nil)
 	}
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
