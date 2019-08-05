@@ -43,11 +43,12 @@ import (
 	Sign:
 		Sign block and update validator index, agg sig
 */
-func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.PaymentAddress, round int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
+func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.PaymentAddress, round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
 	// lock blockchain
 	blockGenerator.chain.chainLock.Lock()
 	defer blockGenerator.chain.chainLock.Unlock()
-	beaconBlock := &BeaconBlock{}
+	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Beacon.BeaconHeight+1)
+	beaconBlock := NewBeaconBlock()
 	beaconBestState := NewBeaconBestState()
 	var err error
 	// produce new block with current beststate
@@ -55,73 +56,70 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	if err != nil {
 		return nil, err
 	}
-	//==========Create header
+	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
+	//============Build body===============
+	rewardByEpochInstruction := [][]string{}
+	if beaconBestState.BeaconHeight%common.EPOCH == 1 {
+		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch)
+		if err != nil {
+			return nil, NewBlockChainError(BuildRewardInstructionError, err)
+		}
+		beaconBestState.Epoch += 1
+	}
+	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
+	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions)
+	if len(rewardByEpochInstruction) != 0 {
+		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
+	}
+	beaconBlock.Body.Instructions = tempInstruction
+	beaconBlock.Body.ShardState = tempShardState
+	if len(beaconBlock.Body.Instructions) != 0 {
+		Logger.log.Info("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+	}
+	//============End Build Body===========
+	//============Build Header=============
 	beaconBlock.Header.ProducerAddress = *producerAddress
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = beaconBestState.Epoch
 	beaconBlock.Header.Round = round
-	BLogger.log.Infof("Producing block: %d", beaconBlock.Header.Height)
-	// Eg: Epoch is 200 blocks then increase epoch at block 201, 401, 601
-	rewardByEpochInstruction := [][]string{}
-	if beaconBlock.Header.Height%common.EPOCH == 1 {
-		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch)
-		if err != nil {
-			return nil, err
-		}
-		beaconBlock.Header.Epoch++
-	}
 	beaconBlock.Header.PreviousBlockHash = beaconBestState.BestBlockHash
-	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeacon)
-	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
-	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions)
-	if len(rewardByEpochInstruction) != 0 {
-		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
-	}
-	//==========Create Body
-	beaconBlock.Body.Instructions = tempInstruction
-	beaconBlock.Body.ShardState = tempShardState
-	//==========End Create Body
-	//============Process new block with beststate
-	if len(beaconBlock.Body.Instructions) != 0 {
-		Logger.log.Critical("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
-	}
-	err = beaconBestState.Update(beaconBlock)
+	BLogger.log.Infof("Producing block: %d", beaconBlock.Header.Height)
+	// Process new block with beststate
+	err = beaconBestState.updateBeaconBestState(beaconBlock)
 	if err != nil {
 		return nil, err
 	}
-	//============End Process new block with beststate
-	//==========Create Hash in Header
+	// calculate hash
 	// BeaconValidator root: beacon committee + beacon pending committee
 	validatorArr := append(beaconBestState.BeaconCommittee, beaconBestState.BeaconPendingValidator...)
-	beaconBlock.Header.BeaconCommitteeAndValidatorsRoot, err = GenerateHashFromStringArray(validatorArr)
+	tempBeaconCommitteeAndValidatorRoot, err := GenerateHashFromStringArray(validatorArr)
 	if err != nil {
-		panic(err)
+		return nil, NewBlockChainError(GenerateBeaconCommitteeAndValidatorRootError, err)
 	}
 	// BeaconCandidate root: beacon current candidate + beacon next candidate
 	beaconCandidateArr := append(beaconBestState.CandidateBeaconWaitingForCurrentRandom, beaconBestState.CandidateBeaconWaitingForNextRandom...)
-	beaconBlock.Header.BeaconCandidateRoot, err = GenerateHashFromStringArray(beaconCandidateArr)
+	tempBeaconCandidateRoot, err := GenerateHashFromStringArray(beaconCandidateArr)
 	if err != nil {
-		panic(err)
+		return nil, NewBlockChainError(GenerateBeaconCandidateRootError, err)
 	}
 	// Shard candidate root: shard current candidate + shard next candidate
 	shardCandidateArr := append(beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CandidateShardWaitingForNextRandom...)
-	beaconBlock.Header.ShardCandidateRoot, err = GenerateHashFromStringArray(shardCandidateArr)
+	tempShardCandidateRoot, err := GenerateHashFromStringArray(shardCandidateArr)
 	if err != nil {
-		panic(err)
+		return nil, NewBlockChainError(GenerateShardCandidateRootError, err)
 	}
 	// Shard Validator root
-	beaconBlock.Header.ShardCommitteeAndValidatorsRoot, err = GenerateHashFromMapByteString(beaconBestState.GetShardPendingValidator(), beaconBestState.GetShardCommittee())
+	tempShardCommitteeAndValidatorRoot, err := GenerateHashFromMapByteString(beaconBestState.GetShardPendingValidator(), beaconBestState.GetShardCommittee())
 	if err != nil {
-		panic(err)
+		return nil, NewBlockChainError(GenerateShardCommitteeAndValidatorRootError, err)
 	}
 	// Shard state hash
 	tempShardStateHash, err := GenerateHashFromShardState(tempShardState)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, err
+		return nil, NewBlockChainError(GenerateShardStateError, err)
 	}
-	beaconBlock.Header.ShardStateHash = tempShardStateHash
 	// Instruction Hash
 	tempInstructionArr := []string{}
 	for _, strs := range tempInstruction {
@@ -130,17 +128,21 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, err
+		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
-	beaconBlock.Header.InstructionHash = tempInstructionHash
-
 	// Instruction merkle root
 	flattenInsts, err := FlattenAndConvertStringInst(tempInstruction)
 	if err != nil {
-		return nil, err
+		return nil, NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
+	// add hash to header
+	beaconBlock.Header.BeaconCommitteeAndValidatorRoot = tempBeaconCommitteeAndValidatorRoot
+	beaconBlock.Header.BeaconCandidateRoot = tempBeaconCandidateRoot
+	beaconBlock.Header.ShardCandidateRoot = tempShardCandidateRoot
+	beaconBlock.Header.ShardCommitteeAndValidatorRoot = tempShardCommitteeAndValidatorRoot
+	beaconBlock.Header.ShardStateHash = tempShardStateHash
+	beaconBlock.Header.InstructionHash = tempInstructionHash
 	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
-
 	//===============End Create Header
 	return beaconBlock, nil
 }
@@ -152,7 +154,7 @@ func (blockGenerator *BlockGenerator) FinalizeBeaconBlock(blk *BeaconBlock, prod
 	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
 	if err != nil {
 		Logger.log.Error(err)
-		return err
+		return NewBlockChainError(ProduceSignatureError, err)
 	}
 	blk.ProducerSig = producerSig
 	//================End Generate Signature
