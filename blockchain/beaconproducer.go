@@ -64,7 +64,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
 	//======Build Header Essential Data=======
 	rewardByEpochInstruction := [][]string{}
-	if beaconBestState.BeaconHeight+1%common.EPOCH == 1 {
+	if (beaconBestState.BeaconHeight+1)%uint64(common.EPOCH) == 1 {
 		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBestState.Epoch)
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
@@ -79,7 +79,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	beaconBlock.Header.Epoch = epoch
 	beaconBlock.Header.Round = round
 	beaconBlock.Header.PreviousBlockHash = beaconBestState.BestBlockHash
-	BLogger.log.Infof("Producing block: %d", beaconBlock.Header.Height)
+	BLogger.log.Infof("Producing block: %d, %d", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	//============Build body===================
 	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
