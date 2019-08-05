@@ -14,17 +14,17 @@ func TestSchnorrSignature(t *testing.T) {
 	privKey.r = RandScalar()
 
 	// generate Schnorr Public Key
-	privKey.publicKey = new(SchnorrPubKey)
+	privKey.publicKey = new(SchnorrPublicKey)
 
 	// G is base generator on Curve
-	privKey.publicKey.G = new(EllipticPoint)
-	privKey.publicKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
+	privKey.publicKey.g = new(EllipticPoint)
+	privKey.publicKey.g.Set(Curve.Params().Gx, Curve.Params().Gy)
 
 	// H = alpha*G
-	privKey.publicKey.H = privKey.publicKey.G.ScalarMult(RandScalar())
+	privKey.publicKey.h = privKey.publicKey.g.ScalarMult(RandScalar())
 
 	// PK = G^SK * H^R
-	privKey.publicKey.PK = privKey.publicKey.G.ScalarMult(privKey.secretKey).Add(privKey.publicKey.H.ScalarMult(privKey.r))
+	privKey.publicKey.publicKey = privKey.publicKey.g.ScalarMult(privKey.secretKey).Add(privKey.publicKey.h.ScalarMult(privKey.r))
 
 	// random message to sign
 	data := RandScalar()
