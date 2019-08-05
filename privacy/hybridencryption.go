@@ -42,6 +42,7 @@ func (ciphertext *Ciphertext) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
+
 	ciphertext.SymKeyEncrypted = bytes[0:elGamalCiphertextSize]
 	ciphertext.MsgEncrypted = bytes[elGamalCiphertextSize:]
 	return nil

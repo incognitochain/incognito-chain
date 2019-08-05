@@ -69,11 +69,16 @@ func (coin *Coin) HashH() *common.Hash {
 
 //CommitAll commits a coin with 5 attributes include:
 // public key, value, serial number derivator, shardID form last byte public key, randomness
-func (coin *Coin) CommitAll() {
+func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
-	coin.CoinCommitment = PedCom.CommitAll(values)
+	commitment, err := PedCom.CommitAll(values)
+	if err != nil {
+		return err
+	}
+	coin.CoinCommitment = commitment
 	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
+	return nil
 }
 
 // Bytes converts a coin's details to a bytes array
