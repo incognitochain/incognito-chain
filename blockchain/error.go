@@ -88,6 +88,15 @@ const (
 	SwapValidatorError
 	CrossShardBitMapError
 	ShardCommitteeLengthAndCommitteeIndexError
+	BuildRewardInstructionError
+	GenerateBeaconCommitteeAndValidatorRootError
+	GenerateShardCommitteeAndValidatorRootError
+	GenerateBeaconCandidateRootError
+	GenerateShardCandidateRootError
+	GenerateShardStateError
+	GenerateShardCommitteeError
+	GenerateShardPendingValidatorError
+	ProduceSignatureError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -170,6 +179,15 @@ var ErrCodeMessage = map[int]struct {
 	SwapValidatorError:                                {-1073, "Swap Validator Error"},
 	CrossShardBitMapError:                             {-1074, "Cross Shard Bitmap Error"},
 	ShardCommitteeLengthAndCommitteeIndexError:        {-1075, "Shard Committee Length And Committee Index Error"},
+	BuildRewardInstructionError:                       {-1076, "Build Reward Transaction Error"},
+	GenerateBeaconCommitteeAndValidatorRootError:      {-1077, "Generate Beacon Committee And Validator Root Error"},
+	GenerateShardCommitteeAndValidatorRootError:       {-1078, "Generate Shard Committee And Validator Root Error"},
+	GenerateBeaconCandidateRootError:                  {-1079, "Generate Beacon Candidate Root Error"},
+	GenerateShardCandidateRootError:                   {-1080, "Generate Shard Candidate Root Error"},
+	GenerateShardStateError:                           {-1081, "Generate Shard State Error"},
+	GenerateShardCommitteeError:                       {-1082, "Generate Shard Committee Root Error"},
+	GenerateShardPendingValidatorError:                {-1083, "Generate Shard Pending Validator Root Error"},
+	ProduceSignatureError:                             {-1084, "Produce Signature Error"},
 }
 
 type BlockChainError struct {
