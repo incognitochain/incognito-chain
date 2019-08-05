@@ -331,11 +331,11 @@ func (tx *Tx) signTx() error {
 	// prepare private key for Schnorr
 	sk := new(big.Int).SetBytes(tx.sigPrivKey[:common.BigIntSize])
 	r := new(big.Int).SetBytes(tx.sigPrivKey[common.BigIntSize:])
-	sigKey := new(privacy.SchnPrivKey)
+	sigKey := new(privacy.SchnorrPrivateKey)
 	sigKey.Set(sk, r)
 
 	// save public key for verification signature tx
-	tx.SigPubKey = sigKey.PubKey.PK.Compress()
+	tx.SigPubKey = sigKey.GetPublicKey().PK.Compress()
 
 	// signing
 	if Logger.log != nil {
@@ -364,7 +364,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 
 	/****** verify Schnorr signature *****/
 	// prepare Public key for verification
-	verKey := new(privacy.SchnPubKey)
+	verKey := new(privacy.SchnorrPubKey)
 	verKey.PK = new(privacy.EllipticPoint)
 	err = verKey.PK.Decompress(tx.SigPubKey)
 	if err != nil {
