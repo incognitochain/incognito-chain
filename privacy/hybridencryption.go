@@ -40,7 +40,7 @@ func (ciphertext *Ciphertext) Bytes() []byte {
 // SetBytes reverts bytes array to Ciphertext
 func (ciphertext *Ciphertext) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return errors.New("SetBytes ciphertext encryption: invalid input")
+		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
 	ciphertext.SymKeyEncrypted = bytes[0:elGamalCiphertextSize]
 	ciphertext.MsgEncrypted = bytes[elGamalCiphertextSize:]

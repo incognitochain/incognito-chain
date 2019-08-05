@@ -27,6 +27,7 @@ const (
 	ProveOneOutOfManyErr
 	ProveSerialNumberPrivacyErr
 	ProveAggregatedRangeErr
+	InvalidInputToSetBytesErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -35,19 +36,20 @@ var ErrCodeMessage = map[int]struct {
 }{
 	UnexpectedErr: {-9000, "Unexpected error"},
 
-	InvalidOutputValue:                        {-9001, "Invalid output value"},
-	MarshalPaymentProofErr:                    {-9002, "Marshal payment proof error"},
-	UnmarshalPaymentProofErr:                  {-9003, "Unmarshal payment proof error"},
-	SetBytesProofErr:                          {-9004, "Set bytes payment proof error"},
-	EncryptOutputCoinErr:                      {-9005, "Encrypt output coins error"},
-	DecryptOutputCoinErr:                      {-9006, "Decrypt output coins error"},
-	DecompressTransmissionKeyErr:              {-9007, "Can not decompress transmission key error"},
-	CalInnerProductErr:                        {-9008, "Calculate inner product between two vectors error"},
+	InvalidOutputValue:           {-9001, "Invalid output value"},
+	MarshalPaymentProofErr:       {-9002, "Marshal payment proof error"},
+	UnmarshalPaymentProofErr:     {-9003, "Unmarshal payment proof error"},
+	SetBytesProofErr:             {-9004, "Set bytes payment proof error"},
+	EncryptOutputCoinErr:         {-9005, "Encrypt output coins error"},
+	DecryptOutputCoinErr:         {-9006, "Decrypt output coins error"},
+	DecompressTransmissionKeyErr: {-9007, "Can not decompress transmission key error"},
+	CalInnerProductErr:           {-9008, "Calculate inner product between two vectors error"},
+	InvalidInputToSetBytesErr:    {-9009, "Length of input data is zero, can not set bytes"},
 
-	ProveSerialNumberNoPrivacyErr:             {-9100, "Proving serial number no privacy proof error"},
-	ProveOneOutOfManyErr:                      {-9101, "Proving one out of many proof error"},
-	ProveSerialNumberPrivacyErr:               {-9102, "Proving serial number privacy proof error"},
-	ProveAggregatedRangeErr:                   {-9103, "Proving aggregated range proof error"},
+	ProveSerialNumberNoPrivacyErr: {-9100, "Proving serial number no privacy proof error"},
+	ProveOneOutOfManyErr:          {-9101, "Proving one out of many proof error"},
+	ProveSerialNumberPrivacyErr:   {-9102, "Proving serial number privacy proof error"},
+	ProveAggregatedRangeErr:       {-9103, "Proving aggregated range proof error"},
 
 	VerifySerialNumberNoPrivacyProofFailedErr: {-9201, "Verify serial number no privacy proof failed"},
 	VerifyCoinCommitmentInputFailedErr:        {-9202, "Verify coin commitment of input coin failed"},

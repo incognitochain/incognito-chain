@@ -379,7 +379,10 @@ func (tx *Tx) verifySigTx() (bool, error) {
 
 	// convert signature from byte array to SchnorrSign
 	signature := new(privacy.SchnSignature)
-	signature.SetBytes(tx.Sig)
+	err = signature.SetBytes(tx.Sig)
+	if err != nil {
+		return false, err
+	}
 
 	// verify signature
 	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])

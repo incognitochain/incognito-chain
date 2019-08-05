@@ -1,7 +1,6 @@
 package privacy
 
 import (
-	"github.com/pkg/errors"
 	"math/big"
 )
 
@@ -48,7 +47,7 @@ func (ciphertext *ElGamalCiphertext) Bytes() []byte {
 // SetBytes reverts 66-byte array to ciphertext
 func (ciphertext *ElGamalCiphertext) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return errors.New("Length bytes array of Elgamal ciphertext is empty")
+		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
 
 	ciphertext.C1 = new(EllipticPoint)
