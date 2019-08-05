@@ -120,7 +120,11 @@ func (sig SchnSignature) Bytes() []byte {
 	return bytes
 }
 
-func (sig *SchnSignature) SetBytes(bytes []byte) {
+func (sig *SchnSignature) SetBytes(bytes []byte) error {
+	if len(bytes) == 0 {
+		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
+	}
+
 	sig.e = new(big.Int).SetBytes(bytes[0:common.BigIntSize])
 	sig.z1 = new(big.Int).SetBytes(bytes[common.BigIntSize : 2*common.BigIntSize])
 	sig.z2 = new(big.Int).SetBytes(bytes[2*common.BigIntSize:])
