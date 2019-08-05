@@ -77,7 +77,8 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	amount, _, errAmount := base58.Base58Check{}.Decode(inst[4])
 	txID, errTx := common.Hash{}.NewHashFromStr(inst[5])
 	height, _, errHeight := base58.Base58Check{}.Decode(inst[6])
-	if err := common.CheckError(errToken, errAddr, errAmount, errTx, errHeight); err != nil {
+	incTokenID, _, errIncToken := base58.Base58Check{}.Decode(inst[7])
+	if err := common.CheckError(errToken, errAddr, errAmount, errTx, errHeight, errIncToken); err != nil {
 		BLogger.log.Error(errors.WithStack(err))
 		return nil, errors.WithStack(err)
 	}
@@ -92,6 +93,7 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
 	flatten = append(flatten, txID[:]...)
 	flatten = append(flatten, toBytes32BigEndian(height)...)
+	flatten = append(flatten, incTokenID...)
 	return flatten, nil
 }
 
