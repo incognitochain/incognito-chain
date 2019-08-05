@@ -13,7 +13,7 @@ import (
 type Poly []*big.Int
 
 // Helper function for generating a polynomial with given integers
-func NewPolyInts(coeffs ...int) (p Poly) {
+func newPoly(coeffs ...int) (p Poly) {
 	p = make([]*big.Int, len(coeffs))
 	for i := 0; i < len(coeffs); i++ {
 		p[i] = big.NewInt(int64(coeffs[i]))
@@ -25,7 +25,7 @@ func NewPolyInts(coeffs ...int) (p Poly) {
 // Returns a polynomial with random coefficients
 // You can give the degree of the polynomial
 // A random coefficients have a [0, 2^bits) integer
-func RandomPoly(degree, bits int64) (p Poly) {
+func randomPoly(degree, bits int64) (p Poly) {
 	p = make(Poly, degree+1)
 	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
 	exp := big.NewInt(2)
@@ -108,7 +108,7 @@ func (p Poly) String() (s string) {
 // if P == Q, returns 0
 // if P > Q, returns 1
 // if P < Q, returns -1
-func (p *Poly) Compare(q *Poly) int {
+func (p *Poly) compare(q *Poly) int {
 	switch {
 	case p.GetDegree() > q.GetDegree():
 		return 1
@@ -129,7 +129,7 @@ func (p *Poly) Compare(q *Poly) int {
 // Add() adds two polynomials
 // modulo m can be nil
 func (p Poly) Add(q Poly, m *big.Int) Poly {
-	if p.Compare(&q) < 0 {
+	if p.compare(&q) < 0 {
 		return q.Add(p, m)
 	}
 	var r Poly = make([]*big.Int, len(p))
@@ -170,7 +170,7 @@ func (p *Poly) Neg() Poly {
 func (p Poly) Clone(adjust int) Poly {
 	var q Poly = make([]*big.Int, len(p)+adjust)
 	if adjust < 0 {
-		return NewPolyInts(0)
+		return newPoly(0)
 	}
 	for i := 0; i < adjust; i++ {
 		q[i] = big.NewInt(0)
@@ -233,7 +233,7 @@ func (p Poly) Div(q Poly, m *big.Int) (quo, rem Poly) {
 		q.sanitize(m)
 	}
 	if p.GetDegree() < q.GetDegree() || q.isZero() {
-		quo = NewPolyInts(0)
+		quo = newPoly(0)
 		rem = p.Clone(0)
 		return
 	}
@@ -262,7 +262,7 @@ func (p Poly) Div(q Poly, m *big.Int) (quo, rem Poly) {
 		// if r == 0, it means that the highest coefficient of the result is not an integer
 		// this polynomial library handles integer coefficients
 		if r.Cmp(big.NewInt(0)) == 0 {
-			quo = NewPolyInts(0)
+			quo = newPoly(0)
 			rem = p.Clone(0)
 			return
 		}
@@ -284,7 +284,7 @@ func (p Poly) Div(q Poly, m *big.Int) (quo, rem Poly) {
 
 // returns the greatest common divisor(GCD) of P and Q (Euclidean algorithm)
 func (p Poly) Gcd(q Poly, m *big.Int) Poly {
-	if p.Compare(&q) < 0 {
+	if p.compare(&q) < 0 {
 		return q.Gcd(p, m)
 	}
 	if q.isZero() {
