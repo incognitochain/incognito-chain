@@ -11,7 +11,7 @@ handleGetMiningInfo - RPC returns various mining-related info
 */
 func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetMiningInfo params: %+v", params)
-	if httpServer.config.MiningPubKeyB58 == "" {
+	if httpServer.config.MiningKeys == "" {
 		return jsonresult.GetMiningInfoResult{
 			IsCommittee: false,
 		}, nil
@@ -24,18 +24,22 @@ func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan 
 	result.IsEnableMining = httpServer.config.Server.IsEnableMining()
 	result.BeaconHeight = httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
 
-	role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
+	// role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
+	role, shardID := httpServer.config.ConsensusEngine.GetUserRole()
 	result.Role = role
-	if role == common.SHARD_ROLE {
-		result.ShardHeight = httpServer.config.BlockChain.BestState.Shard[shardID].ShardHeight
-		result.CurrentShardBlockTx = len(httpServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
-		result.ShardID = int(shardID)
-	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
-		result.ShardID = -1
-	}
-	if role == common.EmptyString {
+
+	switch shardID {
+	case -2:
+		result.ShardID = -2
 		result.IsCommittee = false
+	case -1:
+		result.IsCommittee = true
+	default:
+		result.ShardHeight = httpServer.config.BlockChain.BestState.Shard[byte(shardID)].ShardHeight
+		result.CurrentShardBlockTx = len(httpServer.config.BlockChain.BestState.Shard[byte(shardID)].BestBlock.Body.Transactions)
+		result.ShardID = shardID
 	}
+
 	Logger.log.Debugf("handleGetMiningInfo result: %+v", result)
 	return result, nil
 }

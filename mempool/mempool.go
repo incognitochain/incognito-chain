@@ -3,19 +3,19 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -32,17 +32,17 @@ const (
 
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
-	BlockChain            *blockchain.BlockChain       // Block chain of node
-	DataBase              database.DatabaseInterface   // main database of blockchain
-	DataBaseMempool       databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
-	ChainParams           *blockchain.Params
-	FeeEstimator          map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
-	TxLifeTime            uint                   // Transaction life time in pool
-	MaxTx                 uint64                 //Max transaction pool may have
-	IsLoadFromMempool     bool                   //Reset mempool database when run node
-	PersistMempool        bool
-	RelayShards           []byte
-	UserKeyset            *incognitokey.KeySet
+	BlockChain        *blockchain.BlockChain       // Block chain of node
+	DataBase          database.DatabaseInterface   // main database of blockchain
+	DataBaseMempool   databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
+	ChainParams       *blockchain.Params
+	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
+	TxLifeTime        uint                   // Transaction life time in pool
+	MaxTx             uint64                 //Max transaction pool may have
+	IsLoadFromMempool bool                   //Reset mempool database when run node
+	PersistMempool    bool
+	RelayShards       []byte
+	// UserKeyset            *incognitokey.KeySet
 	PubSubManager         *pubsub.PubSubManager
 	RoleInCommitteesEvent pubsub.EventChannel
 }
