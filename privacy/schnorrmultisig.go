@@ -64,13 +64,13 @@ func (multiSigKeyset *MultiSigKeyset) Set(priKey *PrivateKey, pubKey *PublicKey)
 }
 
 // Bytes - Converting SchnorrMultiSig to byte array
-func (multiSig SchnMultiSig) Bytes() []byte {
+func (multiSig SchnMultiSig) Bytes() ([]byte, error) {
 	if !Curve.IsOnCurve(multiSig.r.X, multiSig.r.Y) {
-		panic("Throw Error from Byte() method")
+		return nil, errors.New("Throw Error from Byte() method")
 	}
 	res := multiSig.r.Compress()
 	if multiSig.s == nil {
-		panic("Throw Error from Byte() method")
+		return nil, errors.New("Throw Error from Byte() method")
 	}
 	temp := multiSig.s.Bytes()
 	diff := common.BigIntSize - len(temp)
@@ -78,7 +78,7 @@ func (multiSig SchnMultiSig) Bytes() []byte {
 		temp = append([]byte{0}, temp...)
 	}
 	res = append(res, temp...)
-	return res
+	return res, nil
 }
 
 func (multisigScheme *MultiSigScheme) Init() {
@@ -101,7 +101,7 @@ func (multisigScheme *MultiSigScheme) Init() {
 	#4 r: random number of signer
 */
 // SignMultiSig ...
-func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
+func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) (*SchnMultiSig, error) {
 	//r = R0+R1+R2+R3+...+Rn
 	R := new(EllipticPoint)
 	R.X = big.NewInt(0)
@@ -141,11 +141,16 @@ func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicK
 	selfR = selfR.ScalarMult(r)
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
-	if len(res.Bytes()) != (common.BigIntSize + CompressedEllipticPointSize) {
-		panic("can not sign multi sig")
+	sigInBytes, err := res.Bytes()
+	if err != nil {
+		Logger.Log.Error("SignMultiSig", err)
+		return nil, err
+	}
+	if len(sigInBytes) != (common.BigIntSize + CompressedEllipticPointSize) {
+		return nil, errors.New("can not sign multi sig")
 	}
 
-	return res
+	return res, nil
 }
 
 // VerifyMultiSig ...
@@ -158,9 +163,14 @@ func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicK
 		#4: r combine in phase 1
 	return: true or false
 */
-func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) bool {
-	if len(multiSig.Bytes()) != (common.BigIntSize + CompressedEllipticPointSize) {
-		panic("Wrong length")
+func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicKey, listCombinePK []*PublicKey, RCombine *EllipticPoint) (bool, error) {
+	multiSigInByte, err := multiSig.Bytes()
+	if err != nil {
+		Logger.Log.Error("VerifyMultiSig", err)
+		return false, err
+	}
+	if len(multiSigInByte) != (common.BigIntSize + CompressedEllipticPointSize) {
+		return false, errors.New("Wrong length")
 	}
 	//Calculate common params:
 	//	aggKey = PK0+PK1+PK2+...+PKn, PK0 is selfPK
@@ -189,7 +199,7 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 	//RXCPoint is r.X^C
 	RXCPoint := X.ScalarMult(C)
 	RXCPoint = RXCPoint.Add(multiSig.r)
-	return GSPoint.IsEqual(RXCPoint)
+	return GSPoint.IsEqual(RXCPoint), nil
 }
 
 //GenerateRandomFromSeed abc

@@ -78,10 +78,11 @@ func TestSchnorrMultiSignature(t *testing.T) {
 	var err error
 	//start1 := time.Now()
 	for i := 0; i < n; i++ {
-		sigs[i] = keySets[i].SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
+		sigs[i], _ = keySets[i].SignMultiSig(data, listPKs, publicRandomness, secretRandomness[i])
 
 		assert.Equal(t, nil, err)
-		assert.Equal(t, schnMultiSigSize, len(sigs[i].Bytes()))
+		inBytes, _ := sigs[i].Bytes()
+		assert.Equal(t, schnMultiSigSize, len(inBytes))
 	}
 
 	//end1 := time.Since(start1)
@@ -100,7 +101,7 @@ func TestSchnorrMultiSignature(t *testing.T) {
 	// verify combined signature
 	//start3 := time.Now()
 	listCombinedPKs := listPKs[:n]
-	isValid := combinedSig.VerifyMultiSig(data, listPKs, listCombinedPKs, combinedPublicRandomness)
+	isValid, _ := combinedSig.VerifyMultiSig(data, listPKs, listCombinedPKs, combinedPublicRandomness)
 	/*end3 := time.Since(start3)
 	fmt.Printf("Time3: %v\n", end3)*/
 	assert.Equal(t, true, isValid)
