@@ -14,14 +14,14 @@ func CreateShardGenesisBlock(
 ) *ShardBlock {
 	body := ShardBody{}
 	header := ShardHeader{
-		Timestamp:       time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
-		Height:          1,
-		Version:         version,
-		PrevBlockHash:   common.Hash{},
-		BeaconHeight:    1,
-		Epoch:           1,
-		Round:           1,
-		ProducerAddress: privacy.PaymentAddress{},
+		Timestamp:         time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
+		Height:            1,
+		Version:           version,
+		PreviousBlockHash: common.Hash{},
+		BeaconHeight:      1,
+		Epoch:             1,
+		Round:             1,
+		ProducerAddress:   privacy.PaymentAddress{},
 	}
 
 	for _, tx := range icoParams.InitialIncognito {

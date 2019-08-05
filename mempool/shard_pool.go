@@ -235,7 +235,7 @@ func (self *ShardPool) PromotePendingPool() {
 func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) bool {
 	//If unknown to beacon best state store in pending
 	// Condition 1
-	if block.Header.Height > blockchain.GetBestStateBeacon().GetBestHeightOfShard(block.Header.ShardID) {
+	if block.Header.Height > blockchain.GetBeaconBestState().GetBestHeightOfShard(block.Header.ShardID) {
 		self.pendingPool[block.Header.Height] = block
 		return false
 	}
@@ -249,7 +249,7 @@ func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) b
 				latestBlock := self.validPool[len(self.validPool)-1]
 				latestBlockHash := latestBlock.Header.Hash()
 				// condition 5
-				preHash := &block.Header.PrevBlockHash
+				preHash := &block.Header.PreviousBlockHash
 				if preHash.IsEqual(&latestBlockHash) {
 					self.validPool = append(self.validPool, block)
 					self.updateLatestShardState()
@@ -266,7 +266,7 @@ func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) b
 					// add delete block to cache
 					self.cache.Add(latestBlockHash, latestBlock)
 					// find previous block of new block
-					previousBlock, ok := self.conflictedPool[block.Header.PrevBlockHash]
+					previousBlock, ok := self.conflictedPool[block.Header.PreviousBlockHash]
 					if ok {
 						// try to add previous block of new block
 						err := self.AddShardBlock(previousBlock)
@@ -276,7 +276,7 @@ func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) b
 						}
 					} else {
 						msg := strconv.Itoa(int(block.Header.ShardID))
-						msg += fmt.Sprint("%+v", block.Header.PrevBlockHash)
+						msg += fmt.Sprint("%+v", block.Header.PreviousBlockHash)
 						self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestShardBlockByHashTopic, msg))
 					}
 					return false

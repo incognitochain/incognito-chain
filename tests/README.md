@@ -2,14 +2,11 @@
 ## Params
 - Second Os Params: testcase name
 - Third Os Params: config file
-## Json file format
+## Test by Json
 Sample Json:
 ```json
 {
- "node": {
-  "host": "http://localhost",
-  "ip": "9334"
- },
+ "node": "node-key",
  "input": {
   "command": "...",
   "context": false,
@@ -27,8 +24,12 @@ Sample Json:
 }
 ```
 ### Node Structure
-- host: ip or host to called (if called by websocket, remove `ws://`)
-- port: port to called
+- node-key is host, rpcport, wsport loaded from websocket.
+- Example key:
+    + Key -1: beacon
+    + Key 0: shard0-
+    + Key 1: shard1-
+    ...
 ### Input Structure:
 - command: name of command (ex: gettransactionbyhash)
 - context:
@@ -124,24 +125,8 @@ Returned response may have many information but as long as it meet the expected 
   }
 ]  
 ```
-### Command and Params List: 
-#### Create and Send Transaction:
-```
-command: createandsendtransaction
-params: [ "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM",
-        { "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":5250000000000},
-        2,
-        0,
-        64 ]
-```
-#### Get Transaction By Hash:
-```
-command: gettranssactionbyhash
-params: ["0xe4afb36e5a99c20cbd5835a1312fc1b5fd65dbe7d36eb992f1dcfcfa8b64c796"]
-```
-
-
-## Rpc Method Prototype
+## Test by Coding
+### Rpc Method Prototype
 ```$xslt
 
 type ExampleReponse struct {
@@ -166,5 +151,20 @@ func handleResponse(resResult json.RawMessage, rpcError *rpcserver.RPCError, res
 	}
 	return nil
 }
-
 ``` 
+### Sample Command and Params List: 
+#### Create and Send Transaction:
+```
+command: createandsendtransaction
+params: [ "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM",
+        { "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":5250000000000},
+        2,
+        0,
+        64 ]
+```
+#### Get Transaction By Hash:
+```
+command: gettranssactionbyhash
+params: ["0xe4afb36e5a99c20cbd5835a1312fc1b5fd65dbe7d36eb992f1dcfcfa8b64c796"]
+```
+

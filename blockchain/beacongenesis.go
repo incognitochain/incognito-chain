@@ -31,18 +31,18 @@ func CreateBeaconGenesisBlock(
 
 	body := BeaconBody{ShardState: nil, Instructions: inst}
 	header := BeaconHeader{
-		Timestamp:           time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
-		Height:              1,
-		Version:             1,
-		Round:               1,
-		Epoch:               1,
-		PrevBlockHash:       common.Hash{},
-		ValidatorsRoot:      common.Hash{},
-		BeaconCandidateRoot: common.Hash{},
-		ShardCandidateRoot:  common.Hash{},
-		ShardValidatorsRoot: common.Hash{},
-		ShardStateHash:      common.Hash{},
-		InstructionHash:     common.Hash{},
+		Timestamp:                        time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
+		Height:                           1,
+		Version:                          1,
+		Round:                            1,
+		Epoch:                            1,
+		PreviousBlockHash:                common.Hash{},
+		BeaconCommitteeAndValidatorsRoot: common.Hash{},
+		BeaconCandidateRoot:              common.Hash{},
+		ShardCandidateRoot:               common.Hash{},
+		ShardCommitteeAndValidatorsRoot:  common.Hash{},
+		ShardStateHash:                   common.Hash{},
+		InstructionHash:                  common.Hash{},
 	}
 
 	block := &BeaconBlock{

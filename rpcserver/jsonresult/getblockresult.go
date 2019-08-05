@@ -42,7 +42,7 @@ type GetBlockResult struct {
 	AggregatedSig     string             `json:"AggregatedSig"`
 	R                 string             `json:"R"`
 	Round             int                `json:"Round"`
-	CrossShards       []int              `json:"CrossShards"`
+	CrossShardBitMap  []int              `json:"CrossShardBitMap"`
 	Epoch             uint64             `json:"Epoch"`
 	Reward            uint64             `json:"Reward"`
 	RewardBeacon      uint64             `json:"RewardBeacon"`
@@ -68,7 +68,7 @@ func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock,
 	getBlockResult.Epoch = block.Header.Epoch
 	getBlockResult.Round = block.Header.Round
 	getBlockResult.Time = block.Header.Timestamp
-	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
+	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Instructions = block.Body.Instructions
 	getBlockResult.Size = size
 }
@@ -77,7 +77,7 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 	getBlockResult.BlockProducerSign = block.ProducerSig
 	getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
 	getBlockResult.Hash = block.Hash().String()
-	getBlockResult.PreviousBlockHash = block.Header.PrevBlockHash.String()
+	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Height = block.Header.Height
 	getBlockResult.Time = block.Header.Timestamp
@@ -95,10 +95,10 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 	getBlockResult.AggregatedSig = block.AggregatedSig
 	getBlockResult.R = block.R
 	getBlockResult.Round = block.Header.Round
-	getBlockResult.CrossShards = []int{}
-	if len(block.Header.CrossShards) > 0 {
-		for _, shardID := range block.Header.CrossShards {
-			getBlockResult.CrossShards = append(getBlockResult.CrossShards, int(shardID))
+	getBlockResult.CrossShardBitMap = []int{}
+	if len(block.Header.CrossShardBitMap) > 0 {
+		for _, shardID := range block.Header.CrossShardBitMap {
+			getBlockResult.CrossShardBitMap = append(getBlockResult.CrossShardBitMap, int(shardID))
 		}
 	}
 	getBlockResult.Epoch = block.Header.Epoch
