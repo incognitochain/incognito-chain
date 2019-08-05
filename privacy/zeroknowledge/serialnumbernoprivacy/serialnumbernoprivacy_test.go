@@ -19,7 +19,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 
 	SND := privacy.RandScalar()
 
-	serialNumber := privacy.PedCom.G[privacy.SK].Derive(skInt, SND)
+	serialNumber := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(skInt, SND)
 
 	witness := new(SNNoPrivacyWitness)
 	witness.Set(serialNumber, pkPoint, SND, skInt)

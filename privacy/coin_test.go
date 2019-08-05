@@ -43,10 +43,10 @@ func TestCoinCommitAll(t *testing.T) {
 	coin.Info = []byte("Incognito chain")
 
 	expectedCm := coin.PublicKey
-	expectedCm = expectedCm.Add(PedCom.G[VALUE].ScalarMult(big.NewInt(int64(coin.Value))))
-	expectedCm = expectedCm.Add(PedCom.G[SND].ScalarMult(coin.SNDerivator))
-	expectedCm = expectedCm.Add(PedCom.G[SHARDID].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
-	expectedCm = expectedCm.Add(PedCom.G[RAND].ScalarMult(coin.Randomness))
+	expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.Value))))
+	expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.SNDerivator))
+	expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
+	expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.Randomness))
 
 	assert.Equal(t, expectedCm, coin.CoinCommitment)
 }
