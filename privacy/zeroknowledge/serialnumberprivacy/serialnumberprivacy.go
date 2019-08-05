@@ -271,10 +271,10 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	dSND := privacy.RandScalar()
 
 	// calculate tSeed = g_SK^eSK * h^dSK
-	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.SK)
+	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.PedersenPrivateKeyIndex)
 
 	// calculate tSND = g_SND^eSND * h^dSND
-	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND, privacy.SND)
+	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND, privacy.PedersenSndIndex)
 
 	// calculate tSND = g_SK^eSND * h^dSND2
 	tOutput := wit.stmt.sn.ScalarMult(new(big.Int).Add(eSK, eSND))
@@ -322,7 +322,7 @@ func (proof *SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check gSND^zInput * h^zRInput = input^x * tInput
-	leftPoint1 := privacy.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, privacy.SND)
+	leftPoint1 := privacy.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, privacy.PedersenSndIndex)
 
 	rightPoint1 := proof.stmt.comInput.ScalarMult(x)
 	rightPoint1 = rightPoint1.Add(proof.tInput)
@@ -333,7 +333,7 @@ func (proof *SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
-	leftPoint2 := privacy.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, privacy.SK)
+	leftPoint2 := privacy.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, privacy.PedersenPrivateKeyIndex)
 
 	rightPoint2 := proof.stmt.comSK.ScalarMult(x)
 	rightPoint2 = rightPoint2.Add(proof.tSK)
@@ -346,10 +346,10 @@ func (proof *SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	// Check sn^(zSeed + zInput) = gSK^x * tOutput
 	leftPoint3 := proof.stmt.sn.ScalarMult(new(big.Int).Add(proof.zSK, proof.zInput))
 
-	rightPoint3 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
+	rightPoint3 := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].ScalarMult(x)
 	rightPoint3 = rightPoint3.Add(proof.tSN)
 
-	if !leftPoint3.IsEqual(rightPoint3){
+	if !leftPoint3.IsEqual(rightPoint3) {
 		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 3 failed")
 		return false, errors.New("verify serial number privacy proof statement 3 failed")
 	}
