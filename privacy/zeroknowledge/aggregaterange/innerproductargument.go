@@ -62,8 +62,8 @@ func (proof InnerProductProof) Bytes() []byte {
 		res = append(res, r.Compress()...)
 	}
 
-	res = append(res, privacy.AddPaddingBigInt(proof.a, common.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.b, common.BigIntSize)...)
+	res = append(res, common.AddPaddingBigInt(proof.a, common.BigIntSize)...)
+	res = append(res, common.AddPaddingBigInt(proof.b, common.BigIntSize)...)
 	res = append(res, proof.p.Compress()...)
 
 	return res
