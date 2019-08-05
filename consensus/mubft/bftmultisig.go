@@ -82,10 +82,19 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 	}
 	sort.Ints(multiSig.combine.ValidatorsIdxR)
 
-	commitSig := multiSig.scheme.GetKeyset().SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
+	commitSig, err := multiSig.scheme.GetKeyset().SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
+	if err != nil {
+		Logger.log.Error("SignData", err)
+		return err
+	}
 
 	multiSig.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), common.ZeroByte)
-	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), common.ZeroByte)
+	commitSigInBytes, err := commitSig.Bytes()
+	if err != nil {
+		Logger.log.Error("SignData", err)
+		return err
+	}
+	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSigInBytes, common.ZeroByte)
 
 	return nil
 }
@@ -124,8 +133,8 @@ func (multiSig *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig st
 	if err != nil {
 		return err
 	}
-	resValidateEachSigOfSigners := valSig.VerifyMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, []*privacy.PublicKey{validatorPubkey}, RCombined)
-	if !resValidateEachSigOfSigners {
+	resValidateEachSigOfSigners, err := valSig.VerifyMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, []*privacy.PublicKey{validatorPubkey}, RCombined)
+	if !resValidateEachSigOfSigners || err != nil {
 		return errors.New("Validator's sig is invalid " + validatorPk)
 	}
 	return nil
@@ -153,5 +162,10 @@ func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs map[string]bftC
 	multiSig.combine.ValidatorsIdxR = make([]int, len(validatorsIdxR))
 	copy(multiSig.combine.ValidatorsIdxR, validatorsIdxR)
 	aggregatedSig := multiSig.scheme.CombineMultiSig(listSigOfSigners)
-	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), common.ZeroByte), nil
+	aggregatedSigInByte, err := aggregatedSig.Bytes()
+	if err != nil {
+		Logger.log.Error("CombineSigs", err)
+		return common.EmptyString, err
+	}
+	return base58.Base58Check{}.Encode(aggregatedSigInByte, common.ZeroByte), nil
 }
