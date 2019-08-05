@@ -64,7 +64,7 @@ func (keySet KeySet) Sign(data []byte) ([]byte, error) {
 	}
 
 	hash := common.HashB(data)
-	privateKeySig := new(privacy.SchnPrivKey)
+	privateKeySig := new(privacy.SchnorrPrivateKey)
 	privateKeySig.Set(new(big.Int).SetBytes(keySet.PrivateKey), big.NewInt(0))
 
 	signature, err := privateKeySig.Sign(hash)
@@ -81,7 +81,7 @@ func (keySet KeySet) Verify(data, signature []byte) (bool, error) {
 	hash := common.HashB(data)
 	isValid := false
 
-	pubKeySig := new(privacy.SchnPubKey)
+	pubKeySig := new(privacy.SchnorrPubKey)
 	PK := new(privacy.EllipticPoint)
 	err := PK.Decompress(keySet.PaymentAddress.Pk)
 	if err != nil {
