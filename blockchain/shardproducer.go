@@ -379,7 +379,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 				startHeight := blockchain.BestState.Shard[shardID].ShardHeight + 2
 				bridgeSwapConfirmInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
 				prevBlock := blockchain.BestState.Shard[shardID].BestBlock
-				Logger.log.Infof("Add Bridge Committees Root in ShardID %+v block %d \n", shardID, prevBlock.Header.Height+1)
+				BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, prevBlock.Header.Height+1)
 			}
 		}
 	}
