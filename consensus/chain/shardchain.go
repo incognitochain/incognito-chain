@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 type ShardChain struct {
@@ -21,7 +22,7 @@ func (s *ShardChain) GetConsensusEngine() ConsensusInterface {
 }
 
 func (s *ShardChain) PushMessageToValidator(msg wire.Message) error {
-	return s.Node.PushMessageToShard(msg, s.ShardID)
+	return s.Node.PushMessageToShard(msg, s.ShardID, map[peer.ID]bool{})
 }
 
 func (s *ShardChain) GetLastBlockTimeStamp() uint64 {

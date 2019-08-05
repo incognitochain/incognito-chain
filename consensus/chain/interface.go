@@ -5,6 +5,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
+
+	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
 type ConsensusEngineInterface interface {
@@ -14,6 +16,10 @@ type ConsensusEngineInterface interface {
 
 	ProcessBFTMsg(msg *wire.MessageBFT)
 	ValidateBlockWithConsensus(block BlockInterface, chainName string, consensusType string) error
+	LoadMiningKeys(keys string) error
+	GetMiningPublicKey() (publickey string, keyType string)
+	SignDataWithMiningKey(data []byte) (string, error)
+	VerifyDataWithMiningKey(data []byte, sig string, publicKey string, publicKeyType string) error
 }
 
 type ConsensusInterface interface {
@@ -60,8 +66,8 @@ type ChainInterface interface {
 }
 
 type Node interface {
-	PushMessageToShard(wire.Message, byte) error
-	PushMessageToBeacon(wire.Message) error
+	PushMessageToShard(wire.Message, byte, map[libp2p.ID]bool) error
+	PushMessageToBeacon(wire.Message, map[libp2p.ID]bool) error
 	IsEnableMining() bool
-	GetMiningKey() string
+	GetMiningKeys() string
 }

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p"
 	crypto "github.com/libp2p/go-libp2p-crypto"
@@ -51,6 +50,7 @@ type Peer struct {
 	pendingPeers     map[string]*Peer
 	pendingPeersMtx  *sync.Mutex
 	publicKey        string
+	publicKeyType    string
 	listeningAddress common.SimpleAddr
 	seed             int64
 
@@ -63,10 +63,16 @@ type Peer struct {
 // config is the struct to hold configuration options useful to RemotePeer.
 type Config struct {
 	MessageListeners MessageListeners
-	UserKeySet       *incognitokey.KeySet
-	MaxOutPeers      int
-	MaxInPeers       int
-	MaxPeers         int
+	// UserKeySet       *incognitokey.KeySet
+	MaxOutPeers     int
+	MaxInPeers      int
+	MaxPeers        int
+	ConsensusEngine interface {
+		GetMiningPublicKey() (publickey string, keyType string)
+		SignMessageWithMiningKey(msg *wire.Message) (string, error)
+		SignDataWithMiningKey(data []byte) (string, error)
+		VerifyMessageWithMiningKey(msg *wire.Message) error
+	}
 }
 
 /*
@@ -177,11 +183,13 @@ func (peerObj *Peer) SetPeerConnsMtx(v *sync.Mutex) {
 	peerObj.peerConnsMtx = v
 }
 
-func (peerObj Peer) GetPublicKey() string {
-	return peerObj.publicKey
+// GetPublicKey return publicKey and keyType
+func (peerObj Peer) GetPublicKey() (string, string) {
+	return peerObj.publicKey, peerObj.publicKeyType
 }
 
-func (peerObj *Peer) SetPublicKey(publicKey string) {
+func (peerObj *Peer) SetPublicKey(publicKey string, keyType string) {
+	peerObj.publicKeyType = keyType
 	peerObj.publicKey = publicKey
 }
 

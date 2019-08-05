@@ -76,6 +76,9 @@ type RpcServerConfig struct {
 		IsEnableMining() bool
 		GetChainMiningStatus(chain int) string
 	}
+	ConsensusEngine interface {
+		GetUserRole() (string, int)
+	}
 	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool *mempool.ShardToBeaconPool
 	CrossShardPool    *mempool.CrossShardPool_v2
@@ -92,8 +95,8 @@ type RpcServerConfig struct {
 	// the mempool before they are mined into blocks.
 	FeeEstimator map[byte]*mempool.FeeEstimator
 	// IsMiningNode    bool   // flag mining node. True: mining, False: not mining
-	MiningPubKeyB58 string // base58check encode of mining pubkey
-	PubSubManager   *pubsub.PubSubManager
+	MiningKeys    string // encode of mining key
+	PubSubManager *pubsub.PubSubManager
 }
 
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
