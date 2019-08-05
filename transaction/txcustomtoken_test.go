@@ -91,7 +91,7 @@ func TestTxCustomToken(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, privacy.SigNoPrivacySize, len(sign))
+	assert.Equal(t, common.SigNoPrivacySize, len(sign))
 
 	isP := tx.IsPrivacy()
 	assert.Equal(t, false, isP)

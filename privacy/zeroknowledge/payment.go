@@ -70,7 +70,7 @@ type PaymentProof struct {
 	commitmentInputSND       []*privacy.EllipticPoint
 	commitmentInputShardID   *privacy.EllipticPoint
 
-	CommitmentIndices []uint64
+	commitmentIndices []uint64
 }
 
 func (paymentProof PaymentProof) GetOneOfManyProof() []*oneoutofmany.OneOutOfManyProof {
@@ -115,6 +115,10 @@ func (paymentProof PaymentProof) GetCommitmentInputSND() []*privacy.EllipticPoin
 
 func (paymentProof PaymentProof) GetCommitmentInputShardID() *privacy.EllipticPoint {
 	return paymentProof.commitmentInputShardID
+}
+
+func (paymentProof PaymentProof) GetCommitmentIndices() []uint64 {
+	return paymentProof.commitmentIndices
 }
 
 func (proof *PaymentProof) Init() *PaymentProof {
@@ -271,8 +275,8 @@ func (proof *PaymentProof) Bytes() []byte {
 	}
 
 	// convert commitment index to bytes array
-	for i := 0; i < len(proof.CommitmentIndices); i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(big.NewInt(int64(proof.CommitmentIndices[i])), common.Uint64Size)...)
+	for i := 0; i < len(proof.commitmentIndices); i++ {
+		bytes = append(bytes, privacy.AddPaddingBigInt(big.NewInt(int64(proof.commitmentIndices[i])), common.Uint64Size)...)
 	}
 	//fmt.Printf("BYTES ------------------ %v\n", bytes)
 	//fmt.Printf("LEN BYTES ------------------ %v\n", len(bytes))
@@ -466,9 +470,9 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 	}
 
 	// get commitments list
-	proof.CommitmentIndices = make([]uint64, len(proof.oneOfManyProof)*privacy.CommitmentRingSize)
+	proof.commitmentIndices = make([]uint64, len(proof.oneOfManyProof)*privacy.CommitmentRingSize)
 	for i := 0; i < len(proof.oneOfManyProof)*privacy.CommitmentRingSize; i++ {
-		proof.CommitmentIndices[i] = new(big.Int).SetBytes(proofbytes[offset : offset+common.Uint64Size]).Uint64()
+		proof.commitmentIndices[i] = new(big.Int).SetBytes(proofbytes[offset : offset+common.Uint64Size]).Uint64()
 		offset = offset + common.Uint64Size
 	}
 
@@ -713,7 +717,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	proof.commitmentInputValue = wit.comInputValue
 	proof.commitmentInputSND = wit.comInputSerialNumberDerivator
 	proof.commitmentInputShardID = wit.comInputShardID
-	proof.CommitmentIndices = wit.commitmentIndexs
+	proof.commitmentIndices = wit.commitmentIndexs
 
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
@@ -833,7 +837,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		// get commitments list from CommitmentIndices
 		commitments := make([]*privacy.EllipticPoint, privacy.CommitmentRingSize)
 		for j := 0; j < privacy.CommitmentRingSize; j++ {
-			index := proof.CommitmentIndices[i*privacy.CommitmentRingSize+j]
+			index := proof.commitmentIndices[i*privacy.CommitmentRingSize+j]
 			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, index, shardID)
 
 			if err != nil {
