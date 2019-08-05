@@ -70,7 +70,7 @@ func main() {
 		for _, value := range tempInitTestcase.([]interface{}) {
 			temp, ok := value.(string)
 			if !ok {
-				log.Println("Failed to get init testcase")
+				log.Println("Failed to load init testcase")
 				os.Exit(1)
 			}
 			initTestcase = append(initTestcase, temp)
@@ -81,7 +81,7 @@ func main() {
 			cmd := exec.Command("go", "test", "-run", initTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", initTestcaseName, err)
+				log.Printf("Failed to run test %+v, err %+v \n", initTestcaseName, string(msg))
 			} else {
 				log.Printf("%+v Message: %+v \n", initTestcaseName, string(msg))
 			}
@@ -91,25 +91,26 @@ func main() {
 	case "transaction":
 		tempTransactionTestcase, ok := testcaseData["transaction"]
 		if !ok {
-			log.Println("Failed to get transaction testcase")
+			log.Println("Failed to load transaction testcase")
 			os.Exit(0)
 		}
 		var transactionTestcase = []string{}
 		for _, value := range tempTransactionTestcase.([]interface{}) {
 			temp, ok := value.(string)
 			if !ok {
-				log.Println("Failed to get transaction testcase")
+				log.Println("Failed to load transaction testcase")
 				os.Exit(1)
 			}
 			transactionTestcase = append(transactionTestcase, temp)
 		}
-		
+
 		log.Println("Begin to run Transaction Testcase")
 		for _, transactionTestcaseName := range transactionTestcase {
+			log.Printf("Begin to run %+v Testcase \n", transactionTestcaseName)
 			cmd := exec.Command("go", "test", "-run", transactionTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", transactionTestcaseName, err)
+				log.Printf("Failed to run test %+v, err %+v \n", transactionTestcaseName, string(msg))
 			} else {
 				log.Printf("%+v Message: %+v \n", transactionTestcaseName, string(msg))
 			}
@@ -117,7 +118,7 @@ func main() {
 	case "crossshard":
 		tempCrossShardTestcase, ok := testcaseData["crossshard"]
 		if !ok {
-			log.Println("Failed to get crossshard testcase")
+			log.Println("Failed to load crossshard testcase")
 			os.Exit(0)
 		}
 		var crossShardTestcase = []string{}
@@ -129,13 +130,14 @@ func main() {
 			}
 			crossShardTestcase = append(crossShardTestcase, temp)
 		}
-		
+
 		log.Println("Begin to run Crossshard Testcase")
 		for _, crossShardTestcaseName := range crossShardTestcase {
+			log.Printf("Begin to run %+v Testcase \n", crossShardTestcaseName)
 			cmd := exec.Command("go", "test", "-run", crossShardTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", crossShardTestcaseName, err)
+				log.Printf("Failed to run test %+v, err %+v \n", crossShardTestcaseName, string(msg))
 			} else {
 				log.Printf("%+v Message: %+v \n", crossShardTestcaseName, string(msg))
 			}
@@ -155,13 +157,14 @@ func main() {
 			}
 			stakeTestcase = append(stakeTestcase, temp)
 		}
-		
+
 		log.Println("Begin to run Stake Testcase")
 		for _, stakeTestcaseName := range stakeTestcase {
+			log.Printf("Begin to run %+v Testcase \n", stakeTestcaseName)
 			cmd := exec.Command("go", "test", "-run", stakeTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", stakeTestcaseName, err)
+				log.Printf("Failed to run test %+v, err %+v \n", stakeTestcaseName, string(msg))
 			} else {
 				log.Printf("%+v Message: %+v \n", stakeTestcaseName, string(msg))
 			}
