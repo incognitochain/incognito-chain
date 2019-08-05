@@ -99,7 +99,7 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.SNDerivator != nil {
 		coinBytes = append(coinBytes, byte(common.BigIntSize))
-		coinBytes = append(coinBytes, AddPaddingBigInt(coin.SNDerivator, common.BigIntSize)...)
+		coinBytes = append(coinBytes, common.AddPaddingBigInt(coin.SNDerivator, common.BigIntSize)...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -114,7 +114,7 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.Randomness != nil {
 		coinBytes = append(coinBytes, byte(common.BigIntSize))
-		coinBytes = append(coinBytes, AddPaddingBigInt(coin.Randomness, common.BigIntSize)...)
+		coinBytes = append(coinBytes, common.AddPaddingBigInt(coin.Randomness, common.BigIntSize)...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -318,7 +318,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
 func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
 	// 32-byte first: Randomness, the rest of msg is value of coin
-	msg := append(AddPaddingBigInt(outputCoin.CoinDetails.Randomness, common.BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
+	msg := append(common.AddPaddingBigInt(outputCoin.CoinDetails.Randomness, common.BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
 
 	pubKeyPoint := new(EllipticPoint)
 	err := pubKeyPoint.Decompress(recipientTK)

@@ -63,7 +63,7 @@ func (point *EllipticPoint) ComputeYCoord() error {
 
 	// compute sqrt(x^3 - 3*x + B) mod p
 	// https://bitcointalk.org/index.php?topic=162805.msg1712294#msg1712294
-	tmpY := new(big.Int).Exp(xCube, PAdd1Div4(Curve.Params().P), Curve.Params().P)
+	tmpY := new(big.Int).Exp(xCube, padd1Div4(Curve.Params().P), Curve.Params().P)
 
 	// check if y is a square root of x^3 - 3*x + B.
 	ySquared := new(big.Int).Mul(tmpY, tmpY)
@@ -161,7 +161,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
 func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
-	tmp := AddPaddingBigInt(point.X, common.BigIntSize)
+	tmp := common.AddPaddingBigInt(point.X, common.BigIntSize)
 	if index == 0 {
 		tmp = append(tmp, byte(0))
 	} else {

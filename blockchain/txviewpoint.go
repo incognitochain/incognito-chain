@@ -127,7 +127,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 
 		// get data for Snderivators
 		snD := item.CoinDetails.SNDerivator
-		ok, err = db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(snD, common.BigIntSize), shardID)
+		ok, err = db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snD, common.BigIntSize), shardID)
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
@@ -271,7 +271,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						subView.mapSnD[pubkey] = make([][]byte, 0)
 					}
 					for _, b := range data {
-						temp := privacy.AddPaddingBigInt(&b, common.BigIntSize)
+						temp := common.AddPaddingBigInt(&b, common.BigIntSize)
 						subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], temp)
 					}
 				}
@@ -378,7 +378,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 
 		// get data for Snderivators
 		snD := item.CoinDetails.SNDerivator
-		ok, err = db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(snD, common.BigIntSize), shardID)
+		ok, err = db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snD, common.BigIntSize), shardID)
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
@@ -449,7 +449,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 							subView.mapSnD[pubkey] = make([][]byte, 0)
 						}
 						for _, t := range data {
-							temp := privacy.AddPaddingBigInt(&t, common.BigIntSize)
+							temp := common.AddPaddingBigInt(&t, common.BigIntSize)
 							subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], temp)
 						}
 					}
