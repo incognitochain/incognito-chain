@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"bytes"
 	"encoding/json"
 	"math/big"
@@ -45,7 +46,7 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 		newInst := [][]string{}
 		switch metaType {
 		case metadata.ContractingRequestMeta:
-			newInst = [][]string{inst}
+			newInst, err = blockChain.buildInstructionsForContractingReq(contentStr, shardID, metaType)
 
 		case metadata.IssuingRequestMeta:
 			newInst, err = blockChain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
@@ -110,6 +111,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
 		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
+		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
 	}, nil
 }
 
