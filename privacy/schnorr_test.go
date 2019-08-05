@@ -9,22 +9,22 @@ import (
 
 func TestSchnorrSignature(t *testing.T) {
 	// generate Schnorr Private Key
-	privKey := new(SchnPrivKey)
-	privKey.SK = RandScalar()
-	privKey.R = RandScalar()
+	privKey := new(SchnorrPrivateKey)
+	privKey.secretKey = RandScalar()
+	privKey.r = RandScalar()
 
 	// generate Schnorr Public Key
-	privKey.PubKey = new(SchnPubKey)
+	privKey.publicKey = new(SchnorrPubKey)
 
 	// G is base generator on Curve
-	privKey.PubKey.G = new(EllipticPoint)
-	privKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
+	privKey.publicKey.G = new(EllipticPoint)
+	privKey.publicKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
 
 	// H = alpha*G
-	privKey.PubKey.H = privKey.PubKey.G.ScalarMult(RandScalar())
+	privKey.publicKey.H = privKey.publicKey.G.ScalarMult(RandScalar())
 
 	// PK = G^SK * H^R
-	privKey.PubKey.PK = privKey.PubKey.G.ScalarMult(privKey.SK).Add(privKey.PubKey.H.ScalarMult(privKey.R))
+	privKey.publicKey.PK = privKey.publicKey.G.ScalarMult(privKey.secretKey).Add(privKey.publicKey.H.ScalarMult(privKey.r))
 
 	// random message to sign
 	data := RandScalar()
@@ -43,6 +43,6 @@ func TestSchnorrSignature(t *testing.T) {
 	assert.Equal(t, signature, signature2)
 
 	// verify the signature with private key
-	res := privKey.PubKey.Verify(signature2, data.Bytes())
+	res := privKey.publicKey.Verify(signature2, data.Bytes())
 	assert.Equal(t, true, res)
 }
