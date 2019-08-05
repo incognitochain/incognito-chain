@@ -772,22 +772,22 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 		isPrivacy := true
 		// check Privacy or not
 
-		if txN.Proof.AggregatedRangeProof == nil || len(txN.Proof.OneOfManyProof) == 0 || len(txN.Proof.SerialNumberProof) == 0 {
+		if txN.Proof.GetAggregatedRangeProof() == nil || len(txN.Proof.GetOneOfManyProof()) == 0 || len(txN.Proof.GetSerialNumberProof()) == 0 {
 			isPrivacy = false
 		}
 
 		if isPrivacy {
-			if !txN.Proof.AggregatedRangeProof.ValidateSanity() {
+			if !txN.Proof.GetAggregatedRangeProof().ValidateSanity() {
 				return false, errors.New("validate sanity Aggregated range proof failed")
 			}
 
-			for i := 0; i < len(txN.Proof.OneOfManyProof); i++ {
-				if !txN.Proof.OneOfManyProof[i].ValidateSanity() {
+			for i := 0; i < len(txN.Proof.GetOneOfManyProof()); i++ {
+				if !txN.Proof.GetOneOfManyProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity One out of many proof failed")
 				}
 			}
-			for i := 0; i < len(txN.Proof.SerialNumberProof); i++ {
-				if !txN.Proof.SerialNumberProof[i].ValidateSanity() {
+			for i := 0; i < len(txN.Proof.GetSerialNumberProof()); i++ {
+				if !txN.Proof.GetSerialNumberProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number proof failed")
 				}
 			}
@@ -811,41 +811,41 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				}
 			}
 			// check ComInputSK
-			if !txN.Proof.ComInputSK.IsSafe() {
+			if !txN.Proof.GetCommitmentInputSecretKey().IsSafe() {
 				return false, errors.New("validate sanity ComInputSK of proof failed")
 			}
 			// check ComInputValue
-			for i := 0; i < len(txN.Proof.ComInputValue); i++ {
-				if !txN.Proof.ComInputValue[i].IsSafe() {
+			for i := 0; i < len(txN.Proof.GetCommitmentInputValue()); i++ {
+				if !txN.Proof.GetCommitmentInputValue()[i].IsSafe() {
 					return false, errors.New("validate sanity ComInputValue of proof failed")
 				}
 			}
 			//check ComInputSND
-			for i := 0; i < len(txN.Proof.ComInputSND); i++ {
-				if !txN.Proof.ComInputSND[i].IsSafe() {
+			for i := 0; i < len(txN.Proof.GetCommitmentInputSND()); i++ {
+				if !txN.Proof.GetCommitmentInputSND()[i].IsSafe() {
 					return false, errors.New("validate sanity ComInputSND of proof failed")
 				}
 			}
 			//check ComInputShardID
-			if !txN.Proof.ComInputShardID.IsSafe() {
+			if !txN.Proof.GetCommitmentInputShardID().IsSafe() {
 				return false, errors.New("validate sanity ComInputShardID of proof failed")
 			}
 
 			// check ComOutputShardID
-			for i := 0; i < len(txN.Proof.ComOutputShardID); i++ {
-				if !txN.Proof.ComOutputShardID[i].IsSafe() {
+			for i := 0; i < len(txN.Proof.GetCommitmentOutputShardID()); i++ {
+				if !txN.Proof.GetCommitmentOutputShardID()[i].IsSafe() {
 					return false, errors.New("validate sanity ComOutputShardID of proof failed")
 				}
 			}
 			//check ComOutputSND
-			for i := 0; i < len(txN.Proof.ComOutputSND); i++ {
-				if !txN.Proof.ComOutputSND[i].IsSafe() {
+			for i := 0; i < len(txN.Proof.GetCommitmentOutputShardID()); i++ {
+				if !txN.Proof.GetCommitmentOutputShardID()[i].IsSafe() {
 					return false, errors.New("validate sanity ComOutputSND of proof failed")
 				}
 			}
 			//check ComOutputValue
-			for i := 0; i < len(txN.Proof.ComOutputValue); i++ {
-				if !txN.Proof.ComOutputValue[i].IsSafe() {
+			for i := 0; i < len(txN.Proof.GetCommitmentOutputValue()); i++ {
+				if !txN.Proof.GetCommitmentOutputValue()[i].IsSafe() {
 					return false, errors.New("validate sanity ComOutputValue of proof failed")
 				}
 			}
@@ -856,8 +856,8 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 		}
 
 		if !isPrivacy {
-			for i := 0; i < len(txN.Proof.SNNoPrivacyProof); i++ {
-				if !txN.Proof.SNNoPrivacyProof[i].ValidateSanity() {
+			for i := 0; i < len(txN.Proof.GetSerialNumberNoPrivacyProof()); i++ {
+				if !txN.Proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
 					return false, errors.New("validate sanity Serial number no privacy proof failed")
 				}
 			}
@@ -977,7 +977,7 @@ func (tx *Tx) GetProof() *zkp.PaymentProof {
 }
 
 func (tx *Tx) IsPrivacy() bool {
-	if tx.Proof == nil || tx.Proof.OneOfManyProof == nil || len(tx.Proof.OneOfManyProof) == 0 {
+	if tx.Proof == nil || len(tx.Proof.GetOneOfManyProof()) == 0 {
 		return false
 	}
 	return true
