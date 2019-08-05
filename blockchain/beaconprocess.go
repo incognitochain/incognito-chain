@@ -284,7 +284,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 	}
 	// Verify epoch with parent block
 	if (block.Header.Height != 1) && (block.Header.Height%common.EPOCH == 1) && (parentBlockInterface.Header.Epoch != block.Header.Epoch-1) {
-		return NewBlockChainError(EpochError, errors.New("lock height and Epoch is not compatiable"))
+		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
 	// Verify timestamp with parent block
 	//jackalope: temporary commment for debug purpose
