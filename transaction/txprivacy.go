@@ -249,7 +249,18 @@ func (tx *Tx) Init(
 
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
-	err = witness.Init(hasPrivacy, new(big.Int).SetBytes(*senderSK), inputCoins, outputCoins, pkLastByteSender, commitmentProving, commitmentIndexs, myCommitmentIndexs, fee)
+	paymentWitnessParam := zkp.PaymentWitnessParam{
+		HasPrivacy:              hasPrivacy,
+		PrivateKey:              new(big.Int).SetBytes(*senderSK),
+		InputCoins:              inputCoins,
+		OutputCoins:             outputCoins,
+		PublicKeyLastByteSender: pkLastByteSender,
+		Commitments:             commitmentProving,
+		CommitmentIndices:       commitmentIndexs,
+		MyCommitmentIndices:     myCommitmentIndexs,
+		Fee:                     fee,
+	}
+	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -440,10 +451,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		// Verify the payment proof
-		valid = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
+		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
 		if !valid {
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			return false, errors.New("FAILED VERIFICATION PAYMENT PROOF")
+			return false, err
 		} else {
 			//Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
