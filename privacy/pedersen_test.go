@@ -12,11 +12,12 @@ func TestPedersenCommitAll(t *testing.T){
 		openings[i] = RandScalar()
 	}
 
-	commitment := PedCom.CommitAll(openings)
+	commitment, err := PedCom.CommitAll(openings)
 	isOnCurve := Curve.IsOnCurve(commitment.X, commitment.Y)
 
 	assert.NotEqual(t, commitment, nil)
 	assert.Equal(t, true, isOnCurve)
+	assert.Equal(t, nil, err)
 }
 
 func TestPedersenCommitAtIndex(t *testing.T){

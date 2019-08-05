@@ -28,6 +28,7 @@ const (
 	ProveSerialNumberPrivacyErr
 	ProveAggregatedRangeErr
 	InvalidInputToSetBytesErr
+	CommitNewOutputCoinNoPrivacyErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -45,6 +46,7 @@ var ErrCodeMessage = map[int]struct {
 	DecompressTransmissionKeyErr: {-9007, "Can not decompress transmission key error"},
 	CalInnerProductErr:           {-9008, "Calculate inner product between two vectors error"},
 	InvalidInputToSetBytesErr:    {-9009, "Length of input data is zero, can not set bytes"},
+	CommitNewOutputCoinNoPrivacyErr:    {-9010, "Can not commit output coin's details when creating tx without privacy"},
 
 	ProveSerialNumberNoPrivacyErr: {-9100, "Proving serial number no privacy proof error"},
 	ProveOneOutOfManyErr:          {-9101, "Proving one out of many proof error"},
