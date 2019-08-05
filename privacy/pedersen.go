@@ -1,6 +1,7 @@
 package privacy
 
 import (
+	"github.com/pkg/errors"
 	"math/big"
 )
 
@@ -38,16 +39,16 @@ func newPedersenParams() PedersenCommitment {
 var PedCom = newPedersenParams()
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func (com PedersenCommitment) CommitAll(openings []*big.Int) *EllipticPoint {
+func (com PedersenCommitment) CommitAll(openings []*big.Int) (*EllipticPoint, error) {
 	if len(openings) != len(com.G) {
-		return nil
+		return nil, errors.New("invalid length of openings to commit")
 	}
 
 	commitment := new(EllipticPoint).Zero()
 	for i := 0; i < len(com.G); i++ {
 		commitment = commitment.Add(com.G[i].ScalarMult(openings[i]))
 	}
-	return commitment
+	return commitment, nil
 }
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
