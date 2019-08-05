@@ -1204,7 +1204,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(httpServer.config.Database)
-		ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize), shardIDSender)
+		ok, err := db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize), shardIDSender)
 		if ok && err == nil {
 			// SnD in db
 			result = append(result, true)
