@@ -849,7 +849,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 					return false, errors.New("validate sanity ComOutputValue of proof failed")
 				}
 			}
-			if len(txN.Proof.CommitmentIndices) != len(txN.Proof.InputCoins)*privacy.CommitmentRingSize {
+			if len(txN.Proof.GetCommitmentIndices()) != len(txN.Proof.InputCoins)*privacy.CommitmentRingSize {
 				return false, errors.New("validate sanity CommitmentIndices of proof failed")
 
 			}
