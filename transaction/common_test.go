@@ -17,9 +17,9 @@ func TestConvertOutputCoinToInputCoin(t *testing.T) {
 	paymentAddress := key.KeySet.PaymentAddress
 	tx, err := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
 
-	in := ConvertOutputCoinToInputCoin(tx.Proof.OutputCoins)
+	in := ConvertOutputCoinToInputCoin(tx.Proof.outputCoins)
 	assert.Equal(t, 1, len(in))
-	assert.Equal(t, tx.Proof.OutputCoins[0].CoinDetails.Value, in[0].CoinDetails.Value)
+	assert.Equal(t, tx.Proof.outputCoins[0].CoinDetails.Value, in[0].CoinDetails.Value)
 }
 
 func TestEstimateTxSize(t *testing.T) {
@@ -35,14 +35,14 @@ func TestEstimateTxSize(t *testing.T) {
 		Amount:         5,
 	}}
 
-	size := EstimateTxSize(tx.Proof.OutputCoins, payments, true, nil, nil, nil, 1)
+	size := EstimateTxSize(tx.Proof.outputCoins, payments, true, nil, nil, nil, 1)
 	assert.Greater(t, size, uint64(0))
 
 	customTokenParams := CustomTokenParamTx{
 		Receiver: []TxTokenVout{{PaymentAddress: paymentAddress, Value: 5}},
 		vins:     []TxTokenVin{{PaymentAddress: paymentAddress, VoutIndex: 1}},
 	}
-	size1 := EstimateTxSize(tx.Proof.OutputCoins, payments, true, nil, &customTokenParams, nil, 1)
+	size1 := EstimateTxSize(tx.Proof.outputCoins, payments, true, nil, &customTokenParams, nil, 1)
 	assert.Greater(t, size1, uint64(0))
 
 	privacyCustomTokenParams := CustomTokenPrivacyParamTx{
@@ -50,7 +50,7 @@ func TestEstimateTxSize(t *testing.T) {
 			PaymentAddress: paymentAddress, Amount: 5,
 		}},
 	}
-	size2 := EstimateTxSize(tx.Proof.OutputCoins, payments, true, nil, nil, &privacyCustomTokenParams, 1)
+	size2 := EstimateTxSize(tx.Proof.outputCoins, payments, true, nil, nil, &privacyCustomTokenParams, 1)
 	assert.Greater(t, size2, uint64(0))
 }
 
@@ -59,9 +59,9 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	_ = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	paymentAddress := key.KeySet.PaymentAddress
 	tx1, _ := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
-	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.outputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
 
-	in1 := ConvertOutputCoinToInputCoin(tx1.Proof.OutputCoins)
+	in1 := ConvertOutputCoinToInputCoin(tx1.Proof.outputCoins)
 
 	cmmIndexs, myIndexs, cmm := RandomCommitmentsProcess(in1, 0, db, 0, &common.Hash{})
 	assert.Equal(t, 8, len(cmmIndexs))
@@ -69,10 +69,10 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	assert.Equal(t, 8, len(cmm))
 
 	tx2, _ := BuildCoinbaseTx(&paymentAddress, 5, &key.KeySet.PrivateKey, db, nil)
-	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx2.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx2.Proof.outputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
 	tx3, _ := BuildCoinbaseTx(&paymentAddress, 5, &key.KeySet.PrivateKey, db, nil)
-	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx3.Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
-	in2 := ConvertOutputCoinToInputCoin(tx2.Proof.OutputCoins)
+	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx3.Proof.outputCoins[0].CoinDetails.CoinCommitment.Compress()}, 0)
+	in2 := ConvertOutputCoinToInputCoin(tx2.Proof.outputCoins)
 	in := append(in1, in2...)
 
 	cmmIndexs, myIndexs, cmm = RandomCommitmentsProcess(in, 0, db, 0, &common.Hash{})

@@ -27,11 +27,11 @@ func (txTokenPrivacyData TxTokenPrivacyData) String() string {
 	record += txTokenPrivacyData.PropertySymbol
 	record += fmt.Sprintf("%d", txTokenPrivacyData.Amount)
 	if txTokenPrivacyData.TxNormal.Proof != nil {
-		for _, out := range txTokenPrivacyData.TxNormal.Proof.OutputCoins {
+		for _, out := range txTokenPrivacyData.TxNormal.Proof.GetOutputCoins() {
 			record += string(out.CoinDetails.PublicKey.Compress())
 			record += strconv.FormatUint(out.CoinDetails.Value, 10)
 		}
-		for _, in := range txTokenPrivacyData.TxNormal.Proof.InputCoins {
+		for _, in := range txTokenPrivacyData.TxNormal.Proof.GetInputCoins() {
 			if in.CoinDetails.PublicKey != nil {
 				record += string(in.CoinDetails.PublicKey.Compress())
 			}

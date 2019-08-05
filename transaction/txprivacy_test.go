@@ -22,7 +22,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	tx, err := BuildCoinbaseTxByCoinID(&paymentAddress, 10, &key.KeySet.PrivateKey, db, responseMeta, common.Hash{}, NormalCoinType, "PRV", 0)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
-	assert.Equal(t, uint64(10), tx.(*Tx).Proof.OutputCoins[0].CoinDetails.Value)
+	assert.Equal(t, uint64(10), tx.(*Tx).Proof.outputCoins[0].CoinDetails.Value)
 	assert.Equal(t, common.PRVCoinID.String(), tx.GetTokenID().String())
 
 	jsonStr, err := json.Marshal(tx)
@@ -32,7 +32,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	tx1 := Tx{}
 	err = json.Unmarshal(jsonStr, &tx1)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint64(10), tx1.Proof.OutputCoins[0].CoinDetails.Value)
+	assert.Equal(t, uint64(10), tx1.Proof.outputCoins[0].CoinDetails.Value)
 	assert.Equal(t, common.PRVCoinID.String(), tx1.GetTokenID().String())
 }
 
@@ -48,7 +48,7 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, true, valid)
 
-	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.OutputCoins)
+	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.outputCoins)
 
 	tx1 := Tx{}
 	in1[0].CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
@@ -78,7 +78,7 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, uint64(0), c)
 
 	tx3 := Tx{}
-	db.StoreCommitments(common.PRVCoinID, paymentAddress.Pk, [][]byte{tx2.(*Tx).Proof.OutputCoins[0].CoinDetails.CoinCommitment.Compress()}, 6)
+	db.StoreCommitments(common.PRVCoinID, paymentAddress.Pk, [][]byte{tx2.(*Tx).Proof.outputCoins[0].CoinDetails.CoinCommitment.Compress()}, 6)
 	err = tx3.Init(&key.KeySet.PrivateKey, []*privacy.PaymentInfo{{PaymentAddress: paymentAddress, Amount: 5}}, in1, 1, true, db, nil, nil)
 	if err.(*TransactionError) != nil {
 		t.Error(err)
