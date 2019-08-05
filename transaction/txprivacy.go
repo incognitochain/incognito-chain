@@ -264,7 +264,7 @@ func (tx *Tx) Init(
 	// set private key for signing tx
 	if hasPrivacy {
 		tx.sigPrivKey = make([]byte, 64)
-		randSK := witness.RandSecretKey
+		randSK := witness.GetRandSecretKey()
 		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
 
 		// encrypt coin details (Randomness)
