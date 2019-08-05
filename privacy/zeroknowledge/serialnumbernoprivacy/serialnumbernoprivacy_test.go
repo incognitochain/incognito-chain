@@ -43,6 +43,7 @@ func TestPKSNNoPrivacy(t *testing.T) {
 	assert.Equal(t, proof, proof2)
 
 	// verify proof
-	res := proof2.Verify(nil)
+	res, err := proof2.Verify(nil)
 	assert.Equal(t, true, res)
+	assert.Equal(t, nil, err)
 }

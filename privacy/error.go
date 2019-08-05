@@ -24,6 +24,7 @@ const (
 	VerifySerialNumberPrivacyProofFailedErr
 	VerifyAggregatedProofFailedErr
 	VerifyAmountPrivacyFailedErr
+	CalInnerProductErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -49,6 +50,8 @@ var ErrCodeMessage = map[int]struct {
 	VerifySerialNumberPrivacyProofFailedErr: {-7, "Verify serial number privacy proof failed"},
 	VerifyAggregatedProofFailedErr: {-7, "Verify aggregated proof failed"},
 	VerifyAmountPrivacyFailedErr: {-7, "Sum of input coins' amount is not equal sum of output coins' amount when creating private tx"},
+	CalInnerProductErr: {-7, "Calculate inner product between two vectors error"},
+
 }
 
 type PrivacyError struct {
