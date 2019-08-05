@@ -2,9 +2,9 @@ package privacy
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -60,7 +60,7 @@ func (multiSigKeyset *MultiSigKeyset) Set(priKey *PrivateKey, pubKey *PublicKey)
 }
 
 // Bytes - Converting SchnorrMultiSig to byte array
-func (multiSig *SchnMultiSig) Bytes() []byte {
+func (multiSig SchnMultiSig) Bytes() []byte {
 	if !Curve.IsOnCurve(multiSig.R.X, multiSig.R.Y) {
 		panic("Throw Error from Byte() method")
 	}
@@ -97,7 +97,7 @@ func (multisigScheme *MultiSigScheme) Init() {
 	#4 r: random number of signer
 */
 // SignMultiSig ...
-func (multiSigKeyset *MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
+func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) *SchnMultiSig {
 	//r = R0+R1+R2+R3+...+Rn
 	R := new(EllipticPoint)
 	R.X = big.NewInt(0)
@@ -189,7 +189,7 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 }
 
 //GenerateRandomFromSeed abc
-func (multisigScheme *MultiSigScheme) GenerateRandomFromSeed(i *big.Int) (*EllipticPoint, *big.Int) {
+func (multisigScheme MultiSigScheme) GenerateRandomFromSeed(i *big.Int) (*EllipticPoint, *big.Int) {
 	r := i
 	GPoint := new(EllipticPoint)
 	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
@@ -199,7 +199,7 @@ func (multisigScheme *MultiSigScheme) GenerateRandomFromSeed(i *big.Int) (*Ellip
 	return R, r
 }
 
-func (multisigScheme *MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int) {
+func (multisigScheme MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int) {
 	r := RandScalar()
 	GPoint := new(EllipticPoint)
 	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
@@ -207,6 +207,27 @@ func (multisigScheme *MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int
 	GPoint.Y.Set(Curve.Params().Gy)
 	R := GPoint.ScalarMult(r)
 	return R, r
+}
+
+/*
+	function: aggregate signature
+	param: list of signature
+	return: agg sign
+*/
+// CombineMultiSig Combining all EC Schnorr MultiSig in given list
+func (multisigScheme MultiSigScheme) CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig {
+	res := new(SchnMultiSig)
+	res.R = new(EllipticPoint)
+	res.R.X, res.R.Y = big.NewInt(0), big.NewInt(0)
+	res.S = big.NewInt(0)
+
+	for i := 0; i < len(listSignatures); i++ {
+		res.R = res.R.Add(listSignatures[i].R)
+		res.S.Add(res.S, listSignatures[i].S)
+		res.S.Mod(res.S, Curve.Params().N)
+	}
+
+	return res
 }
 
 func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey, R *EllipticPoint, data []byte) (*EllipticPoint, *big.Int, *EllipticPoint) {
@@ -257,25 +278,4 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 		}
 	}
 	return aggPubkey, C, X
-}
-
-/*
-	function: aggregate signature
-	param: list of signature
-	return: agg sign
-*/
-// CombineMultiSig Combining all EC Schnorr MultiSig in given list
-func (multisigScheme *MultiSigScheme) CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig {
-	res := new(SchnMultiSig)
-	res.R = new(EllipticPoint)
-	res.R.X, res.R.Y = big.NewInt(0), big.NewInt(0)
-	res.S = big.NewInt(0)
-
-	for i := 0; i < len(listSignatures); i++ {
-		res.R = res.R.Add(listSignatures[i].R)
-		res.S.Add(res.S, listSignatures[i].S)
-		res.S.Mod(res.S, Curve.Params().N)
-	}
-
-	return res
 }
