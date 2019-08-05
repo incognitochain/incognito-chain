@@ -91,6 +91,6 @@ func TestInitTx(t *testing.T) {
 	verified, err := tx3.ValidateTransaction(true, db, 6, &common.PRVCoinID)
 	assert.Equal(t, true, verified)
 
-	tx3.ValidateConstDoubleSpendWithBlockchain(nil, 6, db)
+	tx3.ValidateDoubleSpendWithBlockchain(nil, 6, db, &common.PRVCoinID)
 	tx3.ValidateTxWithBlockChain(nil, 6, db)
 }
