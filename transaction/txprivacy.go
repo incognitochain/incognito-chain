@@ -335,7 +335,7 @@ func (tx *Tx) signTx() error {
 	sigKey.Set(sk, r)
 
 	// save public key for verification signature tx
-	tx.SigPubKey = sigKey.GetPublicKey().PK.Compress()
+	tx.SigPubKey = sigKey.GetPublicKey().GetPublicKey().Compress()
 
 	// signing
 	if Logger.log != nil {
@@ -364,18 +364,13 @@ func (tx *Tx) verifySigTx() (bool, error) {
 
 	/****** verify Schnorr signature *****/
 	// prepare Public key for verification
-	verKey := new(privacy.SchnorrPubKey)
-	verKey.PK = new(privacy.EllipticPoint)
-	err = verKey.PK.Decompress(tx.SigPubKey)
+	verifyKey := new(privacy.SchnorrPublicKey)
+	sigPublicKey := new(privacy.EllipticPoint)
+	err = sigPublicKey.Decompress(tx.SigPubKey)
 	if err != nil {
-		return false, err
+		return false, NewTransactionErr(UnexpectedErr, nil)
 	}
-
-	verKey.G = new(privacy.EllipticPoint)
-	verKey.G.Set(privacy.PedCom.G[privacy.SK].X, privacy.PedCom.G[privacy.SK].Y)
-
-	verKey.H = new(privacy.EllipticPoint)
-	verKey.H.Set(privacy.PedCom.G[privacy.RAND].X, privacy.PedCom.G[privacy.RAND].Y)
+	verifyKey.Set(sigPublicKey)
 
 	// convert signature from byte array to SchnorrSign
 	signature := new(privacy.SchnSignature)
@@ -388,7 +383,7 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
 	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
 	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
-	res = verKey.Verify(signature, tx.Hash()[:])
+	res = verifyKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
 }

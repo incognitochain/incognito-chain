@@ -81,7 +81,7 @@ func (keySet KeySet) Verify(data, signature []byte) (bool, error) {
 	hash := common.HashB(data)
 	isValid := false
 
-	pubKeySig := new(privacy.SchnorrPubKey)
+	pubKeySig := new(privacy.SchnorrPublicKey)
 	PK := new(privacy.EllipticPoint)
 	err := PK.Decompress(keySet.PaymentAddress.Pk)
 	if err != nil {
