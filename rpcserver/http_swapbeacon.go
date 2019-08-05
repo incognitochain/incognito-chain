@@ -217,13 +217,14 @@ func extractInstsFromShardBlock(
 	beaconBlocks []*blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
 ) ([][]string, error) {
-	instructions, err := blockchain.CreateShardInstructionsFromTransactionAndIns(
+	instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(
 		shardBlock.Body.Transactions,
 		bc,
 		shardBlock.Header.ShardID,
-		shardBlock.Header.Height,
-		beaconBlocks,
-		shardBlock.Header.BeaconHeight,
+	//	&shardBlock.Header.ProducerAddress,
+	//	shardBlock.Header.Height,
+	//	beaconBlocks,
+	//	shardBlock.Header.BeaconHeight,
 	)
 	if err != nil {
 		return nil, err

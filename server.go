@@ -1132,7 +1132,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	isRelayNodeForConsensus := cfg.Accelerator
 	if isRelayNodeForConsensus {
 		senderPublicKey, _ := p.GetRemotePeer().GetPublicKey()
-		bestState := blockchain.GetBestStateBeacon()
+		bestState := blockchain.GetBeaconBestState()
 		beaconCommitteeList := bestState.BeaconCommittee
 		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
 		if isInBeaconCommittee {

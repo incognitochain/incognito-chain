@@ -27,7 +27,7 @@ type ShardHeader struct {
 	InstructionsRoot     common.Hash            `json:"InstructionsRoot"`     // actions root created from Instructions and Metadata of transaction
 	CommitteeRoot        common.Hash            `json:"CommitteeRoot"`        // hash from public key list of all committees designated to create this block
 	PendingValidatorRoot common.Hash            `json:"PendingValidatorRoot"` // hash from public key list of all pending validators designated to this ShardID
-	CrossShards          []byte                 `json:"CrossShards"`          // crossShards bitmap for beacon
+	CrossShardBitMap     []byte                 `json:"CrossShardBitMap"`     // crossShards bitmap for beacon
 	BeaconHeight         uint64                 `json:"BeaconHeight"`         // beacon check point height
 	BeaconHash           common.Hash            `json:"BeaconHash"`           // beacon check point hash
 	TotalTxsFee          map[common.Hash]uint64 `json:"TotalTxsFee"`          // fee of all txs in block
@@ -66,7 +66,7 @@ func (shardHeader *ShardHeader) String() string {
 	for _, tokenID := range tokenIDs {
 		res += fmt.Sprintf("%v~%v", tokenID.String(), shardHeader.TotalTxsFee[tokenID])
 	}
-	for _, value := range shardHeader.CrossShards {
+	for _, value := range shardHeader.CrossShardBitMap {
 		res += string(value)
 	}
 	return res

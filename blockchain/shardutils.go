@@ -44,7 +44,7 @@ func FetchBeaconBlockFromHeight(db database.DatabaseInterface, from uint64, to u
 		beaconBlock := BeaconBlock{}
 		err = json.Unmarshal(beaconBlockByte, &beaconBlock)
 		if err != nil {
-			return beaconBlocks, NewBlockChainError(UnmashallJsonBlockError, err)
+			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)
 		}
 		beaconBlocks = append(beaconBlocks, &beaconBlock)
 	}
@@ -119,13 +119,10 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 	- Stake
 	- Stable param: set, del,...
 */
-func CreateShardInstructionsFromTransactionAndIns(
+func CreateShardInstructionsFromTransactionAndInstruction(
 	transactions []metadata.Transaction,
 	bc *BlockChain,
 	shardID byte,
-	shardBlockHeight uint64,
-	beaconBlocks []*BeaconBlock,
-	beaconHeight uint64,
 ) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPubKey := []string{}

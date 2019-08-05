@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
-	"math/rand"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -44,7 +44,7 @@ import (
 		b. Get Transactions for New Block
 		c. Process Assign Instructions from Beacon Blocks
 		c. Generate Instructions
-	//TODO: write more document
+	3. Build Shard Block Header
 */
 func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
 	var (
@@ -113,7 +113,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	// Create Instruction
 	instructions, shardPendingValidator, shardCommittee, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
 	if err != nil {
-		return nil, NewBlockChainError(InstructionError, err)
+		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
 	if len(instructions) != 0 {
 		Logger.log.Info("Shard Producer: Instruction", instructions)
@@ -121,7 +121,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	block.BuildShardBlockBody(instructions, crossTransactions, transactionsForNewBlock)
 	//============End Build Body===========
 	//============Build Header=============
-	prevBlock := blockGenerator.chain.BestState.Shard[shardID].BestBlock
+	previousBlock := blockGenerator.chain.BestState.Shard[shardID].BestBlock
 	//TODO calculate fee for another tx type
 	for _, tx := range block.Body.Transactions {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
@@ -136,12 +136,12 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if len(merkleRoots) > 0 {
 		merkleRoot = merkleRoots[len(merkleRoots)-1]
 	}
-	prevBlockHash := prevBlock.Hash()
+	previousBlockHash := previousBlock.Hash()
 	crossTransactionRoot, err := CreateMerkleCrossTransaction(block.Body.CrossTransactions)
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndIns(block.Body.Transactions, blockGenerator.chain, shardID, prevBlock.Header.Height+1, beaconBlocks, beaconHeight)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(block.Body.Transactions, blockGenerator.chain, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	instructionsHash, err := GenerateHashFromStringArray(totalInstructions)
 	if err != nil {
-		return nil, NewBlockChainError(HashError, err)
+		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
 	committeeRoot, err := GenerateHashFromStringArray(shardCommittee)
 	if err != nil {
@@ -167,11 +167,11 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	// Instruction merkle root
 	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
 	if err != nil {
-		return nil, NewBlockChainError(HashError, err)
+		return nil, NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from Tx: %+v", err))
 	}
 	flattenInsts, err := FlattenAndConvertStringInst(instructions)
 	if err != nil {
-		return nil, NewBlockChainError(HashError, err)
+		return nil, NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from block body: %+v", err))
 	}
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
@@ -179,14 +179,14 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	block.Header = ShardHeader{
 		// ProducerAddress:      producerKeySet.PaymentAddress,
 		ShardID:              shardID,
-		Version:              BlockVersion,
-		PreviousBlockHash:    *prevBlockHash,
-		Height:               prevBlock.Header.Height + 1,
+		Version:              SHARD_BLOCK_VERSION,
+		PreviousBlockHash:    *previousBlockHash,
+		Height:               previousBlock.Header.Height + 1,
 		TxRoot:               *merkleRoot,
 		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
 		CrossTransactionRoot: *crossTransactionRoot,
 		InstructionsRoot:     instructionsHash,
-		CrossShards:          CreateCrossShardByteArray(block.Body.Transactions, shardID),
+		CrossShardBitMap:     CreateCrossShardByteArray(block.Body.Transactions, shardID),
 		CommitteeRoot:        committeeRoot,
 		PendingValidatorRoot: pendingValidatorRoot,
 		BeaconHeight:         beaconHeight,
@@ -265,7 +265,6 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
-				//fmt.Println("SA: swap instruction ", l, beaconBlock.Header.Height, blockGenerator.chain.BestState.Beacon.GetShardCommittee())
 				for _, v := range strings.Split(l[2], ",") {
 					tx, err := blockGenerator.buildReturnStakingAmountTx(v, producerPrivateKey)
 					if err != nil {
@@ -407,15 +406,15 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			- Greater than current cross shard state
 			- Cross Shard Block Signature
 			- Next Cross Shard Block via Beacon Bytemap:
-				// 	When a shard block is created (ex: shard 1 create block A), it will
-				// 	- Send ShardToBeacon Block (A1) to beacon,
-				// 		=> ShardToBeacon Block then will be executed and store as ShardState in beacon
-				// 	- Send CrossShard Block (A2) to other shard if existed
-				// 		=> CrossShard Will be process into CrossTransaction
-				// 	=> A1 and A2 must have the same header
-				// 	- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
-				// 	AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
-				// =====> Store Current and Next cross shard block in DB
+					When a shard block is created (ex: shard 1 create block A), it will
+					- Send ShardToBeacon Block (A1) to beacon,
+						=> ShardToBeacon Block then will be executed and store as ShardState in beacon
+					- Send CrossShard Block (A2) to other shard if existed
+						=> CrossShard Will be process into CrossTransaction
+					=> A1 and A2 must have the same header
+					- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
+					AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
+					=====> Store Current and Next cross shard block in DB
 		3. if miss Cross Shard Block according to beacon bytemap then stop discard the rest
 		4. After validation:
 			- Process valid block
@@ -426,7 +425,6 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 	crossTransactions := make(map[byte][]CrossTransaction)
 	crossTxTokenData := make(map[byte][]CrossTxTokenData)
 	// get cross shard block
-
 	allCrossShardBlock := blockGenerator.crossShardPool[shardID].GetValidBlock(crossShards)
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
@@ -453,7 +451,10 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 				break
 			}
 			shardCommittee := make(map[byte][]string)
-			json.Unmarshal(temp, &shardCommittee)
+			err = json.Unmarshal(temp, &shardCommittee)
+			if err != nil {
+				break
+			}
 			err = blk.VerifyCrossShardBlock(shardCommittee[blk.Header.ShardID])
 			if err != nil {
 				break
@@ -482,7 +483,6 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 			return crossTxTokenData[i].BlockHeight < crossTxTokenData[j].BlockHeight
 		})
 	}
-
 	for _, crossTransaction := range crossTransactions {
 		sort.SliceStable(crossTransaction[:], func(i, j int) bool {
 			return crossTransaction[i].BlockHeight < crossTransaction[j].BlockHeight
@@ -604,7 +604,6 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 			}
 		}
 	}
-
 	return txs, txTokenDataList
 }
 
