@@ -151,10 +151,11 @@ func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 }
 
 func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]string, error) {
-	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
-	//, numberOfActiveShards)
 	var resInst [][]string
-
+	var instRewardForBeacons [][]string
+	var instRewardForDev [][]string
+	var instRewardForShards [][]string
+	numberOfActiveShards := blockchain.BestState.Beacon.ActiveShards
 	allCoinID, err := blockchain.GetAllCoinID()
 	if err != nil {
 		return nil, err
@@ -164,26 +165,18 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
 	totalRewardForDev := map[common.Hash]uint64{}
-
-	var instRewardForBeacons [][]string
-	var instRewardForDev [][]string
-	var instRewardForShards [][]string
-
 	for ID := 0; ID < numberOfActiveShards; ID++ {
 		if totalRewards[ID] == nil {
 			totalRewards[ID] = map[common.Hash]uint64{}
 		}
 		for _, coinID := range allCoinID {
-			//fmt.Printf("[ndh] aaaaaaaaaaaaaaaaaaaaaaaaaaa %+v\n", coinID)
 			totalRewards[ID][coinID], err = blockchain.GetDatabase().GetRewardOfShardByEpoch(epoch, byte(ID), coinID)
 			if err != nil {
 				return nil, err
 			}
 			if totalRewards[ID][coinID] == 0 {
-				//fmt.Printf("[ndh] Delete key %+v\n", coinID)
 				delete(totalRewards[ID], coinID)
 			}
-			//fmt.Printf("[ndh] bbbbbbbbbbbbbbbbbbbbbbbbbbb %+v\n", totalRewards[ID][coinID])
 		}
 		rewardForBeacon, rewardForDev, err := splitReward(&totalRewards[ID], numberOfActiveShards, forDev)
 		if err != nil {
@@ -222,7 +215,6 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 }
 
 func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalReward map[common.Hash]uint64, listCommitee []string) error {
-	// reward := totalReward / uint64(len(listCommitee))
 	reward := map[common.Hash]uint64{}
 	for key, value := range totalReward {
 		reward[key] = value / uint64(len(listCommitee))
@@ -259,7 +251,6 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 	isInit := false
 	epoch := uint64(0)
 	db := blockchain.config.DataBase
-	// listShardCommittee := blockchain.config.DataBase.FetchCommitteeByEpoch
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == StakeAction || l[0] == RandomAction {
@@ -311,7 +302,6 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 						}
 					}
 					continue
-
 				case metadata.ShardBlockRewardRequestMeta:
 					shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
 					if err != nil {

@@ -110,20 +110,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err := blockchain.BestState.Shard[shardID].verifyBestStateWithShardBlock(shardBlock, true, shardID); err != nil {
 		return err
 	}
-	//// check with current final best state
-	//// block can only be insert if it match the current best state
-	//bestBlockHash := &blockchain.BestState.Shard[shardID].BestBlockHash
-	//if !bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
-	//	return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
-	//}
-
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	//========updateShardBestState best state with new block
-	//previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
-	//beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, block.Header.BeaconHeight)
-	//if err != nil {
-	//	return err
-	//}
+	// updateShardBestState best state with new block
 	// Backup beststate
 	if blockchain.config.UserKeySet != nil {
 		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)

@@ -1260,7 +1260,6 @@ func (blockchain *BlockChain) GetAllCoinID() ([]common.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	db := blockchain.GetDatabase()
 	allBridgeTokensBytes, err := db.GetAllBridgeTokens()
 	if err != nil {
