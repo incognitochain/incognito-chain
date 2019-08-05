@@ -115,7 +115,7 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 	peersMap := []map[string]string{}
 	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 
-	bestState := blockchain.GetBestStateBeacon()
+	bestState := blockchain.GetBeaconBestState()
 	beaconCommitteeList := bestState.BeaconCommittee
 	shardCommitteeList := bestState.GetShardCommittee()
 
