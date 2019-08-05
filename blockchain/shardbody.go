@@ -3,6 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -43,7 +45,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 
 	// process tx from tx interface of temp
@@ -71,22 +73,45 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 			}
 		default:
 			{
-				return NewBlockChainError(UnmashallJsonBlockError, errors.New("can not parse a wrong tx"))
+				return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("can not parse a wrong tx"))
 			}
 		}
-
 		if parseErr != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
+			return NewBlockChainError(UnmashallJsonShardBlockError, parseErr)
 		}
-		/*meta, parseErr := metadata.ParseMetadata(txTemp["Metadata"])
-		if parseErr != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
-		}
-		tx.SetMetadata(meta)*/
 		shardBody.Transactions = append(shardBody.Transactions, tx)
 	}
-
 	return nil
+}
+func (shardBody ShardBody) Hash() common.Hash {
+	res := []byte{}
+
+	for _, item := range shardBody.Instructions {
+		for _, l := range item {
+			res = append(res, []byte(l)...)
+		}
+	}
+	keys := []int{}
+	for k := range shardBody.CrossTransactions {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, shardID := range keys {
+		for _, value := range shardBody.CrossTransactions[byte(shardID)] {
+			res = append(res, []byte(fmt.Sprintf("%v", value.BlockHeight))...)
+			res = append(res, value.BlockHash.GetBytes()...)
+			for _, coins := range value.OutputCoin {
+				res = append(res, coins.Bytes()...)
+			}
+			for _, coins := range value.TokenPrivacyData {
+				res = append(res, coins.Bytes()...)
+			}
+		}
+	}
+	for _, tx := range shardBody.Transactions {
+		res = append(res, tx.Hash().GetBytes()...)
+	}
+	return common.HashH(res)
 }
 
 /*
@@ -97,13 +122,13 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 - Make merkle root from these value
 */
 
-func (shardBody *ShardBody) CalcMerkleRootTx() *common.Hash {
+func (shardBody ShardBody) CalcMerkleRootTx() *common.Hash {
 	merkleRoots := Merkle{}.BuildMerkleTreeStore(shardBody.Transactions)
 	merkleRoot := merkleRoots[len(merkleRoots)-1]
 	return merkleRoot
 }
 
-func (shardBody *ShardBody) ExtractIncomingCrossShardMap() (map[byte][]common.Hash, error) {
+func (shardBody ShardBody) ExtractIncomingCrossShardMap() (map[byte][]common.Hash, error) {
 	crossShardMap := make(map[byte][]common.Hash)
 	for shardID, crossblocks := range shardBody.CrossTransactions {
 		for _, crossblock := range crossblocks {
@@ -113,10 +138,7 @@ func (shardBody *ShardBody) ExtractIncomingCrossShardMap() (map[byte][]common.Ha
 	return crossShardMap, nil
 }
 
-func (shardBody *ShardBody) ExtractOutgoingCrossShardMap() (map[byte][]common.Hash, error) {
+func (shardBody ShardBody) ExtractOutgoingCrossShardMap() (map[byte][]common.Hash, error) {
 	crossShardMap := make(map[byte][]common.Hash)
-	// for _, crossblock := range shardBody.CrossOutputCoin {
-	// 	crossShardMap[crossblock.ShardID] = append(crossShardMap[crossblock.ShardID], crossblock.BlockHash)
-	// }
 	return crossShardMap, nil
 }

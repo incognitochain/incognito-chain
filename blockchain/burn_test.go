@@ -284,7 +284,7 @@ func TestBuildBridgeInst(t *testing.T) {
 			insts, err := bc.buildBridgeInstructions(
 				0,
 				tc.insts,
-				&BestStateBeacon{BeaconHeight: height},
+				&BeaconBestState{BeaconHeight: height},
 				setupDB(t),
 			)
 			if err != nil {

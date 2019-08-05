@@ -170,7 +170,7 @@ phase:
 						isMatchBeststate := msg.(*wire.MessageBFTReq).BestStateHash == protocol.RoundData.BestStateHash
 						isMatchRound := msg.(*wire.MessageBFTReq).Round == protocol.RoundData.Round
 						isCommitee := common.IndexOfStr(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Committee) != -1
-						fmt.Println("BFT: val ", isMatchBeststate, isMatchRound, isCommitee, time.Now().Unix(), protocol.RoundData.BestStateHash, msg.(*wire.MessageBFTReq).BestStateHash, blockchain.GetBestStateBeacon().BeaconHeight)
+						fmt.Println("BFT: val ", isMatchBeststate, isMatchRound, isCommitee, time.Now().Unix(), protocol.RoundData.BestStateHash, msg.(*wire.MessageBFTReq).BestStateHash, blockchain.GetBeaconBestState().BeaconHeight)
 						if isMatchBeststate && isMatchRound && isCommitee {
 							if protocol.RoundData.Layer == common.BEACON_ROLE {
 								if userRole, _ := protocol.EngineCfg.BlockChain.BestState.Beacon.GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Round); userRole == common.PROPOSER_ROLE {
@@ -215,7 +215,7 @@ func (protocol *BFTProtocol) phaseAgree() error {
 
 	//map of members and their Ri
 	collectedRiList := make(map[string][]byte)
-	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = protocol.multiSigScheme.personal.Ri
+	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyInBase58CheckEncode()] = protocol.multiSigScheme.personal.Ri
 phase:
 	for {
 		select {
@@ -279,7 +279,7 @@ func (protocol *BFTProtocol) phaseCommit() error {
 
 	phaseData.Sigs = make(map[string]map[string]bftCommittedSig)
 	phaseData.Sigs[protocol.multiSigScheme.combine.R] = make(map[string]bftCommittedSig)
-	phaseData.Sigs[protocol.multiSigScheme.combine.R][protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = bftCommittedSig{
+	phaseData.Sigs[protocol.multiSigScheme.combine.R][protocol.EngineCfg.UserKeySet.GetPublicKeyInBase58CheckEncode()] = bftCommittedSig{
 		Sig:            protocol.multiSigScheme.combine.CommitSig,
 		ValidatorsIdxR: protocol.multiSigScheme.combine.ValidatorsIdxR,
 	}

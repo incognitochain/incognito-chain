@@ -1,9 +1,6 @@
 [
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "gettransactionbyhash",
       "context": false,

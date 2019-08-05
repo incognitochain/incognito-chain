@@ -37,14 +37,13 @@ func (ciphertext *Ciphertext) Bytes() []byte {
 	return res
 }
 
-
 // SetBytes reverts bytes array to Ciphertext
 func (ciphertext *Ciphertext) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return errors.New("SetBytes ciphertext encryption: invalid input")
 	}
-	ciphertext.SymKeyEncrypted = bytes[0:ElGamalCiphertextSize]
-	ciphertext.MsgEncrypted = bytes[ElGamalCiphertextSize:]
+	ciphertext.SymKeyEncrypted = bytes[0:elGamalCiphertextSize]
+	ciphertext.MsgEncrypted = bytes[elGamalCiphertextSize:]
 	return nil
 }
 
@@ -57,7 +56,7 @@ func HybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *Ciphertext
 	// Generate a AES key as the abscissa of a random elliptic point
 	aesKeyPoint := new(EllipticPoint)
 	aesKeyPoint.Randomize()
-	aesKeyByte := AddPaddingBigInt(aesKeyPoint.X, BigIntSize)
+	aesKeyByte := AddPaddingBigInt(aesKeyPoint.X, common.BigIntSize)
 
 	// Encrypt msg using aesKeyByte
 	aesScheme := &common.AES{
@@ -107,7 +106,7 @@ func HybridDecrypt(ciphertext *Ciphertext, privateKey *big.Int) (msg []byte, err
 
 	// Get AES key
 	aesScheme := &common.AES{
-		Key: AddPaddingBigInt(aesKeyPoint.X, BigIntSize),
+		Key: AddPaddingBigInt(aesKeyPoint.X, common.BigIntSize),
 	}
 
 	// Decrypt encrypted coin randomness using AES key

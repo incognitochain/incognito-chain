@@ -37,8 +37,8 @@ func init() {
 		mainLoopTime := time.Duration(BEACON_POOL_MAIN_LOOP_TIME) * time.Millisecond
 		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
-			GetBeaconPool().RemoveBlock(blockchain.GetBestStateBeacon().BeaconHeight)
-			GetBeaconPool().CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
+			GetBeaconPool().RemoveBlock(blockchain.GetBeaconBestState().BeaconHeight)
+			GetBeaconPool().CleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
 			GetBeaconPool().PromotePendingPool()
 		}
 	}()
@@ -47,7 +47,7 @@ func init() {
 func InitBeaconPool(pubsubManager *pubsub.PubSubManager) {
 	//do nothing
 	beaconPool := GetBeaconPool()
-	beaconPool.SetBeaconState(blockchain.GetBestStateBeacon().BeaconHeight)
+	beaconPool.SetBeaconState(blockchain.GetBeaconBestState().BeaconHeight)
 	beaconPool.PubSubManager = pubsubManager
 	_, subChanRole, _ := beaconPool.PubSubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
 	beaconPool.RoleInCommitteesEvent = subChanRole
@@ -109,7 +109,7 @@ func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
 	}
 	self.insertNewBeaconBlockToPool(block)
 	self.promotePendingPool()
-	//self.CleanOldBlock(blockchain.GetBestStateBeacon().BeaconHeight)
+	//self.CleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
 	return nil
 }
 
@@ -117,7 +117,7 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 	//If receive old block, it will ignore
 	if _, ok := self.cache.Get(block.Header.Hash()); ok {
 		if nextBlock, ok := self.pendingPool[block.Header.Height+1]; ok {
-			self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, nextBlock.Header.PrevBlockHash))
+			self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, nextBlock.Header.PreviousBlockHash))
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
@@ -164,7 +164,7 @@ func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock
 			nextHeight := block.Header.Height + 1
 			// Condition 3: check next block
 			if nextBlock, ok := self.pendingPool[nextHeight]; ok {
-				preHash := &nextBlock.Header.PrevBlockHash
+				preHash := &nextBlock.Header.PreviousBlockHash
 				blockHeader := block.Header.Hash()
 				// Condition 4: next block should point to this block
 				if preHash.IsEqual(&blockHeader) {
@@ -193,7 +193,7 @@ func (self *BeaconPool) updateLatestBeaconState() {
 	if len(self.validPool) > 0 {
 		self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
 	} else {
-		self.latestValidHeight = blockchain.GetBestStateBeacon().BeaconHeight
+		self.latestValidHeight = blockchain.GetBeaconBestState().BeaconHeight
 	}
 }
 

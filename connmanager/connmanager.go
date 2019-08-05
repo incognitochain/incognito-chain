@@ -413,10 +413,10 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		publicKeyInBase58CheckEncode := common.EmptyString
 		signDataInBase58CheckEncode := common.EmptyString
 		if listener.GetConfig().UserKeySet != nil {
-			publicKeyInBase58CheckEncode = listener.GetConfig().UserKeySet.GetPublicKeyB58()
+			publicKeyInBase58CheckEncode = listener.GetConfig().UserKeySet.GetPublicKeyInBase58CheckEncode()
 			Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 			// sign data
-			signDataInBase58CheckEncode, err = listener.GetConfig().UserKeySet.SignDataB58([]byte(rawAddress))
+			signDataInBase58CheckEncode, err = listener.GetConfig().UserKeySet.SignDataInBase58CheckEncode([]byte(rawAddress))
 			if err != nil {
 				Logger.log.Error(err)
 			}
@@ -504,7 +504,7 @@ func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool 
 
 // checkBeaconOfPbk - check a public key is beacon committee?
 func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
-	bestState := blockchain.GetBestStateBeacon()
+	bestState := blockchain.GetBeaconBestState()
 	beaconCommitteeList := bestState.BeaconCommittee
 	isInBeaconCommittee := common.IndexOfStr(pbk, beaconCommitteeList) != -1
 	return isInBeaconCommittee
@@ -671,7 +671,7 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (boo
 
 //getShardOfPublicKey - return shardID of public key of peer connection
 func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
-	bestState := blockchain.GetBestStateBeacon()
+	bestState := blockchain.GetBeaconBestState()
 	shardCommitteeList := bestState.GetShardCommittee()
 	for shardID, committees := range shardCommitteeList {
 		isInShardCommittee := common.IndexOfStr(publicKey, committees) != -1

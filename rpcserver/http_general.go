@@ -115,7 +115,7 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 	peersMap := []map[string]string{}
 	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 
-	bestState := blockchain.GetBestStateBeacon()
+	bestState := blockchain.GetBeaconBestState()
 	beaconCommitteeList := bestState.BeaconCommittee
 	shardCommitteeList := bestState.GetShardCommittee()
 
@@ -257,7 +257,7 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 			continue
 		}
 
-		err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
