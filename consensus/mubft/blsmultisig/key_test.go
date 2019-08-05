@@ -17,7 +17,7 @@ func genKeyAndGetBytes(seed []byte, loop int) ([]byte, error) {
 		skBytes := SKBytes(sk)
 		pkBytes := PKBytes(pk)
 		if (len(skBytes) != CSKSz) || (len(pkBytes) != CPKSz) {
-			return internalseed, errors.New(CErr + CErrInLn)
+			return internalseed, errors.New(CErr + CErrInps)
 		}
 		internalseed = common.HashB(append(seed, append(skBytes, pkBytes...)...))
 	}
