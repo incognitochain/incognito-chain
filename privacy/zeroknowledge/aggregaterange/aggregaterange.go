@@ -112,9 +112,9 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	res = append(res, proof.t1.Compress()...)
 	res = append(res, proof.t2.Compress()...)
 
-	res = append(res, privacy.AddPaddingBigInt(proof.tauX, common.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.tHat, common.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.mu, common.BigIntSize)...)
+	res = append(res, common.AddPaddingBigInt(proof.tauX, common.BigIntSize)...)
+	res = append(res, common.AddPaddingBigInt(proof.tHat, common.BigIntSize)...)
+	res = append(res, common.AddPaddingBigInt(proof.mu, common.BigIntSize)...)
 	res = append(res, proof.innerProductProof.Bytes()...)
 
 	//privacy.Logger.Log.Debugf("BYTES ------------ %v\n", res)
