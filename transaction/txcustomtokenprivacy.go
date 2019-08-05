@@ -207,7 +207,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			tempOutputCoin[0].CoinDetails.SNDerivator = sndOut
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 			// create coin commitment
-			temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
+			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
+			if err != nil{
+				return NewTransactionErr(UnexpectedErr, err)
+			}
 			// get last byte
 			temp.PubKeyLastByteSender = tokenParams.Receiver[0].PaymentAddress.Pk[len(tokenParams.Receiver[0].PaymentAddress.Pk)-1]
 

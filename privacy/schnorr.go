@@ -128,6 +128,7 @@ func (sig *SchnSignature) SetBytes(bytes []byte) error {
 	sig.e = new(big.Int).SetBytes(bytes[0:common.BigIntSize])
 	sig.z1 = new(big.Int).SetBytes(bytes[common.BigIntSize : 2*common.BigIntSize])
 	sig.z2 = new(big.Int).SetBytes(bytes[2*common.BigIntSize:])
+	return nil
 }
 
 // Hash calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)
