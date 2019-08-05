@@ -66,11 +66,11 @@ func (multiSigKeyset *MultiSigKeyset) Set(priKey *PrivateKey, pubKey *PublicKey)
 // Bytes - Converting SchnorrMultiSig to byte array
 func (multiSig SchnMultiSig) Bytes() ([]byte, error) {
 	if !Curve.IsOnCurve(multiSig.r.X, multiSig.r.Y) {
-		return nil, errors.New("Throw Error from Byte() method")
+		return nil, errors.New("Invalid multiSig for converting to bytes array")
 	}
 	res := multiSig.r.Compress()
 	if multiSig.s == nil {
-		return nil, errors.New("Throw Error from Byte() method")
+		return nil, errors.New("Invalid multiSig for converting to bytes array")
 	}
 	temp := multiSig.s.Bytes()
 	diff := common.BigIntSize - len(temp)
