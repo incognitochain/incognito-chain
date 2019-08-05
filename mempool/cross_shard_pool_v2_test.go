@@ -12,7 +12,7 @@ import (
 
 var (
 	dbCrossShard          database.DatabaseInterface
-	bestShardStateShard1  *blockchain.BestStateShard
+	bestShardStateShard1  *blockchain.ShardBestState
 	crossShardPoolMapTest = make(map[byte]*CrossShardPool_v2)
 	crossShardBlock2      = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
@@ -120,7 +120,7 @@ var _ = func() (_ struct{}) {
 	if err != nil {
 		panic("Could not store in db")
 	}
-	bestShardStateShard1 = blockchain.InitBestStateShard(1, &blockchain.ChainTestParam)
+	bestShardStateShard1 = blockchain.NewBestStateShardWithConfig(1, &blockchain.ChainTestParam)
 	bestShardStateShard1.BestCrossShard[0] = 3
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
