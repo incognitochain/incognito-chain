@@ -773,7 +773,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		return nil, privacy.NewPrivacyErr(privacy.ProvingErr, err)
 	}
 
-	privacy.Logger.Log.Info("Privacy log: PROVING DONE!!!")
+	privacy.Logger.Log.Debug("Privacy log: PROVING DONE!!!")
 	return proof, nil
 }
 
@@ -827,9 +827,9 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 
 	// check if sum of input values equal sum of output values
 	if sumInputValue != sumOutputValue+fee {
-		privacy.Logger.Log.Infof("sumInputValue: %v\n", sumInputValue)
-		privacy.Logger.Log.Infof("sumOutputValue: %v\n", sumOutputValue)
-		privacy.Logger.Log.Infof("fee: %v\n", fee)
+		privacy.Logger.Log.Debugf("sumInputValue: %v\n", sumInputValue)
+		privacy.Logger.Log.Debugf("sumOutputValue: %v\n", sumOutputValue)
+		privacy.Logger.Log.Debugf("fee: %v\n", fee)
 		privacy.Logger.Log.Errorf("Sum of inputs is not equal sum of output!\n")
 		return false
 	}
