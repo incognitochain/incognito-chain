@@ -25,11 +25,12 @@ var timeZeroVal time.Time
 type UsageFlag uint32
 
 type Peer struct {
-	ID         string
-	RawAddress string
-	PublicKey  string
-	FirstPing  time.Time
-	LastPing   time.Time
+	ID            string
+	RawAddress    string
+	PublicKey     string
+	PublicKeyType string
+	FirstPing     time.Time
+	LastPing      time.Time
 }
 
 // rpcServer provides a concurrent safe RPC server to a bootnode server.

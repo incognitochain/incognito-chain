@@ -47,8 +47,8 @@ func (engine *Engine) Start() error {
 	if engine.started {
 		return errors.New("Consensus engine is already started")
 	}
-	if engine.Node.GetMiningKey() == "" {
-		return errors.New("MiningKey can't be empty")
+	if engine.Node.GetMiningKeys() == "" {
+		return errors.New("MiningKeys can't be empty")
 	}
 	engine.cQuit = make(chan struct{})
 	go func() {
@@ -190,6 +190,10 @@ func (s *Engine) OnBFTMsg(msg wire.Message) {
 	// 		ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().ReceivePrepareMsg(convertPrepareMsg(rawPrepareMsg))
 	// 	}
 	// }
+}
+
+func (s *Engine) GetUserRole() (string, int) {
+	return "", 0
 }
 
 // func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {

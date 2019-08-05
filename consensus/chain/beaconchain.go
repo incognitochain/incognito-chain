@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/wire"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 type BeaconChain struct {
@@ -22,7 +23,7 @@ func (s *BeaconChain) GetConsensusEngine() ConsensusEngineInterface {
 }
 
 func (s *BeaconChain) PushMessageToValidator(msg wire.Message) error {
-	return s.Node.PushMessageToBeacon(msg)
+	return s.Node.PushMessageToBeacon(msg, map[peer.ID]bool{})
 }
 
 func (s *BeaconChain) GetLastBlockTimeStamp() uint64 {

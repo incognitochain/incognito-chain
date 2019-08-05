@@ -11,9 +11,10 @@ type Handler struct {
 }
 
 type PingArgs struct {
-	RawAddress string
-	PublicKey  string
-	SignData   string
+	RawAddress    string
+	PublicKeyType string
+	PublicKey     string
+	SignData      string
 }
 
 // Ping - handler func which receive data from rpc client,
@@ -31,7 +32,7 @@ func (s Handler) Ping(args *PingArgs, responseMessagePeers *[]wire.RawPeer) erro
 	defer s.rpcServer.peersMtx.Unlock()
 	// return note list
 	for _, p := range s.rpcServer.Peers {
-		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.RawAddress, p.PublicKey})
+		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.RawAddress, p.PublicKeyType, p.PublicKey})
 	}
 	fmt.Println("Response", *responseMessagePeers)
 	return nil
