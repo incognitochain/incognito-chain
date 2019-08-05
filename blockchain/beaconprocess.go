@@ -66,7 +66,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCom
 	}
 	//========Update best state with new block
 	snapShotBeaconCommittee := beaconBestState.BeaconCommittee
-	if err := beaconBestState.Update(block); err != nil {
+	if err := beaconBestState.updateBeaconBestState(block); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
@@ -126,7 +126,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	Logger.log.Infof("BEACON | Update BestState with Beacon Block %+v \n", blockHash)
 	//========Update best state with new block
 	snapShotBeaconCommittee := blockchain.BestState.Beacon.BeaconCommittee
-	if err := blockchain.BestState.Beacon.Update(block); err != nil {
+	if err := blockchain.BestState.Beacon.updateBeaconBestState(block); err != nil {
 		return err
 	}
 	if !isValidated {
@@ -526,7 +526,7 @@ func (beaconBestState *BeaconBestState) VerifyPostProcessingBeaconBlock(block *B
 	//=============End Verify producer signature
 	strs = append(strs, beaconBestState.BeaconCommittee...)
 	strs = append(strs, beaconBestState.BeaconPendingValidator...)
-	isOk = VerifyHashFromStringArray(strs, block.Header.BeaconCommitteeAndValidatorsRoot)
+	isOk = VerifyHashFromStringArray(strs, block.Header.BeaconCommitteeAndValidatorRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify Beacon Validator root"))
 	}
@@ -547,7 +547,7 @@ func (beaconBestState *BeaconBestState) VerifyPostProcessingBeaconBlock(block *B
 		return NewBlockChainError(HashError, errors.New("error verify Shard Candidate root"))
 	}
 
-	isOk = VerifyHashFromMapByteString(beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, block.Header.ShardCommitteeAndValidatorsRoot)
+	isOk = VerifyHashFromMapByteString(beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, block.Header.ShardCommitteeAndValidatorRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify shard validator root"))
 	}
@@ -578,11 +578,9 @@ func (beaconBestState *BeaconBestState) VerifyPostProcessingBeaconBlock(block *B
 /*
 	Update Beststate with new Block
 */
-func (beaconBestState *BeaconBestState) Update(newBlock *BeaconBlock) error {
-
-	beaconBestState.lockMu.Lock()
-	defer beaconBestState.lockMu.Unlock()
-
+func (beaconBestState *BeaconBestState) updateBeaconBestState(newBlock *BeaconBlock) error {
+	//beaconBestState.lockMu.Lock()
+	//defer beaconBestState.lockMu.Unlock()
 	newBeaconCandidate := []string{}
 	newShardCandidate := []string{}
 	// Logger.log.Infof("Start processing new block at height %d, with hash %+v", newBlock.Header.Height, *newBlock.Hash())
