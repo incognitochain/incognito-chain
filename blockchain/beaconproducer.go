@@ -48,6 +48,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	blockGenerator.chain.chainLock.Lock()
 	defer blockGenerator.chain.chainLock.Unlock()
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Beacon.BeaconHeight+1)
+	//============Init Variable============
 	beaconBlock := NewBeaconBlock()
 	beaconBestState := NewBeaconBestState()
 	var err error
@@ -59,7 +60,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
 	//============Build body===============
 	rewardByEpochInstruction := [][]string{}
-	if beaconBestState.BeaconHeight%common.EPOCH == 1 {
+	if beaconBestState.BeaconHeight+1%common.EPOCH == 1 {
 		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch)
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
