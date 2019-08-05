@@ -484,9 +484,10 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 
 	for i := 0; i < len(proof.inputCoins); i++ {
 		// Check input coins' Serial number is created from input coins' input and sender's spending key
-		if !proof.serialNumberNoPrivacyProof[i].Verify(nil) {
+		valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
+		if !valid {
 			privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, nil)
+			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
 		}
 
 		// Check input coins' cm is calculated correctly
@@ -570,14 +571,16 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 
 		proof.oneOfManyProof[i].Statement.Commitments = commitments
 
-		if !proof.oneOfManyProof[i].Verify() {
+		valid, err := proof.oneOfManyProof[i].Verify()
+		if !valid {
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, nil)
+			return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 		}
 		// Verify for the Proof that input coins' serial number is derived from the committed derivator
-		if !proof.serialNumberProof[i].Verify(nil) {
+		valid, err = proof.serialNumberProof[i].Verify(nil)
+		if !valid {
 			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, nil)
+			return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
 		}
 	}
 
@@ -594,9 +597,10 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	}
 
 	// Verify the proof that output values and sum of them do not exceed v_max
-	if !proof.aggregatedRangeProof.Verify() {
+	valid, err := proof.aggregatedRangeProof.Verify()
+	if !valid {
 		privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
-		return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, nil)
+		return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
 	}
 
 	// Verify the proof that sum of all input values is equal to sum of all output values

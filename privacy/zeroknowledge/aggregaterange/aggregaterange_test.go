@@ -168,11 +168,12 @@ func TestAggregatedRangeProve(t *testing.T) {
 
 	// verify the proof
 	start = time.Now()
-	res := proof2.Verify()
+	res, err := proof2.Verify()
 	end = time.Since(start)
 	privacy.Logger.Log.Info("Aggregated range verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
+	assert.Equal(t, nil, err)
 }
 
 func TestPad(t *testing.T) {
@@ -202,6 +203,6 @@ func TestJS(t *testing.T) {
 	proof := new(AggregatedRangeProof)
 	proof.SetBytes(proofBytes)
 
-	res := proof.Verify()
+	res, _ := proof.Verify()
 	fmt.Println(res)
 }

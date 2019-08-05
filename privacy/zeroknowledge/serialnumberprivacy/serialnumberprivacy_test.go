@@ -54,8 +54,9 @@ func TestPKSNPrivacy(t *testing.T) {
 	assert.Equal(t, proof, proof2)
 
 	start = time.Now()
-	res := proof2.Verify(nil)
+	res, err := proof2.Verify(nil)
 	end = time.Since(start)
 	fmt.Printf("Serial number verification time: %v\n", end)
 	assert.Equal(t, true, res)
+	assert.Equal(t, nil, err)
 }
