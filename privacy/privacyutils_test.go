@@ -98,7 +98,7 @@ func TestUtilsAddPaddingBigInt(t *testing.T) {
 	}
 
 	for _, item := range data {
-		res := AddPaddingBigInt(item.number, item.size)
+		res := common.AddPaddingBigInt(item.number, item.size)
 		assert.Equal(t, item.size, len(res))
 	}
 }
@@ -114,10 +114,10 @@ func TestUtilsIntToByteArr(t *testing.T) {
 	}
 
 	for _, item := range data {
-		res := IntToByteArr(item.number)
+		res := common.IntToBytes(item.number)
 		assert.Equal(t, item.bytes, res)
 
-		number := ByteArrToInt(res)
+		number := common.BytesToInt(res)
 		assert.Equal(t, item.number, number)
 	}
 }
