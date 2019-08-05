@@ -15,6 +15,7 @@ const (
 	Uint64Size        = 8  // bytes
 	HashSize          = 32 // bytes
 	MaxHashStringSize = HashSize * 2
+	Base58_Version    = 0
 )
 
 // size data for incognito key and signature
