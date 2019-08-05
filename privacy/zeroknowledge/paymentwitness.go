@@ -72,7 +72,10 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	if !hasPrivacy {
 		for _, outCoin := range outputCoins {
 			outCoin.CoinDetails.Randomness = privacy.RandScalar()
-			outCoin.CoinDetails.CommitAll()
+			err := outCoin.CoinDetails.CommitAll()
+			if err != nil {
+				return privacy.NewPrivacyErr(privacy.CommitNewOutputCoinNoPrivacyErr, nil)
+			}
 		}
 
 		wit.privateKey = privateKey
