@@ -57,9 +57,9 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 		shardPendingValidator   = blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator
 		shardCommittee          = blockGenerator.chain.BestState.Shard[shardID].ShardCommittee
 	)
-	//============Build body=============
-	// Fetch Beacon information
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
+	//============Build body===============
+	// Fetch Beacon information
 	BLogger.log.Infof("Producing block: %d", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
@@ -207,7 +207,7 @@ func (blockGenerator *BlockGenerator) FinalizeShardBlock(blk *ShardBlock, produc
 	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
 	if err != nil {
 		Logger.log.Error(err)
-		return err
+		return NewBlockChainError(ProduceSignatureError, err)
 	}
 	blk.ProducerSig = producerSig
 	//End Generate Signature
