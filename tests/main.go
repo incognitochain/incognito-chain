@@ -81,7 +81,7 @@ func main() {
 			cmd := exec.Command("go", "test", "-run", initTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", initTestcaseName, string(msg))
+				panic("Failed to run test " + initTestcaseName + " : " + string(msg))
 			} else {
 				log.Printf("%+v Message: %+v \n", initTestcaseName, string(msg))
 			}
@@ -110,7 +110,7 @@ func main() {
 			cmd := exec.Command("go", "test", "-run", transactionTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", transactionTestcaseName, string(msg))
+				panic("Failed to run test " + transactionTestcaseName + " : " + string(msg))
 			} else {
 				log.Printf("%+v Message: %+v \n", transactionTestcaseName, string(msg))
 			}
@@ -137,7 +137,7 @@ func main() {
 			cmd := exec.Command("go", "test", "-run", crossShardTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", crossShardTestcaseName, string(msg))
+				panic("Failed to run test " + crossShardTestcaseName + " : " + string(msg))
 			} else {
 				log.Printf("%+v Message: %+v \n", crossShardTestcaseName, string(msg))
 			}
@@ -164,7 +164,7 @@ func main() {
 			cmd := exec.Command("go", "test", "-run", stakeTestcaseName)
 			msg, err := cmd.Output()
 			if err != nil {
-				log.Printf("Failed to run test %+v, err %+v \n", stakeTestcaseName, string(msg))
+				panic("Failed to run test " + stakeTestcaseName + " : " + string(msg))
 			} else {
 				log.Printf("%+v Message: %+v \n", stakeTestcaseName, string(msg))
 			}
