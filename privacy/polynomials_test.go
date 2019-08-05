@@ -72,7 +72,7 @@ func TestTrim(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		tmp := (c.p).Clone(0)
+		tmp := (c.p).clone(0)
 		(c.p).trim()
 		if (c.p).compare(&c.ans) != 0 {
 			t.Errorf("TRIM(%v) != %v (your answer was %v)\n", tmp, c.ans, c.p)
@@ -108,7 +108,7 @@ func TestClone(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		q := c.p.Clone(c.d)
+		q := c.p.clone(c.d)
 		if q.compare(&c.ans) != 0 {
 			t.Errorf("Cloning %v with %v adjust != %v", c.p, c.d, c.ans)
 		}
@@ -184,7 +184,7 @@ func TestAdd(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		res := (c.p).Add(c.q, c.m)
+		res := (c.p).add(c.q, c.m)
 		if res.compare(&c.ans) != 0 {
 			t.Errorf("%v + %v != %v (your answer was %v)\n", c.p, c.q, c.ans, res)
 		}
@@ -214,7 +214,7 @@ func BenchmarkAddTwoIntCoeffPolynomial(b *testing.B) {
 	m := big.NewInt(11)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Add(q, m)
+		p.add(q, m)
 	}
 }
 
@@ -461,7 +461,7 @@ func TestDivide(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		q, r := (c.p).Div(c.q, c.m)
+		q, r := (c.p).div(c.q, c.m)
 		if q.compare(&c.quo) != 0 || r.compare(&c.rem) != 0 {
 			t.Errorf("%v / %v != %v (%v) (your answer was %v (%v))\n", c.p, c.q, c.quo, c.rem, q, r)
 		}
@@ -504,7 +504,7 @@ func TestGcd(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		res := (c.p).Gcd(c.q, c.m)
+		res := (c.p).gcd(c.q, c.m)
 		if res.compare(&c.ans) != 0 {
 			t.Errorf("GCD(%v, %v) != %v (your answer was %v)\n", c.p, c.q, c.ans, res)
 		}
@@ -534,7 +534,7 @@ func TestSanitize(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		q := (c.p).Clone(0)
+		q := (c.p).clone(0)
 		q.sanitize(c.m)
 		if q.compare(&c.ans) != 0 {
 			t.Errorf("Sanitized %v with %v != %v", c.p, c.m, c.ans)
@@ -621,7 +621,7 @@ func TestEval(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		res := (c.p).Eval(c.x, c.m)
+		res := (c.p).eval(c.x, c.m)
 		if res.Cmp(c.ans) != 0 {
 			t.Errorf("f(x) = %v, f(%v) != %v (your answer was %v)\n", c.p, c.x, c.ans, res)
 		}
