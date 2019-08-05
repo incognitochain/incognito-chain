@@ -70,10 +70,11 @@ func TestPKOneOfMany(t *testing.T) {
 
 	// verify the proof
 	start = time.Now()
-	res := proof.Verify()
+	res, err := proof.Verify()
 	end = time.Since(start)
 	fmt.Printf("One out of many verification time: %v\n", end)
 	assert.Equal(t, true, res)
+	assert.Equal(t, nil, err)
 }
 
 func TestGetCoefficient(t *testing.T) {
