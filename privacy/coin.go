@@ -11,7 +11,7 @@ import (
 
 // Coin represents a coin
 type Coin struct {
-	PublicKey      *EllipticPoint
+	publicKey      *EllipticPoint
 	CoinCommitment *EllipticPoint
 	SNDerivator    *big.Int
 	SerialNumber   *EllipticPoint
@@ -20,9 +20,17 @@ type Coin struct {
 	Info           []byte //256 bytes
 }
 
+func (coin Coin) GetPublicKey() *EllipticPoint {
+	return coin.publicKey
+}
+
+func (coin *Coin) SetPublicKey(v *EllipticPoint) {
+	coin.publicKey = v
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
-	coin.PublicKey = new(EllipticPoint).Zero()
+	coin.publicKey = new(EllipticPoint).Zero()
 	coin.CoinCommitment = new(EllipticPoint).Zero()
 	coin.SNDerivator = new(big.Int)
 	coin.SerialNumber = new(EllipticPoint).Zero()
@@ -33,7 +41,7 @@ func (coin *Coin) Init() *Coin {
 
 // GetPubKeyLastByte returns the last byte of public key
 func (coin *Coin) GetPubKeyLastByte() byte {
-	pubKeyBytes := coin.PublicKey.Compress()
+	pubKeyBytes := coin.publicKey.Compress()
 	return pubKeyBytes[len(pubKeyBytes)-1]
 }
 
@@ -77,7 +85,7 @@ func (coin *Coin) CommitAll() error {
 		return err
 	}
 	coin.CoinCommitment = commitment
-	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
+	coin.CoinCommitment = coin.CoinCommitment.Add(coin.publicKey)
 	return nil
 }
 
@@ -86,8 +94,8 @@ func (coin *Coin) CommitAll() error {
 func (coin *Coin) Bytes() []byte {
 	var coinBytes []byte
 
-	if coin.PublicKey != nil {
-		publicKey := coin.PublicKey.Compress()
+	if coin.publicKey != nil {
+		publicKey := coin.publicKey.Compress()
 		coinBytes = append(coinBytes, byte(len(publicKey)))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
@@ -156,8 +164,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField := coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.PublicKey = new(EllipticPoint)
-		err = coin.PublicKey.Decompress(coinBytes[offset : offset+int(lenField)])
+		coin.publicKey = new(EllipticPoint)
+		err = coin.publicKey.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}

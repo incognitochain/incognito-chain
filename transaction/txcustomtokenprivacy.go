@@ -196,8 +196,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			tempOutputCoin[0] = new(privacy.OutputCoin)
 			tempOutputCoin[0].CoinDetails = new(privacy.Coin)
 			tempOutputCoin[0].CoinDetails.Value = tokenParams.Amount
-			tempOutputCoin[0].CoinDetails.PublicKey = new(privacy.EllipticPoint)
-			err := tempOutputCoin[0].CoinDetails.PublicKey.Decompress(tokenParams.Receiver[0].PaymentAddress.Pk)
+			tempOutputCoin[0].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
+			err := tempOutputCoin[0].CoinDetails.GetPublicKey().Decompress(tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
 				return NewTransactionErr(UnexpectedErr, err)
 			}
@@ -208,7 +208,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 			// create coin commitment
 			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
-			if err != nil{
+			if err != nil {
 				return NewTransactionErr(UnexpectedErr, err)
 			}
 			// get last byte
@@ -462,7 +462,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenReceivers() ([][]byte,
 	}
 	// fetch payment info
 	for _, coin := range proof.GetOutputCoins() {
-		coinPubKey := coin.CoinDetails.PublicKey.Compress()
+		coinPubKey := coin.CoinDetails.GetPublicKey().Compress()
 		added := false
 		// coinPubKey := vout.PaymentAddress.Pk
 		for i, key := range pubkeys {
@@ -488,7 +488,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenUniqueReceiver() (bool
 		return false, []byte{}, 0
 	}
 	if len(proof.GetInputCoins()) > 0 && proof.GetInputCoins()[0].CoinDetails != nil {
-		sender = proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress()
+		sender = proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	}
 	pubkeys, amounts := txCustomTokenPrivacy.GetTokenReceivers()
 	pubkey := []byte{}
@@ -520,13 +520,13 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) IsCoinsBurning() bool {
 	//  validate receiver with burning address
 	senderPKBytes := []byte{}
 	if len(proof.GetInputCoins()) > 0 {
-		senderPKBytes = txCustomTokenPrivacy.Proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress()
+		senderPKBytes = txCustomTokenPrivacy.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	}
 	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
 	for _, outCoin := range proof.GetOutputCoins() {
-		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().Compress()
 		if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
 			return false
 		}
@@ -551,10 +551,10 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 		return txValue
 	}
 
-	senderPKBytes := proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress()
+	senderPKBytes := proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	txValue := uint64(0)
 	for _, outCoin := range proof.GetOutputCoins() {
-		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().Compress()
 		if bytes.Equal(senderPKBytes, outPKBytes) {
 			continue
 		}

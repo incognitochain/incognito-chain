@@ -921,7 +921,7 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 		in case readonly-key: return all outputcoin tx with amount value
 		in case payment-address: return all outputcoin tx with no amount value
 	*/
-	pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
+	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().Compress()
 	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
 		result := &privacy.OutputCoin{
 			CoinDetails:          outCoinTemp.CoinDetails,
