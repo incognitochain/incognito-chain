@@ -63,7 +63,7 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 
 	in1 := ConvertOutputCoinToInputCoin(tx1.Proof.GetOutputCoins())
 
-	cmmIndexs, myIndexs, cmm := RandomCommitmentsProcess(in1, 0, db, 0, &common.Hash{})
+	cmmIndexs, myIndexs, cmm := RandomCommitmentsProcess(NewRandomCommitmentsProcessParam(in1, 0, db, 0, &common.Hash{}))
 	assert.Equal(t, 8, len(cmmIndexs))
 	assert.Equal(t, 1, len(myIndexs))
 	assert.Equal(t, 8, len(cmm))
@@ -75,13 +75,13 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	in2 := ConvertOutputCoinToInputCoin(tx2.Proof.GetOutputCoins())
 	in := append(in1, in2...)
 
-	cmmIndexs, myIndexs, cmm = RandomCommitmentsProcess(in, 0, db, 0, &common.Hash{})
+	cmmIndexs, myIndexs, cmm = RandomCommitmentsProcess(NewRandomCommitmentsProcessParam(in, 0, db, 0, &common.Hash{}))
 	assert.Equal(t, 16, len(cmmIndexs))
 	assert.Equal(t, 16, len(cmm))
 	assert.Equal(t, 2, len(myIndexs))
 
 	db.CleanCommitments()
-	cmmIndexs1, myCommIndex1, cmm1 := RandomCommitmentsProcess(in, 0, db, 0, &common.Hash{})
+	cmmIndexs1, myCommIndex1, cmm1 := RandomCommitmentsProcess(NewRandomCommitmentsProcessParam(in, 0, db, 0, &common.Hash{}))
 	assert.Equal(t, 0, len(cmmIndexs1))
 	assert.Equal(t, 0, len(myCommIndex1))
 	assert.Equal(t, 0, len(cmm1))
