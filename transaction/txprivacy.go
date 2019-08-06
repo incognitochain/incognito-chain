@@ -292,7 +292,7 @@ func (tx *Tx) Init(
 
 		// hide information of input coins except serial number of input coins
 		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-			tx.Proof.GetInputCoins()[i].CoinDetails.CoinCommitment = nil
+			tx.Proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.Value = 0
 			tx.Proof.GetInputCoins()[i].CoinDetails.SNDerivator = nil
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
@@ -441,7 +441,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		if !hasPrivacy {
 			// Check input coins' cm is exists in cm list (Database)
 			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-				ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.CoinCommitment.Compress(), db, shardID, tokenID)
+				ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().Compress(), db, shardID, tokenID)
 				if !ok || err != nil {
 					return false, err
 				}
@@ -812,7 +812,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().IsSafe() {
 					return false, errors.New("validate sanity Public key of output coin failed")
 				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.CoinCommitment.IsSafe() {
+				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().IsSafe() {
 					return false, errors.New("validate sanity Coin commitment of output coin failed")
 				}
 				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.SNDerivator.Bytes()) > common.BigIntSize {
@@ -872,7 +872,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			}
 			// check input coins without privacy
 			for i := 0; i < len(txN.Proof.GetInputCoins()); i++ {
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.CoinCommitment.IsSafe() {
+				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().IsSafe() {
 					return false, errors.New("validate sanity CoinCommitment of input coin failed")
 				}
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey().IsSafe() {
@@ -892,7 +892,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 
 			// check output coins without privacy
 			for i := 0; i < len(txN.Proof.GetOutputCoins()); i++ {
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.CoinCommitment.IsSafe() {
+				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().IsSafe() {
 					return false, errors.New("validate sanity CoinCommitment of output coin failed")
 				}
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().IsSafe() {
@@ -1164,7 +1164,7 @@ func (tx Tx) ValidateTxSalary(
 	shardID := common.GetShardIDFromLastByte(tx.Proof.GetOutputCoins()[0].CoinDetails.GetPubKeyLastByte())
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(tx.Proof.GetOutputCoins()[0].CoinDetails.Randomness))
-	ok := cmTmp.IsEqual(tx.Proof.GetOutputCoins()[0].CoinDetails.CoinCommitment)
+	ok := cmTmp.IsEqual(tx.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment())
 	if !ok {
 		return ok, errors.New("check output coin's coin commitment isn't calculated correctly")
 	}
