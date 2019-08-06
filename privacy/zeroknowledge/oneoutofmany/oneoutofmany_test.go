@@ -84,6 +84,6 @@ func TestGetCoefficient(t *testing.T) {
 	a[1] = new(big.Int).SetBytes([]byte{144, 245, 78, 232, 93, 155, 71, 49, 175, 154, 78, 81, 146, 120, 171, 74, 88, 99, 196, 61, 124, 156, 35, 55, 39, 22, 189, 111, 108, 236, 3, 131})
 	a[2] = new(big.Int).SetBytes([]byte{224, 15, 114, 83, 56, 148, 202, 7, 187, 99, 242, 4, 2, 168, 169, 168, 44, 174, 215, 111, 119, 162, 172, 44, 225, 97, 236, 240, 242, 233, 148, 49})
 
-	res := GetCoefficient([]byte{0, 1, 1}, 3, 3, a, []byte{0, 1, 1})
+	res := getCoefficient([]byte{0, 1, 1}, 3, 3, a, []byte{0, 1, 1})
 	fmt.Printf("res: %v\n", res.Bytes())
 }

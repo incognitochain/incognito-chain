@@ -529,7 +529,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		privacy.Logger.Log.Debugf("sumInputValue: %v\n", sumInputValue)
 		privacy.Logger.Log.Debugf("sumOutputValue: %v\n", sumOutputValue)
 		privacy.Logger.Log.Debugf("fee: %v\n", fee)
-		privacy.Logger.Log.Debugf("Sum of inputs is not equal sum of output!\n")
+		privacy.Logger.Log.Errorf("Sum of inputs is not equal sum of output!\n")
 		return false, privacy.NewPrivacyErr(privacy.VerifyAmountNoPrivacyFailedErr, nil)
 	}
 	return true, nil
