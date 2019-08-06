@@ -16,7 +16,7 @@ func TestTxCustomToken(t *testing.T) {
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
 
-	tx2, err := BuildCoinbaseTxByCoinID(&paymentAddress, 1000, &key.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0)
+	tx2, err := BuildCoinBaseTxByCoinID(&paymentAddress, 1000, &key.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0)
 
 	valid, err := tx2.ValidateSanityData(nil)
 	assert.Equal(t, nil, err)

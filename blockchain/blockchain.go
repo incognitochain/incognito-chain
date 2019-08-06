@@ -1468,7 +1468,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	if txType == -1 {
 		return nil, errors.New("Invalid token ID")
 	}
-	return transaction.BuildCoinbaseTxByCoinID(
+	return transaction.BuildCoinBaseTxByCoinID(
 		payToAddress,
 		amount,
 		payByPrivateKey,

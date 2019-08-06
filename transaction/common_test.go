@@ -15,7 +15,11 @@ func TestConvertOutputCoinToInputCoin(t *testing.T) {
 	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
-	tx, err := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
+	tx := &Tx{}
+	err = tx.InitTxSalary(10, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
+	if err != nil {
+		t.Error(err)
+	}
 
 	in := ConvertOutputCoinToInputCoin(tx.Proof.GetOutputCoins())
 	assert.Equal(t, 1, len(in))
@@ -28,7 +32,11 @@ func TestEstimateTxSize(t *testing.T) {
 	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
-	tx, err := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
+	tx := &Tx{}
+	err = tx.InitTxSalary(10, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
+	if err != nil {
+		t.Error(err)
+	}
 
 	payments := []*privacy.PaymentInfo{&privacy.PaymentInfo{
 		PaymentAddress: paymentAddress,
@@ -58,7 +66,11 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	key, _ := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
 	_ = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	paymentAddress := key.KeySet.PaymentAddress
-	tx1, _ := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
+	tx1 := &Tx{}
+	err := tx1.InitTxSalary(10, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
+	if err != nil {
+		t.Error(err)
+	}
 	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx1.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()}, 0)
 
 	in1 := ConvertOutputCoinToInputCoin(tx1.Proof.GetOutputCoins())
@@ -68,9 +80,14 @@ func TestRandomCommitmentsProcess(t *testing.T) {
 	assert.Equal(t, 1, len(myIndexs))
 	assert.Equal(t, 8, len(cmm))
 
-	tx2, _ := BuildCoinbaseTx(&paymentAddress, 5, &key.KeySet.PrivateKey, db, nil)
+	tx2 := &Tx{}
+	err = tx2.InitTxSalary(5, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
+	if err != nil {
+		t.Error(err)
+	}
 	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx2.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()}, 0)
-	tx3, _ := BuildCoinbaseTx(&paymentAddress, 5, &key.KeySet.PrivateKey, db, nil)
+	tx3 := &Tx{}
+	err = tx3.InitTxSalary(5, &paymentAddress, &key.KeySet.PrivateKey, db, nil)
 	db.StoreCommitments(common.Hash{}, paymentAddress.Pk, [][]byte{tx3.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()}, 0)
 	in2 := ConvertOutputCoinToInputCoin(tx2.Proof.GetOutputCoins())
 	in := append(in1, in2...)
