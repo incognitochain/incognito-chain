@@ -78,7 +78,7 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, uint64(0), c)
 
 	tx3 := Tx{}
-	db.StoreCommitments(common.PRVCoinID, paymentAddress.Pk, [][]byte{tx2.(*Tx).Proof.outputCoins[0].CoinDetails.CoinCommitment.Compress()}, 6)
+	db.StoreCommitments(common.PRVCoinID, paymentAddress.Pk, [][]byte{tx2.(*Tx).Proof.outputCoins[0].CoinDetails.coinCommitment.Compress()}, 6)
 	err = tx3.Init(&key.KeySet.PrivateKey, []*privacy.PaymentInfo{{PaymentAddress: paymentAddress, Amount: 5}}, in1, 1, true, db, nil, nil)
 	if err.(*TransactionError) != nil {
 		t.Error(err)

@@ -103,7 +103,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	// Commitment and SND must not exist before in db
 	// Outputcoins will be stored as new utxo for next transaction
 	for _, item := range proof.GetOutputCoins() {
-		commitment := item.CoinDetails.CoinCommitment.Compress()
+		commitment := item.CoinDetails.GetCoinCommitment().Compress()
 		pubkey := item.CoinDetails.GetPublicKey().Compress()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
@@ -116,7 +116,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 				acceptedCommitments[publicKeyStr] = make([][]byte, 0)
 			}
 			// get data for commitments
-			acceptedCommitments[publicKeyStr] = append(acceptedCommitments[publicKeyStr], item.CoinDetails.CoinCommitment.Compress())
+			acceptedCommitments[publicKeyStr] = append(acceptedCommitments[publicKeyStr], item.CoinDetails.GetCoinCommitment().Compress())
 
 			// get data for output coin
 			if acceptedOutputcoins[publicKeyStr] == nil {
@@ -354,7 +354,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	// Outputcoins will be stored as new utxo for next transaction
 	for _, outputCoin := range outputCoins {
 		item := &outputCoin
-		commitment := item.CoinDetails.CoinCommitment.Compress()
+		commitment := item.CoinDetails.GetCoinCommitment().Compress()
 		pubkey := item.CoinDetails.GetPublicKey().Compress()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
@@ -367,7 +367,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 				acceptedCommitments[pubkeyStr] = make([][]byte, 0)
 			}
 			// get data for commitments
-			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.CoinCommitment.Compress())
+			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.GetCoinCommitment().Compress())
 
 			// get data for output coin
 			if acceptedOutputcoins[pubkeyStr] == nil {

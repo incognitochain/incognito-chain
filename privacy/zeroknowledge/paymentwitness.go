@@ -254,7 +254,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		randOutputValueAll.Mod(randOutputValueAll, privacy.Curve.Params().N)
 
 		// calculate final commitment for output coins
-		outputCoins[i].CoinDetails.CoinCommitment = cmOutputSum[i]
+		outputCoins[i].CoinDetails.SetCoinCommitment(cmOutputSum[i])
 		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
 
 		cmOutputSumAll = cmOutputSumAll.Add(cmOutputSum[i])
