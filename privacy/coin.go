@@ -68,6 +68,14 @@ func (coin *Coin) SetValue(v uint64) {
 	coin.value = v
 }
 
+func (coin Coin) GetInfo() []byte {
+	return coin.Info
+}
+
+func (coin *Coin) SetInfo(v []byte) {
+	copy(coin.Info, v)
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(EllipticPoint).Zero()
