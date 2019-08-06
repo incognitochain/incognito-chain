@@ -88,6 +88,7 @@ const (
 	SwapValidatorError
 	CrossShardBitMapError
 	ShardCommitteeLengthAndCommitteeIndexError
+	UpdateBridgeIssuanceStatusError
 )
 
 var ErrCodeMessage = map[int]struct {

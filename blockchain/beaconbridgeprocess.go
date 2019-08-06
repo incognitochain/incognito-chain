@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NOTE: for whole bridge's deposit process, anytime an error occurs an error will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
+// NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
 
 type UpdatingInfo struct {
 	countUpAmt      uint64
@@ -167,9 +167,20 @@ func (chain *BlockChain) processIssuingETHReq(
 	if len(inst) != 4 {
 		return nil, nil // skip the instruction
 	}
+
 	if inst[2] == "rejected" {
-		return nil, nil // skip the instruction
+		txReqID, err := common.Hash{}.NewHashFromStr(inst[3])
+		if err != nil {
+			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
+			return nil, nil
+		}
+		err = chain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BRIDGE_REQUEST_REJECTED_STATUS)
+		if err != nil {
+			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
+		}
+		return nil, nil
 	}
+
 	db := chain.GetDatabase()
 	contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 	if err != nil {
@@ -187,15 +198,6 @@ func (chain *BlockChain) processIssuingETHReq(
 		fmt.Println("WARNING: an error occured while inserting ETH tx hash issued to leveldb: ", err)
 		return nil, nil
 	}
-	// err = db.UpdateBridgeTokenInfo(
-	// 	issuingETHAcceptedInst.IncTokenID,
-	// 	issuingETHAcceptedInst.ExternalTokenID,
-	// 	false,
-	// )
-	// if err != nil {
-	// 	fmt.Println("WARNING: an error occured while updating bridge token info to leveldb: ", err)
-	// 	return nil
-	// }
 
 	updatingInfo, found := updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID]
 	if found {
@@ -220,10 +222,20 @@ func (chain *BlockChain) processIssuingReq(
 	if len(inst) != 4 {
 		return nil, nil // skip the instruction
 	}
+
 	if inst[2] == "rejected" {
-		return nil, nil // skip the instruction
+		txReqID, err := common.Hash{}.NewHashFromStr(inst[3])
+		if err != nil {
+			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
+			return nil, nil
+		}
+		err = chain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BRIDGE_REQUEST_REJECTED_STATUS)
+		if err != nil {
+			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
+		}
+		return nil, nil
 	}
-	// db := chain.GetDatabase()
+
 	contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 	if err != nil {
 		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
@@ -235,15 +247,6 @@ func (chain *BlockChain) processIssuingReq(
 		fmt.Println("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
 		return nil, nil
 	}
-	// err = db.UpdateBridgeTokenInfo(
-	// 	issuingAcceptedInst.IncTokenID,
-	// 	[]byte{},
-	// 	true,
-	// )
-	// if err != nil {
-	// 	fmt.Println("WARNING: an error occured while updating bridge token info to leveldb: ", err)
-	// 	return nil
-	// }
 
 	updatingInfo, found := updatingInfoByTokenID[issuingAcceptedInst.IncTokenID]
 	if found {
@@ -281,6 +284,22 @@ func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
 		}
 		if err := bc.config.DataBase.StoreBurningConfirm(txID[:], block.Header.Height); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
+		}
+	}
+	return nil
+}
+
+func (bc *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock) error {
+	db := bc.config.DataBase
+	for _, tx := range block.Body.Transactions {
+		metaType := tx.GetMetadataType()
+		var err error
+		if metaType == metadata.IssuingETHResponseMeta {
+			meta := tx.GetMetadata().(*metadata.IssuingETHResponse)
+			err = db.TrackBridgeReqWithStatus(meta.RequestedTxID, common.BRIDGE_REQUEST_ACCEPTED_STATUS)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
