@@ -1468,8 +1468,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	if txType == -1 {
 		return nil, errors.New("Invalid token ID")
 	}
-	return transaction.BuildCoinBaseTxByCoinID(
-		payToAddress,
+	buildCoinBaseParams := transaction.NewBuildCoinBaseTxByCoinIDParams(payToAddress,
 		amount,
 		payByPrivateKey,
 		db,
@@ -1477,8 +1476,8 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		coinID,
 		txType,
 		coinID.String(),
-		shardID,
-	)
+		shardID)
+	return transaction.BuildCoinBaseTxByCoinID(buildCoinBaseParams)
 }
 
 func CalculateNumberOfByteToRead(amountBytes int) []byte {
