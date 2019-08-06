@@ -158,14 +158,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
-	err = normalTx.Init(senderKey,
+	err = normalTx.Init(NewTxPrivacyInitParams(senderKey,
 		paymentInfo,
 		inputCoin,
 		feeNativeCoin,
 		hasPrivacyCoin,
 		db,
 		nil,
-		metaData)
+		metaData))
 	if err.(*TransactionError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -273,15 +273,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 				PropertyID:     *propertyID,
 				Mintable:       tokenParams.Mintable,
 			}
-			err := temp.Init(senderKey,
+			err := temp.Init(NewTxPrivacyInitParams(senderKey,
 				tokenParams.Receiver,
 				tokenParams.TokenInput,
 				tokenParams.Fee,
 				hasPrivacyToken,
 				db,
 				propertyID,
-				nil,
-			)
+				nil))
 			if err != nil {
 				return err
 			}
