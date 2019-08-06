@@ -42,7 +42,7 @@ func TestBuildCoinbaseTx(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
 	assert.Equal(t, uint64(10), tx.Proof.outputCoins[0].CoinDetails.Value)
-	assert.Equal(t, string(key.KeySet.PaymentAddress.Pk[:]), string(tx.Proof.outputCoins[0].CoinDetails.PublicKey.Compress()[:]))
+	assert.Equal(t, string(key.KeySet.PaymentAddress.Pk[:]), string(tx.Proof.outputCoins[0].CoinDetails.publicKey.Compress()[:]))
 
 	paymentAddress.Pk[0] = 1
 	_, err = BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
