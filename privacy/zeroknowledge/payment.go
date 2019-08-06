@@ -95,6 +95,10 @@ func (paymentProof PaymentProof) GetInputCoins() []*privacy.InputCoin {
 	return paymentProof.inputCoins
 }
 
+func (paymentProof *PaymentProof) SetInputCoins(v []*privacy.InputCoin) {
+	paymentProof.inputCoins = v
+}
+
 func (paymentProof PaymentProof) GetOutputCoins() []*privacy.OutputCoin {
 	return paymentProof.outputCoins
 }
