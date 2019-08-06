@@ -31,6 +31,13 @@ const (
 	InitWithnessError
 	WithnessProveError
 	EncryptOutputError
+	DecompressSigPubKeyError
+	InitTxSignatureFromBytesError
+	VerifyTxSigFailError
+	DuplicatedOutputSndError
+	SndExistedError
+	OutputCommitmentExistError
+	TxProofVerifyFailError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -57,6 +64,13 @@ var ErrCodeMessage = map[int]struct {
 	InitWithnessError:                        {-1016, "Can not init witness for privacy with param: %s"},
 	WithnessProveError:                       {-1017, "Can not prove with witness hashPrivacy=%+v param: %+s"},
 	EncryptOutputError:                       {-1018, "Can not encrypt output"},
+	DecompressSigPubKeyError:                 {-1019, "Can not decompress sig pubkey of tx"},
+	InitTxSignatureFromBytesError:            {-1020, "Can not init signature for tx from bytes"},
+	VerifyTxSigFailError:                     {-1021, "Verify signature of tx is fail"},
+	DuplicatedOutputSndError:                 {-1022, "Duplicate output"},
+	SndExistedError:                          {-1023, "Snd existed: %s"},
+	OutputCommitmentExistError:               {-1024, "Output's commitment existed"},
+	TxProofVerifyFailError:                   {-1025, "Can not verify proof of tx"},
 
 	// for PRV
 	InvalidSanityDataPRV:  {-2000, "Invalid sanity data for PRV"},

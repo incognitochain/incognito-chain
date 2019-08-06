@@ -19,7 +19,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
-	errors2 "github.com/pkg/errors"
 )
 
 type Tx struct {
@@ -455,9 +454,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if !valid {
 		if err != nil {
 			Logger.log.Errorf("Error verifying signature of tx: %+v \n", err)
+			return false, NewTransactionErr(VerifyTxSigFailError, err)
 		}
-		//Logger.log.Error("FAILED VERIFICATION SIGNATURE")
-		return false, errors2.Wrap(err, "signature invalid")
+		Logger.log.Error("FAILED VERIFICATION SIGNATURE")
+		return false, NewTransactionErr(VerifyTxSigFailError, errors.New("FAILED VERIFICATION SIGNATURE"))
 	}
 
 	if tx.Proof != nil {
@@ -465,7 +465,8 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			tokenID = &common.Hash{}
 			err := tokenID.SetBytes(common.PRVCoinID[:])
 			if err != nil {
-				return false, NewTransactionErr(UnexpectedErr, err)
+				Logger.log.Error(err)
+				return false, NewTransactionErr(TokenIDInvalidError, err)
 			}
 		}
 
@@ -476,23 +477,29 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		if common.CheckDuplicateBigIntArray(sndOutputs) {
 			Logger.log.Errorf("Duplicate output coins' snd\n")
-			return false, errors.New("Duplicate output coins' snd\n")
+			return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
 		}
 
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
 			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), shardID, db); ok || err != nil {
+				if err != nil {
+					Logger.log.Error(err)
+				}
 				Logger.log.Errorf("snd existed: %d\n", i)
-				return false, errors.New(fmt.Sprintf("snd existed: %d\n", i))
+				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 			}
 		}
 
 		if !hasPrivacy {
-			// Check input coins' cm is exists in cm list (Database)
+			// Check input coins' commitment is exists in cm list (Database)
 			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
 				ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().Compress(), db, shardID, tokenID)
 				if !ok || err != nil {
-					return false, err
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					return false, NewTransactionErr(OutputCommitmentExistError, err)
 				}
 			}
 		}
@@ -500,10 +507,13 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		// Verify the payment proof
 		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
 		if !valid {
+			if err != nil {
+				Logger.log.Error(err)
+			}
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			return false, err
+			return false, NewTransactionErr(TxProofVerifyFailError, err)
 		} else {
-			//Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
+			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
 	//@UNCOMMENT: metrics time
