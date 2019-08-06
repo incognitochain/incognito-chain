@@ -76,7 +76,7 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]st
 		SPV := make(map[byte][]string)
 		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}
 	}
-	beaconBestState := BestStateBeacon{}
+	beaconBestState := BeaconBestState{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err != nil {
 		panic("Can't Fetch Beacon BestState")
