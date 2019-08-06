@@ -200,11 +200,11 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 	outCoinsUnderLimit := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value < amount {
+		if outCoin.CoinDetails.value < amount {
 			outCoinsUnderLimit = append(outCoinsUnderLimit, outCoin)
 		} else if outCoinOverLimit == nil {
 			outCoinOverLimit = outCoin
-		} else if outCoinOverLimit.CoinDetails.Value > outCoin.CoinDetails.Value {
+		} else if outCoinOverLimit.CoinDetails.value > outCoin.CoinDetails.value {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		} else {
 			remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
@@ -213,22 +213,22 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 	}
 
 	sort.Slice(outCoinsUnderLimit, func(i, j int) bool {
-		return outCoinsUnderLimit[i].CoinDetails.Value < outCoinsUnderLimit[j].CoinDetails.Value
+		return outCoinsUnderLimit[i].CoinDetails.value < outCoinsUnderLimit[j].CoinDetails.value
 	})
 
 	for _, outCoin := range outCoinsUnderLimit {
 		if totalResultOutputCoinAmount < amount {
-			totalResultOutputCoinAmount += outCoin.CoinDetails.Value
+			totalResultOutputCoinAmount += outCoin.CoinDetails.value
 			resultOutputCoins = append(resultOutputCoins, outCoin)
 		} else {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
 
-	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.Value > 2*amount || totalResultOutputCoinAmount < amount) {
+	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.value > 2*amount || totalResultOutputCoinAmount < amount) {
 		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
 		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
-		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.Value
+		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.value
 	} else if outCoinOverLimit != nil {
 		remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
 	}
@@ -803,7 +803,7 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	for _, outCoin := range outCoins {
 		hash := common.HashH(outCoin.CoinDetails.serialNumber.Compress())
 		log.Println("Serial Number: ", hash)
-		sum += outCoin.CoinDetails.Value
+		sum += outCoin.CoinDetails.value
 	}
 	log.Println(sum)
 	salaryTx := initTx("100", privateKeyShard0[0], db)

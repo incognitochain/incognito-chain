@@ -13,13 +13,13 @@ func TestTxTokenPrivacyData(t *testing.T) {
 			outputCoins: []*privacy.OutputCoin{{
 				CoinDetails: &privacy.Coin{
 					publicKey: new(privacy.EllipticPoint).Zero(),
-					Value:     10,
+					value:     10,
 				},
 			}},
 			inputCoins: []*privacy.InputCoin{{
 				CoinDetails: &privacy.Coin{
 					publicKey: new(privacy.EllipticPoint).Zero(),
-					Value:     10,
+					value:     10,
 				},
 			}},
 		}},
