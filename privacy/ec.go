@@ -61,7 +61,7 @@ func (point EllipticPoint) MarshalJSON() ([]byte, error) {
 }
 
 // ComputeYCoord returns Y-coordinate from X-coordinate
-func (point *EllipticPoint) ComputeYCoord() error {
+func (point *EllipticPoint) computeYCoord() error {
 	// Y = +-sqrt(x^3 - 3*x + B)
 	xCube := new(big.Int).Exp(point.x, big.NewInt(3), Curve.Params().P)
 	xCube.Add(xCube, Curve.Params().B)
@@ -86,7 +86,7 @@ func (point *EllipticPoint) ComputeYCoord() error {
 }
 
 // Inverse returns the inverse point of an input elliptic point
-func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
+func (point EllipticPoint) inverse() (*EllipticPoint, error) {
 	// check if point is on the curve
 	if !Curve.IsOnCurve(point.x, point.y) {
 		return nil, IsNotAnEllipticPointErr
@@ -105,10 +105,10 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 
 // Randomize generates a random elliptic point on P256 curve
 // the elliptic point must be not a double point (which is the point has order is two)
-func (point *EllipticPoint) Randomize() {
+func (point *EllipticPoint) randomize() {
 	for {
 		point.x = RandScalar()
-		err := point.ComputeYCoord()
+		err := point.computeYCoord()
 		if (err == nil) && (point.IsSafe()) {
 			break
 		}
@@ -156,7 +156,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 
 	point.x = new(big.Int).SetBytes(compressPointBytes[1:33])
 
-	err := point.ComputeYCoord()
+	err := point.computeYCoord()
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 	for {
 		tmp = common.HashB(tmp)
 		res.x.SetBytes(tmp)
-		err := res.ComputeYCoord()
+		err := res.computeYCoord()
 
 		if (err == nil) && (res.IsSafe()) {
 			break
@@ -214,7 +214,7 @@ func (point EllipticPoint) Add(targetPoint *EllipticPoint) *EllipticPoint {
 
 // Sub subtracts an elliptic point to another elliptic point
 func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, error) {
-	invPoint, err := targetPoint.Inverse()
+	invPoint, err := targetPoint.inverse()
 	if err != nil {
 		return nil, err
 	}
