@@ -44,7 +44,7 @@ type BeaconBestState struct {
 	CurrentRandomNumber                    int64                `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                 `json:"IsGetRandomNumber"`
-	Params                                 map[string]string    `json:"Params,omitempty"`
+	Params                                 map[string]string    `json:"Params,omitempty"` // TODO: review what does this field do
 	MaxBeaconCommitteeSize                 int                  `json:"MaxBeaconCommitteeSize"`
 	MinBeaconCommitteeSize                 int                  `json:"MinBeaconCommitteeSize"`
 	MaxShardCommitteeSize                  int                  `json:"MaxShardCommitteeSize"`
@@ -476,9 +476,5 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestState(target *BeaconBestS
 	if reflect.DeepEqual(*beaconBestState, plainBeaconBestState) {
 		return NewBlockChainError(CloneBeaconBestStateError, fmt.Errorf("Shard Best State %+v clone failed", beaconBestState.BeaconHeight))
 	}
-	//beaconBestState.CandidateShardWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
-	//beaconBestState.CandidateShardWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateShardWaitingForNextRandom
-	//beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
-	//beaconBestState.CandidateBeaconWaitingForNextRandom = blockGenerator.chain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
 	return nil
 }
