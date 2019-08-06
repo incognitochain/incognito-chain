@@ -195,7 +195,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			tempOutputCoin := make([]*privacy.OutputCoin, 1)
 			tempOutputCoin[0] = new(privacy.OutputCoin)
 			tempOutputCoin[0].CoinDetails = new(privacy.Coin)
-			tempOutputCoin[0].CoinDetails.Value = tokenParams.Amount
+			tempOutputCoin[0].CoinDetails.SetValue(tokenParams.Amount)
 			tempOutputCoin[0].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
 			err := tempOutputCoin[0].CoinDetails.GetPublicKey().Decompress(tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
@@ -468,13 +468,13 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenReceivers() ([][]byte,
 		for i, key := range pubkeys {
 			if bytes.Equal(coinPubKey, key) {
 				added = true
-				amounts[i] += coin.CoinDetails.Value
+				amounts[i] += coin.CoinDetails.GetValue()
 				break
 			}
 		}
 		if !added {
 			pubkeys = append(pubkeys, coinPubKey)
-			amounts = append(amounts, coin.CoinDetails.Value)
+			amounts = append(amounts, coin.CoinDetails.GetValue())
 		}
 	}
 	return pubkeys, amounts
@@ -546,7 +546,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 	if proof.GetInputCoins() == nil || len(proof.GetInputCoins()) == 0 { // coinbase tx
 		txValue := uint64(0)
 		for _, outCoin := range proof.GetOutputCoins() {
-			txValue += outCoin.CoinDetails.Value
+			txValue += outCoin.CoinDetails.GetValue()
 		}
 		return txValue
 	}
@@ -558,7 +558,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 		if bytes.Equal(senderPKBytes, outPKBytes) {
 			continue
 		}
-		txValue += outCoin.CoinDetails.Value
+		txValue += outCoin.CoinDetails.GetValue()
 	}
 	return txValue
 }
