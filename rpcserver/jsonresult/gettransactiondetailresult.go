@@ -55,8 +55,8 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			if input.CoinDetails.Randomness != nil {
 				in.CoinDetails.Randomness = *input.CoinDetails.Randomness
 			}
-			if input.CoinDetails.SNDerivator != nil {
-				in.CoinDetails.SNDerivator = *input.CoinDetails.SNDerivator
+			if input.CoinDetails.GetSNDerivator() != nil {
+				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivator()
 			}
 			if input.CoinDetails.SerialNumber != nil {
 				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.SerialNumber.Compress(), 0x0)
@@ -81,8 +81,8 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			if output.CoinDetails.Randomness != nil {
 				out.CoinDetails.Randomness = *output.CoinDetails.Randomness
 			}
-			if output.CoinDetails.SNDerivator != nil {
-				out.CoinDetails.SNDerivator = *output.CoinDetails.SNDerivator
+			if output.CoinDetails.GetSNDerivator() != nil {
+				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivator()
 			}
 			if output.CoinDetails.SerialNumber != nil {
 				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.SerialNumber.Compress(), 0x0)

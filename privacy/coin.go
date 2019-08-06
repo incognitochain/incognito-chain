@@ -13,7 +13,7 @@ import (
 type Coin struct {
 	publicKey      *EllipticPoint
 	coinCommitment *EllipticPoint
-	SNDerivator    *big.Int
+	snDerivator    *big.Int
 	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
@@ -37,18 +37,18 @@ func (coin *Coin) SetCoinCommitment(v *EllipticPoint) {
 }
 
 func (coin Coin) GetSNDerivator() *big.Int {
-	return coin.SNDerivator
+	return coin.snDerivator
 }
 
 func (coin *Coin) SetSNDerivator(v *big.Int) {
-	coin.SNDerivator = v
+	coin.snDerivator = v
 }
 
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(EllipticPoint).Zero()
 	coin.coinCommitment = new(EllipticPoint).Zero()
-	coin.SNDerivator = new(big.Int)
+	coin.snDerivator = new(big.Int)
 	coin.SerialNumber = new(EllipticPoint).Zero()
 	coin.Randomness = new(big.Int)
 	coin.Value = 0
@@ -95,7 +95,7 @@ func (coin *Coin) HashH() *common.Hash {
 // public key, value, serial number derivator, shardID form last byte public key, randomness
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.snDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
 	commitment, err := PedCom.commitAll(values)
 	if err != nil {
 		return err
@@ -126,9 +126,9 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.SNDerivator != nil {
+	if coin.snDerivator != nil {
 		coinBytes = append(coinBytes, byte(common.BigIntSize))
-		coinBytes = append(coinBytes, common.AddPaddingBigInt(coin.SNDerivator, common.BigIntSize)...)
+		coinBytes = append(coinBytes, common.AddPaddingBigInt(coin.snDerivator, common.BigIntSize)...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -204,8 +204,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.SNDerivator = new(big.Int)
-		coin.SNDerivator.SetBytes(coinBytes[offset : offset+int(lenField)])
+		coin.snDerivator = new(big.Int)
+		coin.snDerivator.SetBytes(coinBytes[offset : offset+int(lenField)])
 		offset += int(lenField)
 	}
 
