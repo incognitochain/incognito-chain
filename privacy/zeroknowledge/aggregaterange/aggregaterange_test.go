@@ -63,10 +63,10 @@ func TestEncodeVectors(t *testing.T) {
 		b[i] = big.NewInt(10)
 
 		G[i] = new(privacy.EllipticPoint)
-		G[i].Set(AggParam.g[i].X, AggParam.g[i].Y)
+		G[i].Set(AggParam.g[i].GetX(), AggParam.g[i].GetY())
 
 		H[i] = new(privacy.EllipticPoint)
-		H[i].Set(AggParam.h[i].X, AggParam.h[i].Y)
+		H[i].Set(AggParam.h[i].GetX(), AggParam.h[i].GetY())
 	}
 	start := time.Now()
 	actualRes, err := encodeVectors(a, b, G, H)
