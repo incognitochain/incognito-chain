@@ -104,7 +104,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	// Outputcoins will be stored as new utxo for next transaction
 	for _, item := range proof.GetOutputCoins() {
 		commitment := item.CoinDetails.CoinCommitment.Compress()
-		pubkey := item.CoinDetails.PublicKey.Compress()
+		pubkey := item.CoinDetails.GetPublicKey().Compress()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
 		if err != nil {
@@ -355,7 +355,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	for _, outputCoin := range outputCoins {
 		item := &outputCoin
 		commitment := item.CoinDetails.CoinCommitment.Compress()
-		pubkey := item.CoinDetails.PublicKey.Compress()
+		pubkey := item.CoinDetails.GetPublicKey().Compress()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
 		if err != nil {

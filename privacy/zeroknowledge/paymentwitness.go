@@ -82,7 +82,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		wit.inputCoins = inputCoins
 		wit.outputCoins = outputCoins
 
-		publicKey := inputCoins[0].CoinDetails.PublicKey
+		publicKey := inputCoins[0].CoinDetails.GetPublicKey()
 
 		wit.serialNumberNoPrivacyWitness = make([]*serialnumbernoprivacy.SNNoPrivacyWitness, len(inputCoins))
 		for i := 0; i < len(inputCoins); i++ {
@@ -246,7 +246,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 
 		cmOutputSum[i] = new(privacy.EllipticPoint).Zero()
 		cmOutputSum[i] = cmOutputValue[i].Add(cmOutputSND[i])
-		cmOutputSum[i] = cmOutputSum[i].Add(outputCoins[i].CoinDetails.PublicKey)
+		cmOutputSum[i] = cmOutputSum[i].Add(outputCoins[i].CoinDetails.GetPublicKey())
 		cmOutputSum[i] = cmOutputSum[i].Add(cmOutputShardID[i])
 
 		cmOutputValueAll = cmOutputValueAll.Add(cmOutputValue[i])

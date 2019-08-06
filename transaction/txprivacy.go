@@ -222,8 +222,8 @@ func (tx *Tx) Init(
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
-		outputCoins[i].CoinDetails.PublicKey = new(privacy.EllipticPoint)
-		outputCoins[i].CoinDetails.PublicKey.Decompress(pInfo.PaymentAddress.Pk)
+		outputCoins[i].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
+		outputCoins[i].CoinDetails.GetPublicKey().Decompress(pInfo.PaymentAddress.Pk)
 		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
 	}
 
@@ -295,7 +295,7 @@ func (tx *Tx) Init(
 			tx.Proof.GetInputCoins()[i].CoinDetails.CoinCommitment = nil
 			tx.Proof.GetInputCoins()[i].CoinDetails.Value = 0
 			tx.Proof.GetInputCoins()[i].CoinDetails.SNDerivator = nil
-			tx.Proof.GetInputCoins()[i].CoinDetails.PublicKey = nil
+			tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.Randomness = nil
 		}
 
@@ -597,7 +597,7 @@ func (tx *Tx) GetSender() []byte {
 	if tx.Proof == nil || len(tx.Proof.GetInputCoins()) == 0 {
 		return nil
 	}
-	return tx.Proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress()
+	return tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 }
 
 func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
@@ -606,7 +606,7 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
 		for _, coin := range tx.Proof.GetOutputCoins() {
 			added := false
-			coinPubKey := coin.CoinDetails.PublicKey.Compress()
+			coinPubKey := coin.CoinDetails.GetPublicKey().Compress()
 			for i, key := range pubkeys {
 				if bytes.Equal(coinPubKey, key) {
 					added = true
@@ -626,7 +626,7 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	sender := []byte{} // Empty byte slice for coinbase tx
 	if tx.Proof != nil && len(tx.Proof.GetInputCoins()) > 0 && !tx.IsPrivacy() {
-		sender = tx.Proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress()
+		sender = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	}
 	pubkeys, amounts := tx.GetReceivers()
 	pubkey := []byte{}
@@ -809,7 +809,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 			}
 			// check output coins with privacy
 			for i := 0; i < len(txN.Proof.GetOutputCoins()); i++ {
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.PublicKey.IsSafe() {
+				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().IsSafe() {
 					return false, errors.New("validate sanity Public key of output coin failed")
 				}
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.CoinCommitment.IsSafe() {
@@ -875,7 +875,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.CoinCommitment.IsSafe() {
 					return false, errors.New("validate sanity CoinCommitment of input coin failed")
 				}
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.PublicKey.IsSafe() {
+				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey().IsSafe() {
 					return false, errors.New("validate sanity PublicKey of input coin failed")
 				}
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.SerialNumber.IsSafe() {
@@ -895,7 +895,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.CoinCommitment.IsSafe() {
 					return false, errors.New("validate sanity CoinCommitment of output coin failed")
 				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.PublicKey.IsSafe() {
+				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().IsSafe() {
 					return false, errors.New("validate sanity PublicKey of output coin failed")
 				}
 				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.Randomness.Bytes()) > common.BigIntSize {
@@ -1002,13 +1002,13 @@ func (tx *Tx) IsCoinsBurning() bool {
 	}
 	senderPKBytes := []byte{}
 	if len(tx.Proof.GetInputCoins()) > 0 {
-		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress()
+		senderPKBytes = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	}
 	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
 	for _, outCoin := range tx.Proof.GetOutputCoins() {
-		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().Compress()
 		if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
 			return false
 		}
@@ -1031,10 +1031,10 @@ func (tx *Tx) CalculateTxValue() uint64 {
 		return txValue
 	}
 
-	senderPKBytes := tx.Proof.GetInputCoins()[0].CoinDetails.PublicKey.Compress()
+	senderPKBytes := tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	txValue := uint64(0)
 	for _, outCoin := range tx.Proof.GetOutputCoins() {
-		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().Compress()
 		if bytes.Equal(senderPKBytes, outPKBytes) {
 			continue
 		}
@@ -1083,8 +1083,8 @@ func (tx *Tx) InitTxSalary(
 	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
 	tempOutputCoin[0].CoinDetails = new(privacy.Coin)
 	tempOutputCoin[0].CoinDetails.Value = salary
-	tempOutputCoin[0].CoinDetails.PublicKey = new(privacy.EllipticPoint)
-	err = tempOutputCoin[0].CoinDetails.PublicKey.Decompress(receiverAddr.Pk)
+	tempOutputCoin[0].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
+	err = tempOutputCoin[0].CoinDetails.GetPublicKey().Decompress(receiverAddr.Pk)
 	if err != nil {
 		return err
 	}
@@ -1148,7 +1148,7 @@ func (tx Tx) ValidateTxSalary(
 	}
 
 	// check whether output coin's input exists in input list or not
-	lastByte := tx.Proof.GetOutputCoins()[0].CoinDetails.PublicKey.Compress()[len(tx.Proof.GetOutputCoins()[0].CoinDetails.PublicKey.Compress())-1]
+	lastByte := tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey().Compress()[len(tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey().Compress())-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.PRVCoinID[:])
@@ -1157,7 +1157,7 @@ func (tx Tx) ValidateTxSalary(
 	}
 
 	// check output coin's coin commitment is calculated correctly
-	cmTmp := tx.Proof.GetOutputCoins()[0].CoinDetails.PublicKey
+	cmTmp := tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey()
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(tx.Proof.GetOutputCoins()[0].CoinDetails.Value))))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(tx.Proof.GetOutputCoins()[0].CoinDetails.SNDerivator))
 
