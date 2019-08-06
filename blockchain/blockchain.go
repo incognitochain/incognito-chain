@@ -2203,3 +2203,182 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 	}
 	return nil
 }
+
+func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *BeaconBlock) error {
+	prevBST, err := blockchain.config.DataBase.FetchPrevBestState(true, 0)
+	if err != nil {
+		return err
+	}
+	beaconBestState := BeaconBestState{}
+	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
+		return err
+	}
+	blkHash := block.Header.Hash()
+	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
+	err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
+	if err != nil {
+		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
+	}
+	//verify producer
+	producerPosition := (beaconBestState.BeaconProposerIndex + block.Header.Round) % len(beaconBestState.BeaconCommittee)
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	if strings.Compare(tempProducer, producerPk) != 0 {
+		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	}
+	//verify version
+	if block.Header.Version != BEACON_BLOCK_VERSION {
+		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(BEACON_BLOCK_VERSION)))
+	}
+	prevBlockHash := block.Header.PreviousBlockHash
+	// Verify parent hash exist or not
+	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
+	if err != nil {
+		return NewBlockChainError(DatabaseError, err)
+	}
+	parentBlock := NewBeaconBlock()
+	err = json.Unmarshal(parentBlockBytes, parentBlock)
+	if err != nil {
+
+	}
+	// Verify block height with parent block
+	if parentBlock.Header.Height+1 != block.Header.Height {
+		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	}
+	return nil
+}
+
+//This only happen if user is a beacon committee member.
+func (blockchain *BlockChain) RevertBeaconState() error {
+	//Steps:
+	// 1. Restore current beststate to previous beststate
+	// 2. Set beacon/shardtobeacon pool state
+	// 3. Delete newly inserted block
+	// 4. Delete data store by block
+	blockchain.chainLock.Lock()
+	defer blockchain.chainLock.Unlock()
+	currentBestState := blockchain.BestState.Beacon
+	currentBestStateBlk := currentBestState.BestBlock
+
+	prevBST, err := blockchain.config.DataBase.FetchPrevBestState(true, 0)
+	if err != nil {
+		return err
+	}
+	beaconBestState := BeaconBestState{}
+	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
+		return err
+	}
+	blockchain.config.BeaconPool.SetBeaconState(beaconBestState.BeaconHeight)
+	blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
+	if err := blockchain.config.DataBase.DeleteCommitteeByHeight(currentBestStateBlk.Header.Height); err != nil {
+		return err
+	}
+
+	for shardID, shardStates := range currentBestStateBlk.Body.ShardState {
+		for _, shardState := range shardStates {
+			blockchain.config.DataBase.DeleteAcceptedShardToBeacon(shardID, shardState.Hash)
+		}
+	}
+
+	lastCrossShardState := beaconBestState.LastCrossShardState
+	for fromShard, toShards := range lastCrossShardState {
+		for toShard, height := range toShards {
+			blockchain.config.DataBase.RestoreCrossShardNextHeights(fromShard, toShard, height)
+		}
+		blockchain.config.CrossShardPool[fromShard].UpdatePool()
+	}
+	for _, inst := range currentBestStateBlk.Body.Instructions {
+		if len(inst) < 2 {
+			continue // Not error, just not bridge instruction
+		}
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+			continue
+		}
+		var err error
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			continue
+		}
+		switch metaType {
+		case metadata.AcceptedBlockRewardInfoMeta:
+			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
+			if err != nil {
+				return err
+			}
+			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = val + blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			} else {
+				if acceptedBlkRewardInfo.TxsFee == nil {
+					acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
+				}
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			}
+			Logger.log.Infof("TxsFee in Epoch: %+v of shardID: %+v:\n", currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID)
+			for key, value := range acceptedBlkRewardInfo.TxsFee {
+				Logger.log.Infof("===> TokenID:%+v: Amount: %+v\n", key, value)
+				err = blockchain.config.DataBase.RestoreShardRewardRequest(currentBestStateBlk.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
+				if err != nil {
+					return err
+				}
+
+			}
+		}
+	}
+	err = blockchain.config.DataBase.DeleteBeaconBlock(currentBestStateBlk.Header.Hash(), currentBestStateBlk.Header.Height)
+	if err != nil {
+		return err
+	}
+	blockchain.BestState.Beacon = &beaconBestState
+	if err := blockchain.StoreBeaconBestState(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error {
+	//Steps:
+	// 1. Backup beststate
+	tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
+	if err != nil {
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
+	}
+	if err := blockchain.config.DataBase.StorePrevBestState(tempMarshal, true, 0); err != nil {
+		return NewBlockChainError(UnExpectedError, err)
+	}
+	for _, inst := range block.Body.Instructions {
+		if len(inst) < 2 {
+			continue // Not error, just not bridge instruction
+		}
+		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == RandomAction || inst[0] == SwapAction || inst[0] == AssignAction {
+			continue
+		}
+		var err error
+		metaType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			continue
+		}
+
+		switch metaType {
+		case metadata.AcceptedBlockRewardInfoMeta:
+			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
+			if err != nil {
+				return err
+			}
+			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = val + blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			} else {
+				if acceptedBlkRewardInfo.TxsFee == nil {
+					acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
+				}
+				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+			}
+			for key, _ := range acceptedBlkRewardInfo.TxsFee {
+				err = blockchain.config.DataBase.BackupShardRewardRequest(block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
+				if err != nil {
+					return err
+				}
+
+			}
+		}
+	}
+	return nil
+}

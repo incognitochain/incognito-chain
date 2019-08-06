@@ -7,22 +7,22 @@ import (
 )
 
 type BeaconHeader struct {
-	ProducerAddress                 privacy.PaymentAddress
-	Version                         int         `json:"Version"`
-	Height                          uint64      `json:"Height"`
-	Epoch                           uint64      `json:"Epoch"`
-	Round                           int         `json:"Round"`
-	Timestamp                       int64       `json:"Timestamp"`
-	PreviousBlockHash               common.Hash `json:"PreviousBlockHash"`
-	BeaconCommitteeAndValidatorRoot common.Hash `json:"BeaconCommitteeAndValidatorRoot"` //Build from two list: BeaconCommittee + BeaconPendingValidator
-	BeaconCandidateRoot             common.Hash `json:"BeaconCandidateRoot"`             // CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
-	ShardCandidateRoot              common.Hash `json:"ShardCandidateRoot"`              // CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
-	ShardCommitteeAndValidatorRoot  common.Hash `json:"ShardCommitteeAndValidatorRoot"`
-	ShardStateHash                  common.Hash `json:"ShardStateHash"`  // each shard will have a list of blockHash, shardRoot is hash of all list
-	InstructionHash                 common.Hash `json:"InstructionHash"` // hash of all parameters == hash of instruction
+	ProducerAddress                 privacy.PaymentAddress `json:"ProducerAddress"`
+	Version                         int                    `json:"Version"`
+	Height                          uint64                 `json:"Height"`
+	Epoch                           uint64                 `json:"Epoch"`
+	Round                           int                    `json:"Round"`
+	Timestamp                       int64                  `json:"Timestamp"`
+	PreviousBlockHash               common.Hash            `json:"PreviousBlockHash"`
+	BeaconCommitteeAndValidatorRoot common.Hash            `json:"BeaconCommitteeAndValidatorRoot"` //Build from two list: BeaconCommittee + BeaconPendingValidator
+	BeaconCandidateRoot             common.Hash            `json:"BeaconCandidateRoot"`             // CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
+	ShardCandidateRoot              common.Hash            `json:"ShardCandidateRoot"`              // CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
+	ShardCommitteeAndValidatorRoot  common.Hash            `json:"ShardCommitteeAndValidatorRoot"`
+	ShardStateHash                  common.Hash            `json:"ShardStateHash"`  // each shard will have a list of blockHash, shardRoot is hash of all list
+	InstructionHash                 common.Hash            `json:"InstructionHash"` // hash of all parameters == hash of instruction
 	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionHash but for simplicity, we keep it for now
-	InstructionMerkleRoot common.Hash
+	InstructionMerkleRoot common.Hash `json:"InstructionMerkleRoot"`
 }
 
 func (beaconHeader *BeaconHeader) toString() string {
