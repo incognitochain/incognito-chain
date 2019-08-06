@@ -67,36 +67,59 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Init - init value for tx from inputcoin(old output coin from old tx)
-// create new outputcoin and build privacy proof
-// if not want to create a privacy tx proof, set hashPrivacy = false
-// database is used like an interface which use to query info from db in building tx
-func (tx *Tx) Init(
-	senderSK *privacy.PrivateKey,
+type TxPrivacyInitParams struct {
+	senderSK    *privacy.PrivateKey
+	paymentInfo []*privacy.PaymentInfo
+	inputCoins  []*privacy.InputCoin
+	fee         uint64
+	hasPrivacy  bool
+	db          database.DatabaseInterface
+	tokenID     *common.Hash // default is nil -> use for prv coin
+	metaData    metadata.Metadata
+}
+
+func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoins []*privacy.InputCoin,
 	fee uint64,
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	tokenID *common.Hash, // default is nil -> use for prv coin
-	metaData metadata.Metadata,
-) *TransactionError {
+	metaData metadata.Metadata) *TxPrivacyInitParams {
+	params := &TxPrivacyInitParams{
+		db:          db,
+		tokenID:     tokenID,
+		hasPrivacy:  hasPrivacy,
+		inputCoins:  inputCoins,
+		fee:         fee,
+		metaData:    metaData,
+		paymentInfo: paymentInfo,
+		senderSK:    senderSK,
+	}
+	return params
+}
+
+// Init - init value for tx from inputcoin(old output coin from old tx)
+// create new outputcoin and build privacy proof
+// if not want to create a privacy tx proof, set hashPrivacy = false
+// database is used like an interface which use to query info from db in building tx
+func (tx *Tx) Init(params *TxPrivacyInitParams) *TransactionError {
 
 	Logger.log.Debugf("CREATING TX........\n")
 	tx.Version = txVersion
 	var err error
 
-	if len(inputCoins) > 255 {
-		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(inputCoins))))
+	if len(params.inputCoins) > 255 {
+		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(params.inputCoins))))
 	}
 
-	if len(paymentInfo) > 254 {
-		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(paymentInfo))))
+	if len(params.paymentInfo) > 254 {
+		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(params.paymentInfo))))
 	}
 
-	if tokenID == nil {
-		tokenID = &common.Hash{}
-		tokenID.SetBytes(common.PRVCoinID[:])
+	if params.tokenID == nil {
+		params.tokenID = &common.Hash{}
+		params.tokenID.SetBytes(common.PRVCoinID[:])
 	}
 
 	// Calculate execution time
@@ -108,7 +131,7 @@ func (tx *Tx) Init(
 
 	// create sender's key set from sender's spending key
 	senderFullKey := incognitokey.KeySet{}
-	err = senderFullKey.InitFromPrivateKey(senderSK)
+	err = senderFullKey.InitFromPrivateKey(params.senderSK)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewTransactionErr(UnexpectedErr, err)
@@ -120,16 +143,16 @@ func (tx *Tx) Init(
 	tx.Info = []byte{}
 
 	// set metadata
-	tx.Metadata = metaData
+	tx.Metadata = params.metaData
 
 	// set tx type
 	tx.Type = common.TxNormalType
-	Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(inputCoins), fee, hasPrivacy)
+	Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
 
-	if len(inputCoins) == 0 && fee == 0 && !hasPrivacy {
+	if len(params.inputCoins) == 0 && params.fee == 0 && !params.hasPrivacy {
 		Logger.log.Infof("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
-		tx.Fee = fee
-		tx.sigPrivKey = *senderSK
+		tx.Fee = params.fee
+		tx.sigPrivKey = *params.senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
 		err := tx.signTx()
 		if err != nil {
@@ -143,16 +166,16 @@ func (tx *Tx) Init(
 	var commitmentIndexs []uint64   // array index random of commitments in db
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
-	if hasPrivacy {
-		randomParams := NewRandomCommitmentsProcessParam(inputCoins, privacy.CommitmentRingSize, db, shardID, tokenID)
+	if params.hasPrivacy {
+		randomParams := NewRandomCommitmentsProcessParam(params.inputCoins, privacy.CommitmentRingSize, params.db, shardID, params.tokenID)
 		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(randomParams)
 
 		// Check number of list of random commitments, list of random commitment indices
-		if len(commitmentIndexs) != len(inputCoins)*privacy.CommitmentRingSize {
+		if len(commitmentIndexs) != len(params.inputCoins)*privacy.CommitmentRingSize {
 			return NewTransactionErr(RandomCommitmentErr, nil)
 		}
 
-		if len(myCommitmentIndexs) != len(inputCoins) {
+		if len(myCommitmentIndexs) != len(params.inputCoins) {
 			return NewTransactionErr(RandomCommitmentErr, errors.New("number of list my commitment indices must be equal to number of input coins"))
 		}
 	}
@@ -162,23 +185,23 @@ func (tx *Tx) Init(
 
 	// Calculate sum of all output coins' value
 	sumOutputValue := uint64(0)
-	for _, p := range paymentInfo {
+	for _, p := range params.paymentInfo {
 		sumOutputValue += p.Amount
 	}
 
 	// Calculate sum of all input coins' value
 	sumInputValue := uint64(0)
-	for _, coin := range inputCoins {
+	for _, coin := range params.inputCoins {
 		sumInputValue += coin.CoinDetails.GetValue()
 	}
 	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 
 	// Calculate over balance, it will be returned to sender
-	overBalance := int(sumInputValue - sumOutputValue - fee)
+	overBalance := int(sumInputValue - sumOutputValue - params.fee)
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return NewTransactionErr(WrongInput, errors.New(fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, fee)))
+		return NewTransactionErr(WrongInput, errors.New(fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.fee)))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
@@ -186,22 +209,22 @@ func (tx *Tx) Init(
 		changePaymentInfo := new(privacy.PaymentInfo)
 		changePaymentInfo.Amount = uint64(overBalance)
 		changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
-		paymentInfo = append(paymentInfo, changePaymentInfo)
+		params.paymentInfo = append(params.paymentInfo, changePaymentInfo)
 	}
 
 	// create new output coins
-	outputCoins := make([]*privacy.OutputCoin, len(paymentInfo))
+	outputCoins := make([]*privacy.OutputCoin, len(params.paymentInfo))
 
 	// create SNDs for output coins
 	ok := true
 	sndOuts := make([]*big.Int, 0)
 	for ok {
 		var sndOut *big.Int
-		for i := 0; i < len(paymentInfo); i++ {
+		for i := 0; i < len(params.paymentInfo); i++ {
 			sndOut = privacy.RandScalar()
 			for {
 
-				ok1, err := CheckSNDerivatorExistence(tokenID, sndOut, shardID, db)
+				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, shardID, params.db)
 				if err != nil {
 					Logger.log.Error(err)
 				}
@@ -223,7 +246,7 @@ func (tx *Tx) Init(
 	}
 
 	// create new output coins with info: Pk, value, last byte of pk, snd
-	for i, pInfo := range paymentInfo {
+	for i, pInfo := range params.paymentInfo {
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
@@ -233,7 +256,7 @@ func (tx *Tx) Init(
 	}
 
 	// assign fee tx
-	tx.Fee = fee
+	tx.Fee = params.fee
 
 	// create zero knowledge proof of payment
 	tx.Proof = &zkp.PaymentProof{}
@@ -242,7 +265,7 @@ func (tx *Tx) Init(
 	commitmentProving := make([]*privacy.EllipticPoint, len(commitmentIndexs))
 	for i, cmIndex := range commitmentIndexs {
 		commitmentProving[i] = new(privacy.EllipticPoint)
-		temp, err := db.GetCommitmentByIndex(*tokenID, cmIndex, shardID)
+		temp, err := params.db.GetCommitmentByIndex(*params.tokenID, cmIndex, shardID)
 		if err != nil {
 			return NewTransactionErr(UnexpectedErr, err)
 		}
@@ -255,22 +278,22 @@ func (tx *Tx) Init(
 	// prepare witness for proving
 	witness := new(zkp.PaymentWitness)
 	paymentWitnessParam := zkp.PaymentWitnessParam{
-		HasPrivacy:              hasPrivacy,
-		PrivateKey:              new(big.Int).SetBytes(*senderSK),
-		InputCoins:              inputCoins,
+		HasPrivacy:              params.hasPrivacy,
+		PrivateKey:              new(big.Int).SetBytes(*params.senderSK),
+		InputCoins:              params.inputCoins,
 		OutputCoins:             outputCoins,
 		PublicKeyLastByteSender: pkLastByteSender,
 		Commitments:             commitmentProving,
 		CommitmentIndices:       commitmentIndexs,
 		MyCommitmentIndices:     myCommitmentIndexs,
-		Fee:                     fee,
+		Fee:                     params.fee,
 	}
 	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 
-	tx.Proof, err = witness.Prove(hasPrivacy)
+	tx.Proof, err = witness.Prove(params.hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
@@ -278,15 +301,15 @@ func (tx *Tx) Init(
 	Logger.log.Debugf("DONE PROVING........\n")
 
 	// set private key for signing tx
-	if hasPrivacy {
+	if params.hasPrivacy {
 		tx.sigPrivKey = make([]byte, 64)
 		randSK := witness.GetRandSecretKey()
-		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
+		tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...)
 
 		// encrypt coin details (Randomness)
 		// hide information of output coins except coin commitments, public key, snDerivators
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			err = tx.Proof.GetOutputCoins()[i].Encrypt(paymentInfo[i].PaymentAddress.Tk)
+			err = tx.Proof.GetOutputCoins()[i].Encrypt(params.paymentInfo[i].PaymentAddress.Tk)
 			if err.(*privacy.PrivacyError) != nil {
 				return NewTransactionErr(UnexpectedErr, err)
 			}
@@ -307,7 +330,7 @@ func (tx *Tx) Init(
 	} else {
 		tx.sigPrivKey = []byte{}
 		randSK := big.NewInt(0)
-		tx.sigPrivKey = append(*senderSK, randSK.Bytes()...)
+		tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...)
 	}
 
 	// sign tx

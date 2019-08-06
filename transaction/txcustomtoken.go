@@ -424,14 +424,14 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	var err error
 	// create normal txCustomToken
 	normalTx := Tx{}
-	err = normalTx.Init(senderKey,
+	err = normalTx.Init(NewTxPrivacyInitParams(senderKey,
 		paymentInfo,
 		inputCoin,
 		fee,
 		hasPrivacyCoin,
 		db,
 		nil,
-		metaData)
+		metaData))
 	if err.(*TransactionError) != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
