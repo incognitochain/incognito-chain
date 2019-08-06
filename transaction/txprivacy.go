@@ -23,19 +23,23 @@ import (
 )
 
 type Tx struct {
-	// Basic data
+	// Basic data, required
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 	Info     []byte // 512 bytes
-	// Sign and Privacy proof
+
+	// Sign and Privacy proof, required
 	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
 	Sig                  []byte `json:"Sig, omitempty"`       //
 	Proof                *zkp.PaymentProof
 	PubKeyLastByteSender byte
-	// Metadata
-	Metadata         metadata.Metadata
+
+	// Metadata, optional
+	Metadata metadata.Metadata
+
+	// private field, not use for json parser, only use as temp variable
 	sigPrivKey       []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 	cachedHash       *common.Hash // cached hash data of tx
 	cachedActualSize *uint64      // cached actualsize data for tx
