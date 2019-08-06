@@ -349,8 +349,8 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	shardStates := make(map[byte]ShardState)
 	stakeInstructions := [][]string{}
 	swapInstructions := make(map[byte][][]string)
-	stakePublicKeys := [][]string{}
-	swapPublickKeys := [][]string{}
+	stakeInstructionFromShardBlock := [][]string{}
+	swapInstructionFromShardBlock := [][]string{}
 	bridgeInstructions := [][]string{}
 	stakeBeacon := []string{}
 	stakeShard := []string{}
@@ -387,22 +387,22 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	for _, l := range instructions {
 		if len(l) > 0 {
 			if l[0] == StakeAction {
-				stakePublicKeys = append(stakePublicKeys, l)
+				stakeInstructionFromShardBlock = append(stakeInstructionFromShardBlock, l)
 			}
 			if l[0] == SwapAction {
-				swapPublickKeys = append(swapPublickKeys, l)
+				swapInstructionFromShardBlock = append(swapInstructionFromShardBlock, l)
 			}
 		}
 	}
-	if len(stakePublicKeys) != 0 {
-		Logger.log.Info("Beacon Producer/ Process Stakers List ", stakePublicKeys)
+	if len(stakeInstructionFromShardBlock) != 0 {
+		Logger.log.Info("Beacon Producer/ Process Stakers List ", stakeInstructionFromShardBlock)
 	}
-	if len(swapPublickKeys) != 0 {
-		Logger.log.Info("Beacon Producer/ Process Stakers List ", swapPublickKeys)
+	if len(swapInstructionFromShardBlock) != 0 {
+		Logger.log.Info("Beacon Producer/ Process Stakers List ", swapInstructionFromShardBlock)
 	}
 	// Process Stake Instruction form Shard Block
 	// Validate stake instruction => extract only valid stake instruction
-	for _, stakePublicKey := range stakePublicKeys {
+	for _, stakePublicKey := range stakeInstructionFromShardBlock {
 		var tempStakePublicKey []string
 		newBeaconCandidate, newShardCandidate := getStakeValidatorArrayString(stakePublicKey)
 		assignShard := true
@@ -443,7 +443,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	}
 	// Process Swap Instruction from Shard Block
 	// Validate swap instruction => extract only valid swap instruction
-	for _, swap := range swapPublickKeys {
+	for _, swap := range swapInstructionFromShardBlock {
 		if swap[3] == "beacon" {
 			continue
 		} else if swap[3] == "shard" {
