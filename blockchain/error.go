@@ -101,6 +101,7 @@ const (
 	BeaconBlockProducerError
 	BeaconBlockSignatureError
 	WrongEpochError
+	GenerateInstructionHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -196,6 +197,7 @@ var ErrCodeMessage = map[int]struct {
 	BeaconBlockProducerError:                          {-1086, "Beacon Block Producer Error"},
 	BeaconBlockSignatureError:                         {-1087, "Beacon Block Signature Error"},
 	WrongEpochError:                                   {-1088, "Wrong Epoch Error"},
+	GenerateInstructionHashError:                      {-1089, "Generate Instruction Hash Error"},
 }
 
 type BlockChainError struct {
