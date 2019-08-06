@@ -109,8 +109,8 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if int(shardBlock.Header.ShardID) < 0 || int(shardBlock.Header.ShardID) > 256 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block ShardID in range 0 - 255 but get %+v ", shardBlock.Header.ShardID))
 	}
-	if shardBlock.Header.Version < VERSION {
-		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Version greater or equal than %+v but get %+v ", VERSION, shardBlock.Header.Version))
+	if shardBlock.Header.Version < SHARD_BLOCK_VERSION {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Version greater or equal than %+v but get %+v ", SHARD_BLOCK_VERSION, shardBlock.Header.Version))
 	}
 	if len(shardBlock.Header.PreviousBlockHash[:]) != common.HashSize {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Previous Hash in the right format"))
@@ -157,7 +157,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if len(shardBlock.Header.PendingValidatorRoot[:]) != common.HashSize {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Committee Root in the right format"))
 	}
-	if len(shardBlock.Header.CrossShards) > 254 {
+	if len(shardBlock.Header.CrossShardBitMap) > 254 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Shard Length Less Than 255"))
 	}
 	if shardBlock.Header.BeaconHeight < 1 {
@@ -208,7 +208,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	}{}
 	err := json.Unmarshal(data, &tempBlk)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.AggregatedSig = tempBlk.AggregatedSig
 	shardBlock.R = tempBlk.R
@@ -217,7 +217,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	blkBody := ShardBody{}
 	err = blkBody.UnmarshalJSON(*tempBlk.Body)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.Header = tempBlk.Header
 	// Init shard block data if get nil value
@@ -234,7 +234,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
 	}
 	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.Body = blkBody
 	return nil
@@ -314,12 +314,12 @@ func (blk *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToBeaconBl
 		Logger.log.Error(err)
 		return nil
 	}
-	beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
-	instructions, err := CreateShardInstructionsFromTransactionAndIns(blk.Body.Transactions, bc, blk.Header.ShardID, &blk.Header.ProducerAddress, blk.Header.Height, beaconBlocks, blk.Header.BeaconHeight)
+	//beaconBlocks, err := FetchBeaconBlockFromHeight(bc.config.DataBase, previousShardBlock.Header.BeaconHeight+1, block.Header.BeaconHeight)
+	//if err != nil {
+	//	Logger.log.Error(err)
+	//	return nil
+	//}
+	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(blk.Body.Transactions, bc, blk.Header.ShardID)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil

@@ -19,7 +19,7 @@ import (
 func (blockChain *BlockChain) buildBridgeInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
-	beaconBestState *BestStateBeacon,
+	beaconBestState *BeaconBestState,
 	db database.DatabaseInterface,
 ) ([][]string, error) {
 	accumulatedValues := &metadata.AccumulatedValues{

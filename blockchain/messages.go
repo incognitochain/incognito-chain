@@ -32,7 +32,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		pState.ShardToBeaconPool = shardToBeaconPool
 		for shardID := byte(0); shardID < byte(common.MAX_SHARD_NUMBER); shardID++ {
 			if shardState, ok := (*shard)[shardID]; ok {
-				if shardState.Height > GetBestStateBeacon().GetBestHeightOfShard(shardID) {
+				if shardState.Height > GetBeaconBestState().GetBestHeightOfShard(shardID) {
 					pState.Shard[shardID] = &shardState
 				}
 			}
@@ -207,7 +207,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
-		if block.Header.Version != VERSION {
+		if block.Header.Version != SHARD_BLOCK_VERSION {
 			Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
