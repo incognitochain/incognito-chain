@@ -518,10 +518,10 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		// TODO: validator index condition
-		if len(shardBestState.ShardCommittee) > 3 && len(shardBlock.ValidatorsIdx[1]) < (len(shardBestState.ShardCommittee)>>1) {
+		if len(shardBestState.ShardCommittee) > 3 && len(shardBlock.ValidatorsIndex[1]) < (len(shardBestState.ShardCommittee)>>1) {
 			return NewBlockChainError(ShardCommitteeLengthAndCommitteeIndexError, fmt.Errorf("Expect Number of Committee Size greater than 3 but get %+v", len(shardBestState.ShardCommittee)))
 		}
-		err := ValidateAggSignature(shardBlock.ValidatorsIdx, shardBestState.ShardCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Hash())
+		err := ValidateAggSignature(shardBlock.ValidatorsIndex, shardBestState.ShardCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Hash())
 		if err != nil {
 			return err
 		}
