@@ -36,21 +36,6 @@ func RandScalar() *big.Int {
 	}
 }
 
-// IsPowerOfTwo checks whether n is power of two or not
-func IsPowerOfTwo(n int) bool {
-	if n < 2 {
-		return false
-	}
-	for n > 2 {
-		if n%2 == 0 {
-			n = n / 2
-		} else {
-			return false
-		}
-	}
-	return true
-}
-
 // ConvertIntToBinary represents a integer number in binary array with little endian with size n
 func ConvertIntToBinary(inum int, n int) []byte {
 	binary := make([]byte, n)
