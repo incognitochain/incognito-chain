@@ -112,7 +112,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 				Value:          strconv.FormatUint(outCoin.CoinDetails.Value, 10),
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
-				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
+				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
 				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
 			})
 		}
@@ -1017,7 +1017,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 			},
 		}
 		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
-		i.CoinDetails.Randomness = new(big.Int).SetBytes(RandomnessInBytes)
+		i.CoinDetails.SetRandomness(new(big.Int).SetBytes(RandomnessInBytes))
 
 		SNDerivatorInBytes, _, _ := base58.Base58Check{}.Decode(out.SNDerivator)
 		i.CoinDetails.SetSNDerivator(new(big.Int).SetBytes(SNDerivatorInBytes))
