@@ -83,8 +83,7 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	BLogger.log.Infof("Decoded BurningConfirm inst")
-	BLogger.log.Infof("\tamount: %d\n\tremoteAddr: %x\n\ttokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
+	BLogger.log.Infof("Decoded BurningConfirm inst, amount: %d, remoteAddr: %x, tokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
