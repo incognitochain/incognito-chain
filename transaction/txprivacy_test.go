@@ -55,7 +55,7 @@ func TestInitTx(t *testing.T) {
 		in1[0].CoinDetails.GetSNDerivator()))
 	paymentAddress2, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
 	err = tx1.Init(NewTxPrivacyInitParams(&key.KeySet.PrivateKey, []*privacy.PaymentInfo{{PaymentAddress: paymentAddress2.KeySet.PaymentAddress, Amount: 5}}, in1, 1, false, db, nil, nil))
-	if err.(*TransactionError) != nil {
+	if err != nil {
 		t.Error(err)
 	}
 	unique, pubk, amount := tx1.GetUniqueReceiver()
@@ -80,7 +80,7 @@ func TestInitTx(t *testing.T) {
 	tx3 := Tx{}
 	db.StoreCommitments(common.PRVCoinID, paymentAddress.Pk, [][]byte{tx2.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()}, 6)
 	err = tx3.Init(NewTxPrivacyInitParams(&key.KeySet.PrivateKey, []*privacy.PaymentInfo{{PaymentAddress: paymentAddress, Amount: 5}}, in1, 1, true, db, nil, nil))
-	if err.(*TransactionError) != nil {
+	if err != nil {
 		t.Error(err)
 	}
 
