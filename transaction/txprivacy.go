@@ -110,11 +110,11 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	var err error
 
 	if len(params.inputCoins) > 255 {
-		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(params.inputCoins))))
+		return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
 	}
 
 	if len(params.paymentInfo) > 254 {
-		return NewTransactionErr(UnexpectedErr, errors.New("Input coins in tx are very large:"+strconv.Itoa(len(params.paymentInfo))))
+		return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 	}
 
 	if params.tokenID == nil {
@@ -122,7 +122,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		params.tokenID = &common.Hash{}
 		err := params.tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return NewTransactionErr(UnexpectedErr, err)
+			return NewTransactionErr(TokenIDInvalidError, err, params.tokenID.GetBytes())
 		}
 	}
 
@@ -137,8 +137,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	senderFullKey := incognitokey.KeySet{}
 	err = senderFullKey.InitFromPrivateKey(params.senderSK)
 	if err != nil {
-		Logger.log.Error(err)
-		return NewTransactionErr(UnexpectedErr, err)
+		Logger.log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", params.senderSK)))
+		return NewTransactionErr(PrivateKeySenderInvalidError, err)
 	}
 	// get public key last byte of sender
 	pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
@@ -160,8 +160,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		tx.PubKeyLastByteSender = pkLastByteSender
 		err := tx.signTx()
 		if err != nil {
-			Logger.log.Error(err)
-			return NewTransactionErr(UnexpectedErr, err)
+			Logger.log.Error(errors.New(fmt.Sprintf("cannot sign tx", err)))
+			return NewTransactionErr(SignTxError, err)
 		}
 		return nil
 	}
@@ -257,7 +257,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		outputCoins[i].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
 		err := outputCoins[i].CoinDetails.GetPublicKey().Decompress(pInfo.PaymentAddress.Pk)
 		if err != nil {
-			return NewTransactionErr(UnexpectedErr, err)
+			Logger.log.Error(errors.New(fmt.Sprintf("can not decompress public key from %+v", pInfo.PaymentAddress)))
+			return NewTransactionErr(DecompressPaymentAddressError, err, pInfo.PaymentAddress)
 		}
 		outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
 	}
@@ -274,11 +275,13 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		commitmentProving[i] = new(privacy.EllipticPoint)
 		temp, err := params.db.GetCommitmentByIndex(*params.tokenID, cmIndex, shardID)
 		if err != nil {
-			return NewTransactionErr(UnexpectedErr, err)
+			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
+			return NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
 		}
 		err = commitmentProving[i].Decompress(temp)
 		if err != nil {
-			return NewTransactionErr(UnexpectedErr, err)
+			Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v value=%+v", cmIndex, shardID, temp)))
+			return NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, cmIndex, shardID, temp)
 		}
 	}
 
@@ -297,12 +300,16 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	}
 	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		Logger.log.Error(err)
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, "", "  ")
+		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
 	tx.Proof, err = witness.Prove(params.hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		Logger.log.Error(err)
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, "", "  ")
+		return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 	}
 
 	Logger.log.Debugf("DONE PROVING........\n")
@@ -318,7 +325,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
 			err = tx.Proof.GetOutputCoins()[i].Encrypt(params.paymentInfo[i].PaymentAddress.Tk)
 			if err.(*privacy.PrivacyError) != nil {
-				return NewTransactionErr(UnexpectedErr, err)
+				Logger.log.Error(err)
+				return NewTransactionErr(EncryptOutputError, err)
 			}
 			tx.Proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
 			tx.Proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
@@ -344,7 +352,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	tx.PubKeyLastByteSender = pkLastByteSender
 	err = tx.signTx()
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		Logger.log.Error(err)
+		return NewTransactionErr(SignTxError, err)
 	}
 
 	elapsedPrivacy := time.Since(startPrivacy)
