@@ -64,7 +64,7 @@ func (multiSigKeyset *MultiSigKeyset) Set(priKey *PrivateKey, pubKey *PublicKey)
 
 // Bytes - Converting SchnorrMultiSig to byte array
 func (multiSig SchnMultiSig) Bytes() ([]byte, error) {
-	if !Curve.IsOnCurve(multiSig.r.X, multiSig.r.Y) {
+	if !Curve.IsOnCurve(multiSig.r.x, multiSig.r.y) {
 		return nil, NewPrivacyErr(InvalidMultiSigErr, nil)
 	}
 	res := multiSig.r.Compress()
@@ -86,8 +86,8 @@ func (multisigScheme *MultiSigScheme) Init() {
 	multisigScheme.keyset.publicKey = new(PublicKey)
 	multisigScheme.signature = new(SchnMultiSig)
 	multisigScheme.signature.r = new(EllipticPoint)
-	multisigScheme.signature.r.X = big.NewInt(0)
-	multisigScheme.signature.r.Y = big.NewInt(0)
+	multisigScheme.signature.r.x = big.NewInt(0)
+	multisigScheme.signature.r.y = big.NewInt(0)
 	multisigScheme.signature.s = big.NewInt(0)
 }
 
@@ -103,8 +103,8 @@ func (multisigScheme *MultiSigScheme) Init() {
 func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicKey, listR []*EllipticPoint, r *big.Int) (*SchnMultiSig, error) {
 	//r = R0+R1+R2+R3+...+Rn
 	R := new(EllipticPoint)
-	R.X = big.NewInt(0)
-	R.Y = big.NewInt(0)
+	R.x = big.NewInt(0)
+	R.y = big.NewInt(0)
 	for i := 0; i < len(listR); i++ {
 		R = R.Add(listR[i])
 	}
@@ -134,9 +134,9 @@ func (multiSigKeyset MultiSigKeyset) SignMultiSig(data []byte, listPK []*PublicK
 	sig.Mod(sig, Curve.Params().N)
 
 	selfR := new(EllipticPoint)
-	selfR.X, selfR.Y = big.NewInt(0), big.NewInt(0)
-	selfR.X.Set(Curve.Params().Gx)
-	selfR.Y.Set(Curve.Params().Gy)
+	selfR.x, selfR.y = big.NewInt(0), big.NewInt(0)
+	selfR.x.Set(Curve.Params().Gx)
+	selfR.y.Set(Curve.Params().Gy)
 	selfR = selfR.ScalarMult(r)
 	res := new(SchnMultiSig)
 	res.Set(selfR, sig)
@@ -190,9 +190,9 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 
 	//GSPoint = G*S
 	GSPoint := new(EllipticPoint)
-	GSPoint.X, GSPoint.Y = big.NewInt(0), big.NewInt(0)
-	GSPoint.X.Set(Curve.Params().Gx)
-	GSPoint.Y.Set(Curve.Params().Gy)
+	GSPoint.x, GSPoint.y = big.NewInt(0), big.NewInt(0)
+	GSPoint.x.Set(Curve.Params().Gx)
+	GSPoint.y.Set(Curve.Params().Gy)
 	// fmt.Println("GSPoint: \n", GSPoint)
 	// fmt.Println("multisig.S: \n", multiSig.S)
 	GSPoint = GSPoint.ScalarMult(multiSig.s)
@@ -207,9 +207,9 @@ func (multiSig SchnMultiSig) VerifyMultiSig(data []byte, listCommonPK []*PublicK
 func (multisigScheme MultiSigScheme) GenerateRandomFromSeed(i *big.Int) (*EllipticPoint, *big.Int) {
 	r := i
 	GPoint := new(EllipticPoint)
-	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
-	GPoint.X.Set(Curve.Params().Gx)
-	GPoint.Y.Set(Curve.Params().Gy)
+	GPoint.x, GPoint.y = big.NewInt(0), big.NewInt(0)
+	GPoint.x.Set(Curve.Params().Gx)
+	GPoint.y.Set(Curve.Params().Gy)
 	R := GPoint.ScalarMult(r)
 	return R, r
 }
@@ -217,9 +217,9 @@ func (multisigScheme MultiSigScheme) GenerateRandomFromSeed(i *big.Int) (*Ellipt
 func (multisigScheme MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int) {
 	r := RandScalar()
 	GPoint := new(EllipticPoint)
-	GPoint.X, GPoint.Y = big.NewInt(0), big.NewInt(0)
-	GPoint.X.Set(Curve.Params().Gx)
-	GPoint.Y.Set(Curve.Params().Gy)
+	GPoint.x, GPoint.y = big.NewInt(0), big.NewInt(0)
+	GPoint.x.Set(Curve.Params().Gx)
+	GPoint.y.Set(Curve.Params().Gy)
 	R := GPoint.ScalarMult(r)
 	return R, r
 }
@@ -233,7 +233,7 @@ func (multisigScheme MultiSigScheme) GenerateRandom() (*EllipticPoint, *big.Int)
 func (multisigScheme MultiSigScheme) CombineMultiSig(listSignatures []*SchnMultiSig) *SchnMultiSig {
 	res := new(SchnMultiSig)
 	res.r = new(EllipticPoint)
-	res.r.X, res.r.Y = big.NewInt(0), big.NewInt(0)
+	res.r.x, res.r.y = big.NewInt(0), big.NewInt(0)
 	res.s = big.NewInt(0)
 
 	for i := 0; i < len(listSignatures); i++ {
@@ -247,8 +247,8 @@ func (multisigScheme MultiSigScheme) CombineMultiSig(listSignatures []*SchnMulti
 
 func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey, R *EllipticPoint, data []byte) (*EllipticPoint, *big.Int, *EllipticPoint) {
 	aggPubkey := new(EllipticPoint)
-	aggPubkey.X = big.NewInt(0)
-	aggPubkey.Y = big.NewInt(0)
+	aggPubkey.x = big.NewInt(0)
+	aggPubkey.y = big.NewInt(0)
 
 	for i := 0; i < len(listCommonPK); i++ {
 		temp := new(EllipticPoint)
@@ -257,8 +257,8 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 	}
 
 	X := new(EllipticPoint)
-	X.X = big.NewInt(0)
-	X.Y = big.NewInt(0)
+	X.x = big.NewInt(0)
+	X.y = big.NewInt(0)
 
 	for i := 0; i < len(listCommonPK); i++ {
 		temp := new(EllipticPoint)
@@ -280,8 +280,8 @@ func generateCommonParams(listCommonPK []*PublicKey, listCombinePK []*PublicKey,
 	C.Mod(C, Curve.Params().N)
 
 	if len(listCommonPK) > len(listCombinePK) {
-		X.X.Set(big.NewInt(0))
-		X.Y.Set(big.NewInt(0))
+		X.x.Set(big.NewInt(0))
+		X.y.Set(big.NewInt(0))
 		for i := 0; i < len(listCombinePK); i++ {
 			temp := new(EllipticPoint)
 			temp.Decompress(*listCombinePK[i])

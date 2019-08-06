@@ -40,23 +40,23 @@ func (privateKey *SchnorrPrivateKey) Set(sk *big.Int, r *big.Int) {
 	privateKey.randomness = r
 	privateKey.publicKey = new(SchnorrPublicKey)
 	privateKey.publicKey.g = new(EllipticPoint)
-	privateKey.publicKey.g.Set(PedCom.G[PedersenPrivateKeyIndex].X, PedCom.G[PedersenPrivateKeyIndex].Y)
+	privateKey.publicKey.g.Set(PedCom.G[PedersenPrivateKeyIndex].x, PedCom.G[PedersenPrivateKeyIndex].y)
 
 	privateKey.publicKey.h = new(EllipticPoint)
-	privateKey.publicKey.h.Set(PedCom.G[PedersenRandomnessIndex].X, PedCom.G[PedersenRandomnessIndex].Y)
+	privateKey.publicKey.h.Set(PedCom.G[PedersenRandomnessIndex].x, PedCom.G[PedersenRandomnessIndex].y)
 	privateKey.publicKey.publicKey = PedCom.G[PedersenPrivateKeyIndex].ScalarMult(sk).Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(r))
 }
 
 // Set sets Schnorr public key
 func (publicKey *SchnorrPublicKey) Set(pk *EllipticPoint) {
 	publicKey.publicKey = new(EllipticPoint)
-	publicKey.publicKey.Set(pk.X, pk.Y)
+	publicKey.publicKey.Set(pk.x, pk.y)
 
 	publicKey.g = new(EllipticPoint)
-	publicKey.g.Set(PedCom.G[PedersenPrivateKeyIndex].X, PedCom.G[PedersenPrivateKeyIndex].Y)
+	publicKey.g.Set(PedCom.G[PedersenPrivateKeyIndex].x, PedCom.G[PedersenPrivateKeyIndex].y)
 
 	publicKey.h = new(EllipticPoint)
-	publicKey.h.Set(PedCom.G[PedersenRandomnessIndex].X, PedCom.G[PedersenRandomnessIndex].Y)
+	publicKey.h.Set(PedCom.G[PedersenRandomnessIndex].x, PedCom.G[PedersenRandomnessIndex].y)
 }
 
 //Sign is function which using for signing on hash array by private key
@@ -139,7 +139,7 @@ func (sig *SchnSignature) SetBytes(bytes []byte) error {
 
 // Hash calculates a hash concatenating a given message bytes with a given EC Point. H(p||m)
 func Hash(p EllipticPoint, m []byte) *big.Int {
-	b := append(common.AddPaddingBigInt(p.X, common.BigIntSize), common.AddPaddingBigInt(p.Y, common.BigIntSize)...)
+	b := append(common.AddPaddingBigInt(p.x, common.BigIntSize), common.AddPaddingBigInt(p.y, common.BigIntSize)...)
 	b = append(b, m...)
 
 	return new(big.Int).SetBytes(common.HashB(b))
