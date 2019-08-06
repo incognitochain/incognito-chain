@@ -114,12 +114,35 @@ func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte,
 	return ok, nil
 }
 
-// EstimateTxSize returns the estimated size of the tx in kilobyte
-func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo,
+type EstimateTxSizeParam struct {
+	InputCoins               []*privacy.OutputCoin
+	Payments                 []*privacy.PaymentInfo
+	HasPrivacy               bool
+	Metadata                 metadata.Metadata
+	CustomTokenParams        *CustomTokenParamTx
+	PrivacyCustomTokenParams *CustomTokenPrivacyParamTx
+	LimitFee                 uint64
+}
+
+func NewEstimateTxSizeParam(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo,
 	hasPrivacy bool, metadata metadata.Metadata,
 	customTokenParams *CustomTokenParamTx,
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx,
-	limitFee uint64) uint64 {
+	limitFee uint64) *EstimateTxSizeParam {
+	estimateTxSizeParam := &EstimateTxSizeParam{
+		InputCoins:               inputCoins,
+		HasPrivacy:               hasPrivacy,
+		LimitFee:                 limitFee,
+		CustomTokenParams:        customTokenParams,
+		Metadata:                 metadata,
+		Payments:                 payments,
+		PrivacyCustomTokenParams: privacyCustomTokenParams,
+	}
+	return estimateTxSizeParam
+}
+
+// EstimateTxSize returns the estimated size of the tx in kilobyte
+func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 
 	sizeVersion := uint64(1)  // int8
 	sizeType := uint64(5)     // string, max : 5
@@ -130,45 +153,45 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 
 	sizeSigPubKey := uint64(common.SigPubKeySize)
 	sizeSig := uint64(common.SigNoPrivacySize)
-	if hasPrivacy {
+	if estimateTxSizeParam.HasPrivacy {
 		sizeSig = uint64(common.SigPrivacySize)
 	}
 
 	sizeProof := uint64(0)
-	if len(inputCoins) != 0 || len(payments) != 0 {
-		sizeProof = utils.EstimateProofSize(len(inputCoins), len(payments), hasPrivacy)
+	if len(estimateTxSizeParam.InputCoins) != 0 || len(estimateTxSizeParam.Payments) != 0 {
+		sizeProof = utils.EstimateProofSize(len(estimateTxSizeParam.InputCoins), len(estimateTxSizeParam.Payments), estimateTxSizeParam.HasPrivacy)
 	} else {
-		if limitFee > 0 {
-			sizeProof = utils.EstimateProofSize(1, 1, hasPrivacy)
+		if estimateTxSizeParam.LimitFee > 0 {
+			sizeProof = utils.EstimateProofSize(1, 1, estimateTxSizeParam.HasPrivacy)
 		}
 	}
 
 	sizePubKeyLastByte := uint64(1)
 
 	sizeMetadata := uint64(0)
-	if metadata != nil {
-		sizeMetadata += metadata.CalculateSize()
+	if estimateTxSizeParam.Metadata != nil {
+		sizeMetadata += estimateTxSizeParam.Metadata.CalculateSize()
 	}
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
 
 	// size of custom token data
-	if customTokenParams != nil {
+	if estimateTxSizeParam.CustomTokenParams != nil {
 		customTokenDataSize := uint64(0)
 
-		customTokenDataSize += uint64(len(customTokenParams.PropertyID))
-		customTokenDataSize += uint64(len(customTokenParams.PropertySymbol))
-		customTokenDataSize += uint64(len(customTokenParams.PropertyName))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.CustomTokenParams.PropertyID))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.CustomTokenParams.PropertySymbol))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.CustomTokenParams.PropertyName))
 
 		customTokenDataSize += 8 // for amount
 		customTokenDataSize += 4 // for TokenTxType
 
-		for _, out := range customTokenParams.Receiver {
+		for _, out := range estimateTxSizeParam.CustomTokenParams.Receiver {
 			customTokenDataSize += uint64(len(out.PaymentAddress.Bytes()))
 			customTokenDataSize += 8 //out.Value
 		}
 
-		for _, in := range customTokenParams.vins {
+		for _, in := range estimateTxSizeParam.CustomTokenParams.vins {
 			customTokenDataSize += uint64(len(in.PaymentAddress.Bytes()))
 			customTokenDataSize += uint64(len(in.TxCustomTokenID[:]))
 			customTokenDataSize += uint64(len(in.Signature))
@@ -178,12 +201,12 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 	}
 
 	// size of privacy custom token  data
-	if privacyCustomTokenParams != nil {
+	if estimateTxSizeParam.PrivacyCustomTokenParams != nil {
 		customTokenDataSize := uint64(0)
 
-		customTokenDataSize += uint64(len(privacyCustomTokenParams.PropertyID))
-		customTokenDataSize += uint64(len(privacyCustomTokenParams.PropertySymbol))
-		customTokenDataSize += uint64(len(privacyCustomTokenParams.PropertyName))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.PrivacyCustomTokenParams.PropertyID))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.PrivacyCustomTokenParams.PropertySymbol))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.PrivacyCustomTokenParams.PropertyName))
 
 		customTokenDataSize += 8 // for amount
 		customTokenDataSize += 4 // for TokenTxType
@@ -199,7 +222,7 @@ func EstimateTxSize(inputCoins []*privacy.OutputCoin, payments []*privacy.Paymen
 		customTokenDataSize += uint64(common.SigPrivacySize) // sig
 
 		// Proof
-		customTokenDataSize += utils.EstimateProofSize(len(privacyCustomTokenParams.TokenInput), len(privacyCustomTokenParams.Receiver), true)
+		customTokenDataSize += utils.EstimateProofSize(len(estimateTxSizeParam.PrivacyCustomTokenParams.TokenInput), len(estimateTxSizeParam.PrivacyCustomTokenParams.Receiver), true)
 
 		customTokenDataSize += uint64(1) //PubKeyLastByte
 
