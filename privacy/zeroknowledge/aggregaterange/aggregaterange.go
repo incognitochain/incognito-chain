@@ -28,7 +28,7 @@ type AggregatedRangeProof struct {
 	innerProductProof *InnerProductProof
 }
 
-func (proof *AggregatedRangeProof) ValidateSanity() bool {
+func (proof AggregatedRangeProof) ValidateSanity() bool {
 	for i := 0; i < len(proof.cmsValue); i++ {
 		if !proof.cmsValue[i].IsSafe() {
 			return false
