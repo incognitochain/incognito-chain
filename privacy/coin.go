@@ -36,6 +36,14 @@ func (coin *Coin) SetCoinCommitment(v *EllipticPoint) {
 	coin.coinCommitment = v
 }
 
+func (coin Coin) GetSNDerivator() *big.Int {
+	return coin.SNDerivator
+}
+
+func (coin *Coin) SetSNDerivator(v *big.Int) {
+	coin.SNDerivator = v
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(EllipticPoint).Zero()
