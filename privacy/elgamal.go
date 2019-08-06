@@ -4,47 +4,47 @@ import (
 	"math/big"
 )
 
-// elGamalPubKey represents to public key in ElGamal encryption
+// elGamalPublicKey represents to public key in ElGamal encryption
 // H = G^X, X is private key
-type elGamalPubKey struct {
+type elGamalPublicKey struct {
 	h *EllipticPoint
 }
 
-// elGamalPrivKey represents to private key in ElGamal encryption
-type elGamalPrivKey struct {
+// elGamalPrivateKey represents to private key in ElGamal encryption
+type elGamalPrivateKey struct {
 	x *big.Int
 }
 
-// elGamalCiphertext represents to ciphertext in ElGamal encryption
+// elGamalCipherText represents to ciphertext in ElGamal encryption
 // in which C1 = G^k and C2 = H^k * message
 // k is a random number (32 bytes), message is an elliptic point
-type elGamalCiphertext struct {
+type elGamalCipherText struct {
 	c1, c2 *EllipticPoint
 }
 
-func (ciphertext *elGamalCiphertext) set(c1, c2 *EllipticPoint) {
+func (ciphertext *elGamalCipherText) set(c1, c2 *EllipticPoint) {
 	ciphertext.c1 = c1
 	ciphertext.c2 = c2
 }
 
-func (pub *elGamalPubKey) set(H *EllipticPoint) {
+func (pub *elGamalPublicKey) set(H *EllipticPoint) {
 	pub.h = H
 }
 
-func (pub elGamalPubKey) getH() *EllipticPoint {
+func (pub elGamalPublicKey) getH() *EllipticPoint {
 	return pub.h
 }
 
-func (priv *elGamalPrivKey) set(x *big.Int) {
+func (priv *elGamalPrivateKey) set(x *big.Int) {
 	priv.x = x
 }
 
-func (priv elGamalPrivKey) getX() *big.Int {
+func (priv elGamalPrivateKey) getX() *big.Int {
 	return priv.x
 }
 
 // Bytes converts ciphertext to 66-byte array
-func (ciphertext *elGamalCiphertext) Bytes() []byte {
+func (ciphertext *elGamalCipherText) Bytes() []byte {
 	if ciphertext.c1.IsEqual(new(EllipticPoint).Zero()) {
 		return []byte{}
 	}
@@ -53,7 +53,7 @@ func (ciphertext *elGamalCiphertext) Bytes() []byte {
 }
 
 // SetBytes reverts 66-byte array to ciphertext
-func (ciphertext *elGamalCiphertext) SetBytes(bytes []byte) error {
+func (ciphertext *elGamalCipherText) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
@@ -74,10 +74,10 @@ func (ciphertext *elGamalCiphertext) SetBytes(bytes []byte) error {
 
 // encrypt encrypts plaintext (is an elliptic point) using public key ElGamal
 // returns ElGamal ciphertext
-func (pub *elGamalPubKey) encrypt(plaintext *EllipticPoint) *elGamalCiphertext {
+func (pub *elGamalPublicKey) encrypt(plaintext *EllipticPoint) *elGamalCipherText {
 	randomness := RandScalar()
 
-	ciphertext := new(elGamalCiphertext)
+	ciphertext := new(elGamalCipherText)
 
 	ciphertext.c1 = new(EllipticPoint).Zero()
 	ciphertext.c1.Set(Curve.Params().Gx, Curve.Params().Gy)
@@ -91,6 +91,6 @@ func (pub *elGamalPubKey) encrypt(plaintext *EllipticPoint) *elGamalCiphertext {
 // decrypt receives a ciphertext and
 // decrypts it using private key ElGamal
 // and returns plain text in elliptic point
-func (priv *elGamalPrivKey) decrypt(ciphertext *elGamalCiphertext) (*EllipticPoint, error) {
+func (priv *elGamalPrivateKey) decrypt(ciphertext *elGamalCipherText) (*EllipticPoint, error) {
 	return ciphertext.c2.Sub(ciphertext.c1.ScalarMult(priv.x))
 }
