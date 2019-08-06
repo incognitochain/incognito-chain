@@ -323,7 +323,8 @@ func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Calculate: cd_k = ci^pi,k
 	for k := 0; k < n; k++ {
 		// Calculate pi,k which is coefficient of x^k in polynomial pi(x)
-		cd[k] = new(privacy.EllipticPoint).Zero()
+		cd[k] = new(privacy.EllipticPoint)
+		cd[k].Zero()
 
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
@@ -426,8 +427,10 @@ func (proof OneOutOfManyProof) Verify() (bool, error) {
 		}
 	}
 
-	leftPoint3 := new(privacy.EllipticPoint).Zero()
-	leftPoint32 := new(privacy.EllipticPoint).Zero()
+	leftPoint3 := new(privacy.EllipticPoint)
+	leftPoint3.Zero()
+	leftPoint32 := new(privacy.EllipticPoint)
+	leftPoint32.Zero()
 
 	for i := 0; i < N; i++ {
 		iBinary := privacy.ConvertIntToBinary(i, n)

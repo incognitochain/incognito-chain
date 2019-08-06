@@ -60,10 +60,14 @@ func (proof AggregatedRangeProof) ValidateSanity() bool {
 }
 
 func (proof *AggregatedRangeProof) Init() {
-	proof.a = new(privacy.EllipticPoint).Zero()
-	proof.s = new(privacy.EllipticPoint).Zero()
-	proof.t1 = new(privacy.EllipticPoint).Zero()
-	proof.t2 = new(privacy.EllipticPoint).Zero()
+	proof.a = new(privacy.EllipticPoint)
+	proof.a.Zero()
+	proof.s = new(privacy.EllipticPoint)
+	proof.s.Zero()
+	proof.t1 = new(privacy.EllipticPoint)
+	proof.t1.Zero()
+	proof.t2 = new(privacy.EllipticPoint)
+	proof.t2.Zero()
 	proof.tauX = new(big.Int)
 	proof.tHat = new(big.Int)
 	proof.mu = new(big.Int)
@@ -459,7 +463,9 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	tmpcmsValue := proof.cmsValue
 
 	for i := numValue; i < numValuePad; i++ {
-		tmpcmsValue = append(tmpcmsValue, new(privacy.EllipticPoint).Zero())
+		zero := new(privacy.EllipticPoint)
+		zero.Zero()
+		tmpcmsValue = append(tmpcmsValue, zero)
 	}
 
 	AggParam := newBulletproofParams(numValuePad)

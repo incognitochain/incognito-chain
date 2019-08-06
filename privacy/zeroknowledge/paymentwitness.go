@@ -125,7 +125,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	//randInputSNDIndexSK := make([]*big.Int, numInputCoin)
 
 	// cmInputValueAll is sum of all input coins' value commitments
-	cmInputValueAll := new(privacy.EllipticPoint).Zero()
+	cmInputValueAll := new(privacy.EllipticPoint)
+	cmInputValueAll.Zero()
 	randInputValueAll := big.NewInt(0)
 
 	// Summing all commitments of each input coin into one commitment and proving the knowledge of its Openings
@@ -213,10 +214,12 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	cmOutputSum := make([]*privacy.EllipticPoint, numOutputCoin)
 	randOutputSum := make([]*big.Int, numOutputCoin)
 
-	cmOutputSumAll := new(privacy.EllipticPoint).Zero()
+	cmOutputSumAll := new(privacy.EllipticPoint)
+	cmOutputSumAll.Zero()
 
 	// cmOutputValueAll is sum of all value coin commitments
-	cmOutputValueAll := new(privacy.EllipticPoint).Zero()
+	cmOutputValueAll := new(privacy.EllipticPoint)
+	cmOutputValueAll.Zero()
 	randOutputValueAll := big.NewInt(0)
 
 	randOutputShardID := make([]*big.Int, numOutputCoin)
@@ -244,7 +247,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		randOutputSum[i].Add(randOutputSum[i], randOutputShardID[i])
 		randOutputSum[i].Mod(randOutputSum[i], privacy.Curve.Params().N)
 
-		cmOutputSum[i] = new(privacy.EllipticPoint).Zero()
+		cmOutputSum[i] = new(privacy.EllipticPoint)
+		cmOutputSum[i].Zero()
 		cmOutputSum[i] = cmOutputValue[i].Add(cmOutputSND[i])
 		cmOutputSum[i] = cmOutputSum[i].Add(outputCoins[i].CoinDetails.GetPublicKey())
 		cmOutputSum[i] = cmOutputSum[i].Add(cmOutputShardID[i])

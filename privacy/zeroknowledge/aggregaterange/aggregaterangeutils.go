@@ -163,7 +163,8 @@ func encodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*
 		return nil, errors.New("invalid input")
 	}
 
-	res := new(privacy.EllipticPoint).Zero()
+	res := new(privacy.EllipticPoint)
+	res.Zero()
 	var wg sync.WaitGroup
 	var tmp1, tmp2 *privacy.EllipticPoint
 
