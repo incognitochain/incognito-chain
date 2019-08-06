@@ -102,6 +102,9 @@ const (
 	BeaconBlockSignatureError
 	WrongEpochError
 	GenerateInstructionHashError
+	GetShardBlocksError
+	ShardStateHeightError
+	ShardStateCrossShardBitMapError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -198,6 +201,8 @@ var ErrCodeMessage = map[int]struct {
 	BeaconBlockSignatureError:                         {-1087, "Beacon Block Signature Error"},
 	WrongEpochError:                                   {-1088, "Wrong Epoch Error"},
 	GenerateInstructionHashError:                      {-1089, "Generate Instruction Hash Error"},
+	ShardStateHeightError:                             {-1090, "Generate Instruction Hash Error"},
+	ShardStateCrossShardBitMapError:                   {-1091, "Shard State Cross Shard BitMap Error"},
 }
 
 type BlockChainError struct {
