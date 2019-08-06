@@ -14,8 +14,16 @@ type hybridCipherText struct {
 	symKeyEncrypted []byte
 }
 
+func (ciphertext hybridCipherText) GetMsgEncrypted() []byte {
+	return ciphertext.msgEncrypted
+}
+
+func (ciphertext hybridCipherText) GetSymKeyEncrypted() []byte {
+	return ciphertext.symKeyEncrypted
+}
+
 // isNil check whether ciphertext is nil or not
-func (ciphertext *hybridCipherText) isNil() bool {
+func (ciphertext hybridCipherText) isNil() bool {
 	if len(ciphertext.msgEncrypted) == 0 {
 		return true
 	}
@@ -25,7 +33,7 @@ func (ciphertext *hybridCipherText) isNil() bool {
 
 // Bytes converts ciphertext to bytes array
 // if ciphertext is nil, return empty byte array
-func (ciphertext *hybridCipherText) Bytes() []byte {
+func (ciphertext hybridCipherText) Bytes() []byte {
 	if ciphertext.isNil() {
 		return []byte{}
 	}
