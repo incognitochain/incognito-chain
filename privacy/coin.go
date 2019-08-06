@@ -314,13 +314,13 @@ func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 // CoinDetailsEncrypted is nil when you send tx without privacy
 type OutputCoin struct {
 	CoinDetails          *Coin
-	CoinDetailsEncrypted *hybridCiphertext
+	CoinDetailsEncrypted *hybridCipherText
 }
 
 // Init (OutputCoin) initializes a output coin
 func (outputCoin *OutputCoin) Init() *OutputCoin {
 	outputCoin.CoinDetails = new(Coin).Init()
-	outputCoin.CoinDetailsEncrypted = new(hybridCiphertext)
+	outputCoin.CoinDetailsEncrypted = new(hybridCipherText)
 	return outputCoin
 }
 
@@ -355,7 +355,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	offset += 1
 
 	if lenCoinDetailEncrypted > 0 {
-		outputCoin.CoinDetailsEncrypted = new(hybridCiphertext)
+		outputCoin.CoinDetailsEncrypted = new(hybridCipherText)
 		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
