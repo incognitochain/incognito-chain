@@ -263,13 +263,13 @@ func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 // CoinDetailsEncrypted is nil when you send tx without privacy
 type OutputCoin struct {
 	CoinDetails          *Coin
-	CoinDetailsEncrypted *Ciphertext
+	CoinDetailsEncrypted *hybridCiphertext
 }
 
 // Init (OutputCoin) initializes a output coin
 func (outputCoin *OutputCoin) Init() *OutputCoin {
 	outputCoin.CoinDetails = new(Coin).Init()
-	outputCoin.CoinDetailsEncrypted = new(Ciphertext)
+	outputCoin.CoinDetailsEncrypted = new(hybridCiphertext)
 	return outputCoin
 }
 
@@ -304,7 +304,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	offset += 1
 
 	if lenCoinDetailEncrypted > 0 {
-		outputCoin.CoinDetailsEncrypted = new(Ciphertext)
+		outputCoin.CoinDetailsEncrypted = new(hybridCiphertext)
 		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
@@ -339,7 +339,7 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError
 		return NewPrivacyErr(DecompressTransmissionKeyErr, err)
 	}
 
-	outputCoin.CoinDetailsEncrypted, err = HybridEncrypt(msg, pubKeyPoint)
+	outputCoin.CoinDetailsEncrypted, err = hybridEncrypt(msg, pubKeyPoint)
 	if err != nil {
 		return NewPrivacyErr(EncryptOutputCoinErr, err)
 	}
@@ -349,7 +349,7 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
 func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
-	msg, err := HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
+	msg, err := hybridDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
 	if err != nil {
 		return NewPrivacyErr(DecryptOutputCoinErr, err)
 	}
