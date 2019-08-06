@@ -12,7 +12,7 @@ import (
 // Coin represents a coin
 type Coin struct {
 	publicKey      *EllipticPoint
-	CoinCommitment *EllipticPoint
+	coinCommitment *EllipticPoint
 	SNDerivator    *big.Int
 	SerialNumber   *EllipticPoint
 	Randomness     *big.Int
@@ -28,10 +28,18 @@ func (coin *Coin) SetPublicKey(v *EllipticPoint) {
 	coin.publicKey = v
 }
 
+func (coin Coin) GetCoinCommitment() *EllipticPoint {
+	return coin.coinCommitment
+}
+
+func (coin *Coin) SetCoinCommitment(v *EllipticPoint) {
+	coin.coinCommitment = v
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(EllipticPoint).Zero()
-	coin.CoinCommitment = new(EllipticPoint).Zero()
+	coin.coinCommitment = new(EllipticPoint).Zero()
 	coin.SNDerivator = new(big.Int)
 	coin.SerialNumber = new(EllipticPoint).Zero()
 	coin.Randomness = new(big.Int)
@@ -84,8 +92,8 @@ func (coin *Coin) CommitAll() error {
 	if err != nil {
 		return err
 	}
-	coin.CoinCommitment = commitment
-	coin.CoinCommitment = coin.CoinCommitment.Add(coin.publicKey)
+	coin.coinCommitment = commitment
+	coin.coinCommitment = coin.coinCommitment.Add(coin.publicKey)
 	return nil
 }
 
@@ -102,8 +110,8 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.CoinCommitment != nil {
-		coinCommitment := coin.CoinCommitment.Compress()
+	if coin.coinCommitment != nil {
+		coinCommitment := coin.coinCommitment.Compress()
 		coinBytes = append(coinBytes, byte(len(coinCommitment)))
 		coinBytes = append(coinBytes, coinCommitment...)
 	} else {
@@ -176,8 +184,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.CoinCommitment = new(EllipticPoint)
-		err = coin.CoinCommitment.Decompress(coinBytes[offset : offset+int(lenField)])
+		coin.coinCommitment = new(EllipticPoint)
+		err = coin.coinCommitment.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}

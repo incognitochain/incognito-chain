@@ -48,7 +48,7 @@ func TestCoinCommitAll(t *testing.T) {
 	expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
 	expectedCm = expectedCm.Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(coin.Randomness))
 
-	assert.Equal(t, expectedCm, coin.CoinCommitment)
+	assert.Equal(t, expectedCm, coin.coinCommitment)
 }
 
 /*
@@ -259,7 +259,7 @@ func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	coin.CoinDetails.Value = uint64(100)
 	coin.CoinDetails.Info = []byte("Incognito chain")
 	coin.CoinDetails.SerialNumber = nil
-	coin.CoinDetails.CoinCommitment = nil
+	coin.CoinDetails.coinCommitment = nil
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()
@@ -365,7 +365,7 @@ func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	coin.CoinDetails.Value = uint64(100)
 	coin.CoinDetails.Info = []byte("Incognito chain")
 	coin.CoinDetails.SerialNumber = nil
-	coin.CoinDetails.CoinCommitment = nil
+	coin.CoinDetails.coinCommitment = nil
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()
