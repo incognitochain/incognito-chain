@@ -285,7 +285,7 @@ func (tx *Tx) Init(
 			if err.(*privacy.PrivacyError) != nil {
 				return NewTransactionErr(UnexpectedErr, err)
 			}
-			tx.Proof.GetOutputCoins()[i].CoinDetails.SerialNumber = nil
+			tx.Proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
 			tx.Proof.GetOutputCoins()[i].CoinDetails.Value = 0
 			tx.Proof.GetOutputCoins()[i].CoinDetails.Randomness = nil
 		}
@@ -550,7 +550,7 @@ func (tx *Tx) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
 	if tx.Proof != nil {
 		for _, d := range tx.Proof.GetInputCoins() {
-			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+			hash := common.HashH(d.CoinDetails.GetSerialNumber().Compress())
 			result = append(result, hash)
 		}
 	}
@@ -661,7 +661,7 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map
 	}
 	temp := make(map[common.Hash]interface{})
 	for _, desc := range tx.Proof.GetInputCoins() {
-		hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+		hash := common.HashH(desc.CoinDetails.GetSerialNumber().Compress())
 		temp[hash] = nil
 	}
 
@@ -694,7 +694,7 @@ func (tx *Tx) ValidateDoubleSpendWithBlockchain(
 		prvCoinID.SetBytes(tokenID.GetBytes())
 	}
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.GetInputCoins()); i++ {
-		serialNumber := tx.Proof.GetInputCoins()[i].CoinDetails.SerialNumber.Compress()
+		serialNumber := tx.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().Compress()
 		ok, err := db.HasSerialNumber(*prvCoinID, serialNumber, shardID)
 		if ok || err != nil {
 			return errors.New("double spend")
@@ -803,7 +803,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 
 			// check input coins with privacy
 			for i := 0; i < len(txN.Proof.GetInputCoins()); i++ {
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.SerialNumber.IsSafe() {
+				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().IsSafe() {
 					return false, errors.New("validate sanity Serial number of input coin failed")
 				}
 			}
@@ -878,7 +878,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey().IsSafe() {
 					return false, errors.New("validate sanity PublicKey of input coin failed")
 				}
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.SerialNumber.IsSafe() {
+				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().IsSafe() {
 					return false, errors.New("validate sanity Serial number of input coin failed")
 				}
 				if len(txN.Proof.GetInputCoins()[i].CoinDetails.Randomness.Bytes()) > common.BigIntSize {

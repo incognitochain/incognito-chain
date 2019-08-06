@@ -90,7 +90,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 			if wit.serialNumberNoPrivacyWitness[i] == nil {
 				wit.serialNumberNoPrivacyWitness[i] = new(serialnumbernoprivacy.SNNoPrivacyWitness)
 			}
-			wit.serialNumberNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.SerialNumber, publicKey, inputCoins[i].CoinDetails.GetSNDerivator(), wit.privateKey)
+			wit.serialNumberNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.GetSerialNumber(), publicKey, inputCoins[i].CoinDetails.GetSNDerivator(), wit.privateKey)
 		}
 		return nil
 	}
@@ -198,7 +198,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 			wit.serialNumberWitness[i] = new(serialnumberprivacy.SNPrivacyWitness)
 		}
 		stmt := new(serialnumberprivacy.SerialNumberPrivacyStatement)
-		stmt.Set(inputCoin.CoinDetails.SerialNumber, cmInputSK, wit.comInputSerialNumberDerivator[i])
+		stmt.Set(inputCoin.CoinDetails.GetSerialNumber(), cmInputSK, wit.comInputSerialNumberDerivator[i])
 		wit.serialNumberWitness[i].Set(stmt, privateKey, randInputSK, inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i])
 		// ---------------------------------------------------
 	}
