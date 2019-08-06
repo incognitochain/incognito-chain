@@ -20,6 +20,7 @@ type Coin struct {
 	info           []byte //256 bytes
 }
 
+// Start GET/SET
 func (coin Coin) GetPublicKey() *EllipticPoint {
 	return coin.publicKey
 }
@@ -75,6 +76,8 @@ func (coin Coin) GetInfo() []byte {
 func (coin *Coin) SetInfo(v []byte) {
 	copy(coin.info, v)
 }
+
+// END Get/Set
 
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
