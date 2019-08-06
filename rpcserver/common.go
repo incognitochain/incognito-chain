@@ -157,15 +157,14 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	//fmt.Printf("#inputCoins: %d\n", len(inputCoins))
 	tx := transaction.Tx{}
 	err = tx.Init(
-		&senderKeySet.PrivateKey,
-		paymentInfos,
-		inputCoins,
-		realFee,
-		hasPrivacyCoin,
-		*rpcServer.config.Database,
-		nil, // use for prv coin -> nil is valid
-		meta,
-	)
+		transaction.NewTxPrivacyInitParams(&senderKeySet.PrivateKey,
+			paymentInfos,
+			inputCoins,
+			realFee,
+			hasPrivacyCoin,
+			*rpcServer.config.Database,
+			nil, // use for prv coin -> nil is valid
+			meta))
 	// END create tx
 
 	if err.(*transaction.TransactionError) != nil {

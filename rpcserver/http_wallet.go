@@ -609,15 +609,14 @@ func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interf
 	// false by default
 	tx := transaction.Tx{}
 	err = tx.Init(
-		&senderKeySet.PrivateKey,
-		paymentInfos,
-		inputCoins,
-		realFee,
-		hasPrivacyCoin,
-		*httpServer.config.Database,
-		nil, // use for prv coin -> nil is valid
-		meta,
-	)
+		transaction.NewTxPrivacyInitParams(&senderKeySet.PrivateKey,
+			paymentInfos,
+			inputCoins,
+			realFee,
+			hasPrivacyCoin,
+			*httpServer.config.Database,
+			nil, // use for prv coin -> nil is valid
+			meta))
 	// END create tx
 
 	if err.(*transaction.TransactionError) != nil {
