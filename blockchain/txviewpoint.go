@@ -88,7 +88,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	// Get Serial numbers of input
 	// Append into accepttedSerialNumbers if this serial number haven't exist yet
 	for _, item := range proof.GetInputCoins() {
-		serialNum := item.CoinDetails.SerialNumber.Compress()
+		serialNum := item.CoinDetails.GetSerialNumber().Compress()
 		ok, err := db.HasSerialNumber(*tokenID, serialNum, shardID)
 		if err != nil {
 			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err

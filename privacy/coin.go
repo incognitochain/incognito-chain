@@ -14,7 +14,7 @@ type Coin struct {
 	publicKey      *EllipticPoint
 	coinCommitment *EllipticPoint
 	snDerivator    *big.Int
-	SerialNumber   *EllipticPoint
+	serialNumber   *EllipticPoint
 	Randomness     *big.Int
 	Value          uint64
 	Info           []byte //256 bytes
@@ -45,11 +45,11 @@ func (coin *Coin) SetSNDerivator(v *big.Int) {
 }
 
 func (coin Coin) GetSerialNumber() *EllipticPoint {
-	return coin.SerialNumber
+	return coin.serialNumber
 }
 
 func (coin *Coin) SetSerialNumber(v *EllipticPoint) {
-	coin.SerialNumber = v
+	coin.serialNumber = v
 }
 
 // Init (Coin) initializes a coin
@@ -57,7 +57,7 @@ func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(EllipticPoint).Zero()
 	coin.coinCommitment = new(EllipticPoint).Zero()
 	coin.snDerivator = new(big.Int)
-	coin.SerialNumber = new(EllipticPoint).Zero()
+	coin.serialNumber = new(EllipticPoint).Zero()
 	coin.Randomness = new(big.Int)
 	coin.Value = 0
 	return coin
@@ -141,8 +141,8 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.SerialNumber != nil {
-		serialNumber := coin.SerialNumber.Compress()
+	if coin.serialNumber != nil {
+		serialNumber := coin.serialNumber.Compress()
 		coinBytes = append(coinBytes, byte(len(serialNumber)))
 		coinBytes = append(coinBytes, serialNumber...)
 	} else {
@@ -221,8 +221,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.SerialNumber = new(EllipticPoint)
-		err = coin.SerialNumber.Decompress(coinBytes[offset : offset+int(lenField)])
+		coin.serialNumber = new(EllipticPoint)
+		err = coin.serialNumber.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}

@@ -308,7 +308,7 @@ func (customTokenTx *TxCustomToken) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
 	if tx.Proof != nil {
 		for _, d := range tx.Proof.GetInputCoins() {
-			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+			hash := common.HashH(d.CoinDetails.GetSerialNumber().Compress())
 			result = append(result, hash)
 		}
 	}

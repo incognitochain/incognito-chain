@@ -324,14 +324,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) validateDoubleSpendTxWithCurre
 	temp := make(map[common.Hash]interface{})
 	if txCustomTokenPrivacy.Proof != nil {
 		for _, desc := range txCustomTokenPrivacy.Proof.GetInputCoins() {
-			hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+			hash := common.HashH(desc.CoinDetails.GetSerialNumber().Compress())
 			temp[hash] = nil
 		}
 	}
 	// collect serial number for pToken
 	if txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof != nil {
 		for _, desc := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.GetInputCoins() {
-			hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+			hash := common.HashH(desc.CoinDetails.GetSerialNumber().Compress())
 			temp[hash] = nil
 		}
 	}
@@ -568,14 +568,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ListSerialNumbersHashH() []com
 	result := []common.Hash{}
 	if tx.Proof != nil {
 		for _, d := range tx.Proof.GetInputCoins() {
-			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+			hash := common.HashH(d.CoinDetails.GetSerialNumber().Compress())
 			result = append(result, hash)
 		}
 	}
 	customTokenPrivacy := txCustomTokenPrivacy.TxTokenPrivacyData
 	if customTokenPrivacy.TxNormal.Proof != nil {
 		for _, d := range customTokenPrivacy.TxNormal.Proof.GetInputCoins() {
-			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+			hash := common.HashH(d.CoinDetails.GetSerialNumber().Compress())
 			result = append(result, hash)
 		}
 	}
