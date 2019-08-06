@@ -520,7 +520,7 @@ func (rpcServer HttpServer) estimateFee(
 	if feeEstimator, ok := rpcServer.config.FeeEstimator[shardID]; ok {
 		limitFee = feeEstimator.GetLimitFee()
 	}
-	estimateTxSizeInKb = transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee)
+	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee))
 
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb
