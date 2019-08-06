@@ -31,8 +31,16 @@ func (pub *elGamalPubKey) set(H *EllipticPoint) {
 	pub.h = H
 }
 
+func (pub elGamalPubKey) getH() *EllipticPoint {
+	return pub.h
+}
+
 func (priv *elGamalPrivKey) set(x *big.Int) {
 	priv.x = x
+}
+
+func (priv elGamalPrivKey) getX() *big.Int {
+	return priv.x
 }
 
 // Bytes converts ciphertext to 66-byte array
