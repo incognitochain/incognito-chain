@@ -494,7 +494,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 
 		// Check input coins' cm is calculated correctly
 		cmTmp := proof.inputCoins[i].CoinDetails.GetPublicKey()
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(proof.inputCoins[i].CoinDetails.Value))))
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(proof.inputCoins[i].CoinDetails.GetValue()))))
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(proof.inputCoins[i].CoinDetails.GetSNDerivator()))
 		cmTmp = cmTmp.Add(cmShardIDSender)
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(proof.inputCoins[i].CoinDetails.GetRandomness()))
@@ -504,13 +504,13 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		}
 
 		// Calculate sum of input values
-		sumInputValue += proof.inputCoins[i].CoinDetails.Value
+		sumInputValue += proof.inputCoins[i].CoinDetails.GetValue()
 	}
 
 	for i := 0; i < len(proof.outputCoins); i++ {
 		// Check output coins' cm is calculated correctly
 		cmTmp := proof.outputCoins[i].CoinDetails.GetPublicKey()
-		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(proof.outputCoins[i].CoinDetails.Value))))
+		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(proof.outputCoins[i].CoinDetails.GetValue()))))
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(proof.outputCoins[i].CoinDetails.GetSNDerivator()))
 		shardID := common.GetShardIDFromLastByte(proof.outputCoins[i].CoinDetails.GetPubKeyLastByte())
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
@@ -521,7 +521,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		}
 
 		// Calculate sum of output values
-		sumOutputValue += proof.outputCoins[i].CoinDetails.Value
+		sumOutputValue += proof.outputCoins[i].CoinDetails.GetValue()
 	}
 
 	// check if sum of input values equal sum of output values
