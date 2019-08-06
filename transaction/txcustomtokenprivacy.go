@@ -201,7 +201,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			if err != nil {
 				return NewTransactionErr(UnexpectedErr, err)
 			}
-			tempOutputCoin[0].CoinDetails.Randomness = privacy.RandScalar()
+			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar())
 
 			sndOut := privacy.RandScalar()
 			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
