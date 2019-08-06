@@ -938,9 +938,9 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 		}
 		if len(keySet.PrivateKey) > 0 {
 			// check spent with private-key
-			result.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(keySet.PrivateKey),
-				result.CoinDetails.GetSNDerivator())
-			ok, err := blockchain.config.DataBase.HasSerialNumber(*tokenID, result.CoinDetails.SerialNumber.Compress(), shardID)
+			result.CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(keySet.PrivateKey),
+				result.CoinDetails.GetSNDerivator()))
+			ok, err := blockchain.config.DataBase.HasSerialNumber(*tokenID, result.CoinDetails.GetSerialNumber().Compress(), shardID)
 			if ok || err != nil {
 				return nil
 			}
