@@ -420,7 +420,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
 	shardID byte,
-) *TransactionError {
+) error {
 	var err error
 	// create normal txCustomToken
 	normalTx := Tx{}
@@ -432,7 +432,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 		db,
 		nil,
 		metaData))
-	if err.(*TransactionError) != nil {
+	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 	// override txCustomToken type

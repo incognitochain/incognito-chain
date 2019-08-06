@@ -303,15 +303,14 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := transaction.Tx{}
 	err1 := tx.Init(
-		&senderKeySet.KeySet.PrivateKey,
-		paymentInfos,
-		inputCoins,
-		realFee,
-		hasPrivacyCoin,
-		db,
-		nil, // use for prv coin -> nil is valid
-		nil,
-	)
+		transaction.NewTxPrivacyInitParams(&senderKeySet.KeySet.PrivateKey,
+			paymentInfos,
+			inputCoins,
+			realFee,
+			hasPrivacyCoin,
+			db,
+			nil, // use for prv coin -> nil is valid
+			nil))
 	if err1 != nil {
 		panic("no tx found")
 	}
@@ -392,15 +391,14 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := transaction.Tx{}
 	err1 := tx.Init(
-		&senderKeySet.KeySet.PrivateKey,
-		paymentInfos,
-		inputCoins,
-		realFee,
-		hasPrivacyCoin,
-		db,
-		nil, // use for prv coin -> nil is valid
-		stakingMetadata,
-	)
+		transaction.NewTxPrivacyInitParams(&senderKeySet.KeySet.PrivateKey,
+			paymentInfos,
+			inputCoins,
+			realFee,
+			hasPrivacyCoin,
+			db,
+			nil, // use for prv coin -> nil is valid
+			stakingMetadata))
 	if err1 != nil {
 		panic("no tx found")
 	}

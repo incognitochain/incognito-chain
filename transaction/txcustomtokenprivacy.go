@@ -154,7 +154,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
 	shardID byte,
-) *TransactionError {
+) error {
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
@@ -166,7 +166,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 		db,
 		nil,
 		metaData))
-	if err.(*TransactionError) != nil {
+	if err != nil {
 		return NewTransactionErr(UnexpectedErr, err)
 	}
 	// override TxCustomTokenPrivacyType type
