@@ -52,6 +52,14 @@ func (coin *Coin) SetSerialNumber(v *EllipticPoint) {
 	coin.serialNumber = v
 }
 
+func (coin Coin) GetRandomness() *big.Int {
+	return coin.Randomness
+}
+
+func (coin *Coin) SetRandomness(v *big.Int) {
+	coin.Randomness = v
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(EllipticPoint).Zero()
