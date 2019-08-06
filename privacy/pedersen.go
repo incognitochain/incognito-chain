@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	SK      = byte(0x00)
-	VALUE   = byte(0x01)
-	SND     = byte(0x02)
-	SHARDID = byte(0x03)
-	RAND    = byte(0x04)
+	PedersenPrivateKeyIndex = byte(0x00)
+	PedersenValueIndex      = byte(0x01)
+	PedersenSndIndex        = byte(0x02)
+	PedersenShardIDIndex    = byte(0x03)
+	PedersenRandomnessIndex = byte(0x04)
 )
 
 // PedersenCommitment represents the parameters for the commitment
@@ -39,7 +39,7 @@ func newPedersenParams() PedersenCommitment {
 var PedCom = newPedersenParams()
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func (com PedersenCommitment) CommitAll(openings []*big.Int) (*EllipticPoint, error) {
+func (com PedersenCommitment) commitAll(openings []*big.Int) (*EllipticPoint, error) {
 	if len(openings) != len(com.G) {
 		return nil, errors.New("invalid length of openings to commit")
 	}
@@ -53,6 +53,6 @@ func (com PedersenCommitment) CommitAll(openings []*big.Int) (*EllipticPoint, er
 
 // CommitAtIndex commits specific value with index and returns 34 bytes
 func (com PedersenCommitment) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
-	commitment := com.G[RAND].ScalarMult(rand).Add(com.G[index].ScalarMult(value))
+	commitment := com.G[PedersenRandomnessIndex].ScalarMult(rand).Add(com.G[index].ScalarMult(value))
 	return commitment
 }

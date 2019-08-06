@@ -204,7 +204,7 @@ func (wit *SNNoPrivacyWitness) Prove(mess []byte) (*SNNoPrivacyProof, error) {
 	eSK := privacy.RandScalar()
 
 	// calculate tSeed = g_SK^eSK
-	tSK := privacy.PedCom.G[privacy.SK].ScalarMult(eSK)
+	tSK := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].ScalarMult(eSK)
 
 	// calculate tOutput = sn^eSK
 	tE := wit.stmt.output.ScalarMult(eSK)
@@ -238,7 +238,7 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	}
 
 	// Check gSK^zSeed = vKey^x * tSeed
-	leftPoint1 := privacy.PedCom.G[privacy.SK].ScalarMult(pro.zSeed)
+	leftPoint1 := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].ScalarMult(pro.zSeed)
 
 	rightPoint1 := pro.stmt.vKey.ScalarMult(x)
 	rightPoint1 = rightPoint1.Add(pro.tSeed)
@@ -251,7 +251,7 @@ func (pro *SNNoPrivacyProof) Verify(mess []byte) (bool, error) {
 	// Check sn^(zSeed + x*input) = gSK^x * tOutput
 	leftPoint2 := pro.stmt.output.ScalarMult(new(big.Int).Add(pro.zSeed, new(big.Int).Mul(x, pro.stmt.input)))
 
-	rightPoint2 := privacy.PedCom.G[privacy.SK].ScalarMult(x)
+	rightPoint2 := privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].ScalarMult(x)
 	rightPoint2 = rightPoint2.Add(pro.tOutput)
 
 	if !leftPoint2.IsEqual(rightPoint2) {

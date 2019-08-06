@@ -23,7 +23,7 @@ func TestTxCustomToken(t *testing.T) {
 	assert.Equal(t, true, valid)
 
 	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.outputCoins)
-	in1[0].CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
+	in1[0].CoinDetails.SerialNumber = privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
 		in1[0].CoinDetails.SNDerivator)
 	tx := TxCustomToken{}
 	err = tx.Init(&key.KeySet.PrivateKey,
