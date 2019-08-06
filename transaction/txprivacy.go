@@ -164,7 +164,7 @@ func (tx *Tx) Init(
 	// Calculate sum of all input coins' value
 	sumInputValue := uint64(0)
 	for _, coin := range inputCoins {
-		sumInputValue += coin.CoinDetails.Value
+		sumInputValue += coin.CoinDetails.GetValue()
 	}
 	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 
@@ -221,7 +221,7 @@ func (tx *Tx) Init(
 	for i, pInfo := range paymentInfo {
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
-		outputCoins[i].CoinDetails.Value = pInfo.Amount
+		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
 		outputCoins[i].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
 		outputCoins[i].CoinDetails.GetPublicKey().Decompress(pInfo.PaymentAddress.Pk)
 		outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
@@ -286,14 +286,14 @@ func (tx *Tx) Init(
 				return NewTransactionErr(UnexpectedErr, err)
 			}
 			tx.Proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
-			tx.Proof.GetOutputCoins()[i].CoinDetails.Value = 0
+			tx.Proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
 			tx.Proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
 		}
 
 		// hide information of input coins except serial number of input coins
 		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
-			tx.Proof.GetInputCoins()[i].CoinDetails.Value = 0
+			tx.Proof.GetInputCoins()[i].CoinDetails.SetValue(0)
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
@@ -610,13 +610,13 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 			for i, key := range pubkeys {
 				if bytes.Equal(coinPubKey, key) {
 					added = true
-					amounts[i] += coin.CoinDetails.Value
+					amounts[i] += coin.CoinDetails.GetValue()
 					break
 				}
 			}
 			if !added {
 				pubkeys = append(pubkeys, coinPubKey)
-				amounts = append(amounts, coin.CoinDetails.Value)
+				amounts = append(amounts, coin.CoinDetails.GetValue())
 			}
 		}
 	}
@@ -1026,7 +1026,7 @@ func (tx *Tx) CalculateTxValue() uint64 {
 	if tx.Proof.GetInputCoins() == nil || len(tx.Proof.GetInputCoins()) == 0 { // coinbase tx
 		txValue := uint64(0)
 		for _, outCoin := range tx.Proof.GetOutputCoins() {
-			txValue += outCoin.CoinDetails.Value
+			txValue += outCoin.CoinDetails.GetValue()
 		}
 		return txValue
 	}
@@ -1038,7 +1038,7 @@ func (tx *Tx) CalculateTxValue() uint64 {
 		if bytes.Equal(senderPKBytes, outPKBytes) {
 			continue
 		}
-		txValue += outCoin.CoinDetails.Value
+		txValue += outCoin.CoinDetails.GetValue()
 	}
 	return txValue
 }
@@ -1082,7 +1082,7 @@ func (tx *Tx) InitTxSalary(
 	tempOutputCoin[0] = new(privacy.OutputCoin)
 	//tx.Proof.OutputCoins[0].CoinDetailsEncrypted = new(privacy.CoinDetailsEncrypted).Init()
 	tempOutputCoin[0].CoinDetails = new(privacy.Coin)
-	tempOutputCoin[0].CoinDetails.Value = salary
+	tempOutputCoin[0].CoinDetails.SetValue(salary)
 	tempOutputCoin[0].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
 	err = tempOutputCoin[0].CoinDetails.GetPublicKey().Decompress(receiverAddr.Pk)
 	if err != nil {
@@ -1158,7 +1158,7 @@ func (tx Tx) ValidateTxSalary(
 
 	// check output coin's coin commitment is calculated correctly
 	cmTmp := tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey()
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(tx.Proof.GetOutputCoins()[0].CoinDetails.Value))))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(tx.Proof.GetOutputCoins()[0].CoinDetails.GetValue()))))
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator()))
 
 	shardID := common.GetShardIDFromLastByte(tx.Proof.GetOutputCoins()[0].CoinDetails.GetPubKeyLastByte())
