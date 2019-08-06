@@ -224,7 +224,7 @@ func (tx *Tx) Init(
 		outputCoins[i].CoinDetails.Value = pInfo.Amount
 		outputCoins[i].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
 		outputCoins[i].CoinDetails.GetPublicKey().Decompress(pInfo.PaymentAddress.Pk)
-		outputCoins[i].CoinDetails.SNDerivator = sndOuts[i]
+		outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
 	}
 
 	// assign fee tx
@@ -294,7 +294,7 @@ func (tx *Tx) Init(
 		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.Value = 0
-			tx.Proof.GetInputCoins()[i].CoinDetails.SNDerivator = nil
+			tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.Randomness = nil
 		}
@@ -422,7 +422,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		sndOutputs := make([]*big.Int, len(tx.Proof.GetOutputCoins()))
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.SNDerivator
+			sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator()
 		}
 
 		if common.CheckDuplicateBigIntArray(sndOutputs) {
@@ -432,7 +432,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.SNDerivator, shardID, db); ok || err != nil {
+			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), shardID, db); ok || err != nil {
 				Logger.log.Errorf("snd existed: %d\n", i)
 				return false, errors.New(fmt.Sprintf("snd existed: %d\n", i))
 			}
@@ -815,7 +815,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().IsSafe() {
 					return false, errors.New("validate sanity Coin commitment of output coin failed")
 				}
-				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.SNDerivator.Bytes()) > common.BigIntSize {
+				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity SNDerivator of output coin failed")
 				}
 			}
@@ -884,7 +884,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if len(txN.Proof.GetInputCoins()[i].CoinDetails.Randomness.Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity Randomness of input coin failed")
 				}
-				if len(txN.Proof.GetInputCoins()[i].CoinDetails.SNDerivator.Bytes()) > common.BigIntSize {
+				if len(txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity SNDerivator of input coin failed")
 				}
 
@@ -901,7 +901,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.Randomness.Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity Randomness of output coin failed")
 				}
-				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.SNDerivator.Bytes()) > common.BigIntSize {
+				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity SNDerivator of output coin failed")
 				}
 			}
@@ -1108,7 +1108,7 @@ func (tx *Tx) InitTxSalary(
 		}
 	}
 
-	tx.Proof.GetOutputCoins()[0].CoinDetails.SNDerivator = sndOut
+	tx.Proof.GetOutputCoins()[0].CoinDetails.SetSNDerivator(sndOut)
 
 	// create coin commitment
 	err = tx.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
@@ -1152,14 +1152,14 @@ func (tx Tx) ValidateTxSalary(
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
 	tokenID.SetBytes(common.PRVCoinID[:])
-	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.SNDerivator, shardIDSender, db); ok || err != nil {
+	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), shardIDSender, db); ok || err != nil {
 		return false, err
 	}
 
 	// check output coin's coin commitment is calculated correctly
 	cmTmp := tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey()
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(tx.Proof.GetOutputCoins()[0].CoinDetails.Value))))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(tx.Proof.GetOutputCoins()[0].CoinDetails.SNDerivator))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator()))
 
 	shardID := common.GetShardIDFromLastByte(tx.Proof.GetOutputCoins()[0].CoinDetails.GetPubKeyLastByte())
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))

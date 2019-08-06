@@ -126,7 +126,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 		}
 
 		// get data for Snderivators
-		snD := item.CoinDetails.SNDerivator
+		snD := item.CoinDetails.GetSNDerivator()
 		ok, err = db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snD, common.BigIntSize), shardID)
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
@@ -377,7 +377,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 		}
 
 		// get data for Snderivators
-		snD := item.CoinDetails.SNDerivator
+		snD := item.CoinDetails.GetSNDerivator()
 		ok, err = db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snD, common.BigIntSize), shardID)
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)

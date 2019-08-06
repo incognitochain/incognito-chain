@@ -52,7 +52,7 @@ func TestInitTx(t *testing.T) {
 
 	tx1 := Tx{}
 	in1[0].CoinDetails.SerialNumber = privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
-		in1[0].CoinDetails.SNDerivator)
+		in1[0].CoinDetails.snDerivator)
 	paymentAddress2, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
 	err = tx1.Init(&key.KeySet.PrivateKey, []*privacy.PaymentInfo{{PaymentAddress: paymentAddress2.KeySet.PaymentAddress, Amount: 5}}, in1, 1, false, db, nil, nil)
 	if err.(*TransactionError) != nil {
