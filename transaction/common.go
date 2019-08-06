@@ -115,13 +115,13 @@ func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte,
 }
 
 type EstimateTxSizeParam struct {
-	InputCoins               []*privacy.OutputCoin
-	Payments                 []*privacy.PaymentInfo
-	HasPrivacy               bool
-	Metadata                 metadata.Metadata
-	CustomTokenParams        *CustomTokenParamTx
-	PrivacyCustomTokenParams *CustomTokenPrivacyParamTx
-	LimitFee                 uint64
+	inputCoins               []*privacy.OutputCoin
+	payments                 []*privacy.PaymentInfo
+	hasPrivacy               bool
+	metadata                 metadata.Metadata
+	customTokenParams        *CustomTokenParamTx
+	privacyCustomTokenParams *CustomTokenPrivacyParamTx
+	limitFee                 uint64
 }
 
 func NewEstimateTxSizeParam(inputCoins []*privacy.OutputCoin, payments []*privacy.PaymentInfo,
@@ -130,13 +130,13 @@ func NewEstimateTxSizeParam(inputCoins []*privacy.OutputCoin, payments []*privac
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx,
 	limitFee uint64) *EstimateTxSizeParam {
 	estimateTxSizeParam := &EstimateTxSizeParam{
-		InputCoins:               inputCoins,
-		HasPrivacy:               hasPrivacy,
-		LimitFee:                 limitFee,
-		CustomTokenParams:        customTokenParams,
-		Metadata:                 metadata,
-		Payments:                 payments,
-		PrivacyCustomTokenParams: privacyCustomTokenParams,
+		inputCoins:               inputCoins,
+		hasPrivacy:               hasPrivacy,
+		limitFee:                 limitFee,
+		customTokenParams:        customTokenParams,
+		metadata:                 metadata,
+		payments:                 payments,
+		privacyCustomTokenParams: privacyCustomTokenParams,
 	}
 	return estimateTxSizeParam
 }
@@ -153,45 +153,45 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 
 	sizeSigPubKey := uint64(common.SigPubKeySize)
 	sizeSig := uint64(common.SigNoPrivacySize)
-	if estimateTxSizeParam.HasPrivacy {
+	if estimateTxSizeParam.hasPrivacy {
 		sizeSig = uint64(common.SigPrivacySize)
 	}
 
 	sizeProof := uint64(0)
-	if len(estimateTxSizeParam.InputCoins) != 0 || len(estimateTxSizeParam.Payments) != 0 {
-		sizeProof = utils.EstimateProofSize(len(estimateTxSizeParam.InputCoins), len(estimateTxSizeParam.Payments), estimateTxSizeParam.HasPrivacy)
+	if len(estimateTxSizeParam.inputCoins) != 0 || len(estimateTxSizeParam.payments) != 0 {
+		sizeProof = utils.EstimateProofSize(len(estimateTxSizeParam.inputCoins), len(estimateTxSizeParam.payments), estimateTxSizeParam.hasPrivacy)
 	} else {
-		if estimateTxSizeParam.LimitFee > 0 {
-			sizeProof = utils.EstimateProofSize(1, 1, estimateTxSizeParam.HasPrivacy)
+		if estimateTxSizeParam.limitFee > 0 {
+			sizeProof = utils.EstimateProofSize(1, 1, estimateTxSizeParam.hasPrivacy)
 		}
 	}
 
 	sizePubKeyLastByte := uint64(1)
 
 	sizeMetadata := uint64(0)
-	if estimateTxSizeParam.Metadata != nil {
-		sizeMetadata += estimateTxSizeParam.Metadata.CalculateSize()
+	if estimateTxSizeParam.metadata != nil {
+		sizeMetadata += estimateTxSizeParam.metadata.CalculateSize()
 	}
 
 	sizeTx := sizeVersion + sizeType + sizeLockTime + sizeFee + sizeInfo + sizeSigPubKey + sizeSig + sizeProof + sizePubKeyLastByte + sizeMetadata
 
 	// size of custom token data
-	if estimateTxSizeParam.CustomTokenParams != nil {
+	if estimateTxSizeParam.customTokenParams != nil {
 		customTokenDataSize := uint64(0)
 
-		customTokenDataSize += uint64(len(estimateTxSizeParam.CustomTokenParams.PropertyID))
-		customTokenDataSize += uint64(len(estimateTxSizeParam.CustomTokenParams.PropertySymbol))
-		customTokenDataSize += uint64(len(estimateTxSizeParam.CustomTokenParams.PropertyName))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertyID))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertySymbol))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.customTokenParams.PropertyName))
 
 		customTokenDataSize += 8 // for amount
 		customTokenDataSize += 4 // for TokenTxType
 
-		for _, out := range estimateTxSizeParam.CustomTokenParams.Receiver {
+		for _, out := range estimateTxSizeParam.customTokenParams.Receiver {
 			customTokenDataSize += uint64(len(out.PaymentAddress.Bytes()))
 			customTokenDataSize += 8 //out.Value
 		}
 
-		for _, in := range estimateTxSizeParam.CustomTokenParams.vins {
+		for _, in := range estimateTxSizeParam.customTokenParams.vins {
 			customTokenDataSize += uint64(len(in.PaymentAddress.Bytes()))
 			customTokenDataSize += uint64(len(in.TxCustomTokenID[:]))
 			customTokenDataSize += uint64(len(in.Signature))
@@ -201,12 +201,12 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	}
 
 	// size of privacy custom token  data
-	if estimateTxSizeParam.PrivacyCustomTokenParams != nil {
+	if estimateTxSizeParam.privacyCustomTokenParams != nil {
 		customTokenDataSize := uint64(0)
 
-		customTokenDataSize += uint64(len(estimateTxSizeParam.PrivacyCustomTokenParams.PropertyID))
-		customTokenDataSize += uint64(len(estimateTxSizeParam.PrivacyCustomTokenParams.PropertySymbol))
-		customTokenDataSize += uint64(len(estimateTxSizeParam.PrivacyCustomTokenParams.PropertyName))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertyID))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertySymbol))
+		customTokenDataSize += uint64(len(estimateTxSizeParam.privacyCustomTokenParams.PropertyName))
 
 		customTokenDataSize += 8 // for amount
 		customTokenDataSize += 4 // for TokenTxType
@@ -222,7 +222,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 		customTokenDataSize += uint64(common.SigPrivacySize) // sig
 
 		// Proof
-		customTokenDataSize += utils.EstimateProofSize(len(estimateTxSizeParam.PrivacyCustomTokenParams.TokenInput), len(estimateTxSizeParam.PrivacyCustomTokenParams.Receiver), true)
+		customTokenDataSize += utils.EstimateProofSize(len(estimateTxSizeParam.privacyCustomTokenParams.TokenInput), len(estimateTxSizeParam.privacyCustomTokenParams.Receiver), true)
 
 		customTokenDataSize += uint64(1) //PubKeyLastByte
 
