@@ -33,47 +33,36 @@ import (
 	- No error: valid and can be sign
 	- Error: invalid new block
 */
-func (blockchain *BlockChain) VerifyPreSignBeaconBlock(block *BeaconBlock, isCommittee bool) error {
+func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock, isCommittee bool) error {
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	//========Verify block only
-	Logger.log.Criticalf("BEACON | Verify block for signing process %d, with hash %+v", block.Header.Height, *block.Hash())
-	if err := blockchain.VerifyPreProcessingBeaconBlock(block, isCommittee); err != nil {
+	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
+	if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, isCommittee); err != nil {
 		return err
 	}
 	//========Verify block with previous best state
 	// Get Beststate of previous block == previous best state
 	// Clone best state value into new variable
-	beaconBestState := BeaconBestState{}
-	// check with current final best state
-	// New block must be compatible with current best state
-	bestBlockHash := &blockchain.BestState.Beacon.BestBlockHash
-	if bestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
-		tempMarshal, err := json.Marshal(blockchain.BestState.Beacon)
-		if err != nil {
-			return NewBlockChainError(UnmashallJsonShardBlockError, err)
-		}
-		json.Unmarshal(tempMarshal, &beaconBestState)
-	}
-	// if no match best state found then block is unknown
-	if reflect.DeepEqual(beaconBestState, BeaconBestState{}) {
-		return NewBlockChainError(BeaconError, errors.New("beacon Block does not match with any Beacon State in cache or in Database"))
+	beaconBestState := NewBeaconBestState()
+	if err := beaconBestState.cloneBeaconBestState(blockchain.BestState.Beacon); err != nil {
+		return err
 	}
 	// Verify block with previous best state
 	// not verify agg signature in this function
-	if err := beaconBestState.VerifyBestStateWithBeaconBlock(block, false); err != nil {
+	if err := beaconBestState.VerifyBestStateWithBeaconBlock(beaconBlock, false); err != nil {
 		return err
 	}
 	//========Update best state with new block
 	snapShotBeaconCommittee := beaconBestState.BeaconCommittee
-	if err := beaconBestState.updateBeaconBestState(block); err != nil {
+	if err := beaconBestState.updateBeaconBestState(beaconBlock); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
-	if err := beaconBestState.VerifyPostProcessingBeaconBlock(block, snapShotBeaconCommittee); err != nil {
+	if err := beaconBestState.VerifyPostProcessingBeaconBlock(beaconBlock, snapShotBeaconCommittee); err != nil {
 		return err
 	}
-	Logger.log.Infof("BEACON | Block %d, with hash %+v is VALID to be 🖊 signed", block.Header.Height, *block.Hash())
+	Logger.log.Infof("BEACON | Block %d, with hash %+v is VALID to be 🖊 signed", beaconBlock.Header.Height, *beaconBlock.Hash())
 	return nil
 }
 
@@ -90,7 +79,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	Logger.log.Infof("BEACON | Begin Insert new block %d, with hash %+v \n", block.Header.Height, blockHash)
 	if !isValidated {
 		Logger.log.Infof("BEACON | Verify Pre Processing Beacon Block %+v \n", blockHash)
-		if err := blockchain.VerifyPreProcessingBeaconBlock(block, false); err != nil {
+		if err := blockchain.verifyPreProcessingBeaconBlock(block, false); err != nil {
 			return err
 		}
 	} else {
@@ -234,124 +223,124 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	return nil
 }
 
-/* Verify Pre-prosessing data
-This function DOES NOT verify new block with best state
-DO NOT USE THIS with GENESIS BLOCK
-- Producer validity
-- version
-- parent hash
-- Height = parent hash + 1
-- Epoch = blockHeight % Epoch ? Parent Epoch + 1
-- Timestamp can not excess some limit
-- Instruction hash
-- ShardStateHash
-- ShardState is sorted?
-FOR CURRENT COMMITTEES ONLY
-	- Is shardState existed in pool
+/*
+	VerifyPreProcessingBeaconBlock
+	This function DOES NOT verify new block with best state
+	DO NOT USE THIS with GENESIS BLOCK
+	- Producer validity
+	- version
+	- parent hash
+	- Height = parent hash + 1
+	- Epoch = blockHeight % Epoch ? Parent Epoch + 1
+	- Timestamp can not excess some limit
+	- Instruction hash
+	- ShardStateHash
+	- ShardState is sorted?
+	FOR CURRENT COMMITTEES ONLY
+		- Is shardState existed in pool
 */
-func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock, isCommittee bool) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *BeaconBlock, isCommittee bool) error {
 	//verify producer sig
-	blkHash := block.Header.Hash()
-	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	err := incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
+	hash := beaconBlock.Header.Hash()
+	producerPublicKey := base58.Base58Check{}.Encode(beaconBlock.Header.ProducerAddress.Pk, common.ZeroByte)
+	err := incognitokey.ValidateDataB58(producerPublicKey, beaconBlock.ProducerSig, hash.GetBytes())
 	if err != nil {
-		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
+		return NewBlockChainError(BeaconBlockSignatureError, fmt.Errorf("Producer Public Key %+v, Producer Signature %+v, Hash %+v", producerPublicKey, beaconBlock.ProducerSig, hash))
 	}
-	//verify producer
-	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIndex + block.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
+	//verify producer via index
+	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIndex + beaconBlock.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
 	tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
-	if strings.Compare(tempProducer, producerPk) != 0 {
-		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 	}
 	//verify version
-	if block.Header.Version != BEACON_BLOCK_VERSION {
-		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(BEACON_BLOCK_VERSION)))
+	if beaconBlock.Header.Version != BEACON_BLOCK_VERSION {
+		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect block version to be equal to %+v but get %+v", BEACON_BLOCK_VERSION, beaconBlock.Header.Version))
 	}
-	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
-	parentBlock, err := blockchain.config.DataBase.FetchBeaconBlock(prevBlockHash)
+	previousBlockHash := beaconBlock.Header.PreviousBlockHash
+	parentBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(previousBlockHash)
 	if err != nil {
-		return NewBlockChainError(DatabaseError, err)
+		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
-	parentBlockInterface := NewBeaconBlock()
-	err = json.Unmarshal(parentBlock, parentBlockInterface)
+	previousBeaconBlock := NewBeaconBlock()
+	err = json.Unmarshal(parentBlockBytes, previousBeaconBlock)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonBeaconBlockError, fmt.Errorf("Failed To Unmarshall parent block of block height %+v", block.Header.Height))
+		return NewBlockChainError(UnmashallJsonBeaconBlockError, fmt.Errorf("Failed to unmarshall parent block of block height %+v", beaconBlock.Header.Height))
 	}
 	// Verify block height with parent block
-	if parentBlockInterface.Header.Height+1 != block.Header.Height {
-		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	if previousBeaconBlock.Header.Height+1 != beaconBlock.Header.Height {
+		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive beacon block height %+v but get %+v", previousBeaconBlock.Header.Height+1, beaconBlock.Header.Height))
 	}
 	// Verify epoch with parent block
-	if (block.Header.Height != 1) && (block.Header.Height%common.EPOCH == 1) && (parentBlockInterface.Header.Epoch != block.Header.Epoch-1) {
-		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
+	if (beaconBlock.Header.Height != 1) && (beaconBlock.Header.Height%common.EPOCH == 1) && (previousBeaconBlock.Header.Epoch != beaconBlock.Header.Epoch-1) {
+		return NewBlockChainError(WrongEpochError, fmt.Errorf("Expect receive beacon block epoch %+v greater than previous block epoch %+v, 1 value", beaconBlock.Header.Epoch, previousBeaconBlock.Header.Epoch))
 	}
 	// Verify timestamp with parent block
-	//jackalope: temporary commment for debug purpose
-	//if block.Header.Timestamp <= parentBlockInterface.Header.Timestamp {
-	//	return NewBlockChainError(WrongTimestampError, errors.New("timestamp of new block can't equal to parent block"))
-	//}
-
-	if !VerifyHashFromShardState(block.Body.ShardState, block.Header.ShardStateHash) {
-		return NewBlockChainError(ShardStateHashError, errors.New("shard state hash is not correct"))
+	if beaconBlock.Header.Timestamp <= previousBeaconBlock.Header.Timestamp {
+		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive beacon block with timestamp %+v greater than previous block timestamp %+v", beaconBlock.Header.Timestamp, previousBeaconBlock.Header.Timestamp))
 	}
-
+	if !VerifyHashFromShardState(beaconBlock.Body.ShardState, beaconBlock.Header.ShardStateHash) {
+		return NewBlockChainError(ShardStateHashError, fmt.Errorf("Expect shard state hash to be %+v", beaconBlock.Header.ShardStateHash))
+	}
 	tempInstructionArr := []string{}
-	for _, strs := range block.Body.Instructions {
+	for _, strs := range beaconBlock.Body.Instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
-	if !VerifyHashFromStringArray(tempInstructionArr, block.Header.InstructionHash) {
-		return NewBlockChainError(InstructionHashError, errors.New("instruction hash is not correct"))
+	if !VerifyHashFromStringArray(tempInstructionArr, beaconBlock.Header.InstructionHash) {
+		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect instruction hash to be %+v", beaconBlock.Header.InstructionHash))
 	}
 	// Shard state must in right format
 	// state[i].Height must less than state[i+1].Height and state[i+1].Height - state[i].Height = 1
-	for _, shardStates := range block.Body.ShardState {
+	for _, shardStates := range beaconBlock.Body.ShardState {
 		for i := 0; i < len(shardStates)-2; i++ {
 			if shardStates[i+1].Height-shardStates[i].Height != 1 {
-				return NewBlockChainError(ShardStateError, errors.New("shardstates are not in right format"))
+				return NewBlockChainError(ShardStateError, fmt.Errorf("Expect Shard State Height to be in the right format, %+v, %+v", shardStates[i+1].Height, shardStates[i].Height))
 			}
 		}
 	}
-
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this block
-	flattenInsts, err := FlattenAndConvertStringInst(block.Body.Instructions)
+	flattenInsts, err := FlattenAndConvertStringInst(beaconBlock.Body.Instructions)
 	if err != nil {
-		return NewBlockChainError(HashError, err)
+		return NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
 
 	root := GetKeccak256MerkleRoot(flattenInsts)
-	if !bytes.Equal(root, block.Header.InstructionMerkleRoot[:]) {
-		return NewBlockChainError(HashError, errors.New("invalid InstructionMerkleRoot"))
+	if !bytes.Equal(root, beaconBlock.Header.InstructionMerkleRoot[:]) {
+		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Expect Instruction Merkle Root in Beacon Block Header to be %+v but get %+v", string(beaconBlock.Header.InstructionMerkleRoot[:]), string(root)))
 	}
 
 	// if pool does not have one of needed block, fail to verify
 	if isCommittee {
 		rewardByEpochInstruction := [][]string{}
-		if block.Header.Height%common.EPOCH == 1 {
-			rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(block.Header.Epoch - 1)
+		if beaconBlock.Header.Height%common.EPOCH == 1 {
+			rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch - 1)
 			if err != nil {
-				return err
+				return NewBlockChainError(BuildRewardInstructionError, err)
 			}
 		}
 		// @UNCOMMENT TO TEST
-		beaconBestState := BeaconBestState{}
+		beaconBestState := NewBeaconBestState()
+		if err := beaconBestState.cloneBeaconBestState(blockchain.BestState.Beacon); err != nil {
+			return err
+		}
 		tempShardStates := make(map[byte][]ShardState)
 		validStakers := [][]string{}
 		validSwappers := make(map[byte][][]string)
 		bridgeInstructions := [][]string{}
 		acceptedBlockRewardInstructions := [][]string{}
-		tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
-		err = json.Unmarshal(tempMarshal, &beaconBestState)
-		if err != nil {
-			return NewBlockChainError(UnExpectedError, errors.New("Fail to Unmarshal beacon beststate"))
-		}
-		beaconBestState.CandidateShardWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
-		beaconBestState.CandidateShardWaitingForNextRandom = blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom
-		beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
-		beaconBestState.CandidateBeaconWaitingForNextRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
-		if reflect.DeepEqual(beaconBestState, BeaconBestState{}) {
-			panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
-		}
+		//tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
+		//err = json.Unmarshal(tempMarshal, &beaconBestState)
+		//if err != nil {
+		//	return NewBlockChainError(UnExpectedError, errors.New("Fail to Unmarshal beacon beststate"))
+		//}
+		//beaconBestState.CandidateShardWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
+		//beaconBestState.CandidateShardWaitingForNextRandom = blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom
+		//beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
+		//beaconBestState.CandidateBeaconWaitingForNextRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
+		//if reflect.DeepEqual(beaconBestState, BeaconBestState{}) {
+		//	panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
+		//}
 		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidBlock(nil)
 		var keys []int
 		for k := range allShardBlocks {
@@ -361,9 +350,9 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 		for _, value := range keys {
 			shardID := byte(value)
 			shardBlocks := allShardBlocks[shardID]
-			if len(shardBlocks) >= len(block.Body.ShardState[shardID]) {
-				shardBlocks = shardBlocks[:len(block.Body.ShardState[shardID])]
-				shardStates := block.Body.ShardState[shardID]
+			if len(shardBlocks) >= len(beaconBlock.Body.ShardState[shardID]) {
+				shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
+				shardStates := beaconBlock.Body.ShardState[shardID]
 				for index, shardState := range shardStates {
 					if shardBlocks[index].Header.Height != shardState.Height {
 						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
@@ -397,7 +386,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					}
 				}
 				for _, shardBlock := range shardBlocks {
-					tempShardState, validStaker, validSwapper, bridgeInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(block.Header.Height, shardBlock, shardID)
+					tempShardState, validStaker, validSwapper, bridgeInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID)
 					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
 					validStakers = append(validStakers, validStaker...)
 					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
@@ -409,7 +398,7 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			}
 		}
 		beaconBestState.InitRandomClient(blockchain.config.RandomClient)
-		tempInstruction := beaconBestState.GenerateInstruction(block.Header.Height, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions)
+		tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions)
 		if len(rewardByEpochInstruction) != 0 {
 			tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 		}
@@ -423,8 +412,8 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 			return NewBlockChainError(HashError, errors.New("Fail to generate hash for instruction"))
 		}
 		fmt.Println("BeaconProcess/tempInstructionHash: ", tempInstructionHash)
-		fmt.Println("BeaconProcess/block.Header.InstructionHash: ", block.Header.InstructionHash)
-		if !tempInstructionHash.IsEqual(&block.Header.InstructionHash) {
+		fmt.Println("BeaconProcess/block.Header.InstructionHash: ", beaconBlock.Header.InstructionHash)
+		if !tempInstructionHash.IsEqual(&beaconBlock.Header.InstructionHash) {
 			return NewBlockChainError(InstructionHashError, errors.New("instruction hash is not correct"))
 		}
 	}
@@ -464,8 +453,8 @@ func (beaconBestState *BeaconBestState) VerifyBestStateWithBeaconBlock(block *Be
 	if beaconBestState.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
 	}
-	if !bytes.Equal(beaconBestState.BestBlockHash.GetBytes(), block.Header.PreviousBlockHash.GetBytes()) {
-		return NewBlockChainError(WrongBlockHeightError, errors.New("previous us block should be :"+beaconBestState.BestBlockHash.String()))
+	if !beaconBestState.BestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
+		return NewBlockChainError(BeaconBestStateNotCompatibleError, errors.New("previous us block should be :"+beaconBestState.BestBlockHash.String()))
 	}
 	if block.Header.Height%common.EPOCH == 1 && beaconBestState.Epoch+1 != block.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
