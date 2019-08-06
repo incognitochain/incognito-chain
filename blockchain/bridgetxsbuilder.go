@@ -16,7 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-// NOTE: for whole bridge's deposit process, anytime an error occurs an error will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
+// NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
 
 func buildInstruction(
 	metaType int,
@@ -49,17 +49,18 @@ func (chain *BlockChain) buildInstructionsForIssuingReq(
 ) ([][]string, error) {
 	fmt.Println("[Centralized bridge token issuance] Starting...")
 	instructions := [][]string{}
-	rejectedInst := buildInstruction(metaType, shardID, "rejected", contentStr)
 	db := chain.GetDatabase()
 	issuingReqAction, err := metadata.ParseIssuingInstContent(contentStr)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while parsing issuing action content: ", err)
-		return append(instructions, rejectedInst), nil
+		return nil, nil
 	}
 
 	issuingReq := issuingReqAction.Meta
 	issuingTokenID := issuingReq.TokenID
 	issuingTokenName := issuingReq.TokenName
+	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingReqAction.TxReqID.String())
+
 	if !ac.CanProcessCIncToken(issuingTokenID) {
 		fmt.Printf("WARNING: The issuing token (%s) was already used in the current block.", issuingTokenID.String())
 		return append(instructions, rejectedInst), nil
@@ -102,14 +103,15 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 ) ([][]string, error) {
 	fmt.Println("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
-	rejectedInst := buildInstruction(metaType, shardID, "rejected", contentStr)
 	db := chain.GetDatabase()
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while parsing issuing action content: ", err)
-		return append(instructions, rejectedInst), nil
+		return nil, nil
 	}
 	md := issuingETHReqAction.Meta
+	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingETHReqAction.TxReqID.String())
+
 	ethReceipt := issuingETHReqAction.ETHReceipt
 	if ethReceipt == nil {
 		fmt.Println("WARNING: eth receipt is null.")
@@ -273,10 +275,15 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 	)
 
 	if initErr != nil {
-		// Logger.log.Error(initErr)
 		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
+	// err = blockGenerator.chain.GetDatabase().TrackBridgeReqWithStatus(issuingAcceptedInst.TxReqID, common.BRIDGE_REQUEST_ACCEPTED_STATUS)
+	// if err != nil {
+	// 	fmt.Println("WARNING: an error occured while tracking bridge request with accepted status to leveldb: ", err)
+	// 	return nil, nil
+	// }
+
 	fmt.Println("[Centralized token issuance] Create tx ok.")
 	return resTx, nil
 }
@@ -351,6 +358,14 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
+
+	// fmt.Println("hahaha tracking issuingETHAcceptedInst.TxReqID: ", issuingETHAcceptedInst.TxReqID)
+	// err = blockGenerator.chain.GetDatabase().TrackBridgeReqWithStatus(issuingETHAcceptedInst.TxReqID, common.BRIDGE_REQUEST_ACCEPTED_STATUS)
+	// if err != nil {
+	// 	fmt.Println("WARNING: an error occured while tracking bridge request with accepted status to leveldb: ", err)
+	// 	return nil, nil
+	// }
+
 	fmt.Println("[Decentralized bridge token issuance] Create tx ok.")
 	return resTx, nil
 }

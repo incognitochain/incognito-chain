@@ -207,29 +207,6 @@ func (db *db) UpdateBridgeTokenInfo(
 	return nil
 }
 
-// func (db *db) UpdateBridgeTokenInfo(
-// 	incTokenID common.Hash,
-// 	externalTokenID []byte,
-// 	isCentralized bool,
-// ) error {
-// 	prefix := getBridgePrefix(isCentralized)
-// 	key := append(prefix, incTokenID[:]...)
-// 	bridgeTokenInfo := BridgeTokenInfo{
-// 		TokenID:         &incTokenID,
-// 		ExternalTokenID: externalTokenID,
-// 	}
-// 	bridgeTokenInfoBytes, err := json.Marshal(bridgeTokenInfo)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	dbErr := db.Put(key, bridgeTokenInfoBytes)
-// 	if dbErr != nil {
-// 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.put"))
-// 	}
-// 	return nil
-// }
-
 func (db *db) IsBridgeTokenExistedByType(
 	incTokenID common.Hash,
 	isCentralized bool,
@@ -286,4 +263,21 @@ func (db *db) GetAllBridgeTokens() ([]byte, error) {
 		return nil, err
 	}
 	return allBridgeTokensBytes, nil
+}
+
+func (db *db) TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error {
+	key := append(bridgePrefix, txReqID[:]...)
+	return db.Put(key, []byte{status})
+}
+
+func (db *db) GetBridgeReqWithStatus(txReqID common.Hash) (byte, error) {
+	key := append(bridgePrefix, txReqID[:]...)
+	bridgeRedStatusBytes, dbErr := db.lvdb.Get(key, nil)
+	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
+		return common.BRIDGE_REQUEST_NOT_FOUND_STATUS, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(dbErr, "db.lvdb.Get"))
+	}
+	if len(bridgeRedStatusBytes) == 0 {
+		return common.BRIDGE_REQUEST_NOT_FOUND_STATUS, nil
+	}
+	return bridgeRedStatusBytes[0], nil
 }
