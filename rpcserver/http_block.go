@@ -603,7 +603,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 				if outputCoin.CoinDetailsEncrypted == nil {
 					crossShardPRVResult := jsonresult.CrossShardPRVResult{
 						PublicKey: pubkeyStr,
-						Value:     outputCoin.CoinDetails.Value,
+						Value:     outputCoin.CoinDetails.GetValue(),
 					}
 					result.CrossShardPRVResultList = append(result.CrossShardPRVResultList, crossShardPRVResult)
 				} else {

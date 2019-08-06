@@ -103,13 +103,13 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		item := make([]jsonresult.OutCoin, 0)
 
 		for _, outCoin := range outputCoins {
-			if outCoin.CoinDetails.Value == 0 {
+			if outCoin.CoinDetails.GetValue() == 0 {
 				continue
 			}
 			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
-				Value:          strconv.FormatUint(outCoin.CoinDetails.Value, 10),
+				Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
 				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
 				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
@@ -674,7 +674,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		for _, out := range outcoints {
-			balance += out.CoinDetails.Value
+			balance += out.CoinDetails.GetValue()
 		}
 
 		item.Amount = balance
@@ -707,7 +707,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		for _, out := range outcoints {
-			balance += out.CoinDetails.Value
+			balance += out.CoinDetails.GetValue()
 		}
 
 		item.Amount = balance
@@ -768,7 +768,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			for _, out := range outcoints {
-				totalValue += out.CoinDetails.Value
+				totalValue += out.CoinDetails.GetValue()
 			}
 		}
 	}
@@ -782,7 +782,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			for _, out := range outcoints {
-				totalValue += out.CoinDetails.Value
+				totalValue += out.CoinDetails.GetValue()
 			}
 		}
 	}
@@ -1011,10 +1011,10 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		}
 		temp := big.Int{}
 		temp.SetString(out.Value, 10)
+		coin := &privacy.Coin{}
+		coin.SetValue(temp.Uint64())
 		i := &privacy.OutputCoin{
-			CoinDetails: &privacy.Coin{
-				Value: temp.Uint64(),
-			},
+			CoinDetails: coin,
 		}
 		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
 		i.CoinDetails.SetRandomness(new(big.Int).SetBytes(RandomnessInBytes))
