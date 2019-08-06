@@ -44,7 +44,8 @@ func (com PedersenCommitment) commitAll(openings []*big.Int) (*EllipticPoint, er
 		return nil, errors.New("invalid length of openings to commit")
 	}
 
-	commitment := new(EllipticPoint).Zero()
+	commitment := new(EllipticPoint)
+	commitment.Zero()
 	for i := 0; i < len(com.G); i++ {
 		commitment = commitment.Add(com.G[i].ScalarMult(openings[i]))
 	}

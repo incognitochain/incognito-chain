@@ -45,7 +45,9 @@ func (priv elGamalPrivateKey) GetX() *big.Int {
 
 // Bytes converts ciphertext to 66-byte array
 func (ciphertext elGamalCipherText) Bytes() []byte {
-	if ciphertext.c1.IsEqual(new(EllipticPoint).Zero()) {
+	zero := new(EllipticPoint)
+	zero.Zero()
+	if ciphertext.c1.IsEqual(zero) {
 		return []byte{}
 	}
 	res := append(ciphertext.c1.Compress(), ciphertext.c2.Compress()...)
@@ -79,7 +81,8 @@ func (pub elGamalPublicKey) encrypt(plaintext *EllipticPoint) *elGamalCipherText
 
 	ciphertext := new(elGamalCipherText)
 
-	ciphertext.c1 = new(EllipticPoint).Zero()
+	ciphertext.c1 = new(EllipticPoint)
+	ciphertext.c1.Zero()
 	ciphertext.c1.Set(Curve.Params().Gx, Curve.Params().Gy)
 	ciphertext.c1 = ciphertext.c1.ScalarMult(randomness)
 

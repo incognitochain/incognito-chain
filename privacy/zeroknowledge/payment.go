@@ -605,12 +605,14 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	}
 
 	// Verify the proof that sum of all input values is equal to sum of all output values
-	comInputValueSum := new(privacy.EllipticPoint).Zero()
+	comInputValueSum := new(privacy.EllipticPoint)
+	comInputValueSum.Zero()
 	for i := 0; i < len(proof.commitmentInputValue); i++ {
 		comInputValueSum = comInputValueSum.Add(proof.commitmentInputValue[i])
 	}
 
-	comOutputValueSum := new(privacy.EllipticPoint).Zero()
+	comOutputValueSum := new(privacy.EllipticPoint)
+	comOutputValueSum.Zero()
 	for i := 0; i < len(proof.commitmentOutputValue); i++ {
 		comOutputValueSum = comOutputValueSum.Add(proof.commitmentOutputValue[i])
 	}
