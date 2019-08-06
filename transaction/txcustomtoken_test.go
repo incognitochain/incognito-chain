@@ -40,7 +40,7 @@ func TestTxCustomToken(t *testing.T) {
 		nil,
 		false,
 		6)
-	if err.(*TransactionError) != nil {
+	if err != nil {
 		t.Error(err)
 	}
 
@@ -61,7 +61,7 @@ func TestTxCustomToken(t *testing.T) {
 		nil,
 		false,
 		6)
-	if err.(*TransactionError) != nil {
+	if err != nil {
 		t.Error(err)
 	}
 
@@ -83,7 +83,7 @@ func TestTxCustomToken(t *testing.T) {
 		nil,
 		false,
 		6)
-	if err.(*TransactionError) != nil {
+	if err != nil {
 		t.Error(err)
 	}
 
