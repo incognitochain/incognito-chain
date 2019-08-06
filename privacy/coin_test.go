@@ -34,7 +34,7 @@ func TestCoinCommitAll(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin
-	coin.PublicKey.Decompress(publicKey)
+	coin.publicKey.Decompress(publicKey)
 	coin.SNDerivator = RandScalar()
 	coin.Randomness = RandScalar()
 	coin.Value = uint64(100)
@@ -42,7 +42,7 @@ func TestCoinCommitAll(t *testing.T) {
 	coin.CommitAll()
 	coin.Info = []byte("Incognito chain")
 
-	expectedCm := coin.PublicKey
+	expectedCm := coin.publicKey
 	expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.Value))))
 	expectedCm = expectedCm.Add(PedCom.G[PedersenSndIndex].ScalarMult(coin.SNDerivator))
 	expectedCm = expectedCm.Add(PedCom.G[PedersenShardIDIndex].ScalarMult(big.NewInt(int64(common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())))))
@@ -63,7 +63,7 @@ func TestCoinMarshalJSON(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin
-	coin.PublicKey.Decompress(publicKey)
+	coin.publicKey.Decompress(publicKey)
 	coin.SNDerivator = RandScalar()
 	coin.Randomness = RandScalar()
 	coin.Value = uint64(100)
@@ -94,7 +94,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin
-	coin.PublicKey.Decompress(publicKey)
+	coin.publicKey.Decompress(publicKey)
 	coin.SNDerivator = RandScalar()
 	coin.Randomness = RandScalar()
 	coin.Value = uint64(100)
@@ -124,7 +124,7 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin (exclude serial number, coin commitment)
-	coin.PublicKey.Decompress(publicKey)
+	coin.publicKey.Decompress(publicKey)
 	coin.SNDerivator = RandScalar()
 	coin.Randomness = RandScalar()
 	coin.Value = uint64(100)
@@ -154,7 +154,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin (exclude serial number)
-	coin.PublicKey.Decompress(publicKey)
+	coin.publicKey.Decompress(publicKey)
 	coin.SNDerivator = RandScalar()
 	coin.Randomness = RandScalar()
 	coin.Value = uint64(100)
@@ -198,7 +198,7 @@ func TestCoinHashH(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin (exclude serial number)
-	coin.PublicKey.Decompress(publicKey)
+	coin.publicKey.Decompress(publicKey)
 	coin.SNDerivator = RandScalar()
 	coin.Randomness = RandScalar()
 	coin.Value = uint64(100)
@@ -223,7 +223,7 @@ func TestInputCoinBytesSetBytes(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin
-	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.publicKey.Decompress(publicKey)
 	coin.CoinDetails.SNDerivator = RandScalar()
 	coin.CoinDetails.Randomness = RandScalar()
 	coin.CoinDetails.Value = uint64(100)
@@ -253,7 +253,7 @@ func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin (exclude serial number, coin commitment)
-	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.publicKey.Decompress(publicKey)
 	coin.CoinDetails.SNDerivator = RandScalar()
 	coin.CoinDetails.Randomness = RandScalar()
 	coin.CoinDetails.Value = uint64(100)
@@ -282,7 +282,7 @@ func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin (exclude serial number)
-	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.publicKey.Decompress(publicKey)
 	coin.CoinDetails.SNDerivator = RandScalar()
 	coin.CoinDetails.Randomness = RandScalar()
 	coin.CoinDetails.Value = uint64(100)
@@ -328,7 +328,7 @@ func TestOutputCoinBytesSetBytes(t *testing.T) {
 	paymentAddr := GeneratePaymentAddress(privateKey)
 
 	// init other fields for coin
-	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.publicKey.Decompress(publicKey)
 	coin.CoinDetails.SNDerivator = RandScalar()
 	coin.CoinDetails.Randomness = RandScalar()
 	coin.CoinDetails.Value = uint64(100)
@@ -359,7 +359,7 @@ func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin (exclude serial number, coin commitment, CoinDetailsEncrypted)
-	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.publicKey.Decompress(publicKey)
 	coin.CoinDetails.SNDerivator = RandScalar()
 	coin.CoinDetails.Randomness = RandScalar()
 	coin.CoinDetails.Value = uint64(100)
@@ -388,7 +388,7 @@ func TestOutputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	publicKey := GeneratePublicKey(privateKey)
 
 	// init other fields for coin (exclude serial number)
-	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.publicKey.Decompress(publicKey)
 	coin.CoinDetails.SNDerivator = RandScalar()
 	coin.CoinDetails.Randomness = RandScalar()
 	coin.CoinDetails.Value = uint64(100)
@@ -434,7 +434,7 @@ func TestOutputCoinEncryptDecrypt(t *testing.T) {
 		coin := new(OutputCoin).Init()
 		coin.CoinDetails.Randomness = RandScalar()
 		coin.CoinDetails.Value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
-		coin.CoinDetails.PublicKey.Decompress(paymentAddress.Pk)
+		coin.CoinDetails.publicKey.Decompress(paymentAddress.Pk)
 
 		// encrypt output coins
 		err := coin.Encrypt(paymentAddress.Tk)
@@ -467,7 +467,7 @@ func TestOutputCoinEncryptDecryptWithUnmatchedKey(t *testing.T) {
 	coin := new(OutputCoin).Init()
 	coin.CoinDetails.Randomness = RandScalar()
 	coin.CoinDetails.Value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
-	coin.CoinDetails.PublicKey.Decompress(paymentAddress.Pk)
+	coin.CoinDetails.publicKey.Decompress(paymentAddress.Pk)
 
 	// encrypt output coins
 	err := coin.Encrypt(paymentAddress.Tk)
@@ -500,7 +500,7 @@ func TestOutputCoinEncryptWithInvalidKey(t *testing.T) {
 	coin := new(OutputCoin).Init()
 	coin.CoinDetails.Randomness = RandScalar()
 	coin.CoinDetails.Value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
-	coin.CoinDetails.PublicKey.Decompress(publicKey)
+	coin.CoinDetails.publicKey.Decompress(publicKey)
 
 	dataKey := [][]byte{
 		{1, 2, 3}, // 3 bytes

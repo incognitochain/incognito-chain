@@ -61,8 +61,8 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			if input.CoinDetails.SerialNumber != nil {
 				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.SerialNumber.Compress(), 0x0)
 			}
-			if input.CoinDetails.PublicKey != nil {
-				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.PublicKey.Compress(), 0x0)
+			if input.CoinDetails.GetPublicKey() != nil {
+				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.GetPublicKey().Compress(), 0x0)
 			}
 		}
 		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
@@ -87,8 +87,8 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			if output.CoinDetails.SerialNumber != nil {
 				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.SerialNumber.Compress(), 0x0)
 			}
-			if output.CoinDetails.PublicKey != nil {
-				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.PublicKey.Compress(), 0x0)
+			if output.CoinDetails.GetPublicKey() != nil {
+				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.GetPublicKey().Compress(), 0x0)
 			}
 			if output.CoinDetailsEncrypted != nil {
 				out.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), 0x0)

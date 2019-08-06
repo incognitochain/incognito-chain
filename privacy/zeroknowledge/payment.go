@@ -493,7 +493,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		}
 
 		// Check input coins' cm is calculated correctly
-		cmTmp := proof.inputCoins[i].CoinDetails.PublicKey
+		cmTmp := proof.inputCoins[i].CoinDetails.GetPublicKey()
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(proof.inputCoins[i].CoinDetails.Value))))
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(proof.inputCoins[i].CoinDetails.SNDerivator))
 		cmTmp = cmTmp.Add(cmShardIDSender)
@@ -509,7 +509,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 
 	for i := 0; i < len(proof.outputCoins); i++ {
 		// Check output coins' cm is calculated correctly
-		cmTmp := proof.outputCoins[i].CoinDetails.PublicKey
+		cmTmp := proof.outputCoins[i].CoinDetails.GetPublicKey()
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(big.NewInt(int64(proof.outputCoins[i].CoinDetails.Value))))
 		cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenSndIndex].ScalarMult(proof.outputCoins[i].CoinDetails.SNDerivator))
 		shardID := common.GetShardIDFromLastByte(proof.outputCoins[i].CoinDetails.GetPubKeyLastByte())
@@ -587,7 +587,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 
 	// Check output coins' cm is calculated correctly
 	for i := 0; i < len(proof.outputCoins); i++ {
-		cmTmp := proof.outputCoins[i].CoinDetails.PublicKey.Add(proof.commitmentOutputValue[i])
+		cmTmp := proof.outputCoins[i].CoinDetails.GetPublicKey().Add(proof.commitmentOutputValue[i])
 		cmTmp = cmTmp.Add(proof.commitmentOutputSND[i])
 		cmTmp = cmTmp.Add(proof.commitmentOutputShardID[i])
 

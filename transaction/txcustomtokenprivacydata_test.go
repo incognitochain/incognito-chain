@@ -12,13 +12,13 @@ func TestTxTokenPrivacyData(t *testing.T) {
 		TxNormal: Tx{Proof: &zkp.PaymentProof{
 			outputCoins: []*privacy.OutputCoin{{
 				CoinDetails: &privacy.Coin{
-					PublicKey: new(privacy.EllipticPoint).Zero(),
+					publicKey: new(privacy.EllipticPoint).Zero(),
 					Value:     10,
 				},
 			}},
 			inputCoins: []*privacy.InputCoin{{
 				CoinDetails: &privacy.Coin{
-					PublicKey: new(privacy.EllipticPoint).Zero(),
+					publicKey: new(privacy.EllipticPoint).Zero(),
 					Value:     10,
 				},
 			}},
