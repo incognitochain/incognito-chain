@@ -118,8 +118,12 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) *TransactionError {
 	}
 
 	if params.tokenID == nil {
+		// using default PRV
 		params.tokenID = &common.Hash{}
-		params.tokenID.SetBytes(common.PRVCoinID[:])
+		err := params.tokenID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return NewTransactionErr(UnexpectedErr, err)
+		}
 	}
 
 	// Calculate execution time
@@ -150,7 +154,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) *TransactionError {
 	Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
 
 	if len(params.inputCoins) == 0 && params.fee == 0 && !params.hasPrivacy {
-		Logger.log.Infof("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
+		Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.Fee = params.fee
 		tx.sigPrivKey = *params.senderSK
 		tx.PubKeyLastByteSender = pkLastByteSender
@@ -251,7 +255,10 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) *TransactionError {
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
 		outputCoins[i].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
-		outputCoins[i].CoinDetails.GetPublicKey().Decompress(pInfo.PaymentAddress.Pk)
+		err := outputCoins[i].CoinDetails.GetPublicKey().Decompress(pInfo.PaymentAddress.Pk)
+		if err != nil {
+			return NewTransactionErr(UnexpectedErr, err)
+		}
 		outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
 	}
 
@@ -343,7 +350,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) *TransactionError {
 	elapsedPrivacy := time.Since(startPrivacy)
 	elapsed := time.Since(start)
 	Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
-	Logger.log.Infof("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
+	Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 	return nil
 }
 
@@ -408,9 +415,9 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	}
 
 	// verify signature
-	// Logger.log.Infof(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
-	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
-	// Logger.log.Infof(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
+	// Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	// Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	// Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
 	res = verifyKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -445,7 +452,10 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 	if tx.Proof != nil {
 		if tokenID == nil {
 			tokenID = &common.Hash{}
-			tokenID.SetBytes(common.PRVCoinID[:])
+			err := tokenID.SetBytes(common.PRVCoinID[:])
+			if err != nil {
+				return false, NewTransactionErr(UnexpectedErr, err)
+			}
 		}
 
 		sndOutputs := make([]*big.Int, len(tx.Proof.GetOutputCoins()))
@@ -482,12 +492,12 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
 			return false, err
 		} else {
-			//Logger.log.Infof("SUCCESSED VERIFICATION PAYMENT PROOF ")
+			//Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
 	//@UNCOMMENT: metrics time
 	//elapsed := time.Since(start)
-	//Logger.log.Infof("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
+	//Logger.log.Debugf("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
 	return true, nil
 }
@@ -504,9 +514,9 @@ func (tx Tx) String() string {
 	}
 	if tx.Metadata != nil {
 		metadataHash := tx.Metadata.Hash()
-		//Logger.log.Infof("\n\n\n\n test metadata after hashing: %v\n", metadataHash.GetBytes())
-		metadata := metadataHash.String()
-		record += metadata
+		//Logger.log.Debugf("\n\n\n\n test metadata after hashing: %v\n", metadataHash.GetBytes())
+		metadataStr := metadataHash.String()
+		record += metadataStr
 	}
 
 	//TODO: To be uncomment
@@ -518,8 +528,8 @@ func (tx *Tx) Hash() *common.Hash {
 	if tx.cachedHash != nil {
 		return tx.cachedHash
 	}
-	bytes := []byte(tx.String())
-	hash := common.HashH(bytes)
+	inBytes := []byte(tx.String())
+	hash := common.HashH(inBytes)
 	tx.cachedHash = &hash
 	return &hash
 }
@@ -717,9 +727,15 @@ func (tx *Tx) ValidateDoubleSpendWithBlockchain(
 ) error {
 
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return err
+	}
 	if tokenID != nil {
-		prvCoinID.SetBytes(tokenID.GetBytes())
+		err := prvCoinID.SetBytes(tokenID.GetBytes())
+		if err != nil {
+			return err
+		}
 	}
 	for i := 0; tx.Proof != nil && i < len(tx.Proof.GetInputCoins()); i++ {
 		serialNumber := tx.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().Compress()
@@ -959,7 +975,10 @@ func (tx *Tx) ValidateTxByItself(
 	shardID byte,
 ) (bool, error) {
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return false, err
+	}
 	ok, err := tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID)
 	if !ok {
 		return false, err
@@ -1071,18 +1090,6 @@ func (tx *Tx) CalculateTxValue() uint64 {
 	return txValue
 }
 
-func NewEmptyTx(minerPrivateKey *privacy.PrivateKey, db database.DatabaseInterface, meta metadata.Metadata) metadata.Transaction {
-	tx := Tx{}
-	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
-	tx.InitTxSalary(0,
-		&keyWalletBurningAdd.KeySet.PaymentAddress,
-		minerPrivateKey,
-		db,
-		meta,
-	)
-	return &tx
-}
-
 // InitTxSalary
 // Blockchain use this tx to pay a reward(salary) to miner of chain
 // #1 - salary:
@@ -1124,7 +1131,10 @@ func (tx *Tx) InitTxSalary(
 		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.PRVCoinID[:])
+		err := tokenID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return err
+		}
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
 		if err != nil {
 			return err
@@ -1170,7 +1180,7 @@ func (tx Tx) ValidateTxSalary(
 	valid, err := tx.verifySigTx()
 	if !valid {
 		if err != nil {
-			Logger.log.Infof("Error verifying signature of tx: %+v", err)
+			Logger.log.Debugf("Error verifying signature of tx: %+v", err)
 		}
 		return false, err
 	}
@@ -1179,7 +1189,10 @@ func (tx Tx) ValidateTxSalary(
 	lastByte := tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey().Compress()[len(tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey().Compress())-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.PRVCoinID[:])
+	err = tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return false, err
+	}
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), shardIDSender, db); ok || err != nil {
 		return false, err
 	}
