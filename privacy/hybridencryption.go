@@ -90,7 +90,7 @@ func hybridDecrypt(ciphertext *hybridCiphertext, privateKey *big.Int) (msg []byt
 
 	// Get receiving key, which is a private key of ElGamal cryptosystem
 	privKey := new(elGamalPrivKey)
-	privKey.Set(privateKey)
+	privKey.set(privateKey)
 
 	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
 	encryptedAESKey := new(elGamalCiphertext)
