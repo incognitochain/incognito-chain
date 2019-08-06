@@ -45,7 +45,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonBlockError, err)
+		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 
 	// process tx from tx interface of temp
@@ -73,11 +73,11 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 			}
 		default:
 			{
-				return NewBlockChainError(UnmashallJsonBlockError, errors.New("can not parse a wrong tx"))
+				return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("can not parse a wrong tx"))
 			}
 		}
 		if parseErr != nil {
-			return NewBlockChainError(UnmashallJsonBlockError, parseErr)
+			return NewBlockChainError(UnmashallJsonShardBlockError, parseErr)
 		}
 		shardBody.Transactions = append(shardBody.Transactions, tx)
 	}

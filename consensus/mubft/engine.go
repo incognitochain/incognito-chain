@@ -291,7 +291,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 			//fmt.Println("Create and Push all Cross Shard Block")
 			//PUSH CROSS-SHARD
 			newCrossShardBlocks := shardBlk.CreateAllCrossShardBlock(engine.config.BlockChain.BestState.Beacon.ActiveShards)
-			//fmt.Println("New Cross Shard Blocks ", newCrossShardBlocks, shardBlk.Header.Height, shardBlk.Header.CrossShards)
+			//fmt.Println("New Cross Shard Blocks ", newCrossShardBlocks, shardBlk.Header.Height, shardBlk.Header.CrossShardBitMap)
 
 			for sID, newCrossShardBlock := range newCrossShardBlocks {
 				newCrossShardMsg, err := MakeMsgCrossShardBlock(newCrossShardBlock)

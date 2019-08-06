@@ -132,11 +132,11 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
 			result.R = block.R
 			result.Round = block.Header.Round
-			result.CrossShards = []int{}
+			result.CrossShardBitMap = []int{}
 			result.Instruction = block.Body.Instructions
-			if len(block.Header.CrossShards) > 0 {
-				for _, shardID := range block.Header.CrossShards {
-					result.CrossShards = append(result.CrossShards, int(shardID))
+			if len(block.Header.CrossShardBitMap) > 0 {
+				for _, shardID := range block.Header.CrossShardBitMap {
+					result.CrossShardBitMap = append(result.CrossShardBitMap, int(shardID))
 				}
 			}
 			result.Epoch = block.Header.Epoch
@@ -175,11 +175,11 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			result.BeaconBlockHash = block.Header.BeaconHash.String()
 			result.R = block.R
 			result.Round = block.Header.Round
-			result.CrossShards = []int{}
+			result.CrossShardBitMap = []int{}
 			result.Instruction = block.Body.Instructions
-			if len(block.Header.CrossShards) > 0 {
-				for _, shardID := range block.Header.CrossShards {
-					result.CrossShards = append(result.CrossShards, int(shardID))
+			if len(block.Header.CrossShardBitMap) > 0 {
+				for _, shardID := range block.Header.CrossShardBitMap {
+					result.CrossShardBitMap = append(result.CrossShardBitMap, int(shardID))
 				}
 			}
 			result.Epoch = block.Header.Epoch
