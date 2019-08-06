@@ -239,19 +239,22 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	FOR CURRENT COMMITTEES ONLY
 		- Is shardState existed in pool
 */
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *BeaconBlock, isCommittee bool) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
 	//verify producer sig
-	hash := beaconBlock.Header.Hash()
-	producerPublicKey := base58.Base58Check{}.Encode(beaconBlock.Header.ProducerAddress.Pk, common.ZeroByte)
-	err := incognitokey.ValidateDataB58(producerPublicKey, beaconBlock.ProducerSig, hash.GetBytes())
-	if err != nil {
-		return NewBlockChainError(BeaconBlockSignatureError, fmt.Errorf("Producer Public Key %+v, Producer Signature %+v, Hash %+v", producerPublicKey, beaconBlock.ProducerSig, hash))
-	}
-	//verify producer via index
-	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIndex + beaconBlock.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
-	tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
-	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+	//hash := beaconBlock.Header.Hash()
+	//producerPublicKey := base58.Base58Check{}.Encode(beaconBlock.Header.ProducerAddress.Pk, common.ZeroByte)
+	//err := incognitokey.ValidateDataB58(producerPublicKey, beaconBlock.ProducerSig, hash.GetBytes())
+	//if err != nil {
+	//	return NewBlockChainError(BeaconBlockSignatureError, fmt.Errorf("Producer Public Key %+v, Producer Signature %+v, Hash %+v", producerPublicKey, beaconBlock.ProducerSig, hash))
+	//}
+	////verify producer via index
+	//producerPosition := (blockchain.BestState.Beacon.BeaconProposerIndex + beaconBlock.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
+	//tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
+	//if strings.Compare(tempProducer, producerPublicKey) != 0 {
+	//	return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+	//}
+	if len(beaconBlock.Header.ProducerAddress.Bytes()) != 66 {
+		return NewBlockChainError(ProducerError, fmt.Errorf("Expect %+v has length 66 but get %+v", len(beaconBlock.Header.ProducerAddress.Bytes())))
 	}
 	//verify version
 	if beaconBlock.Header.Version != BEACON_BLOCK_VERSION {
@@ -304,120 +307,109 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	if err != nil {
 		return NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
-
 	root := GetKeccak256MerkleRoot(flattenInsts)
 	if !bytes.Equal(root, beaconBlock.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Expect Instruction Merkle Root in Beacon Block Header to be %+v but get %+v", string(beaconBlock.Header.InstructionMerkleRoot[:]), string(root)))
 	}
-
 	// if pool does not have one of needed block, fail to verify
-	if isCommittee {
-		rewardByEpochInstruction := [][]string{}
-		if beaconBlock.Header.Height%common.EPOCH == 1 {
-			rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch - 1)
-			if err != nil {
-				return NewBlockChainError(BuildRewardInstructionError, err)
-			}
-		}
-		// @UNCOMMENT TO TEST
-		beaconBestState := NewBeaconBestState()
-		if err := beaconBestState.cloneBeaconBestState(blockchain.BestState.Beacon); err != nil {
+	if isPreSign {
+		if err := blockchain.verifyPreProcessingBeaconBlockForSigning(beaconBlock); err != nil {
 			return err
 		}
-		tempShardStates := make(map[byte][]ShardState)
-		validStakers := [][]string{}
-		validSwappers := make(map[byte][][]string)
-		bridgeInstructions := [][]string{}
-		acceptedBlockRewardInstructions := [][]string{}
-		//tempMarshal, _ := json.Marshal(*blockchain.BestState.Beacon)
-		//err = json.Unmarshal(tempMarshal, &beaconBestState)
-		//if err != nil {
-		//	return NewBlockChainError(UnExpectedError, errors.New("Fail to Unmarshal beacon beststate"))
-		//}
-		//beaconBestState.CandidateShardWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
-		//beaconBestState.CandidateShardWaitingForNextRandom = blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom
-		//beaconBestState.CandidateBeaconWaitingForCurrentRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
-		//beaconBestState.CandidateBeaconWaitingForNextRandom = blockchain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
-		//if reflect.DeepEqual(beaconBestState, BeaconBestState{}) {
-		//	panic(NewBlockChainError(BeaconError, errors.New("problem with beststate in producing new block")))
-		//}
-		allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidBlock(nil)
-		var keys []int
-		for k := range allShardBlocks {
-			keys = append(keys, int(k))
-		}
-		sort.Ints(keys)
-		for _, value := range keys {
-			shardID := byte(value)
-			shardBlocks := allShardBlocks[shardID]
-			if len(shardBlocks) >= len(beaconBlock.Body.ShardState[shardID]) {
-				shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
-				shardStates := beaconBlock.Body.ShardState[shardID]
-				for index, shardState := range shardStates {
-					if shardBlocks[index].Header.Height != shardState.Height {
-						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-					}
-					blockHash := shardBlocks[index].Header.Hash()
-					if !blockHash.IsEqual(&shardState.Hash) {
-						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-					}
-					if !reflect.DeepEqual(shardBlocks[index].Header.CrossShardBitMap, shardState.CrossShard) {
-						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-					}
-				}
-				// Only accept block in one epoch
-				for index, shardBlock := range shardBlocks {
-					currentCommittee := blockchain.BestState.Beacon.GetAShardCommittee(shardID)
-					currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
-					hash := shardBlock.Header.Hash()
-					err := ValidateAggSignature(shardBlock.ValidatorsIndex, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-					if index == 0 && err != nil {
-						currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
-						if err != nil {
-							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-						}
-						err = ValidateAggSignature(shardBlock.ValidatorsIndex, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-						if err != nil {
-							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-						}
-					}
-					if index != 0 && err != nil {
-						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-					}
-				}
-				for _, shardBlock := range shardBlocks {
-					tempShardState, validStaker, validSwapper, bridgeInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID)
-					tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
-					validStakers = append(validStakers, validStaker...)
-					validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
-					bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
-					acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
-				}
-			} else {
-				return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
-			}
-		}
-		beaconBestState.InitRandomClient(blockchain.config.RandomClient)
-		tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions)
-		if len(rewardByEpochInstruction) != 0 {
-			tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
-		}
-		fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
-		tempInstructionArr := []string{}
-		for _, strs := range tempInstruction {
-			tempInstructionArr = append(tempInstructionArr, strs...)
-		}
-		tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
+	}
+	return nil
+}
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlock *BeaconBlock) error {
+	var err error
+	rewardByEpochInstruction := [][]string{}
+	tempShardStates := make(map[byte][]ShardState)
+	validStakers := [][]string{}
+	validSwappers := make(map[byte][][]string)
+	bridgeInstructions := [][]string{}
+	acceptedBlockRewardInstructions := [][]string{}
+	if beaconBlock.Header.Height%common.EPOCH == 1 {
+		rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch - 1)
 		if err != nil {
-			return NewBlockChainError(HashError, errors.New("Fail to generate hash for instruction"))
-		}
-		fmt.Println("BeaconProcess/tempInstructionHash: ", tempInstructionHash)
-		fmt.Println("BeaconProcess/block.Header.InstructionHash: ", beaconBlock.Header.InstructionHash)
-		if !tempInstructionHash.IsEqual(&beaconBlock.Header.InstructionHash) {
-			return NewBlockChainError(InstructionHashError, errors.New("instruction hash is not correct"))
+			return NewBlockChainError(BuildRewardInstructionError, err)
 		}
 	}
-
+	beaconBestState := NewBeaconBestState()
+	if err := beaconBestState.cloneBeaconBestState(blockchain.BestState.Beacon); err != nil {
+		return err
+	}
+	beaconBestState.InitRandomClient(blockchain.config.RandomClient)
+	allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidBlock(nil)
+	var keys []int
+	for k := range allShardBlocks {
+		keys = append(keys, int(k))
+	}
+	sort.Ints(keys)
+	for _, value := range keys {
+		shardID := byte(value)
+		shardBlocks := allShardBlocks[shardID]
+		if len(shardBlocks) >= len(beaconBlock.Body.ShardState[shardID]) {
+			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
+			shardStates := beaconBlock.Body.ShardState[shardID]
+			for index, shardState := range shardStates {
+				if shardBlocks[index].Header.Height != shardState.Height {
+					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+				}
+				blockHash := shardBlocks[index].Header.Hash()
+				if !blockHash.IsEqual(&shardState.Hash) {
+					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+				}
+				if !reflect.DeepEqual(shardBlocks[index].Header.CrossShardBitMap, shardState.CrossShard) {
+					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+				}
+			}
+			// Only accept block in one epoch
+			for index, shardBlock := range shardBlocks {
+				currentCommittee := blockchain.BestState.Beacon.GetAShardCommittee(shardID)
+				currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
+				hash := shardBlock.Header.Hash()
+				err := ValidateAggSignature(shardBlock.ValidatorsIndex, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+				if index == 0 && err != nil {
+					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
+					if err != nil {
+						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+					}
+					err = ValidateAggSignature(shardBlock.ValidatorsIndex, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+					if err != nil {
+						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+					}
+				}
+				if index != 0 && err != nil {
+					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+				}
+			}
+			for _, shardBlock := range shardBlocks {
+				tempShardState, validStaker, validSwapper, bridgeInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID)
+				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
+				validStakers = append(validStakers, validStaker...)
+				validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
+				bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
+				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
+			}
+		} else {
+			return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+		}
+	}
+	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions)
+	if len(rewardByEpochInstruction) != 0 {
+		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
+	}
+	fmt.Println("BeaconProcess/tempInstruction: ", tempInstruction)
+	tempInstructionArr := []string{}
+	for _, strs := range tempInstruction {
+		tempInstructionArr = append(tempInstructionArr, strs...)
+	}
+	tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
+	if err != nil {
+		return NewBlockChainError(GenerateInstructionHashError, fmt.Errorf("Fail to generate hash for instruction %+v", tempInstructionArr))
+	}
+	if !tempInstructionHash.IsEqual(&beaconBlock.Header.InstructionHash) {
+		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect Instruction Hash in Beacon Header to be %+v, but get %+v", beaconBlock.Header.InstructionHash, tempInstructionHash))
+	}
 	return nil
 }
 
@@ -434,36 +426,47 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	- staker
 	- ShardState
 */
-func (beaconBestState *BeaconBestState) VerifyBestStateWithBeaconBlock(block *BeaconBlock, isVerifySig bool) error {
-
+func (beaconBestState *BeaconBestState) VerifyBestStateWithBeaconBlock(beaconBlock *BeaconBlock, isVerifySig bool) error {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
+	hash := beaconBlock.Header.Hash()
+	producerPublicKey := base58.Base58Check{}.Encode(beaconBlock.Header.ProducerAddress.Pk, common.ZeroByte)
+	err := incognitokey.ValidateDataB58(producerPublicKey, beaconBlock.ProducerSig, hash.GetBytes())
+	if err != nil {
+		return NewBlockChainError(BeaconBlockSignatureError, fmt.Errorf("Producer Public Key %+v, Producer Signature %+v, Hash %+v", producerPublicKey, beaconBlock.ProducerSig, hash))
+	}
+	//verify producer via index
+	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+	}
 	//=============Verify aggegrate signature
 	if isVerifySig {
 		// ValidatorIdx must > Number of Beacon Committee / 2 AND Number of Beacon Committee > 3
-		if len(beaconBestState.BeaconCommittee) > 3 && len(block.ValidatorsIndex[1]) < (len(beaconBestState.BeaconCommittee)>>1) {
-			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible "+fmt.Sprint(len(block.ValidatorsIndex))))
+		if len(beaconBestState.BeaconCommittee) > 3 && len(beaconBlock.ValidatorsIndex[1]) < (len(beaconBestState.BeaconCommittee)>>1) {
+			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible "+fmt.Sprint(len(beaconBlock.ValidatorsIndex))))
 		}
-		err := ValidateAggSignature(block.ValidatorsIndex, beaconBestState.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
+		err := ValidateAggSignature(beaconBlock.ValidatorsIndex, beaconBestState.BeaconCommittee, beaconBlock.AggregatedSig, beaconBlock.R, beaconBlock.Hash())
 		if err != nil {
 			return NewBlockChainError(SignatureError, err)
 		}
 	}
 	//=============End Verify Aggegrate signature
-	if beaconBestState.BeaconHeight+1 != block.Header.Height {
-		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
+	if beaconBestState.BeaconHeight+1 != beaconBlock.Header.Height {
+		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(beaconBlock.Header.Height+1))))
 	}
-	if !beaconBestState.BestBlockHash.IsEqual(&block.Header.PreviousBlockHash) {
+	if !beaconBestState.BestBlockHash.IsEqual(&beaconBlock.Header.PreviousBlockHash) {
 		return NewBlockChainError(BeaconBestStateNotCompatibleError, errors.New("previous us block should be :"+beaconBestState.BestBlockHash.String()))
 	}
-	if block.Header.Height%common.EPOCH == 1 && beaconBestState.Epoch+1 != block.Header.Epoch {
+	if beaconBlock.Header.Height%common.EPOCH == 1 && beaconBestState.Epoch+1 != beaconBlock.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
-	if block.Header.Height%common.EPOCH != 1 && beaconBestState.Epoch != block.Header.Epoch {
+	if beaconBlock.Header.Height%common.EPOCH != 1 && beaconBestState.Epoch != beaconBlock.Header.Epoch {
 		return NewBlockChainError(EpochError, errors.New("block height and Epoch is not compatiable"))
 	}
 	//=============Verify Stakers
-	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*block)
+	newBeaconCandidate, newShardCandidate := GetStakingCandidate(*beaconBlock)
 	if !reflect.DeepEqual(newBeaconCandidate, []string{}) {
 		validBeaconCandidate := beaconBestState.GetValidStakers(newBeaconCandidate)
 		if !reflect.DeepEqual(validBeaconCandidate, newBeaconCandidate) {
@@ -591,16 +594,6 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(newBlock *BeaconBl
 	}
 
 	allShardState := newBlock.Body.ShardState
-	// if beaconBestState.AllShardState == nil {
-	// 	beaconBestState.AllShardState = make(map[byte][]ShardState)
-	// 	for index := 0; index < common.MAX_SHARD_NUMBER; index++ {
-	// 		beaconBestState.AllShardState[byte(index)] = []ShardState{
-	// 			ShardState{
-	// 				Height: 1,
-	// 			},
-	// 		}
-	// 	}
-	// }
 	if beaconBestState.BestShardHash == nil {
 		beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	}
@@ -611,32 +604,24 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(newBlock *BeaconBl
 	for shardID, shardStates := range allShardState {
 		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
-		//if _, ok := beaconBestState.AllShardState[shardID]; !ok {
-		//	beaconBestState.AllShardState[shardID] = []ShardState{}
-		//}
-		//beaconBestState.AllShardState[shardID] = append(beaconBestState.AllShardState[shardID], shardStates...)
 	}
-
-	//cross shard state
-
 	// update param
 	instructions := newBlock.Body.Instructions
 	for _, l := range instructions {
 		if len(l) < 1 {
 			continue
 		}
-
+		// format
+		// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
+		// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 		if l[0] == SwapAction {
-			fmt.Println("SWAP", l)
-			// format
-			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
-			// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
+			Logger.log.Info("Swap Instruction", l)
 			inPubkeys := strings.Split(l[1], ",")
 			outPubkeys := strings.Split(l[2], ",")
-			fmt.Println("SWAP l1", l[1])
-			fmt.Println("SWAP l2", l[2])
-			fmt.Println("SWAP inPubkeys", inPubkeys)
-			fmt.Println("SWAP outPubkeys", outPubkeys)
+			Logger.log.Info("Swap Instruction", l[1])
+			Logger.log.Info("Swap Instruction", l[2])
+			Logger.log.Info("Swap Instruction inPubkeys", inPubkeys)
+			Logger.log.Info("Swap Instruction outPubkeys", outPubkeys)
 			if l[3] == "shard" {
 				temp, err := strconv.Atoi(l[4])
 				if err != nil {
@@ -646,27 +631,27 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(newBlock *BeaconBl
 				shardID := byte(temp)
 				// delete in public key out of sharding pending validator list
 				if len(l[1]) > 0 {
-					fmt.Println("Beacon Process/Update Before, ShardPendingValidator", beaconBestState.ShardPendingValidator[shardID])
+					Logger.log.Info("Beacon Process/Update Before Update, ShardPendingValidator", beaconBestState.ShardPendingValidator[shardID])
 					tempShardPendingValidator, err := RemoveValidator(beaconBestState.ShardPendingValidator[shardID], inPubkeys)
-					fmt.Println("Beacon Process/Update After, ShardPendingValidator", beaconBestState.ShardPendingValidator[shardID])
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
 					beaconBestState.ShardPendingValidator[shardID] = tempShardPendingValidator
+					Logger.log.Info("Beacon Process/Update After Update, ShardPendingValidator", beaconBestState.ShardPendingValidator[shardID])
 					// append in public key to committees
 					beaconBestState.ShardCommittee[shardID] = append(beaconBestState.ShardCommittee[shardID], inPubkeys...)
-					fmt.Println("Beacon Process/Update Add New, ShardCommitees", beaconBestState.ShardCommittee[shardID])
+					Logger.log.Info("Beacon Process/Update Add New, ShardCommitees", beaconBestState.ShardCommittee[shardID])
 				}
 				// delete out public key out of current committees
 				if len(l[2]) > 0 {
 					tempShardCommittees, err := RemoveValidator(beaconBestState.ShardCommittee[shardID], outPubkeys)
-					fmt.Println("Beacon Process/Update Remove Old, ShardCommitees", beaconBestState.ShardCommittee[shardID])
 					if err != nil {
 						Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
 						return NewBlockChainError(UnExpectedError, err)
 					}
 					beaconBestState.ShardCommittee[shardID] = tempShardCommittees
+					Logger.log.Info("Beacon Process/Update Remove Old, ShardCommitees", beaconBestState.ShardCommittee[shardID])
 				}
 			} else if l[3] == "beacon" {
 				if len(l[1]) > 0 {

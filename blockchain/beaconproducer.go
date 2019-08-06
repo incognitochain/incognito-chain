@@ -134,7 +134,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewBlockChainError(GenerateInstructionError, err)
+		return nil, NewBlockChainError(GenerateInstructionHashError, err)
 	}
 	// Instruction merkle root
 	flattenInsts, err := FlattenAndConvertStringInst(tempInstruction)

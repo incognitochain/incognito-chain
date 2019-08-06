@@ -191,11 +191,12 @@ DO NOT USE THIS with GENESIS BLOCK
 	- Validate Response Transaction From Transaction with Metadata
 	- ALL Transaction in block: see in verifyTransactionFromNewBlock
 */
-func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, shardID byte, isPresig bool) error {
+func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, shardID byte, isPreSign bool) error {
 	//verify producer sig
 	Logger.log.Debugf("SHARD %+v | Begin verifyPreProcessingShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	if len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
-		return NewBlockChainError(WrongShardIDError, fmt.Errorf("Expect receive shardBlock from Shard ID %+v but get %+v", shardID, shardBlock.Header.ShardID))
+		return NewBlockChainError(ProducerError, fmt.Errorf("Expect %+v has length 66 but get %+v", len(shardBlock.Header.ProducerAddress.Bytes())))
+
 	}
 	if shardBlock.Header.ShardID != shardID {
 		return NewBlockChainError(WrongShardIDError, fmt.Errorf("Expect receive shardBlock from Shard ID %+v but get %+v", shardID, shardBlock.Header.ShardID))
@@ -247,7 +248,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		Logger.log.Error(err)
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)
 	}
-	if !isPresig {
+	if !isPreSign {
 		totalInstructions := []string{}
 		for _, value := range txInstructions {
 			totalInstructions = append(totalInstructions, value...)
@@ -362,7 +363,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	}
 	// Get cross shard shardBlock from pool
 	// @NOTICE: COMMENT to bypass verify cross shard shardBlock
-	if isPresig {
+	if isPreSign {
 		err := blockchain.verifyPreProcessingShardBlockForSigning(shardBlock, beaconBlocks, txInstructions, shardID)
 		if err != nil {
 			return err
@@ -498,20 +499,19 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 */
 func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *ShardBlock, isVerifySig bool, shardID byte) error {
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
+	hash := shardBlock.Header.Hash()
 	// Cal next producer
 	// Verify next producer
 	//=============Verify producer signature
-	// TODO: check producer condition
+	producerPublicKey := base58.Base58Check{}.Encode(shardBlock.Header.ProducerAddress.Pk, common.ZeroByte)
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
-	producerPubkey := shardBestState.ShardCommittee[producerPosition]
-	blockHash := shardBlock.Header.Hash()
-	Logger.log.Infof("SHARD %+v | Producer public key %+v and signature %+v, block hash to be signed %+v and encoded public key %+v", shardBlock.Header.ShardID, producerPubkey, shardBlock.ProducerSig, blockHash.GetBytes(), base58.Base58Check{}.Encode(shardBlock.Header.ProducerAddress.Pk, common.ZeroByte))
+	Logger.log.Infof("SHARD %+v | Producer public key %+v and signature %+v, block hash to be signed %+v and encoded public key %+v", shardBlock.Header.ShardID, producerPublicKey, shardBlock.ProducerSig, hash.GetBytes(), base58.Base58Check{}.Encode(shardBlock.Header.ProducerAddress.Pk, common.ZeroByte))
 	//verify producer
 	tempProducer := shardBestState.ShardCommittee[producerPosition]
-	if strings.Compare(tempProducer, producerPubkey) != 0 {
+	if strings.Compare(tempProducer, producerPublicKey) != 0 {
 		return NewBlockChainError(ProducerError, fmt.Errorf("Producer should be should be %+v", tempProducer))
 	}
-	if err := incognitokey.ValidateDataB58(producerPubkey, shardBlock.ProducerSig, blockHash.GetBytes()); err != nil {
+	if err := incognitokey.ValidateDataB58(producerPublicKey, shardBlock.ProducerSig, hash.GetBytes()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	//=============End Verify producer signature
