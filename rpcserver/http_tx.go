@@ -110,7 +110,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
 				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
 				Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
+				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
 				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
 				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
 				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
@@ -1033,7 +1033,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		i.CoinDetails.SetPublicKey(PublicKey)
 
 		InfoBytes, _, _ := base58.Base58Check{}.Decode(out.Info)
-		i.CoinDetails.Info = InfoBytes
+		i.CoinDetails.SetInfo(InfoBytes)
 
 		usableOutputCoins = append(usableOutputCoins, i)
 	}
