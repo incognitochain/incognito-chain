@@ -826,6 +826,13 @@ func (blockchain *BlockChain) processStoreShardBlockAndUpdateDatabase(block *Sha
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
+
+	// Update bridge issuance request status
+	err = blockchain.updateBridgeIssuanceStatus(block)
+	if err != nil {
+		return NewBlockChainError(UpdateBridgeIssuanceStatusError, err)
+	}
+
 	// call FeeEstimator for processing
 	if feeEstimator, ok := blockchain.config.FeeEstimator[block.Header.ShardID]; ok {
 		err := feeEstimator.RegisterBlock(block)
