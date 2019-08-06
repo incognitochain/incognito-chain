@@ -107,13 +107,13 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	// set rand sk for Schnorr signature
 	wit.randSecretKey = new(big.Int).Set(randInputSK)
 
-	cmInputSK := privacy.PedCom.CommitAtIndex(wit.privateKey, randInputSK, privacy.SK)
+	cmInputSK := privacy.PedCom.CommitAtIndex(wit.privateKey, randInputSK, privacy.PedersenPrivateKeyIndex)
 	wit.comInputSecretKey = new(privacy.EllipticPoint)
 	wit.comInputSecretKey.Set(cmInputSK.X, cmInputSK.Y)
 
 	randInputShardID := privacy.RandScalar()
 	senderShardID := common.GetShardIDFromLastByte(publicKeyLastByteSender)
-	wit.comInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(senderShardID)), randInputShardID, privacy.SHARDID)
+	wit.comInputShardID = privacy.PedCom.CommitAtIndex(big.NewInt(int64(senderShardID)), randInputShardID, privacy.PedersenShardIDIndex)
 
 	wit.comInputValue = make([]*privacy.EllipticPoint, numInputCoin)
 	wit.comInputSerialNumberDerivator = make([]*privacy.EllipticPoint, numInputCoin)
@@ -147,8 +147,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		randInputValue[i] = privacy.RandScalar()
 		randInputSND[i] = privacy.RandScalar()
 
-		wit.comInputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(inputCoin.CoinDetails.Value), randInputValue[i], privacy.VALUE)
-		wit.comInputSerialNumberDerivator[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSND[i], privacy.SND)
+		wit.comInputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(inputCoin.CoinDetails.Value), randInputValue[i], privacy.PedersenValueIndex)
+		wit.comInputSerialNumberDerivator[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.SNDerivator, randInputSND[i], privacy.PedersenSndIndex)
 
 		cmInputValueAll = cmInputValueAll.Add(wit.comInputValue[i])
 
@@ -233,11 +233,11 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		randOutputSND[i] = privacy.RandScalar()
 		randOutputShardID[i] = privacy.RandScalar()
 
-		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.Value), randOutputValue[i], privacy.VALUE)
-		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.SND)
+		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.Value), randOutputValue[i], privacy.PedersenValueIndex)
+		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.SNDerivator, randOutputSND[i], privacy.PedersenSndIndex)
 
 		receiverShardID := common.GetShardIDFromLastByte(outputCoins[i].CoinDetails.GetPubKeyLastByte())
-		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(receiverShardID)), randOutputShardID[i], privacy.SHARDID)
+		cmOutputShardID[i] = privacy.PedCom.CommitAtIndex(big.NewInt(int64(receiverShardID)), randOutputShardID[i], privacy.PedersenShardIDIndex)
 
 		randOutputSum[i] = big.NewInt(0)
 		randOutputSum[i].Add(randOutputValue[i], randOutputSND[i])

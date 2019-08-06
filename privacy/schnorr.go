@@ -40,11 +40,11 @@ func (privateKey *SchnorrPrivateKey) Set(sk *big.Int, r *big.Int) {
 	privateKey.randomness = r
 	privateKey.publicKey = new(SchnorrPublicKey)
 	privateKey.publicKey.g = new(EllipticPoint)
-	privateKey.publicKey.g.Set(PedCom.G[SK].X, PedCom.G[SK].Y)
+	privateKey.publicKey.g.Set(PedCom.G[PedersenPrivateKeyIndex].X, PedCom.G[PedersenPrivateKeyIndex].Y)
 
 	privateKey.publicKey.h = new(EllipticPoint)
-	privateKey.publicKey.h.Set(PedCom.G[RAND].X, PedCom.G[RAND].Y)
-	privateKey.publicKey.publicKey = PedCom.G[SK].ScalarMult(sk).Add(PedCom.G[RAND].ScalarMult(r))
+	privateKey.publicKey.h.Set(PedCom.G[PedersenRandomnessIndex].X, PedCom.G[PedersenRandomnessIndex].Y)
+	privateKey.publicKey.publicKey = PedCom.G[PedersenPrivateKeyIndex].ScalarMult(sk).Add(PedCom.G[PedersenRandomnessIndex].ScalarMult(r))
 }
 
 // Set sets Schnorr public key
@@ -53,10 +53,10 @@ func (publicKey *SchnorrPublicKey) Set(pk *EllipticPoint) {
 	publicKey.publicKey.Set(pk.X, pk.Y)
 
 	publicKey.g = new(EllipticPoint)
-	publicKey.g.Set(PedCom.G[SK].X, PedCom.G[SK].Y)
+	publicKey.g.Set(PedCom.G[PedersenPrivateKeyIndex].X, PedCom.G[PedersenPrivateKeyIndex].Y)
 
 	publicKey.h = new(EllipticPoint)
-	publicKey.h.Set(PedCom.G[RAND].X, PedCom.G[RAND].Y)
+	publicKey.h.Set(PedCom.G[PedersenRandomnessIndex].X, PedCom.G[PedersenRandomnessIndex].Y)
 }
 
 //Sign is function which using for signing on hash array by private key

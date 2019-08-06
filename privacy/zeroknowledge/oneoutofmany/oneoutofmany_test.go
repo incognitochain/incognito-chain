@@ -40,12 +40,12 @@ func TestPKOneOfMany(t *testing.T) {
 	for i := 0; i < privacy.CommitmentRingSize; i++ {
 		snDerivators[i] = privacy.RandScalar()
 		randoms[i] = privacy.RandScalar()
-		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.SND)
+		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.PedersenSndIndex)
 	}
 
 	// create Commitment to zero at indexIsZero
 	snDerivators[indexIsZero] = big.NewInt(0)
-	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
+	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.PedersenSndIndex)
 
 	witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
 	start := time.Now()
