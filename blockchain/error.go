@@ -97,6 +97,10 @@ const (
 	GenerateShardCommitteeError
 	GenerateShardPendingValidatorError
 	ProduceSignatureError
+	BeaconBestStateNotCompatibleError
+	BeaconBlockProducerError
+	BeaconBlockSignatureError
+	WrongEpochError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -116,7 +120,7 @@ var ErrCodeMessage = map[int]struct {
 	CanNotCheckDoubleSpendError:                       {-1010, "CanNotCheckDoubleSpend Error"},
 	HashError:                                         {-1011, "Hash error"},
 	WrongVersionError:                                 {-1012, "Version error"},
-	WrongBlockHeightError:                             {-1013, "Block height error"},
+	WrongBlockHeightError:                             {-1013, "Wrong Block Height Error"},
 	DatabaseError:                                     {-1014, "Database Error"},
 	EpochError:                                        {-1015, "Epoch Error"},
 	WrongTimestampError:                               {-1016, "Timestamp Error"},
@@ -188,6 +192,10 @@ var ErrCodeMessage = map[int]struct {
 	GenerateShardCommitteeError:                       {-1082, "Generate Shard Committee Root Error"},
 	GenerateShardPendingValidatorError:                {-1083, "Generate Shard Pending Validator Root Error"},
 	ProduceSignatureError:                             {-1084, "Produce Signature Error"},
+	BeaconBestStateNotCompatibleError:                 {-1085, "New Beacon Block and Beacon Best State Is NOT Compatible"},
+	BeaconBlockProducerError:                          {-1086, "Beacon Block Producer Error"},
+	BeaconBlockSignatureError:                         {-1087, "Beacon Block Signature Error"},
+	WrongEpochError:                                   {-1088, "Wrong Epoch Error"},
 }
 
 type BlockChainError struct {
