@@ -412,7 +412,8 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	sigPublicKey := new(privacy.EllipticPoint)
 	err = sigPublicKey.Decompress(tx.SigPubKey)
 	if err != nil {
-		return false, NewTransactionErr(UnexpectedErr, nil)
+		Logger.log.Error(err)
+		return false, NewTransactionErr(DecompressSigPubKeyError, err)
 	}
 	verifyKey.Set(sigPublicKey)
 
@@ -420,7 +421,8 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	signature := new(privacy.SchnSignature)
 	err = signature.SetBytes(tx.Sig)
 	if err != nil {
-		return false, err
+		Logger.log.Error(err)
+		return false, NewTransactionErr(InitTxSignatureFromBytesError, err)
 	}
 
 	// verify signature
