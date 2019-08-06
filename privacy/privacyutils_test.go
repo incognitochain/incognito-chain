@@ -38,23 +38,6 @@ func TestUtilsRandScalar(t *testing.T) {
 	}
 }
 
-func TestUtilsIsPowerOfTwo(t *testing.T) {
-	data := []struct {
-		number     int
-		isPowerOf2 bool
-	}{
-		{64, true},
-		{124, false},
-		{0, false},
-		{1, false},
-	}
-
-	for _, item := range data {
-		res := IsPowerOfTwo(item.number)
-		assert.Equal(t, item.isPowerOf2, res)
-	}
-}
-
 func TestUtilsConvertIntToBinary(t *testing.T) {
 	data := []struct {
 		number int
