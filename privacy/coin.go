@@ -60,6 +60,14 @@ func (coin *Coin) SetRandomness(v *big.Int) {
 	coin.randomness = v
 }
 
+func (coin Coin) GetValue() uint64 {
+	return coin.Value
+}
+
+func (coin *Coin) SetValue(v uint64) {
+	coin.Value = v
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(EllipticPoint).Zero()
