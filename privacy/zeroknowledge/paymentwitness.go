@@ -71,7 +71,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 
 	if !hasPrivacy {
 		for _, outCoin := range outputCoins {
-			outCoin.CoinDetails.Randomness = privacy.RandScalar()
+			outCoin.CoinDetails.SetRandomness(privacy.RandScalar())
 			err := outCoin.CoinDetails.CommitAll()
 			if err != nil {
 				return privacy.NewPrivacyErr(privacy.CommitNewOutputCoinNoPrivacyErr, nil)
@@ -173,7 +173,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		commitmentTemps[i] = make([]*privacy.EllipticPoint, privacy.CommitmentRingSize)
 
 		randInputIsZero[i] = big.NewInt(0)
-		randInputIsZero[i].Sub(inputCoin.CoinDetails.Randomness, randInputSum[i])
+		randInputIsZero[i].Sub(inputCoin.CoinDetails.GetRandomness(), randInputSum[i])
 		randInputIsZero[i].Mod(randInputIsZero[i], privacy.Curve.Params().N)
 		var err error
 		for j := 0; j < privacy.CommitmentRingSize; j++ {
@@ -255,7 +255,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 
 		// calculate final commitment for output coins
 		outputCoins[i].CoinDetails.SetCoinCommitment(cmOutputSum[i])
-		outputCoins[i].CoinDetails.Randomness = randOutputSum[i]
+		outputCoins[i].CoinDetails.SetRandomness(randOutputSum[i])
 
 		cmOutputSumAll = cmOutputSumAll.Add(cmOutputSum[i])
 	}
