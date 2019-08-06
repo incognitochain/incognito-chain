@@ -33,7 +33,7 @@ type OneOutOfManyProof struct {
 	zd             *big.Int
 }
 
-func (proof *OneOutOfManyProof) ValidateSanity() bool {
+func (proof OneOutOfManyProof) ValidateSanity() bool {
 	if len(proof.cl) != privacy.CommitmentRingSizeExp || len(proof.ca) != privacy.CommitmentRingSizeExp ||
 		len(proof.cb) != privacy.CommitmentRingSizeExp || len(proof.cd) != privacy.CommitmentRingSizeExp ||
 		len(proof.f) != privacy.CommitmentRingSizeExp || len(proof.za) != privacy.CommitmentRingSizeExp ||
@@ -69,7 +69,7 @@ func (proof *OneOutOfManyProof) ValidateSanity() bool {
 	return proof.zd.BitLen() <= 256
 }
 
-func (proof *OneOutOfManyProof) isNil() bool {
+func (proof OneOutOfManyProof) isNil() bool {
 	if proof.cl == nil {
 		return true
 	}
@@ -91,10 +91,7 @@ func (proof *OneOutOfManyProof) isNil() bool {
 	if proof.zb == nil {
 		return true
 	}
-	if proof.zd == nil {
-		return true
-	}
-	return false
+	return proof.zd == nil
 }
 
 func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
@@ -105,16 +102,12 @@ func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
 }
 
 // Set sets Statement
-func (stmt *OneOutOfManyStatement) Set(
-	commitments []*privacy.EllipticPoint) {
+func (stmt *OneOutOfManyStatement) Set(commitments []*privacy.EllipticPoint) {
 	stmt.Commitments = commitments
 }
 
 // Set sets Witness
-func (wit *OneOutOfManyWitness) Set(
-	commitments []*privacy.EllipticPoint,
-	rand *big.Int,
-	indexIsZero uint64) {
+func (wit *OneOutOfManyWitness) Set(commitments []*privacy.EllipticPoint, rand *big.Int, indexIsZero uint64) {
 	wit.stmt = new(OneOutOfManyStatement)
 	wit.stmt.Set(commitments)
 
@@ -138,7 +131,7 @@ func (proof *OneOutOfManyProof) Set(
 }
 
 // Bytes converts one of many proof to bytes array
-func (proof *OneOutOfManyProof) Bytes() []byte {
+func (proof OneOutOfManyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
 	if proof.isNil() {
 		return []byte{}
@@ -274,7 +267,7 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 }
 
 // Prove produces a proof for the statement
-func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
+func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Check the number of Commitment list's elements
 	N := len(wit.stmt.Commitments)
 	if N != privacy.CommitmentRingSize {
@@ -334,7 +327,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
-			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
+			pik := getCoefficient(iBinary, k, n, a, indexIsZeroBinary)
 			cd[k] = cd[k].Add(wit.stmt.Commitments[i].ScalarMult(pik))
 		}
 
@@ -394,7 +387,7 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 }
 
 // Verify verifies a proof output by Prove
-func (proof *OneOutOfManyProof) Verify() (bool, error) {
+func (proof OneOutOfManyProof) Verify() (bool, error) {
 	N := len(proof.Statement.Commitments)
 
 	// the number of Commitment list's elements must be equal to CMRingSize
@@ -476,7 +469,7 @@ func (proof *OneOutOfManyProof) Verify() (bool, error) {
 }
 
 // Get coefficient of x^k in the polynomial p_i(x)
-func GetCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.Int {
+func getCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.Int {
 	res := privacy.Poly{big.NewInt(1)}
 	var fji privacy.Poly
 
