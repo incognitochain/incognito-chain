@@ -529,7 +529,7 @@ func (rpcServer HttpServer) estimateFee(
 func (rpcServer HttpServer) filterMemPoolOutCoinsToSpent(outCoins []*privacy.OutputCoin) (remainOutputCoins []*privacy.OutputCoin, err error) {
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if rpcServer.config.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.SerialNumber.Compress()) == nil {
+		if rpcServer.config.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
