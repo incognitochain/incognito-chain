@@ -70,7 +70,7 @@ func hybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *hybridCiph
 	}
 
 	// Using ElGamal cryptosystem for encrypting AES sym key
-	pubKey := new(elGamalPubKey)
+	pubKey := new(elGamalPublicKey)
 	pubKey.h = new(EllipticPoint)
 	pubKey.h.Set(publicKey.X, publicKey.Y)
 
@@ -89,11 +89,11 @@ func hybridDecrypt(ciphertext *hybridCiphertext, privateKey *big.Int) (msg []byt
 	}
 
 	// Get receiving key, which is a private key of ElGamal cryptosystem
-	privKey := new(elGamalPrivKey)
+	privKey := new(elGamalPrivateKey)
 	privKey.set(privateKey)
 
 	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
-	encryptedAESKey := new(elGamalCiphertext)
+	encryptedAESKey := new(elGamalCipherText)
 	err = encryptedAESKey.SetBytes(ciphertext.symKeyEncrypted)
 	if err != nil {
 		return []byte{}, err
