@@ -72,7 +72,7 @@ func (coin *Coin) HashH() *common.Hash {
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
-	commitment, err := PedCom.CommitAll(values)
+	commitment, err := PedCom.commitAll(values)
 	if err != nil {
 		return err
 	}

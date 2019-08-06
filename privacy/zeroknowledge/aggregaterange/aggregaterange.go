@@ -219,7 +219,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	proof.cmsValue = make([]*privacy.EllipticPoint, numValue)
 	for i := 0; i < numValue; i++ {
-		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
+		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.PedersenValueIndex)
 	}
 
 	n := maxExp
@@ -250,7 +250,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	A = A.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(alpha))
+	A = A.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(alpha))
 	proof.a = A
 
 	// Random blinding vectors sL, sR
@@ -269,7 +269,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	S = S.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(rho))
+	S = S.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(rho))
 	proof.s = S
 
 	// challenge y, z
@@ -370,8 +370,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	tau1 := privacy.RandScalar()
 	tau2 := privacy.RandScalar()
 
-	proof.t1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.VALUE)
-	proof.t2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.VALUE)
+	proof.t1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.PedersenValueIndex)
+	proof.t2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.PedersenValueIndex)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	x := generateChallengeForAggRange(AggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
@@ -525,14 +525,14 @@ func (proof AggregatedRangeProof) Verify() (bool, error) {
 	deltaYZ.Sub(deltaYZ, sum)
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
-	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.VALUE)
+	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.PedersenValueIndex)
 
 	var temp1, temp2, temp3 *privacy.EllipticPoint
 
 	wg.Add(3)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-		temp1 = privacy.PedCom.G[privacy.VALUE].ScalarMult(deltaYZ)
+		temp1 = privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(deltaYZ)
 	}(&wg)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
