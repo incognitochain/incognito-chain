@@ -22,7 +22,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	tx, err := BuildCoinbaseTxByCoinID(&paymentAddress, 10, &key.KeySet.PrivateKey, db, responseMeta, common.Hash{}, NormalCoinType, "PRV", 0)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
-	assert.Equal(t, uint64(10), tx.(*Tx).Proof.outputCoins[0].CoinDetails.value)
+	assert.Equal(t, uint64(10), tx.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetValue())
 	assert.Equal(t, common.PRVCoinID.String(), tx.GetTokenID().String())
 
 	jsonStr, err := json.Marshal(tx)
@@ -32,7 +32,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	tx1 := Tx{}
 	err = json.Unmarshal(jsonStr, &tx1)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint64(10), tx1.Proof.outputCoins[0].CoinDetails.value)
+	assert.Equal(t, uint64(10), tx1.Proof.GetOutputCoins()[0].CoinDetails.GetValue())
 	assert.Equal(t, common.PRVCoinID.String(), tx1.GetTokenID().String())
 }
 
@@ -48,11 +48,11 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, true, valid)
 
-	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.outputCoins)
+	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.GetOutputCoins())
 
 	tx1 := Tx{}
-	in1[0].CoinDetails.serialNumber = privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
-		in1[0].CoinDetails.snDerivator)
+	in1[0].CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
+		in1[0].CoinDetails.GetSNDerivator()))
 	paymentAddress2, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
 	err = tx1.Init(&key.KeySet.PrivateKey, []*privacy.PaymentInfo{{PaymentAddress: paymentAddress2.KeySet.PaymentAddress, Amount: 5}}, in1, 1, false, db, nil, nil)
 	if err.(*TransactionError) != nil {
@@ -78,7 +78,7 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, uint64(0), c)
 
 	tx3 := Tx{}
-	db.StoreCommitments(common.PRVCoinID, paymentAddress.Pk, [][]byte{tx2.(*Tx).Proof.outputCoins[0].CoinDetails.coinCommitment.Compress()}, 6)
+	db.StoreCommitments(common.PRVCoinID, paymentAddress.Pk, [][]byte{tx2.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().Compress()}, 6)
 	err = tx3.Init(&key.KeySet.PrivateKey, []*privacy.PaymentInfo{{PaymentAddress: paymentAddress, Amount: 5}}, in1, 1, true, db, nil, nil)
 	if err.(*TransactionError) != nil {
 		t.Error(err)

@@ -200,11 +200,11 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 	outCoinsUnderLimit := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.value < amount {
+		if outCoin.CoinDetails.GetValue() < amount {
 			outCoinsUnderLimit = append(outCoinsUnderLimit, outCoin)
 		} else if outCoinOverLimit == nil {
 			outCoinOverLimit = outCoin
-		} else if outCoinOverLimit.CoinDetails.value > outCoin.CoinDetails.value {
+		} else if outCoinOverLimit.CoinDetails.GetValue() > outCoin.CoinDetails.GetValue() {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		} else {
 			remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
@@ -213,22 +213,22 @@ func chooseBestOutCoinsToSpent(outCoins []*privacy.OutputCoin, amount uint64) (r
 	}
 
 	sort.Slice(outCoinsUnderLimit, func(i, j int) bool {
-		return outCoinsUnderLimit[i].CoinDetails.value < outCoinsUnderLimit[j].CoinDetails.value
+		return outCoinsUnderLimit[i].CoinDetails.GetValue() < outCoinsUnderLimit[j].CoinDetails.GetValue()
 	})
 
 	for _, outCoin := range outCoinsUnderLimit {
 		if totalResultOutputCoinAmount < amount {
-			totalResultOutputCoinAmount += outCoin.CoinDetails.value
+			totalResultOutputCoinAmount += outCoin.CoinDetails.GetValue()
 			resultOutputCoins = append(resultOutputCoins, outCoin)
 		} else {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
 
-	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.value > 2*amount || totalResultOutputCoinAmount < amount) {
+	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.GetValue() > 2*amount || totalResultOutputCoinAmount < amount) {
 		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
 		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
-		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.value
+		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.GetValue()
 	} else if outCoinOverLimit != nil {
 		remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
 	}
@@ -271,7 +271,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.serialNumber.Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -285,7 +285,7 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 		return nil
 	}
 
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, nil, 1)
+	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, nil, 1))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
@@ -354,7 +354,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.serialNumber.Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -374,7 +374,7 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	} else {
 		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard)
 	}
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, stakingMetadata, nil, nil, 1)
+	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, stakingMetadata, nil, nil, 1))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
@@ -438,7 +438,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.serialNumber.Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -459,7 +459,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 		Amount:         uint64(tokenParamsRaw["TokenAmount"].(float64)),
 	}
 	tokenParams.Receiver, _, _ = transaction.CreateCustomTokenReceiverArray(tokenParamsRaw["TokenReceivers"])
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, tokenParams, nil, 1)
+	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, tokenParams, nil, 1))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
@@ -524,7 +524,7 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 	}
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.serialNumber.Compress()) == nil {
+		if tp.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -547,7 +547,7 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 		Fee:            uint64(tokenParamsRaw["TokenFee"].(float64)),
 	}
 	tokenParams.Receiver, _ = transaction.CreateCustomTokenPrivacyReceiverArray(tokenParamsRaw["TokenReceivers"])
-	estimateTxSizeInKb := transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, tokenParams, 1)
+	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, nil, nil, tokenParams, 1))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	needToPayFee := int64((totalAmmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
@@ -801,9 +801,9 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	sum := uint64(0)
 	outCoins, _ := tp.config.BlockChain.GetListOutputCoinsByKeyset(&senderKeySet.KeySet, shardIDSender, prvCoinID)
 	for _, outCoin := range outCoins {
-		hash := common.HashH(outCoin.CoinDetails.serialNumber.Compress())
+		hash := common.HashH(outCoin.CoinDetails.GetSerialNumber().Compress())
 		log.Println("Serial Number: ", hash)
-		sum += outCoin.CoinDetails.value
+		sum += outCoin.CoinDetails.GetValue()
 	}
 	log.Println(sum)
 	salaryTx := initTx("100", privateKeyShard0[0], db)
