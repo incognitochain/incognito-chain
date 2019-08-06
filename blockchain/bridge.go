@@ -69,7 +69,7 @@ func decodeSwapConfirmInst(inst []string) []byte {
 
 // decodeBurningConfirmInst decodes and flattens a BurningConfirm instruction
 func decodeBurningConfirmInst(inst []string) ([]byte, error) {
-	if len(inst) < 7 {
+	if len(inst) < 8 {
 		return nil, errors.New("invalid length of BurningConfirm inst")
 	}
 	metaType := []byte(inst[0])
@@ -78,8 +78,8 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	remoteAddr, errAddr := decodeRemoteAddr(inst[3])
 	amount, _, errAmount := base58.Base58Check{}.Decode(inst[4])
 	txID, errTx := common.Hash{}.NewHashFromStr(inst[5])
-	height, _, errHeight := base58.Base58Check{}.Decode(inst[6])
-	incTokenID, _, errIncToken := base58.Base58Check{}.Decode(inst[7])
+	incTokenID, _, errIncToken := base58.Base58Check{}.Decode(inst[6])
+	height, _, errHeight := base58.Base58Check{}.Decode(inst[7])
 	if err := common.CheckError(errToken, errAddr, errAmount, errTx, errHeight, errIncToken); err != nil {
 		err = errors.WithStack(err)
 		BLogger.log.Error(err)
@@ -94,8 +94,8 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	flatten = append(flatten, remoteAddr...)
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
 	flatten = append(flatten, txID[:]...)
-	flatten = append(flatten, toBytes32BigEndian(height)...)
 	flatten = append(flatten, incTokenID...)
+	flatten = append(flatten, toBytes32BigEndian(height)...)
 	return flatten, nil
 }
 
