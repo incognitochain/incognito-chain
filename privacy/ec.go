@@ -19,29 +19,21 @@ var Curve = elliptic.P256()
 
 // EllipticPoint represents a point (X, y) on the elliptic curve
 type EllipticPoint struct {
-	X, Y *big.Int
+	x, y *big.Int
 }
 
 func (ellipticPoint EllipticPoint) GetX() *big.Int {
-	return ellipticPoint.X
-}
-
-func (ellipticPoint *EllipticPoint) SetX(v *big.Int) {
-	ellipticPoint.X = v
+	return ellipticPoint.x
 }
 
 func (ellipticPoint EllipticPoint) GetY() *big.Int {
-	return ellipticPoint.Y
-}
-
-func (ellipticPoint *EllipticPoint) SetY(v *big.Int) {
-	ellipticPoint.Y = v
+	return ellipticPoint.y
 }
 
 // Zero returns the elliptic point (0, 0)
 func (point *EllipticPoint) Zero() *EllipticPoint {
-	point.X = big.NewInt(0)
-	point.Y = big.NewInt(0)
+	point.x = big.NewInt(0)
+	point.y = big.NewInt(0)
 	return point
 }
 
@@ -72,9 +64,9 @@ func (point EllipticPoint) MarshalJSON() ([]byte, error) {
 // ComputeYCoord returns Y-coordinate from X-coordinate
 func (point *EllipticPoint) ComputeYCoord() error {
 	// Y = +-sqrt(x^3 - 3*x + B)
-	xCube := new(big.Int).Exp(point.X, big.NewInt(3), Curve.Params().P)
+	xCube := new(big.Int).Exp(point.x, big.NewInt(3), Curve.Params().P)
 	xCube.Add(xCube, Curve.Params().B)
-	xCube.Sub(xCube, new(big.Int).Mul(point.X, big.NewInt(3)))
+	xCube.Sub(xCube, new(big.Int).Mul(point.x, big.NewInt(3)))
 	xCube.Mod(xCube, Curve.Params().P)
 
 	// compute sqrt(x^3 - 3*x + B) mod p
@@ -90,23 +82,23 @@ func (point *EllipticPoint) ComputeYCoord() error {
 		return InvalidXCoordErr
 	}
 
-	point.Y = tmpY
+	point.y = tmpY
 	return nil
 }
 
 // Inverse returns the inverse point of an input elliptic point
 func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 	// check if point is on the curve
-	if !Curve.IsOnCurve(point.X, point.Y) {
+	if !Curve.IsOnCurve(point.x, point.y) {
 		return nil, IsNotAnEllipticPointErr
 	}
 
 	resPoint := new(EllipticPoint).Zero()
 
 	// the inverse of the point (x, y) mod P is the point (x, -y) mod P
-	resPoint.X.Set(point.X)
-	resPoint.Y.Sub(Curve.Params().P, point.Y)
-	resPoint.Y.Mod(resPoint.Y, Curve.Params().P)
+	resPoint.x.Set(point.x)
+	resPoint.y.Sub(Curve.Params().P, point.y)
+	resPoint.y.Mod(resPoint.y, Curve.Params().P)
 
 	return resPoint, nil
 }
@@ -115,7 +107,7 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 // the elliptic point must be not a double point (which is the point has order is two)
 func (point *EllipticPoint) Randomize() {
 	for {
-		point.X = RandScalar()
+		point.x = RandScalar()
 		err := point.ComputeYCoord()
 		if (err == nil) && (point.IsSafe()) {
 			break
@@ -125,26 +117,26 @@ func (point *EllipticPoint) Randomize() {
 
 // IsSafe returns true if an input elliptic point is on the curve and has order not equal to 2
 func (point EllipticPoint) IsSafe() bool {
-	if !Curve.IsOnCurve(point.X, point.Y) {
+	if !Curve.IsOnCurve(point.x, point.y) {
 		return false
 	}
 
 	var doublePoint EllipticPoint
-	doublePoint.X, doublePoint.Y = Curve.Double(point.X, point.Y)
+	doublePoint.x, doublePoint.y = Curve.Double(point.x, point.y)
 
 	return !doublePoint.IsEqual(new(EllipticPoint).Zero())
 }
 
 // Compress compresses point from 64 bytes to CompressedPointSize bytes (33 bytes)
 func (point EllipticPoint) Compress() []byte {
-	if Curve.IsOnCurve(point.X, point.Y) {
+	if Curve.IsOnCurve(point.x, point.y) {
 		b := make([]byte, 0, CompressedEllipticPointSize)
 		format := pointCompressed
-		if isOdd(point.Y) {
+		if isOdd(point.y) {
 			format |= 0x1
 		}
 		b = append(b, format)
-		return paddedAppend(common.BigIntSize, b, point.X.Bytes())
+		return paddedAppend(common.BigIntSize, b, point.x.Bytes())
 	}
 	return nil
 }
@@ -160,15 +152,15 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 		return errors.New("invalid magic in compressed compressPoint bytes")
 	}
 
-	point.X = new(big.Int).SetBytes(compressPointBytes[1:33])
+	point.x = new(big.Int).SetBytes(compressPointBytes[1:33])
 
 	err := point.ComputeYCoord()
 	if err != nil {
 		return err
 	}
 
-	if yBit != isOdd(point.Y) {
-		point.Y.Sub(Curve.Params().P, point.Y)
+	if yBit != isOdd(point.y) {
+		point.y.Sub(Curve.Params().P, point.y)
 	}
 
 	return nil
@@ -177,7 +169,7 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
 func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
-	tmp := common.AddPaddingBigInt(point.X, common.BigIntSize)
+	tmp := common.AddPaddingBigInt(point.x, common.BigIntSize)
 	if index == 0 {
 		tmp = append(tmp, byte(0))
 	} else {
@@ -186,7 +178,7 @@ func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 
 	for {
 		tmp = common.HashB(tmp)
-		res.X.SetBytes(tmp)
+		res.x.SetBytes(tmp)
 		err := res.ComputeYCoord()
 
 		if (err == nil) && (res.IsSafe()) {
@@ -199,21 +191,21 @@ func (point EllipticPoint) Hash(index int64) *EllipticPoint {
 
 // Set sets two coordinates to an elliptic point
 func (point *EllipticPoint) Set(x, y *big.Int) {
-	if point.X == nil {
-		point.X = new(big.Int)
+	if point.x == nil {
+		point.x = new(big.Int)
 	}
-	if point.Y == nil {
-		point.Y = new(big.Int)
+	if point.y == nil {
+		point.y = new(big.Int)
 	}
 
-	point.X.Set(x)
-	point.Y.Set(y)
+	point.x.Set(x)
+	point.y.Set(y)
 }
 
 // Add adds an elliptic point to another elliptic point
 func (point EllipticPoint) Add(targetPoint *EllipticPoint) *EllipticPoint {
 	res := new(EllipticPoint)
-	res.X, res.Y = Curve.Add(point.X, point.Y, targetPoint.X, targetPoint.Y)
+	res.x, res.y = Curve.Add(point.x, point.y, targetPoint.x, targetPoint.y)
 	return res
 }
 
@@ -230,13 +222,13 @@ func (point EllipticPoint) Sub(targetPoint *EllipticPoint) (*EllipticPoint, erro
 
 // IsEqual returns true if two input elliptic points are equal, false otherwise
 func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
-	return point.X.Cmp(p.X) == 0 && point.Y.Cmp(p.Y) == 0
+	return point.x.Cmp(p.x) == 0 && point.y.Cmp(p.y) == 0
 }
 
 // ScalarMult returns x*P for x in Z_N and P in E(Z_P)
 func (point EllipticPoint) ScalarMult(factor *big.Int) *EllipticPoint {
 	res := new(EllipticPoint).Zero()
-	res.X, res.Y = Curve.ScalarMult(point.X, point.Y, factor.Bytes())
+	res.x, res.y = Curve.ScalarMult(point.x, point.y, factor.Bytes())
 	return res
 }
 
