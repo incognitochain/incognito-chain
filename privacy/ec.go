@@ -26,16 +26,8 @@ func (ellipticPoint EllipticPoint) GetX() *big.Int {
 	return ellipticPoint.x
 }
 
-func (ellipticPoint *EllipticPoint) SetX(v *big.Int) {
-	ellipticPoint.x = v
-}
-
 func (ellipticPoint EllipticPoint) GetY() *big.Int {
 	return ellipticPoint.y
-}
-
-func (ellipticPoint *EllipticPoint) SetY(v *big.Int) {
-	ellipticPoint.y = v
 }
 
 // Zero returns the elliptic point (0, 0)
