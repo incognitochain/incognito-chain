@@ -278,11 +278,6 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
-	// err = blockGenerator.chain.GetDatabase().TrackBridgeReqWithStatus(issuingAcceptedInst.TxReqID, common.BRIDGE_REQUEST_ACCEPTED_STATUS)
-	// if err != nil {
-	// 	fmt.Println("WARNING: an error occured while tracking bridge request with accepted status to leveldb: ", err)
-	// 	return nil, nil
-	// }
 
 	fmt.Println("[Centralized token issuance] Create tx ok.")
 	return resTx, nil
@@ -358,13 +353,6 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
-
-	// fmt.Println("hahaha tracking issuingETHAcceptedInst.TxReqID: ", issuingETHAcceptedInst.TxReqID)
-	// err = blockGenerator.chain.GetDatabase().TrackBridgeReqWithStatus(issuingETHAcceptedInst.TxReqID, common.BRIDGE_REQUEST_ACCEPTED_STATUS)
-	// if err != nil {
-	// 	fmt.Println("WARNING: an error occured while tracking bridge request with accepted status to leveldb: ", err)
-	// 	return nil, nil
-	// }
 
 	fmt.Println("[Decentralized bridge token issuance] Create tx ok.")
 	return resTx, nil
