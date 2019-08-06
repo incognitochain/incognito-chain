@@ -21,8 +21,8 @@ const (
 )
 
 var ErrCodeMessage = map[int]struct {
-	code    int
-	message string
+	Code    int
+	Message string
 }{
 	// for common
 	UnexpectedErr:       {-1000, "Unexpected error"},
@@ -44,19 +44,19 @@ var ErrCodeMessage = map[int]struct {
 }
 
 type TransactionError struct {
-	code    int
-	message string
+	Code    int
+	Message string
 	err     error
 }
 
 func (e TransactionError) Error() string {
-	return fmt.Sprintf("%+v: %+v %+v", e.code, e.message, e.err)
+	return fmt.Sprintf("%+v: %+v %+v", e.Code, e.Message, e.err)
 }
 
 func NewTransactionErr(key int, err error) *TransactionError {
 	return &TransactionError{
-		err:     errors.Wrap(err, ErrCodeMessage[key].message),
-		code:    ErrCodeMessage[key].code,
-		message: ErrCodeMessage[key].message,
+		err:     errors.Wrap(err, ErrCodeMessage[key].Message),
+		Code:    ErrCodeMessage[key].Code,
+		Message: ErrCodeMessage[key].Message,
 	}
 }
