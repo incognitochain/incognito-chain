@@ -287,7 +287,7 @@ func (tx *Tx) Init(
 			}
 			tx.Proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
 			tx.Proof.GetOutputCoins()[i].CoinDetails.Value = 0
-			tx.Proof.GetOutputCoins()[i].CoinDetails.Randomness = nil
+			tx.Proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
 		}
 
 		// hide information of input coins except serial number of input coins
@@ -296,7 +296,7 @@ func (tx *Tx) Init(
 			tx.Proof.GetInputCoins()[i].CoinDetails.Value = 0
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
-			tx.Proof.GetInputCoins()[i].CoinDetails.Randomness = nil
+			tx.Proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
 		}
 
 	} else {
@@ -881,7 +881,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber().IsSafe() {
 					return false, errors.New("validate sanity Serial number of input coin failed")
 				}
-				if len(txN.Proof.GetInputCoins()[i].CoinDetails.Randomness.Bytes()) > common.BigIntSize {
+				if len(txN.Proof.GetInputCoins()[i].CoinDetails.GetRandomness().Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity Randomness of input coin failed")
 				}
 				if len(txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().Bytes()) > common.BigIntSize {
@@ -898,7 +898,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().IsSafe() {
 					return false, errors.New("validate sanity PublicKey of output coin failed")
 				}
-				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.Randomness.Bytes()) > common.BigIntSize {
+				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.GetRandomness().Bytes()) > common.BigIntSize {
 					return false, errors.New("validate sanity Randomness of output coin failed")
 				}
 				if len(txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().Bytes()) > common.BigIntSize {
@@ -1088,7 +1088,7 @@ func (tx *Tx) InitTxSalary(
 	if err != nil {
 		return err
 	}
-	tempOutputCoin[0].CoinDetails.Randomness = privacy.RandScalar()
+	tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar())
 	tx.Proof.SetOutputCoins(tempOutputCoin)
 
 	sndOut := privacy.RandScalar()
@@ -1163,7 +1163,7 @@ func (tx Tx) ValidateTxSalary(
 
 	shardID := common.GetShardIDFromLastByte(tx.Proof.GetOutputCoins()[0].CoinDetails.GetPubKeyLastByte())
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenShardIDIndex].ScalarMult(new(big.Int).SetBytes([]byte{shardID})))
-	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(tx.Proof.GetOutputCoins()[0].CoinDetails.Randomness))
+	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(tx.Proof.GetOutputCoins()[0].CoinDetails.GetRandomness()))
 	ok := cmTmp.IsEqual(tx.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment())
 	if !ok {
 		return ok, errors.New("check output coin's coin commitment isn't calculated correctly")
