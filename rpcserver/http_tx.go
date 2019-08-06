@@ -196,7 +196,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = httpServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 
@@ -721,6 +721,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 	Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v", result)
 	return result, nil
 }
+
 // handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetBalancePrivacyCustomToken params: %+v", params)
@@ -749,7 +750,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	
+
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	temps, listCustomTokenCrossShard, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
@@ -788,6 +789,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 	Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", totalValue)
 	return totalValue, nil
 }
+
 // handleCustomTokenDetail - return list tx which relate to custom token by token id
 func (httpServer *HttpServer) handleCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleCustomTokenDetail params: %+v", params)
@@ -894,6 +896,7 @@ func (httpServer *HttpServer) handleListUnspentCustomToken(params interface{}, c
 	Logger.log.Debugf("handleListUnspentCustomToken result: %+v", result)
 	return result, nil
 }
+
 // handleListUnspentCustomToken - return list utxo of custom token
 func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetBalanceCustomToken params: %+v", params)
@@ -914,7 +917,7 @@ func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, cl
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	senderKeyset := senderKey.KeySet
-	
+
 	// param #2: tokenID
 	tokenIDParam, ok := arrayParams[1].(string)
 	if !ok {
@@ -923,7 +926,7 @@ func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, cl
 	}
 	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDParam)
 	unspentTxTokenOuts, err := httpServer.config.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
-	
+
 	if err != nil {
 		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -932,10 +935,11 @@ func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, cl
 	for _, temp := range unspentTxTokenOuts {
 		totalValue += temp.Value
 	}
-	
+
 	Logger.log.Debugf("handleGetBalanceCustomToken result: %+v", totalValue)
 	return totalValue, nil
 }
+
 // handleCreateSignatureOnCustomTokenTx - return a signature which is signed on raw custom token tx
 func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx params: %+v", params)

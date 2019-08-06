@@ -117,7 +117,7 @@ func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
 	})
 	connManager.GetConfig().ConsensusState = consensusState
 	result := make([]*peer.PeerConn, 0)
-	bestState := blockchain.GetBestStateBeacon()
+	bestState := blockchain.GetBeaconBestState()
 	bestState.BeaconCommittee = []string{"abc2", "abc1"}
 	result = connManager.GetPeerConnOfBeacon()
 	if len(result) != 2 {
@@ -165,8 +165,8 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 	})
 	connManager.GetConfig().ConsensusState = consensusState
 	result := make([]*peer.PeerConn, 0)
-	blockchain.InitBestStateBeacon(&blockchain.Params{})
-	bestState := blockchain.GetBestStateBeacon()
+	blockchain.NewBeaconBestStateWithConfig(&blockchain.Params{})
+	bestState := blockchain.GetBeaconBestState()
 	bestState.ShardCommittee[0] = []string{"abc1"}
 	result = connManager.GetPeerConnOfShard(0)
 	if len(result) != 1 {

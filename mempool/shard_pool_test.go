@@ -96,11 +96,11 @@ var _ = func() (_ struct{}) {
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		bestShardHeight[shardID] = 1
-		blockchain.SetBestStateShard(shardID, &blockchain.BestStateShard{
+		blockchain.SetBestStateShard(shardID, &blockchain.ShardBestState{
 			ShardHeight: 1,
 		})
 	}
-	blockchain.SetBestStateBeacon(&blockchain.BestStateBeacon{
+	blockchain.SetBeaconBestState(&blockchain.BeaconBestState{
 		BestShardHeight: bestShardHeight,
 	})
 
@@ -368,7 +368,7 @@ func TestShardPoolInsertNewShardBlockToPool(t *testing.T) {
 		}
 	}
 	// set higher best shard state
-	blockchain.GetBestStateBeacon().SetBestShardHeight(0, 4)
+	blockchain.GetBeaconBestState().SetBestShardHeight(0, 4)
 	// Condition 2: check height
 	// Test Height is not equal to latestvalidheight + 1 (not expected block)
 	isOk = shardPoolTest.insertNewShardBlockToPool(shardBlock3)
@@ -397,7 +397,7 @@ func TestShardPoolInsertNewShardBlockToPool(t *testing.T) {
 	// reset valid pool and pending pool
 	InitShardPoolTest(pbShardPool)
 	// Test Height equal to latestvalidheight + 1 and best shard height is greater than each valid block height
-	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
+	blockchain.GetBeaconBestState().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
 	// Condition 3: Pool is full capacity -> push to pending pool
 	for index, shardBlock := range validShardBlocks {
 		if index < len(validShardBlocks)-1 {
@@ -527,7 +527,7 @@ func TestShardPoolPromotePendingPool(t *testing.T) {
 	shardPoolTest.pendingPool[shardBlock2.Header.Height] = shardBlock2
 	shardPoolTest.pendingPool[shardBlock3.Header.Height] = shardBlock3
 	shardPoolTest.pendingPool[shardBlock4.Header.Height] = shardBlock4
-	blockchain.GetBestStateBeacon().SetBestShardHeight(0, 5)
+	blockchain.GetBeaconBestState().SetBestShardHeight(0, 5)
 	shardPoolTest.promotePendingPool()
 	if len(shardPoolTest.validPool) != 3 {
 		t.Fatalf("Shoud have 3 block in valid pool but get %+v ", len(shardPoolTest.validPool))
@@ -549,7 +549,7 @@ func TestShardPoolPromotePendingPool(t *testing.T) {
 		}
 	}
 	InitShardPoolTest(pbShardPool)
-	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
+	blockchain.GetBeaconBestState().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
 	for index, shardBlock := range validShardBlocks {
 		if index < len(validShardBlocks)-1 {
 			shardPoolTest.validPool = append(shardPoolTest.validPool, shardBlock)
@@ -562,7 +562,7 @@ func TestShardPoolPromotePendingPool(t *testing.T) {
 		t.Fatalf("Shoud have %+v block in valid pool but get %+v ", MAX_VALID_SHARD_BLK_IN_POOL, len(shardPoolTest.validPool))
 	}
 	InitShardPoolTest(pbShardPool)
-	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
+	blockchain.GetBeaconBestState().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
 	for index, shardBlock := range pendingShardBlocks {
 		if index < len(pendingShardBlocks)-2 {
 			shardPoolTest.pendingPool[shardBlock.Header.Height] = shardBlock
@@ -584,13 +584,13 @@ func TestShardPoolPromotePendingPool(t *testing.T) {
 		t.Fatalf("Shoud have %+v block in valid pool but get %+v ", len(pendingShardBlocks)-1, len(shardPoolTest.pendingPool))
 	}
 	InitShardPoolTest(pbShardPool)
-	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
+	blockchain.GetBeaconBestState().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
 	shardPoolTest.pendingPool[shardBlock2.Header.Height] = shardBlock2
 	shardPoolTest.pendingPool[shardBlock3.Header.Height] = shardBlock3
 	shardPoolTest.pendingPool[shardBlock4.Header.Height] = shardBlock4
 	shardPoolTest.pendingPool[shardBlock5.Header.Height] = shardBlock5
 	shardPoolTest.pendingPool[shardBlock6.Header.Height] = shardBlock6
-	blockchain.GetBestStateBeacon().SetBestShardHeight(0, 7)
+	blockchain.GetBeaconBestState().SetBestShardHeight(0, 7)
 	shardPoolTest.promotePendingPool()
 	if len(shardPoolTest.validPool) != 5 {
 		t.Fatalf("Shoud have 5 block in valid pool but get %+v ", len(shardPoolTest.validPool))
@@ -626,7 +626,7 @@ func TestShardPoolPromotePendingPool(t *testing.T) {
 
 func TestShardPoolAddBeaconBlock(t *testing.T) {
 	InitShardPoolTest(pbShardPool)
-	blockchain.GetBestStateBeacon().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
+	blockchain.GetBeaconBestState().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
 	shardPoolTest.SetShardState(testLatestValidHeight)
 	for _, block := range validShardBlocks {
 		err := shardPoolTest.AddShardBlock(block)
