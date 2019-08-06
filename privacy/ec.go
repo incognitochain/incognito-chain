@@ -31,10 +31,9 @@ func (ellipticPoint EllipticPoint) GetY() *big.Int {
 }
 
 // Zero returns the elliptic point (0, 0)
-func (point *EllipticPoint) Zero() *EllipticPoint {
+func (point *EllipticPoint) Zero() {
 	point.x = big.NewInt(0)
 	point.y = big.NewInt(0)
-	return point
 }
 
 // UnmarshalJSON (EllipticPoint) receives bytes array of elli[tic point (it was be MarshalJSON before),
@@ -93,7 +92,8 @@ func (point EllipticPoint) Inverse() (*EllipticPoint, error) {
 		return nil, IsNotAnEllipticPointErr
 	}
 
-	resPoint := new(EllipticPoint).Zero()
+	resPoint := new(EllipticPoint)
+	resPoint.Zero()
 
 	// the inverse of the point (x, y) mod P is the point (x, -y) mod P
 	resPoint.x.Set(point.x)
@@ -124,7 +124,9 @@ func (point EllipticPoint) IsSafe() bool {
 	var doublePoint EllipticPoint
 	doublePoint.x, doublePoint.y = Curve.Double(point.x, point.y)
 
-	return !doublePoint.IsEqual(new(EllipticPoint).Zero())
+	zero := new(EllipticPoint)
+	zero.Zero()
+	return !doublePoint.IsEqual(zero)
 }
 
 // Compress compresses point from 64 bytes to CompressedPointSize bytes (33 bytes)
@@ -168,7 +170,8 @@ func (point *EllipticPoint) Decompress(compressPointBytes []byte) error {
 
 // Hash derives a new elliptic point from an elliptic point and an index using hash function
 func (point EllipticPoint) Hash(index int64) *EllipticPoint {
-	res := new(EllipticPoint).Zero()
+	res := new(EllipticPoint)
+	res.Zero()
 	tmp := common.AddPaddingBigInt(point.x, common.BigIntSize)
 	if index == 0 {
 		tmp = append(tmp, byte(0))
@@ -227,7 +230,8 @@ func (point EllipticPoint) IsEqual(p *EllipticPoint) bool {
 
 // ScalarMult returns x*P for x in Z_N and P in E(Z_P)
 func (point EllipticPoint) ScalarMult(factor *big.Int) *EllipticPoint {
-	res := new(EllipticPoint).Zero()
+	res := new(EllipticPoint)
+	res.Zero()
 	res.x, res.y = Curve.ScalarMult(point.x, point.y, factor.Bytes())
 	return res
 }
