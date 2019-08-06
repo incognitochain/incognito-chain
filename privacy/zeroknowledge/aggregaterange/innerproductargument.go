@@ -123,16 +123,16 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 	}
 
 	p := new(privacy.EllipticPoint)
-	p.Set(wit.p.X, wit.p.Y)
+	p.Set(wit.p.GetX(), wit.p.GetY())
 
 	G := make([]*privacy.EllipticPoint, n)
 	H := make([]*privacy.EllipticPoint, n)
 	for i := range G {
 		G[i] = new(privacy.EllipticPoint)
-		G[i].Set(AggParam.g[i].X, AggParam.g[i].Y)
+		G[i].Set(AggParam.g[i].GetX(), AggParam.g[i].GetY())
 
 		H[i] = new(privacy.EllipticPoint)
-		H[i].Set(AggParam.h[i].X, AggParam.h[i].Y)
+		H[i].Set(AggParam.h[i].GetX(), AggParam.h[i].GetY())
 	}
 
 	proof := new(InnerProductProof)
@@ -202,7 +202,7 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 
 		a = aPrime
 		b = bPrime
-		p.Set(PPrime.X, PPrime.Y)
+		p.Set(PPrime.GetX(), PPrime.GetY())
 		G = GPrime
 		H = HPrime
 		n = nPrime
@@ -217,7 +217,7 @@ func (wit InnerProductWitness) Prove(AggParam *bulletproofParams) (*InnerProduct
 func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	//var AggParam = newBulletproofParams(1)
 	p := new(privacy.EllipticPoint)
-	p.Set(proof.p.X, proof.p.Y)
+	p.Set(proof.p.GetX(), proof.p.GetY())
 
 	n := len(AggParam.g)
 
@@ -225,10 +225,10 @@ func (proof InnerProductProof) Verify(AggParam *bulletproofParams) bool {
 	H := make([]*privacy.EllipticPoint, n)
 	for i := range G {
 		G[i] = new(privacy.EllipticPoint)
-		G[i].Set(AggParam.g[i].X, AggParam.g[i].Y)
+		G[i].Set(AggParam.g[i].GetX(), AggParam.g[i].GetY())
 
 		H[i] = new(privacy.EllipticPoint)
-		H[i].Set(AggParam.h[i].X, AggParam.h[i].Y)
+		H[i].Set(AggParam.h[i].GetX(), AggParam.h[i].GetY())
 	}
 
 	for i := range proof.l {
