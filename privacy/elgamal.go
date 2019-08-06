@@ -31,7 +31,7 @@ func (pub *elGamalPubKey) set(H *EllipticPoint) {
 	pub.h = H
 }
 
-func (pub elGamalPubKey) getH() *EllipticPoint {
+func (pub elGamalPubKey) GetH() *EllipticPoint {
 	return pub.h
 }
 
@@ -39,12 +39,12 @@ func (priv *elGamalPrivKey) set(x *big.Int) {
 	priv.x = x
 }
 
-func (priv elGamalPrivKey) getX() *big.Int {
+func (priv elGamalPrivKey) GetX() *big.Int {
 	return priv.x
 }
 
 // Bytes converts ciphertext to 66-byte array
-func (ciphertext *elGamalCiphertext) Bytes() []byte {
+func (ciphertext elGamalCiphertext) Bytes() []byte {
 	if ciphertext.c1.IsEqual(new(EllipticPoint).Zero()) {
 		return []byte{}
 	}
@@ -74,7 +74,7 @@ func (ciphertext *elGamalCiphertext) SetBytes(bytes []byte) error {
 
 // encrypt encrypts plaintext (is an elliptic point) using public key ElGamal
 // returns ElGamal ciphertext
-func (pub *elGamalPubKey) encrypt(plaintext *EllipticPoint) *elGamalCiphertext {
+func (pub elGamalPubKey) encrypt(plaintext *EllipticPoint) *elGamalCiphertext {
 	randomness := RandScalar()
 
 	ciphertext := new(elGamalCiphertext)
@@ -91,6 +91,6 @@ func (pub *elGamalPubKey) encrypt(plaintext *EllipticPoint) *elGamalCiphertext {
 // decrypt receives a ciphertext and
 // decrypts it using private key ElGamal
 // and returns plain text in elliptic point
-func (priv *elGamalPrivKey) decrypt(ciphertext *elGamalCiphertext) (*EllipticPoint, error) {
+func (priv elGamalPrivKey) decrypt(ciphertext *elGamalCiphertext) (*EllipticPoint, error) {
 	return ciphertext.c2.Sub(ciphertext.c1.ScalarMult(priv.x))
 }
