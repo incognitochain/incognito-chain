@@ -47,7 +47,7 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			CoinDetails: Coin{},
 		}
 		if input.CoinDetails != nil {
-			in.CoinDetails.Value = input.CoinDetails.Value
+			in.CoinDetails.Value = input.CoinDetails.GetValue()
 			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.Info, 0x0)
 			if input.CoinDetails.GetCoinCommitment() != nil {
 				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.GetCoinCommitment().Compress(), 0x0)
@@ -73,7 +73,7 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			CoinDetails: Coin{},
 		}
 		if output.CoinDetails != nil {
-			out.CoinDetails.Value = output.CoinDetails.Value
+			out.CoinDetails.Value = output.CoinDetails.GetValue()
 			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.Info, 0x0)
 			if output.CoinDetails.GetCoinCommitment() != nil {
 				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.GetCoinCommitment().Compress(), 0x0)

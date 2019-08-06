@@ -22,7 +22,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	tx, err := BuildCoinbaseTxByCoinID(&paymentAddress, 10, &key.KeySet.PrivateKey, db, responseMeta, common.Hash{}, NormalCoinType, "PRV", 0)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
-	assert.Equal(t, uint64(10), tx.(*Tx).Proof.outputCoins[0].CoinDetails.Value)
+	assert.Equal(t, uint64(10), tx.(*Tx).Proof.outputCoins[0].CoinDetails.value)
 	assert.Equal(t, common.PRVCoinID.String(), tx.GetTokenID().String())
 
 	jsonStr, err := json.Marshal(tx)
@@ -32,7 +32,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	tx1 := Tx{}
 	err = json.Unmarshal(jsonStr, &tx1)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, uint64(10), tx1.Proof.outputCoins[0].CoinDetails.Value)
+	assert.Equal(t, uint64(10), tx1.Proof.outputCoins[0].CoinDetails.value)
 	assert.Equal(t, common.PRVCoinID.String(), tx1.GetTokenID().String())
 }
 

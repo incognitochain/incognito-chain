@@ -19,7 +19,7 @@ func TestConvertOutputCoinToInputCoin(t *testing.T) {
 
 	in := ConvertOutputCoinToInputCoin(tx.Proof.outputCoins)
 	assert.Equal(t, 1, len(in))
-	assert.Equal(t, tx.Proof.outputCoins[0].CoinDetails.Value, in[0].CoinDetails.Value)
+	assert.Equal(t, tx.Proof.outputCoins[0].CoinDetails.value, in[0].CoinDetails.value)
 }
 
 func TestEstimateTxSize(t *testing.T) {

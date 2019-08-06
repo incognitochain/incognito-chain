@@ -16,7 +16,7 @@ type Coin struct {
 	snDerivator    *big.Int
 	serialNumber   *EllipticPoint
 	randomness     *big.Int
-	Value          uint64
+	value          uint64
 	Info           []byte //256 bytes
 }
 
@@ -61,11 +61,11 @@ func (coin *Coin) SetRandomness(v *big.Int) {
 }
 
 func (coin Coin) GetValue() uint64 {
-	return coin.Value
+	return coin.value
 }
 
 func (coin *Coin) SetValue(v uint64) {
-	coin.Value = v
+	coin.value = v
 }
 
 // Init (Coin) initializes a coin
@@ -75,7 +75,7 @@ func (coin *Coin) Init() *Coin {
 	coin.snDerivator = new(big.Int)
 	coin.serialNumber = new(EllipticPoint).Zero()
 	coin.randomness = new(big.Int)
-	coin.Value = 0
+	coin.value = 0
 	return coin
 }
 
@@ -119,7 +119,7 @@ func (coin *Coin) HashH() *common.Hash {
 // public key, value, serial number derivator, shardID form last byte public key, randomness
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.snDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.randomness}
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.value), coin.snDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.randomness}
 	commitment, err := PedCom.commitAll(values)
 	if err != nil {
 		return err
@@ -172,8 +172,8 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.Value > 0 {
-		value := new(big.Int).SetUint64(coin.Value).Bytes()
+	if coin.value > 0 {
+		value := new(big.Int).SetUint64(coin.value).Bytes()
 		coinBytes = append(coinBytes, byte(len(value)))
 		coinBytes = append(coinBytes, value...)
 	} else {
@@ -258,7 +258,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.Value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
+		coin.value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
 		offset += int(lenField)
 	}
 
@@ -371,7 +371,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
 func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
 	// 32-byte first: Randomness, the rest of msg is value of coin
-	msg := append(common.AddPaddingBigInt(outputCoin.CoinDetails.randomness, common.BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
+	msg := append(common.AddPaddingBigInt(outputCoin.CoinDetails.randomness, common.BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
 
 	pubKeyPoint := new(EllipticPoint)
 	err := pubKeyPoint.Decompress(recipientTK)
@@ -396,7 +396,7 @@ func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
 
 	// Assign randomness and value to outputCoin details
 	outputCoin.CoinDetails.randomness = new(big.Int).SetBytes(msg[0:common.BigIntSize])
-	outputCoin.CoinDetails.Value = new(big.Int).SetBytes(msg[common.BigIntSize:]).Uint64()
+	outputCoin.CoinDetails.value = new(big.Int).SetBytes(msg[common.BigIntSize:]).Uint64()
 
 	return nil
 }
