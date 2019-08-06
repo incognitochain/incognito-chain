@@ -44,6 +44,14 @@ func (coin *Coin) SetSNDerivator(v *big.Int) {
 	coin.snDerivator = v
 }
 
+func (coin Coin) GetSerialNumber() *EllipticPoint {
+	return coin.SerialNumber
+}
+
+func (coin *Coin) SetSerialNumber(v *EllipticPoint) {
+	coin.SerialNumber = v
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(EllipticPoint).Zero()
