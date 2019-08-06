@@ -64,7 +64,7 @@ func hybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *hybridCiph
 	ciphertext = new(hybridCipherText)
 	// Generate a AES key as the abscissa of a random elliptic point
 	aesKeyPoint := new(EllipticPoint)
-	aesKeyPoint.Randomize()
+	aesKeyPoint.randomize()
 	aesKeyByte := common.AddPaddingBigInt(aesKeyPoint.x, common.BigIntSize)
 
 	// Encrypt msg using aesKeyByte
