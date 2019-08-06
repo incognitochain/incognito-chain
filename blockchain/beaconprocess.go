@@ -227,32 +227,18 @@ func (blockchain *BlockChain) InsertBeaconBlock(block *BeaconBlock, isValidated 
 	VerifyPreProcessingBeaconBlock
 	This function DOES NOT verify new block with best state
 	DO NOT USE THIS with GENESIS BLOCK
-	- Producer validity
-	- version
-	- parent hash
-	- Height = parent hash + 1
-	- Epoch = blockHeight % Epoch ? Parent Epoch + 1
-	- Timestamp can not excess some limit
-	- Instruction hash
-	- ShardStateHash
-	- ShardState is sorted?
-	FOR CURRENT COMMITTEES ONLY
-		- Is shardState existed in pool
+	- Producer sanity data
+	- Version: compatible with predefined version
+	- Previous Block exist in database, fetch previous block by previous hash of new beacon block
+	- Check new beacon block height is equal to previous block height + 1
+	- Epoch = blockHeight % Epoch == 1 ? Previous Block Epoch + 1 : Previous Block Epoch
+	- Timestamp of new beacon block is greater than previous beacon block timestamp
+	- ShardStateHash: rebuild shard state hash from shard state body and compare with shard state hash in block header
+	- InstructionHash: rebuild instruction hash from instruction body and compare with instruction hash in block header
+	- InstructionMerkleRoot: rebuild instruction merkle root from instruction body and compare with instruction merkle root in block header
+	- If verify block for signing then verifyPreProcessingBeaconBlockForSigning
 */
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *BeaconBlock, isPreSign bool) error {
-	//verify producer sig
-	//hash := beaconBlock.Header.Hash()
-	//producerPublicKey := base58.Base58Check{}.Encode(beaconBlock.Header.ProducerAddress.Pk, common.ZeroByte)
-	//err := incognitokey.ValidateDataB58(producerPublicKey, beaconBlock.ProducerSig, hash.GetBytes())
-	//if err != nil {
-	//	return NewBlockChainError(BeaconBlockSignatureError, fmt.Errorf("Producer Public Key %+v, Producer Signature %+v, Hash %+v", producerPublicKey, beaconBlock.ProducerSig, hash))
-	//}
-	////verify producer via index
-	//producerPosition := (blockchain.BestState.Beacon.BeaconProposerIndex + beaconBlock.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
-	//tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
-	//if strings.Compare(tempProducer, producerPublicKey) != 0 {
-	//	return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
-	//}
 	if len(beaconBlock.Header.ProducerAddress.Bytes()) != 66 {
 		return NewBlockChainError(ProducerError, fmt.Errorf("Expect %+v has length 66 but get %+v", len(beaconBlock.Header.ProducerAddress.Bytes())))
 	}
@@ -319,14 +305,36 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	}
 	return nil
 }
+
+/*
+	verifyPreProcessingBeaconBlockForSigning
+	Must pass these following condition:
+	- Rebuild Reward By Epoch Instruction
+	- Get All Shard To Beacon Block in Shard To Beacon Pool
+	- For all Shard To Beacon Blocks in each Shard
+		+ Compare all shard height of shard states in body and these Shard To Beacon Blocks (got from pool)
+			* Must be have the same range of height
+			* Compare CrossShardBitMap of each Shard To Beacon Block and Shard State in New Beacon Block Body
+		+ After finish comparing these shard to beacon blocks with shard states in new beacon block body
+			* Verifying Shard To Beacon Block Agg Signature
+			* Only accept block in one epoch
+		+ Get Instruction from these Shard To Beacon Blocks:
+			* Stake Instruction
+			* Swap Instruction
+			* Bridge Instruction
+			* Block Reward Instruction
+		+ Generate Instruction Hash from all recently got instructions
+		+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
+*/
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlock *BeaconBlock) error {
 	var err error
 	rewardByEpochInstruction := [][]string{}
 	tempShardStates := make(map[byte][]ShardState)
-	validStakers := [][]string{}
-	validSwappers := make(map[byte][][]string)
+	stakeInstructions := [][]string{}
+	swapInstructions := make(map[byte][][]string)
 	bridgeInstructions := [][]string{}
 	acceptedBlockRewardInstructions := [][]string{}
+	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%common.EPOCH == 1 {
 		rewardByEpochInstruction, err = blockchain.BuildRewardInstructionByEpoch(beaconBlock.Header.Epoch - 1)
 		if err != nil {
@@ -338,6 +346,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		return err
 	}
 	beaconBestState.InitRandomClient(blockchain.config.RandomClient)
+	// get shard to beacon blocks from pool
 	allShardBlocks := blockchain.config.ShardToBeaconPool.GetValidBlock(nil)
 	var keys []int
 	for k := range allShardBlocks {
@@ -347,19 +356,20 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 	for _, value := range keys {
 		shardID := byte(value)
 		shardBlocks := allShardBlocks[shardID]
+		// repeatly compare each shard to beacon block and shard state in new beacon block body
 		if len(shardBlocks) >= len(beaconBlock.Body.ShardState[shardID]) {
 			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
 			shardStates := beaconBlock.Body.ShardState[shardID]
 			for index, shardState := range shardStates {
 				if shardBlocks[index].Header.Height != shardState.Height {
-					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+					return NewBlockChainError(ShardStateHeightError, fmt.Errorf("Expect shard state height to be %+v but get %+v from pool", shardState.Height, shardBlocks[index].Header.Height))
 				}
 				blockHash := shardBlocks[index].Header.Hash()
 				if !blockHash.IsEqual(&shardState.Hash) {
-					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+					return NewBlockChainError(ShardStateHashError, fmt.Errorf("Expect shard state height %+v has hash %+v but get %+v from pool", shardState.Height, shardState.Hash, shardBlocks[index].Header.Hash()))
 				}
 				if !reflect.DeepEqual(shardBlocks[index].Header.CrossShardBitMap, shardState.CrossShard) {
-					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+					return NewBlockChainError(ShardStateCrossShardBitMapError, fmt.Errorf("Expect shard state height %+v has bitmap %+v but get %+v from pool", shardState.Height, shardState.CrossShard, shardBlocks[index].Header.CrossShardBitMap))
 				}
 			}
 			// Only accept block in one epoch
@@ -371,30 +381,30 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 				if index == 0 && err != nil {
 					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
 					if err != nil {
-						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+						return NewBlockChainError(SwapValidatorError, fmt.Errorf("Failed to swap validator when try to verify shard to beacon block %+v, error %+v", shardBlock.Header.Height, err))
 					}
 					err = ValidateAggSignature(shardBlock.ValidatorsIndex, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 					if err != nil {
-						return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+						return NewBlockChainError(SignatureError, fmt.Errorf("Failed to verify Signature of Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
 					}
 				}
 				if index != 0 && err != nil {
-					return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+					return NewBlockChainError(ShardStateError, fmt.Errorf("Fail to verify with Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
 				}
 			}
 			for _, shardBlock := range shardBlocks {
-				tempShardState, validStaker, validSwapper, bridgeInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID)
+				tempShardState, stakeInstruction, swapInstruction, bridgeInstruction, acceptedBlockRewardInstruction := blockchain.GetShardStateFromBlock(beaconBlock.Header.Height, shardBlock, shardID)
 				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
-				validStakers = append(validStakers, validStaker...)
-				validSwappers[shardID] = append(validSwappers[shardID], validSwapper[shardID]...)
+				stakeInstructions = append(stakeInstructions, stakeInstruction...)
+				swapInstructions[shardID] = append(swapInstructions[shardID], swapInstruction[shardID]...)
 				bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
 			}
 		} else {
-			return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
+			return NewBlockChainError(GetShardBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks)))
 		}
 	}
-	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, validStakers, validSwappers, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions)
+	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, stakeInstructions, swapInstructions, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions)
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
@@ -522,7 +532,6 @@ func (beaconBestState *BeaconBestState) VerifyPostProcessingBeaconBlock(block *B
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify Beacon Validator root"))
 	}
-
 	strs = []string{}
 	strs = append(strs, beaconBestState.CandidateBeaconWaitingForCurrentRandom...)
 	strs = append(strs, beaconBestState.CandidateBeaconWaitingForNextRandom...)
@@ -530,7 +539,6 @@ func (beaconBestState *BeaconBestState) VerifyPostProcessingBeaconBlock(block *B
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify Beacon Candidate root"))
 	}
-
 	strs = []string{}
 	strs = append(strs, beaconBestState.CandidateShardWaitingForCurrentRandom...)
 	strs = append(strs, beaconBestState.CandidateShardWaitingForNextRandom...)
@@ -538,12 +546,10 @@ func (beaconBestState *BeaconBestState) VerifyPostProcessingBeaconBlock(block *B
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify Shard Candidate root"))
 	}
-
 	isOk = VerifyHashFromMapByteString(beaconBestState.ShardPendingValidator, beaconBestState.ShardCommittee, block.Header.ShardCommitteeAndValidatorRoot)
 	if !isOk {
 		return NewBlockChainError(HashError, errors.New("error verify shard validator root"))
 	}
-
 	// COMMENT FOR TESTING
 	// instructions := block.Body.Instructions
 	// for _, l := range instructions {
