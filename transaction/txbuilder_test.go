@@ -41,7 +41,7 @@ func TestBuildCoinbaseTx(t *testing.T) {
 	tx, err := BuildCoinbaseTx(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
-	assert.Equal(t, uint64(10), tx.Proof.outputCoins[0].CoinDetails.Value)
+	assert.Equal(t, uint64(10), tx.Proof.outputCoins[0].CoinDetails.value)
 	assert.Equal(t, string(key.KeySet.PaymentAddress.Pk[:]), string(tx.Proof.outputCoins[0].CoinDetails.publicKey.Compress()[:]))
 
 	paymentAddress.Pk[0] = 1
@@ -59,7 +59,7 @@ func TestBuildCoinbaseTxByCoinID(t *testing.T) {
 	tx, err := BuildCoinbaseTxByCoinID(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
-	assert.Equal(t, uint64(10), tx.(*Tx).Proof.outputCoins[0].CoinDetails.Value)
+	assert.Equal(t, uint64(10), tx.(*Tx).Proof.outputCoins[0].CoinDetails.value)
 	assert.Equal(t, common.PRVCoinID.String(), tx.GetTokenID().String())
 
 	txCustomToken, err := BuildCoinbaseTxByCoinID(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{1}, CustomTokenType, "Custom Token", 0)
@@ -71,6 +71,6 @@ func TestBuildCoinbaseTxByCoinID(t *testing.T) {
 	txCustomTokenPrivacy, err := BuildCoinbaseTxByCoinID(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{2}, CustomTokenPrivacyType, "Custom Token", 0)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
-	assert.Equal(t, uint64(10), txCustomTokenPrivacy.(*TxCustomTokenPrivacy).TxTokenPrivacyData.TxNormal.Proof.outputCoins[0].CoinDetails.Value)
+	assert.Equal(t, uint64(10), txCustomTokenPrivacy.(*TxCustomTokenPrivacy).TxTokenPrivacyData.TxNormal.Proof.outputCoins[0].CoinDetails.value)
 	assert.Equal(t, common.Hash{2}.String(), txCustomTokenPrivacy.GetTokenID().String())
 }
