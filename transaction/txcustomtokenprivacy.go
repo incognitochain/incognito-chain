@@ -204,7 +204,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			tempOutputCoin[0].CoinDetails.Randomness = privacy.RandScalar()
 
 			sndOut := privacy.RandScalar()
-			tempOutputCoin[0].CoinDetails.SNDerivator = sndOut
+			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 			// create coin commitment
 			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
