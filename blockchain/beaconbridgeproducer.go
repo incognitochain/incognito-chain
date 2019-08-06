@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/json"
 	"math/big"
@@ -110,8 +109,8 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 		md.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
-		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
+		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 	}, nil
 }
 

@@ -128,7 +128,7 @@ func (chain *BlockChain) processBurningReq(
 	}
 
 	externalTokenID, _, errExtToken := base58.Base58Check{}.Decode(inst[2])
-	incTokenIDBytes, _, errIncToken := base58.Base58Check{}.Decode(inst[7])
+	incTokenIDBytes, _, errIncToken := base58.Base58Check{}.Decode(inst[6])
 	amountBytes, _, errAmount := base58.Base58Check{}.Decode(inst[4])
 	if err := common.CheckError(errExtToken, errIncToken, errAmount); err != nil {
 		BLogger.log.Error(errors.WithStack(err))
