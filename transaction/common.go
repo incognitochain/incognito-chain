@@ -34,7 +34,8 @@ type RandomCommitmentsProcessParam struct {
 	tokenID          *common.Hash
 }
 
-func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
+func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int,
+	db database.DatabaseInterface, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
 	result := &RandomCommitmentsProcessParam{
 		tokenID:          tokenID,
 		shardID:          shardID,
