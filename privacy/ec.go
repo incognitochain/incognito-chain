@@ -22,6 +22,22 @@ type EllipticPoint struct {
 	X, Y *big.Int
 }
 
+func (ellipticPoint EllipticPoint) GetX() *big.Int {
+	return ellipticPoint.X
+}
+
+func (ellipticPoint *EllipticPoint) SetX(v *big.Int) {
+	ellipticPoint.X = v
+}
+
+func (ellipticPoint EllipticPoint) GetY() *big.Int {
+	return ellipticPoint.Y
+}
+
+func (ellipticPoint *EllipticPoint) SetY(v *big.Int) {
+	ellipticPoint.Y = v
+}
+
 // Zero returns the elliptic point (0, 0)
 func (point *EllipticPoint) Zero() *EllipticPoint {
 	point.X = big.NewInt(0)
