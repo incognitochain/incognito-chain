@@ -109,7 +109,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 
 	cmInputSK := privacy.PedCom.CommitAtIndex(wit.privateKey, randInputSK, privacy.PedersenPrivateKeyIndex)
 	wit.comInputSecretKey = new(privacy.EllipticPoint)
-	wit.comInputSecretKey.Set(cmInputSK.X, cmInputSK.Y)
+	wit.comInputSecretKey.Set(cmInputSK.GetX(), cmInputSK.GetY())
 
 	randInputShardID := privacy.RandScalar()
 	senderShardID := common.GetShardIDFromLastByte(publicKeyLastByteSender)
