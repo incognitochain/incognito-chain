@@ -13,7 +13,7 @@ func TestPedersenCommitAll(t *testing.T) {
 	}
 
 	commitment, err := PedCom.commitAll(openings)
-	isOnCurve := Curve.IsOnCurve(commitment.X, commitment.Y)
+	isOnCurve := Curve.IsOnCurve(commitment.x, commitment.y)
 
 	assert.NotEqual(t, commitment, nil)
 	assert.Equal(t, true, isOnCurve)
