@@ -115,8 +115,8 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	j := 0
 	for _, value := range listUsableCommitments {
 		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(value, common.ZeroByte)]
-		rand := rand.Intn(param.randNum)
-		i := (j * param.randNum) + rand
+		randInt := rand.Intn(param.randNum)
+		i := (j * param.randNum) + randInt
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		commitments = append(commitments[:i], append([][]byte{value}, commitments[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i)) // create myCommitmentIndexs
@@ -263,8 +263,19 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	return txs
 }*/
 
-func BuildCoinBaseTxByCoinID(
-	payToAddress *privacy.PaymentAddress,
+type BuildCoinBaseTxByCoinIDParams struct {
+	payToAddress    *privacy.PaymentAddress
+	amount          uint64
+	payByPrivateKey *privacy.PrivateKey
+	db              database.DatabaseInterface
+	meta            metadata.Metadata
+	coinID          common.Hash
+	txType          int
+	coinName        string
+	shardID         byte
+}
+
+func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	amount uint64,
 	payByPrivateKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
@@ -272,39 +283,53 @@ func BuildCoinBaseTxByCoinID(
 	coinID common.Hash,
 	txType int,
 	coinName string,
-	shardID byte,
-) (metadata.Transaction, error) {
-	switch txType {
+	shardID byte) *BuildCoinBaseTxByCoinIDParams {
+	params := &BuildCoinBaseTxByCoinIDParams{
+		db:              db,
+		shardID:         shardID,
+		meta:            meta,
+		amount:          amount,
+		coinID:          coinID,
+		coinName:        coinName,
+		payByPrivateKey: payByPrivateKey,
+		payToAddress:    payToAddress,
+		txType:          txType,
+	}
+	return params
+}
+
+func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
+	switch params.txType {
 	case NormalCoinType:
 		tx := &Tx{}
-		err := tx.InitTxSalary(amount, payToAddress, payByPrivateKey, db, meta)
+		err := tx.InitTxSalary(params.amount, params.payToAddress, params.payByPrivateKey, params.db, params.meta)
 		return tx, err
 	case CustomTokenType:
 		tx := &TxCustomToken{}
 		receiver := &TxTokenVout{
-			PaymentAddress: *payToAddress,
-			Value:          amount,
+			PaymentAddress: *params.payToAddress,
+			Value:          params.amount,
 		}
 		tokenParams := &CustomTokenParamTx{
-			PropertyID:     coinID.String(),
-			PropertyName:   coinName,
-			PropertySymbol: coinName,
-			Amount:         amount,
+			PropertyID:     params.coinID.String(),
+			PropertyName:   params.coinName,
+			PropertySymbol: params.coinName,
+			Amount:         params.amount,
 			TokenTxType:    CustomTokenInit,
 			Receiver:       []TxTokenVout{*receiver},
 			Mintable:       true,
 		}
 		err := tx.Init(
-			payByPrivateKey,
+			params.payByPrivateKey,
 			nil,
 			nil,
 			0,
 			tokenParams,
 			//listCustomTokens,
-			db,
-			meta,
+			params.db,
+			params.meta,
 			false,
-			shardID,
+			params.shardID,
 		)
 		if err != nil {
 			return nil, errors.New(err.Error())
@@ -312,17 +337,17 @@ func BuildCoinBaseTxByCoinID(
 		return tx, nil
 	case CustomTokenPrivacyType:
 		var propertyID [common.HashSize]byte
-		copy(propertyID[:], coinID[:])
+		copy(propertyID[:], params.coinID[:])
 		receiver := &privacy.PaymentInfo{
-			Amount:         amount,
-			PaymentAddress: *payToAddress,
+			Amount:         params.amount,
+			PaymentAddress: *params.payToAddress,
 		}
 		propID := common.Hash(propertyID)
 		tokenParams := &CustomTokenPrivacyParamTx{
 			PropertyID:     propID.String(),
-			PropertyName:   coinName,
-			PropertySymbol: coinName,
-			Amount:         amount,
+			PropertyName:   params.coinName,
+			PropertySymbol: params.coinName,
+			Amount:         params.amount,
 			TokenTxType:    CustomTokenInit,
 			Receiver:       []*privacy.PaymentInfo{receiver},
 			TokenInput:     []*privacy.InputCoin{},
@@ -330,16 +355,16 @@ func BuildCoinBaseTxByCoinID(
 		}
 		tx := &TxCustomTokenPrivacy{}
 		err := tx.Init(
-			payByPrivateKey,
+			params.payByPrivateKey,
 			[]*privacy.PaymentInfo{},
 			nil,
 			0,
 			tokenParams,
-			db,
-			meta,
+			params.db,
+			params.meta,
 			false,
 			false,
-			shardID,
+			params.shardID,
 		)
 		if err != nil {
 			return nil, errors.New(err.Error())
