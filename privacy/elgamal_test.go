@@ -21,7 +21,7 @@ func TestElGamalEncryption(t *testing.T) {
 
 	// random message (msg is an elliptic point)
 	message := new(EllipticPoint)
-	message.Randomize()
+	message.randomize()
 
 	// Encrypt message using public key
 	ciphertext1 := pubKey.encrypt(message)

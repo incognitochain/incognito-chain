@@ -20,7 +20,7 @@ var _ = func() (_ struct{}) {
 func TestECMarshalJSON(t *testing.T) {
 	// random a elliptic point
 	point := new(EllipticPoint)
-	point.Randomize()
+	point.randomize()
 
 	// marshalJSON point
 	bytesJSON, err := point.MarshalJSON()
@@ -41,7 +41,7 @@ func TestECComputeYCoord(t *testing.T) {
 	points := make([]*EllipticPoint, 4)
 	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
-		points[i].Randomize()
+		points[i].randomize()
 	}
 
 	data := []struct {
@@ -61,7 +61,7 @@ func TestECComputeYCoord(t *testing.T) {
 		pointTmp := new(EllipticPoint)
 		pointTmp.x = item.X
 
-		err := pointTmp.ComputeYCoord()
+		err := pointTmp.computeYCoord()
 		assert.Equal(t, item.err, err)
 		assert.Equal(t, item.Y, pointTmp.y)
 	}
@@ -75,11 +75,11 @@ func TestECInverse(t *testing.T) {
 	points := make([]*EllipticPoint, 10)
 	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
-		points[i].Randomize()
+		points[i].randomize()
 	}
 
 	for _, item := range points {
-		itemInv, err := item.Inverse()
+		itemInv, err := item.inverse()
 
 		invY := new(big.Int).Sub(Curve.Params().P, item.y)
 		invY.Mod(invY, Curve.Params().P)
@@ -94,12 +94,12 @@ func TestECInverseWithInvalidPoint(t *testing.T) {
 	points := make([]*EllipticPoint, 10)
 	for i := 0; i < len(points); i++ {
 		points[i] = new(EllipticPoint)
-		points[i].Randomize()
+		points[i].randomize()
 	}
 
 	for _, item := range points {
 		item.x = new(big.Int).SetBytes(RandBytes(common.BigIntSize))
-		itemInv, err := item.Inverse()
+		itemInv, err := item.inverse()
 
 		assert.Equal(t, IsNotAnEllipticPointErr, err)
 		assert.Equal(t, (*EllipticPoint)(nil), itemInv)
@@ -113,7 +113,7 @@ func TestECInverseWithInvalidPoint(t *testing.T) {
 func TestECRandomize(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		point := new(EllipticPoint)
-		point.Randomize()
+		point.randomize()
 
 		assert.Equal(t, true, point.IsSafe())
 	}
@@ -136,7 +136,7 @@ func TestECCompressDecompress(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		// random elliptic point
 		point := new(EllipticPoint)
-		point.Randomize()
+		point.randomize()
 
 		// compress the point
 		pointBytes := point.Compress()
@@ -153,7 +153,7 @@ func TestECCompressDecompress(t *testing.T) {
 func TestECCompressWithInvalidPoint(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		point := new(EllipticPoint)
-		point.Randomize()
+		point.randomize()
 
 		// edit point
 		point.x.Add(point.x, big.NewInt(1))
