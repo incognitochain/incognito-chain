@@ -49,20 +49,6 @@ func vectorAdd(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
 	return res, nil
 }
 
-//vectorAdd adds two vector and returns result vector
-func vectorSub(a []*big.Int, b []*big.Int) ([]*big.Int, error) {
-	if len(a) != len(b) {
-		return nil, errors.New("VectorSub: Arrays not of the same length")
-	}
-
-	res := make([]*big.Int, len(a))
-	for i := range a {
-		res[i] = new(big.Int).Sub(a[i], b[i])
-		res[i].Mod(res[i], privacy.Curve.Params().N)
-	}
-	return res, nil
-}
-
 // innerProduct calculates inner product between two vectors a and b
 func innerProduct(a []*big.Int, b []*big.Int) (*big.Int, error) {
 	if len(a) != len(b) {
@@ -158,8 +144,8 @@ func EstimateMultiRangeProofSize(nOutput int) uint64 {
 }
 
 // CommitAll commits a list of PCM_CAPACITY value(s)
-func encodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
-	if len(a) != len(b) || len(g) != len(h) || len(a) != len(g) {
+func encodeVectors(l []*big.Int, r []*big.Int, g []*privacy.EllipticPoint, h []*privacy.EllipticPoint) (*privacy.EllipticPoint, error) {
+	if len(l) != len(r) || len(g) != len(h) || len(l) != len(g) {
 		return nil, errors.New("invalid input")
 	}
 
@@ -168,16 +154,16 @@ func encodeVectors(a []*big.Int, b []*big.Int, g []*privacy.EllipticPoint, h []*
 	var wg sync.WaitGroup
 	var tmp1, tmp2 *privacy.EllipticPoint
 
-	for i := 0; i < len(a); i++ {
+	for i := 0; i < len(l); i++ {
 		wg.Add(2)
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			tmp1 = g[i].ScalarMult(a[i])
+			tmp1 = g[i].ScalarMult(l[i])
 		}(i, &wg)
 
 		go func(i int, wg *sync.WaitGroup) {
 			defer wg.Done()
-			tmp2 = h[i].ScalarMult(b[i])
+			tmp2 = h[i].ScalarMult(r[i])
 		}(i, &wg)
 
 		wg.Wait()
