@@ -17,9 +17,10 @@ type Coin struct {
 	serialNumber   *EllipticPoint
 	randomness     *big.Int
 	value          uint64
-	Info           []byte //256 bytes
+	info           []byte //256 bytes
 }
 
+// Start GET/SET
 func (coin Coin) GetPublicKey() *EllipticPoint {
 	return coin.publicKey
 }
@@ -69,12 +70,14 @@ func (coin *Coin) SetValue(v uint64) {
 }
 
 func (coin Coin) GetInfo() []byte {
-	return coin.Info
+	return coin.info
 }
 
 func (coin *Coin) SetInfo(v []byte) {
-	copy(coin.Info, v)
+	copy(coin.info, v)
 }
+
+// END Get/Set
 
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
@@ -188,9 +191,9 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if len(coin.Info) > 0 {
-		coinBytes = append(coinBytes, byte(len(coin.Info)))
-		coinBytes = append(coinBytes, coin.Info...)
+	if len(coin.info) > 0 {
+		coinBytes = append(coinBytes, byte(len(coin.info)))
+		coinBytes = append(coinBytes, coin.info...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -274,8 +277,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.Info = make([]byte, lenField)
-		copy(coin.Info, coinBytes[offset:offset+int(lenField)])
+		coin.info = make([]byte, lenField)
+		copy(coin.info, coinBytes[offset:offset+int(lenField)])
 	}
 	return nil
 }
@@ -311,13 +314,13 @@ func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 // CoinDetailsEncrypted is nil when you send tx without privacy
 type OutputCoin struct {
 	CoinDetails          *Coin
-	CoinDetailsEncrypted *hybridCiphertext
+	CoinDetailsEncrypted *hybridCipherText
 }
 
 // Init (OutputCoin) initializes a output coin
 func (outputCoin *OutputCoin) Init() *OutputCoin {
 	outputCoin.CoinDetails = new(Coin).Init()
-	outputCoin.CoinDetailsEncrypted = new(hybridCiphertext)
+	outputCoin.CoinDetailsEncrypted = new(hybridCipherText)
 	return outputCoin
 }
 
@@ -352,7 +355,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	offset += 1
 
 	if lenCoinDetailEncrypted > 0 {
-		outputCoin.CoinDetailsEncrypted = new(hybridCiphertext)
+		outputCoin.CoinDetailsEncrypted = new(hybridCipherText)
 		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
