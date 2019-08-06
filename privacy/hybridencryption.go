@@ -6,24 +6,24 @@ import (
 	"math/big"
 )
 
-// hybridCiphertext represents to hybridCiphertext for Hybrid encryption
+// hybridCipherText represents to hybridCipherText for Hybrid encryption
 // Hybrid encryption uses AES scheme to encrypt message with arbitrary size
 // and uses Elgamal encryption to encrypt AES key
-type hybridCiphertext struct {
+type hybridCipherText struct {
 	msgEncrypted    []byte
 	symKeyEncrypted []byte
 }
 
-func (ciphertext hybridCiphertext) GetMsgEncrypted() []byte {
+func (ciphertext hybridCipherText) GetMsgEncrypted() []byte {
 	return ciphertext.msgEncrypted
 }
 
-func (ciphertext hybridCiphertext) GetSymKeyEncrypted() []byte {
+func (ciphertext hybridCipherText) GetSymKeyEncrypted() []byte {
 	return ciphertext.symKeyEncrypted
 }
 
 // isNil check whether ciphertext is nil or not
-func (ciphertext hybridCiphertext) isNil() bool {
+func (ciphertext hybridCipherText) isNil() bool {
 	if len(ciphertext.msgEncrypted) == 0 {
 		return true
 	}
@@ -33,7 +33,7 @@ func (ciphertext hybridCiphertext) isNil() bool {
 
 // Bytes converts ciphertext to bytes array
 // if ciphertext is nil, return empty byte array
-func (ciphertext hybridCiphertext) Bytes() []byte {
+func (ciphertext hybridCipherText) Bytes() []byte {
 	if ciphertext.isNil() {
 		return []byte{}
 	}
@@ -45,8 +45,8 @@ func (ciphertext hybridCiphertext) Bytes() []byte {
 	return res
 }
 
-// SetBytes reverts bytes array to hybridCiphertext
-func (ciphertext *hybridCiphertext) SetBytes(bytes []byte) error {
+// SetBytes reverts bytes array to hybridCipherText
+func (ciphertext *hybridCipherText) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
 		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
@@ -60,8 +60,8 @@ func (ciphertext *hybridCiphertext) SetBytes(bytes []byte) error {
 // hybridEncrypt generates AES key by randomize an elliptic point aesKeyPoint and get X-coordinate
 // using AES key to encrypt message
 // After that, using ElGamal encryption encrypt aesKeyPoint using publicKey
-func hybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *hybridCiphertext, err error) {
-	ciphertext = new(hybridCiphertext)
+func hybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *hybridCipherText, err error) {
+	ciphertext = new(hybridCipherText)
 	// Generate a AES key as the abscissa of a random elliptic point
 	aesKeyPoint := new(EllipticPoint)
 	aesKeyPoint.Randomize()
@@ -78,7 +78,7 @@ func hybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *hybridCiph
 	}
 
 	// Using ElGamal cryptosystem for encrypting AES sym key
-	pubKey := new(elGamalPubKey)
+	pubKey := new(elGamalPublicKey)
 	pubKey.h = new(EllipticPoint)
 	pubKey.h.Set(publicKey.X, publicKey.Y)
 
@@ -90,18 +90,18 @@ func hybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *hybridCiph
 // hybridDecrypt receives a ciphertext and privateKey
 // it decrypts aesKeyPoint, using ElGamal encryption with privateKey
 // Using X-coordinate of aesKeyPoint to decrypts message
-func hybridDecrypt(ciphertext *hybridCiphertext, privateKey *big.Int) (msg []byte, err error) {
+func hybridDecrypt(ciphertext *hybridCipherText, privateKey *big.Int) (msg []byte, err error) {
 	// Validate ciphertext
 	if ciphertext.isNil() {
 		return []byte{}, errors.New("ciphertext must not be nil")
 	}
 
 	// Get receiving key, which is a private key of ElGamal cryptosystem
-	privKey := new(elGamalPrivKey)
+	privKey := new(elGamalPrivateKey)
 	privKey.set(privateKey)
 
 	// Parse encrypted AES key encoded as an elliptic point from EncryptedSymKey
-	encryptedAESKey := new(elGamalCiphertext)
+	encryptedAESKey := new(elGamalCipherText)
 	err = encryptedAESKey.SetBytes(ciphertext.symKeyEncrypted)
 	if err != nil {
 		return []byte{}, err
