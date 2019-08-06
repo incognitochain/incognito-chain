@@ -7,14 +7,14 @@ import (
 
 /*
 	Unit test for elgamal encryption
- */
+*/
 func TestElGamalEncryption(t *testing.T) {
 	// generate private key
-	privKey := new(elGamalPrivKey)
+	privKey := new(elGamalPrivateKey)
 	privKey.x = RandScalar()
 
 	// generate public key
-	pubKey := new(elGamalPubKey)
+	pubKey := new(elGamalPublicKey)
 	pubKey.h = new(EllipticPoint)
 	pubKey.h.Set(Curve.Params().Gx, Curve.Params().Gy)
 	pubKey.h = pubKey.h.ScalarMult(privKey.x)
@@ -30,7 +30,7 @@ func TestElGamalEncryption(t *testing.T) {
 	ciphertext1Bytes := ciphertext1.Bytes()
 
 	// new ciphertext2
-	ciphertext2 := new(elGamalCiphertext)
+	ciphertext2 := new(elGamalCipherText)
 	ciphertext2.SetBytes(ciphertext1Bytes)
 
 	assert.Equal(t, ciphertext1, ciphertext2)
