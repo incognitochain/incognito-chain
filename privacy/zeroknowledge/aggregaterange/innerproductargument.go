@@ -25,7 +25,7 @@ type InnerProductProof struct {
 	p *privacy.EllipticPoint
 }
 
-func (proof *InnerProductProof) ValidateSanity() bool {
+func (proof InnerProductProof) ValidateSanity() bool {
 	if len(proof.l) != len(proof.r) {
 		return false
 	}

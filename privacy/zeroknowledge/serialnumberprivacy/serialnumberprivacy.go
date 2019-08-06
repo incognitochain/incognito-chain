@@ -38,7 +38,7 @@ type SNPrivacyProof struct {
 }
 
 // ValidateSanity validates sanity of proof
-func (proof *SNPrivacyProof) ValidateSanity() bool {
+func (proof SNPrivacyProof) ValidateSanity() bool {
 	if !proof.stmt.sn.IsSafe() {
 		return false
 	}
@@ -71,7 +71,7 @@ func (proof *SNPrivacyProof) ValidateSanity() bool {
 	return proof.zRInput.BitLen() <= 256
 }
 
-func (proof *SNPrivacyProof) isNil() bool {
+func (proof SNPrivacyProof) isNil() bool {
 	if proof.stmt.sn == nil {
 		return true
 	}
@@ -164,7 +164,7 @@ func (proof *SNPrivacyProof) Set(
 	proof.zRInput = zRInput
 }
 
-func (proof *SNPrivacyProof) Bytes() []byte {
+func (proof SNPrivacyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
 	if proof.isNil() {
 		return []byte{}
@@ -263,7 +263,7 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	return nil
 }
 
-func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
+func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	// randomness
 	eSK := privacy.RandScalar()
 	eSND := privacy.RandScalar()
@@ -312,7 +312,7 @@ func (wit *SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
 	return proof, nil
 }
 
-func (proof *SNPrivacyProof) Verify(mess []byte) (bool, error) {
+func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	var x *big.Int
 	if mess == nil {
