@@ -26,27 +26,46 @@ func ConvertOutputCoinToInputCoin(usableOutputsOfOld []*privacy.OutputCoin) []*p
 	return inputCoins
 }
 
+type RandomCommitmentsProcessParam struct {
+	usableInputCoins []*privacy.InputCoin
+	randNum          int
+	db               database.DatabaseInterface
+	shardID          byte
+	tokenID          *common.Hash
+}
+
+func NewRandomCommitmentsProcessParam(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) *RandomCommitmentsProcessParam {
+	result := &RandomCommitmentsProcessParam{
+		tokenID:          tokenID,
+		shardID:          shardID,
+		db:               db,
+		randNum:          randNum,
+		usableInputCoins: usableInputCoins,
+	}
+	return result
+}
+
 // RandomCommitmentsProcess - process list commitments and useable tx to create
 // a list commitment random which be used to create a proof for new tx
 // result contains
 // commitmentIndexs = [{1,2,3,4,myindex1,6,7,8}{9,10,11,12,13,myindex2,15,16}...]
 // myCommitmentIndexs = [4, 13, ...]
-func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
+func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
 	commitmentIndexs = []uint64{} // : list commitment indexes which: random from full db commitments + commitments of usableInputCoins
 	commitments = [][]byte{}
 	myCommitmentIndexs = []uint64{} // : list indexes of commitments(usableInputCoins) in {commitmentIndexs}
-	if randNum == 0 {
-		randNum = privacy.CommitmentRingSize // default
+	if param.randNum == 0 {
+		param.randNum = privacy.CommitmentRingSize // default
 	}
 
 	// loop to create list usable commitments from usableInputCoins
 	listUsableCommitments := make(map[common.Hash][]byte)
 	// tick index of each usable commitment with full db commitments
 	mapIndexCommitmentsInUsableTx := make(map[string]*big.Int)
-	for _, in := range usableInputCoins {
+	for _, in := range param.usableInputCoins {
 		usableCommitment := in.CoinDetails.GetCoinCommitment().Compress()
 		listUsableCommitments[common.HashH(usableCommitment)] = usableCommitment
-		index, err := db.GetCommitmentIndex(*tokenID, usableCommitment, shardID)
+		index, err := param.db.GetCommitmentIndex(*param.tokenID, usableCommitment, param.shardID)
 		if err != nil {
 			Logger.log.Error(err)
 			return
@@ -55,9 +74,9 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	}
 
 	// loop to random commitmentIndexs
-	cpRandNum := (len(listUsableCommitments) * randNum) - len(listUsableCommitments)
+	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
 	fmt.Printf("cpRandNum: %d\n", cpRandNum)
-	lenCommitment, err1 := db.GetCommitmentLength(*tokenID, shardID)
+	lenCommitment, err1 := param.db.GetCommitmentLength(*param.tokenID, param.shardID)
 	if err1 != nil {
 		Logger.log.Error(err1)
 		return
@@ -68,16 +87,16 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	}
 	if lenCommitment.Uint64() == 1 {
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
-		temp := usableInputCoins[0].CoinDetails.GetCoinCommitment().Compress()
+		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().Compress()
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}
 	} else {
 		for i := 0; i < cpRandNum; i++ {
 			for {
-				lenCommitment, _ = db.GetCommitmentLength(*tokenID, shardID)
+				lenCommitment, _ = param.db.GetCommitmentLength(*param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
-				ok, err := db.HasCommitmentIndex(*tokenID, index.Uint64(), shardID)
+				ok, err := param.db.HasCommitmentIndex(*param.tokenID, index.Uint64(), param.shardID)
 				if ok && err == nil {
-					temp, _ := db.GetCommitmentByIndex(*tokenID, index.Uint64(), shardID)
+					temp, _ := param.db.GetCommitmentByIndex(*param.tokenID, index.Uint64(), param.shardID)
 					if _, found := listUsableCommitments[common.HashH(temp)]; !found {
 						// random commitment not in commitments of usableinputcoin
 						commitmentIndexs = append(commitmentIndexs, index.Uint64())
@@ -95,8 +114,8 @@ func RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int
 	j := 0
 	for _, value := range listUsableCommitments {
 		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(value, common.ZeroByte)]
-		rand := rand.Intn(randNum)
-		i := (j * randNum) + rand
+		rand := rand.Intn(param.randNum)
+		i := (j * param.randNum) + rand
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		commitments = append(commitments[:i], append([][]byte{value}, commitments[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i)) // create myCommitmentIndexs

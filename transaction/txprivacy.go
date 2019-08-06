@@ -140,7 +140,8 @@ func (tx *Tx) Init(
 	var myCommitmentIndexs []uint64 // index in array index random of commitment in db
 
 	if hasPrivacy {
-		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(inputCoins, privacy.CommitmentRingSize, db, shardID, tokenID)
+		randomParams := NewRandomCommitmentsProcessParam(inputCoins, privacy.CommitmentRingSize, db, shardID, tokenID)
+		commitmentIndexs, myCommitmentIndexs, _ = RandomCommitmentsProcess(randomParams)
 
 		// Check number of list of random commitments, list of random commitment indices
 		if len(commitmentIndexs) != len(inputCoins)*privacy.CommitmentRingSize {
