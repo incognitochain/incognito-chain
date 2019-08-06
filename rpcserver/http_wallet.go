@@ -479,7 +479,10 @@ func (httpServer *HttpServer) handleGetPublicKeyFromPaymentAddress(params interf
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	return base58.Base58Check{}.Encode(key.KeySet.PaymentAddress.Pk[:], common.ZeroByte), nil
+	result := jsonresult.GetPublicKeyFromPaymentAddress{}
+	result.Init(key.KeySet.PaymentAddress.Pk[:])
+
+	return result, nil
 }
 
 // ------------------------------------ Defragment output coin of account by combine many input coin in to 1 output coin --------------------
