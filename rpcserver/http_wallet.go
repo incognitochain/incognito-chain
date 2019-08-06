@@ -41,7 +41,7 @@ func (httpServer *HttpServer) handleListAccounts(params interface{}, closeChan <
 		}
 		amount := uint64(0)
 		for _, out := range outCoins {
-			amount += out.CoinDetails.Value
+			amount += out.CoinDetails.GetValue()
 		}
 		result.Accounts[accountName] = amount
 	}
@@ -225,7 +225,7 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	for _, out := range outcoints {
-		balance += out.CoinDetails.Value
+		balance += out.CoinDetails.GetValue()
 	}
 	log.Println(balance)
 	//return jsonresult.AccountBalanceResult{
@@ -268,7 +268,7 @@ func (httpServer *HttpServer) handleGetBalanceByPaymentAddress(params interface{
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	for _, out := range outcoints {
-		balance += out.CoinDetails.Value
+		balance += out.CoinDetails.GetValue()
 	}
 
 	return balance, nil
@@ -328,7 +328,7 @@ func (httpServer *HttpServer) handleGetBalance(params interface{}, closeChan <-c
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			for _, out := range outCoins {
-				balance += out.CoinDetails.Value
+				balance += out.CoinDetails.GetValue()
 			}
 		}
 	} else {
@@ -342,7 +342,7 @@ func (httpServer *HttpServer) handleGetBalance(params interface{}, closeChan <-c
 					return nil, NewRPCError(ErrUnexpected, err)
 				}
 				for _, out := range outCoins {
-					balance += out.CoinDetails.Value
+					balance += out.CoinDetails.GetValue()
 				}
 				break
 			}
@@ -407,7 +407,7 @@ func (httpServer *HttpServer) handleGetReceivedByAccount(params interface{}, clo
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			for _, out := range outCoins {
-				balance += out.CoinDetails.Value
+				balance += out.CoinDetails.GetValue()
 			}
 			break
 		}
@@ -632,9 +632,9 @@ func (httpServer *HttpServer) calculateOutputCoinsByMinValue(outCoins []*privacy
 	outCoinsTmp := make([]*privacy.OutputCoin, 0)
 	amount := uint64(0)
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value <= maxVal {
+		if outCoin.CoinDetails.GetValue() <= maxVal {
 			outCoinsTmp = append(outCoinsTmp, outCoin)
-			amount += outCoin.CoinDetails.Value
+			amount += outCoin.CoinDetails.GetValue()
 		}
 	}
 	return outCoinsTmp, amount

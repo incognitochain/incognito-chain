@@ -147,7 +147,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		randInputValue[i] = privacy.RandScalar()
 		randInputSND[i] = privacy.RandScalar()
 
-		wit.comInputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(inputCoin.CoinDetails.Value), randInputValue[i], privacy.PedersenValueIndex)
+		wit.comInputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(inputCoin.CoinDetails.GetValue()), randInputValue[i], privacy.PedersenValueIndex)
 		wit.comInputSerialNumberDerivator[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i], privacy.PedersenSndIndex)
 
 		cmInputValueAll = cmInputValueAll.Add(wit.comInputValue[i])
@@ -233,7 +233,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		randOutputSND[i] = privacy.RandScalar()
 		randOutputShardID[i] = privacy.RandScalar()
 
-		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.Value), randOutputValue[i], privacy.PedersenValueIndex)
+		cmOutputValue[i] = privacy.PedCom.CommitAtIndex(new(big.Int).SetUint64(outputCoin.CoinDetails.GetValue()), randOutputValue[i], privacy.PedersenValueIndex)
 		cmOutputSND[i] = privacy.PedCom.CommitAtIndex(outputCoin.CoinDetails.GetSNDerivator(), randOutputSND[i], privacy.PedersenSndIndex)
 
 		receiverShardID := common.GetShardIDFromLastByte(outputCoins[i].CoinDetails.GetPubKeyLastByte())
@@ -265,8 +265,8 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 	// proving sum of output values is less than vmax
 	outputValue := make([]*big.Int, numOutputCoin)
 	for i := 0; i < numOutputCoin; i++ {
-		if outputCoins[i].CoinDetails.Value > 0 {
-			outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.Value))
+		if outputCoins[i].CoinDetails.GetValue() > 0 {
+			outputValue[i] = big.NewInt(int64(outputCoins[i].CoinDetails.GetValue()))
 		} else {
 			return privacy.NewPrivacyErr(privacy.UnexpectedErr, errors.New("output coin's value is less than 0"))
 		}
