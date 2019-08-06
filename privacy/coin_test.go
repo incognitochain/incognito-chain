@@ -40,7 +40,7 @@ func TestCoinCommitAll(t *testing.T) {
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
-	coin.Info = []byte("Incognito chain")
+	coin.info = []byte("Incognito chain")
 
 	expectedCm := coin.publicKey
 	expectedCm = expectedCm.Add(PedCom.G[PedersenValueIndex].ScalarMult(big.NewInt(int64(coin.value))))
@@ -69,7 +69,7 @@ func TestCoinMarshalJSON(t *testing.T) {
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
-	coin.Info = []byte("Incognito chain")
+	coin.info = []byte("Incognito chain")
 
 	bytesJSON, err := coin.MarshalJSON()
 	assert.Equal(t, nil, err)
@@ -100,7 +100,7 @@ func TestCoinBytesSetBytes(t *testing.T) {
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
-	coin.Info = []byte("Incognito chain")
+	coin.info = []byte("Incognito chain")
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()
@@ -130,7 +130,7 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	coin.value = uint64(100)
 	//coin.SerialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.SNDerivator)
 	//coin.CommitAll()
-	coin.Info = []byte("Incognito chain")
+	coin.info = []byte("Incognito chain")
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()
@@ -160,7 +160,7 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
-	coin.Info = []byte("Incognito chain")
+	coin.info = []byte("Incognito chain")
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()
@@ -204,7 +204,7 @@ func TestCoinHashH(t *testing.T) {
 	coin.value = uint64(100)
 	coin.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.snDerivator)
 	coin.CommitAll()
-	coin.Info = []byte("Incognito chain")
+	coin.info = []byte("Incognito chain")
 
 	hash := coin.HashH()
 	assert.Equal(t, common.HashSize, len(hash[:]))
@@ -229,7 +229,7 @@ func TestInputCoinBytesSetBytes(t *testing.T) {
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.snDerivator)
 	coin.CoinDetails.CommitAll()
-	coin.CoinDetails.Info = []byte("Incognito chain")
+	coin.CoinDetails.info = []byte("Incognito chain")
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()
@@ -257,7 +257,7 @@ func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	coin.CoinDetails.snDerivator = RandScalar()
 	coin.CoinDetails.randomness = RandScalar()
 	coin.CoinDetails.value = uint64(100)
-	coin.CoinDetails.Info = []byte("Incognito chain")
+	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.CoinDetails.serialNumber = nil
 	coin.CoinDetails.coinCommitment = nil
 
@@ -288,7 +288,7 @@ func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.snDerivator)
 	coin.CoinDetails.CommitAll()
-	coin.CoinDetails.Info = []byte("Incognito chain")
+	coin.CoinDetails.info = []byte("Incognito chain")
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()
@@ -334,7 +334,7 @@ func TestOutputCoinBytesSetBytes(t *testing.T) {
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.snDerivator)
 	coin.CoinDetails.CommitAll()
-	coin.CoinDetails.Info = []byte("Incognito chain")
+	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.Encrypt(paymentAddr.Tk)
 
 	// convert coin object to bytes array
@@ -363,7 +363,7 @@ func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 	coin.CoinDetails.snDerivator = RandScalar()
 	coin.CoinDetails.randomness = RandScalar()
 	coin.CoinDetails.value = uint64(100)
-	coin.CoinDetails.Info = []byte("Incognito chain")
+	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.CoinDetails.serialNumber = nil
 	coin.CoinDetails.coinCommitment = nil
 
@@ -394,7 +394,7 @@ func TestOutputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 	coin.CoinDetails.value = uint64(100)
 	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(new(big.Int).SetBytes(privateKey), coin.CoinDetails.snDerivator)
 	coin.CoinDetails.CommitAll()
-	coin.CoinDetails.Info = []byte("Incognito chain")
+	coin.CoinDetails.info = []byte("Incognito chain")
 
 	// convert coin object to bytes array
 	coinBytes := coin.Bytes()

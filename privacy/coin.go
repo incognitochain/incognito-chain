@@ -17,7 +17,7 @@ type Coin struct {
 	serialNumber   *EllipticPoint
 	randomness     *big.Int
 	value          uint64
-	Info           []byte //256 bytes
+	info           []byte //256 bytes
 }
 
 func (coin Coin) GetPublicKey() *EllipticPoint {
@@ -69,11 +69,11 @@ func (coin *Coin) SetValue(v uint64) {
 }
 
 func (coin Coin) GetInfo() []byte {
-	return coin.Info
+	return coin.info
 }
 
 func (coin *Coin) SetInfo(v []byte) {
-	copy(coin.Info, v)
+	copy(coin.info, v)
 }
 
 // Init (Coin) initializes a coin
@@ -188,9 +188,9 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if len(coin.Info) > 0 {
-		coinBytes = append(coinBytes, byte(len(coin.Info)))
-		coinBytes = append(coinBytes, coin.Info...)
+	if len(coin.info) > 0 {
+		coinBytes = append(coinBytes, byte(len(coin.info)))
+		coinBytes = append(coinBytes, coin.info...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -274,8 +274,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.Info = make([]byte, lenField)
-		copy(coin.Info, coinBytes[offset:offset+int(lenField)])
+		coin.info = make([]byte, lenField)
+		copy(coin.info, coinBytes[offset:offset+int(lenField)])
 	}
 	return nil
 }
