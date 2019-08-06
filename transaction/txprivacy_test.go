@@ -19,7 +19,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
 	responseMeta, err := metadata.NewWithDrawRewardResponse(&common.Hash{})
-	tx, err := BuildCoinbaseTxByCoinID(&paymentAddress, 10, &key.KeySet.PrivateKey, db, responseMeta, common.Hash{}, NormalCoinType, "PRV", 0)
+	tx, err := BuildCoinBaseTxByCoinID(&paymentAddress, 10, &key.KeySet.PrivateKey, db, responseMeta, common.Hash{}, NormalCoinType, "PRV", 0)
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
 	assert.Equal(t, uint64(10), tx.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetValue())
@@ -42,7 +42,7 @@ func TestInitTx(t *testing.T) {
 	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
-	tx2, err := BuildCoinbaseTxByCoinID(&paymentAddress, 1000, &key.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0)
+	tx2, err := BuildCoinBaseTxByCoinID(&paymentAddress, 1000, &key.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0)
 
 	valid, err := tx2.ValidateSanityData(nil)
 	assert.Equal(t, nil, err)
