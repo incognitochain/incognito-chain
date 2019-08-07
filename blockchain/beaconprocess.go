@@ -642,24 +642,6 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 			beaconBestState.CandidateBeaconWaitingForCurrentRandom = []string{}
 			beaconBestState.BeaconPendingValidator = append(beaconBestState.BeaconPendingValidator, newBeaconPendingValidator...)
 		}
-	} else if beaconBestState.BeaconHeight%common.EPOCH == 0 {
-		// At the end of each epoch, eg: block 200, 400, 600 with epoch is 200 blocks
-		// Swap pending validator in committees, pop some of public key in committees out
-		// ONLY SWAP FOR BEACON, SHARD WILL SWAP WITH IT OWN RULE
-		var (
-			beaconSwapedCommittees []string
-			beaconNewCommittees    []string
-			err                    error
-		)
-		if len(beaconBestState.BeaconPendingValidator) > 0 {
-			beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
-			if err != nil {
-				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err)
-			}
-			Logger.log.Info("Swap: Out committee %+v", beaconSwapedCommittees)
-			Logger.log.Info("Swap: In committee %+v", beaconNewCommittees)
-		}
 	}
 	return nil
 }
