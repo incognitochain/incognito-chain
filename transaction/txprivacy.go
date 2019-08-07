@@ -1064,7 +1064,7 @@ func (tx *Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
-func (tx *Tx) IsCoinsBurning() bool {
+func (tx Tx) IsCoinsBurning() bool {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false
 	}
@@ -1084,7 +1084,7 @@ func (tx *Tx) IsCoinsBurning() bool {
 	return true
 }
 
-func (tx *Tx) CalculateTxValue() uint64 {
+func (tx Tx) CalculateTxValue() uint64 {
 	if tx.Proof == nil {
 		return 0
 	}
@@ -1242,7 +1242,7 @@ func (tx Tx) GetTokenID() *common.Hash {
 	return &common.PRVCoinID
 }
 
-func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []metadata.Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -1265,7 +1265,7 @@ func (tx *Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 	}
 	if meta != nil {
-		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, tx, bcr, accumulatedValues)
+		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &tx, bcr, accumulatedValues)
 	}
 	return true, nil
 }
