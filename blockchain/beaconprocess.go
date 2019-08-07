@@ -651,12 +651,15 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 			beaconNewCommittees    []string
 			err                    error
 		)
-		beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
-		if err != nil {
-			return NewBlockChainError(SwapValidatorError, err)
+		if len(beaconBestState.BeaconPendingValidator) > 0 {
+			beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconSwapedCommittees, beaconNewCommittees, err = SwapValidator(beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
+			if err != nil {
+				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
+				return NewBlockChainError(UnExpectedError, err)
+			}
+			Logger.log.Info("Swap: Out committee %+v", beaconSwapedCommittees)
+			Logger.log.Info("Swap: In committee %+v", beaconNewCommittees)
 		}
-		Logger.log.Info("Swap: Out committee %+v", beaconSwapedCommittees)
-		Logger.log.Info("Swap: In committee %+v", beaconNewCommittees)
 	}
 	return nil
 }
