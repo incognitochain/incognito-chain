@@ -619,7 +619,7 @@ func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interf
 			meta))
 	// END create tx
 
-	if err.(*transaction.TransactionError) != nil {
+	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 

@@ -167,7 +167,7 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 			meta))
 	// END create tx
 
-	if err.(*transaction.TransactionError) != nil {
+	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
@@ -317,7 +317,7 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 			metaData,
 			hasPrivacyCoin,
 			shardIDSender))
-	if err.(*transaction.TransactionError) != nil {
+	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
@@ -459,7 +459,7 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 			hasPrivacyToken,
 			shardIDSender))
 
-	if err.(*transaction.TransactionError) != nil {
+	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
