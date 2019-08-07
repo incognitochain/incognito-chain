@@ -319,7 +319,6 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 	// set private key for signing tx
 	if params.hasPrivacy {
-		tx.sigPrivKey = make([]byte, 64)
 		randSK := witness.GetRandSecretKey()
 		tx.sigPrivKey = append(*params.senderSK, randSK.Bytes()...)
 
