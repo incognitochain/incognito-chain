@@ -117,6 +117,15 @@ const (
 	ProcessSwapInstructionError
 	AssignValidatorToShardError
 	ShuffleBeaconCandidateError
+	CleanBackUpError
+	BackUpBestStateError
+	StoreAcceptedShardToBeaconError
+	StoreCrossShardNextHeightError
+	StoreShardCommitteeByHeightError
+	StoreBeaconCommitteeByHeightError
+	StoreBeaconBestStateError
+	StoreBeaconBlockError
+	StoreBeaconBlockIndexError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -226,6 +235,8 @@ var ErrCodeMessage = map[int]struct {
 	ProcessSwapInstructionError:                       {-1101, "Process Swap Instruction Error"},
 	AssignValidatorToShardError:                       {-1102, "Assign Validator To Shard Error"},
 	ShuffleBeaconCandidateError:                       {-1103, "Shuffle Beacon Candidate Error"},
+	CleanBackUpError:                                  {-1104, "Clean Back Up Error"},
+	BackUpBestStateError:                              {-1105, "Back Up Best State Error"},
 }
 
 type BlockChainError struct {
