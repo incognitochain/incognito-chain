@@ -569,7 +569,7 @@ func (txCustomToken *TxCustomToken) GetTxCustomTokenSignature(keyset incognitoke
 	return keyset.Sign(buff.Bytes())
 }
 
-func (txCustomToken *TxCustomToken) IsPrivacy() bool {
+func (txCustomToken TxCustomToken) IsPrivacy() bool {
 	return false
 }
 
