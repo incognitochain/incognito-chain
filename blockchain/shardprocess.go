@@ -256,7 +256,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		for _, value := range shardBlock.Body.Instructions {
 			totalInstructions = append(totalInstructions, value...)
 		}
-		isOk := VerifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot)
+		isOk := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot)
 		if !isOk {
 			return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v", shardBlock.Header.InstructionsRoot))
 		}
@@ -401,7 +401,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	for _, value := range instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
-	isOk := VerifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot)
+	isOk := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot)
 	if !isOk {
 		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v", shardBlock.Header.InstructionsRoot))
 	}
@@ -692,11 +692,11 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 		isOk bool
 	)
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
-	isOk = VerifyHashFromStringArray(shardBestState.ShardCommittee, shardBlock.Header.CommitteeRoot)
+	isOk = verifyHashFromStringArray(shardBestState.ShardCommittee, shardBlock.Header.CommitteeRoot)
 	if !isOk {
 		return NewBlockChainError(ShardCommitteeRootHashError, fmt.Errorf("Expect shard committee root hash to be %+v", shardBlock.Header.CommitteeRoot))
 	}
-	isOk = VerifyHashFromStringArray(shardBestState.ShardPendingValidator, shardBlock.Header.PendingValidatorRoot)
+	isOk = verifyHashFromStringArray(shardBestState.ShardPendingValidator, shardBlock.Header.PendingValidatorRoot)
 	if !isOk {
 		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v", shardBlock.Header.PendingValidatorRoot))
 	}

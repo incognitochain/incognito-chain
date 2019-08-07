@@ -153,15 +153,15 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	for _, value := range instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
-	instructionsHash, err := GenerateHashFromStringArray(totalInstructions)
+	instructionsHash, err := generateHashFromStringArray(totalInstructions)
 	if err != nil {
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
-	committeeRoot, err := GenerateHashFromStringArray(shardCommittee)
+	committeeRoot, err := generateHashFromStringArray(shardCommittee)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	pendingValidatorRoot, err := GenerateHashFromStringArray(shardPendingValidator)
+	pendingValidatorRoot, err := generateHashFromStringArray(shardPendingValidator)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
