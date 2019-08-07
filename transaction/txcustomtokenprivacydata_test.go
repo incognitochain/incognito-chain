@@ -8,21 +8,24 @@ import (
 )
 
 func TestTxTokenPrivacyData(t *testing.T) {
+	coin1 := &privacy.Coin{}
+	zero := new(privacy.EllipticPoint)
+	zero.Zero()
+	coin1.SetPublicKey(zero)
+	coin1.SetValue(10)
+	coin2 := &privacy.Coin{}
+	coin2.SetPublicKey(zero)
+	coin2.SetValue(10)
+	proof := &zkp.PaymentProof{}
+	proof.SetOutputCoins([]*privacy.OutputCoin{{
+		CoinDetails: coin1,
+	}})
+	proof.SetInputCoins([]*privacy.InputCoin{{
+		CoinDetails: coin2,
+	}})
+	txNormal := Tx{Proof: proof}
 	data := TxTokenPrivacyData{
-		TxNormal: Tx{Proof: &zkp.PaymentProof{
-			OutputCoins: []*privacy.OutputCoin{{
-				CoinDetails: &privacy.Coin{
-					PublicKey: new(privacy.EllipticPoint).Zero(),
-					Value:     10,
-				},
-			}},
-			InputCoins: []*privacy.InputCoin{{
-				CoinDetails: &privacy.Coin{
-					PublicKey: new(privacy.EllipticPoint).Zero(),
-					Value:     10,
-				},
-			}},
-		}},
+		TxNormal: txNormal,
 	}
 	hash, _ := data.Hash()
 	assert.Equal(t, 32, len(hash))
