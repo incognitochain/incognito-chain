@@ -1158,11 +1158,11 @@ func (tx *Tx) InitTxSalary(
 		tokenID := &common.Hash{}
 		err := tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return err
+			return NewTransactionErr(TokenIDInvalidError, err)
 		}
 		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
 		if err != nil {
-			return err
+			return NewTransactionErr(SndExistedError, err)
 		}
 		if ok {
 			sndOut = privacy.RandScalar()

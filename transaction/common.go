@@ -355,17 +355,16 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		}
 		tx := &TxCustomTokenPrivacy{}
 		err := tx.Init(
-			params.payByPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			params.db,
-			params.meta,
-			false,
-			false,
-			params.shardID,
-		)
+			NewTxPrivacyTokenInitParams(params.payByPrivateKey,
+				[]*privacy.PaymentInfo{},
+				nil,
+				0,
+				tokenParams,
+				params.db,
+				params.meta,
+				false,
+				false,
+				params.shardID))
 		if err != nil {
 			return nil, errors.New(err.Error())
 		}
