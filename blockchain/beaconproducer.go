@@ -6,10 +6,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -43,8 +41,6 @@ import (
 		Sign block and update validator index, agg sig
 */
 func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
-	beaconBlock := &BeaconBlock{}
-	beaconBestState := BestStateBeacon{}
 	// lock blockchain
 	blockGenerator.chain.chainLock.Lock()
 	defer blockGenerator.chain.chainLock.Unlock()
@@ -145,19 +141,19 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeacon m
 	return beaconBlock, nil
 }
 
-func (blockGenerator *BlockGenerator) FinalizeBeaconBlock(blk *BeaconBlock, producerKeyset *incognitokey.KeySet) error {
-	// Signature of producer, sign on hash of header
-	blk.Header.Timestamp = time.Now().Unix()
-	blockHash := blk.Header.Hash()
-	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	blk.ProducerSig = producerSig
-	//================End Generate Signature
-	return nil
-}
+// func (blockGenerator *BlockGenerator) FinalizeBeaconBlock(blk *BeaconBlock, producerKeyset *incognitokey.KeySet) error {
+// 	// Signature of producer, sign on hash of header
+// 	blk.Header.Timestamp = time.Now().Unix()
+// 	blockHash := blk.Header.Hash()
+// 	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
+// 	if err != nil {
+// 		Logger.log.Error(err)
+// 		return err
+// 	}
+// 	blk.ProducerSig = producerSig
+// 	//================End Generate Signature
+// 	return nil
+// }
 
 // return param:
 // #1: shard state
@@ -200,8 +196,8 @@ func (blockGenerator *BlockGenerator) GetShardState(
 		//=======
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.GetAShardCommittee(shardID)
-			hash := shardBlock.Header.Hash()
-			err1 := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+			// hash := shardBlock.Header.Hash()
+			err1 := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err1 == nil)
 			if index != 0 && err1 != nil {
 				break

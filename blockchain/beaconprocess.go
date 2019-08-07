@@ -14,8 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 /*
@@ -251,18 +249,18 @@ FOR CURRENT COMMITTEES ONLY
 */
 func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock, isCommittee bool) error {
 	//verify producer sig
-	blkHash := block.Header.Hash()
-	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	err := incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
-	if err != nil {
-		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
-	}
-	//verify producer
-	producerPosition := (blockchain.BestState.Beacon.BeaconProposerIdx + block.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
-	tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
-	if strings.Compare(tempProducer, producerPk) != 0 {
-		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
-	}
+	// blkHash := block.Header.Hash()
+	// producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
+	// err := incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
+	// if err != nil {
+	// 	return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
+	// }
+	// //verify producer
+	// producerPosition := (blockchain.BestState.Beacon.BeaconProposerIdx + block.Header.Round) % len(blockchain.BestState.Beacon.BeaconCommittee)
+	// tempProducer := blockchain.BestState.Beacon.BeaconCommittee[producerPosition]
+	// if strings.Compare(tempProducer, producerPk) != 0 {
+	// 	return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	// }
 	//verify version
 	if block.Header.Version != BEACON_BLOCK_VERSION {
 		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(BEACON_BLOCK_VERSION)))
@@ -380,14 +378,14 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 				for index, shardBlock := range shardBlocks {
 					currentCommittee := blockchain.BestState.Beacon.GetAShardCommittee(shardID)
 					currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
-					hash := shardBlock.Header.Hash()
-					err := ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+					// hash := shardBlock.Header.Hash()
+					err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 					if index == 0 && err != nil {
 						currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
 						if err != nil {
 							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 						}
-						err = ValidateAggSignature(shardBlock.ValidatorsIdx, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
+						err = blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 						if err != nil {
 							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 						}
@@ -450,16 +448,16 @@ func (beaconBestState *BeaconBestState) VerifyBestStateWithBeaconBlock(block *Be
 	beaconBestState.lockMu.RLock()
 	defer beaconBestState.lockMu.RUnlock()
 	//=============Verify aggegrate signature
-	if isVerifySig {
-		// ValidatorIdx must > Number of Beacon Committee / 2 AND Number of Beacon Committee > 3
-		if len(beaconBestState.BeaconCommittee) > 3 && len(block.ValidatorsIdx[1]) < (len(beaconBestState.BeaconCommittee)>>1) {
-			return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible "+fmt.Sprint(len(block.ValidatorsIdx))))
-		}
-		err := ValidateAggSignature(block.ValidatorsIdx, beaconBestState.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
-		if err != nil {
-			return NewBlockChainError(SignatureError, err)
-		}
-	}
+	// if isVerifySig {
+	// 	// ValidatorIdx must > Number of Beacon Committee / 2 AND Number of Beacon Committee > 3
+	// 	if len(beaconBestState.BeaconCommittee) > 3 && len(block.ValidatorsIdx[1]) < (len(beaconBestState.BeaconCommittee)>>1) {
+	// 		return NewBlockChainError(SignatureError, errors.New("block validators and Beacon committee is not compatible "+fmt.Sprint(len(block.ValidatorsIdx))))
+	// 	}
+	// 	err := ValidateAggSignature(block.ValidatorsIdx, beaconBestState.BeaconCommittee, block.AggregatedSig, block.R, block.Hash())
+	// 	if err != nil {
+	// 		return NewBlockChainError(SignatureError, err)
+	// 	}
+	// }
 	//=============End Verify Aggegrate signature
 	if beaconBestState.BeaconHeight+1 != block.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(block.Header.Height+1))))
@@ -518,11 +516,11 @@ func (beaconBestState *BeaconBestState) VerifyPostProcessingBeaconBlock(block *B
 		isOk bool
 	)
 	//=============Verify producer signature
-	producerPubkey := snapShotBeaconCommittee[beaconBestState.BeaconProposerIdx]
-	blockHash := block.Header.Hash()
-	if err := incognitokey.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
-		return NewBlockChainError(SignatureError, err)
-	}
+	// producerPubkey := snapShotBeaconCommittee[beaconBestState.BeaconProposerIdx]
+	// blockHash := block.Header.Hash()
+	// if err := incognitokey.ValidateDataB58(producerPubkey, block.ProducerSig, blockHash.GetBytes()); err != nil {
+	// 	return NewBlockChainError(SignatureError, err)
+	// }
 	//=============End Verify producer signature
 	strs = append(strs, beaconBestState.BeaconCommittee...)
 	strs = append(strs, beaconBestState.BeaconPendingValidator...)
@@ -600,7 +598,7 @@ func (beaconBestState *BeaconBestState) Update(newBlock *BeaconBlock) error {
 	if newBlock.Header.Height == 1 {
 		beaconBestState.BeaconProposerIdx = 0
 	} else {
-		beaconBestState.BeaconProposerIdx = common.IndexOfStr(base58.Base58Check{}.Encode(newBlock.Header.ProducerAddress.Pk, common.ZeroByte), beaconBestState.BeaconCommittee)
+		beaconBestState.BeaconProposerIdx += newBlock.Header.Round
 	}
 
 	allShardState := newBlock.Body.ShardState

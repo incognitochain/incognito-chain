@@ -2,9 +2,12 @@ package blsbft
 
 import (
 	"encoding/json"
+	"errors"
+	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
+	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
 
 type ValidationData struct {
@@ -27,14 +30,35 @@ func EncodeValidationData(validationData ValidationData) ([]byte, error) {
 	return json.Marshal(validationData)
 }
 
-func (e *BLSBFT) validatePreSignBlock(blockHash common.Hash, validationData string) error {
-	valData, err := DecodeValidationData(validationData)
+func (e *BLSBFT) validatePreSignBlock(block chain.BlockInterface, validationData string) error {
+	confident, err := e.ValidateBlock(block, e.Chain)
+	if confident != 2 {
+		return err
+	}
 	return nil
 }
 
-func (e *BLSBFT) ValidateBlock(block chain.BlockInterface) error {
+func (e *BLSBFT) ValidateBlock(block chain.BlockInterface, chain chain.ChainInterface) (byte, error) {
 	valData, error := DecodeValidationData(block.GetValidationField())
-	return nil
+
+	// 1. Verify producer's sig
+	// 2. Verify Committee's sig
+	// 3. Verify correct producer for blockHeight, round
+	blockHash := block.Hash()
+	if err := bls.ValidateSingleSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
+		return 0, err
+	}
+	committee := chain.GetCommittee()
+	if err := bls.ValidateAggSig(block.Hash(), valData.AggSig, committee); err != nil {
+		return 1, err
+	}
+	producerPosition := (chain.GetLastProposerIndex() + block.GetRound()) % chain.GetCommitteeSize()
+	tempProducer := committee[producerPosition]
+	if strings.Compare(tempProducer, valData.Producer) != 0 {
+		return 2, NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	}
+
+	return 3, nil
 
 }
 

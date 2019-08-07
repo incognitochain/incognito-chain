@@ -302,11 +302,13 @@ func (bb *beaconBlock) Hash() []byte {
 }
 
 func (bb *beaconBlock) R() string {
-	return bb.BeaconBlock.R
+	// return bb.BeaconBlock.R
+	return ""
 }
 
 func (bb *beaconBlock) Sig() string {
-	return bb.BeaconBlock.AggregatedSig
+	// return bb.BeaconBlock.AggregatedSig
+	return ""
 }
 
 // SignerPubkeys finds the pubkeys of all signers of a beacon block
@@ -335,7 +337,8 @@ func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, [
 }
 
 func (bb *beaconBlock) ValidatorsIdx(idx int) []int {
-	return bb.BeaconBlock.ValidatorsIdx[idx]
+	// return bb.BeaconBlock.ValidatorsIdx[idx]
+	return []int{}
 }
 
 type shardBlock struct {
@@ -357,15 +360,18 @@ func (sb *shardBlock) Hash() []byte {
 }
 
 func (sb *shardBlock) R() string {
-	return sb.ShardBlock.R
+	// return sb.ShardBlock.R
+	return ""
 }
 
 func (sb *shardBlock) Sig() string {
-	return sb.ShardBlock.AggregatedSig
+	// return sb.ShardBlock.AggregatedSig
+	return ""
 }
 
 func (sb *shardBlock) ValidatorsIdx(idx int) []int {
-	return sb.ShardBlock.ValidatorsIdx[idx]
+	// return sb.ShardBlock.ValidatorsIdx[idx]
+	return []int{}
 }
 
 // SignerPubkeys finds the pubkeys of all signers of a shard block
