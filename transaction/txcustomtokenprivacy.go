@@ -305,7 +305,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			existed := params.db.PrivacyCustomTokenIDExisted(*propertyID)
 			existedCross := params.db.PrivacyCustomTokenIDCrossShardExisted(*propertyID)
 			if !existed && !existedCross {
-				return NewTransactionErr(UnexpectedError, errors.New("invalid Token ID"))
+				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
 			}
 			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxTokenPrivacyData = TxTokenPrivacyData{
@@ -324,14 +324,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				propertyID,
 				nil))
 			if err != nil {
-				return err
+				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
 			txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal = temp
 		}
 	}
 
 	if !handled {
-		return NewTransactionErr(UnexpectedError, errors.New("can't handle this TokenTxType"))
+		return NewTransactionErr(PrivacyTokenTxTypeNotHandleError, errors.New("can't handle this TokenTxType"))
 	}
 	return nil
 }
@@ -346,7 +346,8 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	err := txCustomTokenPrivacy.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
-		return NewTransactionErr(UnexpectedError, err)
+		Logger.log.Error(err)
+		return NewTransactionErr(DoubleSpendError, err)
 	}
 	return nil
 }
@@ -440,7 +441,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 	if txCustomTokenPrivacy.Metadata != nil {
 		validateMetadata := txCustomTokenPrivacy.Metadata.ValidateMetadataByItself()
 		if !validateMetadata {
-			return validateMetadata, errors.New("Metadata is invalid")
+			return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
 		}
 		return validateMetadata, nil
 	}
@@ -450,7 +451,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 // ValidateTransaction - verify proof, signature, ... of PRV and pToken
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// validate for PRV
-	ok, error := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
+	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
 	if ok {
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID
@@ -460,7 +461,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 			return txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.IsPrivacy(), db, shardID, &tokenID)
 		}
 	}
-	return false, error
+	return false, err
 }
 
 // GetProof - return proof PRV of tx

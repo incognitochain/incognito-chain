@@ -1016,7 +1016,7 @@ func (tx Tx) ValidateTxByItself(
 		if validateMetadata {
 			return validateMetadata, nil
 		} else {
-			return validateMetadata, errors.New("Validate Metadata fail")
+			return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
 		}
 	}
 	return true, nil
