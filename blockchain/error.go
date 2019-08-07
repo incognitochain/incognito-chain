@@ -79,6 +79,10 @@ const (
 	VerifyCrossShardCustomTokenError
 	ShardCommitteeRootHashError
 	ShardPendingValidatorRootHashError
+	BeaconCommitteeAndPendingValidatorRootError
+	ShardCommitteeAndPendingValidatorRootError
+	ShardCandidateRootError
+	BeaconCandidateRootError
 	StoreShardBlockError
 	StoreBestStateError
 	FetchAndStoreTransactionError
@@ -211,6 +215,10 @@ var ErrCodeMessage = map[int]struct {
 	ShardBlockSignatureError:                          {-1093, "Shard Block Signature Error"},
 	ShardBestStateBeaconHeightNotCompatibleError:      {-1094, "Shard BestState Beacon Height Not Compatible Error"},
 	BeaconBestStateBestShardHeightNotCompatibleError:  {-1095, "Beacon BestState Best Shard Height Not Compatible Error"},
+	BeaconCommitteeAndPendingValidatorRootError:       {-1096, "Beacon Committee And Pending Validator Root Hash Error"},
+	ShardCommitteeAndPendingValidatorRootError:        {-1097, "Shard Committee And Pending Validator Root Hash Error"},
+	ShardCandidateRootError:                           {-1098, "Shard Candidate Root Hash Error"},
+	BeaconCandidateRootError:                          {-1099, "Beacon Candidate Root Hash Error"},
 }
 
 type BlockChainError struct {

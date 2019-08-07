@@ -522,7 +522,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	// check with current final best state
 	// shardBlock can only be insert if it match the current best state
 	if !shardBestState.BestBlockHash.IsEqual(&shardBlock.Header.PreviousBlockHash) {
-		return NewBlockChainError(ShardBestStateNotCompatibleError, fmt.Errorf("Current Best Block Hash %+v, New Shard Block %+v, Previous Block Hash of New Block %+v", bestBlockHash, shardBlock.Header.Height, shardBlock.Header.PreviousBlockHash))
+		return NewBlockChainError(ShardBestStateNotCompatibleError, fmt.Errorf("Current Best Block Hash %+v, New Shard Block %+v, Previous Block Hash of New Block %+v", shardBestState.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.PreviousBlockHash))
 	}
 	if shardBestState.ShardHeight+1 != shardBlock.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Shard Block height of new Shard Block should be %+v, but get %+v", shardBestState.ShardHeight+1, shardBlock.Header.Height))
