@@ -23,6 +23,8 @@ const (
 	InputCoinIsVeryLargeError
 	PaymentInfoIsVeryLargeError
 	TokenIDInvalidError
+	TokenIDExistedError
+	TokenIDExistedByCrossShardError
 	PrivateKeySenderInvalidError
 	SignTxError
 	DecompressPaymentAddressError
@@ -39,6 +41,9 @@ const (
 	OutputCommitmentExistError
 	TxProofVerifyFailError
 	VerifyMinerCreatedTxBeforeGettingInBlockError
+	CommitOutputCoinError
+
+	PrivacyTokenInitPRVError
 	PrivacyTokenPRVJsonError
 	PrivacyTokenJsonError
 )
@@ -75,6 +80,9 @@ var ErrCodeMessage = map[int]struct {
 	OutputCommitmentExistError:                    {-1024, "Output's commitment existed"},
 	TxProofVerifyFailError:                        {-1025, "Can not verify proof of tx"},
 	VerifyMinerCreatedTxBeforeGettingInBlockError: {-1026, "Verify Miner Created Tx Before Getting In Block error"},
+	CommitOutputCoinError:                         {-1027, "Commit all output error"},
+	TokenIDExistedError:                           {-1028, "This token is existed in network"},
+	TokenIDExistedByCrossShardError:               {-1029, "This token is existed in network by cross shard"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},
@@ -84,6 +92,7 @@ var ErrCodeMessage = map[int]struct {
 	InvalidSanityDataPrivacyTokenError:  {-3000, "Invalid sanity data for privacy Token"},
 	InvalidDoubleSpendPrivacyTokenError: {-3001, "Double spend privacy Token in blockchain"},
 	PrivacyTokenJsonError:               {-3002, "Json data error"},
+	PrivacyTokenInitPRVError:            {-3003, "Init tx for PRV error"},
 }
 
 type TransactionError struct {
