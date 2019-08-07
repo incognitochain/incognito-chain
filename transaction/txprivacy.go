@@ -75,6 +75,7 @@ type TxPrivacyInitParams struct {
 	db          database.DatabaseInterface
 	tokenID     *common.Hash // default is nil -> use for prv coin
 	metaData    metadata.Metadata
+	info        []byte //512
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -144,6 +145,9 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 	// init info of tx
 	tx.Info = []byte{}
+	if len(params.info) > 0 {
+		tx.Info = params.info
+	}
 
 	// set metadata
 	tx.Metadata = params.metaData
