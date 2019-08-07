@@ -32,7 +32,7 @@ type PaymentAddress struct {
 	Tk TransmissionKey // 33 bytes, use to encrypt pointByte
 }
 
-// PaymentInfo contains an address of a payee and a value of coins he/she will receive
+// PaymentInfo contains an address of a payee and a Value of coins he/she will receive
 type PaymentInfo struct {
 	PaymentAddress PaymentAddress
 	Amount         uint64
