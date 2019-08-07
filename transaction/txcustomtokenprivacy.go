@@ -31,14 +31,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		return NewTransactionErr(UnexpectedError, err)
 	}
 	temp := &struct {
 		TxTokenPrivacyData interface{}
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		return NewTransactionErr(UnexpectedError, err)
 	}
 	TxTokenPrivacyDataJson, _ := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
 	_ = json.Unmarshal(TxTokenPrivacyDataJson, &txCustomTokenPrivacy.TxTokenPrivacyData)
@@ -167,7 +167,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 		nil,
 		metaData))
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		return NewTransactionErr(UnexpectedError, err)
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.Type = common.TxCustomTokenPrivacyType
@@ -199,7 +199,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			tempOutputCoin[0].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
 			err := tempOutputCoin[0].CoinDetails.GetPublicKey().Decompress(tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, err)
+				return NewTransactionErr(UnexpectedError, err)
 			}
 			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar())
 
@@ -209,7 +209,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			// create coin commitment
 			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, err)
+				return NewTransactionErr(UnexpectedError, err)
 			}
 			// get last byte
 			temp.PubKeyLastByteSender = tokenParams.Receiver[0].PaymentAddress.Pk[len(tokenParams.Receiver[0].PaymentAddress.Pk)-1]
@@ -219,19 +219,19 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			temp.sigPrivKey = *senderKey
 			err = temp.signTx()
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
+				return NewTransactionErr(UnexpectedError, errors.New("can't handle this TokenTxType"))
 			}
 
 			txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal = temp
 			hashInitToken, err := txCustomTokenPrivacy.TxTokenPrivacyData.Hash()
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
+				return NewTransactionErr(UnexpectedError, errors.New("can't handle this TokenTxType"))
 			}
 
 			if tokenParams.Mintable {
 				propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 				if err != nil {
-					return NewTransactionErr(UnexpectedErr, err)
+					return NewTransactionErr(UnexpectedError, err)
 				}
 				txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID = *propertyID
 				txCustomTokenPrivacy.TxTokenPrivacyData.Mintable = true
@@ -242,12 +242,12 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 				existed := db.PrivacyCustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
-					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network"))
+					return NewTransactionErr(UnexpectedError, errors.New("this token is existed in network"))
 				}
 				existed = db.PrivacyCustomTokenIDCrossShardExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed(crossshard)", newHashInitToken)
-					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network via cross shard"))
+					return NewTransactionErr(UnexpectedError, errors.New("this token is existed in network via cross shard"))
 				}
 				txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID = newHashInitToken
 				Logger.log.Infof("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID.String())
@@ -263,7 +263,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			existed := db.PrivacyCustomTokenIDExisted(*propertyID)
 			existedCross := db.PrivacyCustomTokenIDCrossShardExisted(*propertyID)
 			if !existed && !existedCross {
-				return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
+				return NewTransactionErr(UnexpectedError, errors.New("invalid Token ID"))
 			}
 			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxTokenPrivacyData = TxTokenPrivacyData{
@@ -289,7 +289,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 	}
 
 	if !handled {
-		return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
+		return NewTransactionErr(UnexpectedError, errors.New("can't handle this TokenTxType"))
 	}
 	return nil
 }
@@ -304,7 +304,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(m
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	err := txCustomTokenPrivacy.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		return NewTransactionErr(UnexpectedError, err)
 	}
 	return nil
 }
@@ -353,11 +353,11 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 ) error {
 	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, nil)
 	if err != nil {
-		return NewTransactionErr(InvalidDoubleSpendPRV, err)
+		return NewTransactionErr(InvalidDoubleSpendPRVError, err)
 	}
 	err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, txCustomTokenPrivacy.GetTokenID())
 	if err != nil {
-		return NewTransactionErr(InvalidDoubleSpendPrivacyToken, err)
+		return NewTransactionErr(InvalidDoubleSpendPrivacyTokenError, err)
 	}
 	return nil
 }
@@ -367,13 +367,13 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateSanityData(bcr metadat
 	// validate sanity data for PRV
 	result, err := txCustomTokenPrivacy.Tx.validateNormalTxSanityData()
 	if err != nil {
-		return result, NewTransactionErr(InvalidSanityDataPRV, err)
+		return result, NewTransactionErr(InvalidSanityDataPRVError, err)
 	}
 	// validate sanity for pToken
 
 	result, err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.validateNormalTxSanityData()
 	if err != nil {
-		return result, NewTransactionErr(InvalidSanityDataPrivacyToken, err)
+		return result, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
 	}
 	return result, nil
 }
