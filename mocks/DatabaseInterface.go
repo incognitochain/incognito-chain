@@ -1762,8 +1762,8 @@ func (_m *DatabaseInterface) StoreCommitments(tokenID common.Hash, pubkey []byte
 	return r0
 }
 
-// StoreCommitteeByHeight provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) StoreCommitteeByHeight(_a0 uint64, _a1 interface{}) error {
+// StoreShardCommitteeByHeight provides a mock function with given fields: _a0, _a1
+func (_m *DatabaseInterface) StoreShardCommitteeByHeight(_a0 uint64, _a1 interface{}) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error

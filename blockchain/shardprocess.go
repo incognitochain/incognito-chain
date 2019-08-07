@@ -115,11 +115,11 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 			err = blockchain.config.DataBase.CleanBackup(true, shardBlock.Header.ShardID)
 			if err != nil {
-				return err
+				return NewBlockChainError(CleanBackUpError, err)
 			}
 			err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
 			if err != nil {
-				return err
+				return NewBlockChainError(BackUpBestStateError, err)
 			}
 		}
 	}
