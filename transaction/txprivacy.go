@@ -304,14 +304,14 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, "", "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
 	tx.Proof, err = witness.Prove(params.hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, "", "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 	}
 
