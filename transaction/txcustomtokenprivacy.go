@@ -69,7 +69,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) JSONString() string {
 }
 
 // Hash returns the hash of all fields of the transaction
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Hash() *common.Hash {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) Hash() *common.Hash {
 	if txCustomTokenPrivacy.cachedHash != nil {
 		return txCustomTokenPrivacy.cachedHash
 	}
@@ -590,15 +590,15 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetSigPubKey() []byte {
 }
 
 // GetTxFeeToken - return Token Fee use to pay for privacy token Tx
-func (tx *TxCustomTokenPrivacy) GetTxFeeToken() uint64 {
+func (tx TxCustomTokenPrivacy) GetTxFeeToken() uint64 {
 	return tx.TxTokenPrivacyData.TxNormal.Fee
 }
 
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenID() *common.Hash {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenID() *common.Hash {
 	return &txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID
 }
 
 // GetTxFee - return fee PRV of Tx which contain privacy token Tx
-func (tx *TxCustomTokenPrivacy) GetTxFee() uint64 {
+func (tx TxCustomTokenPrivacy) GetTxFee() uint64 {
 	return tx.Tx.GetTxFee()
 }
