@@ -1,7 +1,6 @@
 package mempool
 
 import (
-	"encoding/json"
 	"errors"
 	"sort"
 	"strconv"
@@ -175,17 +174,17 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(block *blockchain.CrossShardBl
 			return nil, pool.shardID, NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
 		}
 	}
-	shardCommitteeByte, err := pool.db.FetchCommitteeByHeight(block.Header.BeaconHeight)
-	if err != nil {
-		return nil, pool.shardID, NewBlockPoolError(DatabaseError, errors.New("No committee for this epoch"))
-	}
-	shardCommittee := make(map[byte][]string)
-	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
-		return nil, pool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
-	}
-	if err := blockchain.ValidateAggSignature(block.ValidatorsIdx, shardCommittee[shardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
-		return nil, pool.shardID, err
-	}
+	// shardCommitteeByte, err := pool.db.FetchCommitteeByHeight(block.Header.BeaconHeight)
+	// if err != nil {
+	// 	return nil, pool.shardID, NewBlockPoolError(DatabaseError, errors.New("No committee for this epoch"))
+	// }
+	// shardCommittee := make(map[byte][]string)
+	// if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+	// 	return nil, pool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
+	// }
+	// if err := blockchain.ValidateAggSignature(block.ValidatorsIdx, shardCommittee[shardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+	// 	return nil, pool.shardID, err
+	// }
 
 	if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
 		if pool.pendingPool[shardID][len(pool.pendingPool[shardID])-1].Header.Height > block.Header.Height {

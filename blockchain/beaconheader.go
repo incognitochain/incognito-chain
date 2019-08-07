@@ -2,12 +2,12 @@ package blockchain
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type BeaconHeader struct {
-	ProducerAddress                  privacy.PaymentAddress
+	// ProducerAddress                  privacy.PaymentAddress
 	Version                          int         `json:"Version"`
 	Height                           uint64      `json:"Height"`
 	Epoch                            uint64      `json:"Epoch"`
@@ -27,7 +27,7 @@ type BeaconHeader struct {
 
 func (beaconHeader *BeaconHeader) toString() string {
 	res := ""
-	res += beaconHeader.ProducerAddress.String()
+	// res += beaconHeader.ProducerAddress.String()
 	res += fmt.Sprintf("%v", beaconHeader.Version)
 	res += fmt.Sprintf("%v", beaconHeader.Height)
 	res += fmt.Sprintf("%v", beaconHeader.Epoch)

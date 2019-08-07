@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/binary"
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -99,8 +100,8 @@ func (crossTransaction CrossTransaction) Hash() common.Hash {
 	- Agg Signature
 	- MerklePath
 */
-func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
-	if err := ValidateAggSignature(crossShardBlock.ValidatorsIdx, committees, crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
+func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockChain, committees []string) error {
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committees, crossShardBlock.ConsensusType); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {

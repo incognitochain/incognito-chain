@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"sort"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -199,19 +199,19 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	return block, nil
 }
 
-func (blockGenerator *BlockGenerator) FinalizeShardBlock(blk *ShardBlock, producerKeyset *incognitokey.KeySet) error {
-	// Signature of producer, sign on hash of header
-	blk.Header.Timestamp = time.Now().Unix()
-	blockHash := blk.Header.Hash()
-	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	blk.ProducerSig = producerSig
-	//End Generate Signature
-	return nil
-}
+// func (blockGenerator *BlockGenerator) FinalizeShardBlock(blk *ShardBlock, producerKeyset *incognitokey.KeySet) error {
+// 	// Signature of producer, sign on hash of header
+// 	blk.Header.Timestamp = time.Now().Unix()
+// 	blockHash := blk.Header.Hash()
+// 	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
+// 	if err != nil {
+// 		Logger.log.Error(err)
+// 		return err
+// 	}
+// 	blk.ProducerSig = producerSig
+// 	//End Generate Signature
+// 	return nil
+// }
 
 /*
 	Get Transaction For new Block
@@ -455,7 +455,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 			if err != nil {
 				break
 			}
-			err = blk.VerifyCrossShardBlock(shardCommittee[blk.Header.ShardID])
+			err = blk.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee[blk.Header.ShardID])
 			if err != nil {
 				break
 			}

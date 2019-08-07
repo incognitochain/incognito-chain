@@ -9,6 +9,6 @@ func (engine *Engine) GetMiningPublicKey() (publickey string, keyType string) {
 func (engine *Engine) SignDataWithMiningKey(data []byte) (string, error) {
 	return "", nil
 }
-func (engine *Engine) VerifyDataWithMiningKey(data []byte, sig string, publicKey string, publicKeyType string) error {
+func (engine *Engine) VerifyValidationData(data []byte, validationData string, consensusType string) error {
 	return nil
 }

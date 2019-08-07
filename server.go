@@ -994,7 +994,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 	pbk := ""
 	pbkType := ""
 	if msg.PublicKey != "" {
-		err := serverObj.consensusEngine.VerifyDataWithMiningKey([]byte(peerConn.GetListenerPeer().GetPeerID().Pretty()), msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
+		err := serverObj.consensusEngine.VerifyData([]byte(peerConn.GetListenerPeer().GetPeerID().Pretty()), msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
 		if err == nil {
 			pbk = msg.PublicKey
 		} else {
