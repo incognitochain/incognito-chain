@@ -5,7 +5,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -52,7 +51,7 @@ func (s *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (s *BeaconChain) GetLastProposerIndex() int {
-	return common.IndexOfStr(base58.Base58Check{}.Encode(s.Blockchain.BestState.Beacon.BestBlock.Header.ProducerAddress.Pk, common.ZeroByte), s.Blockchain.BestState.Beacon.BeaconCommittee)
+	return s.Blockchain.BestState.Beacon.BeaconProposerIdx
 }
 
 func (s *BeaconChain) CreateNewBlock(round int) BlockInterface {

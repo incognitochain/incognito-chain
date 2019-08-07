@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"io"
 	"log"
 	"math/big"
@@ -96,8 +95,9 @@ type Config struct {
 	// UserKeySet *incognitokey.KeySet
 
 	ConsensusEngine interface {
-		ValidateBlockProducerSig(validationData string, blockHash common.Hash) error
-		ValidateAggSignature(committee []string, validataData string, blockHash common.Hash) error
+		VerifyValidationData(data common.Hash, validationData string, consensusType string) error
+		ValidateBlockWithConsensus(block interface{}, chainName string, consensusType string) (byte, error)
+		ValidateBlockCommitteSig(block interface{}, committee []string, consensusType string) error
 		GetBlockProducerPubKeyB58(validationData string) string
 		GetUserMiningKey() string
 	}
