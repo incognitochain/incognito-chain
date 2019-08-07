@@ -449,17 +449,16 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
-		&senderKeySet.PrivateKey,
-		nil,
-		inputCoins,
-		realFeePrv,
-		tokenParams,
-		*rpcServer.config.Database,
-		metaData,
-		hasPrivacyCoin,
-		hasPrivacyToken,
-		shardIDSender,
-	)
+		transaction.NewTxPrivacyTokenInitParams(&senderKeySet.PrivateKey,
+			nil,
+			inputCoins,
+			realFeePrv,
+			tokenParams,
+			*rpcServer.config.Database,
+			metaData,
+			hasPrivacyCoin,
+			hasPrivacyToken,
+			shardIDSender))
 
 	if err.(*transaction.TransactionError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
