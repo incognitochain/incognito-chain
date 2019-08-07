@@ -76,7 +76,8 @@ func TestEncodeVectors(t *testing.T) {
 		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 	start = time.Now()
-	expectedRes := new(privacy.EllipticPoint).Zero()
+	expectedRes := new(privacy.EllipticPoint)
+	expectedRes.Zero()
 	for i := 0; i < n; i++ {
 		expectedRes = expectedRes.Add(G[i].ScalarMult(a[i]))
 		expectedRes = expectedRes.Add(H[i].ScalarMult(b[i]))
@@ -104,7 +105,8 @@ func TestInnerProductProve(t *testing.T) {
 		wit.b[i] = new(big.Int).SetBytes(tmp)
 	}
 
-	wit.p = new(privacy.EllipticPoint).Zero()
+	wit.p = new(privacy.EllipticPoint)
+	wit.p.Zero()
 	c, err := innerProduct(wit.a, wit.b)
 	if err != nil {
 		privacy.Logger.Log.Info("Err: %v\n", err)
