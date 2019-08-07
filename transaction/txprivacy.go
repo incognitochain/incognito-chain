@@ -370,7 +370,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 func (tx *Tx) signTx() error {
 	//Check input transaction
 	if tx.Sig != nil {
-		return errors.New("input transaction must be an unsigned one")
+		return NewTransactionErr(UnexpectedError, errors.New("input transaction must be an unsigned one"))
 	}
 
 	/****** using Schnorr signature *******/
@@ -403,7 +403,7 @@ func (tx *Tx) signTx() error {
 func (tx *Tx) verifySigTx() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
-		return false, errors.New("input transaction must be an signed one")
+		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
 	}
 
 	var err error
@@ -429,9 +429,9 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	}
 
 	// verify signature
-	// Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
-	// Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
-	// Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)
 	res = verifyKey.Verify(signature, tx.Hash()[:])
 
 	return res, nil
@@ -572,7 +572,7 @@ func (tx Tx) GetTxFeeToken() uint64 {
 }
 
 // GetTxActualSize computes the actual size of a given transaction in kilobyte
-func (tx *Tx) GetTxActualSize() uint64 {
+func (tx Tx) GetTxActualSize() uint64 {
 	if tx.cachedActualSize != nil {
 		return *tx.cachedActualSize
 	}
@@ -605,11 +605,11 @@ func (tx *Tx) GetTxActualSize() uint64 {
 }
 
 // GetType returns the type of the transaction
-func (tx *Tx) GetType() string {
+func (tx Tx) GetType() string {
 	return tx.Type
 }
 
-func (tx *Tx) ListSerialNumbersHashH() []common.Hash {
+func (tx Tx) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
 	if tx.Proof != nil {
 		for _, d := range tx.Proof.GetInputCoins() {
@@ -629,22 +629,22 @@ func (tx Tx) CheckCMExistence(cm []byte, db database.DatabaseInterface, shardID 
 	return ok, err
 }
 
-func (tx *Tx) CheckTxVersion(maxTxVersion int8) bool {
+func (tx Tx) CheckTxVersion(maxTxVersion int8) bool {
 	return !(tx.Version > maxTxVersion)
 }
 
-func (tx *Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
+func (tx Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
 	if tx.Metadata != nil {
-		return tx.Metadata.CheckTransactionFee(tx, minFeePerKbTx)
+		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
 	}
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
 	return tx.Fee >= fullFee
 }
 
-func (tx *Tx) IsSalaryTx() bool {
+func (tx Tx) IsSalaryTx() bool {
 	// Check normal tx(not an action tx)
 	if tx.GetType() != common.TxRewardType {
 		return false
@@ -656,14 +656,14 @@ func (tx *Tx) IsSalaryTx() bool {
 	return false
 }
 
-func (tx *Tx) GetSender() []byte {
+func (tx Tx) GetSender() []byte {
 	if tx.Proof == nil || len(tx.Proof.GetInputCoins()) == 0 {
 		return nil
 	}
 	return tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 }
 
-func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
+func (tx Tx) GetReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
 	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
@@ -686,7 +686,7 @@ func (tx *Tx) GetReceivers() ([][]byte, []uint64) {
 	return pubkeys, amounts
 }
 
-func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
+func (tx Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	sender := []byte{} // Empty byte slice for coinbase tx
 	if tx.Proof != nil && len(tx.Proof.GetInputCoins()) > 0 && !tx.IsPrivacy() {
 		sender = tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
@@ -705,20 +705,20 @@ func (tx *Tx) GetUniqueReceiver() (bool, []byte, uint64) {
 	return count == 1, pubkey, amount
 }
 
-func (tx *Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
+func (tx Tx) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	unique, pk, amount := tx.GetUniqueReceiver()
 	return unique, pk, amount, &common.PRVCoinID
 }
 
-func (tx *Tx) GetTokenReceivers() ([][]byte, []uint64) {
+func (tx Tx) GetTokenReceivers() ([][]byte, []uint64) {
 	return nil, nil
 }
 
-func (tx *Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
+func (tx Tx) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	return false, nil, 0
 }
 
-func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
+func (tx Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
 	if tx.Proof == nil {
 		return nil
 	}
@@ -738,13 +738,13 @@ func (tx *Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map
 	return nil
 }
 
-func (tx *Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
-func (tx *Tx) ValidateDoubleSpendWithBlockchain(
+func (tx Tx) ValidateDoubleSpendWithBlockchain(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 	db database.DatabaseInterface,
@@ -772,7 +772,7 @@ func (tx *Tx) ValidateDoubleSpendWithBlockchain(
 	return nil
 }
 
-func (tx *Tx) ValidateTxWithBlockChain(
+func (tx Tx) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 	db database.DatabaseInterface,
@@ -781,7 +781,7 @@ func (tx *Tx) ValidateTxWithBlockChain(
 		return nil
 	}
 	if tx.Metadata != nil {
-		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(tx, bcr, shardID, db)
+		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(&tx, bcr, shardID, db)
 		fmt.Printf("[db] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
 			return err
@@ -979,11 +979,11 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 	return true, nil
 }
 
-func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+func (tx Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	Logger.log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
 		Logger.log.Debug("tx.Metadata.ValidateSanityData")
-		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, tx)
+		isContinued, ok, err := tx.Metadata.ValidateSanityData(bcr, &tx)
 		Logger.log.Debug("END tx.Metadata.ValidateSanityData")
 		if err != nil || !ok || !isContinued {
 			return ok, err
@@ -993,7 +993,7 @@ func (tx *Tx) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error)
 	return tx.validateNormalTxSanityData()
 }
 
-func (tx *Tx) ValidateTxByItself(
+func (tx Tx) ValidateTxByItself(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
@@ -1053,7 +1053,7 @@ func (tx Tx) GetSigPubKey() []byte {
 	return tx.SigPubKey
 }
 
-func (tx *Tx) GetProof() *zkp.PaymentProof {
+func (tx Tx) GetProof() *zkp.PaymentProof {
 	return tx.Proof
 }
 
@@ -1064,7 +1064,7 @@ func (tx Tx) IsPrivacy() bool {
 	return true
 }
 
-func (tx *Tx) ValidateType() bool {
+func (tx Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 

@@ -69,7 +69,7 @@ func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 	return nil
 }
 
-func (customTokenTx *TxCustomToken) ValidateTxWithCurrentMempool(
+func (customTokenTx TxCustomToken) ValidateTxWithCurrentMempool(
 	mr metadata.MempoolRetriever,
 ) error {
 	if customTokenTx.Type == common.TxRewardType || customTokenTx.Type == common.TxReturnStakingType {
@@ -118,7 +118,7 @@ func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain
 	return nil
 }
 
-func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
+func (customTokenTx TxCustomToken) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 	db database.DatabaseInterface,
@@ -131,7 +131,7 @@ func (customTokenTx *TxCustomToken) ValidateTxWithBlockChain(
 	}
 
 	if customTokenTx.Metadata != nil {
-		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(customTokenTx, bcr, shardID, db)
+		isContinued, err := customTokenTx.Metadata.ValidateTxWithBlockChain(&customTokenTx, bcr, shardID, db)
 		if err != nil {
 			return NewTransactionErr(UnexpectedError, err)
 		}
@@ -177,9 +177,9 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata
 	return true, nil
 }
 
-func (customTokenTx *TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+func (customTokenTx TxCustomToken) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	if customTokenTx.Metadata != nil {
-		isContinued, ok, err := customTokenTx.Metadata.ValidateSanityData(bcr, customTokenTx)
+		isContinued, ok, err := customTokenTx.Metadata.ValidateSanityData(bcr, &customTokenTx)
 		if err != nil || !ok || !isContinued {
 			return ok, err
 		}
@@ -252,7 +252,7 @@ func (customTokenTx *TxCustomToken) GetListUTXOFromTxCustomToken(
 	return true
 }
 
-func (customTokenTx *TxCustomToken) ValidateTxByItself(
+func (customTokenTx TxCustomToken) ValidateTxByItself(
 	hasPrivacy bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
@@ -303,7 +303,7 @@ func (customTokenTx *TxCustomToken) ValidateTxByItself(
 	}
 	return true, nil
 }
-func (customTokenTx *TxCustomToken) ListSerialNumbersHashH() []common.Hash {
+func (customTokenTx TxCustomToken) ListSerialNumbersHashH() []common.Hash {
 	tx := customTokenTx.Tx
 	result := []common.Hash{}
 	if tx.Proof != nil {
@@ -351,7 +351,7 @@ func (customTokenTx TxCustomToken) Hash() *common.Hash {
 
 // GetTxActualSize computes the virtual size of a given transaction
 // size of this tx = (normal TxNormal size) + (custom token data size)
-func (customTokenTx *TxCustomToken) GetTxActualSize() uint64 {
+func (customTokenTx TxCustomToken) GetTxActualSize() uint64 {
 	normalTxSize := customTokenTx.Tx.GetTxActualSize()
 	tokenDataSize := uint64(0)
 	tokenDataSize += uint64(len(customTokenTx.TxTokenData.PropertyName))
@@ -397,7 +397,7 @@ func (customTokenTx *TxCustomToken) GetTxActualSize() uint64 {
 	return uint64(math.Ceil(float64(tokenDataSize) / 1024))
 }*/
 
-func (tx *TxCustomToken) CheckTransactionFee(minFeePerKbTx uint64) bool {
+func (tx TxCustomToken) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
 	return tx.GetTxFee() >= fullFee
 }
@@ -573,22 +573,22 @@ func (txCustomToken TxCustomToken) IsPrivacy() bool {
 	return false
 }
 
-func (txCustomToken *TxCustomToken) ValidateType() bool {
+func (txCustomToken TxCustomToken) ValidateType() bool {
 	return txCustomToken.Type == common.TxCustomTokenType
 }
 
-func (txCustomToken *TxCustomToken) GetProof() *zkp.PaymentProof {
+func (txCustomToken TxCustomToken) GetProof() *zkp.PaymentProof {
 	return txCustomToken.Proof
 }
 
-func (txCustomToken *TxCustomToken) GetSender() []byte {
+func (txCustomToken TxCustomToken) GetSender() []byte {
 	if len(txCustomToken.TxTokenData.Vins) == 0 {
 		return nil
 	}
 	return txCustomToken.TxTokenData.Vins[0].PaymentAddress.Pk[:]
 }
 
-func (tx *TxCustomToken) GetTokenReceivers() ([][]byte, []uint64) {
+func (tx TxCustomToken) GetTokenReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
 	for _, vout := range tx.TxTokenData.Vouts {
@@ -609,7 +609,7 @@ func (tx *TxCustomToken) GetTokenReceivers() ([][]byte, []uint64) {
 	return pubkeys, amounts
 }
 
-func (tx *TxCustomToken) GetTokenUniqueReceiver() (bool, []byte, uint64) {
+func (tx TxCustomToken) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	sender := []byte{}
 	if len(tx.TxTokenData.Vins) > 0 {
 		sender = tx.TxTokenData.Vins[0].PaymentAddress.Pk
@@ -628,7 +628,7 @@ func (tx *TxCustomToken) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	return count == 1, pubkey, amount
 }
 
-func (txCustomToken *TxCustomToken) GetTransferData() (bool, []byte, uint64, *common.Hash) {
+func (txCustomToken TxCustomToken) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	unique, pk, amount := txCustomToken.GetTokenUniqueReceiver()
 	return unique, pk, amount, &txCustomToken.TxTokenData.PropertyID
 }
