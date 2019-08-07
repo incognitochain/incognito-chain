@@ -26,7 +26,7 @@ func TestTxCustomToken(t *testing.T) {
 	in1[0].CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
 		in1[0].CoinDetails.GetSNDerivator()))
 	tx := TxCustomToken{}
-	err = tx.Init(&key.KeySet.PrivateKey,
+	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},
 		in1,
 		0,
@@ -39,14 +39,14 @@ func TestTxCustomToken(t *testing.T) {
 		db,
 		nil,
 		false,
-		6)
+		6))
 	if err != nil {
 		t.Error(err)
 	}
 
 	db.StoreCustomToken(common.PRVCoinID, tx.Hash()[:])
 
-	err = tx.Init(&key.KeySet.PrivateKey,
+	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},
 		in1,
 		0,
@@ -60,7 +60,7 @@ func TestTxCustomToken(t *testing.T) {
 		db,
 		nil,
 		false,
-		6)
+		6))
 	if err != nil {
 		t.Error(err)
 	}
@@ -68,7 +68,7 @@ func TestTxCustomToken(t *testing.T) {
 	assert.Equal(t, string(tx.TxTokenData.Vins[0].PaymentAddress.Pk[:]), string(tx.GetSender()))
 
 	paymentAddress2, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
-	err = tx.Init(&key.KeySet.PrivateKey,
+	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},
 		in1,
 		0,
@@ -82,7 +82,7 @@ func TestTxCustomToken(t *testing.T) {
 		db,
 		nil,
 		false,
-		6)
+		6))
 	if err != nil {
 		t.Error(err)
 	}
