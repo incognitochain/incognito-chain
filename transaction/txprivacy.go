@@ -246,8 +246,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		}
 
 		// if sndOuts has two elements that have same value, then re-generates it
-		ok = common.CheckDuplicateBigIntArray(sndOuts)
-		if ok {
+		ok1 := common.CheckDuplicateBigIntArray(sndOuts)
+		if ok1 {
 			sndOuts = make([]*big.Int, 0)
 		}
 	}
