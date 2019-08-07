@@ -39,6 +39,8 @@ const (
 	OutputCommitmentExistError
 	TxProofVerifyFailError
 	VerifyMinerCreatedTxBeforeGettingInBlockError
+	PrivacyTokenPRVJsonError
+	PrivacyTokenJsonError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -81,6 +83,7 @@ var ErrCodeMessage = map[int]struct {
 	// for privacy token
 	InvalidSanityDataPrivacyTokenError:  {-3000, "Invalid sanity data for privacy Token"},
 	InvalidDoubleSpendPrivacyTokenError: {-3001, "Double spend privacy Token in blockchain"},
+	PrivacyTokenJsonError:               {-3002, "Json data error"},
 }
 
 type TransactionError struct {
