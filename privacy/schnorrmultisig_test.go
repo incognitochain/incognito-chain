@@ -57,7 +57,8 @@ func TestSchnorrMultiSignature(t *testing.T) {
 	publicRandomness := make([]*EllipticPoint, n)
 
 	multiSigScheme := new(MultiSigScheme)
-	combinedPublicRandomness := new(EllipticPoint).Zero()
+	combinedPublicRandomness := new(EllipticPoint)
+	combinedPublicRandomness.Zero()
 	for i := 0; i < n; i++ {
 		seed := big.NewInt(int64(i + 10))
 		publicRandomness[i], secretRandomness[i] = multiSigScheme.GenerateRandomFromSeed(seed)
