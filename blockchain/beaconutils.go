@@ -114,9 +114,6 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 			currentValidators = append(currentValidators, tempValidators...)
 		}
 	}
-	fmt.Println("Swap Validator/Before: pendingValidators", pendingValidators)
-	fmt.Println("Swap Validator/Before: currentValidators", currentValidators)
-	fmt.Println("Swap Validator: offset", offset)
 	// out pubkey: swapped out validator
 	swapValidator = append(swapValidator, currentValidators[:offset]...)
 	// unqueue validator with index from 0 to offset-1 from currentValidators list
@@ -127,10 +124,6 @@ func SwapValidator(pendingValidators []string, currentValidators []string, maxCo
 	currentValidators = append(currentValidators, pendingValidators[:offset]...)
 	// save new pending validators list
 	pendingValidators = pendingValidators[offset:]
-	fmt.Println("Swap Validator: pendingValidators", pendingValidators)
-	fmt.Println("Swap Validator: currentValidators", currentValidators)
-	fmt.Println("Swap Validator: swapValidator", swapValidator)
-	fmt.Println("Swap Validator: tempValidators", tempValidators)
 	if len(currentValidators) > maxCommittee {
 		panic("Length of current validator greater than max committee in Swap validator ")
 	}
