@@ -197,7 +197,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
-	err = normalTx.Init(NewTxPrivacyInitParams(params.senderKey,
+	err = normalTx.Init(NewTxPrivacyInitParams(
+		params.senderKey,
 		params.paymentInfo,
 		params.inputCoin,
 		params.feeNativeCoin,
@@ -206,7 +207,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 		nil,
 		params.metaData))
 	if err != nil {
-		return NewTransactionErr(UnexpectedError, err)
+		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.Type = common.TxCustomTokenPrivacyType
@@ -238,7 +239,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			tempOutputCoin[0].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
 			err := tempOutputCoin[0].CoinDetails.GetPublicKey().Decompress(params.tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
-				return NewTransactionErr(UnexpectedError, err)
+				return NewTransactionErr(DecompressPaymentAddressError, err)
 			}
 			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar())
 
@@ -248,7 +249,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			// create coin commitment
 			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
 			if err != nil {
-				return NewTransactionErr(UnexpectedError, err)
+				return NewTransactionErr(CommitOutputCoinError, err)
 			}
 			// get last byte
 			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
@@ -258,19 +259,21 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			temp.sigPrivKey = *params.senderKey
 			err = temp.signTx()
 			if err != nil {
-				return NewTransactionErr(UnexpectedError, errors.New("can't handle this TokenTxType"))
+				Logger.log.Error(errors.New("can't sign this tx"))
+				return NewTransactionErr(SignTxError, err)
 			}
 
 			txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal = temp
 			hashInitToken, err := txCustomTokenPrivacy.TxTokenPrivacyData.Hash()
 			if err != nil {
-				return NewTransactionErr(UnexpectedError, errors.New("can't handle this TokenTxType"))
+				Logger.log.Error(errors.New("can't hash this token data"))
+				return NewTransactionErr(UnexpectedError, err)
 			}
 
 			if params.tokenParams.Mintable {
 				propertyID, err := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 				if err != nil {
-					return NewTransactionErr(UnexpectedError, err)
+					return NewTransactionErr(TokenIDInvalidError, err)
 				}
 				txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID = *propertyID
 				txCustomTokenPrivacy.TxTokenPrivacyData.Mintable = true
@@ -281,15 +284,15 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				existed := params.db.PrivacyCustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
-					return NewTransactionErr(UnexpectedError, errors.New("this token is existed in network"))
+					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
 				}
 				existed = params.db.PrivacyCustomTokenIDCrossShardExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed(crossshard)", newHashInitToken)
-					return NewTransactionErr(UnexpectedError, errors.New("this token is existed in network via cross shard"))
+					return NewTransactionErr(TokenIDExistedByCrossShardError, errors.New("this token is existed in network via cross shard"))
 				}
 				txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID = newHashInitToken
-				Logger.log.Infof("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID.String())
+				Logger.log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID.String())
 			}
 		}
 	case CustomTokenTransfer:
@@ -304,7 +307,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			if !existed && !existedCross {
 				return NewTransactionErr(UnexpectedError, errors.New("invalid Token ID"))
 			}
-			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
+			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxTokenPrivacyData = TxTokenPrivacyData{
 				Type:           params.tokenParams.TokenTxType,
 				PropertyName:   params.tokenParams.PropertyName,

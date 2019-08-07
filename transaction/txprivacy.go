@@ -1176,7 +1176,7 @@ func (tx *Tx) InitTxSalary(
 	// create coin commitment
 	err = tx.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
 	if err != nil {
-		return err
+		return NewTransactionErr(CommitOutputCoinError, err)
 	}
 	// get last byte
 	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
@@ -1187,7 +1187,7 @@ func (tx *Tx) InitTxSalary(
 	tx.SetMetadata(metaData)
 	err = tx.signTx()
 	if err != nil {
-		return err
+		return NewTransactionErr(SignTxError, err)
 	}
 
 	return nil
