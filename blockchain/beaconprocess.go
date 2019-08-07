@@ -572,25 +572,21 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBlock) error {
 	beaconBestState.lock.Lock()
 	defer beaconBestState.lock.Unlock()
+	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	newBeaconCandidate := []string{}
 	newShardCandidate := []string{}
-	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
-	if beaconBlock == nil {
-		return errors.New("null pointer")
-	}
-	// signal of random parameter from beacon block
-	randomFlag := false
-	// update BestShardHash, BestBlock, BestBlockHash
+	randomFlag := false // signal of random parameter from beacon block
+	// update beacon best state
 	beaconBestState.PreviousBestBlockHash = beaconBestState.BestBlockHash
 	beaconBestState.BestBlockHash = *beaconBlock.Hash()
 	beaconBestState.BestBlock = *beaconBlock
 	beaconBestState.Epoch = beaconBlock.Header.Epoch
 	beaconBestState.BeaconHeight = beaconBlock.Header.Height
-	if beaconBlock.Header.Height == 1 {
-		beaconBestState.BeaconProposerIndex = 0
-	} else {
-		beaconBestState.BeaconProposerIndex = common.IndexOfStr(base58.Base58Check{}.Encode(beaconBlock.Header.ProducerAddress.Pk, common.ZeroByte), beaconBestState.BeaconCommittee)
-	}
+	//if beaconBlock.Header.Height == 1 {
+	//	beaconBestState.BeaconProposerIndex = 0
+	//} else {
+	beaconBestState.BeaconProposerIndex = common.IndexOfStr(base58.Base58Check{}.Encode(beaconBlock.Header.ProducerAddress.Pk, common.ZeroByte), beaconBestState.BeaconCommittee)
+	//}
 	//if beaconBestState.BestShardHash == nil {
 	//	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	//}
@@ -604,28 +600,30 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 	}
 	// update param
 	for _, instruction := range beaconBlock.Body.Instructions {
-		err, tempRandomFlag := beaconBestState.processInstruction(instruction, newBeaconCandidate, newShardCandidate)
+		err, tempRandomFlag, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction)
 		if err != nil {
 			return err
 		}
 		if tempRandomFlag {
 			randomFlag = tempRandomFlag
 		}
+		newBeaconCandidate = append(newBeaconCandidate, tempNewBeaconCandidate...)
+		newShardCandidate = append(newShardCandidate, tempNewShardCandidate...)
 	}
-	if beaconBestState.BeaconHeight == 1 {
-		// Assign committee with genesis block
-		Logger.log.Infof("Proccessing Genesis Block")
-		//Test with 1 member
-		beaconBestState.BeaconCommittee = make([]string, beaconBestState.MaxBeaconCommitteeSize)
-		copy(beaconBestState.BeaconCommittee, newBeaconCandidate[:beaconBestState.MaxBeaconCommitteeSize])
-		for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
-			beaconBestState.ShardCommittee[byte(shardID)] = append(beaconBestState.ShardCommittee[byte(shardID)], newShardCandidate[shardID*beaconBestState.MinShardCommitteeSize:(shardID+1)*beaconBestState.MinShardCommitteeSize]...)
-		}
-		beaconBestState.Epoch = 1
-	} else {
-		beaconBestState.CandidateBeaconWaitingForNextRandom = append(beaconBestState.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
-		beaconBestState.CandidateShardWaitingForNextRandom = append(beaconBestState.CandidateShardWaitingForNextRandom, newShardCandidate...)
-	}
+	//if beaconBestState.BeaconHeight == 1 {
+	//	Assign committee with genesis block
+	//Logger.log.Infof("Proccessing Genesis Block")
+	//Test with 1 member
+	//beaconBestState.BeaconCommittee = make([]string, beaconBestState.MaxBeaconCommitteeSize)
+	//copy(beaconBestState.BeaconCommittee, newBeaconCandidate[:beaconBestState.MaxBeaconCommitteeSize])
+	//for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
+	//	beaconBestState.ShardCommittee[byte(shardID)] = append(beaconBestState.ShardCommittee[byte(shardID)], newShardCandidate[shardID*beaconBestState.MinShardCommitteeSize:(shardID+1)*beaconBestState.MinShardCommitteeSize]...)
+	//}
+	//beaconBestState.Epoch = 1
+	//} else {
+	beaconBestState.CandidateBeaconWaitingForNextRandom = append(beaconBestState.CandidateBeaconWaitingForNextRandom, newBeaconCandidate...)
+	beaconBestState.CandidateShardWaitingForNextRandom = append(beaconBestState.CandidateShardWaitingForNextRandom, newShardCandidate...)
+	//}
 
 	if beaconBestState.BeaconHeight%common.EPOCH == 1 && beaconBestState.BeaconHeight != 1 {
 		// Begin of each epoch
@@ -711,10 +709,12 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	}
 	// update param
 	for _, instruction := range genesisBeaconBlock.Body.Instructions {
-		err, _ := beaconBestState.processInstruction(instruction, newBeaconCandidate, newShardCandidate)
+		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction)
 		if err != nil {
 			return err
 		}
+		newBeaconCandidate = append(newBeaconCandidate, tempNewBeaconCandidate...)
+		newShardCandidate = append(newShardCandidate, tempNewShardCandidate...)
 	}
 	beaconBestState.BeaconCommittee = make([]string, beaconBestState.MaxBeaconCommitteeSize)
 	copy(beaconBestState.BeaconCommittee, newBeaconCandidate[:beaconBestState.MaxBeaconCommitteeSize])
@@ -725,83 +725,99 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) processInstruction(instruction []string, newBeaconCandidate []string, newShardCandidate []string) (error, bool) {
+/*
+	processInstruction, process these instruction:
+	- Random Instruction
+		+ format
+			["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
+		+ store random number into beststate
+	- Swap Instruction
+		+ format
+			["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
+			["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
+        + Update shard/beacon pending validator and shard/beacon committee in beststate
+	- Stake Instruction
+		+ format
+			["stake" "pubkey1,pubkey2,..." "beacon"]
+			["stake" "pubkey1,pubkey2,..." "shard"]
+		+ Get Stake public key and for later storage
+	Return param
+	#1 error
+	#2 random flag
+	#3 new beacon candidate
+	#4 new shard candidate
+
+*/
+func (beaconBestState *BeaconBestState) processInstruction(instruction []string) (error, bool, []string, []string) {
+	newBeaconCandidate := []string{}
+	newShardCandidate := []string{}
 	if len(instruction) < 1 {
-		return nil, false
+		return nil, false, []string{}, []string{}
 	}
 	// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 	if instruction[0] == RandomAction {
 		temp, err := strconv.Atoi(instruction[1])
 		if err != nil {
-			Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-			return NewBlockChainError(UnExpectedError, err), false
+			return NewBlockChainError(ProcessRandomInstructionError, err), false, []string{}, []string{}
 		}
 		beaconBestState.CurrentRandomNumber = int64(temp)
 		Logger.log.Infof("Random number found %+v", beaconBestState.CurrentRandomNumber)
-		return nil, true
+		return nil, true, []string{}, []string{}
 	}
-	// format
-	// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
-	// ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
+
 	if instruction[0] == SwapAction {
 		Logger.log.Info("Swap Instruction", instruction)
 		inPubkeys := strings.Split(instruction[1], ",")
 		outPubkeys := strings.Split(instruction[2], ",")
-		Logger.log.Info("Swap Instruction", instruction[1])
-		Logger.log.Info("Swap Instruction", instruction[2])
 		Logger.log.Info("Swap Instruction inPubkeys", inPubkeys)
 		Logger.log.Info("Swap Instruction outPubkeys", outPubkeys)
 		if instruction[3] == "shard" {
 			temp, err := strconv.Atoi(instruction[4])
 			if err != nil {
-				Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-				return NewBlockChainError(UnExpectedError, err), false
+				return NewBlockChainError(ProcessSwapInstructionError, err), false, []string{}, []string{}
 			}
 			shardID := byte(temp)
 			// delete in public key out of sharding pending validator list
 			if len(instruction[1]) > 0 {
-				Logger.log.Info("Beacon Process/Update Before Update, ShardPendingValidator", beaconBestState.ShardPendingValidator[shardID])
 				tempShardPendingValidator, err := RemoveValidator(beaconBestState.ShardPendingValidator[shardID], inPubkeys)
 				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err), false
+					return NewBlockChainError(ProcessSwapInstructionError, err), false, []string{}, []string{}
 				}
+				// update shard pending validator
 				beaconBestState.ShardPendingValidator[shardID] = tempShardPendingValidator
-				Logger.log.Info("Beacon Process/Update After Update, ShardPendingValidator", beaconBestState.ShardPendingValidator[shardID])
-				// append in public key to committees
+				// add new public key to committees
 				beaconBestState.ShardCommittee[shardID] = append(beaconBestState.ShardCommittee[shardID], inPubkeys...)
-				Logger.log.Info("Beacon Process/Update Add New, ShardCommitees", beaconBestState.ShardCommittee[shardID])
 			}
 			// delete out public key out of current committees
 			if len(instruction[2]) > 0 {
 				tempShardCommittees, err := RemoveValidator(beaconBestState.ShardCommittee[shardID], outPubkeys)
 				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err), false
+					return NewBlockChainError(ProcessSwapInstructionError, err), false, []string{}, []string{}
 				}
+				// remove old public key in shard committee update shard committee
 				beaconBestState.ShardCommittee[shardID] = tempShardCommittees
-				Logger.log.Info("Beacon Process/Update Remove Old, ShardCommitees", beaconBestState.ShardCommittee[shardID])
 			}
 		} else if instruction[3] == "beacon" {
 			if len(instruction[1]) > 0 {
 				tempBeaconPendingValidator, err := RemoveValidator(beaconBestState.BeaconPendingValidator, inPubkeys)
 				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err), false
+					return NewBlockChainError(ProcessSwapInstructionError, err), false, []string{}, []string{}
 				}
+				// update beacon pending validator
 				beaconBestState.BeaconPendingValidator = tempBeaconPendingValidator
+				// add new public key to beacon committee
 				beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, inPubkeys...)
 			}
 			if len(instruction[2]) > 0 {
 				tempBeaconCommittes, err := RemoveValidator(beaconBestState.BeaconCommittee, outPubkeys)
 				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err), false
+					return NewBlockChainError(ProcessSwapInstructionError, err), false, []string{}, []string{}
 				}
+				// remove old public key in beacon committee and update beacon best state
 				beaconBestState.BeaconCommittee = tempBeaconCommittes
 			}
 		}
-		return nil, false
+		return nil, false, []string{}, []string{}
 	}
 	// Update candidate
 	// get staking candidate list and store
@@ -809,13 +825,13 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	if instruction[0] == StakeAction && instruction[2] == "beacon" {
 		beacon := strings.Split(instruction[1], ",")
 		newBeaconCandidate = append(newBeaconCandidate, beacon...)
-		return nil, false
+		return nil, false, newBeaconCandidate, newShardCandidate
 	}
 
 	if instruction[0] == StakeAction && instruction[2] == "shard" {
 		shard := strings.Split(instruction[1], ",")
 		newShardCandidate = append(newShardCandidate, shard...)
-		return nil, false
+		return nil, false, newBeaconCandidate, newShardCandidate
 	}
-	return nil, false
+	return nil, false, []string{}, []string{}
 }
