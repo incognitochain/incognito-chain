@@ -519,7 +519,7 @@ func cloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxToken
 }
 func CreateMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin) (*common.Hash, error) {
 	if len(crossOutputCoins) == 0 {
-		res, err := GenerateZeroValueHash()
+		res, err := generateZeroValueHash()
 
 		return &res, err
 	}
@@ -559,7 +559,7 @@ func VerifyMerkleCrossOutputCoin(crossOutputCoins map[byte][]CrossOutputCoin, ro
 }
 func CreateMerkleCrossTransaction(crossTransactions map[byte][]CrossTransaction) (*common.Hash, error) {
 	if len(crossTransactions) == 0 {
-		res, err := GenerateZeroValueHash()
+		res, err := generateZeroValueHash()
 		return &res, err
 	}
 	keys := []int{}
