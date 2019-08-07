@@ -582,17 +582,16 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 						Receiver:       txTokenData.Vouts,
 					}
 					err := tx.Init(
-						privatekey,
-						nil,
-						nil,
-						0,
-						tokenParam,
-						//listCustomTokens,
-						blockchain.config.DataBase,
-						nil,
-						false,
-						shardID,
-					)
+						transaction.NewTxNormalTokenInitParam(privatekey,
+							nil,
+							nil,
+							0,
+							tokenParam,
+							//listCustomTokens,
+							blockchain.config.DataBase,
+							nil,
+							false,
+							shardID))
 					if err != nil {
 						panic("")
 					}
