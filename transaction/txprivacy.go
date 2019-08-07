@@ -545,7 +545,7 @@ func (tx Tx) String() string {
 	return record
 }
 
-func (tx *Tx) Hash() *common.Hash {
+func (tx Tx) Hash() *common.Hash {
 	if tx.cachedHash != nil {
 		return tx.cachedHash
 	}
@@ -555,15 +555,15 @@ func (tx *Tx) Hash() *common.Hash {
 	return &hash
 }
 
-func (tx *Tx) GetSenderAddrLastByte() byte {
+func (tx Tx) GetSenderAddrLastByte() byte {
 	return tx.PubKeyLastByteSender
 }
 
-func (tx *Tx) GetTxFee() uint64 {
+func (tx Tx) GetTxFee() uint64 {
 	return tx.Fee
 }
 
-func (tx *Tx) GetTxFeeToken() uint64 {
+func (tx Tx) GetTxFeeToken() uint64 {
 	return uint64(0)
 }
 

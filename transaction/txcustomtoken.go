@@ -340,7 +340,7 @@ func (customTokenTx *TxCustomToken) JSONString() string {
 }
 
 // Hash returns the hash of all fields of the transaction
-func (customTokenTx *TxCustomToken) Hash() *common.Hash {
+func (customTokenTx TxCustomToken) Hash() *common.Hash {
 	if customTokenTx.cachedHash != nil {
 		return customTokenTx.cachedHash
 	}
@@ -690,7 +690,7 @@ func (txCustomToken *TxCustomToken) IsCoinsBurning() bool {
 	return true
 }
 
-func (txCustomToken *TxCustomToken) GetTokenID() *common.Hash {
+func (txCustomToken TxCustomToken) GetTokenID() *common.Hash {
 	return &txCustomToken.TxTokenData.PropertyID
 }
 
@@ -738,6 +738,6 @@ func (txCustomToken *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 }*/
 
 // GetTxFee - return fee PRV of Tx which contain privacy token Tx
-func (tx *TxCustomToken) GetTxFee() uint64 {
+func (tx TxCustomToken) GetTxFee() uint64 {
 	return tx.Tx.GetTxFee()
 }
