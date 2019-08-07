@@ -585,7 +585,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ListSerialNumbersHashH() []com
 }
 
 // GetSigPubKey - return sig pubkey for pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetSigPubKey() []byte {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.SigPubKey
 }
 
