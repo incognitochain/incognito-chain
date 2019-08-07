@@ -231,12 +231,12 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 /*
 	- set instruction
 	- del instruction
-	- swap instruction -> ok
+	- swap instruction
 	+ format
 	+ ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 	+ ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
-	- random instruction -> ok
-	- stake instruction -> ok
+	- random instruction
+	- stake instruction
 */
 func (beaconBestState *BeaconBestState) GenerateInstruction(
 	beaconHeight uint64,
