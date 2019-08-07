@@ -8,8 +8,8 @@ import (
 
 type BeaconHeader struct {
 	ProducerAddress   privacy.PaymentAddress `json:"ProducerAddress"`
-	PreviousBlockHash common.Hash            `json:"PreviousBlockHash"`
 	Version           int                    `json:"Version"`
+	PreviousBlockHash common.Hash            `json:"PreviousBlockHash"`
 	Height            uint64                 `json:"Height"`
 	Epoch             uint64                 `json:"Epoch"`
 	Round             int                    `json:"Round"`
