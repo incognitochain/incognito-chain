@@ -317,7 +317,7 @@ func (customTokenTx TxCustomToken) ListSerialNumbersHashH() []common.Hash {
 	})
 	return result
 }
-func (customTokenTx *TxCustomToken) String() string {
+func (customTokenTx TxCustomToken) String() string {
 	// get hash of tx
 	record := customTokenTx.Tx.Hash().String()
 

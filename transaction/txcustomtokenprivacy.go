@@ -24,6 +24,7 @@ type TxCustomTokenPrivacy struct {
 	Tx                                    // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
 
+	// private field, not use for json parser, only use as temp variable
 	cachedHash *common.Hash // cached hash data of tx
 }
 
@@ -31,22 +32,32 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
 	if err != nil {
-		return NewTransactionErr(UnexpectedError, err)
+		Logger.log.Error(err)
+		return NewTransactionErr(PrivacyTokenPRVJsonError, err)
 	}
 	temp := &struct {
 		TxTokenPrivacyData interface{}
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
+		Logger.log.Error(err)
+		return NewTransactionErr(PrivacyTokenJsonError, err)
+	}
+	TxTokenPrivacyDataJson, err := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
+	if err != nil {
+		Logger.log.Error(err)
 		return NewTransactionErr(UnexpectedError, err)
 	}
-	TxTokenPrivacyDataJson, _ := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
-	_ = json.Unmarshal(TxTokenPrivacyDataJson, &txCustomTokenPrivacy.TxTokenPrivacyData)
+	err = json.Unmarshal(TxTokenPrivacyDataJson, &txCustomTokenPrivacy.TxTokenPrivacyData)
+	if err != nil {
+		Logger.log.Error(err)
+		return NewTransactionErr(PrivacyTokenJsonError, err)
+	}
 	txCustomTokenPrivacy.Tx = tx
 	return nil
 }
 
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) String() string {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) String() string {
 	// get hash of tx
 	record := txCustomTokenPrivacy.Tx.Hash().String()
 
@@ -59,7 +70,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) String() string {
 	return record
 }
 
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) JSONString() string {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) JSONString() string {
 	data, err := json.MarshalIndent(txCustomTokenPrivacy, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
@@ -99,7 +110,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
-func (tx *TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
+func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 	tokenDataSize := uint64(0)
 	tokenDataSize += tx.TxTokenPrivacyData.TxNormal.GetTxActualSize()
 	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertyName))
@@ -126,7 +137,7 @@ func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
 }
 
 // CheckTransactionFeeByFeeToken - check fee for all tx by use token as fee
-func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
+func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
@@ -135,7 +146,7 @@ func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint
 }
 
 // CheckTransactionFeeByFeeTokenForTokenData - check fee for token data info in tx by use token as fee
-func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
+func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
