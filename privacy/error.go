@@ -41,7 +41,7 @@ var ErrCodeMessage = map[int]struct {
 }{
 	UnexpectedErr: {-9000, "Unexpected error"},
 
-	InvalidOutputValue:              {-9001, "Invalid output value"},
+	InvalidOutputValue:              {-9001, "Invalid output Value"},
 	MarshalPaymentProofErr:          {-9002, "Marshal payment proof error"},
 	UnmarshalPaymentProofErr:        {-9003, "Unmarshal payment proof error"},
 	SetBytesProofErr:                {-9004, "Set bytes payment proof error"},
