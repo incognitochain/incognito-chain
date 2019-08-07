@@ -478,3 +478,26 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestState(target *BeaconBestS
 	}
 	return nil
 }
+
+func (beaconBestState *BeaconBestState) updateLastCrossShardState(shardStates map[byte][]ShardState) {
+	lastCrossShardState := beaconBestState.LastCrossShardState
+	for fromShard, shardBlocks := range shardStates {
+		for _, shardBlock := range shardBlocks {
+			for _, toShard := range shardBlock.CrossShard {
+				if fromShard == toShard {
+					continue
+				}
+				if lastCrossShardState[fromShard] == nil {
+					lastCrossShardState[fromShard] = make(map[byte]uint64)
+				}
+				waitHeight := shardBlock.Height
+				lastCrossShardState[fromShard][toShard] = waitHeight
+			}
+		}
+	}
+}
+func (beaconBestState *BeaconBestState) UpdateLastCrossShardState(shardStates map[byte][]ShardState) {
+	beaconBestState.lock.Lock()
+	defer beaconBestState.lock.Unlock()
+	beaconBestState.updateLastCrossShardState(shardStates)
+}

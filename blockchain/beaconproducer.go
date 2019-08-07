@@ -99,29 +99,29 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	// calculate hash
 	// BeaconValidator root: beacon committee + beacon pending committee
 	validatorArr := append(beaconBestState.BeaconCommittee, beaconBestState.BeaconPendingValidator...)
-	tempBeaconCommitteeAndValidatorRoot, err := GenerateHashFromStringArray(validatorArr)
+	tempBeaconCommitteeAndValidatorRoot, err := generateHashFromStringArray(validatorArr)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateBeaconCommitteeAndValidatorRootError, err)
 	}
 	// BeaconCandidate root: beacon current candidate + beacon next candidate
 	beaconCandidateArr := append(beaconBestState.CandidateBeaconWaitingForCurrentRandom, beaconBestState.CandidateBeaconWaitingForNextRandom...)
-	tempBeaconCandidateRoot, err := GenerateHashFromStringArray(beaconCandidateArr)
+	tempBeaconCandidateRoot, err := generateHashFromStringArray(beaconCandidateArr)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateBeaconCandidateRootError, err)
 	}
 	// Shard candidate root: shard current candidate + shard next candidate
 	shardCandidateArr := append(beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CandidateShardWaitingForNextRandom...)
-	tempShardCandidateRoot, err := GenerateHashFromStringArray(shardCandidateArr)
+	tempShardCandidateRoot, err := generateHashFromStringArray(shardCandidateArr)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateShardCandidateRootError, err)
 	}
 	// Shard Validator root
-	tempShardCommitteeAndValidatorRoot, err := GenerateHashFromMapByteString(beaconBestState.GetShardPendingValidator(), beaconBestState.GetShardCommittee())
+	tempShardCommitteeAndValidatorRoot, err := generateHashFromMapByteString(beaconBestState.GetShardPendingValidator(), beaconBestState.GetShardCommittee())
 	if err != nil {
 		return nil, NewBlockChainError(GenerateShardCommitteeAndValidatorRootError, err)
 	}
 	// Shard state hash
-	tempShardStateHash, err := GenerateHashFromShardState(tempShardState)
+	tempShardStateHash, err := generateHashFromShardState(tempShardState)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewBlockChainError(GenerateShardStateError, err)
@@ -131,7 +131,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	for _, strs := range tempInstruction {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
-	tempInstructionHash, err := GenerateHashFromStringArray(tempInstructionArr)
+	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, NewBlockChainError(GenerateInstructionHashError, err)
@@ -514,7 +514,6 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 	strs = append(strs, strconv.Itoa(int(timestamp)))
 	return strs, int64(1000)
 }
-
 func getStakeValidatorArrayString(v []string) ([]string, []string) {
 	beacon := []string{}
 	shard := []string{}
