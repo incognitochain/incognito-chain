@@ -1019,7 +1019,7 @@ func (tx *Tx) ValidateTxByItself(
 }
 
 // GetMetadataType returns the type of underlying metadata if is existed
-func (tx *Tx) GetMetadataType() int {
+func (tx Tx) GetMetadataType() int {
 	if tx.Metadata != nil {
 		return tx.Metadata.GetType()
 	}
@@ -1027,7 +1027,7 @@ func (tx *Tx) GetMetadataType() int {
 }
 
 // GetMetadata returns metadata of tx is existed
-func (tx *Tx) GetMetadata() metadata.Metadata {
+func (tx Tx) GetMetadata() metadata.Metadata {
 	return tx.Metadata
 }
 
@@ -1037,15 +1037,15 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 }
 
 // GetMetadata returns metadata of tx is existed
-func (tx *Tx) GetInfo() []byte {
+func (tx Tx) GetInfo() []byte {
 	return tx.Info
 }
 
-func (tx *Tx) GetLockTime() int64 {
+func (tx Tx) GetLockTime() int64 {
 	return tx.LockTime
 }
 
-func (tx *Tx) GetSigPubKey() []byte {
+func (tx Tx) GetSigPubKey() []byte {
 	return tx.SigPubKey
 }
 
@@ -1053,7 +1053,7 @@ func (tx *Tx) GetProof() *zkp.PaymentProof {
 	return tx.Proof
 }
 
-func (tx *Tx) IsPrivacy() bool {
+func (tx Tx) IsPrivacy() bool {
 	if tx.Proof == nil || len(tx.Proof.GetOneOfManyProof()) == 0 {
 		return false
 	}
