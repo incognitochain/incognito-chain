@@ -514,16 +514,3 @@ func (beaconBestState *BeaconBestState) generateRandomInstruction(timestamp int6
 	strs = append(strs, strconv.Itoa(int(timestamp)))
 	return strs, int64(1000)
 }
-func getStakeValidatorArrayString(v []string) ([]string, []string) {
-	beacon := []string{}
-	shard := []string{}
-	if len(v) > 0 {
-		if v[0] == StakeAction && v[2] == "beacon" {
-			beacon = strings.Split(v[1], ",")
-		}
-		if v[0] == StakeAction && v[2] == "shard" {
-			shard = strings.Split(v[1], ",")
-		}
-	}
-	return beacon, shard
-}
