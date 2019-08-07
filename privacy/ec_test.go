@@ -124,7 +124,8 @@ func TestECRandomize(t *testing.T) {
 */
 
 func TestECIsSafeWithZeroPoint(t *testing.T) {
-	point := new(EllipticPoint).Zero()
+	point := new(EllipticPoint)
+	point.Zero()
 	assert.Equal(t, false, point.IsSafe())
 }
 
