@@ -38,7 +38,7 @@ func randomPoly(degree, bits int64) (p Poly) {
 	return
 }
 
-// trim() makes sure that the highest coefficient never has zero value
+// trim() makes sure that the highest coefficient never has zero Value
 // when you add or subtract two polynomials, sometimes the highest coefficient goes zero
 // if you don't remove the highest and zero coefficient, GetDegree() returns the wrong result
 func (p *Poly) trim() {
