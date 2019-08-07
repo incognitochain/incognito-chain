@@ -44,8 +44,10 @@ const (
 	CommitOutputCoinError
 
 	PrivacyTokenInitPRVError
+	PrivacyTokenInitTokenDataError
 	PrivacyTokenPRVJsonError
 	PrivacyTokenJsonError
+	PrivacyTokenTxTypeNotHandleError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -93,6 +95,8 @@ var ErrCodeMessage = map[int]struct {
 	InvalidDoubleSpendPrivacyTokenError: {-3001, "Double spend privacy Token in blockchain"},
 	PrivacyTokenJsonError:               {-3002, "Json data error"},
 	PrivacyTokenInitPRVError:            {-3003, "Init tx for PRV error"},
+	PrivacyTokenTxTypeNotHandleError:    {-3004, "Can not handle this tx type for privacy token"},
+	PrivacyTokenInitTokenDataError:      {-3005, "Can not init data for privacy token tx"},
 }
 
 type TransactionError struct {
