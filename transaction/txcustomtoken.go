@@ -416,8 +416,20 @@ func (tx TxCustomToken) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	return tx.GetTxFeeToken() >= fullFee
 }*/
 
-// CreateTxCustomToken ...
-func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
+type NormalTokenInitParam struct {
+	senderKey      *privacy.PrivateKey
+	paymentInfo    []*privacy.PaymentInfo
+	inputCoin      []*privacy.InputCoin
+	fee            uint64
+	tokenParams    *CustomTokenParamTx
+	db             database.DatabaseInterface
+	metaData       metadata.Metadata
+	hasPrivacyCoin bool
+	shardID        byte
+}
+
+func NewTxNormalTokenInitParam(
+	senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoin []*privacy.InputCoin,
 	fee uint64,
@@ -425,19 +437,34 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
-	shardID byte,
-) error {
+	shardID byte) *NormalTokenInitParam {
+	params := &NormalTokenInitParam{
+		tokenParams:    tokenParams,
+		senderKey:      senderKey,
+		inputCoin:      inputCoin,
+		hasPrivacyCoin: hasPrivacyCoin,
+		db:             db,
+		metaData:       metaData,
+		paymentInfo:    paymentInfo,
+		shardID:        shardID,
+		fee:            fee,
+	}
+	return params
+}
+
+// CreateTxCustomToken ...
+func (txCustomToken *TxCustomToken) Init(params *NormalTokenInitParam) error {
 	var err error
 	// create normal txCustomToken
 	normalTx := Tx{}
-	err = normalTx.Init(NewTxPrivacyInitParams(senderKey,
-		paymentInfo,
-		inputCoin,
-		fee,
-		hasPrivacyCoin,
-		db,
+	err = normalTx.Init(NewTxPrivacyInitParams(params.senderKey,
+		params.paymentInfo,
+		params.inputCoin,
+		params.fee,
+		params.hasPrivacyCoin,
+		params.db,
 		nil,
-		metaData))
+		params.metaData))
 	if err != nil {
 		return NewTransactionErr(UnexpectedError, err)
 	}
@@ -447,39 +474,39 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	txCustomToken.TxTokenData = TxTokenData{}
 	var handled = false
 	// Add token data component
-	switch tokenParams.TokenTxType {
+	switch params.tokenParams.TokenTxType {
 	case CustomTokenCrossShard:
 		{
 			handled = true
-			propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			propertyID, err := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 			if err != nil {
 				return NewTransactionErr(UnexpectedError, err)
 			}
 			txCustomToken.TxTokenData = TxTokenData{
 				PropertyID:     *propertyID,
-				Type:           tokenParams.TokenTxType,
-				PropertyName:   tokenParams.PropertyName,
-				PropertySymbol: tokenParams.PropertySymbol,
+				Type:           params.tokenParams.TokenTxType,
+				PropertyName:   params.tokenParams.PropertyName,
+				PropertySymbol: params.tokenParams.PropertySymbol,
 				Vins:           nil,
 				Vouts:          nil,
-				Amount:         tokenParams.Amount,
+				Amount:         params.tokenParams.Amount,
 			}
-			txCustomToken.TxTokenData.Vouts = tokenParams.Receiver
+			txCustomToken.TxTokenData.Vouts = params.tokenParams.Receiver
 		}
 	case CustomTokenInit:
 		{
 			handled = true
 			txCustomToken.TxTokenData = TxTokenData{
-				Type:           tokenParams.TokenTxType,
-				PropertyName:   tokenParams.PropertyName,
-				PropertySymbol: tokenParams.PropertySymbol,
+				Type:           params.tokenParams.TokenTxType,
+				PropertyName:   params.tokenParams.PropertyName,
+				PropertySymbol: params.tokenParams.PropertySymbol,
 				Vins:           nil,
 				Vouts:          nil,
-				Amount:         tokenParams.Amount,
+				Amount:         params.tokenParams.Amount,
 			}
 			var VoutsTemp []TxTokenVout
 
-			receiver := tokenParams.Receiver[0]
+			receiver := params.tokenParams.Receiver[0]
 			receiverAmount := receiver.Value
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
 				PaymentAddress: receiver.PaymentAddress,
@@ -487,8 +514,8 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 			})
 
 			txCustomToken.TxTokenData.Vouts = VoutsTemp
-			if tokenParams.Mintable {
-				propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			if params.tokenParams.Mintable {
+				propertyID, err := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 				if err != nil {
 					return NewTransactionErr(UnexpectedError, err)
 				}
@@ -501,7 +528,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 					return NewTransactionErr(WrongTokenTxTypeError, err)
 				}
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
-				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
+				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
 				//fmt.Println("INIT Tx Custom Token/ newHashInitToken", newHashInitToken)
 				//for customTokenID := range listCustomTokens {
 				//	if newHashInitToken.String() == customTokenID.String() {
@@ -509,7 +536,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 				//		return NewTransactionErr(CustomTokenExistedError, nil)
 				//	}
 				//}
-				existed := db.CustomTokenIDExisted(newHashInitToken)
+				existed := params.db.CustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
 					return NewTransactionErr(CustomTokenExistedError, nil)
@@ -520,30 +547,30 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	case CustomTokenTransfer:
 		handled = true
 		paymentTokenAmount := uint64(0)
-		for _, receiver := range tokenParams.Receiver {
+		for _, receiver := range params.tokenParams.Receiver {
 			paymentTokenAmount += receiver.Value
 		}
-		refundTokenAmount := tokenParams.vinsAmount - paymentTokenAmount
+		refundTokenAmount := params.tokenParams.vinsAmount - paymentTokenAmount
 		txCustomToken.TxTokenData = TxTokenData{
-			Type:           tokenParams.TokenTxType,
-			PropertyName:   tokenParams.PropertyName,
-			PropertySymbol: tokenParams.PropertySymbol,
+			Type:           params.tokenParams.TokenTxType,
+			PropertyName:   params.tokenParams.PropertyName,
+			PropertySymbol: params.tokenParams.PropertySymbol,
 			Vins:           nil,
 			Vouts:          nil,
-			Mintable:       tokenParams.Mintable,
+			Mintable:       params.tokenParams.Mintable,
 		}
-		propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+		propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 		//if _, ok := listCustomTokens[*propertyID]; !ok {
 		//	return NewTransactionErr(UnexpectedError, errors.New("invalid Token ID"))
 		//}
-		existed := db.CustomTokenIDExisted(*propertyID)
+		existed := params.db.CustomTokenIDExisted(*propertyID)
 		if !existed {
 			return NewTransactionErr(UnexpectedError, errors.New("invalid Token ID"))
 		}
 		txCustomToken.TxTokenData.PropertyID = *propertyID
-		txCustomToken.TxTokenData.Vins = tokenParams.vins
+		txCustomToken.TxTokenData.Vins = params.tokenParams.vins
 		var VoutsTemp []TxTokenVout
-		for _, receiver := range tokenParams.Receiver {
+		for _, receiver := range params.tokenParams.Receiver {
 			receiverAmount := receiver.Value
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
 				PaymentAddress: receiver.PaymentAddress,
@@ -552,7 +579,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 		}
 		if refundTokenAmount > 0 {
 			VoutsTemp = append(VoutsTemp, TxTokenVout{
-				PaymentAddress: tokenParams.vins[0].PaymentAddress,
+				PaymentAddress: params.tokenParams.vins[0].PaymentAddress,
 				Value:          refundTokenAmount,
 			})
 		}

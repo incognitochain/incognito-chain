@@ -320,17 +320,16 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 			Mintable:       true,
 		}
 		err := tx.Init(
-			params.payByPrivateKey,
-			nil,
-			nil,
-			0,
-			tokenParams,
-			//listCustomTokens,
-			params.db,
-			params.meta,
-			false,
-			params.shardID,
-		)
+			NewTxNormalTokenInitParam(params.payByPrivateKey,
+				nil,
+				nil,
+				0,
+				tokenParams,
+				//listCustomTokens,
+				params.db,
+				params.meta,
+				false,
+				params.shardID))
 		if err != nil {
 			return nil, errors.New(err.Error())
 		}
