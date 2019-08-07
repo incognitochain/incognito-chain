@@ -63,10 +63,10 @@ func TestEncodeVectors(t *testing.T) {
 		b[i] = big.NewInt(10)
 
 		G[i] = new(privacy.EllipticPoint)
-		G[i].Set(AggParam.g[i].X, AggParam.g[i].Y)
+		G[i].Set(AggParam.g[i].GetX(), AggParam.g[i].GetY())
 
 		H[i] = new(privacy.EllipticPoint)
-		H[i].Set(AggParam.h[i].X, AggParam.h[i].Y)
+		H[i].Set(AggParam.h[i].GetX(), AggParam.h[i].GetY())
 	}
 	start := time.Now()
 	actualRes, err := encodeVectors(a, b, G, H)
@@ -76,7 +76,8 @@ func TestEncodeVectors(t *testing.T) {
 		privacy.Logger.Log.Info("Err: %v\n", err)
 	}
 	start = time.Now()
-	expectedRes := new(privacy.EllipticPoint).Zero()
+	expectedRes := new(privacy.EllipticPoint)
+	expectedRes.Zero()
 	for i := 0; i < n; i++ {
 		expectedRes = expectedRes.Add(G[i].ScalarMult(a[i]))
 		expectedRes = expectedRes.Add(H[i].ScalarMult(b[i]))
@@ -104,7 +105,8 @@ func TestInnerProductProve(t *testing.T) {
 		wit.b[i] = new(big.Int).SetBytes(tmp)
 	}
 
-	wit.p = new(privacy.EllipticPoint).Zero()
+	wit.p = new(privacy.EllipticPoint)
+	wit.p.Zero()
 	c, err := innerProduct(wit.a, wit.b)
 	if err != nil {
 		privacy.Logger.Log.Info("Err: %v\n", err)
@@ -162,17 +164,18 @@ func TestAggregatedRangeProve(t *testing.T) {
 	assert.Equal(t, int(expectProofSize), len(bytes))
 	fmt.Printf("Aggregated range proof size: %v\n", len(bytes))
 
-	// new AggregatedRangeProof from bytes array
+	// new aggregatedRangeProof from bytes array
 	proof2 := new(AggregatedRangeProof)
 	proof2.SetBytes(bytes)
 
 	// verify the proof
 	start = time.Now()
-	res := proof2.Verify()
+	res, err := proof2.Verify()
 	end = time.Since(start)
 	privacy.Logger.Log.Info("Aggregated range verification time: %v\n", end)
 
 	assert.Equal(t, true, res)
+	assert.Equal(t, nil, err)
 }
 
 func TestPad(t *testing.T) {
@@ -202,6 +205,6 @@ func TestJS(t *testing.T) {
 	proof := new(AggregatedRangeProof)
 	proof.SetBytes(proofBytes)
 
-	res := proof.Verify()
+	res, _ := proof.Verify()
 	fmt.Println(res)
 }
