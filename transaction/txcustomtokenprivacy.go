@@ -427,7 +427,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetProof() *zkp.PaymentProof {
 }
 
 // VerifyMinerCreatedTxBeforeGettingInBlock
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []metadata.Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -447,7 +447,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGett
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomTokenPrivacy, bcr, accumulatedValues)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &txCustomTokenPrivacy, bcr, accumulatedValues)
 }
 
 // GetTokenReceivers - return receivers in tx, who receive token
@@ -510,7 +510,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTransferData() (bool, []byt
 }
 
 // IsCoinsBurning - checking this is a burning pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) IsCoinsBurning() bool {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning() bool {
 	// get proof of pToken
 	proof := txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof
 	if proof == nil || len(proof.GetOutputCoins()) == 0 {
@@ -534,7 +534,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) IsCoinsBurning() bool {
 }
 
 // CalculateTxValue - get tx value for pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 	proof := txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof
 	if proof == nil {
 		return 0

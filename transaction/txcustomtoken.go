@@ -649,7 +649,7 @@ func (txCustomToken *TxCustomToken) GetMetadataFromVinsTx(bcr metadata.Blockchai
 	return prevTx.GetMetadata(), nil
 }
 
-func (txCustomToken *TxCustomToken) CalculateTxValue() uint64 {
+func (txCustomToken TxCustomToken) CalculateTxValue() uint64 {
 	vins := txCustomToken.TxTokenData.Vins
 	vouts := txCustomToken.TxTokenData.Vouts
 	if len(vins) == 0 { // coinbase tx
@@ -671,7 +671,7 @@ func (txCustomToken *TxCustomToken) CalculateTxValue() uint64 {
 	return txValue
 }
 
-func (txCustomToken *TxCustomToken) IsCoinsBurning() bool {
+func (txCustomToken TxCustomToken) IsCoinsBurning() bool {
 	vins := txCustomToken.TxTokenData.Vins
 	vouts := txCustomToken.TxTokenData.Vouts
 	if len(vins) == 0 || len(vouts) == 0 {
@@ -694,7 +694,7 @@ func (txCustomToken TxCustomToken) GetTokenID() *common.Hash {
 	return &txCustomToken.TxTokenData.PropertyID
 }
 
-func (txCustomToken *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (txCustomToken TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []metadata.Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -714,7 +714,7 @@ func (txCustomToken *TxCustomToken) VerifyMinerCreatedTxBeforeGettingInBlock(
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomToken, bcr, accumulatedValues)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &txCustomToken, bcr, accumulatedValues)
 }
 
 // GetTxFeeToken - return Token Fee use to pay for privacy token Tx
