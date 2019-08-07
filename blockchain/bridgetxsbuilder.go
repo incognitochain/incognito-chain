@@ -251,17 +251,16 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 
 	resTx := &transaction.TxCustomTokenPrivacy{}
 	initErr := resTx.Init(
-		producerPrivateKey,
-		[]*privacy.PaymentInfo{},
-		nil,
-		0,
-		tokenParams,
-		blockGenerator.chain.config.DataBase,
-		issuingRes,
-		false,
-		false,
-		shardID,
-	)
+		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			blockGenerator.chain.config.DataBase,
+			issuingRes,
+			false,
+			false,
+			shardID))
 
 	if initErr != nil {
 		// Logger.log.Error(initErr)
@@ -329,17 +328,16 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 	)
 	resTx := &transaction.TxCustomTokenPrivacy{}
 	initErr := resTx.Init(
-		producerPrivateKey,
-		[]*privacy.PaymentInfo{},
-		nil,
-		0,
-		tokenParams,
-		blockGenerator.chain.config.DataBase,
-		issuingETHRes,
-		false,
-		false,
-		shardID,
-	)
+		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			blockGenerator.chain.config.DataBase,
+			issuingETHRes,
+			false,
+			false,
+			shardID))
 
 	if initErr != nil {
 		fmt.Println("WARNING: an error occured while initializing response tx: ", initErr)

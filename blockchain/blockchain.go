@@ -921,7 +921,7 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 		in case readonly-key: return all outputcoin tx with amount value
 		in case payment-address: return all outputcoin tx with no amount value
 	*/
-	pubkeyCompress := outCoinTemp.CoinDetails.PublicKey.Compress()
+	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().Compress()
 	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
 		result := &privacy.OutputCoin{
 			CoinDetails:          outCoinTemp.CoinDetails,
@@ -938,9 +938,9 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 		}
 		if len(keySet.PrivateKey) > 0 {
 			// check spent with private-key
-			result.CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(keySet.PrivateKey),
-				result.CoinDetails.SNDerivator)
-			ok, err := blockchain.config.DataBase.HasSerialNumber(*tokenID, result.CoinDetails.SerialNumber.Compress(), shardID)
+			result.CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(keySet.PrivateKey),
+				result.CoinDetails.GetSNDerivator()))
+			ok, err := blockchain.config.DataBase.HasSerialNumber(*tokenID, result.CoinDetails.GetSerialNumber().Compress(), shardID)
 			if ok || err != nil {
 				return nil
 			}
@@ -1200,7 +1200,8 @@ func (self *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 }
 
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
-	return transaction.RandomCommitmentsProcess(usableInputCoins, randNum, blockchain.config.DataBase, shardID, tokenID)
+	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.config.DataBase, shardID, tokenID)
+	return transaction.RandomCommitmentsProcess(param)
 }
 
 func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte) (bool, error) {
@@ -1467,8 +1468,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	if txType == -1 {
 		return nil, errors.New("Invalid token ID")
 	}
-	return transaction.BuildCoinbaseTxByCoinID(
-		payToAddress,
+	buildCoinBaseParams := transaction.NewBuildCoinBaseTxByCoinIDParams(payToAddress,
 		amount,
 		payByPrivateKey,
 		db,
@@ -1476,8 +1476,8 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 		coinID,
 		txType,
 		coinID.String(),
-		shardID,
-	)
+		shardID)
+	return transaction.BuildCoinBaseTxByCoinID(buildCoinBaseParams)
 }
 
 func CalculateNumberOfByteToRead(amountBytes int) []byte {

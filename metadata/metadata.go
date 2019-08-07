@@ -152,7 +152,7 @@ type Metadata interface {
 
 // Interface for all type of transaction
 type Transaction interface {
-	// GET/SET func
+	// GET/SET FUNC
 	GetMetadataType() int
 	GetType() string
 	GetLockTime() int64
@@ -181,7 +181,7 @@ type Transaction interface {
 	ListSerialNumbersHashH() []common.Hash
 	Hash() *common.Hash
 
-	// Validate func
+	// VALIDATE FUNC
 	CheckTxVersion(int8) bool
 	CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
