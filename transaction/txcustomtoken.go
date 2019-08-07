@@ -33,17 +33,23 @@ func (customTokenTx *TxCustomToken) UnmarshalJSON(data []byte) error {
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
 	if err != nil {
-		return NewTransactionErr(UnexpectedError, err)
+		return NewTransactionErr(NormalTokenPRVJsonError, err)
 	}
 	temp := &struct {
 		TxTokenData interface{}
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
-		return NewTransactionErr(UnexpectedError, err)
+		return NewTransactionErr(NormalTokenJsonError, err)
 	}
-	txTokenDataJson, _ := json.MarshalIndent(temp.TxTokenData, "", "\t")
-	_ = json.Unmarshal(txTokenDataJson, &customTokenTx.TxTokenData)
+	txTokenDataJson, err := json.MarshalIndent(temp.TxTokenData, "", "\t")
+	if err != nil {
+		return NewTransactionErr(NormalTokenJsonError, err)
+	}
+	err = json.Unmarshal(txTokenDataJson, &customTokenTx.TxTokenData)
+	if err != nil {
+		return NewTransactionErr(NormalTokenJsonError, err)
+	}
 	customTokenTx.Tx = tx
 	return nil
 }
@@ -53,7 +59,7 @@ func (customTokenTx *TxCustomToken) SetListUtxo(data map[common.Hash]TxCustomTok
 	customTokenTx.listUtxo = data
 }
 
-func (customTokentx *TxCustomToken) validateDoubleSpendCustomTokenOnTx(
+func (customTokentx TxCustomToken) validateDoubleSpendCustomTokenOnTx(
 	txInBlock metadata.Transaction,
 ) error {
 	temp := txInBlock.(*TxCustomToken)
@@ -73,7 +79,7 @@ func (customTokenTx TxCustomToken) ValidateTxWithCurrentMempool(
 	mr metadata.MempoolRetriever,
 ) error {
 	if customTokenTx.Type == common.TxRewardType || customTokenTx.Type == common.TxReturnStakingType {
-		return errors.New("can not receive a salary tx | return staking tx from other node, this is a violation")
+		return NewTransactionErr(UnexpectedError, errors.New("can not receive a salary tx | return staking tx from other node, this is a violation"))
 	}
 
 	normalTx := customTokenTx.Tx
@@ -93,7 +99,7 @@ func (customTokenTx TxCustomToken) ValidateTxWithCurrentMempool(
 	return nil
 }
 
-func (customTokenTx *TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain(
+func (customTokenTx TxCustomToken) validateDoubleSpendCustomTokenWithBlockchain(
 	bcr metadata.BlockchainRetriever,
 ) error {
 	listTxs, err := bcr.GetCustomTokenTxs(&customTokenTx.TxTokenData.PropertyID)
@@ -147,7 +153,7 @@ func (customTokenTx TxCustomToken) ValidateTxWithBlockChain(
 	return customTokenTx.validateDoubleSpendCustomTokenWithBlockchain(bcr)
 }
 
-func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+func (txCustomToken TxCustomToken) validateCustomTokenTxSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	ok, err := txCustomToken.Tx.ValidateSanityData(bcr)
 	if err != nil || !ok {
 		return ok, NewTransactionErr(UnexpectedError, err)
@@ -158,7 +164,7 @@ func (txCustomToken *TxCustomToken) validateCustomTokenTxSanityData(bcr metadata
 		if len(vin.PaymentAddress.Pk) == 0 {
 			return false, NewTransactionErr(WrongInputError, nil)
 		}
-		if vin.Signature == "" {
+		if vin.Signature == common.EmptyString {
 			return false, NewTransactionErr(WrongSigError, nil)
 		}
 		if vin.TxCustomTokenID.String() == zeroHash.String() {
@@ -563,7 +569,7 @@ func (txCustomToken *TxCustomToken) Init(senderKey *privacy.PrivateKey,
 	return nil
 }
 
-func (txCustomToken *TxCustomToken) GetTxCustomTokenSignature(keyset incognitokey.KeySet) ([]byte, error) {
+func (txCustomToken TxCustomToken) GetTxCustomTokenSignature(keyset incognitokey.KeySet) ([]byte, error) {
 	buff := new(bytes.Buffer)
 	json.NewEncoder(buff).Encode(txCustomToken)
 	return keyset.Sign(buff.Bytes())
