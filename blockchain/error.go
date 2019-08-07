@@ -88,6 +88,7 @@ const (
 	SwapValidatorError
 	CrossShardBitMapError
 	ShardCommitteeLengthAndCommitteeIndexError
+	BeaconCommitteeLengthAndCommitteeIndexError
 	BuildRewardInstructionError
 	GenerateBeaconCommitteeAndValidatorRootError
 	GenerateShardCommitteeAndValidatorRootError
@@ -97,7 +98,7 @@ const (
 	GenerateShardCommitteeError
 	GenerateShardPendingValidatorError
 	ProduceSignatureError
-	BeaconBestStateNotCompatibleError
+	BeaconBestStateBestBlockNotCompatibleError
 	BeaconBlockProducerError
 	BeaconBlockSignatureError
 	WrongEpochError
@@ -105,6 +106,9 @@ const (
 	GetShardBlocksError
 	ShardStateHeightError
 	ShardStateCrossShardBitMapError
+	ShardBlockSignatureError
+	ShardBestStateBeaconHeightNotCompatibleError
+	BeaconBestStateBestShardHeightNotCompatibleError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -196,13 +200,17 @@ var ErrCodeMessage = map[int]struct {
 	GenerateShardCommitteeError:                       {-1082, "Generate Shard Committee Root Error"},
 	GenerateShardPendingValidatorError:                {-1083, "Generate Shard Pending Validator Root Error"},
 	ProduceSignatureError:                             {-1084, "Produce Signature Error"},
-	BeaconBestStateNotCompatibleError:                 {-1085, "New Beacon Block and Beacon Best State Is NOT Compatible"},
+	BeaconBestStateBestBlockNotCompatibleError:        {-1085, "New Beacon Block and Beacon Best State Is NOT Compatible"},
 	BeaconBlockProducerError:                          {-1086, "Beacon Block Producer Error"},
 	BeaconBlockSignatureError:                         {-1087, "Beacon Block Signature Error"},
 	WrongEpochError:                                   {-1088, "Wrong Epoch Error"},
 	GenerateInstructionHashError:                      {-1089, "Generate Instruction Hash Error"},
 	ShardStateHeightError:                             {-1090, "Generate Instruction Hash Error"},
 	ShardStateCrossShardBitMapError:                   {-1091, "Shard State Cross Shard BitMap Error"},
+	BeaconCommitteeLengthAndCommitteeIndexError:       {-1092, "Shard Committee Length And Committee Index Error"},
+	ShardBlockSignatureError:                          {-1093, "Shard Block Signature Error"},
+	ShardBestStateBeaconHeightNotCompatibleError:      {-1094, "Shard BestState Beacon Height Not Compatible Error"},
+	BeaconBestStateBestShardHeightNotCompatibleError:  {-1095, "Beacon BestState Best Shard Height Not Compatible Error"},
 }
 
 type BlockChainError struct {
