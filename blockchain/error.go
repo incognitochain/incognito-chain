@@ -113,6 +113,8 @@ const (
 	ShardBlockSignatureError
 	ShardBestStateBeaconHeightNotCompatibleError
 	BeaconBestStateBestShardHeightNotCompatibleError
+	ProcessRandomInstructionError
+	ProcessSwapInstructionError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -218,7 +220,7 @@ var ErrCodeMessage = map[int]struct {
 	BeaconCommitteeAndPendingValidatorRootError:       {-1096, "Beacon Committee And Pending Validator Root Hash Error"},
 	ShardCommitteeAndPendingValidatorRootError:        {-1097, "Shard Committee And Pending Validator Root Hash Error"},
 	ShardCandidateRootError:                           {-1098, "Shard Candidate Root Hash Error"},
-	BeaconCandidateRootError:                          {-1099, "Beacon Candidate Root Hash Error"},
+	ProcessRandomInstructionError:                     {-1100, "Process Random Instruction Error"},
 }
 
 type BlockChainError struct {
