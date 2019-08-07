@@ -229,6 +229,10 @@ func (e *BLSBFT) enterNewRound() {
 
 }
 
+func (e *BLSBFT) GetConsensusHighestBlockConfident() byte {
+	return HIGHEST_BLOCK_CONFIDENT
+}
+
 func init() {
 	consensus.RegisterConsensus(common.BLSBFT, BLSBFT{})
 }

@@ -8,16 +8,12 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // BestState houses information about the current best block and other info
@@ -57,6 +53,7 @@ type BeaconBestState struct {
 	MinShardCommitteeSize                  int                  `json:"MinShardCommitteeSize"`
 	ActiveShards                           int                  `json:"ActiveShards"`
 	ConsensusAlgorithm                     string               `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm                map[byte]string      `json:"ShardConsensusAlgorithm"`
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -460,18 +457,21 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 		return err
 	}
 
-	blkHash := block.Header.Hash()
-	producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
-	if err != nil {
-		return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
+	confident, err := blockchain.config.ConsensusEngine.ValidateBlockWithConsensus(block, common.BEACON_CHAINKEY, beaconBestState.ConsensusAlgorithm)
+	if confident < 1 {
+		return NewBlockChainError(VerificationError, err)
 	}
+	// producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
+	// err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
+	// if err != nil {
+	// 	return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
+	// }
 	//verify producer
-	producerPosition := (beaconBestState.BeaconProposerIdx + block.Header.Round) % len(beaconBestState.BeaconCommittee)
-	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
-	if strings.Compare(tempProducer, producerPk) != 0 {
-		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
-	}
+	// producerPosition := (beaconBestState.BeaconProposerIdx + block.Header.Round) % len(beaconBestState.BeaconCommittee)
+	// tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	// if strings.Compare(tempProducer, producerPk) != 0 {
+	// 	return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	// }
 	//verify version
 	if block.Header.Version != BEACON_BLOCK_VERSION {
 		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(BEACON_BLOCK_VERSION)))

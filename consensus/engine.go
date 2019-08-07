@@ -6,13 +6,9 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/wire"
-)
-
-const (
-	BEACON_CHAINKEY = "beacon"
-	SHARD_CHAINKEY  = "shard"
 )
 
 var AvailableConsensus map[string]chain.ConsensusInterface
@@ -23,6 +19,7 @@ type Engine struct {
 	started            bool
 	Node               chain.Node
 	ChainConsensusList map[string]chain.ConsensusInterface
+	Chains             map[string]chain.ChainInterface
 	Blockchain         *blockchain.BlockChain
 	BlockGen           *blockchain.BlockGenerator
 }
@@ -125,10 +122,10 @@ func (engine *Engine) Stop(name string) error {
 }
 
 func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
-	if engine.ChainConsensusList[BEACON_CHAINKEY].GetConsensusName() != engine.Blockchain.BestState.Beacon.ConsensusAlgorithm {
-		consensus, ok := AvailableConsensus[engine.ChainConsensusList[BEACON_CHAINKEY].GetConsensusName()]
+	if engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName() != engine.Blockchain.BestState.Beacon.ConsensusAlgorithm {
+		consensus, ok := AvailableConsensus[engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName()]
 		if ok {
-			engine.ChainConsensusList[BEACON_CHAINKEY] = consensus.NewInstance()
+			engine.ChainConsensusList[common.BEACON_CHAINKEY] = consensus.NewInstance()
 		} else {
 			panic("Update code please")
 		}
@@ -136,7 +133,7 @@ func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
 	for idx := 0; idx < engine.Blockchain.BestState.Beacon.ActiveShards; idx++ {
 		shard, ok := engine.Blockchain.BestState.Shard[byte(idx)]
 		if ok {
-			chainKey := GetShardChainKey(byte(idx))
+			chainKey := common.GetShardChainKey(byte(idx))
 			if shard.ConsensusAlgorithm != engine.ChainConsensusList[chainKey].GetConsensusName() {
 				consensus, ok := AvailableConsensus[engine.ChainConsensusList[chainKey].GetConsensusName()]
 				if ok {
@@ -152,10 +149,6 @@ func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
 	return nil
 }
 
-func GetShardChainKey(shardID byte) string {
-	return SHARD_CHAINKEY + "-" + string(shardID)
-}
-
 func RegisterConsensus(name string, consensus chain.ConsensusInterface) error {
 	AvailableConsensus[name] = consensus
 	return nil
@@ -164,8 +157,12 @@ func RegisterConsensus(name string, consensus chain.ConsensusInterface) error {
 func (engine *Engine) ValidateBlockWithConsensus(block chain.BlockInterface, chainName string, consensusType string) error {
 	consensusModule, ok := engine.ChainConsensusList[chainName]
 	if ok && !consensusModule.IsOngoing() {
-		consensusModule.ValidateBlock(block)
+		consensusModule.ValidateBlock(block, engine.Chains[chainName])
 	}
+	return nil
+}
+
+func (engine *Engine) ValidateBlockCommitteSig(blockHash common.Hash, committee []string, sig string, consensusType string) error {
 	return nil
 }
 
@@ -234,3 +231,7 @@ func (s *Engine) GetUserRole() (string, int) {
 // 	}
 // 	return prepareMsg
 // }
+
+func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, consensusType string) error {
+	return nil
+}

@@ -413,3 +413,7 @@ func GetENV(key, fallback string) string {
 	}
 	return value
 }
+
+func GetShardChainKey(shardID byte) string {
+	return SHARD_CHAINKEY + "-" + string(shardID)
+}

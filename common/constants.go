@@ -121,3 +121,8 @@ var (
 	// otherwise using localhost
 	ETHERERUM_LIGHT_NODE_HOST = GetENV("GETH_NAME", "127.0.0.1")
 )
+
+const (
+	BEACON_CHAINKEY = "beacon"
+	SHARD_CHAINKEY  = "shard"
+)

@@ -8,12 +8,13 @@ import (
 )
 
 type BeaconBlock struct {
-	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"R"`
-	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
-	ProducerSig   string  `json:"ProducerSig"`
+	// AggregatedSig string  `json:"AggregatedSig"`
+	// R             string  `json:"R"`
+	// ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
+	// ProducerSig   string  `json:"ProducerSig"`
 
 	ValidationData string `json:"ValidationData"`
+	ConsensusType  string `json:"ConsensusType"`
 
 	Body   BeaconBody
 	Header BeaconHeader
@@ -32,9 +33,9 @@ func (beaconBlock *BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
 
-func (beaconBlock *BeaconBlock) GetProducerPubKey() string {
-	return string(beaconBlock.Header.ProducerAddress.Pk)
-}
+// func (beaconBlock *BeaconBlock) GetProducerPubKey() string {
+// 	return string(beaconBlock.Header.ProducerAddress.Pk)
+// }
 
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
@@ -52,10 +53,10 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	beaconBlock.AggregatedSig = tempBlk.AggregatedSig
-	beaconBlock.R = tempBlk.R
-	beaconBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
-	beaconBlock.ProducerSig = tempBlk.ProducerSig
+	// beaconBlock.AggregatedSig = tempBlk.AggregatedSig
+	// beaconBlock.R = tempBlk.R
+	// beaconBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
+	// beaconBlock.ProducerSig = tempBlk.ProducerSig
 	beaconBlock.Header = tempBlk.Header
 	beaconBlock.Body = tempBlk.Body
 	return nil
