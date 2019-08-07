@@ -43,6 +43,9 @@ const (
 	VerifyMinerCreatedTxBeforeGettingInBlockError
 	CommitOutputCoinError
 
+	NormalTokenPRVJsonError
+	NormalTokenJsonError
+
 	PrivacyTokenInitPRVError
 	PrivacyTokenInitTokenDataError
 	PrivacyTokenPRVJsonError
@@ -94,9 +97,14 @@ var ErrCodeMessage = map[int]struct {
 	InvalidSanityDataPrivacyTokenError:  {-3000, "Invalid sanity data for privacy Token"},
 	InvalidDoubleSpendPrivacyTokenError: {-3001, "Double spend privacy Token in blockchain"},
 	PrivacyTokenJsonError:               {-3002, "Json data error"},
-	PrivacyTokenInitPRVError:            {-3003, "Init tx for PRV error"},
-	PrivacyTokenTxTypeNotHandleError:    {-3004, "Can not handle this tx type for privacy token"},
-	PrivacyTokenInitTokenDataError:      {-3005, "Can not init data for privacy token tx"},
+	PrivacyTokenPRVJsonError:            {-3003, "Json data error"},
+	PrivacyTokenInitPRVError:            {-3004, "Init tx for PRV error"},
+	PrivacyTokenTxTypeNotHandleError:    {-3005, "Can not handle this tx type for privacy token"},
+	PrivacyTokenInitTokenDataError:      {-3006, "Can not init data for privacy token tx"},
+
+	// for normal token
+	NormalTokenPRVJsonError: {-4000, "Json data error"},
+	NormalTokenJsonError:    {-4001, "Json data error"},
 }
 
 type TransactionError struct {
