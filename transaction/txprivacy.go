@@ -54,7 +54,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		return NewTransactionErr(UnexpectedError, err)
 	}
 	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
 	if parseErr != nil {
@@ -175,11 +175,11 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 		// Check number of list of random commitments, list of random commitment indices
 		if len(commitmentIndexs) != len(params.inputCoins)*privacy.CommitmentRingSize {
-			return NewTransactionErr(RandomCommitmentErr, nil)
+			return NewTransactionErr(RandomCommitmentError, nil)
 		}
 
 		if len(myCommitmentIndexs) != len(params.inputCoins) {
-			return NewTransactionErr(RandomCommitmentErr, errors.New("number of list my commitment indices must be equal to number of input coins"))
+			return NewTransactionErr(RandomCommitmentError, errors.New("number of list my commitment indices must be equal to number of input coins"))
 		}
 	}
 
@@ -204,7 +204,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return NewTransactionErr(WrongInput, errors.New(fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.fee)))
+		return NewTransactionErr(WrongInputError, errors.New(fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.fee)))
 	}
 
 	// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
@@ -1202,8 +1202,9 @@ func (tx Tx) ValidateTxSalary(
 	if !valid {
 		if err != nil {
 			Logger.log.Debugf("Error verifying signature of tx: %+v", err)
+			return false, NewTransactionErr(VerifyTxSigFailError, err)
 		}
-		return false, err
+		return false, nil
 	}
 
 	// check whether output coin's input exists in input list or not
@@ -1212,7 +1213,7 @@ func (tx Tx) ValidateTxSalary(
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
-		return false, err
+		return false, NewTransactionErr(TokenIDInvalidError, err)
 	}
 	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), shardIDSender, db); ok || err != nil {
 		return false, err
@@ -1228,7 +1229,7 @@ func (tx Tx) ValidateTxSalary(
 	cmTmp = cmTmp.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(tx.Proof.GetOutputCoins()[0].CoinDetails.GetRandomness()))
 	ok := cmTmp.IsEqual(tx.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment())
 	if !ok {
-		return ok, errors.New("check output coin's coin commitment isn't calculated correctly")
+		return ok, NewTransactionErr(UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
 	}
 	return ok, nil
 }
@@ -1265,7 +1266,12 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 	}
 	if meta != nil {
-		return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &tx, bcr, accumulatedValues)
+		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &tx, bcr, accumulatedValues)
+		if err != nil {
+			Logger.log.Error(err)
+			return false, NewTransactionErr(VerifyMinerCreatedTxBeforeGettingInBlockError, err)
+		}
+		return ok, nil
 	}
 	return true, nil
 }
