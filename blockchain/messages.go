@@ -212,7 +212,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			return
 		}
 
-		if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.GetAShardCommittee(block.Header.ShardID), block.AggregatedSig, block.R, block.Hash()); err != nil {
+		if err = ValidateAggSignature(block.ValidatorsIndex, blockchain.BestState.Beacon.GetAShardCommittee(block.Header.ShardID), block.AggregatedSig, block.R, block.Hash()); err != nil {
 			Logger.log.Error(err)
 			return
 		}

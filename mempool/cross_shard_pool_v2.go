@@ -183,7 +183,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(block *blockchain.CrossShardBl
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
 		return nil, pool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
 	}
-	if err := blockchain.ValidateAggSignature(block.ValidatorsIdx, shardCommittee[shardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+	if err := blockchain.ValidateAggSignature(block.ValidatorsIndex, shardCommittee[shardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
 		return nil, pool.shardID, err
 	}
 
