@@ -229,10 +229,10 @@ func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalRe
 	}
 	for key := range totalReward {
 		for i, committee := range listCommitee {
-			committeeBytes, _, err := base58.Base58Check{}.Decode(committee)
+			committeeBytes, _, err := DecodeCommitteeKey(committee)
 			if err != nil {
 				for j := i - 1; j >= 0; j-- {
-					committeeBytes, _, _ := base58.Base58Check{}.Decode(listCommitee[j])
+					committeeBytes, _, _ := DecodeCommitteeKey(listCommitee[j])
 					_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward[key], key)
 				}
 				return err
@@ -240,7 +240,7 @@ func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalRe
 			err = blockchain.config.DataBase.AddCommitteeReward(committeeBytes, reward[key], key)
 			if err != nil {
 				for j := i - 1; j >= 0; j-- {
-					committeeBytes, _, _ := base58.Base58Check{}.Decode(listCommitee[j])
+					committeeBytes, _, _ := DecodeCommitteeKey(listCommitee[j])
 					_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward[key], key)
 				}
 				return err

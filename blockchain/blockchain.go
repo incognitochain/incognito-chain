@@ -1248,7 +1248,9 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 		baseRewards[key] = value / uint64(len(blockchain.BestState.Beacon.BeaconCommittee))
 	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
-		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)
+		incPK := publickeyStr[:common.IncPubKeyB58Size]
+
+		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, incPK)
 		if err != nil {
 			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
 			return nil, err
@@ -1600,4 +1602,20 @@ func (blockchain *BlockChain) DeleteIncomingCrossShard(block *ShardBlock) error 
 
 func (blockchain *BlockChain) GetActiveShardNumber() int {
 	return blockchain.BestState.Beacon.ActiveShards
+}
+
+// DecodeCommitteeKey take input committee key which is contained in output of FetchCommittee...
+// then decode it to incognito publickey and bls publickey
+func DecodeCommitteeKey(committeeKey string) ([]byte, []byte, error) {
+	incPKB58 := committeeKey[:common.IncPubKeyB58Size]
+	blsPKB58 := committeeKey[common.IncPubKeyB58Size:]
+	iPKBytes, ver, err := base58.Base58Check{}.Decode(incPKB58)
+	if ver != common.ZeroByte || err != nil {
+		return []byte{0}, []byte{0}, errors.New("Base58CheckDecode IncognitoKey error")
+	}
+	bPKBytes, ver, err := base58.Base58Check{}.Decode(blsPKB58)
+	if ver != common.ZeroByte || err != nil {
+		return []byte{0}, []byte{0}, errors.New("Base58CheckDecode BLSKey error")
+	}
+	return iPKBytes, bPKBytes, nil
 }
