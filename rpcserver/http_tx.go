@@ -13,6 +13,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	bls "github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -1355,9 +1356,11 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
 	}
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
+	blsPKBytes := bls.IncSK2BLSPKBytes(senderKey.KeySet.PrivateKey)
+
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard)
+	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(blsPKBytes, common.ZeroByte))
 
 	tx, err := httpServer.buildRawTransaction(params, metadata)
 	if err.(*RPCError) != nil {

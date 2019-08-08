@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	bls "github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -15,20 +16,25 @@ type StakingMetadata struct {
 	MetadataBase
 	PaymentAddress     string
 	StakingAmountShard uint64
+	// BLSPublicKey PublicKey of BLS scheme on consensus, base58CheckEncode
+	BLSPublicKey string
 }
 
-func NewStakingMetadata(stakingType int, paymentAdd string, stakingAmountShard uint64) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, paymentAdd string, stakingAmountShard uint64, blsPublicKey string) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
 
-	return &StakingMetadata{*metadataBase, paymentAdd, stakingAmountShard}, nil
+	return &StakingMetadata{*metadataBase, paymentAdd, stakingAmountShard, blsPublicKey}, nil
 }
 
 /*
  */
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
+	if !bls.ChkPKSt(sm.BLSPublicKey) {
+		return false
+	}
 	return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
 }
 
@@ -72,6 +78,9 @@ func (sm *StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
+	}
+	if !bls.ChkPKSt(sm.BLSPublicKey) {
+		return false, false, errors.New("invalid BLS PublicKey")
 	}
 	if sm.Type == ShardStakingMeta && amount != bcr.GetStakingAmountShard() {
 		return false, false, errors.New("invalid Stake Shard Amount")
