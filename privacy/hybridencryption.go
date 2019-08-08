@@ -1,9 +1,12 @@
 package privacy
 
 import (
+	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
 // hybridCipherText represents to hybridCipherText for Hybrid encryption
@@ -29,6 +32,23 @@ func (ciphertext hybridCipherText) isNil() bool {
 	}
 
 	return len(ciphertext.symKeyEncrypted) == 0
+}
+
+func (hybridCipherText hybridCipherText) MarshalJSON() ([]byte, error) {
+	data := hybridCipherText.Bytes()
+	temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
+	return json.Marshal(temp)
+}
+
+func (hybridCipherText *hybridCipherText) UnmarshalJSON(data []byte) error {
+	dataStr := ""
+	_ = json.Unmarshal(data, &dataStr)
+	temp, _, err := base58.Base58Check{}.Decode(dataStr)
+	if err != nil {
+		return err
+	}
+	hybridCipherText.SetBytes(temp)
+	return nil
 }
 
 // Bytes converts ciphertext to bytes array
