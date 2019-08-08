@@ -2,12 +2,13 @@ package blockchain
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -76,7 +77,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	beaconBlock.Header.Epoch = epoch
 	beaconBlock.Header.Round = round
 	beaconBlock.Header.PreviousBlockHash = beaconBestState.BestBlockHash
-	BLogger.log.Infof("Producing block: %d, %d", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
+	BLogger.log.Infof("Producing block: %d (epoch %d)", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	//============Build body===================
 	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
@@ -88,6 +89,9 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	beaconBlock.Body.ShardState = tempShardState
 	if len(beaconBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
+	}
+	if len(bridgeInstructions) > 0 {
+		BLogger.log.Infof("Producer instructions: %+v", tempInstruction)
 	}
 	//============End Build Body================
 	//============Build Header Hash=============
@@ -217,7 +221,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 			totalBlock = MAX_S2B_BLOCK
 		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
-			shardState, validStakeInstruction, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight, shardBlock, shardID)
+			shardState, validStakeInstruction, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)
 			validSwapInstructions[shardID] = append(validSwapInstructions[shardID], validSwapInstruction[shardID]...)
