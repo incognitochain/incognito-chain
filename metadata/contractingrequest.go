@@ -2,7 +2,10 @@ package metadata
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"reflect"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
@@ -16,6 +19,11 @@ type ContractingRequest struct {
 	BurnedAmount  uint64 // must be equal to vout value
 	TokenID       common.Hash
 	MetadataBase
+}
+
+type ContractingReqAction struct {
+	Meta    ContractingRequest `json:"meta"`
+	TxReqID common.Hash        `json:"txReqId"`
 }
 
 func NewContractingRequest(
@@ -100,7 +108,17 @@ func (cReq *ContractingRequest) Hash() *common.Hash {
 }
 
 func (cReq *ContractingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	return [][]string{}, nil
+	actionContent := map[string]interface{}{
+		"meta":          *cReq,
+		"RequestedTxID": tx.Hash(),
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(ContractingRequestMeta), actionContentBase64Str}
+	return [][]string{action}, nil
 }
 
 func (cReq *ContractingRequest) CalculateSize() uint64 {
