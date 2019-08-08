@@ -786,7 +786,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock) 
 	}
 	err := blockchain.updateDatabaseWithBlockRewardInfo(beaconBlock)
 	if err != nil {
-		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfo, err)
+		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
 	// execute, store
 	err = blockchain.processBridgeInstructions(beaconBlock)

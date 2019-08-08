@@ -128,7 +128,9 @@ const (
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
 	ProcessBridgeInstructionError
-	UpdateDatabaseWithBlockRewardInfo
+	UpdateDatabaseWithBlockRewardInfoError
+	CreateCrossShardBlockError
+	VerifyCrossShardBlockShardTxRootError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -241,7 +243,9 @@ var ErrCodeMessage = map[int]struct {
 	CleanBackUpError:                                  {-1104, "Clean Back Up Error"},
 	BackUpBestStateError:                              {-1105, "Back Up Best State Error"},
 	ProcessBridgeInstructionError:                     {-1106, "Process Bridge Instruction Error"},
-	UpdateDatabaseWithBlockRewardInfo:                 {-1107, "Update Database With Block Reward Info"},
+	UpdateDatabaseWithBlockRewardInfoError:            {-1107, "Update Database With Block Reward Info Error"},
+	CreateCrossShardBlockError:                        {-1108, "Create Cross Shard Block Error"},
+	VerifyCrossShardBlockShardTxRootError:             {-1109, "Verify Cross Shard Block ShardTxRoot Error"},
 }
 
 type BlockChainError struct {
