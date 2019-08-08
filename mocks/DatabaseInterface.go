@@ -801,6 +801,27 @@ func (_m *DatabaseInterface) GetBlockByIndex(_a0 uint64, _a1 byte) (common.Hash,
 	return r0, r1
 }
 
+// GetBridgeReqWithStatus provides a mock function with given fields: txReqID
+func (_m *DatabaseInterface) GetBridgeReqWithStatus(txReqID common.Hash) (byte, error) {
+	ret := _m.Called(txReqID)
+
+	var r0 byte
+	if rf, ok := ret.Get(0).(func(common.Hash) byte); ok {
+		r0 = rf(txReqID)
+	} else {
+		r0 = ret.Get(0).(byte)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(txReqID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetBurningConfirm provides a mock function with given fields: txID
 func (_m *DatabaseInterface) GetBurningConfirm(txID []byte) (uint64, error) {
 	ret := _m.Called(txID)
@@ -1785,20 +1806,6 @@ func (_m *DatabaseInterface) StoreCommitments(tokenID common.Hash, pubkey []byte
 	return r0
 }
 
-// StoreShardCommitteeByHeight provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) StoreShardCommitteeByHeight(_a0 uint64, _a1 interface{}) error {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(uint64, interface{}) error); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // StoreCommitteeFromShardBestState provides a mock function with given fields: shardID, shardHeight, v
 func (_m *DatabaseInterface) StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error {
 	ret := _m.Called(shardID, shardHeight, v)
@@ -2023,6 +2030,20 @@ func (_m *DatabaseInterface) StoreShardBlockIndex(_a0 common.Hash, _a1 uint64, _
 	return r0
 }
 
+// StoreShardCommitteeByHeight provides a mock function with given fields: _a0, _a1
+func (_m *DatabaseInterface) StoreShardCommitteeByHeight(_a0 uint64, _a1 interface{}) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64, interface{}) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StoreTransactionIndex provides a mock function with given fields: txId, blockHash, indexInBlock
 func (_m *DatabaseInterface) StoreTransactionIndex(txId common.Hash, blockHash common.Hash, indexInBlock int) error {
 	ret := _m.Called(txId, blockHash, indexInBlock)
@@ -2044,6 +2065,20 @@ func (_m *DatabaseInterface) StoreTxByPublicKey(publicKey []byte, txID common.Ha
 	var r0 error
 	if rf, ok := ret.Get(0).(func([]byte, common.Hash, byte) error); ok {
 		r0 = rf(publicKey, txID, shardID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// TrackBridgeReqWithStatus provides a mock function with given fields: txReqID, status
+func (_m *DatabaseInterface) TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error {
+	ret := _m.Called(txReqID, status)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(common.Hash, byte) error); ok {
+		r0 = rf(txReqID, status)
 	} else {
 		r0 = ret.Error(0)
 	}
