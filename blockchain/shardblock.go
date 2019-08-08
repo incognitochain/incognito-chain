@@ -338,7 +338,9 @@ func (blk *ShardBlock) CreateAllCrossShardBlock(activeShards int) map[byte]*Cros
 		shardID := common.GetShardIDFromLastByte(byte(i))
 		if shardID != blk.Header.ShardID {
 			crossShard, err := blk.CreateCrossShardBlock(shardID)
-			fmt.Printf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, shardID, crossShard)
+			if crossShard != nil {
+				Logger.log.Infof("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", blk.Header.ShardID, shardID, crossShard)
+			}
 			if crossShard != nil && err == nil {
 				allCrossShard[byte(i)] = crossShard
 			}
