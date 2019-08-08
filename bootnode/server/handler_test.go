@@ -24,14 +24,14 @@ func TestHandler_Ping(t *testing.T) {
 	}
 
 	args := &PingArgs{
-		RawAddress: "localhost:9333",
-		PublicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
+		rawAddress: "localhost:9333",
+		publicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
 	}
-	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.RawAddress))
+	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.rawAddress))
 	if err != nil {
 		t.Error(err)
 	}
-	args.SignData = signDataB58
+	args.signData = signDataB58
 
 	var response = make([]wire.RawPeer, 0)
 	err = handler.Ping(args, &response)
