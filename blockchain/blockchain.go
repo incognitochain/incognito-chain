@@ -31,17 +31,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-/*
-blockChain is a view presents for data in blockchain network
-because we use 20 chain data to contain all block in system, so
-this struct has a array best state with len = 20,
-every beststate present for a best block in every chain
-*/
 type BlockChain struct {
+	Chain     map[string]ChainInterface
 	BestState *BestState
 	config    Config
 	chainLock sync.Mutex
-	//channel
+
 	cQuitSync        chan struct{}
 	Synker           Synker
 	ConsensusOngoing bool

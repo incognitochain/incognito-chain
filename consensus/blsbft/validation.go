@@ -58,7 +58,10 @@ func (e *BLSBFT) ValidateBlock(block chain.BlockInterface) error {
 }
 
 func (e *BLSBFT) ValidateProducerPosition(block chain.BlockInterface) error {
-	valData, error := DecodeValidationData(block.GetValidationField())
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return err
+	}
 	committee := e.Chain.GetCommittee()
 	producerPosition := (e.Chain.GetLastProposerIndex() + block.GetRound()) % e.Chain.GetCommitteeSize()
 	tempProducer := committee[producerPosition]
@@ -70,7 +73,10 @@ func (e *BLSBFT) ValidateProducerPosition(block chain.BlockInterface) error {
 }
 
 func (e *BLSBFT) ValidateProducerSig(block chain.BlockInterface) error {
-	valData, error := DecodeValidationData(block.GetValidationField())
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return err
+	}
 	blockHash := block.Hash()
 	if err := bls.ValidateSingleSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
 		return err
@@ -79,7 +85,10 @@ func (e *BLSBFT) ValidateProducerSig(block chain.BlockInterface) error {
 }
 
 func (e *BLSBFT) ValidateCommitteeSig(block chain.BlockInterface) error {
-	valData, error := DecodeValidationData(block.GetValidationField())
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return err
+	}
 	committee := e.Chain.GetCommittee()
 	if err := bls.ValidateAggSig(block.Hash(), valData.AggSig, committee); err != nil {
 		return err
