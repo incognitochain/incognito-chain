@@ -19,7 +19,8 @@ import (
 func (blockChain *BlockChain) buildBridgeInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
-	beaconBestState *BeaconBestState,
+	// beaconBestState *BeaconBestState
+	beaconHeight uint64,
 	db database.DatabaseInterface,
 ) ([][]string, error) {
 	accumulatedValues := &metadata.AccumulatedValues{
@@ -28,7 +29,7 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 		CBridgeTokens:    []*common.Hash{},
 	}
 	instructions := [][]string{}
-	beaconHeight := beaconBestState.BeaconHeight
+	//beaconHeight := beaconBestState.BeaconHeight
 	for _, inst := range shardBlockInstructions {
 		if len(inst) < 2 {
 			continue
