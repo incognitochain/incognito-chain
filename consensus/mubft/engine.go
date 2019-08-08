@@ -152,8 +152,9 @@ func (engine *Engine) execBeaconRole() {
 		engine.retries = 0
 	}
 	if engine.retries >= MaxNormalRetryTime {
-		timeSinceLastBlk := time.Since(time.Unix(engine.config.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0))
-		engine.currentBFTRound = int(timeSinceLastBlk.Round(common.MinBeaconBlkInterval).Seconds()) / int(common.MinBeaconBlkInterval.Seconds())
+		timeSinceLastBlk := int(time.Since(time.Unix(engine.config.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0)))
+		blkTime := int(common.MinBeaconBlkInterval.Seconds())
+		engine.currentBFTRound = (timeSinceLastBlk - timeSinceLastBlk%blkTime) / blkTime
 	}
 
 	bftProtocol := &BFTProtocol{
@@ -224,8 +225,9 @@ func (engine *Engine) execShardRole(shardID byte) {
 		engine.retries = 0
 	}
 	if engine.retries >= MaxNormalRetryTime {
-		timeSinceLastBlk := time.Since(time.Unix(engine.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp, 0))
-		engine.currentBFTRound = int(timeSinceLastBlk.Round(common.MinShardBlkInterval).Seconds()) / int(common.MinShardBlkInterval.Seconds())
+		timeSinceLastBlk := int(time.Since(time.Unix(engine.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp, 0)))
+		blkTime := int(common.MinShardBlkInterval.Seconds())
+		engine.currentBFTRound = (timeSinceLastBlk - timeSinceLastBlk%blkTime) / blkTime
 	}
 	engine.config.BlockChain.Synker.SyncShard(shardID)
 	bftProtocol := &BFTProtocol{
