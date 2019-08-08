@@ -19,7 +19,7 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 	if err != nil {
 		return []byte{}, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
 	}
-	keyWallet.KeySet.ImportFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
+	keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
 	param["TokenID"] = arrayParams[4].(map[string]interface{})["TokenID"]
 	arrayParams[4] = interface{}(param)
@@ -42,6 +42,8 @@ func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params inte
 
 // handleGetRewardAmount - Get the reward amount of a payment address with all existed token
 func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	rewardAmountResult := make(map[string]uint64)
+	rewardAmounts := make(map[common.Hash]uint64)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
@@ -61,13 +63,15 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 		keySet = httpServer.config.Server.GetUserKeySet()
 	}
 
+	if keySet == nil {
+		return rewardAmountResult, nil
+	}
+
 	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	rewardAmountResult := make(map[string]uint64)
-	rewardAmounts := make(map[common.Hash]uint64)
 	for _, coinID := range allCoinIDs {
 		amount, err := (*httpServer.config.Database).GetCommitteeReward(keySet.PaymentAddress.Pk, coinID)
 		if err != nil {

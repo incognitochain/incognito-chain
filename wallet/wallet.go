@@ -87,7 +87,6 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 	return nil
 }
 
-
 // CreateNewAccount create new account with accountName
 // it returns that new account and returns errors if accountName is existed
 // If shardID is nil, new account will belong to any shards
@@ -95,7 +94,7 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*AccountWallet, error) {
 	if accountName != "" {
 		for _, acc := range wallet.MasterAccount.Child {
-			if acc.Name == accountName{
+			if acc.Name == accountName {
 				return nil, NewWalletError(ExistedAccountNameErr, nil)
 			}
 		}
@@ -110,7 +109,7 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*Acco
 			if !temp.IsImported {
 				childNumber := temp.Key.ChildNumber
 				childNumberInt32, err := common.BytesToInt32(childNumber)
-				if err != nil{
+				if err != nil {
 					return nil, NewWalletError(UnexpectedErr, err)
 				}
 				newIndex = uint64(childNumberInt32 + 1)
@@ -203,7 +202,7 @@ func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, pa
 		return nil, err
 	}
 
-	err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
 		return nil, err
 	}

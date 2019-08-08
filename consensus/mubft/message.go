@@ -26,7 +26,7 @@ func MakeMsgBFTReq(bestStateHash common.Hash, round int, userKeySet *incognitoke
 	}
 	msg.(*wire.MessageBFTReq).BestStateHash = bestStateHash
 	msg.(*wire.MessageBFTReq).Round = round
-	msg.(*wire.MessageBFTReq).Pubkey = userKeySet.GetPublicKeyB58()
+	msg.(*wire.MessageBFTReq).Pubkey = userKeySet.GetPublicKeyInBase58CheckEncode()
 	err = msg.(*wire.MessageBFTReq).SignMsg(userKeySet)
 	if err != nil {
 		return msg, err
@@ -43,7 +43,7 @@ func MakeMsgBFTReady(bestStateHash common.Hash, round int, poolState map[byte]ui
 	// msg.(*wire.MessageBFTReady).PoolState = poolState
 	msg.(*wire.MessageBFTReady).BestStateHash = bestStateHash
 	msg.(*wire.MessageBFTReady).Round = round
-	msg.(*wire.MessageBFTReady).Pubkey = userKeySet.GetPublicKeyB58()
+	msg.(*wire.MessageBFTReady).Pubkey = userKeySet.GetPublicKeyInBase58CheckEncode()
 	err = msg.(*wire.MessageBFTReady).SignMsg(userKeySet)
 	if err != nil {
 		return msg, err
@@ -60,7 +60,7 @@ func MakeMsgBFTPropose(block json.RawMessage, layer string, shardID byte, userKe
 	msg.(*wire.MessageBFTPropose).Block = block
 	msg.(*wire.MessageBFTPropose).Layer = layer
 	msg.(*wire.MessageBFTPropose).ShardID = shardID
-	msg.(*wire.MessageBFTPropose).Pubkey = userKeySet.GetPublicKeyB58()
+	msg.(*wire.MessageBFTPropose).Pubkey = userKeySet.GetPublicKeyInBase58CheckEncode()
 	err = msg.(*wire.MessageBFTPropose).SignMsg(userKeySet)
 	if err != nil {
 		return msg, err
@@ -76,7 +76,7 @@ func MakeMsgBFTAgree(Ri []byte, userKeySet *incognitokey.KeySet, blkHash common.
 		return msg, err
 	}
 	msg.(*wire.MessageBFTAgree).Ri = Ri
-	msg.(*wire.MessageBFTAgree).Pubkey = userKeySet.GetPublicKeyB58()
+	msg.(*wire.MessageBFTAgree).Pubkey = userKeySet.GetPublicKeyInBase58CheckEncode()
 	msg.(*wire.MessageBFTAgree).BlkHash = blkHash
 	err = msg.(*wire.MessageBFTAgree).SignMsg(userKeySet)
 	if err != nil {
@@ -94,7 +94,7 @@ func MakeMsgBFTCommit(commitSig string, R string, validatorsIdx []int, userKeySe
 	msg.(*wire.MessageBFTCommit).CommitSig = commitSig
 	msg.(*wire.MessageBFTCommit).R = R
 	msg.(*wire.MessageBFTCommit).ValidatorsIdx = validatorsIdx
-	msg.(*wire.MessageBFTCommit).Pubkey = userKeySet.GetPublicKeyB58()
+	msg.(*wire.MessageBFTCommit).Pubkey = userKeySet.GetPublicKeyInBase58CheckEncode()
 	err = msg.(*wire.MessageBFTCommit).SignMsg(userKeySet)
 	if err != nil {
 		return msg, err

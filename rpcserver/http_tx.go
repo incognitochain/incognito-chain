@@ -103,17 +103,17 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		item := make([]jsonresult.OutCoin, 0)
 
 		for _, outCoin := range outputCoins {
-			if outCoin.CoinDetails.Value == 0 {
+			if outCoin.CoinDetails.GetValue() == 0 {
 				continue
 			}
 			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
-				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
-				Value:          strconv.FormatUint(outCoin.CoinDetails.Value, 10),
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
-				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
-				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
-				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.SNDerivator.Bytes(), common.ZeroByte),
+				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
+				Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
+				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
+				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
+				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
+				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
 			})
 		}
 		result.Outputs[readonlyKeyStr] = item
@@ -196,7 +196,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	txMsg.(*wire.MessageTx).Transaction = &tx
 	err = httpServer.config.Server.PushMessageToAll(txMsg)
 	if err == nil {
-		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
+		Logger.log.Infof("handleSendRawTransaction result: %+v, err: %+v", nil, err)
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 
@@ -287,8 +287,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -318,8 +318,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -347,8 +347,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
@@ -640,7 +640,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	err = account.KeySet.ImportFromPrivateKey(&account.KeySet.PrivateKey)
+	err = account.KeySet.InitFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrUnexpected, err)
@@ -674,7 +674,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		for _, out := range outcoints {
-			balance += out.CoinDetails.Value
+			balance += out.CoinDetails.GetValue()
 		}
 
 		item.Amount = balance
@@ -707,7 +707,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		for _, out := range outcoints {
-			balance += out.CoinDetails.Value
+			balance += out.CoinDetails.GetValue()
 		}
 
 		item.Amount = balance
@@ -720,6 +720,74 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 	}
 	Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v", result)
 	return result, nil
+}
+
+// handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
+func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Debugf("handleGetBalancePrivacyCustomToken params: %+v", params)
+	result := jsonresult.ListCustomTokenBalance{ListCustomTokenBalance: []jsonresult.CustomTokenBalance{}}
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 2 {
+		Logger.log.Debugf("handleGetBalancePrivacyCustomToken error: Need 2 params but get %+v", len(arrayParams))
+	}
+	privateKey, ok := arrayParams[0].(string)
+	if len(privateKey) == 0 || !ok {
+		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", nil)
+		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Private key is invalid"))
+	}
+	tokenID, ok := arrayParams[1].(string)
+	if len(tokenID) == 0 || !ok {
+		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", nil)
+		return result, NewRPCError(ErrRPCInvalidParams, errors.New("TokenID is invalid"))
+	}
+	account, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	err = account.KeySet.InitFromPrivateKey(&account.KeySet.PrivateKey)
+	if err != nil {
+		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+
+	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
+	temps, listCustomTokenCrossShard, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
+	if err != nil {
+		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	totalValue := uint64(0)
+	for tempTokenID, _ := range temps {
+		if tokenID == tempTokenID.String() {
+			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+			shardIDSender := common.GetShardIDFromLastByte(lastByte)
+			outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
+			if err != nil {
+				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
+				return nil, NewRPCError(ErrUnexpected, err)
+			}
+			for _, out := range outcoints {
+				totalValue += out.CoinDetails.GetValue()
+			}
+		}
+	}
+	for tempTokenID, _ := range listCustomTokenCrossShard {
+		if tokenID == tempTokenID.String() {
+			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
+			shardIDSender := common.GetShardIDFromLastByte(lastByte)
+			outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
+			if err != nil {
+				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
+				return nil, NewRPCError(ErrUnexpected, err)
+			}
+			for _, out := range outcoints {
+				totalValue += out.CoinDetails.GetValue()
+			}
+		}
+	}
+	Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", totalValue)
+	return totalValue, nil
 }
 
 // handleCustomTokenDetail - return list tx which relate to custom token by token id
@@ -817,16 +885,59 @@ func (httpServer *HttpServer) handleListUnspentCustomToken(params interface{}, c
 	result := []jsonresult.UnspentCustomToken{}
 	for _, temp := range unspentTxTokenOuts {
 		item := jsonresult.UnspentCustomToken{
-			PaymentAddress:  senderKeyParam,
-			Index:           temp.GetIndex(),
-			TxCustomTokenID: temp.GetTxCustomTokenID().String(),
-			Value:           temp.Value,
+			PaymentAddress: senderKeyParam,
+			Index:          temp.GetIndex(),
+			TxHash:         temp.GetTxCustomTokenID().String(),
+			Value:          temp.Value,
 		}
 		result = append(result, item)
 	}
 
 	Logger.log.Debugf("handleListUnspentCustomToken result: %+v", result)
 	return result, nil
+}
+
+// handleListUnspentCustomToken - return list utxo of custom token
+func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Debugf("handleGetBalanceCustomToken params: %+v", params)
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 2 {
+		Logger.log.Debugf("handleListUnspentCustomToken result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+	}
+	// param #1: paymentaddress of sender
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKey is invalid"))
+	}
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
+	if err != nil {
+		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	senderKeyset := senderKey.KeySet
+
+	// param #2: tokenID
+	tokenIDParam, ok := arrayParams[1].(string)
+	if !ok {
+		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v", nil)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("tokenID is invalid"))
+	}
+	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDParam)
+	unspentTxTokenOuts, err := httpServer.config.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
+
+	if err != nil {
+		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	totalValue := uint64(0)
+	for _, temp := range unspentTxTokenOuts {
+		totalValue += temp.Value
+	}
+
+	Logger.log.Debugf("handleGetBalanceCustomToken result: %+v", totalValue)
+	return totalValue, nil
 }
 
 // handleCreateSignatureOnCustomTokenTx - return a signature which is signed on raw custom token tx
@@ -850,7 +961,7 @@ func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interf
 	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrCreateTxData, err)
@@ -900,29 +1011,29 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		}
 		temp := big.Int{}
 		temp.SetString(out.Value, 10)
+		coin := &privacy.Coin{}
+		coin.SetValue(temp.Uint64())
 		i := &privacy.OutputCoin{
-			CoinDetails: &privacy.Coin{
-				Value: temp.Uint64(),
-			},
+			CoinDetails: coin,
 		}
 		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
-		i.CoinDetails.Randomness = new(big.Int).SetBytes(RandomnessInBytes)
+		i.CoinDetails.SetRandomness(new(big.Int).SetBytes(RandomnessInBytes))
 
 		SNDerivatorInBytes, _, _ := base58.Base58Check{}.Decode(out.SNDerivator)
-		i.CoinDetails.SNDerivator = new(big.Int).SetBytes(SNDerivatorInBytes)
+		i.CoinDetails.SetSNDerivator(new(big.Int).SetBytes(SNDerivatorInBytes))
 
 		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(out.CoinCommitment)
 		CoinCommitment := &privacy.EllipticPoint{}
 		_ = CoinCommitment.Decompress(CoinCommitmentBytes)
-		i.CoinDetails.CoinCommitment = CoinCommitment
+		i.CoinDetails.SetCoinCommitment(CoinCommitment)
 
 		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(out.PublicKey)
 		PublicKey := &privacy.EllipticPoint{}
 		_ = PublicKey.Decompress(PublicKeyBytes)
-		i.CoinDetails.PublicKey = PublicKey
+		i.CoinDetails.SetPublicKey(PublicKey)
 
 		InfoBytes, _, _ := base58.Base58Check{}.Decode(out.Info)
-		i.CoinDetails.Info = InfoBytes
+		i.CoinDetails.SetInfo(InfoBytes)
 
 		usableOutputCoins = append(usableOutputCoins, i)
 	}
@@ -1093,7 +1204,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(httpServer.config.Database)
-		ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), privacy.BigIntSize), shardIDSender)
+		ok, err := db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize), shardIDSender)
 		if ok && err == nil {
 			// SnD in db
 			result = append(result, true)
@@ -1239,7 +1350,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
 	}
-	err = senderKey.KeySet.ImportFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
 	}

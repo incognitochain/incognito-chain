@@ -13,7 +13,6 @@ import (
 )
 
 func (protocol *BFTProtocol) phasePropose() error {
-	//fmt.Println("[db] phasePropose")
 	go protocol.CreateBlockMsg()
 	phaseDuration := getTimeout(protocol.phase, len(protocol.RoundData.Committee))
 	timeout := time.AfterFunc(phaseDuration, func() {
@@ -171,7 +170,7 @@ phase:
 						isMatchBeststate := msg.(*wire.MessageBFTReq).BestStateHash == protocol.RoundData.BestStateHash
 						isMatchRound := msg.(*wire.MessageBFTReq).Round == protocol.RoundData.Round
 						isCommitee := common.IndexOfStr(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Committee) != -1
-						fmt.Println("BFT: val ", isMatchBeststate, isMatchRound, isCommitee, time.Now().Unix(), protocol.RoundData.BestStateHash, msg.(*wire.MessageBFTReq).BestStateHash, blockchain.GetBestStateBeacon().BeaconHeight)
+						fmt.Println("BFT: val ", isMatchBeststate, isMatchRound, isCommitee, time.Now().Unix(), protocol.RoundData.BestStateHash, msg.(*wire.MessageBFTReq).BestStateHash, blockchain.GetBeaconBestState().BeaconHeight)
 						if isMatchBeststate && isMatchRound && isCommitee {
 							if protocol.RoundData.Layer == common.BEACON_ROLE {
 								if userRole, _ := protocol.EngineCfg.BlockChain.BestState.Beacon.GetPubkeyRole(msg.(*wire.MessageBFTReq).Pubkey, protocol.RoundData.Round); userRole == common.PROPOSER_ROLE {
@@ -216,14 +215,14 @@ func (protocol *BFTProtocol) phaseAgree() error {
 
 	//map of members and their Ri
 	collectedRiList := make(map[string][]byte)
-	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = protocol.multiSigScheme.personal.Ri
+	collectedRiList[protocol.EngineCfg.UserKeySet.GetPublicKeyInBase58CheckEncode()] = protocol.multiSigScheme.personal.Ri
 phase:
 	for {
 		select {
 		case <-protocol.cTimeout:
-			//Use collected Ri to calc r & get ValidatorsIdx if len(Ri) > 1/2size(committee)
+			//Use collected Ri to calc r & get ValidatorsIndex if len(Ri) > 1/2size(committee)
 			// then sig block with this r
-			if len(collectedRiList) < (2*len(protocol.RoundData.Committee)/3)+1 {
+			if len(collectedRiList) < (2 * len(protocol.RoundData.Committee) / 3) {
 				fmt.Println("BFT: Didn't receive enough Ri to continue", time.Since(protocol.startTime).Seconds())
 				return errors.New("Didn't receive enough Ri to continue")
 			}
@@ -280,7 +279,7 @@ func (protocol *BFTProtocol) phaseCommit() error {
 
 	phaseData.Sigs = make(map[string]map[string]bftCommittedSig)
 	phaseData.Sigs[protocol.multiSigScheme.combine.R] = make(map[string]bftCommittedSig)
-	phaseData.Sigs[protocol.multiSigScheme.combine.R][protocol.EngineCfg.UserKeySet.GetPublicKeyB58()] = bftCommittedSig{
+	phaseData.Sigs[protocol.multiSigScheme.combine.R][protocol.EngineCfg.UserKeySet.GetPublicKeyInBase58CheckEncode()] = bftCommittedSig{
 		Sig:            protocol.multiSigScheme.combine.CommitSig,
 		ValidatorsIdxR: protocol.multiSigScheme.combine.ValidatorsIdxR,
 	}
@@ -323,19 +322,19 @@ phase:
 			if protocol.RoundData.Layer == common.BEACON_ROLE {
 				protocol.pendingBlock.(*blockchain.BeaconBlock).R = protocol.multiSigScheme.combine.R
 				protocol.pendingBlock.(*blockchain.BeaconBlock).AggregatedSig = AggregatedSig
-				protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx = make([][]int, 2)
-				protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[0] = make([]int, len(ValidatorsIdxR))
-				protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[1] = make([]int, len(ValidatorsIdxAggSig))
-				copy(protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[0], ValidatorsIdxR)
-				copy(protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIdx[1], ValidatorsIdxAggSig)
+				protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIndex = make([][]int, 2)
+				protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIndex[0] = make([]int, len(ValidatorsIdxR))
+				protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIndex[1] = make([]int, len(ValidatorsIdxAggSig))
+				copy(protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIndex[0], ValidatorsIdxR)
+				copy(protocol.pendingBlock.(*blockchain.BeaconBlock).ValidatorsIndex[1], ValidatorsIdxAggSig)
 			} else {
 				protocol.pendingBlock.(*blockchain.ShardBlock).R = protocol.multiSigScheme.combine.R
 				protocol.pendingBlock.(*blockchain.ShardBlock).AggregatedSig = AggregatedSig
-				protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx = make([][]int, 2)
-				protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[0] = make([]int, len(ValidatorsIdxR))
-				protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[1] = make([]int, len(ValidatorsIdxAggSig))
-				copy(protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[0], ValidatorsIdxR)
-				copy(protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIdx[1], ValidatorsIdxAggSig)
+				protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIndex = make([][]int, 2)
+				protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIndex[0] = make([]int, len(ValidatorsIdxR))
+				protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIndex[1] = make([]int, len(ValidatorsIdxAggSig))
+				copy(protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIndex[0], ValidatorsIdxR)
+				copy(protocol.pendingBlock.(*blockchain.ShardBlock).ValidatorsIndex[1], ValidatorsIdxAggSig)
 			}
 			break phase
 		case msgCommit := <-protocol.cBFTMsg:

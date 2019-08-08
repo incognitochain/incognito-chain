@@ -34,7 +34,7 @@ func initTx() {
 	for _, val := range testUserkeyList {
 
 		testUserKey, _ := wallet.Base58CheckDeserialize(val)
-		testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
+		testUserKey.KeySet.InitFromPrivateKey(&testUserKey.KeySet.PrivateKey)
 
 		testSalaryTX := transaction.Tx{}
 		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,

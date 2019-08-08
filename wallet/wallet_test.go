@@ -38,13 +38,13 @@ var _ = func() (_ struct{}) {
 }()
 
 /*
-		Unit test for Init function
- */
-func TestInit(t *testing.T){
+	Unit test for Init function
+*/
+func TestInit(t *testing.T) {
 	data := []struct {
-		passPhrase string
+		passPhrase   string
 		numOfAccount uint32
-		name string
+		name         string
 	}{
 		{"", uint32(2), "Wallet1"},
 		{"12345678", uint32(3), "Wallet2"},
@@ -63,9 +63,9 @@ func TestInit(t *testing.T){
 	}
 }
 
-func TestInitWithNumAccIsZero(t *testing.T){
-	passPhrase :=  "12345678"
-	numOfAccount :=  uint32(0)
+func TestInitWithNumAccIsZero(t *testing.T) {
+	passPhrase := "12345678"
+	numOfAccount := uint32(0)
 	name := "Wallet 1"
 
 	err := wallet.Init(passPhrase, numOfAccount, name)
@@ -74,9 +74,9 @@ func TestInitWithNumAccIsZero(t *testing.T){
 	assert.Equal(t, 1, len(wallet.MasterAccount.Child))
 }
 
-func TestInitWithEmptyName(t *testing.T){
-	passPhrase :=  "12345678"
-	numOfAccount :=  uint32(3)
+func TestInitWithEmptyName(t *testing.T) {
+	passPhrase := "12345678"
+	numOfAccount := uint32(3)
 	name := ""
 
 	err := wallet.Init(passPhrase, numOfAccount, name)
@@ -85,13 +85,13 @@ func TestInitWithEmptyName(t *testing.T){
 }
 
 /*
-		Unit test for CreateNewAccount function
- */
+	Unit test for CreateNewAccount function
+*/
 
-func TestCreateNewAccount(t *testing.T){
+func TestCreateNewAccount(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -105,26 +105,26 @@ func TestCreateNewAccount(t *testing.T){
 
 	for _, item := range data {
 		newAccount, err := wallet.CreateNewAccount(item.accountName, &item.shardID)
-		actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk) -1])
+		actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk)-1])
 
 		assert.Equal(t, nil, err)
-		assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+		assert.Equal(t, numAccount+1, len(wallet.MasterAccount.Child))
 		assert.Equal(t, item.accountName, newAccount.Name)
 		assert.Equal(t, item.shardID, actualShardID)
 		assert.Equal(t, false, newAccount.IsImported)
 		assert.Equal(t, 0, len(newAccount.Child))
 		assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
 		assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
-		assert.Equal(t, privacy.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
-		assert.Equal(t, privacy.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
-		assert.Equal(t, privacy.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
-		assert.Equal(t, privacy.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
+		assert.Equal(t, common.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
+		assert.Equal(t, common.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
+		assert.Equal(t, common.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
+		assert.Equal(t, common.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
 
 		numAccount++
 	}
 }
 
-func TestCreateNewAccountWithEmptyName(t *testing.T){
+func TestCreateNewAccountWithEmptyName(t *testing.T) {
 	// init wallet
 	wallet.Init("", 0, "Wallet")
 
@@ -135,23 +135,23 @@ func TestCreateNewAccountWithEmptyName(t *testing.T){
 	shardID := byte(0)
 
 	newAccount, err := wallet.CreateNewAccount(accountName, &shardID)
-	actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk) -1])
+	actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk)-1])
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
-	assert.Equal(t, "AccountWallet " + strconv.Itoa(numAccount), newAccount.Name)
+	assert.Equal(t, numAccount+1, len(wallet.MasterAccount.Child))
+	assert.Equal(t, "AccountWallet "+strconv.Itoa(numAccount), newAccount.Name)
 	assert.Equal(t, shardID, actualShardID)
 	assert.Equal(t, false, newAccount.IsImported)
 	assert.Equal(t, 0, len(newAccount.Child))
 	assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
 	assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
-	assert.Equal(t, privacy.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
-	assert.Equal(t, privacy.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
-	assert.Equal(t, privacy.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
-	assert.Equal(t, privacy.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
+	assert.Equal(t, common.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
+	assert.Equal(t, common.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
+	assert.Equal(t, common.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
+	assert.Equal(t, common.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
 }
 
-func TestCreateNewAccountWithNilShardID(t *testing.T){
+func TestCreateNewAccountWithNilShardID(t *testing.T) {
 	// init wallet
 	wallet.Init("", 0, "Wallet")
 	numAccount := len(wallet.MasterAccount.Child)
@@ -160,22 +160,21 @@ func TestCreateNewAccountWithNilShardID(t *testing.T){
 	accountName := "Acc A"
 
 	newAccount, err := wallet.CreateNewAccount(accountName, nil)
-	actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk) -1])
+	actualShardID := common.GetShardIDFromLastByte(newAccount.Key.KeySet.PaymentAddress.Pk[len(newAccount.Key.KeySet.PaymentAddress.Pk)-1])
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+	assert.Equal(t, numAccount+1, len(wallet.MasterAccount.Child))
 	assert.Equal(t, accountName, newAccount.Name)
 	assert.GreaterOrEqual(t, actualShardID, byte(0))
 	assert.Equal(t, false, newAccount.IsImported)
 	assert.Equal(t, 0, len(newAccount.Child))
 	assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
 	assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
-	assert.Equal(t, privacy.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
-	assert.Equal(t, privacy.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
-	assert.Equal(t, privacy.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
-	assert.Equal(t, privacy.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
+	assert.Equal(t, common.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
+	assert.Equal(t, common.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
+	assert.Equal(t, common.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
+	assert.Equal(t, common.ReceivingKeySize, len(newAccount.Key.KeySet.ReadonlyKey.Rk))
 }
-
 
 func TestWalletCreateNewAccountDuplicateAccountName(t *testing.T) {
 	wallet.Init("", 0, "Wallet")
@@ -189,12 +188,12 @@ func TestWalletCreateNewAccountDuplicateAccountName(t *testing.T) {
 	// create new account with existed name
 	_, err := wallet.CreateNewAccount(accountName, &shardID)
 
-	assert.Equal(t,  NewWalletError(ExistedAccountNameErr, nil), err)
+	assert.Equal(t, NewWalletError(ExistedAccountNameErr, nil), err)
 }
 
 /*
-		Unit test for ExportAccount function
- */
+	Unit test for ExportAccount function
+*/
 
 func TestWalletExportAccount(t *testing.T) {
 	accountName := "Acc F"
@@ -213,18 +212,18 @@ func TestWalletExportAccountWithWrongIndex(t *testing.T) {
 	wallet.CreateNewAccount(accountName, &shardID)
 
 	res := wallet.ExportAccount(uint32(len(wallet.MasterAccount.Child)))
-	assert.Equal(t,"", res)
+	assert.Equal(t, "", res)
 }
 
 /*
-		Unit test for ImportAccount function
- */
+	Unit test for ImportAccount function
+*/
 
-func TestWalletImportAccount(t *testing.T){
+func TestWalletImportAccount(t *testing.T) {
 	data := []struct {
 		privateKeyStr string
-		accountName string
-		passPhrase string
+		accountName   string
+		passPhrase    string
 	}{
 		{"112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ", "Acc A", "123"},
 		{"112t8rnYJncU5TRMexdSX2X9a58c9dKPfzWMEaS7AXY3WniXbVUXvDVmZaKms2QEXtviEUKPdrqq3auNqZB8wQPtuXv8JfzprtMtgdGRiFij", "Acc B", "123"},
@@ -240,19 +239,19 @@ func TestWalletImportAccount(t *testing.T){
 		keyWallet, _ := Base58CheckDeserialize(item.privateKeyStr)
 
 		assert.Equal(t, nil, err)
-		assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+		assert.Equal(t, numAccount+1, len(wallet.MasterAccount.Child))
 		assert.Equal(t, item.accountName, newAccount.Name)
 		assert.Equal(t, true, newAccount.IsImported)
 		assert.Equal(t, 0, len(newAccount.Child))
 		assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
 		assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
-		assert.Equal(t,keyWallet.KeySet.PrivateKey, newAccount.Key.KeySet.PrivateKey)
+		assert.Equal(t, keyWallet.KeySet.PrivateKey, newAccount.Key.KeySet.PrivateKey)
 
 		numAccount++
 	}
 }
 
-func TestWalletImportAccountWithWrongPrivKeyStr(t *testing.T){
+func TestWalletImportAccountWithWrongPrivKeyStr(t *testing.T) {
 	privateKeyStr := "abc"
 	accountName := "Acc A"
 	passPhrase := "123"
@@ -263,7 +262,7 @@ func TestWalletImportAccountWithWrongPrivKeyStr(t *testing.T){
 	assert.Equal(t, errors.New("invalid format: version and/or checksum bytes missing"), err)
 }
 
-func TestWalletImportAccountWithExistedPrivKeyStr(t *testing.T){
+func TestWalletImportAccountWithExistedPrivKeyStr(t *testing.T) {
 	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
 	accountName := "Acc A"
 	passPhrase := "123"
@@ -275,7 +274,7 @@ func TestWalletImportAccountWithExistedPrivKeyStr(t *testing.T){
 	assert.Equal(t, NewWalletError(ExistedAccountErr, nil), err)
 }
 
-func TestWalletImportAccountWithExistedAccountName(t *testing.T){
+func TestWalletImportAccountWithExistedAccountName(t *testing.T) {
 	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
 	accountName := "Acc A"
 	passPhrase := "123"
@@ -288,7 +287,7 @@ func TestWalletImportAccountWithExistedAccountName(t *testing.T){
 	assert.Equal(t, NewWalletError(ExistedAccountNameErr, nil), err)
 }
 
-func TestWalletImportAccountWithUnmatchedPassPhrase(t *testing.T){
+func TestWalletImportAccountWithUnmatchedPassPhrase(t *testing.T) {
 	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
 	accountName := "Acc A"
 	passPhrase := "123"
@@ -301,14 +300,14 @@ func TestWalletImportAccountWithUnmatchedPassPhrase(t *testing.T){
 }
 
 /*
-		Unit test for RemoveAccount function
- */
+	Unit test for RemoveAccount function
+*/
 
-func TestWalletRemoveAccount(t *testing.T){
+func TestWalletRemoveAccount(t *testing.T) {
 	data := []struct {
 		privateKeyStr string
-		accountName string
-		passPhrase string
+		accountName   string
+		passPhrase    string
 	}{
 		{"112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ", "Acc A", "123"},
 		{"112t8rnYJncU5TRMexdSX2X9a58c9dKPfzWMEaS7AXY3WniXbVUXvDVmZaKms2QEXtviEUKPdrqq3auNqZB8wQPtuXv8JfzprtMtgdGRiFij", "Acc B", "123"},
@@ -327,7 +326,7 @@ func TestWalletRemoveAccount(t *testing.T){
 		err := wallet.RemoveAccount(item.privateKeyStr, item.passPhrase)
 
 		assert.Equal(t, nil, err)
-		assert.Equal(t, numAccount - 1, len(wallet.MasterAccount.Child))
+		assert.Equal(t, numAccount-1, len(wallet.MasterAccount.Child))
 		numAccount--
 
 		indexAccount := -1
@@ -343,7 +342,7 @@ func TestWalletRemoveAccount(t *testing.T){
 	}
 }
 
-func TestWalletRemoveAccountWithWrongPrivKeyStr(t *testing.T){
+func TestWalletRemoveAccountWithWrongPrivKeyStr(t *testing.T) {
 	privateKeyStr := "abc"
 	passPhrase := "123"
 
@@ -354,7 +353,7 @@ func TestWalletRemoveAccountWithWrongPrivKeyStr(t *testing.T){
 	assert.Equal(t, NewWalletError(NotFoundAccountErr, nil), err)
 }
 
-func TestWalletRemoveAccountWithNotExistedPrivKeyStr(t *testing.T){
+func TestWalletRemoveAccountWithNotExistedPrivKeyStr(t *testing.T) {
 	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
 	accountName := "Acc A"
 	passPhrase := "123"
@@ -368,7 +367,7 @@ func TestWalletRemoveAccountWithNotExistedPrivKeyStr(t *testing.T){
 	assert.Equal(t, NewWalletError(NotFoundAccountErr, nil), err)
 }
 
-func TestWalletRemoveAccountWithUnmatchedPassPhrase(t *testing.T){
+func TestWalletRemoveAccountWithUnmatchedPassPhrase(t *testing.T) {
 	privateKeyStr := "112t8rnY6orkxdArx6fH7xV8C3kiEAJMuDmf7ptrgQ3iqo6VKzSzippYzqT3kPqCXyVmb4iP5AnyTzD1thrhybntuWockJrtYHq6CeSWK5VZ"
 	accountName := "Acc A"
 	passPhrase := "123"
@@ -381,12 +380,11 @@ func TestWalletRemoveAccountWithUnmatchedPassPhrase(t *testing.T){
 	assert.Equal(t, NewWalletError(WrongPassphraseErr, nil), err)
 }
 
-
 /*
-		Unit test for Save function
- */
+	Unit test for Save function
+*/
 
-func TestWalletSave(t *testing.T){
+func TestWalletSave(t *testing.T) {
 	passPhrase := "123"
 	wallet.Init(passPhrase, 0, "Wallet")
 
@@ -398,7 +396,7 @@ func TestWalletSave(t *testing.T){
 	assert.Greater(t, len(fileData), 0)
 }
 
-func TestWalletSaveWithEmptyPassPhrase(t *testing.T){
+func TestWalletSaveWithEmptyPassPhrase(t *testing.T) {
 	passPhrase := "123"
 	passPhrase2 := ""
 	wallet.Init(passPhrase, 0, "Wallet")
@@ -411,7 +409,7 @@ func TestWalletSaveWithEmptyPassPhrase(t *testing.T){
 	assert.Greater(t, len(fileData), 0)
 }
 
-func TestWalletSaveWithUnmatchedPassPhrase(t *testing.T){
+func TestWalletSaveWithUnmatchedPassPhrase(t *testing.T) {
 	passPhrase := "123"
 	passPhrase2 := "1234"
 	wallet.Init(passPhrase, 0, "Wallet")
@@ -421,9 +419,9 @@ func TestWalletSaveWithUnmatchedPassPhrase(t *testing.T){
 	assert.Equal(t, NewWalletError(WrongPassphraseErr, nil), err)
 }
 
-func TestWalletSaveWithWrongConfig(t *testing.T){
+func TestWalletSaveWithWrongConfig(t *testing.T) {
 	passPhrase := "123"
-	wallet := new (Wallet)
+	wallet := new(Wallet)
 	wallet.Init(passPhrase, 0, "Wallet")
 
 	// set wrong config wallet
@@ -443,10 +441,10 @@ func TestWalletSaveWithWrongConfig(t *testing.T){
 }
 
 /*
-		Unit test for LoadWallet function
- */
+	Unit test for LoadWallet function
+*/
 
-func TestWalletLoadWallet(t *testing.T){
+func TestWalletLoadWallet(t *testing.T) {
 	passPhrase := "123"
 	numAcc := 2
 	name := "Wallet"
@@ -462,7 +460,7 @@ func TestWalletLoadWallet(t *testing.T){
 	assert.Equal(t, wallet, wallet2)
 }
 
-func TestWalletLoadWalletWithUnmatchedPassPhrase(t *testing.T){
+func TestWalletLoadWalletWithUnmatchedPassPhrase(t *testing.T) {
 	passPhrase := "123"
 	passPhrase2 := "1234"
 	numAcc := 2
@@ -477,7 +475,7 @@ func TestWalletLoadWalletWithUnmatchedPassPhrase(t *testing.T){
 	assert.Equal(t, ErrCodeMessage[JsonUnmarshalErr].code, err.(*WalletError).GetCode())
 }
 
-func TestWalletLoadWalletWithEmptyPassPhrase(t *testing.T){
+func TestWalletLoadWalletWithEmptyPassPhrase(t *testing.T) {
 	passPhrase := "123"
 	passPhrase2 := ""
 	numAcc := 2
@@ -492,7 +490,7 @@ func TestWalletLoadWalletWithEmptyPassPhrase(t *testing.T){
 	assert.Equal(t, ErrCodeMessage[JsonUnmarshalErr].code, err.(*WalletError).GetCode())
 }
 
-func TestWalletLoadWalletWithWrongConfig(t *testing.T){
+func TestWalletLoadWalletWithWrongConfig(t *testing.T) {
 	passPhrase := "123"
 	numAcc := 2
 	name := "Wallet"
@@ -516,13 +514,13 @@ func TestWalletLoadWalletWithWrongConfig(t *testing.T){
 }
 
 /*
-		Unit test for DumpPrivkey function
- */
+	Unit test for DumpPrivkey function
+*/
 
-func TestWalletDumpPrivkey(t *testing.T){
+func TestWalletDumpPrivkey(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -543,10 +541,10 @@ func TestWalletDumpPrivkey(t *testing.T){
 	}
 }
 
-func TestWalletDumpPrivkeyWithNotExistedAcc(t *testing.T){
+func TestWalletDumpPrivkeyWithNotExistedAcc(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -567,13 +565,13 @@ func TestWalletDumpPrivkeyWithNotExistedAcc(t *testing.T){
 }
 
 /*
-		Unit test for GetAddressByAccName function
- */
+	Unit test for GetAddressByAccName function
+*/
 
-func TestWalletGetAddressByAccName(t *testing.T){
+func TestWalletGetAddressByAccName(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -597,10 +595,10 @@ func TestWalletGetAddressByAccName(t *testing.T){
 	}
 }
 
-func TestWalletGetAddressByAccNameWithNotExistedAcc(t *testing.T){
+func TestWalletGetAddressByAccNameWithNotExistedAcc(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -618,17 +616,17 @@ func TestWalletGetAddressByAccNameWithNotExistedAcc(t *testing.T){
 	shardId := byte(0)
 	accName := "acc E"
 	_ = wallet.GetAddressByAccName(accName, &shardId)
-	assert.Equal(t, numAccount + 1, len(wallet.MasterAccount.Child))
+	assert.Equal(t, numAccount+1, len(wallet.MasterAccount.Child))
 
 	accName2 := "acc F"
 	_ = wallet.GetAddressByAccName(accName2, nil)
-	assert.Equal(t, numAccount + 2, len(wallet.MasterAccount.Child))
+	assert.Equal(t, numAccount+2, len(wallet.MasterAccount.Child))
 }
 
-func TestWalletGetAddressByAccNameWithNilShardID(t *testing.T){
+func TestWalletGetAddressByAccNameWithNilShardID(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -653,13 +651,13 @@ func TestWalletGetAddressByAccNameWithNilShardID(t *testing.T){
 }
 
 /*
-		Unit test for GetAddressesByAccName function
- */
+	Unit test for GetAddressesByAccName function
+*/
 
-func TestWalletGetAddressesByAccName(t *testing.T){
+func TestWalletGetAddressesByAccName(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -678,10 +676,10 @@ func TestWalletGetAddressesByAccName(t *testing.T){
 	assert.Equal(t, 1, len(keyData))
 }
 
-func TestWalletGetAddressesByAccNameWithNotExistedAcc(t *testing.T){
+func TestWalletGetAddressesByAccNameWithNotExistedAcc(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -701,13 +699,13 @@ func TestWalletGetAddressesByAccNameWithNotExistedAcc(t *testing.T){
 }
 
 /*
-		Unit test for ListAccounts function
- */
+	Unit test for ListAccounts function
+*/
 
-func TestWalletListAccounts(t *testing.T){
+func TestWalletListAccounts(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -723,7 +721,7 @@ func TestWalletListAccounts(t *testing.T){
 
 	mapAcc := wallet.ListAccounts()
 
-	assert.Equal(t, len(data) + 1, len(mapAcc))
+	assert.Equal(t, len(data)+1, len(mapAcc))
 
 	for _, item := range data {
 		assert.Equal(t, item.accountName, mapAcc[item.accountName].Name)
@@ -731,13 +729,13 @@ func TestWalletListAccounts(t *testing.T){
 }
 
 /*
-		Unit test for ContainPubKey function
- */
+	Unit test for ContainPubKey function
+*/
 
-func TestWalletContainPubKey(t *testing.T){
+func TestWalletContainPubKey(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -755,10 +753,10 @@ func TestWalletContainPubKey(t *testing.T){
 	}
 }
 
-func TestWalletContainPubKeyWithNotExistedPubKey(t *testing.T){
+func TestWalletContainPubKeyWithNotExistedPubKey(t *testing.T) {
 	data := []struct {
 		accountName string
-		shardID byte
+		shardID     byte
 	}{
 		{"Acc A", byte(0)},
 		{"Acc B", byte(1)},
@@ -772,8 +770,7 @@ func TestWalletContainPubKeyWithNotExistedPubKey(t *testing.T){
 		wallet.CreateNewAccount(item.accountName, &item.shardID)
 	}
 
-	randPubKey := privacy.RandBytes(privacy.PublicKeySize)
+	randPubKey := privacy.RandBytes(common.PublicKeySize)
 	res := wallet.ContainPubKey(randPubKey)
 	assert.Equal(t, false, res)
 }
-

@@ -726,7 +726,7 @@ func (conf *config) GetUserKeySet() (*incognitokey.KeySet, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = KeySetUser.ImportFromPrivateKey(&temp.KeySet.PrivateKey)
+	err = KeySetUser.InitFromPrivateKey(&temp.KeySet.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
