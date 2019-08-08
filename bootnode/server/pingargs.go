@@ -1,13 +1,13 @@
 package server
 
 type PingArgs struct {
-	rawAddress string
-	publicKey  string
-	signData   string
+	RawAddress string
+	PublicKey  string
+	SignData   string
 }
 
 func (ping *PingArgs) Init(RawAddress string, PublicKey string, SignData string) {
-	ping.publicKey = PublicKey
-	ping.signData = SignData
-	ping.rawAddress = RawAddress
+	ping.PublicKey = PublicKey
+	ping.SignData = SignData
+	ping.RawAddress = RawAddress
 }
