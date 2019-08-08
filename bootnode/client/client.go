@@ -13,7 +13,7 @@ func main() {
 	if client != nil {
 		defer client.Close()
 		var response []wire.RawPeer
-		client.Call("Handler.GetPeers", nil, &response)
+		err := client.Call("Handler.GetPeers", "", &response)
 		if err != nil {
 			panic(err)
 		}
