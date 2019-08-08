@@ -100,7 +100,7 @@ func (crossTransaction CrossTransaction) Hash() common.Hash {
 	- MerklePath
 */
 func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(committees []string) error {
-	if err := ValidateAggSignature(crossShardBlock.ValidatorsIdx, committees, crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
+	if err := ValidateAggSignature(crossShardBlock.ValidatorsIndex, committees, crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {
