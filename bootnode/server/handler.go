@@ -25,7 +25,7 @@ func (s Handler) Ping(args *PingArgs, responseMessagePeers *[]wire.RawPeer) erro
 	defer s.rpcServer.peersMtx.Unlock()
 	// return note list
 	for _, p := range s.rpcServer.peers {
-		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.RawAddress, p.PublicKey})
+		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publicKey})
 	}
 	fmt.Println("Response", *responseMessagePeers)
 	return nil
