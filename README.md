@@ -1,4 +1,7 @@
-# Incognito chain
+# Incognito sidechain
+
+## License
+Incognito sidechain is released under the terms of the MIT license. See [COPYING](https://github.com/incognitochain/incognito-chain/blob/master/COPYING) for more information or see https://opensource.org/licenses/MIT
 
 ![Incognito is digital money you can actually use.](https://avatars2.githubusercontent.com/u/45321944?s=200&v=4)
 
