@@ -24,6 +24,7 @@ type TxCustomTokenPrivacy struct {
 	Tx                                    // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
 	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
 
+	// private field, not use for json parser, only use as temp variable
 	cachedHash *common.Hash // cached hash data of tx
 }
 
@@ -31,22 +32,32 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		Logger.log.Error(err)
+		return NewTransactionErr(PrivacyTokenPRVJsonError, err)
 	}
 	temp := &struct {
 		TxTokenPrivacyData interface{}
 	}{}
 	err = json.Unmarshal(data, &temp)
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		Logger.log.Error(err)
+		return NewTransactionErr(PrivacyTokenJsonError, err)
 	}
-	TxTokenPrivacyDataJson, _ := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
-	_ = json.Unmarshal(TxTokenPrivacyDataJson, &txCustomTokenPrivacy.TxTokenPrivacyData)
+	TxTokenPrivacyDataJson, err := json.MarshalIndent(temp.TxTokenPrivacyData, "", "\t")
+	if err != nil {
+		Logger.log.Error(err)
+		return NewTransactionErr(UnexpectedError, err)
+	}
+	err = json.Unmarshal(TxTokenPrivacyDataJson, &txCustomTokenPrivacy.TxTokenPrivacyData)
+	if err != nil {
+		Logger.log.Error(err)
+		return NewTransactionErr(PrivacyTokenJsonError, err)
+	}
 	txCustomTokenPrivacy.Tx = tx
 	return nil
 }
 
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) String() string {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) String() string {
 	// get hash of tx
 	record := txCustomTokenPrivacy.Tx.Hash().String()
 
@@ -59,7 +70,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) String() string {
 	return record
 }
 
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) JSONString() string {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) JSONString() string {
 	data, err := json.MarshalIndent(txCustomTokenPrivacy, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
@@ -69,7 +80,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) JSONString() string {
 }
 
 // Hash returns the hash of all fields of the transaction
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Hash() *common.Hash {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) Hash() *common.Hash {
 	if txCustomTokenPrivacy.cachedHash != nil {
 		return txCustomTokenPrivacy.cachedHash
 	}
@@ -80,7 +91,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Hash() *common.Hash {
 
 // GetTxActualSize computes the virtual size of a given transaction
 // size of this tx = (normal TxNormal size) + (custom token data size)
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 	normalTxSize := txCustomTokenPrivacy.Tx.GetTxActualSize()
 
 	tokenDataSize := uint64(0)
@@ -99,7 +110,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 	return normalTxSize + uint64(math.Ceil(float64(tokenDataSize)/1024))
 }
 
-func (tx *TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
+func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 	tokenDataSize := uint64(0)
 	tokenDataSize += tx.TxTokenPrivacyData.TxNormal.GetTxActualSize()
 	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertyName))
@@ -117,7 +128,7 @@ func (tx *TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 }
 
 // CheckTransactionFee - check fee for all tx by use PRV as fee
-func (tx *TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
+func (tx TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
@@ -126,7 +137,7 @@ func (tx *TxCustomTokenPrivacy) CheckTransactionFee(minFeePerKbTx uint64) bool {
 }
 
 // CheckTransactionFeeByFeeToken - check fee for all tx by use token as fee
-func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
+func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
@@ -135,7 +146,7 @@ func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeToken(minFeePerKbTx uint
 }
 
 // CheckTransactionFeeByFeeTokenForTokenData - check fee for token data info in tx by use token as fee
-func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
+func (tx TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFeePerKbTx uint64) bool {
 	if tx.IsSalaryTx() {
 		return true
 	}
@@ -143,8 +154,20 @@ func (tx *TxCustomTokenPrivacy) CheckTransactionFeeByFeeTokenForTokenData(minFee
 	return tx.GetTxFeeToken() >= fullFee
 }
 
-// Init -  build normal tx component and privacy custom token data
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.PrivateKey,
+type TxPrivacyTokenInitParams struct {
+	senderKey       *privacy.PrivateKey
+	paymentInfo     []*privacy.PaymentInfo
+	inputCoin       []*privacy.InputCoin
+	feeNativeCoin   uint64
+	tokenParams     *CustomTokenPrivacyParamTx
+	db              database.DatabaseInterface
+	metaData        metadata.Metadata
+	hasPrivacyCoin  bool
+	hasPrivacyToken bool
+	shardID         byte
+}
+
+func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	paymentInfo []*privacy.PaymentInfo,
 	inputCoin []*privacy.InputCoin,
 	feeNativeCoin uint64,
@@ -153,21 +176,38 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 	metaData metadata.Metadata,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
-	shardID byte,
-) *TransactionError {
+	shardID byte) *TxPrivacyTokenInitParams {
+	params := &TxPrivacyTokenInitParams{
+		shardID:         shardID,
+		paymentInfo:     paymentInfo,
+		metaData:        metaData,
+		db:              db,
+		feeNativeCoin:   feeNativeCoin,
+		hasPrivacyCoin:  hasPrivacyCoin,
+		hasPrivacyToken: hasPrivacyToken,
+		inputCoin:       inputCoin,
+		senderKey:       senderKey,
+		tokenParams:     tokenParams,
+	}
+	return params
+}
+
+// Init -  build normal tx component and privacy custom token data
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenInitParams) error {
 	var err error
 	// init data for tx PRV for fee
 	normalTx := Tx{}
-	err = normalTx.Init(senderKey,
-		paymentInfo,
-		inputCoin,
-		feeNativeCoin,
-		hasPrivacyCoin,
-		db,
+	err = normalTx.Init(NewTxPrivacyInitParams(
+		params.senderKey,
+		params.paymentInfo,
+		params.inputCoin,
+		params.feeNativeCoin,
+		params.hasPrivacyCoin,
+		params.db,
 		nil,
-		metaData)
-	if err.(*TransactionError) != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		params.metaData))
+	if err != nil {
+		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
 	// override TxCustomTokenPrivacyType type
 	normalTx.Type = common.TxCustomTokenPrivacyType
@@ -176,78 +216,83 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 	// check action type and create privacy custom toke data
 	var handled = false
 	// Add token data component
-	switch tokenParams.TokenTxType {
+	switch params.tokenParams.TokenTxType {
 	case CustomTokenInit:
 		// case init a new privacy custom token
 		{
 			handled = true
 			txCustomTokenPrivacy.TxTokenPrivacyData = TxTokenPrivacyData{
-				Type:           tokenParams.TokenTxType,
-				PropertyName:   tokenParams.PropertyName,
-				PropertySymbol: tokenParams.PropertySymbol,
-				Amount:         tokenParams.Amount,
+				Type:           params.tokenParams.TokenTxType,
+				PropertyName:   params.tokenParams.PropertyName,
+				PropertySymbol: params.tokenParams.PropertySymbol,
+				Amount:         params.tokenParams.Amount,
 			}
 
 			// issue token with data of privacy
 			temp := Tx{}
 			temp.Type = common.TxNormalType
 			temp.Proof = new(zkp.PaymentProof)
-			temp.Proof.OutputCoins = make([]*privacy.OutputCoin, 1)
-			temp.Proof.OutputCoins[0] = new(privacy.OutputCoin)
-			temp.Proof.OutputCoins[0].CoinDetails = new(privacy.Coin)
-			temp.Proof.OutputCoins[0].CoinDetails.Value = tokenParams.Amount
-			temp.Proof.OutputCoins[0].CoinDetails.PublicKey = new(privacy.EllipticPoint)
-			err := temp.Proof.OutputCoins[0].CoinDetails.PublicKey.Decompress(tokenParams.Receiver[0].PaymentAddress.Pk)
+			tempOutputCoin := make([]*privacy.OutputCoin, 1)
+			tempOutputCoin[0] = new(privacy.OutputCoin)
+			tempOutputCoin[0].CoinDetails = new(privacy.Coin)
+			tempOutputCoin[0].CoinDetails.SetValue(params.tokenParams.Amount)
+			tempOutputCoin[0].CoinDetails.SetPublicKey(new(privacy.EllipticPoint))
+			err := tempOutputCoin[0].CoinDetails.GetPublicKey().Decompress(params.tokenParams.Receiver[0].PaymentAddress.Pk)
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, err)
+				return NewTransactionErr(DecompressPaymentAddressError, err)
 			}
-			temp.Proof.OutputCoins[0].CoinDetails.Randomness = privacy.RandScalar()
+			tempOutputCoin[0].CoinDetails.SetRandomness(privacy.RandScalar())
 
 			sndOut := privacy.RandScalar()
-			temp.Proof.OutputCoins[0].CoinDetails.SNDerivator = sndOut
-
+			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+			temp.Proof.SetOutputCoins(tempOutputCoin)
 			// create coin commitment
-			temp.Proof.OutputCoins[0].CoinDetails.CommitAll()
+			err = temp.Proof.GetOutputCoins()[0].CoinDetails.CommitAll()
+			if err != nil {
+				return NewTransactionErr(CommitOutputCoinError, err)
+			}
 			// get last byte
-			temp.PubKeyLastByteSender = tokenParams.Receiver[0].PaymentAddress.Pk[len(tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
 
 			// sign Tx
-			temp.SigPubKey = tokenParams.Receiver[0].PaymentAddress.Pk
-			temp.sigPrivKey = *senderKey
+			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
+			temp.sigPrivKey = *params.senderKey
 			err = temp.signTx()
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
+				Logger.log.Error(errors.New("can't sign this tx"))
+				return NewTransactionErr(SignTxError, err)
 			}
 
 			txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal = temp
 			hashInitToken, err := txCustomTokenPrivacy.TxTokenPrivacyData.Hash()
 			if err != nil {
-				return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
+				Logger.log.Error(errors.New("can't hash this token data"))
+				return NewTransactionErr(UnexpectedError, err)
 			}
 
-			if tokenParams.Mintable {
-				propertyID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			if params.tokenParams.Mintable {
+				propertyID, err := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
 				if err != nil {
-					return NewTransactionErr(UnexpectedErr, err)
+					return NewTransactionErr(TokenIDInvalidError, err)
 				}
 				txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID = *propertyID
 				txCustomTokenPrivacy.TxTokenPrivacyData.Mintable = true
 			} else {
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
-				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), shardID))
+				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
 				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
-				existed := db.PrivacyCustomTokenIDExisted(newHashInitToken)
+				existed := params.db.PrivacyCustomTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
-					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network"))
+					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
 				}
-				existed = db.PrivacyCustomTokenIDCrossShardExisted(newHashInitToken)
+				existed = params.db.PrivacyCustomTokenIDCrossShardExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed(crossshard)", newHashInitToken)
-					return NewTransactionErr(UnexpectedErr, errors.New("this token is existed in network via cross shard"))
+					return NewTransactionErr(TokenIDExistedByCrossShardError, errors.New("this token is existed in network via cross shard"))
 				}
 				txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID = newHashInitToken
-				Logger.log.Infof("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID.String())
+				Logger.log.Debugf("A new token privacy wil be issued with ID: %+v", txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID.String())
 			}
 		}
 	case CustomTokenTransfer:
@@ -256,53 +301,53 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(senderKey *privacy.Privat
 			// make a transfering for privacy custom token
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
-			propertyID, _ := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
-			existed := db.PrivacyCustomTokenIDExisted(*propertyID)
-			existedCross := db.PrivacyCustomTokenIDCrossShardExisted(*propertyID)
+			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
+			existed := params.db.PrivacyCustomTokenIDExisted(*propertyID)
+			existedCross := params.db.PrivacyCustomTokenIDCrossShardExisted(*propertyID)
 			if !existed && !existedCross {
-				return NewTransactionErr(UnexpectedErr, errors.New("invalid Token ID"))
+				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
 			}
-			Logger.log.Infof("Token %+v wil be transfered with", propertyID)
+			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
 			txCustomTokenPrivacy.TxTokenPrivacyData = TxTokenPrivacyData{
-				Type:           tokenParams.TokenTxType,
-				PropertyName:   tokenParams.PropertyName,
-				PropertySymbol: tokenParams.PropertySymbol,
+				Type:           params.tokenParams.TokenTxType,
+				PropertyName:   params.tokenParams.PropertyName,
+				PropertySymbol: params.tokenParams.PropertySymbol,
 				PropertyID:     *propertyID,
-				Mintable:       tokenParams.Mintable,
+				Mintable:       params.tokenParams.Mintable,
 			}
-			err := temp.Init(senderKey,
-				tokenParams.Receiver,
-				tokenParams.TokenInput,
-				tokenParams.Fee,
-				hasPrivacyToken,
-				db,
+			err := temp.Init(NewTxPrivacyInitParams(params.senderKey,
+				params.tokenParams.Receiver,
+				params.tokenParams.TokenInput,
+				params.tokenParams.Fee,
+				params.hasPrivacyToken,
+				params.db,
 				propertyID,
-				nil,
-			)
+				nil))
 			if err != nil {
-				return err
+				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
 			txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal = temp
 		}
 	}
 
 	if !handled {
-		return NewTransactionErr(UnexpectedErr, errors.New("can't handle this TokenTxType"))
+		return NewTransactionErr(PrivacyTokenTxTypeNotHandleError, errors.New("can't handle this TokenTxType"))
 	}
 	return nil
 }
 
 // ValidateType - check type of tx
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateType() bool {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateType() bool {
 	return txCustomTokenPrivacy.Type == common.TxCustomTokenPrivacyType
 }
 
 // ValidateTxWithCurrentMempool - validate for serrial number use in tx is double with other tx in mempool
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	err := txCustomTokenPrivacy.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
-		return NewTransactionErr(UnexpectedErr, err)
+		Logger.log.Error(err)
+		return NewTransactionErr(DoubleSpendError, err)
 	}
 	return nil
 }
@@ -311,7 +356,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(m
 // check serrial numbers is valid,
 // not double spend with any tx in mempool
 // this a private func -> call by ValidateTxWithCurrentMempool
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[common.Hash][]common.Hash) error {
 	// check proof of PRV and pToken
 	if txCustomTokenPrivacy.Proof == nil && txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof == nil {
 		return errors.New("empty tx")
@@ -320,15 +365,15 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) validateDoubleSpendTxWithCurre
 	// collect serial number for PRV
 	temp := make(map[common.Hash]interface{})
 	if txCustomTokenPrivacy.Proof != nil {
-		for _, desc := range txCustomTokenPrivacy.Proof.InputCoins {
-			hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+		for _, desc := range txCustomTokenPrivacy.Proof.GetInputCoins() {
+			hash := common.HashH(desc.CoinDetails.GetSerialNumber().Compress())
 			temp[hash] = nil
 		}
 	}
 	// collect serial number for pToken
 	if txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof != nil {
-		for _, desc := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.InputCoins {
-			hash := common.HashH(desc.CoinDetails.SerialNumber.Compress())
+		for _, desc := range txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof.GetInputCoins() {
+			hash := common.HashH(desc.CoinDetails.GetSerialNumber().Compress())
 			temp[hash] = nil
 		}
 	}
@@ -344,40 +389,40 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) validateDoubleSpendTxWithCurre
 	return nil
 }
 
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxWithBlockChain(
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 	bcr metadata.BlockchainRetriever,
 	shardID byte,
 	db database.DatabaseInterface,
 ) error {
 	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, nil)
 	if err != nil {
-		return NewTransactionErr(InvalidDoubleSpendPRV, err)
+		return NewTransactionErr(InvalidDoubleSpendPRVError, err)
 	}
 	err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.ValidateDoubleSpendWithBlockchain(bcr, shardID, db, txCustomTokenPrivacy.GetTokenID())
 	if err != nil {
-		return NewTransactionErr(InvalidDoubleSpendPrivacyToken, err)
+		return NewTransactionErr(InvalidDoubleSpendPrivacyTokenError, err)
 	}
 	return nil
 }
 
 // ValidateSanityData - validate sanity data of PRV and pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	// validate sanity data for PRV
 	result, err := txCustomTokenPrivacy.Tx.validateNormalTxSanityData()
 	if err != nil {
-		return result, NewTransactionErr(InvalidSanityDataPRV, err)
+		return result, NewTransactionErr(InvalidSanityDataPRVError, err)
 	}
 	// validate sanity for pToken
 
 	result, err = txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.validateNormalTxSanityData()
 	if err != nil {
-		return result, NewTransactionErr(InvalidSanityDataPrivacyToken, err)
+		return result, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
 	}
 	return result, nil
 }
 
 // ValidateTxByItself - validate tx by itself, check signature, proof,... and metadata
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxByItself(
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 	hasPrivacyCoin bool,
 	db database.DatabaseInterface,
 	bcr metadata.BlockchainRetriever,
@@ -396,7 +441,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxByItself(
 	if txCustomTokenPrivacy.Metadata != nil {
 		validateMetadata := txCustomTokenPrivacy.Metadata.ValidateMetadataByItself()
 		if !validateMetadata {
-			return validateMetadata, errors.New("Metadata is invalid")
+			return validateMetadata, NewTransactionErr(UnexpectedError, errors.New("Metadata is invalid"))
 		}
 		return validateMetadata, nil
 	}
@@ -406,7 +451,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTxByItself(
 // ValidateTransaction - verify proof, signature, ... of PRV and pToken
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, db database.DatabaseInterface, shardID byte, tokenID *common.Hash) (bool, error) {
 	// validate for PRV
-	ok, error := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
+	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
 	if ok {
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID
@@ -416,16 +461,16 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 			return txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.IsPrivacy(), db, shardID, &tokenID)
 		}
 	}
-	return false, error
+	return false, err
 }
 
 // GetProof - return proof PRV of tx
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetProof() *zkp.PaymentProof {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetProof() *zkp.PaymentProof {
 	return txCustomTokenPrivacy.Proof
 }
 
 // VerifyMinerCreatedTxBeforeGettingInBlock
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []metadata.Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -445,11 +490,11 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifyMinerCreatedTxBeforeGett
 	if !meta.IsMinerCreatedMetaType() {
 		return false, nil
 	}
-	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, txCustomTokenPrivacy, bcr, accumulatedValues)
+	return meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &txCustomTokenPrivacy, bcr, accumulatedValues)
 }
 
 // GetTokenReceivers - return receivers in tx, who receive token
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenReceivers() ([][]byte, []uint64) {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenReceivers() ([][]byte, []uint64) {
 	pubkeys := [][]byte{}
 	amounts := []uint64{}
 	// get proof pToken
@@ -458,34 +503,34 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenReceivers() ([][]byte,
 		return pubkeys, amounts
 	}
 	// fetch payment info
-	for _, coin := range proof.OutputCoins {
-		coinPubKey := coin.CoinDetails.PublicKey.Compress()
+	for _, coin := range proof.GetOutputCoins() {
+		coinPubKey := coin.CoinDetails.GetPublicKey().Compress()
 		added := false
 		// coinPubKey := vout.PaymentAddress.Pk
 		for i, key := range pubkeys {
 			if bytes.Equal(coinPubKey, key) {
 				added = true
-				amounts[i] += coin.CoinDetails.Value
+				amounts[i] += coin.CoinDetails.GetValue()
 				break
 			}
 		}
 		if !added {
 			pubkeys = append(pubkeys, coinPubKey)
-			amounts = append(amounts, coin.CoinDetails.Value)
+			amounts = append(amounts, coin.CoinDetails.GetValue())
 		}
 	}
 	return pubkeys, amounts
 }
 
 // GetTokenUniqueReceiver
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenUniqueReceiver() (bool, []byte, uint64) {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenUniqueReceiver() (bool, []byte, uint64) {
 	sender := []byte{}
 	proof := txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof
 	if proof == nil {
 		return false, []byte{}, 0
 	}
-	if len(proof.InputCoins) > 0 && proof.InputCoins[0].CoinDetails != nil {
-		sender = proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	if len(proof.GetInputCoins()) > 0 && proof.GetInputCoins()[0].CoinDetails != nil {
+		sender = proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	}
 	pubkeys, amounts := txCustomTokenPrivacy.GetTokenReceivers()
 	pubkey := []byte{}
@@ -502,28 +547,28 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenUniqueReceiver() (bool
 }
 
 // GetTransferData
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTransferData() (bool, []byte, uint64, *common.Hash) {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTransferData() (bool, []byte, uint64, *common.Hash) {
 	unique, pk, amount := txCustomTokenPrivacy.GetTokenUniqueReceiver()
 	return unique, pk, amount, &txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID
 }
 
 // IsCoinsBurning - checking this is a burning pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) IsCoinsBurning() bool {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning() bool {
 	// get proof of pToken
 	proof := txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof
-	if proof == nil || len(proof.OutputCoins) == 0 {
+	if proof == nil || len(proof.GetOutputCoins()) == 0 {
 		return false
 	}
 	//  validate receiver with burning address
 	senderPKBytes := []byte{}
-	if len(proof.InputCoins) > 0 {
-		senderPKBytes = txCustomTokenPrivacy.Proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	if len(proof.GetInputCoins()) > 0 {
+		senderPKBytes = txCustomTokenPrivacy.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	}
 	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
-	for _, outCoin := range proof.OutputCoins {
-		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
+	for _, outCoin := range proof.GetOutputCoins() {
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().Compress()
 		if !bytes.Equal(senderPKBytes, outPKBytes) && !bytes.Equal(outPKBytes, paymentAddressBurningAccount.Pk[:]) {
 			return false
 		}
@@ -532,47 +577,47 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) IsCoinsBurning() bool {
 }
 
 // CalculateTxValue - get tx value for pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) CalculateTxValue() uint64 {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 	proof := txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.Proof
 	if proof == nil {
 		return 0
 	}
-	if proof.OutputCoins == nil || len(proof.OutputCoins) == 0 {
+	if proof.GetOutputCoins() == nil || len(proof.GetOutputCoins()) == 0 {
 		return 0
 	}
-	if proof.InputCoins == nil || len(proof.InputCoins) == 0 { // coinbase tx
+	if proof.GetInputCoins() == nil || len(proof.GetInputCoins()) == 0 { // coinbase tx
 		txValue := uint64(0)
-		for _, outCoin := range proof.OutputCoins {
-			txValue += outCoin.CoinDetails.Value
+		for _, outCoin := range proof.GetOutputCoins() {
+			txValue += outCoin.CoinDetails.GetValue()
 		}
 		return txValue
 	}
 
-	senderPKBytes := proof.InputCoins[0].CoinDetails.PublicKey.Compress()
+	senderPKBytes := proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	txValue := uint64(0)
-	for _, outCoin := range proof.OutputCoins {
-		outPKBytes := outCoin.CoinDetails.PublicKey.Compress()
+	for _, outCoin := range proof.GetOutputCoins() {
+		outPKBytes := outCoin.CoinDetails.GetPublicKey().Compress()
 		if bytes.Equal(senderPKBytes, outPKBytes) {
 			continue
 		}
-		txValue += outCoin.CoinDetails.Value
+		txValue += outCoin.CoinDetails.GetValue()
 	}
 	return txValue
 }
 
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ListSerialNumbersHashH() []common.Hash {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ListSerialNumbersHashH() []common.Hash {
 	tx := txCustomTokenPrivacy.Tx
 	result := []common.Hash{}
 	if tx.Proof != nil {
-		for _, d := range tx.Proof.InputCoins {
-			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+		for _, d := range tx.Proof.GetInputCoins() {
+			hash := common.HashH(d.CoinDetails.GetSerialNumber().Compress())
 			result = append(result, hash)
 		}
 	}
 	customTokenPrivacy := txCustomTokenPrivacy.TxTokenPrivacyData
 	if customTokenPrivacy.TxNormal.Proof != nil {
-		for _, d := range customTokenPrivacy.TxNormal.Proof.InputCoins {
-			hash := common.HashH(d.CoinDetails.SerialNumber.Compress())
+		for _, d := range customTokenPrivacy.TxNormal.Proof.GetInputCoins() {
+			hash := common.HashH(d.CoinDetails.GetSerialNumber().Compress())
 			result = append(result, hash)
 		}
 	}
@@ -583,20 +628,20 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ListSerialNumbersHashH() []com
 }
 
 // GetSigPubKey - return sig pubkey for pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetSigPubKey() []byte {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return txCustomTokenPrivacy.TxTokenPrivacyData.TxNormal.SigPubKey
 }
 
 // GetTxFeeToken - return Token Fee use to pay for privacy token Tx
-func (tx *TxCustomTokenPrivacy) GetTxFeeToken() uint64 {
+func (tx TxCustomTokenPrivacy) GetTxFeeToken() uint64 {
 	return tx.TxTokenPrivacyData.TxNormal.Fee
 }
 
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) GetTokenID() *common.Hash {
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenID() *common.Hash {
 	return &txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID
 }
 
 // GetTxFee - return fee PRV of Tx which contain privacy token Tx
-func (tx *TxCustomTokenPrivacy) GetTxFee() uint64 {
+func (tx TxCustomTokenPrivacy) GetTxFee() uint64 {
 	return tx.Tx.GetTxFee()
 }
