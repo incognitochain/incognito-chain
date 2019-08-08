@@ -284,7 +284,7 @@ func TestBuildBridgeInst(t *testing.T) {
 		{
 			desc:  "ERC20",
 			insts: [][]string{setupBurningRequest(2)},
-			out:   [][]string{setupBurningConfirmInst(int64(height)+1, token[:])},
+			out:   [][]string{setupBurningConfirmInst(int64(height), token[:])},
 		},
 	}
 
@@ -294,7 +294,7 @@ func TestBuildBridgeInst(t *testing.T) {
 			insts, err := bc.buildBridgeInstructions(
 				0,
 				tc.insts,
-				&BeaconBestState{BeaconHeight: height},
+				height,
 				setupDB(t),
 			)
 			if err != nil {
