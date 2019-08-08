@@ -25,7 +25,7 @@ type PedersenCommitment struct {
 
 func newPedersenParams() PedersenCommitment {
 	var pcm PedersenCommitment
-	const capacity = 5 // fixed value = 5
+	const capacity = 5 // fixed Value = 5
 	pcm.G = make([]*EllipticPoint, capacity)
 	pcm.G[0] = new(EllipticPoint)
 	pcm.G[0].Set(Curve.Params().Gx, Curve.Params().Gy)
@@ -38,7 +38,7 @@ func newPedersenParams() PedersenCommitment {
 
 var PedCom = newPedersenParams()
 
-// CommitAll commits a list of PCM_CAPACITY value(s)
+// CommitAll commits a list of PCM_CAPACITY Value(s)
 func (com PedersenCommitment) commitAll(openings []*big.Int) (*EllipticPoint, error) {
 	if len(openings) != len(com.G) {
 		return nil, errors.New("invalid length of openings to commit")
@@ -52,7 +52,7 @@ func (com PedersenCommitment) commitAll(openings []*big.Int) (*EllipticPoint, er
 	return commitment, nil
 }
 
-// CommitAtIndex commits specific value with index and returns 34 bytes
+// CommitAtIndex commits specific Value with index and returns 34 bytes
 func (com PedersenCommitment) CommitAtIndex(value, rand *big.Int, index byte) *EllipticPoint {
 	commitment := com.G[PedersenRandomnessIndex].ScalarMult(rand).Add(com.G[index].ScalarMult(value))
 	return commitment

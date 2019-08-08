@@ -25,7 +25,7 @@ func RandBytes(length int) []byte {
 	return b
 }
 
-// RandScalar generates a big int with value less than order of group of elliptic points
+// RandScalar generates a big int with Value less than order of group of elliptic points
 func RandScalar() *big.Int {
 	randNum := new(big.Int)
 	for {
