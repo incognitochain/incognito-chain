@@ -107,6 +107,14 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if err := blockchain.BestState.Shard[shardID].verifyBestStateWithShardBlock(shardBlock, true, shardID); err != nil {
 		return err
 	}
+
+	// Store shard committee in ShardBestState
+	// This might be different from the committee observed from BeaconBestState when a swap instruction is being process on beacon
+	// Note: we must store before updating ShardBestState because this block is still signed by the old committee
+	if err := blockchain.config.DataBase.StoreCommitteeFromShardBestState(shardID, shardBlock.Header.Height, blockchain.BestState.Shard[shardID].ShardCommittee); err != nil {
+		return NewBlockChainError(DatabaseError, err)
+	}
+
 	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// updateShardBestState best state with new block
 	// Backup beststate
@@ -195,7 +203,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		return NewBlockChainError(WrongShardIDError, fmt.Errorf("Expect receive shardBlock from Shard ID %+v but get %+v", shardID, shardBlock.Header.ShardID))
 	}
 	if len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
-		return NewBlockChainError(ProducerError, fmt.Errorf("Expect %+v has length 66 but get %+v", len(shardBlock.Header.ProducerAddress.Bytes())))
+		return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(shardBlock.Header.ProducerAddress.Bytes())))
 
 	}
 	if shardBlock.Header.Version != SHARD_BLOCK_VERSION {

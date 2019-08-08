@@ -152,7 +152,7 @@ func (engine *Engine) execBeaconRole() {
 		engine.retries = 0
 	}
 	if engine.retries >= MaxNormalRetryTime {
-		timeSinceLastBlk := int(time.Since(time.Unix(engine.config.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0)))
+		timeSinceLastBlk := int(time.Since(time.Unix(engine.config.BlockChain.BestState.Beacon.BestBlock.Header.Timestamp, 0)).Seconds())
 		blkTime := int(common.MinBeaconBlkInterval.Seconds())
 		engine.currentBFTRound = (timeSinceLastBlk - timeSinceLastBlk%blkTime) / blkTime
 	}
@@ -225,7 +225,7 @@ func (engine *Engine) execShardRole(shardID byte) {
 		engine.retries = 0
 	}
 	if engine.retries >= MaxNormalRetryTime {
-		timeSinceLastBlk := int(time.Since(time.Unix(engine.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp, 0)))
+		timeSinceLastBlk := int(time.Since(time.Unix(engine.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp, 0)).Seconds())
 		blkTime := int(common.MinShardBlkInterval.Seconds())
 		engine.currentBFTRound = (timeSinceLastBlk - timeSinceLastBlk%blkTime) / blkTime
 	}
