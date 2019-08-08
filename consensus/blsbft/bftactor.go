@@ -142,7 +142,7 @@ func (e *BLSBFT) Start() {
 				case LISTEN:
 					// timeout or vote nil?
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
-					if e.Blocks[roundKey] != nil && e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]) != nil {
+					if e.Blocks[roundKey] != nil && e.validatePreSignBlock(e.Blocks[roundKey], e.Chain) != nil {
 						e.Block = e.Blocks[roundKey]
 						e.enterAgreePhase()
 					}
@@ -227,10 +227,6 @@ func (e *BLSBFT) enterNewRound() {
 	// 	e.enterListenPhase()
 	// }
 
-}
-
-func (e *BLSBFT) GetConsensusHighestBlockConfident() byte {
-	return HIGHEST_BLOCK_CONFIDENT
 }
 
 func init() {

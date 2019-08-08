@@ -157,7 +157,7 @@ func RegisterConsensus(name string, consensus chain.ConsensusInterface) error {
 func (engine *Engine) ValidateBlockWithConsensus(block chain.BlockInterface, chainName string, consensusType string) error {
 	consensusModule, ok := engine.ChainConsensusList[chainName]
 	if ok && !consensusModule.IsOngoing() {
-		consensusModule.ValidateBlock(block, engine.Chains[chainName])
+		consensusModule.ValidateBlock(block)
 	}
 	return nil
 }
@@ -191,6 +191,10 @@ func (s *Engine) OnBFTMsg(msg wire.Message) {
 
 func (s *Engine) GetUserRole() (string, int) {
 	return "", 0
+}
+
+func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, consensusType string) error {
+	return nil
 }
 
 // func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
@@ -231,7 +235,3 @@ func (s *Engine) GetUserRole() (string, int) {
 // 	}
 // 	return prepareMsg
 // }
-
-func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, consensusType string) error {
-	return nil
-}

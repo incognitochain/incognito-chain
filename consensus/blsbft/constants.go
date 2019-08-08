@@ -11,6 +11,5 @@ const (
 
 //
 const (
-	TIMEOUT                 = 60 * time.Second
-	HIGHEST_BLOCK_CONFIDENT = 3
+	TIMEOUT = 60 * time.Second
 )
