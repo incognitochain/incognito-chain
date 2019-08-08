@@ -217,7 +217,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 			totalBlock = MAX_S2B_BLOCK
 		}
 		for _, shardBlock := range shardBlocks[:totalBlock+1] {
-			shardState, validStakeInstruction, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight, shardBlock, shardID)
+			shardState, validStakeInstruction, validSwapInstruction, bridgeInstruction, acceptedRewardInstruction := blockGenerator.chain.GetShardStateFromBlock(beaconBestState.BeaconHeight+1, shardBlock, shardID)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			validStakeInstructions = append(validStakeInstructions, validStakeInstruction...)
 			validSwapInstructions[shardID] = append(validSwapInstructions[shardID], validSwapInstruction[shardID]...)
@@ -239,7 +239,7 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 	- stake instruction
 */
 func (beaconBestState *BeaconBestState) GenerateInstruction(
-	beaconHeight uint64,
+	newBeaconHeight uint64,
 	stakers [][]string,
 	swap map[byte][][]string,
 	shardCandidates []string,
@@ -260,7 +260,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, swap[byte(shardID)]...)
 	}
 	// Beacon normal swap
-	if beaconHeight%uint64(common.EPOCH) == 0 {
+	if newBeaconHeight%uint64(common.EPOCH) == 0 {
 		swapBeaconInstructions := []string{}
 		_, currentValidators, swappedValidator, beaconNextCommittee, _ := SwapValidator(beaconBestState.BeaconPendingValidator, beaconBestState.BeaconCommittee, beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
@@ -270,14 +270,14 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 			instructions = append(instructions, swapBeaconInstructions)
 			// Generate instruction storing validators pubkey and send to bridge
-			beaconRootInst := buildBeaconSwapConfirmInstruction(currentValidators, beaconHeight+1)
+			beaconRootInst := buildBeaconSwapConfirmInstruction(currentValidators, newBeaconHeight)
 			instructions = append(instructions, beaconRootInst)
 		}
 	}
 	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
 	instructions = append(instructions, stakers...)
-	if beaconHeight%uint64(common.EPOCH) > uint64(common.RANDOM_TIME) && !beaconBestState.IsGetRandomNumber {
+	if newBeaconHeight%uint64(common.EPOCH) > uint64(common.RANDOM_TIME) && !beaconBestState.IsGetRandomNumber {
 		//=================================
 		// COMMENT FOR TESTING
 		//var err error
@@ -289,7 +289,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		if chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
 			randomInstruction, rand := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp)
 			instructions = append(instructions, randomInstruction)
-			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v", randomInstruction, beaconHeight)
+			Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v", randomInstruction, newBeaconHeight)
 			for _, candidate := range shardCandidates {
 				shardID := calculateCandidateShardID(candidate, rand, beaconBestState.ActiveShards)
 				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
@@ -334,7 +334,7 @@ func (beaconBestState *BeaconBestState) GetValidStakers(tempStaker []string) []s
 
 */
 func (blockChain *BlockChain) GetShardStateFromBlock(
-	beaconHeight uint64,
+	newBeaconHeight uint64,
 	shardBlock *ShardToBeaconBlock,
 	shardID byte,
 ) (
@@ -466,7 +466,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	bridgeInstructionForBlock, err := blockChain.buildBridgeInstructions(
 		shardID,
 		shardBlock.Instructions,
-		beaconHeight,
+		newBeaconHeight,
 		//beaconBestState,
 		blockChain.config.DataBase,
 	)
