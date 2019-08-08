@@ -31,6 +31,7 @@ const (
 	SigPubKeySize    = 33
 	SigNoPrivacySize = 64
 	SigPrivacySize   = 96
+	IncPubKeyB58Size = 51
 )
 
 // for exit code
