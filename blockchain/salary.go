@@ -328,9 +328,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 	return nil
 }
 
-func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
-	beaconBlock *BeaconBlock,
-) error {
+func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *BeaconBlock) error {
 	db := blockchain.config.DataBase
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) <= 2 {
@@ -345,10 +343,8 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:
-			//fmt.Printf("[ndh] - - %+v\n", inst[2])
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
-				//fmt.Printf("[ndh] error1 - - %+v\n", err)
 				return err
 			}
 			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
@@ -360,7 +356,6 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				//fmt.Printf("[ndh] - - - zzzzzzzzzzzzzzzzzzzzzzzz epoch %+v, shardID %+v %+v %+v\n", beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
 				err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key)
 				if err != nil {
 					return err
@@ -369,7 +364,6 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconBlock(
 			continue
 		}
 	}
-	//fmt.Printf("[ndh] non error \n")
 	return nil
 }
 
