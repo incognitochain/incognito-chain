@@ -116,11 +116,11 @@ func findBeaconBlockWithBurnInst(beaconBlocks []*blockchain.BeaconBlock, inst []
 func findBurnConfirmInst(insts [][]string, txID *common.Hash) ([]string, int) {
 	instType := strconv.Itoa(metadata.BurningConfirmMeta)
 	for i, inst := range insts {
-		if inst[0] != instType {
+		if inst[0] != instType || len(inst) < 5 {
 			continue
 		}
 
-		h, err := common.Hash{}.NewHashFromStr(inst[len(inst)-2])
+		h, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
 			continue
 		}

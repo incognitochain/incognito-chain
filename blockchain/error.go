@@ -92,6 +92,7 @@ const (
 	SwapValidatorError
 	CrossShardBitMapError
 	ShardCommitteeLengthAndCommitteeIndexError
+	UpdateBridgeIssuanceStatusError
 	BeaconCommitteeLengthAndCommitteeIndexError
 	BuildRewardInstructionError
 	GenerateBeaconCommitteeAndValidatorRootError
