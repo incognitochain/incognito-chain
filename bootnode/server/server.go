@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	HeartbeatInterval = 10
-	HeartbeatTimeout  = 60
+	heartbeatInterval = 10
+	heartbeatTimeout  = 60
 )
 
 // timeZeroVal is simply the zero value for a time.Time and is used to avoid
@@ -46,7 +46,7 @@ func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
 	rpcServer.peers = make(map[string]*peer)
 	rpcServer.server = rpc.NewServer()
 	// start go routin hertbeat to check invalid peers
-	go rpcServer.PeerHeartBeat(HeartbeatTimeout)
+	go rpcServer.PeerHeartBeat(heartbeatTimeout)
 }
 
 // Start - create handler and add into rpc server
@@ -98,7 +98,7 @@ func (rpcServer *RpcServer) CombineID(rawAddress string, publicKey string) strin
 	return rawAddress + publicKey
 }
 
-// PeerHeartBeat - loop forever after HeartbeatInterval to check peers
+// PeerHeartBeat - loop forever after heartbeatInterval to check peers
 // which are not connected to remove from bootnode
 // use Last Ping time to compare with time.now
 func (rpcServer *RpcServer) PeerHeartBeat(heartbeatTimeout int) {
@@ -113,6 +113,6 @@ func (rpcServer *RpcServer) PeerHeartBeat(heartbeatTimeout int) {
 				}
 			}
 		}
-		time.Sleep(HeartbeatInterval * time.Second)
+		time.Sleep(heartbeatInterval * time.Second)
 	}
 }
