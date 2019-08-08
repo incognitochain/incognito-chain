@@ -19,7 +19,6 @@ import (
 func (blockChain *BlockChain) buildBridgeInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
-	// beaconBestState *BeaconBestState
 	beaconHeight uint64,
 	db database.DatabaseInterface,
 ) ([][]string, error) {
@@ -29,7 +28,6 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 		CBridgeTokens:    []*common.Hash{},
 	}
 	instructions := [][]string{}
-	//beaconHeight := beaconBestState.BeaconHeight
 	for _, inst := range shardBlockInstructions {
 		if len(inst) < 2 {
 			continue
@@ -56,7 +54,7 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(inst, beaconHeight+1, db)
+			burningConfirm, err = buildBurningConfirmInst(inst, beaconHeight, db)
 			newInst = [][]string{burningConfirm}
 
 		default:
