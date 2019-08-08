@@ -301,7 +301,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	}
 	for index, _ := range crossShards {
 		if crossShards[index] != shardBlock.Header.CrossShardBitMap[index] {
-			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is but get %+v", index, shardBlock.Header.CrossShardBitMap[index], crossShards[index]))
+			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is %+v but get %+v", index, shardBlock.Header.CrossShardBitMap[index], crossShards[index]))
 		}
 	}
 	// Check if InstructionMerkleRoot is the root of merkle tree containing all instructions in this shardBlock
@@ -805,6 +805,13 @@ func (blockchain *BlockChain) processStoreShardBlockAndUpdateDatabase(shardBlock
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
+
+	// Update bridge issuance request status
+	err = blockchain.updateBridgeIssuanceStatus(shardBlock)
+	if err != nil {
+		return NewBlockChainError(UpdateBridgeIssuanceStatusError, err)
+	}
+
 	// call FeeEstimator for processing
 	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
 		err := feeEstimator.RegisterBlock(shardBlock)
