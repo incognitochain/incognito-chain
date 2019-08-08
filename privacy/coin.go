@@ -11,29 +11,91 @@ import (
 
 // Coin represents a coin
 type Coin struct {
-	PublicKey      *EllipticPoint
-	CoinCommitment *EllipticPoint
-	SNDerivator    *big.Int
-	SerialNumber   *EllipticPoint
-	Randomness     *big.Int
-	Value          uint64
-	Info           []byte //256 bytes
+	publicKey      *EllipticPoint
+	coinCommitment *EllipticPoint
+	snDerivator    *big.Int
+	serialNumber   *EllipticPoint
+	randomness     *big.Int
+	value          uint64
+	info           []byte //256 bytes
 }
+
+// Start GET/SET
+func (coin Coin) GetPublicKey() *EllipticPoint {
+	return coin.publicKey
+}
+
+func (coin *Coin) SetPublicKey(v *EllipticPoint) {
+	coin.publicKey = v
+}
+
+func (coin Coin) GetCoinCommitment() *EllipticPoint {
+	return coin.coinCommitment
+}
+
+func (coin *Coin) SetCoinCommitment(v *EllipticPoint) {
+	coin.coinCommitment = v
+}
+
+func (coin Coin) GetSNDerivator() *big.Int {
+	return coin.snDerivator
+}
+
+func (coin *Coin) SetSNDerivator(v *big.Int) {
+	coin.snDerivator = v
+}
+
+func (coin Coin) GetSerialNumber() *EllipticPoint {
+	return coin.serialNumber
+}
+
+func (coin *Coin) SetSerialNumber(v *EllipticPoint) {
+	coin.serialNumber = v
+}
+
+func (coin Coin) GetRandomness() *big.Int {
+	return coin.randomness
+}
+
+func (coin *Coin) SetRandomness(v *big.Int) {
+	coin.randomness = v
+}
+
+func (coin Coin) GetValue() uint64 {
+	return coin.value
+}
+
+func (coin *Coin) SetValue(v uint64) {
+	coin.value = v
+}
+
+func (coin Coin) GetInfo() []byte {
+	return coin.info
+}
+
+func (coin *Coin) SetInfo(v []byte) {
+	copy(coin.info, v)
+}
+
+// END Get/Set
 
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
-	coin.PublicKey = new(EllipticPoint).Zero()
-	coin.CoinCommitment = new(EllipticPoint).Zero()
-	coin.SNDerivator = new(big.Int)
-	coin.SerialNumber = new(EllipticPoint).Zero()
-	coin.Randomness = new(big.Int)
-	coin.Value = 0
+	coin.publicKey = new(EllipticPoint)
+	coin.publicKey.Zero()
+	coin.coinCommitment = new(EllipticPoint)
+	coin.coinCommitment.Zero()
+	coin.snDerivator = new(big.Int)
+	coin.serialNumber = new(EllipticPoint)
+	coin.serialNumber.Zero()
+	coin.randomness = new(big.Int)
+	coin.value = 0
 	return coin
 }
 
 // GetPubKeyLastByte returns the last byte of public key
 func (coin *Coin) GetPubKeyLastByte() byte {
-	pubKeyBytes := coin.PublicKey.Compress()
+	pubKeyBytes := coin.publicKey.Compress()
 	return pubKeyBytes[len(pubKeyBytes)-1]
 }
 
@@ -69,11 +131,16 @@ func (coin *Coin) HashH() *common.Hash {
 
 //CommitAll commits a coin with 5 attributes include:
 // public key, value, serial number derivator, shardID form last byte public key, randomness
-func (coin *Coin) CommitAll() {
+func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.Value), coin.SNDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.Randomness}
-	coin.CoinCommitment = PedCom.CommitAll(values)
-	coin.CoinCommitment = coin.CoinCommitment.Add(coin.PublicKey)
+	values := []*big.Int{big.NewInt(0), new(big.Int).SetUint64(coin.value), coin.snDerivator, new(big.Int).SetBytes([]byte{shardID}), coin.randomness}
+	commitment, err := PedCom.commitAll(values)
+	if err != nil {
+		return err
+	}
+	coin.coinCommitment = commitment
+	coin.coinCommitment = coin.coinCommitment.Add(coin.publicKey)
+	return nil
 }
 
 // Bytes converts a coin's details to a bytes array
@@ -81,55 +148,55 @@ func (coin *Coin) CommitAll() {
 func (coin *Coin) Bytes() []byte {
 	var coinBytes []byte
 
-	if coin.PublicKey != nil {
-		publicKey := coin.PublicKey.Compress()
+	if coin.publicKey != nil {
+		publicKey := coin.publicKey.Compress()
 		coinBytes = append(coinBytes, byte(len(publicKey)))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.CoinCommitment != nil {
-		coinCommitment := coin.CoinCommitment.Compress()
+	if coin.coinCommitment != nil {
+		coinCommitment := coin.coinCommitment.Compress()
 		coinBytes = append(coinBytes, byte(len(coinCommitment)))
 		coinBytes = append(coinBytes, coinCommitment...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.SNDerivator != nil {
-		coinBytes = append(coinBytes, byte(BigIntSize))
-		coinBytes = append(coinBytes, AddPaddingBigInt(coin.SNDerivator, BigIntSize)...)
+	if coin.snDerivator != nil {
+		coinBytes = append(coinBytes, byte(common.BigIntSize))
+		coinBytes = append(coinBytes, common.AddPaddingBigInt(coin.snDerivator, common.BigIntSize)...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.SerialNumber != nil {
-		serialNumber := coin.SerialNumber.Compress()
+	if coin.serialNumber != nil {
+		serialNumber := coin.serialNumber.Compress()
 		coinBytes = append(coinBytes, byte(len(serialNumber)))
 		coinBytes = append(coinBytes, serialNumber...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.Randomness != nil {
-		coinBytes = append(coinBytes, byte(BigIntSize))
-		coinBytes = append(coinBytes, AddPaddingBigInt(coin.Randomness, BigIntSize)...)
+	if coin.randomness != nil {
+		coinBytes = append(coinBytes, byte(common.BigIntSize))
+		coinBytes = append(coinBytes, common.AddPaddingBigInt(coin.randomness, common.BigIntSize)...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.Value > 0 {
-		value := new(big.Int).SetUint64(coin.Value).Bytes()
+	if coin.value > 0 {
+		value := new(big.Int).SetUint64(coin.value).Bytes()
 		coinBytes = append(coinBytes, byte(len(value)))
 		coinBytes = append(coinBytes, value...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if len(coin.Info) > 0 {
-		coinBytes = append(coinBytes, byte(len(coin.Info)))
-		coinBytes = append(coinBytes, coin.Info...)
+	if len(coin.info) > 0 {
+		coinBytes = append(coinBytes, byte(len(coin.info)))
+		coinBytes = append(coinBytes, coin.info...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -151,8 +218,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField := coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.PublicKey = new(EllipticPoint)
-		err = coin.PublicKey.Decompress(coinBytes[offset : offset+int(lenField)])
+		coin.publicKey = new(EllipticPoint)
+		err = coin.publicKey.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -163,8 +230,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.CoinCommitment = new(EllipticPoint)
-		err = coin.CoinCommitment.Decompress(coinBytes[offset : offset+int(lenField)])
+		coin.coinCommitment = new(EllipticPoint)
+		err = coin.coinCommitment.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -175,8 +242,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.SNDerivator = new(big.Int)
-		coin.SNDerivator.SetBytes(coinBytes[offset : offset+int(lenField)])
+		coin.snDerivator = new(big.Int)
+		coin.snDerivator.SetBytes(coinBytes[offset : offset+int(lenField)])
 		offset += int(lenField)
 	}
 
@@ -184,8 +251,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.SerialNumber = new(EllipticPoint)
-		err = coin.SerialNumber.Decompress(coinBytes[offset : offset+int(lenField)])
+		coin.serialNumber = new(EllipticPoint)
+		err = coin.serialNumber.Decompress(coinBytes[offset : offset+int(lenField)])
 		if err != nil {
 			return err
 		}
@@ -196,8 +263,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.Randomness = new(big.Int)
-		coin.Randomness.SetBytes(coinBytes[offset : offset+int(lenField)])
+		coin.randomness = new(big.Int)
+		coin.randomness.SetBytes(coinBytes[offset : offset+int(lenField)])
 		offset += int(lenField)
 	}
 
@@ -205,7 +272,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.Value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
+		coin.value = new(big.Int).SetBytes(coinBytes[offset : offset+int(lenField)]).Uint64()
 		offset += int(lenField)
 	}
 
@@ -213,8 +280,8 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField = coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		coin.Info = make([]byte, lenField)
-		copy(coin.Info, coinBytes[offset:offset+int(lenField)])
+		coin.info = make([]byte, lenField)
+		copy(coin.info, coinBytes[offset:offset+int(lenField)])
 	}
 	return nil
 }
@@ -250,13 +317,13 @@ func (inputCoin *InputCoin) SetBytes(bytes []byte) error {
 // CoinDetailsEncrypted is nil when you send tx without privacy
 type OutputCoin struct {
 	CoinDetails          *Coin
-	CoinDetailsEncrypted *Ciphertext
+	CoinDetailsEncrypted *hybridCipherText
 }
 
 // Init (OutputCoin) initializes a output coin
 func (outputCoin *OutputCoin) Init() *OutputCoin {
 	outputCoin.CoinDetails = new(Coin).Init()
-	outputCoin.CoinDetailsEncrypted = new(Ciphertext)
+	outputCoin.CoinDetailsEncrypted = new(hybridCipherText)
 	return outputCoin
 }
 
@@ -291,7 +358,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 	offset += 1
 
 	if lenCoinDetailEncrypted > 0 {
-		outputCoin.CoinDetailsEncrypted = new(Ciphertext)
+		outputCoin.CoinDetailsEncrypted = new(hybridCipherText)
 		err := outputCoin.CoinDetailsEncrypted.SetBytes(bytes[offset : offset+lenCoinDetailEncrypted])
 		if err != nil {
 			return err
@@ -318,7 +385,7 @@ func (outputCoin *OutputCoin) SetBytes(bytes []byte) error {
 // and ElGamal cryptosystem is used as a key encapsulation scheme.
 func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError {
 	// 32-byte first: Randomness, the rest of msg is value of coin
-	msg := append(AddPaddingBigInt(outputCoin.CoinDetails.Randomness, BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.Value).Bytes()...)
+	msg := append(common.AddPaddingBigInt(outputCoin.CoinDetails.randomness, common.BigIntSize), new(big.Int).SetUint64(outputCoin.CoinDetails.value).Bytes()...)
 
 	pubKeyPoint := new(EllipticPoint)
 	err := pubKeyPoint.Decompress(recipientTK)
@@ -326,7 +393,7 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError
 		return NewPrivacyErr(DecompressTransmissionKeyErr, err)
 	}
 
-	outputCoin.CoinDetailsEncrypted, err = HybridEncrypt(msg, pubKeyPoint)
+	outputCoin.CoinDetailsEncrypted, err = hybridEncrypt(msg, pubKeyPoint)
 	if err != nil {
 		return NewPrivacyErr(EncryptOutputCoinErr, err)
 	}
@@ -336,14 +403,14 @@ func (outputCoin *OutputCoin) Encrypt(recipientTK TransmissionKey) *PrivacyError
 
 // Decrypt decrypts a ciphertext encrypting for coin with recipient's receiving key
 func (outputCoin *OutputCoin) Decrypt(viewingKey ViewingKey) *PrivacyError {
-	msg, err := HybridDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
+	msg, err := hybridDecrypt(outputCoin.CoinDetailsEncrypted, new(big.Int).SetBytes(viewingKey.Rk))
 	if err != nil {
 		return NewPrivacyErr(DecryptOutputCoinErr, err)
 	}
 
 	// Assign randomness and value to outputCoin details
-	outputCoin.CoinDetails.Randomness = new(big.Int).SetBytes(msg[0:BigIntSize])
-	outputCoin.CoinDetails.Value = new(big.Int).SetBytes(msg[BigIntSize:]).Uint64()
+	outputCoin.CoinDetails.randomness = new(big.Int).SetBytes(msg[0:common.BigIntSize])
+	outputCoin.CoinDetails.value = new(big.Int).SetBytes(msg[common.BigIntSize:]).Uint64()
 
 	return nil
 }

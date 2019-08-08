@@ -17,11 +17,11 @@ type outMsg struct {
 }
 
 type newPeerMsg struct {
-	Peer  *Peer
-	CConn chan *PeerConn
+	peer  *Peer
+	cConn chan *PeerConn
 }
 
 type newStreamMsg struct {
-	Stream net.Stream
-	CConn  chan *PeerConn
+	stream net.Stream
+	cConn  chan *PeerConn
 }

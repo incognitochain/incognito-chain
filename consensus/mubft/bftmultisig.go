@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -40,14 +40,14 @@ func (multiSig *multiSigScheme) Init(userKeySet *incognitokey.KeySet, committee 
 	copy(multiSig.combine.SigningCommittee, committee)
 	multiSig.scheme = new(privacy.MultiSigScheme)
 	multiSig.scheme.Init()
-	multiSig.scheme.Keyset.Set(&userKeySet.PrivateKey, &userKeySet.PaymentAddress.Pk)
+	multiSig.scheme.GetKeyset().Set(&userKeySet.PrivateKey, &userKeySet.PaymentAddress.Pk)
 }
 
 func (multiSig *multiSigScheme) Prepare() error {
 	myRiECCPoint, myrBigInt := multiSig.scheme.GenerateRandom()
 	myRi := myRiECCPoint.Compress()
 	myr := myrBigInt.Bytes()
-	for len(myr) < privacy.BigIntSize {
+	for len(myr) < common.BigIntSize {
 		myr = append([]byte{0}, myr...)
 	}
 
@@ -82,10 +82,19 @@ func (multiSig *multiSigScheme) SignData(RiList map[string][]byte) error {
 	}
 	sort.Ints(multiSig.combine.ValidatorsIdxR)
 
-	commitSig := multiSig.scheme.Keyset.SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
+	commitSig, err := multiSig.scheme.GetKeyset().SignMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, listROfSigners, new(big.Int).SetBytes(multiSig.personal.r))
+	if err != nil {
+		Logger.log.Error("SignData", err)
+		return err
+	}
 
 	multiSig.combine.R = base58.Base58Check{}.Encode(RCombined.Compress(), common.ZeroByte)
-	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSig.Bytes(), common.ZeroByte)
+	commitSigInBytes, err := commitSig.Bytes()
+	if err != nil {
+		Logger.log.Error("SignData", err)
+		return err
+	}
+	multiSig.combine.CommitSig = base58.Base58Check{}.Encode(commitSigInBytes, common.ZeroByte)
 
 	return nil
 }
@@ -124,8 +133,8 @@ func (multiSig *multiSigScheme) VerifyCommitSig(validatorPk string, commitSig st
 	if err != nil {
 		return err
 	}
-	resValidateEachSigOfSigners := valSig.VerifyMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, []*privacy.PublicKey{validatorPubkey}, RCombined)
-	if !resValidateEachSigOfSigners {
+	resValidateEachSigOfSigners, err := valSig.VerifyMultiSig(multiSig.dataToSig.GetBytes(), listPubkeyOfSigners, []*privacy.PublicKey{validatorPubkey}, RCombined)
+	if !resValidateEachSigOfSigners || err != nil {
 		return errors.New("Validator's sig is invalid " + validatorPk)
 	}
 	return nil
@@ -153,5 +162,10 @@ func (multiSig *multiSigScheme) CombineSigs(R string, commitSigs map[string]bftC
 	multiSig.combine.ValidatorsIdxR = make([]int, len(validatorsIdxR))
 	copy(multiSig.combine.ValidatorsIdxR, validatorsIdxR)
 	aggregatedSig := multiSig.scheme.CombineMultiSig(listSigOfSigners)
-	return base58.Base58Check{}.Encode(aggregatedSig.Bytes(), common.ZeroByte), nil
+	aggregatedSigInByte, err := aggregatedSig.Bytes()
+	if err != nil {
+		Logger.log.Error("CombineSigs", err)
+		return common.EmptyString, err
+	}
+	return base58.Base58Check{}.Encode(aggregatedSigInByte, common.ZeroByte), nil
 }

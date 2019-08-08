@@ -2,7 +2,6 @@ package mempool
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -38,7 +37,7 @@ type ShardToBeaconPool struct {
 }
 
 func InitShardToBeaconPool() {
-	GetShardToBeaconPool().SetShardState(blockchain.GetBestStateBeacon().GetBestShardHeight())
+	GetShardToBeaconPool().SetShardState(blockchain.GetBeaconBestState().GetBestShardHeight())
 }
 
 // get singleton instance of ShardToBeacon pool
@@ -231,15 +230,13 @@ func (self *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64) map[byte][]*
 			finalBlocks[shardID] = append(finalBlocks[shardID], blk)
 		}
 	}
-	//UNCOMMENT FOR TESTING
-	// Logger.log.Info()
-	// fmt.Print("ShardToBeaconPool/ValidPendingBlock ")
-	// for _, block := range finalBlocks[byte(0)] {
-	// 	fmt.Printf(" %+v ", block.Header.Height)
-	// }
-	// Logger.log.Info()
-	//==============
-	fmt.Println("GetValidBlock", limit, finalBlocks)
+	////UNCOMMENT FOR TESTING
+	//Logger.log.Infof("ShardToBeaconPool, Valid Block ")
+	//for _, block := range finalBlocks[byte(0)] {
+	//	fmt.Printf(" %+v ", block.Header.Height)
+	//}
+	////==============
+	//fmt.Println("GetValidBlock", limit, finalBlocks)
 	return finalBlocks
 }
 

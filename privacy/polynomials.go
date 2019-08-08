@@ -13,7 +13,7 @@ import (
 type Poly []*big.Int
 
 // Helper function for generating a polynomial with given integers
-func NewPolyInts(coeffs ...int) (p Poly) {
+func newPoly(coeffs ...int) (p Poly) {
 	p = make([]*big.Int, len(coeffs))
 	for i := 0; i < len(coeffs); i++ {
 		p[i] = big.NewInt(int64(coeffs[i]))
@@ -25,7 +25,7 @@ func NewPolyInts(coeffs ...int) (p Poly) {
 // Returns a polynomial with random coefficients
 // You can give the degree of the polynomial
 // A random coefficients have a [0, 2^bits) integer
-func RandomPoly(degree, bits int64) (p Poly) {
+func randomPoly(degree, bits int64) (p Poly) {
 	p = make(Poly, degree+1)
 	rr := rand.New(rand.NewSource(time.Now().UnixNano()))
 	exp := big.NewInt(2)
@@ -108,7 +108,7 @@ func (p Poly) String() (s string) {
 // if P == Q, returns 0
 // if P > Q, returns 1
 // if P < Q, returns -1
-func (p *Poly) Compare(q *Poly) int {
+func (p *Poly) compare(q *Poly) int {
 	switch {
 	case p.GetDegree() > q.GetDegree():
 		return 1
@@ -128,9 +128,9 @@ func (p *Poly) Compare(q *Poly) int {
 
 // Add() adds two polynomials
 // modulo m can be nil
-func (p Poly) Add(q Poly, m *big.Int) Poly {
-	if p.Compare(&q) < 0 {
-		return q.Add(p, m)
+func (p Poly) add(q Poly, m *big.Int) Poly {
+	if p.compare(&q) < 0 {
+		return q.add(p, m)
 	}
 	var r Poly = make([]*big.Int, len(p))
 	for i := 0; i < len(q); i++ {
@@ -153,7 +153,7 @@ func (p Poly) Add(q Poly, m *big.Int) Poly {
 }
 
 // Neg() returns a polynomial Q = -P
-func (p *Poly) Neg() Poly {
+func (p *Poly) neg() Poly {
 	var q Poly = make([]*big.Int, len(*p))
 	for i := 0; i < len(*p); i++ {
 		b := new(big.Int)
@@ -167,10 +167,10 @@ func (p *Poly) Neg() Poly {
 // adjust increases the degree of copied polynomial
 // adjust cannot have a negative integer
 // for example, P = x + 1 and adjust = 2, Clone() returns x^3 + x^2
-func (p Poly) Clone(adjust int) Poly {
+func (p Poly) clone(adjust int) Poly {
 	var q Poly = make([]*big.Int, len(p)+adjust)
 	if adjust < 0 {
-		return NewPolyInts(0)
+		return newPoly(0)
 	}
 	for i := 0; i < adjust; i++ {
 		q[i] = big.NewInt(0)
@@ -197,8 +197,8 @@ func (p *Poly) sanitize(m *big.Int) {
 // Sub() subtracts P from Q
 // Since we already have Add(), Sub() does Add(P, -Q)
 func (p Poly) Sub(q Poly, m *big.Int) Poly {
-	r := q.Neg()
-	return p.Add(r, m)
+	r := q.neg()
+	return p.add(r, m)
 }
 
 // P * Q
@@ -227,22 +227,22 @@ func (p Poly) Mul(q Poly, m *big.Int) Poly {
 }
 
 // returns (P / Q, P % Q)
-func (p Poly) Div(q Poly, m *big.Int) (quo, rem Poly) {
+func (p Poly) div(q Poly, m *big.Int) (quo, rem Poly) {
 	if m != nil {
 		p.sanitize(m)
 		q.sanitize(m)
 	}
 	if p.GetDegree() < q.GetDegree() || q.isZero() {
-		quo = NewPolyInts(0)
-		rem = p.Clone(0)
+		quo = newPoly(0)
+		rem = p.clone(0)
 		return
 	}
 	quo = make([]*big.Int, p.GetDegree()-q.GetDegree()+1)
-	rem = p.Clone(0)
+	rem = p.clone(0)
 	for i := 0; i < len(quo); i++ {
 		quo[i] = big.NewInt(0)
 	}
-	t := p.Clone(0)
+	t := p.clone(0)
 	qd := q.GetDegree()
 	for {
 		td := t.GetDegree()
@@ -262,11 +262,11 @@ func (p Poly) Div(q Poly, m *big.Int) (quo, rem Poly) {
 		// if r == 0, it means that the highest coefficient of the result is not an integer
 		// this polynomial library handles integer coefficients
 		if r.Cmp(big.NewInt(0)) == 0 {
-			quo = NewPolyInts(0)
-			rem = p.Clone(0)
+			quo = newPoly(0)
+			rem = p.clone(0)
 			return
 		}
-		u := q.Clone(rd)
+		u := q.clone(rd)
 		for i := rd; i < len(u); i++ {
 			u[i].Mul(u[i], r)
 			if m != nil {
@@ -283,20 +283,20 @@ func (p Poly) Div(q Poly, m *big.Int) (quo, rem Poly) {
 }
 
 // returns the greatest common divisor(GCD) of P and Q (Euclidean algorithm)
-func (p Poly) Gcd(q Poly, m *big.Int) Poly {
-	if p.Compare(&q) < 0 {
-		return q.Gcd(p, m)
+func (p Poly) gcd(q Poly, m *big.Int) Poly {
+	if p.compare(&q) < 0 {
+		return q.gcd(p, m)
 	}
 	if q.isZero() {
 		return p
 	} else {
-		_, rem := p.Div(q, m)
-		return q.Gcd(rem, m)
+		_, rem := p.div(q, m)
+		return q.gcd(rem, m)
 	}
 }
 
 // Eval() returns p(x) where x is the given big integer
-func (p Poly) Eval(x *big.Int, m *big.Int) (y *big.Int) {
+func (p Poly) eval(x *big.Int, m *big.Int) (y *big.Int) {
 	y = big.NewInt(0)
 	accx := big.NewInt(1)
 	xd := new(big.Int)

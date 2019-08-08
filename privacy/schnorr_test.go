@@ -1,28 +1,30 @@
 package privacy
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSchnorrSignature(t *testing.T) {
 	// generate Schnorr Private Key
-	privKey := new(SchnPrivKey)
-	privKey.SK = RandScalar()
-	privKey.R = RandScalar()
+	privKey := new(SchnorrPrivateKey)
+	privKey.privateKey = RandScalar()
+	privKey.randomness = RandScalar()
 
 	// generate Schnorr Public Key
-	privKey.PubKey = new(SchnPubKey)
+	privKey.publicKey = new(SchnorrPublicKey)
 
 	// G is base generator on Curve
-	privKey.PubKey.G = new(EllipticPoint)
-	privKey.PubKey.G.Set(Curve.Params().Gx, Curve.Params().Gy)
+	privKey.publicKey.g = new(EllipticPoint)
+	privKey.publicKey.g.Set(Curve.Params().Gx, Curve.Params().Gy)
 
 	// H = alpha*G
-	privKey.PubKey.H = privKey.PubKey.G.ScalarMult(RandScalar())
+	privKey.publicKey.h = privKey.publicKey.g.ScalarMult(RandScalar())
 
 	// PK = G^SK * H^R
-	privKey.PubKey.PK = privKey.PubKey.G.ScalarMult(privKey.SK).Add(privKey.PubKey.H.ScalarMult(privKey.R))
+	privKey.publicKey.publicKey = privKey.publicKey.g.ScalarMult(privKey.privateKey).Add(privKey.publicKey.h.ScalarMult(privKey.randomness))
 
 	// random message to sign
 	data := RandScalar()
@@ -33,7 +35,7 @@ func TestSchnorrSignature(t *testing.T) {
 
 	// convert signature to bytes array
 	signatureBytes := signature.Bytes()
-	assert.Equal(t, SigPrivacySize, len(signatureBytes))
+	assert.Equal(t, common.SigPrivacySize, len(signatureBytes))
 
 	// revert bytes array to signature
 	signature2 := new(SchnSignature)
@@ -41,6 +43,6 @@ func TestSchnorrSignature(t *testing.T) {
 	assert.Equal(t, signature, signature2)
 
 	// verify the signature with private key
-	res := privKey.PubKey.Verify(signature2, data.Bytes())
+	res := privKey.publicKey.Verify(signature2, data.Bytes())
 	assert.Equal(t, true, res)
 }

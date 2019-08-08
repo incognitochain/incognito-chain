@@ -7,8 +7,8 @@ import (
 
 /*
 	Unit test for Hybrid encryption
- */
-func TestHybridEncryption (t*testing.T){
+*/
+func TestHybridEncryption(t *testing.T) {
 	// random message
 	msg := RandBytes(100)
 
@@ -17,26 +17,26 @@ func TestHybridEncryption (t*testing.T){
 	publicKey := PedCom.G[0].ScalarMult(privKey)
 
 	// encrypt message using public key
-	ciphertext, err := HybridEncrypt(msg, publicKey)
+	ciphertext, err := hybridEncrypt(msg, publicKey)
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, ElGamalCiphertextSize, len(ciphertext.SymKeyEncrypted))
-	assert.Greater(t, len(ciphertext.MsgEncrypted), 0)
+	assert.Equal(t, elGamalCiphertextSize, len(ciphertext.symKeyEncrypted))
+	assert.Greater(t, len(ciphertext.msgEncrypted), 0)
 
-	// convert Ciphertext to bytes array
+	// convert hybridCipherText to bytes array
 	ciphertextBytes := ciphertext.Bytes()
 
-	assert.Greater(t, len(ciphertextBytes), ElGamalCiphertextSize)
+	assert.Greater(t, len(ciphertextBytes), elGamalCiphertextSize)
 
-	// new Ciphertext to set bytes array
-	ciphertext2 := new(Ciphertext)
+	// new hybridCipherText to set bytes array
+	ciphertext2 := new(hybridCipherText)
 	err2 := ciphertext2.SetBytes(ciphertextBytes)
 
 	assert.Equal(t, nil, err2)
 	assert.Equal(t, ciphertext, ciphertext2)
 
 	// decrypt message using private key
-	msg2, err := HybridDecrypt(ciphertext2, privKey)
+	msg2, err := hybridDecrypt(ciphertext2, privKey)
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, msg, msg2)
