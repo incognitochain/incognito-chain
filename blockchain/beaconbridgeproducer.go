@@ -56,7 +56,7 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(inst, beaconHeight+1, db)
+			burningConfirm, err = buildBurningConfirmInst(inst, beaconHeight, db)
 			newInst = [][]string{burningConfirm}
 
 		default:
