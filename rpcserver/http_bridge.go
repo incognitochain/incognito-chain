@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"fmt"
 	"encoding/json"
 	"strconv"
 
@@ -273,4 +274,22 @@ func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, close
 		return false, NewRPCError(ErrUnexpected, err)
 	}
 	return ethHeader, nil
+}
+
+func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	db := httpServer.config.BlockChain.GetDatabase()
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	txReqID, err := common.Hash{}.NewHashFromStr(data["TxReqID"].(string))
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+
+	fmt.Println("hahaha rpc txReqID: ", txReqID)
+
+	status, err := db.GetBridgeReqWithStatus(*txReqID)
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	return status, nil
 }

@@ -16,17 +16,17 @@ func TestTxCustomToken(t *testing.T) {
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
 
-	tx2, err := BuildCoinbaseTxByCoinID(&paymentAddress, 1000, &key.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0)
+	tx2, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&paymentAddress, 1000, &key.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0))
 
 	valid, err := tx2.ValidateSanityData(nil)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, true, valid)
 
-	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.OutputCoins)
-	in1[0].CoinDetails.SerialNumber = privacy.PedCom.G[privacy.SK].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
-		in1[0].CoinDetails.SNDerivator)
+	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.GetOutputCoins())
+	in1[0].CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
+		in1[0].CoinDetails.GetSNDerivator()))
 	tx := TxCustomToken{}
-	err = tx.Init(&key.KeySet.PrivateKey,
+	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},
 		in1,
 		0,
@@ -39,14 +39,14 @@ func TestTxCustomToken(t *testing.T) {
 		db,
 		nil,
 		false,
-		6)
-	if err.(*TransactionError) != nil {
+		6))
+	if err != nil {
 		t.Error(err)
 	}
 
 	db.StoreCustomToken(common.PRVCoinID, tx.Hash()[:])
 
-	err = tx.Init(&key.KeySet.PrivateKey,
+	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},
 		in1,
 		0,
@@ -60,15 +60,15 @@ func TestTxCustomToken(t *testing.T) {
 		db,
 		nil,
 		false,
-		6)
-	if err.(*TransactionError) != nil {
+		6))
+	if err != nil {
 		t.Error(err)
 	}
 
 	assert.Equal(t, string(tx.TxTokenData.Vins[0].PaymentAddress.Pk[:]), string(tx.GetSender()))
 
 	paymentAddress2, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
-	err = tx.Init(&key.KeySet.PrivateKey,
+	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},
 		in1,
 		0,
@@ -82,8 +82,8 @@ func TestTxCustomToken(t *testing.T) {
 		db,
 		nil,
 		false,
-		6)
-	if err.(*TransactionError) != nil {
+		6))
+	if err != nil {
 		t.Error(err)
 	}
 
@@ -91,7 +91,7 @@ func TestTxCustomToken(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, privacy.SigNoPrivacySize, len(sign))
+	assert.Equal(t, common.SigNoPrivacySize, len(sign))
 
 	isP := tx.IsPrivacy()
 	assert.Equal(t, false, isP)

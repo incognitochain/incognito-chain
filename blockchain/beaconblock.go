@@ -6,12 +6,12 @@ import (
 )
 
 type BeaconBlock struct {
-	AggregatedSig string  `json:"AggregatedSig"`
-	R             string  `json:"R"`
-	ValidatorsIdx [][]int `json:"ValidatorsIdx"` //[0]: r | [1]:AggregatedSig
-	ProducerSig   string  `json:"ProducerSig"`
-	Header        BeaconHeader
-	Body          BeaconBody
+	AggregatedSig   string  `json:"AggregatedSig"`
+	R               string  `json:"R"`
+	ValidatorsIndex [][]int `json:"ValidatorsIndex"` //[0]: r | [1]:AggregatedSig
+	ProducerSig     string  `json:"ProducerSig"`
+	Header          BeaconHeader
+	Body            BeaconBody
 }
 
 func NewBeaconBlock() *BeaconBlock {
@@ -24,23 +24,23 @@ func (beaconBlock *BeaconBlock) Hash() *common.Hash {
 }
 
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
-	tempBlk := &struct {
-		AggregatedSig string  `json:"AggregatedSig"`
-		ValidatorsIdx [][]int `json:"ValidatorsIdx"`
-		ProducerSig   string  `json:"ProducerSig"`
-		R             string  `json:"R"`
-		Header        BeaconHeader
-		Body          BeaconBody
+	tempBeaconBlock := &struct {
+		AggregatedSig   string  `json:"AggregatedSig"`
+		ValidatorsIndex [][]int `json:"ValidatorsIndex"`
+		ProducerSig     string  `json:"ProducerSig"`
+		R               string  `json:"R"`
+		Header          BeaconHeader
+		Body            BeaconBody
 	}{}
-	err := json.Unmarshal(data, &tempBlk)
+	err := json.Unmarshal(data, &tempBeaconBlock)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	beaconBlock.AggregatedSig = tempBlk.AggregatedSig
-	beaconBlock.R = tempBlk.R
-	beaconBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
-	beaconBlock.ProducerSig = tempBlk.ProducerSig
-	beaconBlock.Header = tempBlk.Header
-	beaconBlock.Body = tempBlk.Body
+	beaconBlock.AggregatedSig = tempBeaconBlock.AggregatedSig
+	beaconBlock.R = tempBeaconBlock.R
+	beaconBlock.ValidatorsIndex = tempBeaconBlock.ValidatorsIndex
+	beaconBlock.ProducerSig = tempBeaconBlock.ProducerSig
+	beaconBlock.Header = tempBeaconBlock.Header
+	beaconBlock.Body = tempBeaconBlock.Body
 	return nil
 }
