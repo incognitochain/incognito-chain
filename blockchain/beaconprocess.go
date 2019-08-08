@@ -160,7 +160,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	blockchain.BestState.Beacon.lock.RLock()
 	defer blockchain.BestState.Beacon.lock.RUnlock()
 	if len(beaconBlock.Header.ProducerAddress.Bytes()) != 66 {
-		return NewBlockChainError(ProducerError, fmt.Errorf("Expect %+v has length 66 but get %+v", len(beaconBlock.Header.ProducerAddress.Bytes())))
+		return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.ProducerAddress.Bytes())))
 	}
 	//verify version
 	if beaconBlock.Header.Version != BEACON_BLOCK_VERSION {
@@ -332,7 +332,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 		return NewBlockChainError(GenerateInstructionHashError, fmt.Errorf("Fail to generate hash for instruction %+v", tempInstructionArr))
 	}
 	if !tempInstructionHash.IsEqual(&beaconBlock.Header.InstructionHash) {
-		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect Instruction Hash in Beacon Header to be %+v, but get %+v", beaconBlock.Header.InstructionHash, tempInstructionHash))
+		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect Instruction Hash in Beacon Header to be %+v, but get %+v, validator instructions: %+v", beaconBlock.Header.InstructionHash, tempInstructionHash, tempInstruction))
 	}
 	return nil
 }
