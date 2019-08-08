@@ -20,16 +20,16 @@ func TestHybridEncryption(t *testing.T) {
 	ciphertext, err := hybridEncrypt(msg, publicKey)
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, elGamalCiphertextSize, len(ciphertext.SymKeyEncrypted))
-	assert.Greater(t, len(ciphertext.MsgEncrypted), 0)
+	assert.Equal(t, elGamalCiphertextSize, len(ciphertext.symKeyEncrypted))
+	assert.Greater(t, len(ciphertext.msgEncrypted), 0)
 
-	// convert HybridCipherText to bytes array
+	// convert hybridCipherText to bytes array
 	ciphertextBytes := ciphertext.Bytes()
 
 	assert.Greater(t, len(ciphertextBytes), elGamalCiphertextSize)
 
-	// new HybridCipherText to set bytes array
-	ciphertext2 := new(HybridCipherText)
+	// new hybridCipherText to set bytes array
+	ciphertext2 := new(hybridCipherText)
 	err2 := ciphertext2.SetBytes(ciphertextBytes)
 
 	assert.Equal(t, nil, err2)
