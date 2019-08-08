@@ -127,6 +127,7 @@ const (
 	StoreBeaconBestStateError
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
+	StoreCommitteeFromShardBestStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -238,6 +239,7 @@ var ErrCodeMessage = map[int]struct {
 	ShuffleBeaconCandidateError:                       {-1103, "Shuffle Beacon Candidate Error"},
 	CleanBackUpError:                                  {-1104, "Clean Back Up Error"},
 	BackUpBestStateError:                              {-1105, "Back Up Best State Error"},
+	StoreCommitteeFromShardBestStateError:             {-1106, "Store Committee From ShardBestState Error"},
 }
 
 type BlockChainError struct {
