@@ -858,7 +858,6 @@ func (synker *synker) InsertShardBlockFromPool(shardID byte) {
 func (synker *synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
 	synker.States.Lock()
 	result := make(map[byte]uint64)
-	fmt.Println("ClosestShardToBeaconPoolState", synker.States.ClosestState.ShardToBeaconPool)
 	for shardID, height := range synker.States.ClosestState.ShardToBeaconPool {
 		result[shardID] = height
 	}
