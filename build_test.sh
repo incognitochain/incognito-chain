@@ -3,7 +3,7 @@ echo "Start build Incognito"
 if [ "$1" == "y" ]; then
   rm -rfv data/*
 fi
-git pull
+#git pull
 
 echo "Package install"
 dep ensure -v
