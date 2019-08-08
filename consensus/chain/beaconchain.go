@@ -71,10 +71,10 @@ func (s *BeaconChain) ValidateBlock(block interface{}) error {
 	return nil
 }
 
-func (s *BeaconChain) ValidatePreSignBlock(block interface{}) error {
-	_ = block.(*blockchain.BeaconBlock)
-	return nil
-}
+// func (s *BeaconChain) ValidatePreSignBlock(block interface{}) error {
+// 	_ = block.(*blockchain.BeaconBlock)
+// 	return nil
+// }
 
 func (s *BeaconChain) InsertBlk(block interface{}, isValid bool) {
 	if isValid {

@@ -11,5 +11,6 @@ const (
 
 //
 const (
-	TIMEOUT = 60 * time.Second
+	TIMEOUT             = 5 * time.Second
+	MaxNetworkDelayTime = 150 * time.Millisecond // in ms
 )
