@@ -10,7 +10,7 @@ type Handler struct {
 	rpcServer *RpcServer
 }
 
-func (s Handler) GetPeers(args *PingArgs, responseMessagePeers *[]wire.RawPeer) error {
+func (s Handler) GetPeers(args interface{}, responseMessagePeers *[]wire.RawPeer) error {
 	// return note list
 	for _, p := range s.rpcServer.peers {
 		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publicKey})
@@ -25,7 +25,7 @@ func (s Handler) Ping(args *PingArgs, responseMessagePeers *[]wire.RawPeer) erro
 	fmt.Println("Receive ```Ping``` method from ```RPC client``` with data", args)
 
 	// update peer which have just send information to our rpc server
-	err := s.rpcServer.AddOrUpdatePeer(args.rawAddress, args.publicKey, args.signData)
+	err := s.rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
 	if err != nil {
 		return err
 	}
