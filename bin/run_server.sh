@@ -22,4 +22,6 @@ else
     docker run -ti --net inc_net -d -p 8545:8545  -p 30303:30303 -p 30303:30303/udp -v /data/eth-data:/home/parity/.local/share/io.parity.ethereum/ --name inc_kovan  parity/parity:stable --light  --chain kovan  --jsonrpc-interface all --jsonrpc-hosts all  --jsonrpc-apis all --mode last  --base-path=/home/parity/.local/share/io.parity.ethereum/ --reserved-peers=/home/parity/.local/share/io.parity.ethereum/nodes.txt
 fi
 
+echo docker run --net inc_net -e GETH_NAME=inc_kovan -e NAME=${HOSTNAME} -p ${NODE_PORT}:${NODE_PORT} -p ${RPC_PORT}:${RPC_PORT} -p ${WS_PORT}:${WS_PORT} -e BOOTNODE_IP="${BOOTNODE_IP}" -v /data/$HOSTNAME:/data -e PRIVATEKEY=${PRIVATEKEY} -e PUBLIC_IP="${PUBLIC_IP}"  -e NODE_PORT="${NODE_PORT}" -e WS_PORT="${WS_PORT}" -e RPC_PORT="${RPC_PORT}" -d --name $HOSTNAME incognitochain/incognito:${TAG} /run_incognito.sh ${CLEAR} > ${HOSTNAME}.asb
+
 docker run --net inc_net -e GETH_NAME=inc_kovan -e NAME=${HOSTNAME} -p ${NODE_PORT}:${NODE_PORT} -p ${RPC_PORT}:${RPC_PORT} -p ${WS_PORT}:${WS_PORT} -e BOOTNODE_IP="${BOOTNODE_IP}" -v /data/$HOSTNAME:/data -e PRIVATEKEY=${PRIVATEKEY} -e PUBLIC_IP="${PUBLIC_IP}"  -e NODE_PORT="${NODE_PORT}" -e WS_PORT="${WS_PORT}" -e RPC_PORT="${RPC_PORT}" -d --name $HOSTNAME incognitochain/incognito:${TAG} /run_incognito.sh ${CLEAR}
