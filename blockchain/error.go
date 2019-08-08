@@ -127,6 +127,8 @@ const (
 	StoreBeaconBestStateError
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
+	ProcessBridgeInstructionError
+	UpdateDatabaseWithBlockRewardInfo
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -238,6 +240,8 @@ var ErrCodeMessage = map[int]struct {
 	ShuffleBeaconCandidateError:                       {-1103, "Shuffle Beacon Candidate Error"},
 	CleanBackUpError:                                  {-1104, "Clean Back Up Error"},
 	BackUpBestStateError:                              {-1105, "Back Up Best State Error"},
+	ProcessBridgeInstructionError:                     {-1106, "Process Bridge Instruction Error"},
+	UpdateDatabaseWithBlockRewardInfo:                 {-1107, "Update Database With Block Reward Info"},
 }
 
 type BlockChainError struct {
