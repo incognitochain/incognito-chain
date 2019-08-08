@@ -10,8 +10,10 @@ type Handler struct {
 	rpcServer *RpcServer
 }
 
-func (s Handler) GetPeers(args interface{}, responseMessagePeers *[]wire.RawPeer) error {
+func (s Handler) GetPeers(args string, responseMessagePeers *[]wire.RawPeer) error {
+	fmt.Println(args)
 	// return note list
+	*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{"asff", "asfaf"})
 	for _, p := range s.rpcServer.peers {
 		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publicKey})
 	}
