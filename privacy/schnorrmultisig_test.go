@@ -52,7 +52,7 @@ func TestSchnorrMultiSignature(t *testing.T) {
 	// random message to sign
 	data := []byte{50, 30, 179, 190, 122, 161, 29, 184, 20, 123, 94, 62, 60, 134, 200, 20, 250, 211, 152, 16, 131, 222, 168, 160, 188, 237, 76, 113, 44, 220, 78, 42}
 
-	// each members generates a randomness (public and private) before signing
+	// each members generates a Randomness (public and private) before signing
 	secretRandomness := make([]*big.Int, n)
 	publicRandomness := make([]*EllipticPoint, n)
 
