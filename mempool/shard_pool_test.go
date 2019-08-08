@@ -139,11 +139,9 @@ var _ = func() (_ struct{}) {
 }()
 
 func ResetShardPool() {
+	//shardPoolMap = make(map[byte]*ShardPool)
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
-		if shardPoolMap[shardID].RoleInCommitteesEvent != nil {
-			close(shardPoolMap[shardID].RoleInCommitteesEvent)
-		}
 		shardPoolMap[shardID] = new(ShardPool)
 		shardPoolMap[shardID].shardID = shardID
 		shardPoolMap[shardID].mtx = new(sync.RWMutex)
@@ -156,10 +154,14 @@ func ResetShardPool() {
 		shardPoolMap[shardID].cache, _ = lru.New(shardPoolMap[shardID].config.CacheSize)
 		shardPoolMap[shardID].PubSubManager = pbShardPool
 		_, subChanRole, _ := shardPoolMap[shardID].PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+		if shardPoolMap[shardID].RoleInCommitteesEvent != nil {
+			close(shardPoolMap[shardID].RoleInCommitteesEvent)
+		}
 		shardPoolMap[shardID].RoleInCommitteesEvent = subChanRole
 	}
 }
 func TestInitShardPool(t *testing.T) {
+	ResetShardPool()
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		if shardPoolMap[shardID].latestValidHeight != 1 {
