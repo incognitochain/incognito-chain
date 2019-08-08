@@ -475,16 +475,15 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := &transaction.TxCustomToken{}
 	err1 := tx.Init(
-		&senderKeySet.KeySet.PrivateKey,
-		nil,
-		inputCoins,
-		realFee,
-		tokenParams,
-		db,
-		nil,
-		hasPrivacyCoin,
-		shardIDSender,
-	)
+		transaction.NewTxNormalTokenInitParam(&senderKeySet.KeySet.PrivateKey,
+			nil,
+			inputCoins,
+			realFee,
+			tokenParams,
+			db,
+			nil,
+			hasPrivacyCoin,
+			shardIDSender))
 	if err1 != nil {
 		panic("no tx found")
 	}
@@ -563,17 +562,16 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err1 := tx.Init(
-		&senderKeySet.KeySet.PrivateKey,
-		nil,
-		inputCoins,
-		realFee,
-		tokenParams,
-		db,
-		nil,
-		hasPrivacyCoin,
-		true,
-		shardIDSender,
-	)
+		transaction.NewTxPrivacyTokenInitParams(&senderKeySet.KeySet.PrivateKey,
+			nil,
+			inputCoins,
+			realFee,
+			tokenParams,
+			db,
+			nil,
+			hasPrivacyCoin,
+			true,
+			shardIDSender))
 	if err1 != nil {
 		panic("no tx found")
 	}
