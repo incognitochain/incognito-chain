@@ -136,7 +136,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	}
 	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	go blockchain.removeOldDataAfterProcessing(shardBlock, shardID)
+	go blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
 	if err != nil {
@@ -855,7 +855,7 @@ func (blockchain *BlockChain) updateDatabaseWithTransactionMetadata(shardBlock *
 	- Remove Candiates in Mempool
 	- Remove Transaction in Mempool and Block Generator
 */
-func (blockchain *BlockChain) removeOldDataAfterProcessing(shardBlock *ShardBlock, shardID byte) {
+func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock *ShardBlock, shardID byte) {
 	//remove staking txid in beststate shard
 	go func() {
 		for _, l := range shardBlock.Body.Instructions {
@@ -909,7 +909,15 @@ func (blockchain *BlockChain) removeOldDataAfterProcessing(shardBlock *ShardBloc
 		}
 	}()
 }
-
+func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
+	blockchain.BestState.Beacon.lock.RLock()
+	defer blockchain.BestState.Beacon.lock.RUnlock()
+	//=========Remove beacon beaconBlock in pool
+	go blockchain.config.BeaconPool.SetBeaconState(blockchain.BestState.Beacon.BeaconHeight)
+	go blockchain.config.BeaconPool.RemoveBlock(blockchain.BestState.Beacon.BeaconHeight)
+	//=========Remove shard to beacon beaconBlock in pool
+	go blockchain.config.ShardToBeaconPool.SetShardState(blockchain.BestState.Beacon.GetBestShardHeight())
+}
 func (blockchain *BlockChain) verifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
 	txTokenDataListFromTxs := []transaction.TxTokenData{}
 	_, txTokenDataList := blockchain.createCustomTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
