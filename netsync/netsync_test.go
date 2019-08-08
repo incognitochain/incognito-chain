@@ -54,7 +54,7 @@ var (
 		ContentSig: "1UMCTHhncrgK54Uyh1q5s5A5jxKegrMkB3e7rhisv8P6VZ1CD4cE5AhrtJ8XB3zUt9wjNkFCoN2Z7oXMMgRwWBsAVfcxjQ",
 		Timestamp:  1561733485,
 	}
-	// &{CommitSig:12GuGZd6TRq6XiqZdewNmAaAdonQhJEXcno7BMKKwk48xxhYNu9FzqzrLd6ypykHyNJuQeTrKNM7gyB34gpDfrwXeaQWDYs R:15urAahVkbs1hK91CQKLnzmt6xx6Fb1rS82gdoy2xZjaxQ9hXo7 ValidatorsIdx:[0 1 2] Pubkey:17yV5NTyFPm73sHa7tK3mdKbMJmVavdrvZzhCynAexcg81BYfQe ContentSig:19J3wNPPdsn4HmWqLh5UAGnoc5AGkEb4y6Enz9iwuAkguLRUf3zcBVCGBMZgn7GtgBhXVic1cNVWC8p725LpKU7Tq1wPc9 Timestamp:1561733485}
+	// &{CommitSig:12GuGZd6TRq6XiqZdewNmAaAdonQhJEXcno7BMKKwk48xxhYNu9FzqzrLd6ypykHyNJuQeTrKNM7gyB34gpDfrwXeaQWDYs R:15urAahVkbs1hK91CQKLnzmt6xx6Fb1rS82gdoy2xZjaxQ9hXo7 ValidatorsIndex:[0 1 2] Pubkey:17yV5NTyFPm73sHa7tK3mdKbMJmVavdrvZzhCynAexcg81BYfQe ContentSig:19J3wNPPdsn4HmWqLh5UAGnoc5AGkEb4y6Enz9iwuAkguLRUf3zcBVCGBMZgn7GtgBhXVic1cNVWC8p725LpKU7Tq1wPc9 Timestamp:1561733485}
 	msgBFTCommit = &wire.MessageBFTCommit{
 		CommitSig:     "12GuGZd6TRq6XiqZdewNmAaAdonQhJEXcno7BMKKwk48xxhYNu9FzqzrLd6ypykHyNJuQeTrKNM7gyB34gpDfrwXeaQWDYs",
 		R:             "15urAahVkbs1hK91CQKLnzmt6xx6Fb1rS82gdoy2xZjaxQ9hXo7",
