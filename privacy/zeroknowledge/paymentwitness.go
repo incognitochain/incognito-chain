@@ -293,17 +293,17 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 	proof := new(PaymentProof)
 	proof.Init()
 
-	proof.InputCoins = wit.inputCoins
-	proof.OutputCoins = wit.outputCoins
-	proof.CommitmentOutputValue = wit.comOutputValue
-	proof.CommitmentOutputSND = wit.comOutputSerialNumberDerivator
-	proof.CommitmentOutputShardID = wit.comOutputShardID
+	proof.inputCoins = wit.inputCoins
+	proof.outputCoins = wit.outputCoins
+	proof.commitmentOutputValue = wit.comOutputValue
+	proof.commitmentOutputSND = wit.comOutputSerialNumberDerivator
+	proof.commitmentOutputShardID = wit.comOutputShardID
 
-	proof.CommitmentInputSecretKey = wit.comInputSecretKey
-	proof.CommitmentInputValue = wit.comInputValue
-	proof.CommitmentInputSND = wit.comInputSerialNumberDerivator
-	proof.CommitmentInputShardID = wit.comInputShardID
-	proof.CommitmentIndices = wit.commitmentIndices
+	proof.commitmentInputSecretKey = wit.comInputSecretKey
+	proof.commitmentInputValue = wit.comInputValue
+	proof.commitmentInputSND = wit.comInputSerialNumberDerivator
+	proof.commitmentInputShardID = wit.comInputShardID
+	proof.commitmentIndices = wit.commitmentIndices
 
 	// if hasPrivacy == false, don't need to create the zero knowledge proof
 	// proving user has spending key corresponding with public key in input coins
@@ -315,7 +315,7 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 			if err != nil {
 				return nil, privacy.NewPrivacyErr(privacy.ProveSerialNumberNoPrivacyErr, err)
 			}
-			proof.SerialNumberNoPrivacyProof = append(proof.SerialNumberNoPrivacyProof, snNoPrivacyProof)
+			proof.serialNumberNoPrivacyProof = append(proof.serialNumberNoPrivacyProof, snNoPrivacyProof)
 		}
 		return proof, nil
 	}
@@ -329,19 +329,19 @@ func (wit *PaymentWitness) Prove(hasPrivacy bool) (*PaymentProof, *privacy.Priva
 		if err != nil {
 			return nil, privacy.NewPrivacyErr(privacy.ProveOneOutOfManyErr, err)
 		}
-		proof.OneOfManyProof = append(proof.OneOfManyProof, oneOfManyProof)
+		proof.oneOfManyProof = append(proof.oneOfManyProof, oneOfManyProof)
 
 		// Proving that serial number is derived from the committed derivator
 		serialNumberProof, err := wit.serialNumberWitness[i].Prove(nil)
 		if err != nil {
 			return nil, privacy.NewPrivacyErr(privacy.ProveSerialNumberPrivacyErr, err)
 		}
-		proof.SerialNumberProof = append(proof.SerialNumberProof, serialNumberProof)
+		proof.serialNumberProof = append(proof.serialNumberProof, serialNumberProof)
 	}
 	var err error
 
 	// Proving that each output values and sum of them does not exceed v_max
-	proof.AggregatedRangeProof, err = wit.aggregatedRangeWitness.Prove()
+	proof.aggregatedRangeProof, err = wit.aggregatedRangeWitness.Prove()
 	if err != nil {
 		return nil, privacy.NewPrivacyErr(privacy.ProveAggregatedRangeErr, err)
 	}
