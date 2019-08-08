@@ -335,7 +335,6 @@ func (beaconBestState *BeaconBestState) GetValidStakers(tempStaker []string) []s
 */
 func (blockChain *BlockChain) GetShardStateFromBlock(
 	beaconHeight uint64,
-	//beaconBestState *BeaconBestState,
 	shardBlock *ShardToBeaconBlock,
 	shardID byte,
 ) (
