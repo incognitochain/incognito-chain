@@ -32,7 +32,7 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 	}
 	crossShardPoolMap := make(map[byte]blockchain.CrossShardPool)
 	shardPoolMap := make(map[byte]blockchain.ShardPool)
-	for i := 0; i< 255; i++ {
+	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		crossShardPoolMap[shardID] = mempool.GetCrossShardPool(shardID)
 		shardPoolMap[shardID] = mempool.GetShardPool(shardID)
@@ -41,25 +41,26 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 	txPool := &mempool.TxPool{}
 	txPool.Init(&mempool.Config{
 		PubSubManager: pb,
-		DataBase: db,
-		BlockChain: bc,
-		ChainParams: bcParams,
+		DataBase:      db,
+		BlockChain:    bc,
+		ChainParams:   bcParams,
 	})
 	err = bc.Init(&blockchain.Config{
-		ChainParams: bcParams,
+		ChainParams:       bcParams,
 		DataBase:          db,
 		BeaconPool:        mempool.GetBeaconPool(),
 		ShardToBeaconPool: mempool.GetShardToBeaconPool(),
 		PubSubManager:     pb,
-		CrossShardPool:  crossShardPoolMap,
-		ShardPool: shardPoolMap,
-		TxPool: txPool,
+		CrossShardPool:    crossShardPoolMap,
+		ShardPool:         shardPoolMap,
+		TxPool:            txPool,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return bc, nil
 }
+
 //default chainDataDir is data/testnet/block
 func BackupShardChain(bc *blockchain.BlockChain, shardID byte, outDatadir string, fileName string) error {
 	if fileName == "" {
@@ -68,7 +69,7 @@ func BackupShardChain(bc *blockchain.BlockChain, shardID byte, outDatadir string
 	if outDatadir == "" {
 		outDatadir = "./"
 	}
-	file := filepath.Join(outDatadir,fileName)
+	file := filepath.Join(outDatadir, fileName)
 	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
@@ -88,7 +89,7 @@ func BackupBeaconChain(bc *blockchain.BlockChain, outDatadir string, fileName st
 	if outDatadir == "" {
 		outDatadir = "./"
 	}
-	file := filepath.Join(outDatadir,fileName)
+	file := filepath.Join(outDatadir, fileName)
 	fileHandler, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
 		return err
@@ -168,12 +169,12 @@ func RestoreShardChain(bc *blockchain.BlockChain, filename string) error {
 		if bc.BestState.Shard[block.Header.ShardID].ShardHeight >= block.Header.Height {
 			continue
 		}
-		if block.Header.Height % 100 == 0 {
+		if block.Header.Height%100 == 0 {
 			log.Printf("Restore Shard %+v Block %+v \n", block.Header.ShardID, block.Header.Height)
 		}
 		err = bc.InsertShardBlock(block, true)
 		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
-			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockError].Code {
+			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
 				continue
 			}
 		}
@@ -252,7 +253,7 @@ func RestoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 		if bc.BestState.Beacon.BeaconHeight >= block.Header.Height {
 			continue
 		}
-		if block.Header.Height % 100 == 0 {
+		if block.Header.Height%100 == 0 {
 			log.Printf("Restore Block %+v \n", block.Header.Height)
 		}
 		if block.Header.Height == 1 {
@@ -260,7 +261,7 @@ func RestoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 		}
 		err = bc.InsertBeaconBlock(block, true)
 		if bcErr, ok := err.(*blockchain.BlockChainError); ok {
-			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateBlockError].Code {
+			if bcErr.Code == blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
 				continue
 			}
 		}

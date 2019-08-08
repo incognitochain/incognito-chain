@@ -31,9 +31,13 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(beaconInstProof.inst))
+	decodedInst, err := blockchain.DecodeInstruction(beaconInstProof.inst)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	inst := hex.EncodeToString(decodedInst)
 
-	return buildProofResult(decodedInst, beaconInstProof, bridgeInstProof, "", ""), nil
+	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
 }
 
 // getBridgeSwapProofOnBridge finds a bridge committee swap instruction in a bridge block and returns its proof; the bridge block must be included in a given beaconBlock
@@ -92,7 +96,7 @@ func findBridgeBlockWithInst(
 		}
 
 		_, bridgeInstID := findCommSwapInst(bridgeBlock.Body.Instructions, metadata.BridgeSwapConfirmMeta)
-		fmt.Printf("[db] finding swap bridge inst in bridge block %d %d\n", state.Height, bridgeInstID)
+		BLogger.log.Debugf("Finding swap bridge inst in bridge block %d %d", state.Height, bridgeInstID)
 		if bridgeInstID >= 0 {
 			return bridgeBlock, bridgeInstID, nil
 		}

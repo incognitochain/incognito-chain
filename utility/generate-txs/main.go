@@ -16,22 +16,22 @@ import (
 
 func main() {
 	//==========Write
-		transactions := []string{}
-		db, err := database.Open("leveldb", filepath.Join("./", "./"))
-		if err != nil {
-			fmt.Print("could not open connection to leveldb")
-			fmt.Print(err)
-			panic(err)
-		}
-		privateKeys := readTxsFromFile("private-keys-shard-1-1.json")
-		fmt.Println(len(privateKeys))
-		for _, privateKey := range privateKeys {
-			txs := initTx("1000", privateKey, db)
-			transactions = append(transactions, txs[0])
-		}
+	transactions := []string{}
+	db, err := database.Open("leveldb", filepath.Join("./", "./"))
+	if err != nil {
+		fmt.Print("could not open connection to leveldb")
+		fmt.Print(err)
+		panic(err)
+	}
+	privateKeys := readTxsFromFile("private-keys-shard-1-1.json")
+	fmt.Println(len(privateKeys))
+	for _, privateKey := range privateKeys {
+		txs := initTx("1000", privateKey, db)
+		transactions = append(transactions, txs[0])
+	}
 	fmt.Println(len(transactions))
-		file, _ := json.MarshalIndent(transactions, "", " ")
-		_ = ioutil.WriteFile("shard1-1-init-txs.json", file, 0644)
+	file, _ := json.MarshalIndent(transactions, "", " ")
+	_ = ioutil.WriteFile("shard1-1-init-txs.json", file, 0644)
 }
 func readTxsFromFile(filename string) []string {
 	// Open our jsonFile
@@ -58,7 +58,7 @@ func initTx(amount string, privateKey string, db database.DatabaseInterface) []s
 	for _, val := range testUserkeyList {
 
 		testUserKey, _ := wallet.Base58CheckDeserialize(val)
-		testUserKey.KeySet.ImportFromPrivateKey(&testUserKey.KeySet.PrivateKey)
+		testUserKey.KeySet.InitFromPrivateKey(&testUserKey.KeySet.PrivateKey)
 
 		testSalaryTX := transaction.Tx{}
 		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,

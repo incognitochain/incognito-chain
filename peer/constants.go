@@ -4,15 +4,15 @@ import "time"
 
 const (
 	// listen all interface
-	LocalHost         = "0.0.0.0"
-	MaxRetryConn      = 15
-	RetryConnDuration = 10 * time.Second
-	ProtocolId        = "/incognito/0.6.1-beta"
-	DelimMessageByte  = '\n'
-	DelimMessageStr   = "\n"
+	localHost         = "0.0.0.0"
+	maxRetryConn      = 15
+	retryConnDuration = 10 * time.Second // in 10 second
+	protocolID        = "/incognito/0.6.1-beta"
+	delimMessageByte  = '\n'
+	delimMessageStr   = "\n"
 
-	MessageLiveTime        = 3 * time.Second      // in second
-	MessageCleanupInterval = MessageLiveTime * 10 //in second
+	messageLiveTime        = 3 * time.Second      // in 3 second
+	messageCleanupInterval = messageLiveTime * 10 //in second: messageLiveTime * 10
 )
 
 // ConnState can be either pending, established, disconnected or failed.  When
@@ -20,16 +20,16 @@ const (
 // established or failed depending on the connection result.  An established
 // connection which was disconnected is categorized as disconnected.
 const (
-	ConnPending ConnState = iota
-	ConnCanceled
-	ConnEstablished
+	connPending ConnState = iota
+	connCanceled
+	connEstablished
 )
 
 const (
-	MaxRetriesCheckHashMessage = 5
-	MaxTimeoutCheckHashMessage = time.Duration(10)
-	HeavyMessageSize           = 5 * 1024 * 1024
-	SpamMessageSize            = 50 * 1024 * 1024
+	maxRetriesCheckHashMessage = 5
+	maxTimeoutCheckHashMessage = time.Duration(10)
+	heavyMessageSize           = 5 * 1024 * 1024  // 5 Mb
+	spamMessageSize            = 50 * 1024 * 1024 // 50 Mb
 )
 
 const (
@@ -37,10 +37,4 @@ const (
 	MessageToShard  = byte('s')
 	MessageToPeer   = byte('p')
 	MessageToBeacon = byte('b')
-)
-
-var (
-	RelayNode = []string{
-		"16Hn1SNtGTsYS7zYBcct4b5Jn5xCzzC8S846Er1kFVUfGRxs1Ht",
-	}
 )

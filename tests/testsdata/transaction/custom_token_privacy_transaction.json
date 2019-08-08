@@ -1,0 +1,134 @@
+[
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "createandsendprivacycustomtokentransaction",
+      "context": false,
+      "params": [
+        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        {},
+        20,
+        1,
+        {
+          "TokenID": "",
+          "TokenName": "ABC17644",
+          "TokenSymbol": "ABC17644",
+          "TokenTxType": 0,
+          "TokenAmount": 1000,
+          "TokenReceivers": {
+            "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t": 1000
+          },
+          "TokenFee": 0
+        }
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {
+        "TokenID": "2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb",
+        "TokenName": "ABC17644",
+        "TokenAmount": 1000
+      }
+    },
+    "store": {
+      "TxID1": "TxID"
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribependingtransaction",
+      "context": true,
+      "params": ["TxID1"],
+      "type": "ws",
+      "wait": 600
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "getbalanceprivacycustomtoken",
+      "context": false,
+      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe","2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb"]
+    },
+    "output": {
+      "error": null,
+      "response": 1000
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "createandsendprivacycustomtokentransaction",
+      "context": false,
+      "params": [
+        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        {},
+        20,
+        1,
+        {
+          "TokenID": "2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb",
+          "TokenName": "ABC17644",
+          "TokenSymbol": "ABC17644",
+          "TokenTxType": 1,
+          "TokenAmount": 1000,
+          "TokenReceivers": {
+            "1Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn4cNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aEr": 500
+          },
+          "TokenFee": 0
+        }
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    },
+    "store": {
+      "TxID2": "TxID"
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribependingtransaction",
+      "context": true,
+      "params": [
+        "TxID2"
+      ],
+      "type": "ws",
+      "wait": 600
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "getbalanceprivacycustomtoken",
+      "context": false,
+      "params": ["112t8rrfnKmgLJ9htCg6Bn3QNfTZmQCBR5gsgoMJRhphK1vfHRrRemqKgu9fE9EAKdEYoJBgy4xhnyhDjccsHRmDY2bF5BmkK4kd2juCdVGk", "2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb"]
+    },
+    "output": {
+      "error": null,
+      "response": 500
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "getbalanceprivacycustomtoken",
+      "context": false,
+      "params": ["112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe", "2b68be66946c1aac4a17e11b15221a0f1570e3f4bad7be23ba9686a77a8dfacb"]
+    },
+    "output": {
+      "error": null,
+      "response": 500
+    }
+  }
+]

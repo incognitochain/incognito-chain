@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
 
@@ -60,7 +60,7 @@ func (msg *MessageBFTPropose) SignMsg(keySet *incognitokey.KeySet) error {
 	dataBytes = append(dataBytes, []byte(msg.Pubkey)...)
 	dataBytes = append(dataBytes, []byte(fmt.Sprint(msg.Timestamp))...)
 	var err error
-	msg.ContentSig, err = keySet.SignDataB58(dataBytes)
+	msg.ContentSig, err = keySet.SignDataInBase58CheckEncode(dataBytes)
 	return err
 }
 

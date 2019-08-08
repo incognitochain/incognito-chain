@@ -244,3 +244,33 @@ func (db *db) GetIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHas
 	}
 	return idx, nil
 }
+
+func (db *db) StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error {
+	key := append(shardPrefix, shardID)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, shardHeight)
+	key = append(key, buf[:]...)
+
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
+
+	if err := db.Put(key, val); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error) {
+	key := append(shardPrefix, shardID)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, shardHeight)
+	key = append(key, buf[:]...)
+
+	b, err := db.Get(key)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
+	}
+	return b, nil
+}

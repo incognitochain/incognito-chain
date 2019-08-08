@@ -1,14 +1,15 @@
 package incognitokey
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 /*
-		Unit test for GenerateKey function
- */
+	Unit test for GenerateKey function
+*/
 
 func TestKeySetGenerateKey(t *testing.T) {
 	data := [][]byte{
@@ -22,54 +23,54 @@ func TestKeySetGenerateKey(t *testing.T) {
 
 	for _, item := range data {
 		keySet = keySet.GenerateKey(item)
-		assert.Equal(t, privacy.PrivateKeySize, len(keySet.PrivateKey))
-		assert.Equal(t, privacy.PublicKeySize, len(keySet.PaymentAddress.Pk))
-		assert.Equal(t, privacy.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
-		assert.Equal(t, privacy.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
+		assert.Equal(t, common.PrivateKeySize, len(keySet.PrivateKey))
+		assert.Equal(t, common.PublicKeySize, len(keySet.PaymentAddress.Pk))
+		assert.Equal(t, common.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
+		assert.Equal(t, common.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
 	}
 }
 
 /*
-		Unit test for ImportFromPrivateKeyByte function
- */
+	Unit test for InitFromPrivateKeyByte function
+*/
 
 func TestKeySetImportFromPrivateKeyByte(t *testing.T) {
-	privateKey := privacy.RandBytes(privacy.PrivateKeySize)
+	privateKey := privacy.RandBytes(common.PrivateKeySize)
 
 	keySet := new(KeySet)
-	err := keySet.ImportFromPrivateKeyByte(privateKey)
+	err := keySet.InitFromPrivateKeyByte(privateKey)
 
 	assert.Equal(t, nil, err)
-	assert.Equal(t, privacy.PrivateKeySize, len(keySet.PrivateKey[:]))
-	assert.Equal(t, privacy.PublicKeySize, len(keySet.PaymentAddress.Pk))
-	assert.Equal(t, privacy.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
-	assert.Equal(t, privacy.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
+	assert.Equal(t, common.PrivateKeySize, len(keySet.PrivateKey[:]))
+	assert.Equal(t, common.PublicKeySize, len(keySet.PaymentAddress.Pk))
+	assert.Equal(t, common.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
+	assert.Equal(t, common.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
 }
 
 func TestKeySetImportFromPrivateKeyByteWithInvalidPrivKey(t *testing.T) {
 	keySet := new(KeySet)
-	err := keySet.ImportFromPrivateKeyByte(nil)
+	err := keySet.InitFromPrivateKeyByte(nil)
 	assert.Equal(t, NewCashecError(InvalidPrivateKeyErr, nil), err)
 
-	err2 := keySet.ImportFromPrivateKeyByte([]byte{1, 2, 3})
+	err2 := keySet.InitFromPrivateKeyByte([]byte{1, 2, 3})
 	assert.Equal(t, NewCashecError(InvalidPrivateKeyErr, nil), err2)
 }
 
 /*
-		Unit test for ImportFromPrivateKey function
- */
+	Unit test for InitFromPrivateKey function
+*/
 
 func TestKeySetImportFromPrivateKey(t *testing.T) {
 	privateKey := privacy.GeneratePrivateKey([]byte{1, 2, 3})
 
 	keySet := new(KeySet)
-	err := keySet.ImportFromPrivateKey(&privateKey)
+	err := keySet.InitFromPrivateKey(&privateKey)
 
 	assert.Equal(t, nil, err)
 	assert.Equal(t, privateKey, keySet.PrivateKey[:])
-	assert.Equal(t, privacy.PublicKeySize, len(keySet.PaymentAddress.Pk))
-	assert.Equal(t, privacy.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
-	assert.Equal(t, privacy.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
+	assert.Equal(t, common.PublicKeySize, len(keySet.PaymentAddress.Pk))
+	assert.Equal(t, common.TransmissionKeySize, len(keySet.PaymentAddress.Tk))
+	assert.Equal(t, common.ReceivingKeySize, len(keySet.ReadonlyKey.Rk))
 }
 
 func TestKeySetImportFromPrivateKeyWithInvalidPrivKey(t *testing.T) {
@@ -77,17 +78,17 @@ func TestKeySetImportFromPrivateKeyWithInvalidPrivKey(t *testing.T) {
 
 	// private is not enough length
 	privateKey := privacy.PrivateKey(privacy.RandBytes(10))
-	err := keySet.ImportFromPrivateKey(&privateKey)
+	err := keySet.InitFromPrivateKey(&privateKey)
 	assert.Equal(t, NewCashecError(InvalidPrivateKeyErr, nil), err)
 
 	// nil private key
-	err = keySet.ImportFromPrivateKey(nil)
+	err = keySet.InitFromPrivateKey(nil)
 	assert.Equal(t, NewCashecError(InvalidPrivateKeyErr, nil), err)
 }
 
 /*
-		Unit test for Sign function
- */
+	Unit test for Sign function
+*/
 
 func TestKeySetSign(t *testing.T) {
 	data := [][]byte{
@@ -102,7 +103,7 @@ func TestKeySetSign(t *testing.T) {
 	for _, item := range data {
 		sig, err := keySet.Sign(item)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, privacy.SigNoPrivacySize, len(sig))
+		assert.Equal(t, common.SigNoPrivacySize, len(sig))
 	}
 }
 
@@ -111,13 +112,13 @@ func TestKeySetSignWithEmptyData(t *testing.T) {
 	keySet.GenerateKey([]byte{1, 2, 2})
 
 	sig, err := keySet.Sign([]byte{})
-	assert.Equal(t, NewCashecError(InvalidDataSignErr, nil), err)
+	assert.Equal(t, ErrCodeMessage[InvalidDataSignErr].Code, err.(*CashecError).Code)
 	assert.Equal(t, 0, len(sig))
 }
 
 /*
-		Unit test for Verify function
- */
+	Unit test for Verify function
+*/
 
 func TestKeySetVerify(t *testing.T) {
 	data := [][]byte{
@@ -181,82 +182,8 @@ func TestKeySetVerifyWithUnmatchedPubKey(t *testing.T) {
 }
 
 /*
-		Unit test for EncodeToString function
- */
-
-func TestKeySetEncodeToString(t *testing.T) {
-	data := [][]byte{
-		{},
-		{1},
-		{1, 2, 3},
-		{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, // 32 bytes
-	}
-
-	keySet := new(KeySet)
-
-	for _, item := range data {
-		keySet = keySet.GenerateKey(item)
-		keySetEncoded := keySet.EncodeToString()
-
-		assert.Greater(t, len(keySetEncoded), 0)
-	}
-}
-
-/*
-		Unit test for DecodeToKeySet function
- */
-
-func TestKeySetDecodeToKeySet(t *testing.T) {
-	data := [][]byte{
-		{},
-		{1},
-		{1, 2, 3},
-		{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, // 32 bytes
-	}
-
-	keySet := new(KeySet)
-
-	for _, item := range data {
-		keySet = keySet.GenerateKey(item)
-		keySetEncoded := keySet.EncodeToString()
-
-		keySet2 := new(KeySet)
-		keySet2, err := keySet2.DecodeToKeySet(keySetEncoded)
-
-		assert.Equal(t, nil, err)
-		assert.Equal(t, keySet, keySet2)
-	}
-}
-
-func TestKeySetDecodeToKeySetWithWrongString(t *testing.T) {
-	data := [][]byte{
-		{},
-		{1},
-		{1, 2, 3},
-		{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4}, // 32 bytes
-	}
-
-	keySet := new(KeySet)
-
-	for _, item := range data {
-		// encode
-		keySet = keySet.GenerateKey(item)
-		keySetEncoded := keySet.EncodeToString()
-
-		// edit encoded key set string
-		keySetEncoded = keySetEncoded + "abc"
-
-		// decode
-		keySet2 := new(KeySet)
-		keySet2, err := keySet2.DecodeToKeySet(keySetEncoded)
-
-		assert.Equal(t, NewCashecError(DecodeFromStringErr, nil), err)
-	}
-}
-
-/*
-		Unit test for SignDataB58 function
- */
+	Unit test for SignDataB58 function
+*/
 func TestKeySetSignDataB58(t *testing.T) {
 	data := [][]byte{
 		{1},
@@ -269,7 +196,7 @@ func TestKeySetSignDataB58(t *testing.T) {
 	keySet.GenerateKey([]byte{1})
 
 	for _, item := range data {
-		sig, err := keySet.SignDataB58(item)
+		sig, err := keySet.SignDataInBase58CheckEncode(item)
 		assert.Equal(t, nil, err)
 		assert.Greater(t, len(sig), 0)
 	}
@@ -280,13 +207,13 @@ func TestKeySetSignDataB58WithEmptyData(t *testing.T) {
 	keySet := new(KeySet)
 	keySet.GenerateKey([]byte{1})
 
-	_, err := keySet.SignDataB58([]byte{})
-	assert.Equal(t, ErrCodeMessage[SignDataB58Err].code, err.(*CashecError).GetCode())
+	_, err := keySet.SignDataInBase58CheckEncode([]byte{})
+	assert.Equal(t, ErrCodeMessage[SignDataB58Err].Code, err.(*CashecError).GetCode())
 }
 
 /*
-		Unit test for ValidateDataB58 function
- */
+	Unit test for ValidateDataB58 function
+*/
 func TestKeySetValidateDataB58(t *testing.T) {
 	// generate key set
 	keySet := new(KeySet)
@@ -294,10 +221,10 @@ func TestKeySetValidateDataB58(t *testing.T) {
 
 	// sign data
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-	sigB58, _ := keySet.SignDataB58(data)
+	sigB58, _ := keySet.SignDataInBase58CheckEncode(data)
 
 	// get pubB58
-	pubB58 := keySet.GetPublicKeyB58()
+	pubB58 := keySet.GetPublicKeyInBase58CheckEncode()
 
 	// validate
 	err := ValidateDataB58(pubB58, sigB58, data)
@@ -312,10 +239,10 @@ func TestKeySetValidateDataB58WithUnmatchedData(t *testing.T) {
 	// sign data
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 	data2 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	sigB58, _ := keySet.SignDataB58(data)
+	sigB58, _ := keySet.SignDataInBase58CheckEncode(data)
 
 	// get pubB58
-	pubB58 := keySet.GetPublicKeyB58()
+	pubB58 := keySet.GetPublicKeyInBase58CheckEncode()
 
 	// validate
 	err := ValidateDataB58(pubB58, sigB58, data2)
@@ -329,12 +256,12 @@ func TestKeySetValidateDataB58WithWrongSig(t *testing.T) {
 
 	// sign data
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-	sigB58, _ := keySet.SignDataB58(data)
+	sigB58, _ := keySet.SignDataInBase58CheckEncode(data)
 	// edit the signature
 	sigB58 += "abc"
 
 	// get pubB58
-	pubB58 := keySet.GetPublicKeyB58()
+	pubB58 := keySet.GetPublicKeyInBase58CheckEncode()
 
 	// validate
 	err := ValidateDataB58(pubB58, sigB58, data)
@@ -348,10 +275,10 @@ func TestKeySetValidateDataB58WithWrongPub(t *testing.T) {
 
 	// sign data
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-	sigB58, _ := keySet.SignDataB58(data)
+	sigB58, _ := keySet.SignDataInBase58CheckEncode(data)
 
 	// get pubB58
-	pubB58 := keySet.GetPublicKeyB58()
+	pubB58 := keySet.GetPublicKeyInBase58CheckEncode()
 	// edit the public key
 	pubB58 += "abc"
 

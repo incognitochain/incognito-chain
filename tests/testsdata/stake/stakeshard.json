@@ -1,9 +1,6 @@
 [
   {
-    "node": {
-      "host": "http://localhost",
-      "port": "9334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "createandsendstakingtransaction",
       "context": false,
@@ -26,16 +23,13 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "subcribependingtransaction",
       "context": true,
       "params": ["TxIDStake"],
       "type": "ws",
-      "wait": 60
+      "wait": 600
     },
     "output": {
       "error": null,
@@ -43,16 +37,13 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "subcribeshardcandidatebypublickey",
       "context": false,
       "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
       "type": "ws",
-      "wait": 1000
+      "wait": 10000
     },
     "output": {
       "error": null,
@@ -60,16 +51,13 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "subcribeshardpendingvalidatorbypublickey",
       "context": false,
       "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
       "type": "ws",
-      "wait": 1000
+      "wait": 10000
     },
     "output": {
       "error": null,
@@ -77,16 +65,13 @@
     }
   },
   {
-    "node": {
-      "host": "localhost",
-      "port": "19334"
-    },
+    "node": "shard0-0",
     "input": {
       "command": "subcribeshardcommitteebypublickey",
       "context": false,
       "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
       "type": "ws",
-      "wait": 1000
+      "wait": 10000
     },
     "output": {
       "error": null,

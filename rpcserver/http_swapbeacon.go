@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/pkg/errors"
 )
 
 type swapProof struct {
@@ -56,9 +57,13 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst := hex.EncodeToString(blockchain.DecodeInstruction(bridgeInstProof.inst))
+	decodedInst, err := blockchain.DecodeInstruction(bridgeInstProof.inst)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	inst := hex.EncodeToString(decodedInst)
 
-	return buildProofResult(decodedInst, beaconInstProof, bridgeInstProof, "", ""), nil
+	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
 }
 
 // getShardAndBeaconBlocks returns a shard block (with all of its instructions) and the included beacon blocks
@@ -99,7 +104,7 @@ func getBeaconSwapProofOnBridge(
 	insts := bridgeBlock.Body.Instructions
 	_, instID := findCommSwapInst(insts, metadata.BeaconSwapConfirmMeta)
 	if instID < 0 {
-		return nil, fmt.Errorf("cannot find beacon swap instruction in brinstIDge block")
+		return nil, fmt.Errorf("cannot find beacon swap instruction in bridge block")
 	}
 
 	block := &shardBlock{ShardBlock: bridgeBlock}
@@ -213,14 +218,14 @@ func extractInstsFromShardBlock(
 	beaconBlocks []*blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
 ) ([][]string, error) {
-	instructions, err := blockchain.CreateShardInstructionsFromTransactionAndIns(
+	instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(
 		shardBlock.Body.Transactions,
 		bc,
 		shardBlock.Header.ShardID,
-		&shardBlock.Header.ProducerAddress,
-		shardBlock.Header.Height,
-		beaconBlocks,
-		shardBlock.Header.BeaconHeight,
+	//	&shardBlock.Header.ProducerAddress,
+	//	shardBlock.Header.Height,
+	//	beaconBlocks,
+	//	shardBlock.Header.BeaconHeight,
 	)
 	if err != nil {
 		return nil, err
@@ -233,7 +238,7 @@ func extractInstsFromShardBlock(
 func findCommSwapInst(insts [][]string, meta int) ([]string, int) {
 	for i, inst := range insts {
 		if strconv.Itoa(meta) == inst[0] {
-			fmt.Println("[db] CommSwap inst:", inst)
+			BLogger.log.Debug("CommSwap inst:", inst)
 			return inst, i
 		}
 	}
@@ -263,14 +268,19 @@ func buildProofFromTree(merkles [][]byte, id int) *keccak256MerkleProof {
 // buildProof receives a list of data (as bytes) and returns a merkle proof for one element in the list
 func buildProof(data [][]byte, id int) *keccak256MerkleProof {
 	merkles := blockchain.BuildKeccak256MerkleTree(data)
+	BLogger.log.Debugf("BuildProof: %x", merkles[id])
+	BLogger.log.Debugf("BuildProof merkles: %x", merkles)
 	return buildProofFromTree(merkles, id)
 }
 
 // buildInstProof receives a list of instructions (as string) and returns a merkle proof for one instruction in the list
 func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
-	flattenInsts := blockchain.FlattenAndConvertStringInst(insts)
-	fmt.Printf("[db] insts: %v\n", insts)
-	// fmt.Printf("[db] flattenInsts: %x\n", flattenInsts)
+	flattenInsts, err := blockchain.FlattenAndConvertStringInst(insts)
+	if err != nil {
+		BLogger.log.Errorf("Cannot flatten instructions: %+v", err)
+		return nil
+	}
+	BLogger.log.Debugf("insts: %v", insts)
 	return buildProof(flattenInsts, id)
 }
 
@@ -302,7 +312,8 @@ func (bb *beaconBlock) Sig() string {
 
 // SignerPubkeys finds the pubkeys of all signers of a beacon block
 func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	commsRaw, err := db.FetchBeaconCommitteeByHeight(bb.Header.Height)
+	// Fetch with height-1 because BestStateBeacon is updated before saving committee to database => new committee is saved instead of the one signing this block
+	commsRaw, err := db.FetchBeaconCommitteeByHeight(bb.Header.Height - 1)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -326,7 +337,7 @@ func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, [
 }
 
 func (bb *beaconBlock) ValidatorsIdx(idx int) []int {
-	return bb.BeaconBlock.ValidatorsIdx[idx]
+	return bb.BeaconBlock.ValidatorsIndex[idx]
 }
 
 type shardBlock struct {
@@ -356,25 +367,21 @@ func (sb *shardBlock) Sig() string {
 }
 
 func (sb *shardBlock) ValidatorsIdx(idx int) []int {
-	return sb.ShardBlock.ValidatorsIdx[idx]
+	return sb.ShardBlock.ValidatorsIndex[idx]
 }
 
 // SignerPubkeys finds the pubkeys of all signers of a shard block
 func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	commsRaw, err := db.FetchCommitteeByHeight(sb.Header.Height)
+	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	commsRaw, err := db.FetchCommitteeFromShardBestState(bridgeID, sb.Header.Height)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	comms := make(map[byte][]string)
-	err = json.Unmarshal(commsRaw, &comms)
+	comm := []string{}
+	err = json.Unmarshal(commsRaw, &comm)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	comm, ok := comms[sb.Header.ShardID]
-	if !ok {
-		return nil, nil, fmt.Errorf("no committee member found for shard block")
+		return nil, nil, errors.WithStack(err)
 	}
 
 	signerIdxs := sb.ValidatorsIdx(1) // List of signers
@@ -392,8 +399,8 @@ func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []
 // buildSignersProof builds the merkle proofs for some elements in a list of pubkeys
 func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
 	merkles := blockchain.BuildKeccak256MerkleTree(pubkeys)
-	fmt.Printf("[db] pubkeys: %x\n", pubkeys)
-	fmt.Printf("[db] merkles: %x\n", merkles)
+	BLogger.log.Debugf("pubkeys: %x", pubkeys)
+	BLogger.log.Debugf("merkles: %x", merkles)
 	proofs := make([]*keccak256MerkleProof, len(pubkeys))
 	for i, pid := range idxs {
 		proofs[i] = buildProofFromTree(merkles, pid)
