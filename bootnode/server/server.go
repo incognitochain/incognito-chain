@@ -16,10 +16,6 @@ const (
 	heartbeatTimeout  = 60
 )
 
-// timeZeroVal is simply the zero value for a time.Time and is used to avoid
-// creating multiple instances.
-var timeZeroVal time.Time
-
 type peer struct {
 	id         string
 	rawAddress string
