@@ -3,10 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"flag"
-	"github.com/btcsuite/websocket"
-	"github.com/incognitochain/incognito-chain/rpcserver"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,18 +12,19 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/incognitochain/incognito-chain/rpcserver"
 )
 
 var (
 	flags = make(map[string]*string)
 )
-//Error
-var (
-	ErrParseFailed = errors.New("Failed to parse result")
-)
+
 type Client struct {
-	Host string `json:"host"`
-	Port string `json:"port"`
+	host string
+	port string
+	ws   string
 }
 
 func newClient() *Client {
@@ -34,8 +32,15 @@ func newClient() *Client {
 }
 func newClientWithHost(host, port string) *Client {
 	return &Client{
-		Host: host,
-		Port: port,
+		host: host,
+		port: port,
+	}
+}
+func newClientWithFullInform(host, port, ws string) *Client {
+	return &Client{
+		host: host,
+		port: port,
+		ws:   ws,
 	}
 }
 func getMethodName(depthList ...int) string {
@@ -60,7 +65,7 @@ func makeRPCRequest(client *Client, method string, params ...interface{}) (*rpcs
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	resp, err := http.Post(client.Host+":"+client.Port, "application/json", bytes.NewBuffer(requestBytes))
+	resp, err := http.Post(client.host+":"+client.port, "application/json", bytes.NewBuffer(requestBytes))
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
@@ -78,7 +83,7 @@ func makeRPCRequest(client *Client, method string, params ...interface{}) (*rpcs
 	return &response, nil
 }
 
-func makeRPCRequestV2(client *Client, method string, params ...interface{}) (interface{}, *rpcserver.RPCError) {
+func makeRPCRequestJson(client *Client, method string, params ...interface{}) (interface{}, *rpcserver.RPCError) {
 	request := rpcserver.JsonRequest{
 		Jsonrpc: "1.0",
 		Method:  method,
@@ -89,7 +94,7 @@ func makeRPCRequestV2(client *Client, method string, params ...interface{}) (int
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
-	resp, err := http.Post(client.Host+":"+client.Port, "application/json", bytes.NewBuffer(requestBytes))
+	resp, err := http.Post("http://"+client.host+":"+client.port, "application/json", bytes.NewBuffer(requestBytes))
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
@@ -106,7 +111,7 @@ func makeRPCRequestV2(client *Client, method string, params ...interface{}) (int
 	}
 	result := parseResult(response.Result)
 	if result == nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ParseFailedError)
 	}
 	return result, response.Error
 }
@@ -123,17 +128,17 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	subcription := rpcserver.SubcriptionRequest{
 		JsonRequest: request,
 		Subcription: "0",
-		Type: 0,
+		Type:        0,
 	}
 	subcriptionBytes, err := json.Marshal(&subcription)
 	if err != nil {
 		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
 	}
 	var addr string
-	if flag.Lookup("address:"+client.Host+client.Port) != nil {
-		addr = flag.Lookup("address:"+client.Host+client.Port).Value.(flag.Getter).Get().(string)
+	if flag.Lookup("address:"+client.host+client.ws) != nil {
+		addr = flag.Lookup("address:" + client.host + client.ws).Value.(flag.Getter).Get().(string)
 	} else {
-		addr = *flag.String("address:"+client.Host+client.Port, client.Host+":"+client.Port, "http service address")
+		addr = *flag.String("address:"+client.host+client.ws, client.host+":"+client.ws, "http service address")
 	}
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
@@ -155,20 +160,22 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 			if err != nil {
 				return
 			}
-			responseChunk , err := ioutil.ReadAll(reader)
+			responseChunk, err := ioutil.ReadAll(reader)
 			responseBytes = append(responseBytes, responseChunk...)
 			return
-			
+
 		}
 	}()
 	ticker := time.NewTicker(timeout)
-	loop:
+loop:
 	for {
 		select {
-			case <-ticker.C: {
+		case <-ticker.C:
+			{
 				break loop
 			}
-			case <-done: {
+		case <-done:
+			{
 				break loop
 			}
 		}
@@ -188,60 +195,7 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	}
 	result := parseResult(subResult.Result)
 	if result == nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ErrParseFailed)
+		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ParseFailedError)
 	}
 	return result, response.Error
-}
-
-func (client *Client) getBlockChainInfo(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	//result := &jsonresult.GetBlockChainInfoResult{}
-	result := make(map[string]interface{})
-	res, rpcError := makeRPCRequest(client, getBlockChainInfo, []string{})
-	if rpcError != nil {
-		return result, rpcError
-	}
-	err := json.Unmarshal(res.Result, &result)
-	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
-	}
-	return result, res.Error
-}
-
-func (client *Client) createAndSendTransaction(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	//result := &jsonresult.CreateTransactionResult{}
-	result := make(map[string]interface{})
-	res, rpcError := makeRPCRequest(client, createAndSendTransaction, params)
-	if rpcError != nil {
-		return result, rpcError
-	}
-	err := json.Unmarshal(res.Result, &result)
-	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
-	}
-	return result, nil
-}
-
-func (client *Client) getBalanceByPrivatekey(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	result := make(map[string]interface{})
-	res, rpcError := makeRPCRequest(client, getBalanceByPrivatekey, params)
-	if rpcError != nil {
-		return result, rpcError
-	}
-	err := json.Unmarshal(res.Result, &result)
-	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
-	}
-	return result, nil
-}
-func (client *Client) getTransactionByHash(params ...interface{}) (interface{}, *rpcserver.RPCError) {
-	result := make(map[string]interface{})
-	res, rpcError := makeRPCRequest(client, getTransactionByHash, params)
-	if rpcError != nil {
-		return result, rpcError
-	}
-	err := json.Unmarshal(res.Result, &result)
-	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
-	}
-	return result, nil
 }

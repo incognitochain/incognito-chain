@@ -8,7 +8,7 @@ import (
 )
 
 func TestReadFile(t *testing.T) {
-	res, err := readfile("./testsdata/transaction.json")
+	res, err := readfile("./testsdata/normal_transaction.json")
 	if err != nil {
 		t.Fatal()
 	}

@@ -115,22 +115,22 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 	peersMap := []map[string]string{}
 	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 
-	bestState := blockchain.GetBestStateBeacon()
+	bestState := blockchain.GetBeaconBestState()
 	beaconCommitteeList := bestState.BeaconCommittee
 	shardCommitteeList := bestState.GetShardCommittee()
 
-	for _, peerConn := range listeningPeer.PeerConns {
+	for _, peerConn := range listeningPeer.GetPeerConns() {
 		peerItem := map[string]string{
-			"RawAddress": peerConn.RemoteRawAddress,
-			"PublicKey":  peerConn.RemotePeer.PublicKey,
+			"RawAddress": peerConn.GetRemoteRawAddress(),
+			"PublicKey":  peerConn.GetRemotePeer().GetPublicKey(),
 			"NodeType":   "",
 		}
-		isInBeaconCommittee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, beaconCommitteeList) != -1
+		isInBeaconCommittee := common.IndexOfStr(peerConn.GetRemotePeer().GetPublicKey(), beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			peerItem["NodeType"] = "Beacon"
 		}
 		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(peerConn.RemotePeer.PublicKey, committees) != -1
+			isInShardCommitee := common.IndexOfStr(peerConn.GetRemotePeer().GetPublicKey(), committees) != -1
 			if isInShardCommitee {
 				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
 				break
@@ -152,8 +152,8 @@ func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-
 	peersMap := []string{}
 	peers := httpServer.config.AddrMgr.AddressCache()
 	for _, peer := range peers {
-		for _, peerConn := range peer.PeerConns {
-			peersMap = append(peersMap, peerConn.RemoteRawAddress)
+		for _, peerConn := range peer.GetPeerConns() {
+			peersMap = append(peersMap, peerConn.GetRemoteRawAddress())
 		}
 	}
 	result.Peers = peersMap
@@ -175,8 +175,8 @@ func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan
 	result.NetworkActive = httpServer.config.ConnMgr.GetListeningPeer() != nil
 	result.LocalAddresses = []string{}
 	listener := httpServer.config.ConnMgr.GetListeningPeer()
-	result.Connections = len(listener.PeerConns)
-	result.LocalAddresses = append(result.LocalAddresses, listener.RawAddress)
+	result.Connections = len(listener.GetPeerConns())
+	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
 
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -257,7 +257,7 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 			continue
 		}
 
-		err = keyWallet.KeySet.ImportFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
@@ -273,17 +273,17 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		}
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
-			if outCoin.CoinDetails.Value == 0 {
+			if outCoin.CoinDetails.GetValue() == 0 {
 				continue
 			}
 			item = append(item, jsonresult.OutCoin{
-				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
-				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
-				Value:          strconv.FormatUint(outCoin.CoinDetails.Value, 10),
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
-				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
-				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
-				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.SNDerivator.Bytes(), common.ZeroByte),
+				SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSerialNumber().Compress(), common.ZeroByte),
+				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
+				Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
+				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
+				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
+				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
+				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
 			})
 		}
 		result.Outputs[priKeyStr] = item
@@ -370,7 +370,7 @@ func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, close
 	}
 	result := 0
 	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
-	result += len(listeningPeer.PeerConns)
+	result += len(listeningPeer.GetPeerConns())
 	Logger.log.Debugf("handleGetConnectionCount result: %+v", result)
 	return result, nil
 }

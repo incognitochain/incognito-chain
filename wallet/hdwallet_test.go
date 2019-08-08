@@ -3,23 +3,22 @@ package wallet
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 /*
-		Unit test for NewMasterKey function
- */
+	Unit test for NewMasterKey function
+*/
 
-func TestHDWalletNewMasterKey(t *testing.T){
-	data := []struct{
+func TestHDWalletNewMasterKey(t *testing.T) {
+	data := []struct {
 		seed []byte
 	}{
-		{[]byte{1,2,3}},
-		{[]byte{}},		// empty array
-		{[]byte{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}},			// 32 bytes
-		{[]byte{1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}},  // 64 bytes
+		{[]byte{1, 2, 3}},
+		{[]byte{}}, // empty array
+		{[]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}},                                                                                                 // 32 bytes
+		{[]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}}, // 64 bytes
 	}
 
 	for _, item := range data {
@@ -28,22 +27,22 @@ func TestHDWalletNewMasterKey(t *testing.T){
 		assert.Equal(t, nil, err)
 		assert.Equal(t, ChildNumberLen, len(masterKey.ChildNumber))
 		assert.Equal(t, ChainCodeLen, len(masterKey.ChainCode))
-		assert.Equal(t, privacy.PublicKeySize, len(masterKey.KeySet.PaymentAddress.Pk))
-		assert.Equal(t, privacy.TransmissionKeySize, len(masterKey.KeySet.PaymentAddress.Tk))
-		assert.Equal(t, privacy.PrivateKeySize, len(masterKey.KeySet.PrivateKey))
-		assert.Equal(t, privacy.ReceivingKeySize, len(masterKey.KeySet.ReadonlyKey.Rk))
+		assert.Equal(t, common.PublicKeySize, len(masterKey.KeySet.PaymentAddress.Pk))
+		assert.Equal(t, common.TransmissionKeySize, len(masterKey.KeySet.PaymentAddress.Tk))
+		assert.Equal(t, common.PrivateKeySize, len(masterKey.KeySet.PrivateKey))
+		assert.Equal(t, common.ReceivingKeySize, len(masterKey.KeySet.ReadonlyKey.Rk))
 	}
 }
 
 /*
-		Unit test for NewChildKey function
- */
+	Unit test for NewChildKey function
+*/
 
 func TestHDWalletNewChildKey(t *testing.T) {
-	seed := []byte{1,2,3}
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
-	data := []struct{
+	data := []struct {
 		childIdx uint32
 	}{
 		{uint32(0)},
@@ -59,16 +58,16 @@ func TestHDWalletNewChildKey(t *testing.T) {
 		assert.Equal(t, nil, err)
 		assert.Equal(t, common.Uint32ToBytes(item.childIdx), childKey.ChildNumber)
 		assert.Equal(t, ChainCodeLen, len(childKey.ChainCode))
-		assert.Equal(t, masterKey.Depth + 1, childKey.Depth)
-		assert.Equal(t, privacy.PublicKeySize, len(childKey.KeySet.PaymentAddress.Pk))
-		assert.Equal(t, privacy.TransmissionKeySize, len(childKey.KeySet.PaymentAddress.Tk))
-		assert.Equal(t, privacy.PrivateKeySize, len(childKey.KeySet.PrivateKey))
-		assert.Equal(t, privacy.ReceivingKeySize, len(childKey.KeySet.ReadonlyKey.Rk))
+		assert.Equal(t, masterKey.Depth+1, childKey.Depth)
+		assert.Equal(t, common.PublicKeySize, len(childKey.KeySet.PaymentAddress.Pk))
+		assert.Equal(t, common.TransmissionKeySize, len(childKey.KeySet.PaymentAddress.Tk))
+		assert.Equal(t, common.PrivateKeySize, len(childKey.KeySet.PrivateKey))
+		assert.Equal(t, common.ReceivingKeySize, len(childKey.KeySet.ReadonlyKey.Rk))
 	}
 }
 
 func TestHDWalletNewChildKeyFromOtherChildKey(t *testing.T) {
-	seed := []byte{1,2,3}
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 	childKey1, _ := masterKey.NewChildKey(uint32(1))
 
@@ -78,15 +77,15 @@ func TestHDWalletNewChildKeyFromOtherChildKey(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, common.Uint32ToBytes(childIndex), childKey2.ChildNumber)
 	assert.Equal(t, ChainCodeLen, len(childKey2.ChainCode))
-	assert.Equal(t, childKey1.Depth + 1, childKey2.Depth)
-	assert.Equal(t, privacy.PublicKeySize, len(childKey2.KeySet.PaymentAddress.Pk))
-	assert.Equal(t, privacy.TransmissionKeySize, len(childKey2.KeySet.PaymentAddress.Tk))
-	assert.Equal(t, privacy.PrivateKeySize, len(childKey2.KeySet.PrivateKey))
-	assert.Equal(t, privacy.ReceivingKeySize, len(childKey2.KeySet.ReadonlyKey.Rk))
+	assert.Equal(t, childKey1.Depth+1, childKey2.Depth)
+	assert.Equal(t, common.PublicKeySize, len(childKey2.KeySet.PaymentAddress.Pk))
+	assert.Equal(t, common.TransmissionKeySize, len(childKey2.KeySet.PaymentAddress.Tk))
+	assert.Equal(t, common.PrivateKeySize, len(childKey2.KeySet.PrivateKey))
+	assert.Equal(t, common.ReceivingKeySize, len(childKey2.KeySet.ReadonlyKey.Rk))
 }
 
 func TestHDWalletNewChildKeyWithSameChildIdx(t *testing.T) {
-	seed := []byte{1,2,3}
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
 	childIndex := uint32(10)
@@ -100,29 +99,29 @@ func TestHDWalletNewChildKeyWithSameChildIdx(t *testing.T) {
 	assert.Equal(t, childKey1.Depth, childKey2.Depth)
 	assert.Equal(t, childKey1.KeySet.PaymentAddress.Pk, childKey2.KeySet.PaymentAddress.Pk)
 	assert.Equal(t, ChainCodeLen, len(childKey2.ChainCode))
-	assert.Equal(t, masterKey.Depth + 1, childKey2.Depth)
+	assert.Equal(t, masterKey.Depth+1, childKey2.Depth)
 }
 
 /*
-		Unit test for Serialize function
- */
+	Unit test for Serialize function
+*/
 
-func TestHDWalletSerialize( t *testing.T){
-	seed := []byte{1,2,3}
+func TestHDWalletSerialize(t *testing.T) {
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
 	privKeyBytes, err := masterKey.Serialize(PriKeyType)
 	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
 	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
 
-	actualCheckSumPrivKey := privKeyBytes[PrivKeySerializedBytesLen - 4:]
-	expectedCheckSumPrivKey := base58.ChecksumFirst4Bytes(privKeyBytes[:PrivKeySerializedBytesLen - 4])
+	actualCheckSumPrivKey := privKeyBytes[PrivKeySerializedBytesLen-4:]
+	expectedCheckSumPrivKey := base58.ChecksumFirst4Bytes(privKeyBytes[:PrivKeySerializedBytesLen-4])
 
-	actualCheckSumPaymentAddr := paymentAddrBytes[PaymentAddrSerializedBytesLen - 4:]
-	expectedCheckSumPaymentAddr := base58.ChecksumFirst4Bytes(paymentAddrBytes[:PaymentAddrSerializedBytesLen - 4])
+	actualCheckSumPaymentAddr := paymentAddrBytes[PaymentAddrSerializedBytesLen-4:]
+	expectedCheckSumPaymentAddr := base58.ChecksumFirst4Bytes(paymentAddrBytes[:PaymentAddrSerializedBytesLen-4])
 
-	actualCheckSumReadOnlyKey := readonlyKeyBytes[ReadOnlyKeySerializedBytesLen - 4:]
-	expectedCheckSumReadOnlyKey := base58.ChecksumFirst4Bytes(readonlyKeyBytes[:ReadOnlyKeySerializedBytesLen - 4])
+	actualCheckSumReadOnlyKey := readonlyKeyBytes[ReadOnlyKeySerializedBytesLen-4:]
+	expectedCheckSumReadOnlyKey := base58.ChecksumFirst4Bytes(readonlyKeyBytes[:ReadOnlyKeySerializedBytesLen-4])
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, PrivKeySerializedBytesLen, len(privKeyBytes))
@@ -134,11 +133,11 @@ func TestHDWalletSerialize( t *testing.T){
 	assert.Equal(t, expectedCheckSumReadOnlyKey, actualCheckSumReadOnlyKey)
 }
 
-func TestHDWalletSerializeWithInvalidKeyType( t *testing.T){
-	seed := []byte{1,2,3}
+func TestHDWalletSerializeWithInvalidKeyType(t *testing.T) {
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
-	data := []struct{
+	data := []struct {
 		keyType byte
 	}{
 		{byte(3)},
@@ -148,7 +147,7 @@ func TestHDWalletSerializeWithInvalidKeyType( t *testing.T){
 		{byte(255)},
 	}
 
-	for _, item := range data{
+	for _, item := range data {
 		serializedKey, err := masterKey.Serialize(item.keyType)
 
 		assert.Equal(t, []byte{}, serializedKey)
@@ -157,11 +156,11 @@ func TestHDWalletSerializeWithInvalidKeyType( t *testing.T){
 }
 
 /*
-		Unit test for Base58CheckSerialize function
- */
+	Unit test for Base58CheckSerialize function
+*/
 
-func TestHDWalletBase58CheckSerialize( t *testing.T){
-	seed := []byte{1,2,3}
+func TestHDWalletBase58CheckSerialize(t *testing.T) {
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
 	privKeyBytes := masterKey.Base58CheckSerialize(PriKeyType)
@@ -173,11 +172,11 @@ func TestHDWalletBase58CheckSerialize( t *testing.T){
 	assert.Equal(t, ReadOnlyKeyBase58CheckSerializedBytesLen, len(readonlyKeyBytes))
 }
 
-func TestHDWalletBase58CheckSerializeWithInvalidKeyType( t *testing.T){
-	seed := []byte{1,2,3}
+func TestHDWalletBase58CheckSerializeWithInvalidKeyType(t *testing.T) {
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
-	data := []struct{
+	data := []struct {
 		keyType byte
 	}{
 		{byte(3)},
@@ -187,7 +186,7 @@ func TestHDWalletBase58CheckSerializeWithInvalidKeyType( t *testing.T){
 		{byte(255)},
 	}
 
-	for _, item := range data{
+	for _, item := range data {
 		serializedKey := masterKey.Base58CheckSerialize(item.keyType)
 
 		assert.Equal(t, "", serializedKey)
@@ -195,11 +194,11 @@ func TestHDWalletBase58CheckSerializeWithInvalidKeyType( t *testing.T){
 }
 
 /*
-		Unit test for Deserialize function
- */
+	Unit test for Deserialize function
+*/
 
-func TestHDWalletDeserialize( t *testing.T){
-	seed := []byte{1,2,3}
+func TestHDWalletDeserialize(t *testing.T) {
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
 	privKeyBytes, err := masterKey.Serialize(PriKeyType)
@@ -221,8 +220,8 @@ func TestHDWalletDeserialize( t *testing.T){
 	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Rk, keyWallet.KeySet.ReadonlyKey.Rk)
 }
 
-func TestHDWalletDeserializeWithInvalidChecksum( t *testing.T){
-	seed := []byte{1,2,3}
+func TestHDWalletDeserializeWithInvalidChecksum(t *testing.T) {
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
 	privKeyBytes, err := masterKey.Serialize(PriKeyType)
@@ -230,9 +229,9 @@ func TestHDWalletDeserializeWithInvalidChecksum( t *testing.T){
 	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
 
 	// edit checksum
-	privKeyBytes[len(privKeyBytes) - 1] = 0
-	paymentAddrBytes[len(paymentAddrBytes) - 1] = 0
-	readonlyKeyBytes[len(readonlyKeyBytes) - 1] = 0
+	privKeyBytes[len(privKeyBytes)-1] = 0
+	paymentAddrBytes[len(paymentAddrBytes)-1] = 0
+	readonlyKeyBytes[len(readonlyKeyBytes)-1] = 0
 
 	_, err = Deserialize(privKeyBytes)
 	assert.Equal(t, NewWalletError(InvalidChecksumErr, nil), err)
@@ -245,11 +244,11 @@ func TestHDWalletDeserializeWithInvalidChecksum( t *testing.T){
 }
 
 /*
-		Unit test for Base58CheckDeserialize function
- */
+	Unit test for Base58CheckDeserialize function
+*/
 
-func TestHDWalletBase58CheckDeserialize( t *testing.T){
-	seed := []byte{1,2,3}
+func TestHDWalletBase58CheckDeserialize(t *testing.T) {
+	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
 	privKeyStr := masterKey.Base58CheckSerialize(PriKeyType)
@@ -270,7 +269,7 @@ func TestHDWalletBase58CheckDeserialize( t *testing.T){
 	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Rk, keyWallet.KeySet.ReadonlyKey.Rk)
 }
 
-func TestHDWalletBase58CheckDeserializeWithInvalidData( t *testing.T) {
+func TestHDWalletBase58CheckDeserializeWithInvalidData(t *testing.T) {
 	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
@@ -292,4 +291,3 @@ func TestHDWalletBase58CheckDeserializeWithInvalidData( t *testing.T) {
 	_, err = Base58CheckDeserialize(readonlyKeyStr)
 	assert.NotEqual(t, nil, err)
 }
-

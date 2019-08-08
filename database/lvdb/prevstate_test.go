@@ -511,7 +511,7 @@ func Test_db_DeleteCommitteeByEpoch(t *testing.T) {
 			db := &db{
 				lvdb: tt.fields.lvdb,
 			}
-			if err := db.DeleteCommitteeByEpoch(tt.args.blkEpoch); (err != nil) != tt.wantErr {
+			if err := db.DeleteCommitteeByHeight(tt.args.blkEpoch); (err != nil) != tt.wantErr {
 				t.Errorf("db.DeleteCommitteeByEpoch() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

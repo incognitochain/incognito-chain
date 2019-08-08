@@ -1,89 +1,99 @@
 package privacy
 
 import (
-	"github.com/pkg/errors"
 	"math/big"
 )
 
-// ElGamalPubKey represents to public key in ElGamal encryption
+// elGamalPublicKey represents to public key in ElGamal encryption
 // H = G^X, X is private key
-type ElGamalPubKey struct {
-	H *EllipticPoint
+type elGamalPublicKey struct {
+	h *EllipticPoint
 }
 
-// ElGamalPrivKey represents to private key in ElGamal encryption
-type ElGamalPrivKey struct {
-	X *big.Int
+// elGamalPrivateKey represents to private key in ElGamal encryption
+type elGamalPrivateKey struct {
+	x *big.Int
 }
 
-// ElGamalCiphertext represents to ciphertext in ElGamal encryption
+// elGamalCipherText represents to ciphertext in ElGamal encryption
 // in which C1 = G^k and C2 = H^k * message
 // k is a random number (32 bytes), message is an elliptic point
-type ElGamalCiphertext struct {
-	C1, C2 *EllipticPoint
+type elGamalCipherText struct {
+	c1, c2 *EllipticPoint
 }
 
-func (ciphertext *ElGamalCiphertext) Set(C1, C2 *EllipticPoint) {
-	ciphertext.C1 = C1
-	ciphertext.C2 = C2
+func (ciphertext *elGamalCipherText) set(c1, c2 *EllipticPoint) {
+	ciphertext.c1 = c1
+	ciphertext.c2 = c2
 }
 
-func (pub *ElGamalPubKey) Set(H *EllipticPoint) {
-	pub.H = H
+func (pub *elGamalPublicKey) set(H *EllipticPoint) {
+	pub.h = H
 }
 
-func (priv *ElGamalPrivKey) Set(x *big.Int) {
-	priv.X = x
+func (pub elGamalPublicKey) GetH() *EllipticPoint {
+	return pub.h
+}
+
+func (priv *elGamalPrivateKey) set(x *big.Int) {
+	priv.x = x
+}
+
+func (priv elGamalPrivateKey) GetX() *big.Int {
+	return priv.x
 }
 
 // Bytes converts ciphertext to 66-byte array
-func (ciphertext *ElGamalCiphertext) Bytes() []byte {
-	if ciphertext.C1.IsEqual(new(EllipticPoint).Zero()) {
+func (ciphertext elGamalCipherText) Bytes() []byte {
+	zero := new(EllipticPoint)
+	zero.Zero()
+	if ciphertext.c1.IsEqual(zero) {
 		return []byte{}
 	}
-	res := append(ciphertext.C1.Compress(), ciphertext.C2.Compress()...)
+	res := append(ciphertext.c1.Compress(), ciphertext.c2.Compress()...)
 	return res
 }
 
 // SetBytes reverts 66-byte array to ciphertext
-func (ciphertext *ElGamalCiphertext) SetBytes(bytes []byte) error {
+func (ciphertext *elGamalCipherText) SetBytes(bytes []byte) error {
 	if len(bytes) == 0 {
-		return errors.New("Length bytes array of Elgamal ciphertext is empty")
+		return NewPrivacyErr(InvalidInputToSetBytesErr, nil)
 	}
 
-	ciphertext.C1 = new(EllipticPoint)
-	ciphertext.C2 = new(EllipticPoint)
+	ciphertext.c1 = new(EllipticPoint)
+	ciphertext.c2 = new(EllipticPoint)
 
-	err := ciphertext.C1.Decompress(bytes[:CompressedPointSize])
+	err := ciphertext.c1.Decompress(bytes[:CompressedEllipticPointSize])
 	if err != nil {
 		return err
 	}
-	err = ciphertext.C2.Decompress(bytes[CompressedPointSize:])
+	err = ciphertext.c2.Decompress(bytes[CompressedEllipticPointSize:])
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// Encrypt encrypts plaintext (is an elliptic point) using public key ElGamal
+// encrypt encrypts plaintext (is an elliptic point) using public key ElGamal
 // returns ElGamal ciphertext
-func (pub *ElGamalPubKey) Encrypt(plaintext *EllipticPoint) *ElGamalCiphertext {
+func (pub elGamalPublicKey) encrypt(plaintext *EllipticPoint) *elGamalCipherText {
 	randomness := RandScalar()
 
-	ciphertext := new(ElGamalCiphertext)
+	ciphertext := new(elGamalCipherText)
 
-	ciphertext.C1 = new(EllipticPoint).Zero()
-	ciphertext.C1.Set(Curve.Params().Gx, Curve.Params().Gy)
-	ciphertext.C1 = ciphertext.C1.ScalarMult(randomness)
+	ciphertext.c1 = new(EllipticPoint)
+	ciphertext.c1.Zero()
+	ciphertext.c1.Set(Curve.Params().Gx, Curve.Params().Gy)
+	ciphertext.c1 = ciphertext.c1.ScalarMult(randomness)
 
-	ciphertext.C2 = plaintext.Add(pub.H.ScalarMult(randomness))
+	ciphertext.c2 = plaintext.Add(pub.h.ScalarMult(randomness))
 
 	return ciphertext
 }
 
-// Decrypt receives a ciphertext and
+// decrypt receives a ciphertext and
 // decrypts it using private key ElGamal
 // and returns plain text in elliptic point
-func (priv *ElGamalPrivKey) Decrypt(ciphertext *ElGamalCiphertext) (*EllipticPoint, error) {
-	return ciphertext.C2.Sub(ciphertext.C1.ScalarMult(priv.X))
+func (priv elGamalPrivateKey) decrypt(ciphertext *elGamalCipherText) (*EllipticPoint, error) {
+	return ciphertext.c2.Sub(ciphertext.c1.ScalarMult(priv.x))
 }

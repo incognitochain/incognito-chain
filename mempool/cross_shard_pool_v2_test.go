@@ -12,7 +12,7 @@ import (
 
 var (
 	dbCrossShard          database.DatabaseInterface
-	bestShardStateShard1  *blockchain.BestStateShard
+	bestShardStateShard1  *blockchain.ShardBestState
 	crossShardPoolMapTest = make(map[byte]*CrossShardPool_v2)
 	crossShardBlock2      = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
@@ -32,57 +32,57 @@ var (
 	}
 	crossShardBlock3 = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        3,
-			PrevBlockHash: crossShardBlock2.Header.Hash(),
+			ShardID:           0,
+			Height:            3,
+			PreviousBlockHash: crossShardBlock2.Header.Hash(),
 		},
 		ToShardID: 1,
 	}
 	crossShardBlock4 = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        4,
-			PrevBlockHash: crossShardBlock3.Header.Hash(),
+			ShardID:           0,
+			Height:            4,
+			PreviousBlockHash: crossShardBlock3.Header.Hash(),
 		},
 		ToShardID: 1,
 	}
 	crossShardBlock5 = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        5,
-			PrevBlockHash: crossShardBlock4.Header.Hash(),
+			ShardID:           0,
+			Height:            5,
+			PreviousBlockHash: crossShardBlock4.Header.Hash(),
 		},
 		ToShardID: 1,
 	}
 	crossShardBlock6 = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        6,
-			PrevBlockHash: crossShardBlock5.Header.Hash(),
+			ShardID:           0,
+			Height:            6,
+			PreviousBlockHash: crossShardBlock5.Header.Hash(),
 		},
 		ToShardID: 1,
 	}
 	crossShardBlock7 = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        7,
-			PrevBlockHash: crossShardBlock6.Header.Hash(),
+			ShardID:           0,
+			Height:            7,
+			PreviousBlockHash: crossShardBlock6.Header.Hash(),
 		},
 		ToShardID: 1,
 	}
 	crossShardBlock8 = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        8,
-			PrevBlockHash: crossShardBlock6.Header.Hash(),
+			ShardID:           0,
+			Height:            8,
+			PreviousBlockHash: crossShardBlock6.Header.Hash(),
 		},
 		ToShardID: 1,
 	}
 	crossShardBlock9 = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
-			ShardID:       0,
-			Height:        9,
-			PrevBlockHash: crossShardBlock6.Header.Hash(),
+			ShardID:           0,
+			Height:            9,
+			PreviousBlockHash: crossShardBlock6.Header.Hash(),
 		},
 		ToShardID: 1,
 	}
@@ -120,7 +120,7 @@ var _ = func() (_ struct{}) {
 	if err != nil {
 		panic("Could not store in db")
 	}
-	bestShardStateShard1 = blockchain.InitBestStateShard(1, &blockchain.ChainTestParam)
+	bestShardStateShard1 = blockchain.NewBestStateShardWithConfig(1, &blockchain.ChainTestParam)
 	bestShardStateShard1.BestCrossShard[0] = 3
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return

@@ -39,9 +39,8 @@ func TestAddrManager_New(t *testing.T) {
 
 func TestAddrManager_Good(t *testing.T) {
 	rawAddress := "localhost:9333"
-	addr := peer.Peer{
-		RawAddress: rawAddress,
-	}
+	addr := peer.Peer{}
+	addr.SetRawAddress(rawAddress)
 	addrManager.Good(&addr)
 	if len(addrManager.addrIndex) == 0 {
 		t.Error("Wrong addrManager.addrIndex")
@@ -82,9 +81,8 @@ func TestAddrManager_AddressCache(t *testing.T) {
 		t.Error("Cache should be empty")
 	}
 	// add peer into addr manager
-	addr := peer.Peer{
-		RawAddress: rawAddress,
-	}
+	addr := peer.Peer{}
+	addr.SetRawAddress(rawAddress)
 	addrManager.Good(&addr)
 	cached = addrManager.AddressCache()
 	if len(cached) == 0 {
@@ -96,9 +94,8 @@ func TestNewAddrManager_SaveAndLoadPeer(t *testing.T) {
 	addrManager = NewAddrManager(dataDir, common.Hash{})
 	rawAddress := "localhost:9333"
 	// add peer into addr manager
-	addr := peer.Peer{
-		RawAddress: rawAddress,
-	}
+	addr := peer.Peer{}
+	addr.SetRawAddress(rawAddress)
 	addrManager.Good(&addr)
 	err := addrManager.savePeers()
 

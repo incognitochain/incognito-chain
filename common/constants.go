@@ -7,6 +7,7 @@ const (
 	EmptyString       = ""
 	ZeroByte          = byte(0x00)
 	DateOutputFormat  = "2006-01-02T15:04:05.999999"
+	BigIntSize        = 32 // bytes
 	CheckSumLen       = 4  // bytes
 	AESKeySize        = 32 // bytes
 	Int32Size         = 4  // bytes
@@ -14,6 +15,22 @@ const (
 	Uint64Size        = 8  // bytes
 	HashSize          = 32 // bytes
 	MaxHashStringSize = HashSize * 2
+	Base58_Version    = 0
+)
+
+// size data for incognito key and signature
+const (
+	// for key size
+	PrivateKeySize      = 32 // bytes
+	PublicKeySize       = 33 // bytes
+	TransmissionKeySize = 33 //bytes
+	ReceivingKeySize    = 32 // bytes
+	PaymentAddressSize  = 66 // bytes
+	// for signature size
+	// it is used for both privacy and no privacy
+	SigPubKeySize    = 33
+	SigNoPrivacySize = 64
+	SigPrivacySize   = 96
 )
 
 // for exit code
@@ -65,8 +82,8 @@ const (
 
 // CONSENSUS
 const (
-	EPOCH       = 50
-	RANDOM_TIME = 25
+	EPOCH       = 10
+	RANDOM_TIME = 5
 	OFFSET      = 1
 
 	NODEMODE_RELAY  = "relay"
@@ -89,8 +106,13 @@ const (
 
 	BRIDGE_SHARD_ID = 1
 
+	BRIDGE_REQUEST_NOT_FOUND_STATUS  = 0
+	BRIDGE_REQUEST_PROCESSING_STATUS = 1
+	BRIDGE_REQUEST_ACCEPTED_STATUS   = 2
+	BRIDGE_REQUEST_REJECTED_STATUS   = 3
+
 	ETH_ADDR_STR          = "0x0000000000000000000000000000000000000000"
-	ETH_CONTRACT_ADDR_STR = "0xCd5fD8129c04437D85E5c1913878fb22b9E3E8f7"
+	ETH_CONTRACT_ADDR_STR = "0xe97f7d3f866cb8200941082c887c7ae5eeab1f58"
 
 	ETHERERUM_LIGHT_NODE_PROTOCOL = "http"
 	ETHERERUM_LIGHT_NODE_PORT     = "8545"
