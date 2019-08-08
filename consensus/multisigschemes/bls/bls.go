@@ -6,7 +6,7 @@ func (keyset *KeySet) SignData(privKey string, dataHash common.Hash) string {
 	return ""
 }
 
-func ValidateAggSig(dataHash common.Hash, aggSig string, validatorPubkeyList []string) error {
+func ValidateAggSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error {
 	return nil
 }
 func ValidateSingleSig(dataHash *common.Hash, sig string, pubkey string) error {
