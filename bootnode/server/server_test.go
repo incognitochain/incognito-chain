@@ -23,16 +23,16 @@ func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
 	}
 
 	args := &PingArgs{
-		RawAddress: "localhost:9333",
-		PublicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
+		rawAddress: "localhost:9333",
+		publicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
 	}
-	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.RawAddress))
+	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.rawAddress))
 	if err != nil {
 		t.Error(err)
 	}
-	args.SignData = signDataB58
-	rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
-	if len(rpcServer.Peers) == 0 {
+	args.signData = signDataB58
+	rpcServer.AddOrUpdatePeer(args.rawAddress, args.publicKey, args.signData)
+	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
 }
@@ -53,21 +53,21 @@ func TestRpcServer_RemovePeerByPbk(t *testing.T) {
 	}
 
 	args := &PingArgs{
-		RawAddress: "localhost:9333",
-		PublicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
+		rawAddress: "localhost:9333",
+		publicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
 	}
-	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.RawAddress))
+	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.rawAddress))
 	if err != nil {
 		t.Error(err)
 	}
-	args.SignData = signDataB58
-	rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
-	if len(rpcServer.Peers) == 0 {
+	args.signData = signDataB58
+	rpcServer.AddOrUpdatePeer(args.rawAddress, args.publicKey, args.signData)
+	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
 
-	rpcServer.RemovePeerByPbk(args.PublicKey)
-	if len(rpcServer.Peers) > 0 {
+	rpcServer.RemovePeerByPbk(args.publicKey)
+	if len(rpcServer.peers) > 0 {
 		t.Error("RemovePeerByPbk fail")
 	}
 }
@@ -88,22 +88,22 @@ func TestRpcServer_PeerHeartBeat(t *testing.T) {
 	}
 
 	args := &PingArgs{
-		RawAddress: "localhost:9333",
-		PublicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
+		rawAddress: "localhost:9333",
+		publicKey:  base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte),
 	}
-	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.RawAddress))
+	signDataB58, err := keyWallet.KeySet.SignDataInBase58CheckEncode([]byte(args.rawAddress))
 	if err != nil {
 		t.Error(err)
 	}
-	args.SignData = signDataB58
-	rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
-	if len(rpcServer.Peers) == 0 {
+	args.signData = signDataB58
+	rpcServer.AddOrUpdatePeer(args.rawAddress, args.publicKey, args.signData)
+	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
 
 	go rpcServer.PeerHeartBeat(6)
 	for {
-		if len(rpcServer.Peers) == 0 {
+		if len(rpcServer.peers) == 0 {
 			t.Log("PeerHeartBeat")
 			return
 		}

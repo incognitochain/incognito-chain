@@ -34,7 +34,7 @@ type Peer struct {
 
 // rpcServer provides a concurrent safe RPC server to a bootnode server.
 type RpcServer struct {
-	Peers    map[string]*Peer // list peers which are still pinging to bootnode continuously
+	peers    map[string]*Peer // list peers which are still pinging to bootnode continuously
 	peersMtx sync.Mutex
 	server   *rpc.Server
 	Config   RpcServerConfig // config for RPC server
@@ -47,7 +47,7 @@ type RpcServerConfig struct {
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
 	// get config and init list Peers
 	rpcServer.Config = *config
-	rpcServer.Peers = make(map[string]*Peer)
+	rpcServer.peers = make(map[string]*Peer)
 	rpcServer.server = rpc.NewServer()
 	// start go routin hertbeat to check invalid peers
 	go rpcServer.PeerHeartBeat(HeartbeatTimeout)
@@ -75,7 +75,7 @@ func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 stri
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
 		err := incognitokey.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
 		if err == nil {
-			rpcServer.Peers[publicKeyB58] = &Peer{
+			rpcServer.peers[publicKeyB58] = &Peer{
 				ID:         rpcServer.CombineID(rawAddress, publicKeyB58),
 				RawAddress: rawAddress,
 				PublicKey:  publicKeyB58,
@@ -92,7 +92,7 @@ func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 stri
 
 // RemovePeerByPbk - remove peer from mem of bootnode
 func (rpcServer *RpcServer) RemovePeerByPbk(publicKey string) {
-	delete(rpcServer.Peers, publicKey)
+	delete(rpcServer.peers, publicKey)
 }
 
 // CombineID - return string = rawAddress of peer + public key in base58check encode of node(run as committee)
@@ -108,9 +108,9 @@ func (rpcServer *RpcServer) CombineID(rawAddress string, publicKey string) strin
 func (rpcServer *RpcServer) PeerHeartBeat(heartbeatTimeout int) {
 	for {
 		now := time.Now().Local()
-		if len(rpcServer.Peers) > 0 {
+		if len(rpcServer.peers) > 0 {
 		loop:
-			for publicKey, peer := range rpcServer.Peers {
+			for publicKey, peer := range rpcServer.peers {
 				if now.Sub(peer.LastPing).Seconds() > float64(heartbeatTimeout) {
 					rpcServer.RemovePeerByPbk(publicKey)
 					goto loop
