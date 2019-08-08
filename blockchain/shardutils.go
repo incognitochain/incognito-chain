@@ -136,14 +136,18 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
+			meta := tx.GetMetadata().(*metadata.StakingMetadata)
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			stakeShardPubKey = append(stakeShardPubKey, pkb58)
+			pkJoin := pkb58 + meta.BLSPublicKey
+			stakeShardPubKey = append(stakeShardPubKey, pkJoin)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 		case metadata.BeaconStakingMeta:
+			meta := tx.GetMetadata().(*metadata.StakingMetadata)
 			pk := tx.GetProof().InputCoins[0].CoinDetails.PublicKey.Compress()
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
+			pkJoin := pkb58 + meta.BLSPublicKey
+			stakeBeaconPubKey = append(stakeBeaconPubKey, pkJoin)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 		}
 	}
