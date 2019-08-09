@@ -632,12 +632,12 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			if !ok {
 				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 			}
-			producerPaymentAddress := stakingMetadata.ProducerPaymentAddress
-			producerWallet, err := wallet.Base58CheckDeserialize(producerPaymentAddress)
-			if err != nil || producerWallet == nil {
-				return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", producerPaymentAddress))
+			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+			if err != nil || candidateWallet == nil {
+				return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
 			}
-			pk := producerWallet.KeySet.PaymentAddress.Pk
+			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			tp.candidateMtx.RLock()
 			foundPubkey = common.IndexOfStrInHashMap(pkb58, tp.PoolCandidate)
