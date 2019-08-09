@@ -664,7 +664,6 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 				swapedCommittees = strings.Split(l[2], ",")
 			}
 			newCommittees := strings.Split(l[1], ",")
-
 			for _, v := range swapedCommittees {
 				delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
 			}
