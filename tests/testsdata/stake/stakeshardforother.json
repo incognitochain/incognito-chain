@@ -12,7 +12,7 @@
         10,
         0,
         63,
-        "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t"
+        "112t8rotpPVSeHrknwVUTLQgy2avatUWKh2oV9EjVMw6eEtwyJT1FsrHGzvBaLpHL4gPVfJjuSUWvTtiTKuWGNNwGuLo8SHCgfA36ttJ5J7u"
       ]
     },
     "output": {
@@ -42,7 +42,7 @@
     "input": {
       "command": "subcribeshardcandidatebypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
       "type": "ws",
       "wait": 10000
     },
@@ -56,7 +56,7 @@
     "input": {
       "command": "subcribeshardpendingvalidatorbypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
       "type": "ws",
       "wait": 10000
     },
@@ -70,7 +70,7 @@
     "input": {
       "command": "subcribeshardcommitteebypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
       "type": "ws",
       "wait": 10000
     },

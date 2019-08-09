@@ -5,14 +5,14 @@
       "command": "createandsendstakingtransaction",
       "context": false,
       "params": [
-        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM",
         {
-          "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":1750000000000
+          "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":5250000000000
         },
         10,
         0,
-        63,
-        "1Uv4APZadR2kbpm4Uazwng2hwfqb2AtuV6Y6QVcypzQurzwE9YvUzTA8TWVndLJxtuAytWPey57YiU97abmSJ7nnPxnDdsjGcXUAiiE6t"
+        64,
+        "1Uv3B8RVFJi9dJjLUKPTx9tAy2ozZ3aPhRktfban527RqJ8MoeF3LMVesYUCSdZKnS56vRfPPz59x2Bou5yF3aFChdLx77RaQZWWCg1WK"
       ]
     },
     "output": {
@@ -40,9 +40,9 @@
   {
     "node": "shard0-0",
     "input": {
-      "command": "subcribeshardcandidatebypublickey",
+      "command": "subcribebeaconcandidatebypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["16dgSNJETEoXc4ayNmpcmUyZfYQJRZHHTSWhCj1Huhy1JHhf5Xi"],
       "type": "ws",
       "wait": 10000
     },
@@ -54,9 +54,9 @@
   {
     "node": "shard0-0",
     "input": {
-      "command": "subcribeshardpendingvalidatorbypublickey",
+      "command": "subcribebeaconpendingvalidatorbypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["16dgSNJETEoXc4ayNmpcmUyZfYQJRZHHTSWhCj1Huhy1JHhf5Xi"],
       "type": "ws",
       "wait": 10000
     },
@@ -68,9 +68,9 @@
   {
     "node": "shard0-0",
     "input": {
-      "command": "subcribeshardcommitteebypublickey",
+      "command": "subcribebeaconcommitteebypublickey",
       "context": false,
-      "params": ["189NzoXMQznioWS2tZgxKKPhaiJBag1TcLsMMhBRxFH7Re11c8V"],
+      "params": ["16dgSNJETEoXc4ayNmpcmUyZfYQJRZHHTSWhCj1Huhy1JHhf5Xi"],
       "type": "ws",
       "wait": 10000
     },
