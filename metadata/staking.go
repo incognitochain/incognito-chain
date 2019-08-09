@@ -13,26 +13,32 @@ import (
 
 type StakingMetadata struct {
 	MetadataBase
-	PaymentAddress     string
-	StakingAmountShard uint64
+	StakingPaymentAddress  string
+	ProducerPaymentAddress string
+	StakingAmountShard     uint64
 }
 
-func NewStakingMetadata(stakingType int, paymentAdd string, stakingAmountShard uint64) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, stakingPaymentAddress string, producerPaymentAddress string, stakingAmountShard uint64) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
 
-	return &StakingMetadata{*metadataBase, paymentAdd, stakingAmountShard}, nil
+	return &StakingMetadata{
+		MetadataBase:           *metadataBase,
+		StakingPaymentAddress:  stakingPaymentAddress,
+		ProducerPaymentAddress: producerPaymentAddress,
+		StakingAmountShard:     stakingAmountShard,
+	}, nil
 }
 
 /*
  */
-func (sm *StakingMetadata) ValidateMetadataByItself() bool {
-	return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
+func (stakingMetadata *StakingMetadata) ValidateMetadataByItself() bool {
+	return (stakingMetadata.Type == ShardStakingMeta || stakingMetadata.Type == BeaconStakingMeta)
 }
 
-func (sm *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
+func (stakingMetadata *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
 	senderPubkeyString := base58.Base58Check{}.Encode(txr.GetSigPubKey(), common.ZeroByte)
 	tempStaker := []string{senderPubkeyString}
@@ -60,7 +66,7 @@ func (sm *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr Blockch
 	// Receiver Is Burning Address
 	//
 */
-func (sm *StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (stakingMetadata *StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if txr.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
@@ -73,16 +79,16 @@ func (sm *StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
-	if sm.Type == ShardStakingMeta && amount != bcr.GetStakingAmountShard() {
+	if stakingMetadata.Type == ShardStakingMeta && amount != bcr.GetStakingAmountShard() {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if sm.Type == BeaconStakingMeta && amount != bcr.GetStakingAmountShard()*3 {
+	if stakingMetadata.Type == BeaconStakingMeta && amount != bcr.GetStakingAmountShard()*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 	return true, true, nil
 }
-func (sm *StakingMetadata) GetType() int {
-	return sm.Type
+func (stakingMetadata *StakingMetadata) GetType() int {
+	return stakingMetadata.Type
 }
 func GetValidStaker(committees []string, stakers []string) []string {
 	validStaker := []string{}
@@ -101,14 +107,14 @@ func GetValidStaker(committees []string, stakers []string) []string {
 	return validStaker
 }
 
-func (sm *StakingMetadata) CalculateSize() uint64 {
-	return calculateSize(sm)
+func (stakingMetadata *StakingMetadata) CalculateSize() uint64 {
+	return calculateSize(stakingMetadata)
 }
 
-func (sm StakingMetadata) GetBeaconStakeAmount() uint64 {
-	return sm.StakingAmountShard * 3
+func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {
+	return stakingMetadata.StakingAmountShard * 3
 }
 
-func (sm StakingMetadata) GetShardStateAmount() uint64 {
-	return sm.StakingAmountShard
+func (stakingMetadata StakingMetadata) GetShardStateAmount() uint64 {
+	return stakingMetadata.StakingAmountShard
 }

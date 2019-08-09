@@ -53,13 +53,13 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 
 	txData := block.Body.Transactions[index]
 
-	keyWallet, err2 := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress)
+	keyWallet, err2 := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).StakingPaymentAddress)
 	if err2 != nil {
 		fmt.Println("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), committeeShardID)
 		return nil, NewBlockChainError(UnExpectedError, err2)
 	}
 
-	fmt.Println("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress, committeeShardID)
+	fmt.Println("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).StakingPaymentAddress, committeeShardID)
 	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 
 	if paymentShardID != committeeShardID {
