@@ -1357,9 +1357,9 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard)
+	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard)
 
-	tx, err := httpServer.buildRawTransaction(params, metadata)
+	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
