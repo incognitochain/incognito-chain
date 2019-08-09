@@ -78,8 +78,9 @@ func TestNetSyncCreateBlkShardMsgByType(t *testing.T) {
 	}
 	// type 1: shard block
 	_, err = netSync.CreateBlkShardMsgByType(shardBlockCrossShard01, 1, 1)
-	if err != nil {
-		t.Error("should create cross shard block ", err)
+	if err == nil {
+		// no cross output coin
+		t.Error("Should NOT create cross shard block ", err)
 	}
 	//// type 2: shard block
 	_, err = netSync.CreateBlkShardMsgByType(shardBlockNoCrossShard, 2, 1)
