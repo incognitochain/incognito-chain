@@ -251,7 +251,8 @@ var _ = func() (_ struct{}) {
 }()
 
 func TestNetSyncStart(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -308,7 +309,8 @@ func TestNetSyncStart(t *testing.T) {
 }
 
 func TestNetSyncStop(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -335,7 +337,8 @@ func TestNetSyncStop(t *testing.T) {
 }
 
 func TestNetSyncHandleTxWithRole(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -362,7 +365,8 @@ func TestNetSyncHandleTxWithRole(t *testing.T) {
 }
 
 func TestNetSyncHandleCacheTx(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -382,7 +386,8 @@ func TestNetSyncHandleCacheTx(t *testing.T) {
 }
 
 func TestNetSyncHandleCacheTxHash(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -399,7 +404,8 @@ func TestNetSyncHandleCacheTxHash(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageTx(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -431,7 +437,8 @@ func TestNetSyncHandleMessageTx(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageTxToken(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -464,7 +471,8 @@ func TestNetSyncHandleMessageTxToken(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -492,7 +500,8 @@ func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T) {
 	netSync.Stop()
 }
 func TestHandleCacheBlock(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -511,7 +520,8 @@ func TestHandleCacheBlock(t *testing.T) {
 	}
 }
 func TestNetSyncHandleMessageBeaconBlock(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -532,7 +542,8 @@ func TestNetSyncHandleMessageBeaconBlock(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageShardBlock(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -553,7 +564,8 @@ func TestNetSyncHandleMessageShardBlock(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageShardToBeacon(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -574,7 +586,8 @@ func TestNetSyncHandleMessageShardToBeacon(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageCrossShard(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -595,7 +608,8 @@ func TestNetSyncHandleMessageCrossShard(t *testing.T) {
 }
 
 func TestNetSyncQueueTx(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -641,7 +655,8 @@ func TestNetSyncQueueTx(t *testing.T) {
 }
 
 func TestNetSyncQueueTxToken(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -687,7 +702,8 @@ func TestNetSyncQueueTxToken(t *testing.T) {
 }
 
 func TestNetSyncQueueTxPrivacyToken(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -733,7 +749,8 @@ func TestNetSyncQueueTxPrivacyToken(t *testing.T) {
 }
 
 func TestNetSyncQueueBlock(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -824,7 +841,8 @@ func TestNetSyncQueueBlock(t *testing.T) {
 }
 
 func TestNetSyncQueueGetBlockShard(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -857,7 +875,8 @@ func TestNetSyncQueueGetBlockShard(t *testing.T) {
 	netSync.Stop()
 }
 func TestNetSyncQueueGetBlockBeacon(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -891,7 +910,8 @@ func TestNetSyncQueueGetBlockBeacon(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageGetShardToBeacon(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:        bc,
 		PubSubManager:     pb,
 		Server:            server,
@@ -912,7 +932,8 @@ func TestNetSyncHandleMessageGetShardToBeacon(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageGetCrossShard(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:     bc,
 		PubSubManager:  pb,
 		Server:         server,
@@ -933,7 +954,8 @@ func TestNetSyncHandleMessageGetCrossShard(t *testing.T) {
 }
 
 func TestNetSyncQueueMessage(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -994,7 +1016,8 @@ func (consensus *Consensus) OnBFTMsg(msg wire.Message) {
 }
 
 func TestNetSyncHandleMessageBFTMsgError(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -1012,7 +1035,8 @@ func TestNetSyncHandleMessageBFTMsgError(t *testing.T) {
 }
 
 func TestNetSyncHandleMessageBFTMsg(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
@@ -1153,7 +1177,8 @@ out6:
 }
 
 func TestHandleMessagePeerState(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:    bc,
 		PubSubManager: pb,
 		Server:        server,
