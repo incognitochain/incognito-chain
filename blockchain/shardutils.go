@@ -141,12 +141,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
-			producerPaymentAddress := stakingMetadata.ProducerPaymentAddress
-			producerWallet, err := wallet.Base58CheckDeserialize(producerPaymentAddress)
-			if err != nil || producerWallet == nil {
-				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", producerPaymentAddress)
+			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+			if err != nil || candidateWallet == nil {
+				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
 			}
-			pk := producerWallet.KeySet.PaymentAddress.Pk
+			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeShardPubKey = append(stakeShardPubKey, pkb58)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
@@ -155,12 +155,12 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
-			producerPaymentAddress := stakingMetadata.ProducerPaymentAddress
-			producerWallet, err := wallet.Base58CheckDeserialize(producerPaymentAddress)
-			if err != nil || producerWallet == nil {
-				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", producerPaymentAddress)
+			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+			if err != nil || candidateWallet == nil {
+				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
 			}
-			pk := producerWallet.KeySet.PaymentAddress.Pk
+			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
