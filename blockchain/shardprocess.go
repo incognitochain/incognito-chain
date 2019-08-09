@@ -892,12 +892,12 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 					if !ok {
 						continue
 					}
-					producerPaymentAddress := stakingMetadata.ProducerPaymentAddress
-					producerWallet, err := wallet.Base58CheckDeserialize(producerPaymentAddress)
-					if err != nil || producerWallet == nil {
+					candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+					candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+					if err != nil || candidateWallet == nil {
 						continue
 					}
-					pk := producerWallet.KeySet.PaymentAddress.Pk
+					pk := candidateWallet.KeySet.PaymentAddress.Pk
 					pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 					candidates = append(candidates, pkb58)
 				}

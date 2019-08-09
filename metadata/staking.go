@@ -13,21 +13,21 @@ import (
 
 type StakingMetadata struct {
 	MetadataBase
-	StakingPaymentAddress  string
-	ProducerPaymentAddress string
-	StakingAmountShard     uint64
+	FunderPaymentAddress    string
+	CandidatePaymentAddress string
+	StakingAmountShard      uint64
 }
 
-func NewStakingMetadata(stakingType int, stakingPaymentAddress string, producerPaymentAddress string, stakingAmountShard uint64) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
 	return &StakingMetadata{
-		MetadataBase:           *metadataBase,
-		StakingPaymentAddress:  stakingPaymentAddress,
-		ProducerPaymentAddress: producerPaymentAddress,
-		StakingAmountShard:     stakingAmountShard,
+		MetadataBase:            *metadataBase,
+		FunderPaymentAddress:    funderPaymentAddress,
+		CandidatePaymentAddress: candidatePaymentAddress,
+		StakingAmountShard:      stakingAmountShard,
 	}, nil
 }
 
@@ -39,7 +39,13 @@ func (stakingMetadata *StakingMetadata) ValidateMetadataByItself() bool {
 
 func (stakingMetadata *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
-	senderPubkeyString := base58.Base58Check{}.Encode(txr.GetSigPubKey(), common.ZeroByte)
+	candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return false, errors.New("Can create wallet key from payment address")
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+	senderPubkeyString := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 	tempStaker := []string{senderPubkeyString}
 	for _, committees := range SC {
 		tempStaker = GetValidStaker(committees, tempStaker)
