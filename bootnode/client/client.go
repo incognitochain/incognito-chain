@@ -3,8 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wire"
 	"net/rpc"
+
+	"github.com/incognitochain/incognito-chain/wire"
 )
 
 func main() {
