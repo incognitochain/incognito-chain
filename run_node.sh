@@ -54,6 +54,9 @@ fi
 if [ "$1" == "shard-stake-3" ]; then
 ./incognito --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rotpPVSeHrknwVUTLQgy2avatUWKh2oV9EjVMw6eEtwyJT1FsrHGzvBaLpHL4gPVfJjuSUWvTtiTKuWGNNwGuLo8SHCgfA36ttJ5J7u" --nodemode "auto" --datadir "data/shard-stake-3" --listen "0.0.0.0:9447" --externaladdress "0.0.0.0:9447" --norpcauth --rpclisten "0.0.0.0:9348"
 fi
+if [ "$1" == "shard-stake-4" ]; then
+./incognito --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roEu1K8gUXF3cyRBv1GSGHDXNaSFh45sxgCCSi4Q6KWbW91DtYFqJdAP5MFBJEziejirb4cdDhE2Mxi4PSg8wf277vnCryQyL3VtBK2" --nodemode "auto" --datadir "data/shard-stake-4" --listen "0.0.0.0:9448" --externaladdress "0.0.0.0:9448" --norpcauth --rpclisten "0.0.0.0:9349"
+fi
 ####full node
 # ./incognito --discoverpeersaddress "0.0.0.0:9330" --nodemode "relay" --relayshards "all" --datadir "data/fullnode" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9343"
 

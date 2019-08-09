@@ -17,6 +17,8 @@
   ],
   "stake": [
     "TestStakeShard",
-    "TestStakeBeacon"
+    "TestStakeBeacon",
+    "TestStakeShardForOther",
+    "TestStakeBeaconForOther"
   ]
 }

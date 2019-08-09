@@ -45,8 +45,8 @@ func (stakingMetadata *StakingMetadata) ValidateTxWithBlockChain(txr Transaction
 		return false, errors.New("Can create wallet key from payment address")
 	}
 	pk := candidateWallet.KeySet.PaymentAddress.Pk
-	senderPubkeyString := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-	tempStaker := []string{senderPubkeyString}
+	pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+	tempStaker := []string{pkb58}
 	for _, committees := range SC {
 		tempStaker = GetValidStaker(committees, tempStaker)
 	}
@@ -76,7 +76,6 @@ func (stakingMetadata *StakingMetadata) ValidateSanityData(bcr BlockchainRetriev
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
 	onlyOne, pubkey, amount := txr.GetUniqueReceiver()
-
 	if !onlyOne {
 		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
 	}
@@ -89,6 +88,15 @@ func (stakingMetadata *StakingMetadata) ValidateSanityData(bcr BlockchainRetriev
 	}
 	if stakingMetadata.Type == BeaconStakingMeta && amount != bcr.GetStakingAmountShard()*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
+	}
+	candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return false, false, errors.New("Invalid Candidate Payment Address, Failed to Deserialized Into Key Wallet")
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+	if len(pk) != 33 {
+		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
 	}
 	return true, true, nil
 }
