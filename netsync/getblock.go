@@ -2,21 +2,21 @@ package netsync
 
 import (
 	"sort"
-	
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
-func (netSync *NetSync) GetBlkShardByHashAndSend(peerID libp2p.ID, blkType byte, blkHashes []common.Hash, crossShardID byte) {
+func (netSync *NetSync) getBlkShardByHashAndSend(peerID libp2p.ID, blkType byte, blkHashes []common.Hash, crossShardID byte) {
 	for _, blkHash := range blkHashes {
 		blk, _, err := netSync.config.BlockChain.GetShardBlockByHash(blkHash)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
 		}
-		blkMsg, err := netSync.CreateBlkShardMsgByType(blk, blkType, crossShardID)
+		blkMsg, err := netSync.createBlockShardMsgByType(blk, blkType, crossShardID)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -28,7 +28,7 @@ func (netSync *NetSync) GetBlkShardByHashAndSend(peerID libp2p.ID, blkType byte,
 	}
 }
 
-func (netSync *NetSync) GetBlkBeaconByHashAndSend(peerID libp2p.ID, blkHashes []common.Hash) {
+func (netSync *NetSync) getBlkBeaconByHashAndSend(peerID libp2p.ID, blkHashes []common.Hash) {
 	for _, blkHash := range blkHashes {
 		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHash(blkHash)
 		if err != nil {
@@ -41,11 +41,15 @@ func (netSync *NetSync) GetBlkBeaconByHashAndSend(peerID libp2p.ID, blkHashes []
 			continue
 		}
 		newMsg.(*wire.MessageBlockBeacon).Block = blk
-		netSync.config.Server.PushMessageToPeer(newMsg, peerID)
+		err = netSync.config.Server.PushMessageToPeer(newMsg, peerID)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
 	}
 }
 
-func (netSync *NetSync) GetBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bool, blkType byte, specificHeight bool, shardID byte, blkHeights []uint64, crossShardID byte) {
+func (netSync *NetSync) getBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bool, blkType byte, specificHeight bool, shardID byte, blkHeights []uint64, crossShardID byte) {
 	//fmt.Println("GETCROSS: ", fromPool, blkType, specificHeight, shardID, crossShardID, blkHeights)
 	if !specificHeight {
 		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
@@ -105,7 +109,7 @@ func (netSync *NetSync) GetBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bo
 				Logger.log.Error(err)
 				continue
 			}
-			blkMsg, err = netSync.CreateBlkShardMsgByType(blk, blkType, crossShardID)
+			blkMsg, err = netSync.createBlockShardMsgByType(blk, blkType, crossShardID)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -120,7 +124,7 @@ func (netSync *NetSync) GetBlkShardByHeightAndSend(peerID libp2p.ID, fromPool bo
 	}
 }
 
-func (netSync *NetSync) GetBlkBeaconByHeightAndSend(peerID libp2p.ID, fromPool bool, specificHeight bool, blkHeights []uint64) {
+func (netSync *NetSync) getBlockkBeaconByHeightAndSend(peerID libp2p.ID, fromPool bool, specificHeight bool, blkHeights []uint64) {
 	if !specificHeight {
 		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
 			return
@@ -165,7 +169,7 @@ func (netSync *NetSync) GetBlkBeaconByHeightAndSend(peerID libp2p.ID, fromPool b
 // 0: normal
 // 1: crossShard
 // 2: shardToBeacon
-func (netSync *NetSync) CreateBlkShardMsgByType(block *blockchain.ShardBlock, blkType byte, crossShardID byte) (wire.Message, error) {
+func (netSync *NetSync) createBlockShardMsgByType(block *blockchain.ShardBlock, blkType byte, crossShardID byte) (wire.Message, error) {
 	var (
 		blkMsg wire.Message
 		err    error
