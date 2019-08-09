@@ -66,6 +66,7 @@ const (
 	InstructionMerkleRootError
 	FetchBeaconBlockHashError
 	FetchBeaconBlockError
+	FetchShardBlockError
 	BeaconBlockNotCompatibleError
 	SwapInstructionError
 	TransactionCreatedByMinerError
@@ -128,6 +129,10 @@ const (
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
 	StoreCommitteeFromShardBestStateError
+	GetStakingTransactionError
+	DecodeHashError
+	GetTransactionFromDatabaseError
+	WalletKey
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -240,6 +245,10 @@ var ErrCodeMessage = map[int]struct {
 	CleanBackUpError:                                  {-1104, "Clean Back Up Error"},
 	BackUpBestStateError:                              {-1105, "Back Up Best State Error"},
 	StoreCommitteeFromShardBestStateError:             {-1106, "Store Committee From ShardBestState Error"},
+	GetStakingTransactionError:                        {-1107, "Get Staking Transaction Error"},
+	DecodeHashError:                                   {-1108, "Decode Hash Error"},
+	GetTransactionFromDatabaseError:                   {-1109, "Get Transaction From Database Error"},
+	FetchShardBlockError:                              {-1110, "Fetch Shard Block Error"},
 }
 
 type BlockChainError struct {

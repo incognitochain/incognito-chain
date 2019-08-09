@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"sort"
 	"strconv"
@@ -60,7 +62,6 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 				shardID := common.GetShardIDFromLastByte(lastByte)
 				byteMap[common.GetShardIDFromLastByte(shardID)] = 1
-				//fmt.Println("CS: header has output coin to shard", shardID)
 			}
 		}
 
@@ -136,12 +137,30 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
-			pk := tx.GetProof().GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			producerPaymentAddress := stakingMetadata.ProducerPaymentAddress
+			producerWallet, err := wallet.Base58CheckDeserialize(producerPaymentAddress)
+			if err != nil || producerWallet == nil {
+				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", producerPaymentAddress)
+			}
+			pk := producerWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeShardPubKey = append(stakeShardPubKey, pkb58)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 		case metadata.BeaconStakingMeta:
-			pk := tx.GetProof().GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			producerPaymentAddress := stakingMetadata.ProducerPaymentAddress
+			producerWallet, err := wallet.Base58CheckDeserialize(producerPaymentAddress)
+			if err != nil || producerWallet == nil {
+				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", producerPaymentAddress)
+			}
+			pk := producerWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())

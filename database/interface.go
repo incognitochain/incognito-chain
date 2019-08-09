@@ -62,7 +62,7 @@ type DatabaseInterface interface {
 
 	// Transaction index
 	StoreTransactionIndex(txId common.Hash, blockHash common.Hash, indexInBlock int) error
-	GetTransactionIndexById(txId common.Hash) (common.Hash, int, *DatabaseError)
+	GetTransactionIndexById(txId common.Hash) (common.Hash, int, error)
 	DeleteTransactionIndex(txId common.Hash) error
 
 	// Best state of Prev

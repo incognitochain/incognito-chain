@@ -23,45 +23,39 @@ const (
 // }
 
 func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
-	swaperPubKey string,
+	swapPublicKey string,
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) (metadata.Transaction, error) {
 	addressBytes := blockGenerator.chain.config.UserKeySet.PaymentAddress.Pk
 	//shardID := common.GetShardIDFromLastByte(addressBytes[len(addressBytes)-1])
 	_, committeeShardID := blockGenerator.chain.BestState.Beacon.GetPubkeyRole(base58.Base58Check{}.Encode(addressBytes, 0x00), 0)
-
-	fmt.Println("SA: get tx for ", swaperPubKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
-	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swaperPubKey]
+	Logger.log.Info("SA: get tx for ", swapPublicKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
+	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swapPublicKey]
 	if !ok {
-		return nil, NewBlockChainError(UnExpectedError, errors.New("No staking tx in best state"))
+		return nil, NewBlockChainError(GetStakingTransactionError, errors.New("No staking tx in best state"))
 	}
-
 	var txHash = &common.Hash{}
-	(&common.Hash{}).Decode(txHash, tx)
-
+	err := (&common.Hash{}).Decode(txHash, tx)
+	if err != nil {
+		return nil, NewBlockChainError(DecodeHashError, err)
+	}
 	blockHash, index, err := blockGenerator.chain.config.DataBase.GetTransactionIndexById(*txHash)
 	if err != nil {
-		abc := NewBlockChainError(UnExpectedError, err)
-		Logger.log.Error(abc)
-		return nil, abc
+		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
 	}
-	block, _, err1 := blockGenerator.chain.GetShardBlockByHash(blockHash)
-	if err1 != nil {
-		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
-		return nil, NewBlockChainError(UnExpectedError, err1)
+	shardBlock, _, err := blockGenerator.chain.GetShardBlockByHash(blockHash)
+	if err != nil || shardBlock == nil {
+		Logger.log.Errorf("ERROR", err, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
+		return nil, NewBlockChainError(FetchShardBlockError, err)
 	}
-
-	txData := block.Body.Transactions[index]
-
-	keyWallet, err2 := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).StakingPaymentAddress)
-	if err2 != nil {
-		fmt.Println("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), committeeShardID)
-		return nil, NewBlockChainError(UnExpectedError, err2)
+	txData := shardBlock.Body.Transactions[index]
+	keyWallet, err := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).StakingPaymentAddress)
+	if err != nil {
+		Logger.log.Error("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), committeeShardID)
+		return nil, NewBlockChainError(UnExpectedError, err)
 	}
-
-	fmt.Println("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).StakingPaymentAddress, committeeShardID)
+	Logger.log.Info("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).StakingPaymentAddress, committeeShardID)
 	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
-
 	if paymentShardID != committeeShardID {
 		return nil, NewBlockChainError(UnExpectedError, errors.New("Not from this shard"))
 	}
