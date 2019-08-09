@@ -345,7 +345,10 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txFeeToken := tx.GetTxFeeToken()
 	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
 	startAdd := time.Now()
-	tp.addTx(txD, isStore)
+	err = tp.addTx(txD, isStore)
+	if err != nil {
+		return nil, nil, err
+	}
 	if isNewTransaction {
 		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -736,7 +739,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 // #2: store into db
 // #3: default nil, contain input coins hash, which are used for creating this tx
 */
-func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
+func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	if isStore {
@@ -782,8 +785,18 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		switch metadataType {
 		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
 			{
-				publicKey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-				tp.addCandidateToList(*txHash, publicKey)
+				stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+				if !ok {
+					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+				}
+				candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+				candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+				if err != nil || candidateWallet == nil {
+					return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
+				}
+				pk := candidateWallet.KeySet.PaymentAddress.Pk
+				pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+				tp.addCandidateToList(*txHash, pkb58)
 			}
 		default:
 			{
@@ -799,6 +812,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 	}
 	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
+	return nil
 }
 
 // Check relay shard and public key role before processing transaction
