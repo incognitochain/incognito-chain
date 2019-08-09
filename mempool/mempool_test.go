@@ -934,8 +934,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err91 == nil {
 		t.Fatal("Expect replace fail error in mempool error error but no error")
 	} else {
-		if err91.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err91)
+		if err91.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTxError].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTxError], err91)
 		}
 	}
 	// Check Condition 5: replace (custom token privacy tx)
@@ -952,8 +952,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err93 == nil {
 		t.Fatal("Expect replace fail error in mempool error error but no error")
 	} else {
-		if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err93)
+		if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTxError].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTxError], err93)
 		}
 	}
 	// Check Condition 5: Check double spend with mempool
