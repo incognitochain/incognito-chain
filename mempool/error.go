@@ -32,7 +32,9 @@ const (
 	RejectTestTransactionError
 	WrongShardIDError
 	HashError
-	RejectReplacementTx
+	RejectReplacementTxError
+	GetStakingMetadataError
+	WalletKeySerializedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -62,7 +64,9 @@ var ErrCodeMessage = map[int]struct {
 	MarshalError:                      {-1019, "Marshal Error"},
 	UnmarshalError:                    {-1020, "Unmarshal Error"},
 	HashError:                         {-1021, "Hash Error"},
-	RejectReplacementTx:               {-1022, "Replacement or Cancel Tx Error"},
+	RejectReplacementTxError:          {-1022, "Replacement or Cancel Tx Error"},
+	GetStakingMetadataError:           {-1023, "Get Staking Metadata Error"},
+	WalletKeySerializedError:          {-1024, "Wallet Key Serialized Error"},
 }
 
 type MempoolTxError struct {

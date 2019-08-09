@@ -269,7 +269,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				for _, v := range strings.Split(l[2], ",") {
 					tx, err := blockGenerator.buildReturnStakingAmountTx(v, producerPrivateKey)
 					if err != nil {
-						Logger.log.Error("SA:", err)
+						Logger.log.Error(err)
 						continue
 					}
 					resTxs = append(resTxs, tx)

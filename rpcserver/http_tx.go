@@ -1338,11 +1338,9 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type component"))
 	}
 	stakingType, ok := paramsArray[4].(float64)
-
 	if !ok {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type component"))
 	}
-
 	senderKeyParam := paramsArray[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
@@ -1358,7 +1356,6 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
 	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard)
-
 	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
