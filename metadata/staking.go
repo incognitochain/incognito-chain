@@ -23,7 +23,6 @@ func NewStakingMetadata(stakingType int, stakingPaymentAddress string, producerP
 		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
-
 	return &StakingMetadata{
 		MetadataBase:           *metadataBase,
 		StakingPaymentAddress:  stakingPaymentAddress,
