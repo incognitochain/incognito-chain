@@ -132,11 +132,13 @@ const (
 	GetStakingTransactionError
 	DecodeHashError
 	GetTransactionFromDatabaseError
-	WalletKey
 	ProcessBridgeInstructionError
 	UpdateDatabaseWithBlockRewardInfoError
 	CreateCrossShardBlockError
 	VerifyCrossShardBlockShardTxRootError
+	WalletKeySerializedError
+	InitSalaryTransactionError
+	RemoveOldDataAfterProcessingError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -257,6 +259,9 @@ var ErrCodeMessage = map[int]struct {
 	DecodeHashError:                                   {-1111, "Decode Hash Error"},
 	GetTransactionFromDatabaseError:                   {-1112, "Get Transaction From Database Error"},
 	FetchShardBlockError:                              {-1113, "Fetch Shard Block Error"},
+	WalletKeySerializedError:                          {-1114, "Wallet Key Serialized Error"},
+	InitSalaryTransactionError:                        {-1115, "Init Salary Transaction Error"},
+	RemoveOldDataAfterProcessingError:                 {-1116, "Remove Old Data After Processing Error"},
 }
 
 type BlockChainError struct {
