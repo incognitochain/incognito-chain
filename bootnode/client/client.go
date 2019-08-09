@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/wire"
 	"net/rpc"
 )
@@ -16,6 +18,9 @@ func main() {
 		err := client.Call("Handler.GetPeers", "", &response)
 		if err != nil {
 			panic(err)
+		} else {
+			responseJson, _ := json.MarshalIndent(response, "", "\t")
+			fmt.Println(responseJson)
 		}
 	}
 }
