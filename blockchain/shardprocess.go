@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"sort"
 	"strconv"
@@ -887,8 +888,18 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		for _, tx := range shardBlock.Body.Transactions {
 			if tx.GetMetadata() != nil {
 				if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-					pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-					candidates = append(candidates, pubkey)
+					stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+					if !ok {
+						continue
+					}
+					producerPaymentAddress := stakingMetadata.ProducerPaymentAddress
+					producerWallet, err := wallet.Base58CheckDeserialize(producerPaymentAddress)
+					if err != nil || producerWallet == nil {
+						continue
+					}
+					pk := producerWallet.KeySet.PaymentAddress.Pk
+					pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+					candidates = append(candidates, pkb58)
 				}
 			}
 			if tx.GetType() == common.TxCustomTokenType {

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -626,9 +628,19 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	foundPubkey := -1
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-			pubkey = base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+			}
+			producerPaymentAddress := stakingMetadata.ProducerPaymentAddress
+			producerWallet, err := wallet.Base58CheckDeserialize(producerPaymentAddress)
+			if err != nil || producerWallet == nil {
+				return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", producerPaymentAddress))
+			}
+			pk := producerWallet.KeySet.PaymentAddress.Pk
+			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			tp.candidateMtx.RLock()
-			foundPubkey = common.IndexOfStrInHashMap(pubkey, tp.PoolCandidate)
+			foundPubkey = common.IndexOfStrInHashMap(pkb58, tp.PoolCandidate)
 			tp.candidateMtx.RUnlock()
 		}
 	}
@@ -669,7 +681,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFee = float64(tx.GetTxFee())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee {
-					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -678,7 +690,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
-					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -690,7 +702,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
-					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			}
@@ -706,7 +718,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				}
 				return nil, true
 			} else {
-				return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Unexpected error occur")), true
+				return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Unexpected error occur")), true
 			}
 		} else {
 			//found no tx to be replaced
