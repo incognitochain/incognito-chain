@@ -73,6 +73,6 @@ func (e *BLSBFT) validateAndSendVote() {
 	// }
 }
 
-func (e *BLSBFT) getTimeout() time.Duration {
-	return
-}
+// func (e *BLSBFT) getTimeout() time.Duration {
+// 	return
+// }

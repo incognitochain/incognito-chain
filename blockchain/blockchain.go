@@ -93,7 +93,7 @@ type Config struct {
 		VerifyValidationData(data common.Hash, validationData string, consensusType string) error
 		ValidateBlockWithConsensus(block interface{}, chainName string, consensusType string) (byte, error)
 		ValidateBlockCommitteSig(block interface{}, committee []string, consensusType string) error
-		GetBlockProducerPubKeyB58(validationData string) string
+		GetBlockProducerPubKeyB58(validationData string, consensusType string) string
 		GetUserMiningKey() string
 	}
 }
