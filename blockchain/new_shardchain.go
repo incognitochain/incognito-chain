@@ -60,15 +60,6 @@ func (chain *ShardChain) ValidateBlock(block BeaconBlock) error {
 	return nil
 }
 
-// func (s *ShardChain) ValidatePreSignBlock(block interface{}) error {
-// 	_ = block.(*blockchain.BeaconBlock)
-// 	return nil
-// }
-
-func (chain *ShardChain) InsertBlk(block *BeaconBlock, isValid bool) {
-	chain.Blockchain.InsertBeaconBlock(block, isValid)
+func (chain *ShardChain) InsertBlk(block *ShardBlock, isValid bool) {
+	chain.Blockchain.InsertShardBlock(block, isValid)
 }
-
-// func (chain *ShardChain) GetActiveShardNumber() int {
-// 	return chain.Blockchain.GetActiveShardNumber()
-// }

@@ -2,10 +2,8 @@ package main
 
 import (
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -21,10 +19,6 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"golang.org/x/net/context"
-	"google.golang.org/api/option"
-
-	"cloud.google.com/go/storage"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -198,12 +192,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	// init an pubsub manager
 	var pubsub = pubsub.NewPubSubManager()
 	serverObj.miningKeys = cfg.MiningKeys
-	if serverObj.miningKeys != "" {
+	if serverObj.miningKeys == "" {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
-			Logger.log.Critical(err)
-			return err
-		} else {
-			Logger.log.Error(err)
+			panic("miningkeys can't be empty in this node mode")
 		}
 	}
 	serverObj.pusubManager = pubsub
@@ -252,10 +243,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		CrossShardPool:    serverObj.crossShardPool,
 		Server:            serverObj,
 		// UserKeySet:        serverObj.userKeySet,
-		NodeMode:      cfg.NodeMode,
-		FeeEstimator:  make(map[byte]blockchain.FeeEstimator),
-		PubSubManager: pubsub,
-		RandomClient:  randomClient,
+		NodeMode:        cfg.NodeMode,
+		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
+		PubSubManager:   pubsub,
+		RandomClient:    randomClient,
+		ConsensusEngine: serverObj.consensusEngine,
 	})
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
@@ -270,7 +262,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	//init shard to beacon bool
 	mempool.InitShardToBeaconPool()
-
 	// or if it cannot be loaded, create a new one.
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
@@ -353,7 +344,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
+
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
+
 	// Init block template generator
 	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
 	if err != nil {
@@ -628,15 +621,13 @@ func (serverObj Server) Start() {
 
 		serverObj.rpcServer.Start()
 	}
-	go serverObj.blockChain.Synker.Start()
-
+	err := serverObj.consensusEngine.Start()
+	if err != nil {
+		Logger.log.Error(err)
+		go serverObj.Stop()
+		return
+	}
 	if cfg.NodeMode != common.NODEMODE_RELAY {
-		err := serverObj.consensusEngine.Start()
-		if err != nil {
-			Logger.log.Error(err)
-			go serverObj.Stop()
-			return
-		}
 		serverObj.memPool.IsBlockGenStarted = true
 		serverObj.blockChain.SetIsBlockGenStarted(true)
 		for _, shardPool := range serverObj.shardPool {
@@ -645,6 +636,7 @@ func (serverObj Server) Start() {
 		go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
+	go serverObj.blockChain.Synker.Start()
 	if serverObj.memPool != nil {
 		serverObj.memPool.LoadOrResetDatabaseMempool()
 		go serverObj.TransactionPoolBroadcastLoop()
@@ -722,69 +714,69 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
 // Force source code to be updated and remove data
 func (serverObject Server) CheckForceUpdateSourceCode() {
-	go func() {
-		ctx := context.Background()
-		myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
-		if err != nil {
-			Logger.log.Error(err)
-		}
-		for {
-			reader, err := myClient.Bucket("incognito").Object("version-chain.json").NewReader(ctx)
-			if err != nil {
-				Logger.log.Error(err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			defer reader.Close()
+	// go func() {
+	// 	ctx := context.Background()
+	// 	myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	// 	if err != nil {
+	// 		Logger.log.Error(err)
+	// 	}
+	// 	for {
+	// 		reader, err := myClient.Bucket("incognito").Object("version-chain.json").NewReader(ctx)
+	// 		if err != nil {
+	// 			Logger.log.Error(err)
+	// 			time.Sleep(10 * time.Second)
+	// 			continue
+	// 		}
+	// 		defer reader.Close()
 
-			type VersionChain struct {
-				Version    string `json:"Version"`
-				Note       string `json:"Note"`
-				RemoveData bool   `json:"RemoveData"`
-			}
-			versionChain := VersionChain{}
-			currentVersion := version()
-			body, err := ioutil.ReadAll(reader)
-			if err != nil {
-				Logger.log.Error(err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			err = json.Unmarshal(body, &versionChain)
-			if err != nil {
-				Logger.log.Error(err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			force := currentVersion != versionChain.Version
-			if force {
-				Logger.log.Error("\n*********************************************************************************\n" +
-					versionChain.Note +
-					"\n*********************************************************************************\n")
-				Logger.log.Error("\n*********************************************************************************\n You're running version: " +
-					currentVersion +
-					"\n*********************************************************************************\n")
-				Logger.log.Error("\n*********************************************************************************\n" +
-					versionChain.Note +
-					"\n*********************************************************************************\n")
+	// 		type VersionChain struct {
+	// 			Version    string `json:"Version"`
+	// 			Note       string `json:"Note"`
+	// 			RemoveData bool   `json:"RemoveData"`
+	// 		}
+	// 		versionChain := VersionChain{}
+	// 		currentVersion := version()
+	// 		body, err := ioutil.ReadAll(reader)
+	// 		if err != nil {
+	// 			Logger.log.Error(err)
+	// 			time.Sleep(10 * time.Second)
+	// 			continue
+	// 		}
+	// 		err = json.Unmarshal(body, &versionChain)
+	// 		if err != nil {
+	// 			Logger.log.Error(err)
+	// 			time.Sleep(10 * time.Second)
+	// 			continue
+	// 		}
+	// 		force := currentVersion != versionChain.Version
+	// 		if force {
+	// 			Logger.log.Error("\n*********************************************************************************\n" +
+	// 				versionChain.Note +
+	// 				"\n*********************************************************************************\n")
+	// 			Logger.log.Error("\n*********************************************************************************\n You're running version: " +
+	// 				currentVersion +
+	// 				"\n*********************************************************************************\n")
+	// 			Logger.log.Error("\n*********************************************************************************\n" +
+	// 				versionChain.Note +
+	// 				"\n*********************************************************************************\n")
 
-				Logger.log.Error("\n*********************************************************************************\n New version: " +
-					versionChain.Version +
-					"\n*********************************************************************************\n")
+	// 			Logger.log.Error("\n*********************************************************************************\n New version: " +
+	// 				versionChain.Version +
+	// 				"\n*********************************************************************************\n")
 
-				Logger.log.Error("\n*********************************************************************************\n" +
-					"We're exited because having a force update on this souce code." +
-					"\nPlease Update source code at https://github.com/incognitochain/incognito-chain" +
-					"\n*********************************************************************************\n")
-				if versionChain.RemoveData {
-					serverObject.Stop()
-					os.RemoveAll(cfg.DataDir)
-				}
-				os.Exit(common.ExitCodeForceUpdate)
-			}
-			time.Sleep(10 * time.Second)
-		}
-	}()
+	// 			Logger.log.Error("\n*********************************************************************************\n" +
+	// 				"We're exited because having a force update on this souce code." +
+	// 				"\nPlease Update source code at https://github.com/incognitochain/incognito-chain" +
+	// 				"\n*********************************************************************************\n")
+	// 			if versionChain.RemoveData {
+	// 				serverObject.Stop()
+	// 				os.RemoveAll(cfg.DataDir)
+	// 			}
+	// 			os.Exit(common.ExitCodeForceUpdate)
+	// 		}
+	// 		time.Sleep(10 * time.Second)
+	// 	}
+	// }()
 }
 
 /*

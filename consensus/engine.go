@@ -11,20 +11,22 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
-var AvailableConsensus map[string]chain.ConsensusInterface
+var AvailableConsensus map[string]ConsensusInterface
 
 type Engine struct {
 	sync.Mutex
 	cQuit              chan struct{}
 	started            bool
-	Node               chain.Node
-	ChainConsensusList map[string]chain.ConsensusInterface
+	Node               nodeInterface
+	ChainConsensusList map[string]ConsensusInterface
 	Chains             map[string]chain.ChainInterface
+	CurrentMiningChain string
 	Blockchain         *blockchain.BlockChain
 	BlockGen           *blockchain.BlockGenerator
+	MiningKeys         map[string]string
 }
 
-func New(node chain.Node, blockchain *blockchain.BlockChain, blockgen *blockchain.BlockGenerator) *Engine {
+func New(node nodeInterface, blockchain *blockchain.BlockChain, blockgen *blockchain.BlockGenerator) *Engine {
 	engine := Engine{
 		Node:       node,
 		Blockchain: blockchain,
@@ -44,9 +46,10 @@ func (engine *Engine) Start() error {
 	if engine.started {
 		return errors.New("Consensus engine is already started")
 	}
-	if engine.Node.GetMiningKeys() == "" {
-		return errors.New("MiningKeys can't be empty")
-	}
+	Logger.log.Info("starting consensus...")
+	// if engine.Node.GetMiningKeys() == "" {
+	// 	return errors.New("MiningKeys can't be empty")
+	// }
 	engine.cQuit = make(chan struct{})
 	go func() {
 		for {
@@ -149,7 +152,10 @@ func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
 	return nil
 }
 
-func RegisterConsensus(name string, consensus chain.ConsensusInterface) error {
+func RegisterConsensus(name string, consensus ConsensusInterface) error {
+	if len(AvailableConsensus) == 0 {
+		AvailableConsensus = make(map[string]ConsensusInterface)
+	}
 	AvailableConsensus[name] = consensus
 	return nil
 }
@@ -174,7 +180,8 @@ func (engine *Engine) IsOngoing(chainName string) bool {
 	return false
 }
 
-func (s *Engine) OnBFTMsg(msg wire.Message) {
+func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
+
 	// switch msg.MessageType() {
 	// case wire.CmdBFTPropose:
 	// 	rawProposeMsg := msg.(*wire.MessageBFTProposeV2)
@@ -189,7 +196,7 @@ func (s *Engine) OnBFTMsg(msg wire.Message) {
 	// }
 }
 
-func (s *Engine) GetUserRole() (string, int) {
+func (engine *Engine) GetUserRole() (string, int) {
 	return "", 0
 }
 
@@ -235,3 +242,7 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 // 	}
 // 	return prepareMsg
 // }
+
+func (engine *Engine) GetBlockProducerPubKeyB58(validationData string, consensusType string) string {
+	return ""
+}

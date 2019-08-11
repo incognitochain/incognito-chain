@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
@@ -40,7 +41,7 @@ func (e *BLSBFT) validatePreSignBlock(block chain.BlockInterface) error {
 	return nil
 }
 
-func (e *BLSBFT) ValidateBlock(block chain.BlockInterface) error {
+func (e *BLSBFT) ValidateBlock(block consensus.BlockInterface) error {
 
 	// 1. Verify producer's sig
 	// 2. Verify Committee's sig
@@ -57,7 +58,7 @@ func (e *BLSBFT) ValidateBlock(block chain.BlockInterface) error {
 	return nil
 }
 
-func (e *BLSBFT) ValidateProducerPosition(block chain.BlockInterface) error {
+func (e *BLSBFT) ValidateProducerPosition(block consensus.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
@@ -72,7 +73,7 @@ func (e *BLSBFT) ValidateProducerPosition(block chain.BlockInterface) error {
 	return nil
 }
 
-func (e *BLSBFT) ValidateProducerSig(block chain.BlockInterface) error {
+func (e *BLSBFT) ValidateProducerSig(block consensus.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
@@ -84,7 +85,7 @@ func (e *BLSBFT) ValidateProducerSig(block chain.BlockInterface) error {
 	return nil
 }
 
-func (e *BLSBFT) ValidateCommitteeSig(block chain.BlockInterface) error {
+func (e *BLSBFT) ValidateCommitteeSig(block consensus.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
@@ -105,7 +106,7 @@ func (e *BLSBFT) FinalizedValidationData(block chain.BlockInterface, sigs []stri
 	return nil
 }
 
-func (e BLSBFT) NewInstance() chain.ConsensusInterface {
+func (e BLSBFT) NewInstance() consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	return &newInstance
 }

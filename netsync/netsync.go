@@ -57,7 +57,7 @@ type NetSyncConfig struct {
 		PushMessageToAll(wire.Message) error
 	}
 	Consensus interface {
-		OnBFTMsg(wire.Message)
+		OnBFTMsg(*wire.MessageBFT)
 	}
 }
 
@@ -141,31 +141,35 @@ out:
 								}
 							}
 						}
-					case *wire.MessageBFTPropose:
-						{
-							netSync.HandleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTProposeV2:
-						{
-							netSync.HandleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTPrepareV2:
-						{
-							netSync.HandleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTAgree:
-						{
-							netSync.HandleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTCommit:
-						{
-							netSync.HandleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTReady:
-						{
-							netSync.HandleMessageBFTMsg(msg)
-						}
-					case *wire.MessageBFTReq:
+					// case *wire.MessageBFTPropose:
+					// 	{
+					// 		netSync.HandleMessageBFTMsg(msg)
+					// 	}
+					// case *wire.MessageBFTProposeV2:
+					// 	{
+					// 		netSync.HandleMessageBFTMsg(msg)
+					// 	}
+					// case *wire.MessageBFTPrepareV2:
+					// 	{
+					// 		netSync.HandleMessageBFTMsg(msg)
+					// 	}
+					// case *wire.MessageBFTAgree:
+					// 	{
+					// 		netSync.HandleMessageBFTMsg(msg)
+					// 	}
+					// case *wire.MessageBFTCommit:
+					// 	{
+					// 		netSync.HandleMessageBFTMsg(msg)
+					// 	}
+					// case *wire.MessageBFTReady:
+					// 	{
+					// 		netSync.HandleMessageBFTMsg(msg)
+					// 	}
+					// case *wire.MessageBFTReq:
+					// 	{
+					// 		netSync.HandleMessageBFTMsg(msg)
+					// 	}
+					case *wire.MessageBFT:
 						{
 							netSync.HandleMessageBFTMsg(msg)
 						}
@@ -406,7 +410,7 @@ func (netSync *NetSync) HandleMessageShardToBeacon(msg *wire.MessageShardToBeaco
 	}
 }
 
-func (netSync *NetSync) HandleMessageBFTMsg(msg wire.Message) {
+func (netSync *NetSync) HandleMessageBFTMsg(msg *wire.MessageBFT) {
 	Logger.log.Info("Handling new message BFTMsg")
 	if err := msg.VerifyMsgSanity(); err != nil {
 		Logger.log.Error(err)
