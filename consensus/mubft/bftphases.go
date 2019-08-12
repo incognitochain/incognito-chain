@@ -15,6 +15,11 @@ import (
 func (protocol *BFTProtocol) phasePropose() error {
 	go protocol.CreateBlockMsg()
 	phaseDuration := getTimeout(protocol.phase, len(protocol.RoundData.Committee))
+	if protocol.RoundData.Layer == common.BEACON_ROLE {
+		phaseDuration += common.MinBeaconBlkInterval
+	} else {
+		phaseDuration += common.MinShardBlkInterval
+	}
 	timeout := time.AfterFunc(phaseDuration, func() {
 		fmt.Println("BFT: Propose phase timeout", time.Since(protocol.startTime).Seconds())
 		protocol.closeTimeoutCh()
