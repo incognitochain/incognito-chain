@@ -535,7 +535,7 @@ func TestWalletDumpPrivkey(t *testing.T) {
 		paymentAddrSerialized := newAccount.Key.Base58CheckSerialize(PaymentAddressType)
 		privateKeySerialized := newAccount.Key.Base58CheckSerialize(PriKeyType)
 
-		keyData := wallet.DumpPrivkey(paymentAddrSerialized)
+		keyData := wallet.DumpPrivateKey(paymentAddrSerialized)
 
 		assert.Equal(t, privateKeySerialized, keyData.PrivateKey)
 	}
@@ -558,7 +558,7 @@ func TestWalletDumpPrivkeyWithNotExistedAcc(t *testing.T) {
 		newAccount, _ := wallet.CreateNewAccount(item.accountName, &item.shardID)
 		paymentAddrSerialized := newAccount.Key.Base58CheckSerialize(PaymentAddressType)
 
-		keyData := wallet.DumpPrivkey(paymentAddrSerialized + "123")
+		keyData := wallet.DumpPrivateKey(paymentAddrSerialized + "123")
 
 		assert.Equal(t, "", keyData.PrivateKey)
 	}
@@ -748,7 +748,7 @@ func TestWalletContainPubKey(t *testing.T) {
 	for _, item := range data {
 		newAcc, _ := wallet.CreateNewAccount(item.accountName, &item.shardID)
 
-		res := wallet.ContainPubKey(newAcc.Key.KeySet.PaymentAddress.Pk)
+		res := wallet.ContainPublicKey(newAcc.Key.KeySet.PaymentAddress.Pk)
 		assert.Equal(t, true, res)
 	}
 }
@@ -771,6 +771,6 @@ func TestWalletContainPubKeyWithNotExistedPubKey(t *testing.T) {
 	}
 
 	randPubKey := privacy.RandBytes(common.PublicKeySize)
-	res := wallet.ContainPubKey(randPubKey)
+	res := wallet.ContainPublicKey(randPubKey)
 	assert.Equal(t, false, res)
 }
