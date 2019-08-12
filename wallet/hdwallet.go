@@ -5,9 +5,9 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // KeyWallet represents with bip32 standard
@@ -145,7 +145,7 @@ func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
 // Deserialize receives a byte array and deserializes into KeySet
 // because data contains keyType and serialized data of corresponding key
 // it returns KeySet just contain corresponding key
-func Deserialize(data []byte) (*KeyWallet, error) {
+func deserialize(data []byte) (*KeyWallet, error) {
 	var key = &KeyWallet{}
 	keyType := data[0]
 	if keyType == PriKeyType {
@@ -190,5 +190,5 @@ func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	return Deserialize(b)
+	return deserialize(b)
 }
