@@ -1,7 +1,6 @@
 package oneoutofmany
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,7 +33,7 @@ type OneOutOfManyProof struct {
 	zd             *big.Int
 }
 
-func (proof *OneOutOfManyProof) ValidateSanity() bool {
+func (proof OneOutOfManyProof) ValidateSanity() bool {
 	if len(proof.cl) != privacy.CommitmentRingSizeExp || len(proof.ca) != privacy.CommitmentRingSizeExp ||
 		len(proof.cb) != privacy.CommitmentRingSizeExp || len(proof.cd) != privacy.CommitmentRingSizeExp ||
 		len(proof.f) != privacy.CommitmentRingSizeExp || len(proof.za) != privacy.CommitmentRingSizeExp ||
@@ -70,7 +69,7 @@ func (proof *OneOutOfManyProof) ValidateSanity() bool {
 	return proof.zd.BitLen() <= 256
 }
 
-func (proof *OneOutOfManyProof) isNil() bool {
+func (proof OneOutOfManyProof) isNil() bool {
 	if proof.cl == nil {
 		return true
 	}
@@ -92,10 +91,7 @@ func (proof *OneOutOfManyProof) isNil() bool {
 	if proof.zb == nil {
 		return true
 	}
-	if proof.zd == nil {
-		return true
-	}
-	return false
+	return proof.zd == nil
 }
 
 func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
@@ -106,16 +102,12 @@ func (proof *OneOutOfManyProof) Init() *OneOutOfManyProof {
 }
 
 // Set sets Statement
-func (stmt *OneOutOfManyStatement) Set(
-	commitments []*privacy.EllipticPoint) {
+func (stmt *OneOutOfManyStatement) Set(commitments []*privacy.EllipticPoint) {
 	stmt.Commitments = commitments
 }
 
 // Set sets Witness
-func (wit *OneOutOfManyWitness) Set(
-	commitments []*privacy.EllipticPoint,
-	rand *big.Int,
-	indexIsZero uint64) {
+func (wit *OneOutOfManyWitness) Set(commitments []*privacy.EllipticPoint, rand *big.Int, indexIsZero uint64) {
 	wit.stmt = new(OneOutOfManyStatement)
 	wit.stmt.Set(commitments)
 
@@ -139,7 +131,7 @@ func (proof *OneOutOfManyProof) Set(
 }
 
 // Bytes converts one of many proof to bytes array
-func (proof *OneOutOfManyProof) Bytes() []byte {
+func (proof OneOutOfManyProof) Bytes() []byte {
 	// if proof is nil, return an empty array
 	if proof.isNil() {
 		return []byte{}
@@ -173,21 +165,21 @@ func (proof *OneOutOfManyProof) Bytes() []byte {
 
 	// convert array f to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.f[i], common.BigIntSize)...)
+		bytes = append(bytes, common.AddPaddingBigInt(proof.f[i], common.BigIntSize)...)
 	}
 
 	// convert array za to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.za[i], common.BigIntSize)...)
+		bytes = append(bytes, common.AddPaddingBigInt(proof.za[i], common.BigIntSize)...)
 	}
 
 	// convert array zb to bytes array
 	for i := 0; i < n; i++ {
-		bytes = append(bytes, privacy.AddPaddingBigInt(proof.zb[i], common.BigIntSize)...)
+		bytes = append(bytes, common.AddPaddingBigInt(proof.zb[i], common.BigIntSize)...)
 	}
 
 	// convert array zd to bytes array
-	bytes = append(bytes, privacy.AddPaddingBigInt(proof.zd, common.BigIntSize)...)
+	bytes = append(bytes, common.AddPaddingBigInt(proof.zd, common.BigIntSize)...)
 
 	return bytes
 }
@@ -275,7 +267,7 @@ func (proof *OneOutOfManyProof) SetBytes(bytes []byte) error {
 }
 
 // Prove produces a proof for the statement
-func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
+func (wit OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 	// Check the number of Commitment list's elements
 	N := len(wit.stmt.Commitments)
 	if N != privacy.CommitmentRingSize {
@@ -317,35 +309,36 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 
 		// Calculate cl, ca, cb, cd
 		// cl = Com(l, r)
-		cl[j] = privacy.PedCom.CommitAtIndex(indexInt, r[j], privacy.SK)
+		cl[j] = privacy.PedCom.CommitAtIndex(indexInt, r[j], privacy.PedersenPrivateKeyIndex)
 
 		// ca = Com(a, s)
-		ca[j] = privacy.PedCom.CommitAtIndex(a[j], s[j], privacy.SK)
+		ca[j] = privacy.PedCom.CommitAtIndex(a[j], s[j], privacy.PedersenPrivateKeyIndex)
 
 		// cb = Com(la, t)
 		la := new(big.Int).Mul(indexInt, a[j])
 		//la.Mod(la, privacy.Curve.Params().N)
-		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], privacy.SK)
+		cb[j] = privacy.PedCom.CommitAtIndex(la, t[j], privacy.PedersenPrivateKeyIndex)
 	}
 
 	// Calculate: cd_k = ci^pi,k
 	for k := 0; k < n; k++ {
 		// Calculate pi,k which is coefficient of x^k in polynomial pi(x)
-		cd[k] = new(privacy.EllipticPoint).Zero()
+		cd[k] = new(privacy.EllipticPoint)
+		cd[k].Zero()
 
 		for i := 0; i < N; i++ {
 			iBinary := privacy.ConvertIntToBinary(i, n)
-			pik := GetCoefficient(iBinary, k, n, a, indexIsZeroBinary)
+			pik := getCoefficient(iBinary, k, n, a, indexIsZeroBinary)
 			cd[k] = cd[k].Add(wit.stmt.Commitments[i].ScalarMult(pik))
 		}
 
-		cd[k] = cd[k].Add(privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], privacy.SK))
+		cd[k] = cd[k].Add(privacy.PedCom.CommitAtIndex(big.NewInt(0), u[k], privacy.PedersenPrivateKeyIndex))
 	}
 
 	// Calculate x
 	x := big.NewInt(0)
 	for j := 0; j < n; j++ {
-		x = utils.GenerateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
+		x = utils.GenerateChallenge([][]byte{common.AddPaddingBigInt(x, common.BigIntSize), cl[j].Compress(), ca[j].Compress(), cb[j].Compress(), cd[j].Compress()})
 	}
 
 	// Calculate za, zb zd
@@ -395,12 +388,12 @@ func (wit *OneOutOfManyWitness) Prove() (*OneOutOfManyProof, error) {
 }
 
 // Verify verifies a proof output by Prove
-func (proof *OneOutOfManyProof) Verify() bool {
+func (proof OneOutOfManyProof) Verify() (bool, error) {
 	N := len(proof.Statement.Commitments)
 
 	// the number of Commitment list's elements must be equal to CMRingSize
 	if N != privacy.CommitmentRingSize {
-		return false
+		return false, errors.New("Invalid length of commitments list in one out of many proof")
 	}
 	n := privacy.CommitmentRingSizeExp
 
@@ -408,17 +401,17 @@ func (proof *OneOutOfManyProof) Verify() bool {
 	x := big.NewInt(0)
 
 	for j := 0; j < n; j++ {
-		x = utils.GenerateChallenge([][]byte{privacy.AddPaddingBigInt(x, common.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
+		x = utils.GenerateChallenge([][]byte{common.AddPaddingBigInt(x, common.BigIntSize), proof.cl[j].Compress(), proof.ca[j].Compress(), proof.cb[j].Compress(), proof.cd[j].Compress()})
 	}
 
 	for i := 0; i < n; i++ {
 		//Check cl^x * ca = Com(f, za)
 		leftPoint1 := proof.cl[i].ScalarMult(x).Add(proof.ca[i])
-		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.SK)
+		rightPoint1 := privacy.PedCom.CommitAtIndex(proof.f[i], proof.za[i], privacy.PedersenPrivateKeyIndex)
 
 		if !leftPoint1.IsEqual(rightPoint1) {
-			fmt.Printf("ERR1\n")
-			return false
+			privacy.Logger.Log.Errorf("verify one out of many proof statement 1 failed")
+			return false, errors.New("verify one out of many proof statement 1 failed")
 		}
 
 		//Check cl^(x-f) * cb = Com(0, zb)
@@ -426,16 +419,18 @@ func (proof *OneOutOfManyProof) Verify() bool {
 		xSubF.Mod(xSubF, privacy.Curve.Params().N)
 
 		leftPoint2 := proof.cl[i].ScalarMult(xSubF).Add(proof.cb[i])
-		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb[i], privacy.SK)
+		rightPoint2 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zb[i], privacy.PedersenPrivateKeyIndex)
 
 		if !leftPoint2.IsEqual(rightPoint2) {
-			fmt.Printf("ERR1\n")
-			return false
+			privacy.Logger.Log.Errorf("verify one out of many proof statement 2 failed")
+			return false, errors.New("verify one out of many proof statement 2 failed")
 		}
 	}
 
-	leftPoint3 := new(privacy.EllipticPoint).Zero()
-	leftPoint32 := new(privacy.EllipticPoint).Zero()
+	leftPoint3 := new(privacy.EllipticPoint)
+	leftPoint3.Zero()
+	leftPoint32 := new(privacy.EllipticPoint)
+	leftPoint32.Zero()
 
 	for i := 0; i < N; i++ {
 		iBinary := privacy.ConvertIntToBinary(i, n)
@@ -466,18 +461,18 @@ func (proof *OneOutOfManyProof) Verify() bool {
 
 	leftPoint3 = leftPoint3.Add(leftPoint32)
 
-	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, privacy.SK)
+	rightPoint3 := privacy.PedCom.CommitAtIndex(big.NewInt(0), proof.zd, privacy.PedersenPrivateKeyIndex)
 
-	//fmt.Printf("Leftpoint3: %v\n", leftPoint3.Compress())
-	//fmt.Printf("RightPoint3: %v\n", rightPoint3.Compress())
-	//fmt.Printf("Leftpoint32: %v\n", leftPoint32.Compress())
-	//fmt.Printf("ERR3\n")
+	if !leftPoint3.IsEqual(rightPoint3) {
+		privacy.Logger.Log.Errorf("verify one out of many proof statement 3 failed")
+		return false, errors.New("verify one out of many proof statement 3 failed")
+	}
 
-	return leftPoint3.IsEqual(rightPoint3)
+	return true, nil
 }
 
 // Get coefficient of x^k in the polynomial p_i(x)
-func GetCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.Int {
+func getCoefficient(iBinary []byte, k int, n int, a []*big.Int, l []byte) *big.Int {
 	res := privacy.Poly{big.NewInt(1)}
 	var fji privacy.Poly
 
