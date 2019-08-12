@@ -8,8 +8,8 @@ import (
 )
 
 /*
-		Unit test for NewEntropy function
- */
+	Unit test for NewEntropy function
+*/
 
 func TestMnemonicNewEntropy(t *testing.T) {
 	data := []int{128, 256}
@@ -35,8 +35,8 @@ func TestMnemonicNewEntropyWithInvalidBitSize(t *testing.T) {
 }
 
 /*
-		Unit test for NewMnemonic function
- */
+	Unit test for NewMnemonic function
+*/
 func TestMnemonicNewMnemonic(t *testing.T) {
 	data := []int{128, 256}
 	mnemonic := MnemonicGenerator{}
@@ -70,8 +70,8 @@ func TestMnemonicNewMnemonicWithInvalidEntropy(t *testing.T) {
 }
 
 /*
-		Unit test for MnemonicToByteArray function
- */
+	Unit test for MnemonicToByteArray function
+*/
 func TestMnemonicMnemonicToByteArray(t *testing.T) {
 	data := []struct {
 		len   int
@@ -122,7 +122,7 @@ func TestMnemonicMnemonicToByteArrayWithInvalidMnemonic(t *testing.T) {
 		len   int
 		words string
 	}{
-		{ 1, "abc"},
+		{1, "abc"},
 		{13, "comic best traffic surround pool want vicious grape october shift scrap stadium abc"},
 		{25, "organ local excess argue economy item surge unfair there knee tongue tree labor divert hockey mountain update differ trial buzz tomato ball farm seven abc"},
 	}
@@ -136,8 +136,8 @@ func TestMnemonicMnemonicToByteArrayWithInvalidMnemonic(t *testing.T) {
 }
 
 /*
-		Unit test for NewSeed function
- */
+	Unit test for NewSeed function
+*/
 
 func TestMnemonicNewSeed(t *testing.T) {
 	data := []struct {
@@ -154,7 +154,7 @@ func TestMnemonicNewSeed(t *testing.T) {
 		seedBytes := mnemonic.NewSeed(item.words, password)
 
 		log.Print("seedBytes: ", seedBytes)
-		assert.Equal(t, SeedKeyLen, len(seedBytes))
+		assert.Equal(t, seedKeyLen, len(seedBytes))
 	}
 }
 
@@ -163,7 +163,7 @@ func TestMnemonicNewSeedWithInvalidMnemonic(t *testing.T) {
 		len   int
 		words string
 	}{
-		{ 1, "abc"},
+		{1, "abc"},
 		{13, "comic best traffic surround pool want vicious grape october shift scrap stadium abc"},
 		{25, "organ local excess argue economy item surge unfair there knee tongue tree labor divert hockey mountain update differ trial buzz tomato ball farm seven abc"},
 	}
@@ -173,18 +173,18 @@ func TestMnemonicNewSeedWithInvalidMnemonic(t *testing.T) {
 	for _, item := range data {
 		seedBytes := mnemonic.NewSeed(item.words, password)
 		log.Print("seedBytes: ", seedBytes)
-		assert.Equal(t, SeedKeyLen, len(seedBytes))
+		assert.Equal(t, seedKeyLen, len(seedBytes))
 	}
 }
 
 /*
-		Unit test for IsMnemonicValid function
- */
+	Unit test for IsMnemonicValid function
+*/
 
 func TestMnemonicIsMnemonicValid(t *testing.T) {
 	data := []struct {
-		len   int
-		words string
+		len     int
+		words   string
 		isValid bool
 	}{
 		{12, "comic best traffic surround pool want vicious grape october shift scrap stadium", true},
