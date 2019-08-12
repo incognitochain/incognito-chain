@@ -205,16 +205,16 @@ func TestHDWalletDeserialize(t *testing.T) {
 	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
 	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
 
-	keyWallet, err := Deserialize(privKeyBytes)
+	keyWallet, err := deserialize(privKeyBytes)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, masterKey.KeySet.PrivateKey, keyWallet.KeySet.PrivateKey)
 
-	keyWallet, err = Deserialize(paymentAddrBytes)
+	keyWallet, err = deserialize(paymentAddrBytes)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, masterKey.KeySet.PaymentAddress.Pk, keyWallet.KeySet.PaymentAddress.Pk)
 	assert.Equal(t, masterKey.KeySet.PaymentAddress.Tk, keyWallet.KeySet.PaymentAddress.Tk)
 
-	keyWallet, err = Deserialize(readonlyKeyBytes)
+	keyWallet, err = deserialize(readonlyKeyBytes)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Pk, keyWallet.KeySet.ReadonlyKey.Pk)
 	assert.Equal(t, masterKey.KeySet.ReadonlyKey.Rk, keyWallet.KeySet.ReadonlyKey.Rk)
@@ -233,13 +233,13 @@ func TestHDWalletDeserializeWithInvalidChecksum(t *testing.T) {
 	paymentAddrBytes[len(paymentAddrBytes)-1] = 0
 	readonlyKeyBytes[len(readonlyKeyBytes)-1] = 0
 
-	_, err = Deserialize(privKeyBytes)
+	_, err = deserialize(privKeyBytes)
 	assert.Equal(t, NewWalletError(InvalidChecksumErr, nil), err)
 
-	_, err = Deserialize(paymentAddrBytes)
+	_, err = deserialize(paymentAddrBytes)
 	assert.Equal(t, NewWalletError(InvalidChecksumErr, nil), err)
 
-	_, err = Deserialize(readonlyKeyBytes)
+	_, err = deserialize(readonlyKeyBytes)
 	assert.Equal(t, NewWalletError(InvalidChecksumErr, nil), err)
 }
 
