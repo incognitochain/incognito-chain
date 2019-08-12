@@ -1,6 +1,7 @@
 package netsync
 
 import (
+	"github.com/pkg/errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -103,15 +104,17 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 	}
 	netSync.config.ShardBlockEvent = subChanShardBlock
 }
-func (netSync *NetSync) Start() {
+
+func (netSync *NetSync) Start() error {
 	// Already started?
 	if atomic.AddInt32(&netSync.started, 1) != 1 {
-		return
+		return NewNetSyncError(AlreadyStartError, errors.New("Already started"))
 	}
 	Logger.log.Debug("Starting sync manager")
 	//netSync.waitgroup.Add(1)
 	go netSync.messageHandler()
 	go netSync.cacheLoop()
+	return nil
 }
 
 // Stop gracefully shuts down the sync manager by stopping all asynchronous
@@ -230,31 +233,34 @@ out:
 	Logger.log.Debug("Block handler done")
 }
 
-func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) {
+func (netSync *NetSync) QueueTx(peer *peer.Peer, msg *wire.MessageTx, done chan struct{}) error {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
-		return
+		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
 	netSync.cMessage <- msg
+	return nil
 }
 
-func (netSync *NetSync) QueueTxToken(peer *peer.Peer, msg *wire.MessageTxToken, done chan struct{}) {
+func (netSync *NetSync) QueueTxToken(peer *peer.Peer, msg *wire.MessageTxToken, done chan struct{}) error {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
-		return
+		return NewNetSyncError(AlreadyShutdownError, errors.New("we're shutting down"))
 	}
 	netSync.cMessage <- msg
+	return nil
 }
 
-func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTxPrivacyToken, done chan struct{}) {
+func (netSync *NetSync) QueueTxPrivacyToken(peer *peer.Peer, msg *wire.MessageTxPrivacyToken, done chan struct{}) error {
 	// Don't accept more transactions if we're shutting down.
 	if atomic.LoadInt32(&netSync.shutdown) != 0 {
 		done <- struct{}{}
-		return
+		return NewNetSyncError(AlreadyShutdownError, errors.New("We're shutting down"))
 	}
 	netSync.cMessage <- msg
+	return nil
 }
 
 // handleTxMsg handles transaction messages from all peers.
@@ -483,7 +489,10 @@ func (netSync *NetSync) HandleCacheBlock(blockHash string) bool {
 	if ok {
 		return true
 	}
-	netSync.cache.blockCache.Add(blockHash, 1, messageLiveTime)
+	err := netSync.cache.blockCache.Add(blockHash, 1, messageLiveTime)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	return false
 }
 
@@ -494,14 +503,20 @@ func (netSync *NetSync) HandleCacheTx(txHash common.Hash) bool {
 	if ok {
 		return true
 	}
-	netSync.cache.txCache.Add(txHash.String(), 1, messageLiveTime)
+	err := netSync.cache.txCache.Add(txHash.String(), 1, messageLiveTime)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	return false
 }
 
 func (netSync *NetSync) HandleCacheTxHash(txHash common.Hash) {
 	netSync.cache.txCacheMtx.Lock()
 	defer netSync.cache.txCacheMtx.Unlock()
-	netSync.cache.txCache.Add(txHash.String(), 1, messageLiveTime)
+	err := netSync.cache.txCache.Add(txHash.String(), 1, messageLiveTime)
+	if err != nil {
+		Logger.log.Error(err)
+	}
 }
 
 func (netSync *NetSync) HandleTxWithRole(tx metadata.Transaction) bool {
