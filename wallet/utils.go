@@ -3,14 +3,7 @@ package wallet
 import (
 	"crypto/sha256"
 	"math/big"
-
-	"github.com/incognitochain/incognito-chain/common/base58"
 )
-
-func addChecksumToBytes(data []byte) ([]byte, error) {
-	checksum := base58.ChecksumFirst4Bytes(data)
-	return append(data, checksum...), nil
-}
 
 // padByteSlice returns a byte slice of the given size with contents of the
 // given slice left padded and any empty spaces filled with 0's.
