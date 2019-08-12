@@ -30,6 +30,7 @@ const (
 	ErrUnsubcribe
 	ErrSubcribe
 	ErrNetwork
+	ErrTokenIsInvalid
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -40,7 +41,7 @@ var ErrCodeMessage = map[int]struct {
 	// general
 	ErrUnexpected:     {-1, "Unexpected error"},
 	ErrAlreadyStarted: {-2, "RPC server is already started"},
-	ErrNetwork: {-3, "Network Error, failed to send request to RPC server"},
+	ErrNetwork:        {-3, "Network Error, failed to send request to RPC server"},
 
 	// validate component -1xxx
 	ErrRPCInvalidRequest:             {-1001, "Invalid request"},
@@ -60,6 +61,7 @@ var ErrCodeMessage = map[int]struct {
 	ErrInvalidSenderViewingKey:       {-1015, "Invalid viewing key"},
 	ErrRejectInvalidFee:              {-1016, "Reject invalid fee"},
 	ErrTxNotExistedInMemAndBLock:     {-1017, "Tx is not existed in mem and block"},
+	ErrTokenIsInvalid:                {-1018, "Token is invalid"},
 
 	// processing -2xxx
 	ErrCreateTxData: {-2001, "Can not create tx"},
@@ -77,9 +79,11 @@ type RPCError struct {
 	err        error  `json:"Err"`
 	StackTrace string `json:"StackTrace"`
 }
+
 func GetErrorCode(err int) int {
 	return ErrCodeMessage[err].code
 }
+
 // Guarantee RPCError satisifies the builtin error interface.
 var _, _ error = RPCError{}, (*RPCError)(nil)
 
