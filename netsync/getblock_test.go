@@ -53,7 +53,7 @@ func TestNetSyncGetBlkShardByHashAndSend(t *testing.T) {
 		ShardToBeaconPool: shardToBeaconPool,
 	})
 	// type 0: shard block
-	netSync.getBlkShardByHashAndSend(peerID, 0, []common.Hash{hash0, hash1, hash2}, 1)
+	netSync.getBlockShardByHashAndSend(peerID, blockShard, []common.Hash{hash0, hash1, hash2}, 1)
 }
 
 // Just test flow of this function, other type with be test in later case
