@@ -52,7 +52,7 @@ func NewMasterKey(seed []byte) (*KeyWallet, error) {
 func (key *KeyWallet) NewChildKey(childIdx uint32) (*KeyWallet, error) {
 	intermediary, err := key.getIntermediary(childIdx)
 	if err != nil {
-		return nil, err
+		return nil, NewWalletError(NewChildKeyError, err)
 	}
 
 	newSeed := []byte{}
