@@ -58,7 +58,7 @@ func TestInit(t *testing.T) {
 		assert.Equal(t, int(item.numOfAccount), len(wallet.MasterAccount.Child))
 		assert.Equal(t, item.name, wallet.Name)
 		assert.Equal(t, item.passPhrase, wallet.PassPhrase)
-		assert.Equal(t, SeedKeyLen, len(wallet.Seed))
+		assert.Equal(t, seedKeyLen, len(wallet.Seed))
 		assert.Greater(t, len(wallet.Mnemonic), 0)
 	}
 }
@@ -113,8 +113,8 @@ func TestCreateNewAccount(t *testing.T) {
 		assert.Equal(t, item.shardID, actualShardID)
 		assert.Equal(t, false, newAccount.IsImported)
 		assert.Equal(t, 0, len(newAccount.Child))
-		assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
-		assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
+		assert.Equal(t, childNumberLen, len(newAccount.Key.ChildNumber))
+		assert.Equal(t, chainCodeLen, len(newAccount.Key.ChainCode))
 		assert.Equal(t, common.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
 		assert.Equal(t, common.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
 		assert.Equal(t, common.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
@@ -143,8 +143,8 @@ func TestCreateNewAccountWithEmptyName(t *testing.T) {
 	assert.Equal(t, shardID, actualShardID)
 	assert.Equal(t, false, newAccount.IsImported)
 	assert.Equal(t, 0, len(newAccount.Child))
-	assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
-	assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
+	assert.Equal(t, childNumberLen, len(newAccount.Key.ChildNumber))
+	assert.Equal(t, chainCodeLen, len(newAccount.Key.ChainCode))
 	assert.Equal(t, common.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
 	assert.Equal(t, common.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
 	assert.Equal(t, common.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
@@ -168,8 +168,8 @@ func TestCreateNewAccountWithNilShardID(t *testing.T) {
 	assert.GreaterOrEqual(t, actualShardID, byte(0))
 	assert.Equal(t, false, newAccount.IsImported)
 	assert.Equal(t, 0, len(newAccount.Child))
-	assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
-	assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
+	assert.Equal(t, childNumberLen, len(newAccount.Key.ChildNumber))
+	assert.Equal(t, chainCodeLen, len(newAccount.Key.ChainCode))
 	assert.Equal(t, common.PublicKeySize, len(newAccount.Key.KeySet.PaymentAddress.Pk))
 	assert.Equal(t, common.TransmissionKeySize, len(newAccount.Key.KeySet.PaymentAddress.Tk))
 	assert.Equal(t, common.PrivateKeySize, len(newAccount.Key.KeySet.PrivateKey))
@@ -202,7 +202,7 @@ func TestWalletExportAccount(t *testing.T) {
 
 	for i := range wallet.MasterAccount.Child {
 		res := wallet.ExportAccount(uint32(i))
-		assert.Equal(t, PrivateKeySerializedLen, len(res))
+		assert.Equal(t, privateKeySerializedLen, len(res))
 	}
 }
 
@@ -243,8 +243,8 @@ func TestWalletImportAccount(t *testing.T) {
 		assert.Equal(t, item.accountName, newAccount.Name)
 		assert.Equal(t, true, newAccount.IsImported)
 		assert.Equal(t, 0, len(newAccount.Child))
-		assert.Equal(t, ChildNumberLen, len(newAccount.Key.ChildNumber))
-		assert.Equal(t, ChainCodeLen, len(newAccount.Key.ChainCode))
+		assert.Equal(t, childNumberLen, len(newAccount.Key.ChildNumber))
+		assert.Equal(t, chainCodeLen, len(newAccount.Key.ChainCode))
 		assert.Equal(t, keyWallet.KeySet.PrivateKey, newAccount.Key.KeySet.PrivateKey)
 
 		numAccount++
