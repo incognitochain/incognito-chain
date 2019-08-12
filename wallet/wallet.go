@@ -15,6 +15,7 @@ type AccountWallet struct {
 	Child      []AccountWallet
 	IsImported bool
 }
+
 type Wallet struct {
 	Seed          []byte
 	Entropy       []byte
@@ -292,7 +293,7 @@ func (wallet *Wallet) LoadWallet(password string) error {
 // and returns KeySerializedData object contains PrivateKey
 // which is corresponding to paymentAddrSerialized in all wallet accounts
 // If there is not any wallet account corresponding to paymentAddrSerialized, it returns empty KeySerializedData object
-func (wallet *Wallet) DumpPrivkey(paymentAddrSerialized string) KeySerializedData {
+func (wallet *Wallet) DumpPrivateKey(paymentAddrSerialized string) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(PaymentAddressType)
 		if address == paymentAddrSerialized {
@@ -356,7 +357,7 @@ func (wallet *Wallet) ListAccounts() map[string]AccountWallet {
 }
 
 // ContainPubKey checks whether the wallet contains any account with pubKey or not
-func (wallet *Wallet) ContainPubKey(pubKey []byte) bool {
+func (wallet *Wallet) ContainPublicKey(pubKey []byte) bool {
 	for _, account := range wallet.MasterAccount.Child {
 		if bytes.Equal(account.Key.KeySet.PaymentAddress.Pk[:], pubKey) {
 			return true

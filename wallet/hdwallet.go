@@ -22,13 +22,13 @@ type KeyWallet struct {
 // Seed is a bytes array which any size
 func NewMasterKey(seed []byte) (*KeyWallet, error) {
 	// Generate PubKey and chaincode
-	hmac := hmac.New(sha512.New, []byte("Incognito Seed"))
-	_, err := hmac.Write(seed)
+	hmacObj := hmac.New(sha512.New, []byte("Incognito Seed"))
+	_, err := hmacObj.Write(seed)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
-	intermediary := hmac.Sum(nil)
+	intermediary := hmacObj.Sum(nil)
 
 	// Split it into our PubKey and chain code
 	keyBytes := intermediary[:32]  // use to create master private/public keypair
@@ -76,12 +76,12 @@ func (key *KeyWallet) getIntermediary(childIdx uint32) ([]byte, error) {
 	var data []byte
 	data = append(data, childIndexBytes...)
 
-	hmac := hmac.New(sha512.New, key.ChainCode)
-	_, err := hmac.Write(data)
+	hmacObj := hmac.New(sha512.New, key.ChainCode)
+	_, err := hmacObj.Write(data)
 	if err != nil {
 		return nil, err
 	}
-	return hmac.Sum(nil), nil
+	return hmacObj.Sum(nil), nil
 }
 
 // Serialize receives keyType and serializes key which has keyType to bytes array
@@ -121,13 +121,18 @@ func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 	}
 
 	// Append the standard doublesha256 checksum
-	serializedKey, err := addChecksumToBytes(buffer.Bytes())
+	serializedKey, err := key.addChecksumToBytes(buffer.Bytes())
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
 	}
 
 	return serializedKey, nil
+}
+
+func (key KeyWallet) addChecksumToBytes(data []byte) ([]byte, error) {
+	checksum := base58.ChecksumFirst4Bytes(data)
+	return append(data, checksum...), nil
 }
 
 // Base58CheckSerialize encodes the key corresponding to keyType in KeySet
