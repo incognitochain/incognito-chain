@@ -142,7 +142,7 @@ func (e *BLSBFT) Start() {
 				case LISTEN:
 					// timeout or vote nil?
 					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
-					if e.Blocks[roundKey] != nil && e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]) != nil {
+					if e.Blocks[roundKey] != nil && e.validatePreSignBlock(e.Blocks[roundKey]) != nil {
 						e.Block = e.Blocks[roundKey]
 						e.enterAgreePhase()
 					}
@@ -181,7 +181,7 @@ func (e *BLSBFT) enterProposePhase() {
 
 	blockData, _ := json.Marshal(e.Block)
 	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-	go e.Chain.PushMessageToValidator(msg)
+	go e.Chain.PushMessageToValidators(msg)
 	e.enterAgreePhase()
 
 }
@@ -229,10 +229,6 @@ func (e *BLSBFT) enterNewRound() {
 
 }
 
-func (e *BLSBFT) GetConsensusHighestBlockConfident() byte {
-	return HIGHEST_BLOCK_CONFIDENT
-}
-
 func init() {
-	consensus.RegisterConsensus(common.BLSBFT, BLSBFT{})
+	consensus.RegisterConsensus(common.BLS_CONSENSUS, &BLSBFT{})
 }

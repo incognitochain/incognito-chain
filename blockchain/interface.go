@@ -7,10 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-type BFTBlockInterface interface {
-	// UnmarshalJSON(data []byte) error
-}
-
 type ShardToBeaconPool interface {
 	RemoveBlock(map[byte]uint64)
 	//GetFinalBlock() map[byte][]ShardToBeaconBlock
@@ -92,4 +88,71 @@ type TxPool interface {
 
 type FeeEstimator interface {
 	RegisterBlock(block *ShardBlock) error
+}
+
+type ConsensusEngineInterface interface {
+	IsOngoing(chainkey string) bool
+
+	GetMiningPublicKey() (publickey string, keyType string)
+	SignDataWithMiningKey(data []byte) (string, error)
+
+	ValidateProducerPosition(block BlockInterface, chain ChainInterface) error
+	ValidateProducerSig(block BlockInterface, chain ChainInterface) error
+	ValidateCommitteeSig(block BlockInterface, chain ChainInterface) error
+
+	VerifyData(data []byte, sig string, publicKey string, consensusType string) error
+
+	SwitchConsensus(chainkey string, consensus string) error
+}
+
+type ConsensusInterface interface {
+	NewInstance() ConsensusInterface
+	GetConsensusName() string
+
+	ValidateBlock(block BlockInterface) error
+	IsOngoing() bool
+	ValidateProducerPosition(block BlockInterface) error
+	ValidateProducerSig(block BlockInterface) error
+	ValidateCommitteeSig(block BlockInterface) error
+}
+
+type BlockInterface interface {
+	GetHeight() uint64
+	Hash() *common.Hash
+	AddValidationField(validateData string) error
+	GetValidationField() string
+	GetRound() int
+	GetRoundKey() string
+}
+
+type ChainInterface interface {
+	GetChainName() string
+	GetChainConsensus() ConsensusInterface
+	GetLastBlockTimeStamp() uint64
+	GetBlkMinInterval() time.Duration
+	GetBlkMaxCreateTime() time.Duration
+	IsReady() bool
+	GetActiveShardNumber() int
+
+	GetPubkeyRole(pubkey string, round int) (string, byte)
+	GetHeight() uint64
+	GetCommitteeSize() int
+	GetCommittee() []string
+	GetPubKeyCommitteeIndex(string) int
+	GetLastProposerIndex() int
+
+	CreateNewBlock(round int) BlockInterface
+	InsertBlk(interface{}, bool)
+	ValidateBlock(interface{}) error
+	ValidateBlockSanity(interface{}) error
+	ValidateBlockWithBlockChain(interface{}) error
+}
+
+type BestStateInterface interface {
+	GetLastBlockTimeStamp() uint64
+	GetBlkMinInterval() time.Duration
+	GetBlkMaxCreateTime() time.Duration
+	CurrentHeight() uint64
+	GetCommittee() []string
+	GetLastProposerIdx() int
 }
