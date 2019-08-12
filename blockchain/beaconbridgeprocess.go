@@ -293,13 +293,18 @@ func (bc *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock) error {
 	db := bc.config.DataBase
 	for _, tx := range block.Body.Transactions {
 		metaType := tx.GetMetadataType()
-		var err error
+		var reqTxID common.Hash
 		if metaType == metadata.IssuingETHResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingETHResponse)
-			err = db.TrackBridgeReqWithStatus(meta.RequestedTxID, common.BRIDGE_REQUEST_ACCEPTED_STATUS)
-			if err != nil {
-				return err
-			}
+			reqTxID = meta.RequestedTxID
+		} else if metaType == metadata.IssuingResponseMeta {
+			meta := tx.GetMetadata().(*metadata.IssuingResponse)
+			reqTxID = meta.RequestedTxID
+		}
+		var err error
+		err = db.TrackBridgeReqWithStatus(reqTxID, common.BRIDGE_REQUEST_ACCEPTED_STATUS)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
