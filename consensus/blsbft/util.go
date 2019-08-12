@@ -72,3 +72,7 @@ func (e *BLSBFT) validateAndSendVote() {
 	// 	go e.Chain.PushMessageToValidator(msg)
 	// }
 }
+
+// func (e *BLSBFT) getTimeout() time.Duration {
+// 	return
+// }

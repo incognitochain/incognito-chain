@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
@@ -30,36 +31,70 @@ func EncodeValidationData(validationData ValidationData) ([]byte, error) {
 	return json.Marshal(validationData)
 }
 
-func (e *BLSBFT) validatePreSignBlock(block chain.BlockInterface, validationData string) error {
-	confident, err := e.ValidateBlock(block, e.Chain)
-	if confident != 2 {
+func (e *BLSBFT) validatePreSignBlock(block chain.BlockInterface) error {
+	if err := e.ValidateProducerSig(block); err != nil {
+		return err
+	}
+	if err := e.ValidateProducerPosition(block); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (e *BLSBFT) ValidateBlock(block chain.BlockInterface, chain chain.ChainInterface) (byte, error) {
-	valData, error := DecodeValidationData(block.GetValidationField())
+func (e *BLSBFT) ValidateBlock(block consensus.BlockInterface) error {
 
 	// 1. Verify producer's sig
 	// 2. Verify Committee's sig
 	// 3. Verify correct producer for blockHeight, round
-	blockHash := block.Hash()
-	if err := bls.ValidateSingleSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
-		return 0, err
+	if err := e.ValidateProducerSig(block); err != nil {
+		return err
 	}
-	committee := chain.GetCommittee()
-	if err := bls.ValidateAggSig(block.Hash(), valData.AggSig, committee); err != nil {
-		return 1, err
+	if err := e.ValidateCommitteeSig(block); err != nil {
+		return err
 	}
-	producerPosition := (chain.GetLastProposerIndex() + block.GetRound()) % chain.GetCommitteeSize()
+	if err := e.ValidateProducerPosition(block); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *BLSBFT) ValidateProducerPosition(block consensus.BlockInterface) error {
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return err
+	}
+	committee := e.Chain.GetCommittee()
+	producerPosition := (e.Chain.GetLastProposerIndex() + block.GetRound()) % e.Chain.GetCommitteeSize()
 	tempProducer := committee[producerPosition]
 	if strings.Compare(tempProducer, valData.Producer) != 0 {
-		return 2, NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+		return errors.New("Producer should be should be :" + tempProducer)
 	}
 
-	return 3, nil
+	return nil
+}
 
+func (e *BLSBFT) ValidateProducerSig(block consensus.BlockInterface) error {
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return err
+	}
+	blockHash := block.Hash()
+	if err := bls.ValidateSingleSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *BLSBFT) ValidateCommitteeSig(block consensus.BlockInterface) error {
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return err
+	}
+	committee := e.Chain.GetCommittee()
+	if err := bls.ValidateAggSig(block.Hash(), valData.AggSig, committee); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (e *BLSBFT) CreateValidationData(blockHash common.Hash, privateKey string, round int) ValidationData {
@@ -71,12 +106,7 @@ func (e *BLSBFT) FinalizedValidationData(block chain.BlockInterface, sigs []stri
 	return nil
 }
 
-func (e *BLSBFT) ValidateProducerSig(blockHash common.Hash, validationData string) error {
-
-	return nil
-}
-
-func (e BLSBFT) NewInstance() chain.ConsensusInterface {
+func (e BLSBFT) NewInstance() consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	return &newInstance
 }

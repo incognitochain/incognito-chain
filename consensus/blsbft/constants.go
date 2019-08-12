@@ -11,6 +11,6 @@ const (
 
 //
 const (
-	TIMEOUT                 = 60 * time.Second
-	HIGHEST_BLOCK_CONFIDENT = 3
+	TIMEOUT             = 5 * time.Second
+	MaxNetworkDelayTime = 150 * time.Millisecond // in ms
 )
