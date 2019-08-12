@@ -1,22 +1,20 @@
 package netsync
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/pubsub"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/patrickmn/go-cache"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
+	"github.com/patrickmn/go-cache"
 )
 
 // NetSync is a gate for message to enter node from network (after Peerconn),
@@ -29,7 +27,6 @@ import (
 type NetSync struct {
 	started  int32
 	shutdown int32
-	//waitgroup sync.WaitGroup
 
 	cMessage chan interface{}
 	cQuit    chan struct{}
