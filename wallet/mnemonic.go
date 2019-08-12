@@ -43,23 +43,6 @@ var (
 	wordMap map[string]int
 )
 
-var (
-	// ErrInvalidMnemonic is returned when trying to use a malformed Mnemonic.
-	ErrInvalidMnemonic = errors.New("invalid menomic")
-
-	// ErrEntropyLengthInvalid is returned when trying to use an Entropy set with
-	// an invalid size.
-	ErrEntropyLengthInvalid = errors.New("entropy length must be [128, 256] and a multiple of 32")
-
-	// ErrValidatedSeedLengthMismatch is returned when a validated Seed is not the
-	// same size as the given Seed. This should never happen is present only as a
-	// sanity assertion.
-	ErrValidatedSeedLengthMismatch = errors.New("seed length does not match validated Seed length")
-
-	// ErrChecksumIncorrect is returned when Entropy has the incorrect checksum.
-	ErrChecksumIncorrect = errors.New("checksum incorrect")
-)
-
 func init() {
 	list := NewWordList("english")
 	wordList = list
@@ -149,7 +132,7 @@ func (mnemonicGen *MnemonicGenerator) MnemonicToByteArray(mnemonic string, raw .
 	// Pre validate that the Mnemonic is well formed and only contains words that
 	// are present in the word list
 	if !mnemonicGen.IsMnemonicValid(mnemonic) {
-		return nil, ErrInvalidMnemonic
+		return nil, errors.New("invalid menomic")
 	}
 
 	// Convert word indices to a `big.Int` representing the Entropy
@@ -173,7 +156,7 @@ func (mnemonicGen *MnemonicGenerator) MnemonicToByteArray(mnemonic string, raw .
 	// ValidateTransaction that the checksum is correct
 	newChecksummedEntropyBytes := mnemonicGen.padByteSlice(mnemonicGen.addChecksum(rawEntropyBytes), fullByteSize)
 	if !mnemonicGen.compareByteSlices(checksummedEntropyBytes, newChecksummedEntropyBytes) {
-		return nil, ErrChecksumIncorrect
+		return nil, errors.New("checksum incorrect")
 	}
 
 	if raw != nil && raw[0] {
@@ -251,7 +234,7 @@ func (mnemonicGen *MnemonicGenerator) computeChecksum(data []byte) []byte {
 // Mnemonic.
 func validateEntropyBitSize(bitSize int) error {
 	if (bitSize%32) != 0 || bitSize < 128 || bitSize > 256 {
-		return ErrEntropyLengthInvalid
+		return errors.New("entropy length must be [128, 256] and a multiple of 32")
 	}
 	return nil
 }

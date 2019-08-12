@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	InvalidChecksumErr    = iota
+	InvalidChecksumErr = iota
 	WrongPassphraseErr
 	ExistedAccountErr
 	ExistedAccountNameErr
@@ -21,6 +21,7 @@ const (
 	AESDecryptErr
 	InvalidKeyTypeErr
 	InvalidPlaintextErr
+	NewChildKeyError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -33,16 +34,17 @@ var ErrCodeMessage = map[int]struct {
 	WrongPassphraseErr:    {-1001, "Wrong passphrase"},
 	ExistedAccountErr:     {-1002, "Existed account"},
 	ExistedAccountNameErr: {-1002, "Existed account name"},
-	EmptyWalletNameErr: {-1003, "Wallet name is empty"},
-	NotFoundAccountErr: {-1004, "Account wallet is not found"},
-	JsonMarshalErr: {-1005, "Can not json marshal"},
-	JsonUnmarshalErr: {-1006, "Can not json unmarshal"},
-	WriteFileErr: {-1007, "Can not write file"},
-	ReadFileErr: {-1008, "Can not read file"},
-	AESEncryptErr: {-1009, "Can not AES encrypt data"},
-	AESDecryptErr: {-1010, "Can not AES decrypt data"},
-	InvalidKeyTypeErr: {-1011, "Serialized key type is invalid"},
-	InvalidPlaintextErr : {-1012, "Plaintext is invalid"},
+	EmptyWalletNameErr:    {-1003, "Wallet name is empty"},
+	NotFoundAccountErr:    {-1004, "Account wallet is not found"},
+	JsonMarshalErr:        {-1005, "Can not json marshal"},
+	JsonUnmarshalErr:      {-1006, "Can not json unmarshal"},
+	WriteFileErr:          {-1007, "Can not write file"},
+	ReadFileErr:           {-1008, "Can not read file"},
+	AESEncryptErr:         {-1009, "Can not AES encrypt data"},
+	AESDecryptErr:         {-1010, "Can not AES decrypt data"},
+	InvalidKeyTypeErr:     {-1011, "Serialized key type is invalid"},
+	InvalidPlaintextErr:   {-1012, "Plaintext is invalid"},
+	NewChildKeyError:      {-1013, "Can not create new child key"},
 }
 
 type WalletError struct {
@@ -66,5 +68,3 @@ func NewWalletError(key int, err error) *WalletError {
 		message: ErrCodeMessage[key].message,
 	}
 }
-
-
