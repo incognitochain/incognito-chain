@@ -11,11 +11,6 @@ import (
 	"syscall"
 )
 
-const (
-	FileLimitWant = 2048
-	FileLimitMin  = 1024
-)
-
 // SetLimits raises some process limits to values which allow node and
 // associated utilities to run.
 func SetLimits() error {
@@ -25,23 +20,23 @@ func SetLimits() error {
 	if err != nil {
 		return err
 	}
-	if rLimit.Cur > FileLimitWant {
+	if rLimit.Cur > fileLimitWant {
 		return nil
 	}
-	if rLimit.Max < FileLimitMin {
+	if rLimit.Max < fileLimitMin {
 		err = fmt.Errorf("need at least %v file descriptors",
-			FileLimitMin)
+			fileLimitMin)
 		return err
 	}
-	if rLimit.Max < FileLimitWant {
+	if rLimit.Max < fileLimitWant {
 		rLimit.Cur = rLimit.Max
 	} else {
-		rLimit.Cur = FileLimitWant
+		rLimit.Cur = fileLimitWant
 	}
 	err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 	if err != nil {
 		// try min value
-		rLimit.Cur = FileLimitMin
+		rLimit.Cur = fileLimitMin
 		err = syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit)
 		if err != nil {
 			return err

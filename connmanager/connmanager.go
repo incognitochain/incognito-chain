@@ -423,11 +423,8 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		}
 
 		// packing in a object PingArgs
-		args := &server.PingArgs{
-			RawAddress: rawAddress,
-			PublicKey:  publicKeyInBase58CheckEncode,
-			SignData:   signDataInBase58CheckEncode,
-		}
+		args := &server.PingArgs{}
+		args.Init(rawAddress, publicKeyInBase58CheckEncode, signDataInBase58CheckEncode)
 		Logger.log.Debugf("[Exchange Peers] Ping %+v", args)
 
 		err := client.Call("Handler.Ping", args, &response)
