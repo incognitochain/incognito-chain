@@ -15,14 +15,18 @@ type ConsensusEngineInterface interface {
 	IsOngoing(chainkey string) bool
 
 	ProcessBFTMsg(msg *wire.MessageBFT)
-	GetConsensusHighestBlockConfident(consensusType string) byte
-	ValidateBlockWithConsensus(block BlockInterface, chainCommittee []string, consensusType string) (byte, error)
-	ValidateBlockCommitteSig(block BlockInterface, committee []string, consensusType string) error
 
 	LoadMiningKeys(keys string) error
 	GetMiningPublicKey() (publickey string, keyType string)
 	SignDataWithMiningKey(data []byte) (string, error)
+
+	ValidateProducerPosition(block BlockInterface, chain ChainInterface) error
+	ValidateProducerSig(block BlockInterface, chain ChainInterface) error
+	ValidateCommitteeSig(block BlockInterface, chain ChainInterface) error
+
 	VerifyData(data []byte, sig string, publicKey string, consensusType string) error
+
+	SwitchConsensus(chainkey string, consensus string) error
 }
 
 type ConsensusInterface interface {
@@ -35,8 +39,11 @@ type ConsensusInterface interface {
 
 	ProcessBFTMsg(msg *wire.MessageBFT)
 
-	ValidateBlock(block BlockInterface, chain ChainInterface) (byte, error)
-	GetConsensusHighestBlockConfident() byte
+	ValidateBlock(block BlockInterface) error
+
+	ValidateProducerPosition(block BlockInterface) error
+	ValidateProducerSig(block BlockInterface) error
+	ValidateCommitteeSig(block BlockInterface) error
 }
 
 type BlockInterface interface {

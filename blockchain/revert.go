@@ -32,7 +32,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	// }
 	//verify producer
 	// block.GetValidationField()
-	producerPk := blockchain.config.ConsensusEngine.GetBlockProducerPubKeyB58(block.ValidationData)
+	producerPk := blockchain.config.ConsensusEngine.GetBlockProducerPubKeyB58(block.ValidationData, block.ConsensusType)
 	producerPosition := (shardBestState.ShardProposerIdx + block.Header.Round) % len(shardBestState.ShardCommittee)
 	tempProducer := shardBestState.ShardCommittee[producerPosition]
 	if strings.Compare(tempProducer, producerPk) != 0 {
