@@ -428,8 +428,9 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 						continue
 					}
 
-					// add 24 bytes headerBytes into messageHex
+					// Add 24 bytes headerBytes into messageHex
 					headerBytes := make([]byte, wire.MessageHeaderSize)
+					// add command type of message
 					cmdType, messageErr := wire.GetCmdType(reflect.TypeOf(outMsg.message))
 					if messageErr != nil {
 						Logger.log.Error("Can not get cmd type for " + outMsg.message.MessageType())
@@ -437,8 +438,10 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 						continue
 					}
 					copy(headerBytes[:], []byte(cmdType))
+					// add forward type of message at 13st byte
 					copy(headerBytes[wire.MessageCmdTypeSize:], []byte{outMsg.forwardType})
 					if outMsg.forwardValue != nil {
+						// add forward value at 14st byte
 						copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 					}
 					messageBytes = append(messageBytes, headerBytes...)
