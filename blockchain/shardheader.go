@@ -34,6 +34,9 @@ type ShardHeader struct {
 	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionRoot but for simplicity, we keep it for now
 	InstructionMerkleRoot common.Hash `json:"InstructionMerkleRoot"`
+
+	ConsensusType string `json:"ConsensusType"`
+	Producer      string `json:"Producer"`
 }
 
 func (shardHeader *ShardHeader) String() string {

@@ -31,7 +31,7 @@ func EncodeValidationData(validationData ValidationData) ([]byte, error) {
 	return json.Marshal(validationData)
 }
 
-func (e *BLSBFT) validatePreSignBlock(block chain.BlockInterface) error {
+func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
 	if err := e.ValidateProducerSig(block); err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (e *BLSBFT) validatePreSignBlock(block chain.BlockInterface) error {
 	return nil
 }
 
-func (e *BLSBFT) ValidateBlock(block consensus.BlockInterface) error {
+func (e *BLSBFT) ValidateBlock(block common.BlockInterface) error {
 
 	// 1. Verify producer's sig
 	// 2. Verify Committee's sig
@@ -58,7 +58,7 @@ func (e *BLSBFT) ValidateBlock(block consensus.BlockInterface) error {
 	return nil
 }
 
-func (e *BLSBFT) ValidateProducerPosition(block consensus.BlockInterface) error {
+func (e *BLSBFT) ValidateProducerPosition(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (e *BLSBFT) ValidateProducerPosition(block consensus.BlockInterface) error 
 	return nil
 }
 
-func (e *BLSBFT) ValidateProducerSig(block consensus.BlockInterface) error {
+func (e *BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (e *BLSBFT) ValidateProducerSig(block consensus.BlockInterface) error {
 	return nil
 }
 
-func (e *BLSBFT) ValidateCommitteeSig(block consensus.BlockInterface) error {
+func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err

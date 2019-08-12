@@ -379,13 +379,13 @@ func (blockchain *BlockChain) VerifyPreProcessingBeaconBlock(block *BeaconBlock,
 					currentCommittee := blockchain.BestState.Beacon.GetAShardCommittee(shardID)
 					currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
 					// hash := shardBlock.Header.Hash()
-					err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
+					err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock.Hash(), currentCommittee, shardBlock.ValidationData, beaconBestState.ShardConsensusAlgorithm[shardID])
 					if index == 0 && err != nil {
 						currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
 						if err != nil {
 							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 						}
-						err = blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
+						err = blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock.Hash(), currentCommittee, shardBlock.ValidationData, beaconBestState.ShardConsensusAlgorithm[shardID])
 						if err != nil {
 							return NewBlockChainError(ShardStateError, errors.New("shardstate fail to verify with ShardToBeacon Block in pool"))
 						}
