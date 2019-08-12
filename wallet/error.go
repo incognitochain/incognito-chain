@@ -22,6 +22,9 @@ const (
 	InvalidKeyTypeErr
 	InvalidPlaintextErr
 	NewChildKeyError
+	NewEntropyError
+	NewMnemonicError
+	MnemonicInvalidError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -45,6 +48,9 @@ var ErrCodeMessage = map[int]struct {
 	InvalidKeyTypeErr:     {-1011, "Serialized key type is invalid"},
 	InvalidPlaintextErr:   {-1012, "Plaintext is invalid"},
 	NewChildKeyError:      {-1013, "Can not create new child key"},
+	NewEntropyError:       {-1014, "Can not create entropy"},
+	NewMnemonicError:      {-1015, "Can not create mnemonic"},
+	MnemonicInvalidError:  {-1016, "Mnemonic is invalid"},
 }
 
 type WalletError struct {

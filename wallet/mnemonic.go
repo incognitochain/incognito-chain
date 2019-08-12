@@ -18,24 +18,6 @@ var (
 	bigOne                  = big.NewInt(1)
 	bigTwo                  = big.NewInt(2)
 
-	// used to isolate the checksum bits from the Entropy+checksum byte array
-	wordLengthChecksumMasksMapping = map[int]*big.Int{
-		12: big.NewInt(15),
-		15: big.NewInt(31),
-		18: big.NewInt(63),
-		21: big.NewInt(127),
-		24: big.NewInt(255),
-	}
-	// used to use only the desired x of 8 available checksum bits.
-	// 256 bit (word length 24) requires all 8 bits of the checksum,
-	// and thus no shifting is needed for it (we would get a divByZero crash if we did)
-	wordLengthChecksumShiftMapping = map[int]*big.Int{
-		12: big.NewInt(16),
-		15: big.NewInt(8),
-		18: big.NewInt(4),
-		21: big.NewInt(2),
-	}
-
 	// wordList is the set of words to use
 	wordList []string
 
@@ -58,23 +40,26 @@ type MnemonicGenerator struct {
 // NewEntropy will create random Entropy bytes
 // so long as the requested size bitSize is an appropriate size.
 // bitSize has to be a multiple 32 and be within the inclusive range of {128, 256}
-func (mnemonicGen *MnemonicGenerator) NewEntropy(bitSize int) ([]byte, error) {
+func (mnemonicGen *MnemonicGenerator) newEntropy(bitSize int) ([]byte, error) {
 	err := validateEntropyBitSize(bitSize)
 	if err != nil {
-		return nil, err
+		return nil, NewWalletError(NewEntropyError, err)
 	}
 
 	// create bytes array for Entropy from bitSize
 	entropy := make([]byte, bitSize/8)
 	// random bytes array
 	_, err = rand.Read(entropy)
-	return entropy, err
+	if err != nil {
+		return nil, NewWalletError(NewEntropyError, err)
+	}
+	return entropy, nil
 }
 
 // NewMnemonic will return a string consisting of the Mnemonic words for
 // the given Entropy.
 // If the provide Entropy is invalid, an error will be returned.
-func (mnemonicGen *MnemonicGenerator) NewMnemonic(entropy []byte) (string, error) {
+func (mnemonicGen *MnemonicGenerator) newMnemonic(entropy []byte) (string, error) {
 	// Compute some lengths for convenience
 	entropyBitLength := len(entropy) * 8
 	checksumBitLength := entropyBitLength / 32
@@ -82,7 +67,7 @@ func (mnemonicGen *MnemonicGenerator) NewMnemonic(entropy []byte) (string, error
 
 	err := validateEntropyBitSize(entropyBitLength)
 	if err != nil {
-		return "", err
+		return "", NewWalletError(NewMnemonicError, err)
 	}
 
 	// Add checksum to Entropy
@@ -120,7 +105,7 @@ func (mnemonicGen *MnemonicGenerator) NewMnemonic(entropy []byte) (string, error
 // MnemonicToByteArray takes a Mnemonic string and turns it into a byte array
 // suitable for creating another Mnemonic.
 // An error is returned if the Mnemonic is invalid.
-func (mnemonicGen *MnemonicGenerator) MnemonicToByteArray(mnemonic string, raw ...bool) ([]byte, error) {
+func (mnemonicGen *MnemonicGenerator) mnemonicToByteArray(mnemonic string, raw ...bool) ([]byte, error) {
 	var (
 		mnemonicSlice    = strings.Split(mnemonic, " ")
 		entropyBitSize   = len(mnemonicSlice) * 11
@@ -131,8 +116,8 @@ func (mnemonicGen *MnemonicGenerator) MnemonicToByteArray(mnemonic string, raw .
 
 	// Pre validate that the Mnemonic is well formed and only contains words that
 	// are present in the word list
-	if !mnemonicGen.IsMnemonicValid(mnemonic) {
-		return nil, errors.New("invalid menomic")
+	if !mnemonicGen.isMnemonicValid(mnemonic) {
+		return nil, NewWalletError(MnemonicInvalidError, errors.New("invalid menomic"))
 	}
 
 	// Convert word indices to a `big.Int` representing the Entropy
@@ -174,7 +159,7 @@ func (mnemonicGen *MnemonicGenerator) NewSeed(mnemonic string, password string) 
 // IsMnemonicValid attempts to verify that the provided Mnemonic is valid.
 // Validity is determined by both the number of words being appropriate,
 // and that all the words in the Mnemonic are present in the word list.
-func (mnemonicGen *MnemonicGenerator) IsMnemonicValid(mnemonic string) bool {
+func (mnemonicGen *MnemonicGenerator) isMnemonicValid(mnemonic string) bool {
 	// Create a list of all the words in the Mnemonic sentence
 	words := strings.Fields(mnemonic)
 
