@@ -18,9 +18,9 @@ type ShardBlock struct {
 	// ProducerSig   string  `json:"ProducerSig"`
 
 	ValidationData string `json:"ValidationData"`
-	ConsensusType  string `json:"ConsensusType"`
-	Body           ShardBody
-	Header         ShardHeader
+
+	Body   ShardBody
+	Header ShardHeader
 }
 
 type ShardToBeaconBlock struct {
@@ -29,7 +29,6 @@ type ShardToBeaconBlock struct {
 	// ValidatorsIdx  [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	// ProducerSig    string  `json:"ProducerSig"`
 	ValidationData string `json:"ValidationData"`
-	ConsensusType  string `json:"ConsensusType"`
 
 	Instructions [][]string
 	Header       ShardHeader
@@ -41,7 +40,6 @@ type CrossShardBlock struct {
 	// ValidatorsIdx   [][]int `json:"ValidatorsIdx"` //[0]: R | [1]:AggregatedSig
 	// ProducerSig     string  `json:"ProducerSig"`
 	ValidationData string `json:"ValidationData"`
-	ConsensusType  string `json:"ConsensusType"`
 
 	Header          ShardHeader
 	ToShardID       byte

@@ -23,6 +23,9 @@ type BeaconHeader struct {
 	// Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionHash but for simplicity, we keep it for now
 	InstructionMerkleRoot common.Hash
+
+	ConsensusType string `json:"ConsensusType"`
+	Producer      string `json:"Producer"`
 }
 
 func (beaconHeader *BeaconHeader) toString() string {
