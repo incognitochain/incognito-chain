@@ -55,8 +55,8 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 
 	mnemonicGen := MnemonicGenerator{}
 	wallet.Name = name
-	wallet.Entropy, _ = mnemonicGen.NewEntropy(128)
-	wallet.Mnemonic, _ = mnemonicGen.NewMnemonic(wallet.Entropy)
+	wallet.Entropy, _ = mnemonicGen.newEntropy(128)
+	wallet.Mnemonic, _ = mnemonicGen.newMnemonic(wallet.Entropy)
 	wallet.Seed = mnemonicGen.NewSeed(wallet.Mnemonic, passPhrase)
 	wallet.PassPhrase = passPhrase
 
@@ -138,7 +138,10 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*Acco
 			Name:  accountName,
 		}
 		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
-		wallet.Save(wallet.PassPhrase)
+		err := wallet.Save(wallet.PassPhrase)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 		return &account, nil
 
 	} else {
@@ -153,7 +156,10 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*Acco
 			Name:  accountName,
 		}
 		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
-		wallet.Save(wallet.PassPhrase)
+		err := wallet.Save(wallet.PassPhrase)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 		return &account, nil
 	}
 }
@@ -174,7 +180,10 @@ func (wallet *Wallet) RemoveAccount(privateKeyStr string, passPhrase string) err
 	for i, account := range wallet.MasterAccount.Child {
 		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
 			wallet.MasterAccount.Child = append(wallet.MasterAccount.Child[:i], wallet.MasterAccount.Child[i+1:]...)
-			wallet.Save(passPhrase)
+			err := wallet.Save(passPhrase)
+			if err != nil {
+				Logger.log.Error(err)
+			}
 			return nil
 		}
 	}
