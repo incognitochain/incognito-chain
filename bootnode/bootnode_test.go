@@ -9,5 +9,5 @@ func TestBootNodeLoadConfig(t *testing.T) {
 	config, err := loadConfig()
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, config)
-	assert.Equal(t, DefaultRPCServerPort, config.RPCPort)
+	assert.Equal(t, defaultRPCServerPort, config.RPCPort)
 }

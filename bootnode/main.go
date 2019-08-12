@@ -16,7 +16,7 @@ var (
 // and store in mem list connectable peers in incognito network
 func main() {
 	// Show Version at startup.
-	log.Printf("Version %s\n", Version)
+	log.Printf("Version %s\n", version)
 
 	// Load config
 	tcfg, err := loadConfig()
