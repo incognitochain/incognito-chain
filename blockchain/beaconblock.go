@@ -14,7 +14,6 @@ type BeaconBlock struct {
 	// ProducerSig   string  `json:"ProducerSig"`
 
 	ValidationData string `json:"ValidationData"`
-	ConsensusType  string `json:"ConsensusType"`
 
 	Body   BeaconBody
 	Header BeaconHeader

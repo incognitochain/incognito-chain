@@ -24,19 +24,11 @@ type ConsensusInterface interface {
 
 	ProcessBFTMsg(msg *wire.MessageBFT)
 
-	ValidateBlock(block BlockInterface) error
+	ValidateBlock(block common.BlockInterface) error
 
-	ValidateProducerPosition(block BlockInterface) error
-	ValidateProducerSig(block BlockInterface) error
-	ValidateCommitteeSig(block BlockInterface) error
-}
-type BlockInterface interface {
-	GetHeight() uint64
-	Hash() *common.Hash
-	AddValidationField(validateData string) error
-	GetValidationField() string
-	GetRound() int
-	GetRoundKey() string
+	ValidateProducerPosition(block common.BlockInterface) error
+	ValidateProducerSig(block common.BlockInterface) error
+	ValidateCommitteeSig(block common.BlockInterface) error
 }
 
 // type KeyInterface interface{

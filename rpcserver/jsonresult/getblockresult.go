@@ -70,7 +70,7 @@ func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock,
 	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
 	// getBlockResult.BlockProducerSign = block.ProducerSig
 	getBlockResult.ValidationData = block.ValidationData
-	getBlockResult.ConsensusType = block.ConsensusType
+	getBlockResult.ConsensusType = block.Header.ConsensusType
 	getBlockResult.Epoch = block.Header.Epoch
 	getBlockResult.Round = block.Header.Round
 	getBlockResult.Time = block.Header.Timestamp
@@ -83,7 +83,7 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 	// getBlockResult.BlockProducerSign = block.ProducerSig
 	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
 	getBlockResult.ValidationData = block.ValidationData
-	getBlockResult.ConsensusType = block.ConsensusType
+	getBlockResult.ConsensusType = block.Header.ConsensusType
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Version = block.Header.Version
