@@ -16,9 +16,10 @@ type StakingMetadata struct {
 	FunderPaymentAddress    string
 	CandidatePaymentAddress string
 	StakingAmountShard      uint64
+	IsRewardFunder          bool
 }
 
-func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, isRewardFunder bool) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
@@ -28,6 +29,7 @@ func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidateP
 		FunderPaymentAddress:    funderPaymentAddress,
 		CandidatePaymentAddress: candidatePaymentAddress,
 		StakingAmountShard:      stakingAmountShard,
+		IsRewardFunder:          isRewardFunder,
 	}, nil
 }
 
