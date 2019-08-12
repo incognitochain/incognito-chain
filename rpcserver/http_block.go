@@ -258,7 +258,7 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 			Epoch:          block.Header.Epoch,
 			Version:        block.Header.Version,
 			ValidationData: block.ValidationData,
-			ConsensusType:  block.ConsensusType,
+			ConsensusType:  block.Header.ConsensusType,
 			// BlockProducerSign: block.ProducerSig,
 			// BlockProducer:     block.Header.ProducerAddress.String(),
 			// AggregatedSig:     block.AggregatedSig,

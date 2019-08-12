@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -460,22 +461,18 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
 		return err
 	}
+	//verify producer
+	producerPk := block.Header.Producer
+	producerPosition := (beaconBestState.BeaconProposerIdx + block.Header.Round) % len(beaconBestState.BeaconCommittee)
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	if strings.Compare(tempProducer, producerPk) != 0 {
+		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
+	}
 
-	confident, err := blockchain.config.ConsensusEngine.ValidateBlockWithConsensus(block, common.BEACON_CHAINKEY, beaconBestState.ConsensusAlgorithm)
-	if confident < 1 {
+	err = blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block.Hash(), beaconBestState.BeaconCommittee, block.ValidationData, block.Header.ConsensusType)
+	if err != nil {
 		return NewBlockChainError(VerificationError, err)
 	}
-	// producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	// err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
-	// if err != nil {
-	// 	return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
-	// }
-	//verify producer
-	// producerPosition := (beaconBestState.BeaconProposerIdx + block.Header.Round) % len(beaconBestState.BeaconCommittee)
-	// tempProducer := beaconBestState.BeaconCommittee[producerPosition]
-	// if strings.Compare(tempProducer, producerPk) != 0 {
-	// 	return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
-	// }
 	//verify version
 	if block.Header.Version != BEACON_BLOCK_VERSION {
 		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(BEACON_BLOCK_VERSION)))
