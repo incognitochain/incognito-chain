@@ -16,7 +16,7 @@ func TestMnemonicNewEntropy(t *testing.T) {
 
 	mnemonic := MnemonicGenerator{}
 	for _, item := range data {
-		entropy, err := mnemonic.NewEntropy(item)
+		entropy, err := mnemonic.newEntropy(item)
 
 		assert.Equal(t, nil, err)
 		assert.Equal(t, item/8, len(entropy))
@@ -28,7 +28,7 @@ func TestMnemonicNewEntropyWithInvalidBitSize(t *testing.T) {
 
 	mnemonic := MnemonicGenerator{}
 	for _, item := range data {
-		_, err := mnemonic.NewEntropy(item)
+		_, err := mnemonic.newEntropy(item)
 
 		assert.NotEqual(t, nil, err)
 	}
@@ -42,8 +42,8 @@ func TestMnemonicNewMnemonic(t *testing.T) {
 	mnemonic := MnemonicGenerator{}
 
 	for _, item := range data {
-		entropy, err := mnemonic.NewEntropy(item)
-		mnemonic, err := mnemonic.NewMnemonic(entropy)
+		entropy, err := mnemonic.newEntropy(item)
+		mnemonic, err := mnemonic.newMnemonic(entropy)
 
 		words := strings.Split(mnemonic, " ")
 
@@ -60,10 +60,10 @@ func TestMnemonicNewMnemonicWithInvalidEntropy(t *testing.T) {
 	mnemonic := MnemonicGenerator{}
 
 	for _, item := range data {
-		entropy, _ := mnemonic.NewEntropy(item)
+		entropy, _ := mnemonic.newEntropy(item)
 		// edit entropy
 		entropy = append(entropy, byte(12))
-		_, err := mnemonic.NewMnemonic(entropy)
+		_, err := mnemonic.newMnemonic(entropy)
 
 		assert.NotEqual(t, nil, err)
 	}
@@ -83,7 +83,7 @@ func TestMnemonicMnemonicToByteArray(t *testing.T) {
 	mnemonic := MnemonicGenerator{}
 
 	for _, item := range data {
-		mnemonicBytes, err := mnemonic.MnemonicToByteArray(item.words)
+		mnemonicBytes, err := mnemonic.mnemonicToByteArray(item.words)
 
 		log.Print("mnemonicBytes: ", mnemonicBytes)
 
@@ -105,7 +105,7 @@ func TestMnemonicMnemonicToByteArrayWithRaw(t *testing.T) {
 	mnemonic := MnemonicGenerator{}
 
 	for _, item := range data {
-		mnemonicBytes, err := mnemonic.MnemonicToByteArray(item.words, true)
+		mnemonicBytes, err := mnemonic.mnemonicToByteArray(item.words, true)
 
 		log.Print("mnemonicBytes: ", mnemonicBytes)
 
@@ -129,7 +129,7 @@ func TestMnemonicMnemonicToByteArrayWithInvalidMnemonic(t *testing.T) {
 	mnemonic := MnemonicGenerator{}
 
 	for _, item := range data {
-		_, err := mnemonic.MnemonicToByteArray(item.words)
+		_, err := mnemonic.mnemonicToByteArray(item.words)
 
 		assert.NotEqual(t, nil, err)
 	}
@@ -200,7 +200,7 @@ func TestMnemonicIsMnemonicValid(t *testing.T) {
 	mnemonic := MnemonicGenerator{}
 
 	for _, item := range data {
-		isValid := mnemonic.IsMnemonicValid(item.words)
+		isValid := mnemonic.isMnemonicValid(item.words)
 		assert.Equal(t, item.isValid, isValid)
 	}
 }
