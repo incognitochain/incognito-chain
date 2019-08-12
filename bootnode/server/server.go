@@ -12,29 +12,21 @@ import (
 )
 
 const (
-	HeartbeatInterval = 10
-	HeartbeatTimeout  = 60
+	heartbeatInterval = 10
+	heartbeatTimeout  = 60
 )
 
-// timeZeroVal is simply the zero value for a time.Time and is used to avoid
-// creating multiple instances.
-var timeZeroVal time.Time
-
-// UsageFlag define flags that specify additional properties about the
-// circumstances under which a command can be used.
-type UsageFlag uint32
-
-type Peer struct {
-	ID         string
-	RawAddress string
-	PublicKey  string
-	FirstPing  time.Time
-	LastPing   time.Time
+type peer struct {
+	id         string
+	rawAddress string
+	publicKey  string
+	firstPing  time.Time
+	lastPing   time.Time
 }
 
 // rpcServer provides a concurrent safe RPC server to a bootnode server.
 type RpcServer struct {
-	Peers    map[string]*Peer // list peers which are still pinging to bootnode continuously
+	peers    map[string]*peer // list peers which are still pinging to bootnode continuously
 	peersMtx sync.Mutex
 	server   *rpc.Server
 	Config   RpcServerConfig // config for RPC server
@@ -47,10 +39,10 @@ type RpcServerConfig struct {
 func (rpcServer *RpcServer) Init(config *RpcServerConfig) {
 	// get config and init list Peers
 	rpcServer.Config = *config
-	rpcServer.Peers = make(map[string]*Peer)
+	rpcServer.peers = make(map[string]*peer)
 	rpcServer.server = rpc.NewServer()
 	// start go routin hertbeat to check invalid peers
-	go rpcServer.PeerHeartBeat(HeartbeatTimeout)
+	go rpcServer.PeerHeartBeat(heartbeatTimeout)
 }
 
 // Start - create handler and add into rpc server
@@ -75,12 +67,12 @@ func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 stri
 	if signDataB58 != "" && publicKeyB58 != "" && rawAddress != "" {
 		err := incognitokey.ValidateDataB58(publicKeyB58, signDataB58, []byte(rawAddress))
 		if err == nil {
-			rpcServer.Peers[publicKeyB58] = &Peer{
-				ID:         rpcServer.CombineID(rawAddress, publicKeyB58),
-				RawAddress: rawAddress,
-				PublicKey:  publicKeyB58,
-				FirstPing:  time.Now().Local(),
-				LastPing:   time.Now().Local(),
+			rpcServer.peers[publicKeyB58] = &peer{
+				id:         rpcServer.CombineID(rawAddress, publicKeyB58),
+				rawAddress: rawAddress,
+				publicKey:  publicKeyB58,
+				firstPing:  time.Now().Local(),
+				lastPing:   time.Now().Local(),
 			}
 		} else {
 			log.Println("AddOrUpdatePeer error", err)
@@ -92,7 +84,7 @@ func (rpcServer *RpcServer) AddOrUpdatePeer(rawAddress string, publicKeyB58 stri
 
 // RemovePeerByPbk - remove peer from mem of bootnode
 func (rpcServer *RpcServer) RemovePeerByPbk(publicKey string) {
-	delete(rpcServer.Peers, publicKey)
+	delete(rpcServer.peers, publicKey)
 }
 
 // CombineID - return string = rawAddress of peer + public key in base58check encode of node(run as committee)
@@ -102,21 +94,21 @@ func (rpcServer *RpcServer) CombineID(rawAddress string, publicKey string) strin
 	return rawAddress + publicKey
 }
 
-// PeerHeartBeat - loop forever after HeartbeatInterval to check peers
+// PeerHeartBeat - loop forever after heartbeatInterval to check peers
 // which are not connected to remove from bootnode
 // use Last Ping time to compare with time.now
 func (rpcServer *RpcServer) PeerHeartBeat(heartbeatTimeout int) {
 	for {
 		now := time.Now().Local()
-		if len(rpcServer.Peers) > 0 {
+		if len(rpcServer.peers) > 0 {
 		loop:
-			for publicKey, peer := range rpcServer.Peers {
-				if now.Sub(peer.LastPing).Seconds() > float64(heartbeatTimeout) {
+			for publicKey, peer := range rpcServer.peers {
+				if now.Sub(peer.lastPing).Seconds() > float64(heartbeatTimeout) {
 					rpcServer.RemovePeerByPbk(publicKey)
 					goto loop
 				}
 			}
 		}
-		time.Sleep(HeartbeatInterval * time.Second)
+		time.Sleep(heartbeatInterval * time.Second)
 	}
 }
