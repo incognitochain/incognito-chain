@@ -216,8 +216,8 @@ func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, pa
 		return nil, err
 	}
 
-	Logger.log.Infof("Pub-key : %s", keyWallet.Base58CheckSerialize(PaymentAddressType))
-	Logger.log.Infof("Readonly-key : %s", keyWallet.Base58CheckSerialize(ReadonlyKeyType))
+	Logger.log.Debugf("Pub-key : %s", keyWallet.Base58CheckSerialize(PaymentAddressType))
+	Logger.log.Debugf("Readonly-key : %s", keyWallet.Base58CheckSerialize(ReadonlyKeyType))
 
 	account := AccountWallet{
 		Key:        *keyWallet,

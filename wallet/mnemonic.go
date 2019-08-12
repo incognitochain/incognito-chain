@@ -2,13 +2,13 @@ package wallet
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/binary"
 	"errors"
-	"golang.org/x/crypto/pbkdf2"
 	"math/big"
 	"strings"
+
+	"golang.org/x/crypto/pbkdf2"
 )
 
 var (
@@ -34,8 +34,7 @@ func init() {
 	}
 }
 
-type MnemonicGenerator struct {
-}
+type MnemonicGenerator struct{}
 
 // NewEntropy will create random Entropy bytes
 // so long as the requested size bitSize is an appropriate size.
@@ -71,7 +70,7 @@ func (mnemonicGen *MnemonicGenerator) newMnemonic(entropy []byte) (string, error
 	}
 
 	// Add checksum to Entropy
-	entropy = mnemonicGen.addChecksum(entropy)
+	entropy = addChecksum(entropy)
 
 	// Break Entropy up into sentenceLength chunks of 11 bits
 	// For each word AND mask the rightmost 11 bits and find the word at that index
@@ -93,7 +92,7 @@ func (mnemonicGen *MnemonicGenerator) newMnemonic(entropy []byte) (string, error
 		entropyInt.Div(entropyInt, rightShift11BitsDivider)
 
 		// Get the bytes representing the 11 bits as a 2 byte slice
-		wordBytes := mnemonicGen.padByteSlice(word.Bytes(), 2)
+		wordBytes := padByteSlice(word.Bytes(), 2)
 
 		// Convert bytes to an index and add that word to the list
 		words[i] = wordList[binary.BigEndian.Uint16(wordBytes)]
@@ -135,12 +134,12 @@ func (mnemonicGen *MnemonicGenerator) mnemonicToByteArray(mnemonic string, raw .
 	rawEntropy := big.NewInt(0).Div(checksummedEntropy, checksumModulo)
 
 	// Convert `big.Int`s to byte padded byte slices
-	rawEntropyBytes := mnemonicGen.padByteSlice(rawEntropy.Bytes(), checksumByteSize)
-	checksummedEntropyBytes := mnemonicGen.padByteSlice(checksummedEntropy.Bytes(), fullByteSize)
+	rawEntropyBytes := padByteSlice(rawEntropy.Bytes(), checksumByteSize)
+	checksummedEntropyBytes := padByteSlice(checksummedEntropy.Bytes(), fullByteSize)
 
 	// ValidateTransaction that the checksum is correct
-	newChecksummedEntropyBytes := mnemonicGen.padByteSlice(mnemonicGen.addChecksum(rawEntropyBytes), fullByteSize)
-	if !mnemonicGen.compareByteSlices(checksummedEntropyBytes, newChecksummedEntropyBytes) {
+	newChecksummedEntropyBytes := padByteSlice(addChecksum(rawEntropyBytes), fullByteSize)
+	if !compareByteSlices(checksummedEntropyBytes, newChecksummedEntropyBytes) {
 		return nil, errors.New("checksum incorrect")
 	}
 
@@ -181,40 +180,6 @@ func (mnemonicGen *MnemonicGenerator) isMnemonicValid(mnemonic string) bool {
 	return true
 }
 
-// Appends to data the first (len(data) / 32)bits of the result of sha256(data)
-// Currently only supports data up to 32 bytes
-func (mnemonicGen *MnemonicGenerator) addChecksum(data []byte) []byte {
-	// Get first byte of sha256
-	hash := mnemonicGen.computeChecksum(data)
-	firstChecksumByte := hash[0]
-
-	// len() is in bytes so we divide by 4
-	checksumBitLength := uint(len(data) / 4)
-
-	// For each bit of check sum we want we shift the data one the left
-	// and then set the (new) right most bit equal to checksum bit at that index
-	// staring from the left
-	dataBigInt := new(big.Int).SetBytes(data)
-	for i := uint(0); i < checksumBitLength; i++ {
-		// Bitshift 1 left
-		dataBigInt.Mul(dataBigInt, bigTwo)
-
-		// Set rightmost bit if leftmost checksum bit is set
-		if uint8(firstChecksumByte&(1<<(7-i))) > 0 {
-			dataBigInt.Or(dataBigInt, bigOne)
-		}
-	}
-
-	return dataBigInt.Bytes()
-}
-
-// computeChecksum returns hashing of data using SHA256
-func (mnemonicGen *MnemonicGenerator) computeChecksum(data []byte) []byte {
-	hasher := sha256.New()
-	hasher.Write(data)
-	return hasher.Sum(nil)
-}
-
 // validateEntropyBitSize ensures that Entropy is the correct size for being a
 // Mnemonic.
 func validateEntropyBitSize(bitSize int) error {
@@ -222,32 +187,6 @@ func validateEntropyBitSize(bitSize int) error {
 		return errors.New("entropy length must be [128, 256] and a multiple of 32")
 	}
 	return nil
-}
-
-// padByteSlice returns a byte slice of the given size with contents of the
-// given slice left padded and any empty spaces filled with 0's.
-func (mnemonic *MnemonicGenerator) padByteSlice(slice []byte, length int) []byte {
-	offset := length - len(slice)
-	if offset <= 0 {
-		return slice
-	}
-	newSlice := make([]byte, length)
-	copy(newSlice[offset:], slice)
-	return newSlice
-}
-
-// compareByteSlices returns true of the byte slices have equal contents and
-// returns false otherwise.
-func (mnemonicGen *MnemonicGenerator) compareByteSlices(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // splitMnemonicWords splits mnemonic string into list of words in that mnemonic string
