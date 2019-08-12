@@ -24,7 +24,7 @@ func newConfigParser(cfg *config, options flags.Options) *flags.Parser {
 func loadConfig() (*config, error) {
 	// create config object from default values
 	cfg := config{
-		RPCPort: DefaultRPCServerPort,
+		RPCPort: defaultRPCServerPort,
 	}
 
 	//preCfg := cfg
