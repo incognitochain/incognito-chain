@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 
@@ -61,6 +62,9 @@ type BeaconBestState struct {
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
 	lockMu              sync.RWMutex
 	randomClient        btc.RandomClient
+
+	BlockInterval      time.Duration
+	BlockMaxCreateTime time.Duration
 }
 
 var beaconBestState *BeaconBestState
