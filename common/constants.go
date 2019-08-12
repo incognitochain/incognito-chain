@@ -58,7 +58,6 @@ var (
 
 // for mining consensus
 const (
-	MaxTxsInBlock        = 1000
 	MinBeaconBlkInterval = 10 * time.Second //second
 	MinShardBlkInterval  = 10 * time.Second //second => process block in
 	MinShardBlkCreation  = 4 * time.Second  //second => process block in
@@ -83,8 +82,8 @@ const (
 
 // CONSENSUS
 const (
-	EPOCH       = 50
-	RANDOM_TIME = 25
+	EPOCH       = 10
+	RANDOM_TIME = 5
 	OFFSET      = 1
 
 	NODEMODE_RELAY  = "relay"
