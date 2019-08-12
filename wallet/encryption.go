@@ -23,9 +23,9 @@ func deriveKey(passPhrase string, salt []byte) ([]byte, []byte) {
 // EncryptByPassPhrase receives passphrase and plaintext
 // it generates AES key from passPhrase and encrypt the plaintext
 // it returns encrypted plaintext (ciphertext) in string
-func EncryptByPassPhrase(passphrase string, plaintext []byte) (string, error) {
+func encryptByPassPhrase(passphrase string, plaintext []byte) (string, error) {
 	if len(plaintext) == 0 {
-		return "", NewWalletError(InvalidPlaintextErr, nil)
+		return common.EmptyString, NewWalletError(InvalidPlaintextErr, nil)
 	}
 
 	// generate key from pass phrase
@@ -37,28 +37,30 @@ func EncryptByPassPhrase(passphrase string, plaintext []byte) (string, error) {
 	}
 
 	// encrypt plaintext
-	ciphertext, err := aes.Encrypt(plaintext)
-	if err != nil{
-		return "", err
+	cipherText, err := aes.Encrypt(plaintext)
+	if err != nil {
+		return common.EmptyString, err
 	}
 
 	// return data ciphertext and salt to generate decryption key
-	return hex.EncodeToString(salt) + "-" + hex.EncodeToString(ciphertext), nil
+	saltEncode := hex.EncodeToString(salt)
+	cipherTextEncode := hex.EncodeToString(cipherText)
+	return saltEncode + "-" + cipherTextEncode, nil
 }
 
 // DecryptByPassPhrase receives passPhrase and ciphertext (in hex encode to string)
 // it generates AES key from passPhrase and decrypt the ciphertext
 // and returns plain text in bytes array
-func DecryptByPassPhrase(passPhrase string, cipherText string) ([]byte, error) {
+func decryptByPassPhrase(passPhrase string, cipherText string) ([]byte, error) {
 	arr := strings.Split(cipherText, "-")
 
 	salt, err := hex.DecodeString(arr[0])
-	if err != nil{
+	if err != nil {
 		return []byte{}, err
 	}
 
 	data, err := hex.DecodeString(arr[1])
-	if err != nil{
+	if err != nil {
 		return []byte{}, err
 	}
 
@@ -72,7 +74,7 @@ func DecryptByPassPhrase(passPhrase string, cipherText string) ([]byte, error) {
 
 	// decrypt ciphertext
 	plaintext, err := aes.Decrypt(data)
-	if err != nil{
+	if err != nil {
 		return []byte{}, err
 	}
 
