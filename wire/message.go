@@ -48,7 +48,7 @@ const (
 type Message interface {
 	Hash() string
 	MessageType() string
-	MaxPayloadLength(int) int
+	MaxPayloadLength(version int) int // update version can change length of message
 	JsonSerialize() ([]byte, error)
 	JsonDeserialize(string) error
 	SetSenderID(peer.ID) error

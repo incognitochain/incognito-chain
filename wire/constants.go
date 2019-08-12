@@ -1,6 +1,9 @@
 package wire
 
 const (
+	// Message version
+	Version = 1
+
 	// Total in bytes of header message
 	MessageHeaderSize = 24
 
