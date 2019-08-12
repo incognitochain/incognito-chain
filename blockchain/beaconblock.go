@@ -38,17 +38,12 @@ func (beaconBlock *BeaconBlock) GetHeight() uint64 {
 
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBlk := &struct {
-		AggregatedSig string  `json:"AggregatedSig"`
-		ValidatorsIdx [][]int `json:"ValidatorsIdx"`
-		ProducerSig   string  `json:"ProducerSig"`
-		R             string  `json:"R"`
-
 		ValidationData string `json:"ValidationData"`
 
 		Header BeaconHeader
 		Body   BeaconBody
 	}{}
-	err := json.Unmarshal(data, &tempBlk)
+	err := json.Unmarshal(data, &tempBeaconBlock)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
@@ -56,6 +51,7 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	// beaconBlock.R = tempBlk.R
 	// beaconBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
 	// beaconBlock.ProducerSig = tempBlk.ProducerSig
+	beaconBlock.ValidationData = tempBlk.ValidationData
 	beaconBlock.Header = tempBlk.Header
 	beaconBlock.Body = tempBlk.Body
 	return nil

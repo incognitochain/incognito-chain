@@ -74,6 +74,8 @@ type DatabaseInterface interface {
 	StoreShardBestState(interface{}, byte) error
 	FetchShardBestState(byte) ([]byte, error)
 	CleanShardBestState() error
+	StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error
+	FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error)
 
 	// Best state of beacon chain
 	StoreBeaconBestState(interface{}) error
@@ -81,7 +83,7 @@ type DatabaseInterface interface {
 	CleanBeaconBestState() error
 
 	// Commitee with epoch
-	StoreCommitteeByHeight(uint64, interface{}) error
+	StoreShardCommitteeByHeight(uint64, interface{}) error
 	StoreBeaconCommitteeByHeight(uint64, interface{}) error
 	DeleteCommitteeByHeight(uint64) error
 	FetchCommitteeByHeight(uint64) ([]byte, error)
@@ -165,8 +167,10 @@ type DatabaseInterface interface {
 	IsETHTxHashIssued([]byte) (bool, error)
 	CanProcessTokenPair([]byte, common.Hash) (bool, error)
 	CanProcessCIncToken(common.Hash) (bool, error)
-	UpdateBridgeTokenInfo(common.Hash, []byte, bool) error
+	UpdateBridgeTokenInfo(common.Hash, []byte, bool, uint64, string) error
 	GetAllBridgeTokens() ([]byte, error)
+	TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error
+	GetBridgeReqWithStatus(txReqID common.Hash) (byte, error)
 
 	// Block reward
 	AddShardRewardRequest(epoch uint64, shardID byte, amount uint64, tokenID common.Hash) error

@@ -56,9 +56,9 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		shardCommittee          = blockGenerator.chain.BestState.Shard[shardID].ShardCommittee
 		tempPrivateKey          = blockGenerator.createTempKeyset()
 	)
-	//============Build body=============
-	// Fetch Beacon information
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
+	//============Build body===============
+	// Fetch Beacon information
 	BLogger.log.Infof("Producing block: %d", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
 	beaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
@@ -152,15 +152,15 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	for _, value := range instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
-	instructionsHash, err := GenerateHashFromStringArray(totalInstructions)
+	instructionsHash, err := generateHashFromStringArray(totalInstructions)
 	if err != nil {
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
-	committeeRoot, err := GenerateHashFromStringArray(shardCommittee)
+	committeeRoot, err := generateHashFromStringArray(shardCommittee)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
-	pendingValidatorRoot, err := GenerateHashFromStringArray(shardPendingValidator)
+	pendingValidatorRoot, err := generateHashFromStringArray(shardPendingValidator)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
@@ -288,11 +288,11 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 			var newTx metadata.Transaction
 			switch metaType {
 			case metadata.IssuingETHRequestMeta:
-				if len(l) >= 4 {
+				if len(l) >= 4 && l[2] == "accepted" {
 					newTx, err = blockGenerator.buildETHIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
 			case metadata.IssuingRequestMeta:
-				if len(l) >= 4 {
+				if len(l) >= 4 && l[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(l[3], producerPrivateKey, shardID)
 				}
 
@@ -360,7 +360,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 				startHeight := blockchain.BestState.Shard[shardID].ShardHeight + 2
 				bridgeSwapConfirmInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
 				prevBlock := blockchain.BestState.Shard[shardID].BestBlock
-				Logger.log.Infof("Add Bridge Committees Root in ShardID %+v block %d \n", shardID, prevBlock.Header.Height+1)
+				BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, prevBlock.Header.Height+1)
 			}
 		}
 	}
@@ -375,9 +375,11 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 	// Also, pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BRIDGE_SHARD_ID)
 	if shardID == bridgeID {
+		prevBlock := blockchain.BestState.Shard[shardID].BestBlock
 		commPubkeyInst := pickBeaconSwapConfirmInst(beaconBlocks)
 		if len(commPubkeyInst) > 0 {
 			instructions = append(instructions, commPubkeyInst...)
+			BLogger.log.Infof("Found beacon swap confirm inst and add to bridge block %d: %s", prevBlock.Header.Height+1, commPubkeyInst)
 		}
 		height := blockchain.BestState.Shard[shardID].ShardHeight + 1
 		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
@@ -386,7 +388,6 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			for _, b := range beaconBlocks {
 				bid = append(bid, b.Header.Height)
 			}
-			prevBlock := blockchain.BestState.Shard[shardID].BestBlock
 			Logger.log.Infof("Picked burning confirm inst: %s %d %v\n", confirmInsts, prevBlock.Header.Height+1, bid)
 			instructions = append(instructions, confirmInsts...)
 		}
@@ -580,17 +581,16 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 						Receiver:       txTokenData.Vouts,
 					}
 					err := tx.Init(
-						privatekey,
-						nil,
-						nil,
-						0,
-						tokenParam,
-						//listCustomTokens,
-						blockchain.config.DataBase,
-						nil,
-						false,
-						shardID,
-					)
+						transaction.NewTxNormalTokenInitParam(privatekey,
+							nil,
+							nil,
+							0,
+							tokenParam,
+							//listCustomTokens,
+							blockchain.config.DataBase,
+							nil,
+							false,
+							shardID))
 					if err != nil {
 						panic("")
 					}
