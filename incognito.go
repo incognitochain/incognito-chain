@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,12 +9,16 @@ import (
 	"runtime/debug"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
+
 	"github.com/incognitochain/incognito-chain/database"
 	_ "github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	_ "github.com/incognitochain/incognito-chain/databasemp/lvdb"
 	"github.com/incognitochain/incognito-chain/limits"
 	"github.com/incognitochain/incognito-chain/wallet"
+
+	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 )
 
 var (

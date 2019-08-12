@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -41,6 +42,9 @@ type ShardBestState struct {
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
 	ConsensusAlgorithm     string            `json:"ConsensusAlgorithm"`
+
+	BlockInterval      time.Duration
+	BlockMaxCreateTime time.Duration
 
 	MetricBlockHeight uint64
 	lock              sync.RWMutex
