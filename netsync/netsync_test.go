@@ -282,13 +282,13 @@ func TestNetSyncStart(t *testing.T) {
 	beaconBlock.Header.Height = 2
 	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, &shardBlock))
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+	res := netSync.handleCacheBlock("s" + shardBlock.Header.Hash().String())
 	if !res {
 		t.Error("Block should be in cache")
 	}
 	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, &beaconBlock))
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("b" + beaconBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("b" + beaconBlock.Header.Hash().String())
 	if !res {
 		t.Error("Block should be in cache")
 	}
@@ -301,7 +301,7 @@ func TestNetSyncStart(t *testing.T) {
 	err = json.Unmarshal(rawTxBytes, &tx)
 	go netSync.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.TransactionHashEnterNodeTopic, *tx.Hash()))
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheTx(*tx.Hash())
+	res = netSync.handleCacheTx(*tx.Hash())
 	if !res {
 		t.Error("Transaction should be in cache")
 	}
@@ -354,12 +354,12 @@ func TestNetSyncHandleTxWithRole(t *testing.T) {
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTx{Transaction: &tx}
-	if !netSync.HandleTxWithRole(msg.Transaction) {
+	if !netSync.handleTxWithRole(msg.Transaction) {
 		t.Fatal("NetSync should accept this transaction")
 	}
 	netSync.config.RoleInCommittees = -1
 	netSync.config.RelayShard = []byte{0}
-	if !netSync.HandleTxWithRole(msg.Transaction) {
+	if !netSync.handleTxWithRole(msg.Transaction) {
 		t.Fatal("NetSync should accept this transaction")
 	}
 }
@@ -375,11 +375,11 @@ func TestNetSyncHandleCacheTx(t *testing.T) {
 	})
 	consensus.ch = make(chan interface{})
 	hash := common.HashH([]byte{0})
-	res := netSync.HandleCacheTx(hash)
+	res := netSync.handleCacheTx(hash)
 	if res {
 		t.Fatal("Hash should not be in cache")
 	}
-	res = netSync.HandleCacheTx(hash)
+	res = netSync.handleCacheTx(hash)
 	if !res {
 		t.Fatal("Hash should be in cache")
 	}
@@ -396,8 +396,8 @@ func TestNetSyncHandleCacheTxHash(t *testing.T) {
 	})
 	consensus.ch = make(chan interface{})
 	hash := common.HashH([]byte{0})
-	netSync.HandleCacheTxHash(hash)
-	res := netSync.HandleCacheTx(hash)
+	netSync.handleCacheTx(hash)
+	res := netSync.handleCacheTx(hash)
 	if !res {
 		t.Fatal("Hash should be in cache")
 	}
@@ -426,7 +426,7 @@ func TestNetSyncHandleMessageTx(t *testing.T) {
 	<-time.Tick(1 * time.Second)
 	netSync.cMessage <- msg
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res := netSync.handleCacheTx(*msg.Transaction.Hash())
 	if !res {
 		t.Error("Transaction should be in cache")
 	}
@@ -462,7 +462,7 @@ func TestNetSyncHandleMessageTxToken(t *testing.T) {
 	<-time.Tick(1 * time.Second)
 	netSync.cMessage <- msg
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res := netSync.handleCacheTx(*msg.Transaction.Hash())
 	if !res {
 		t.Error("Transaction should be in cache")
 	}
@@ -493,7 +493,7 @@ func TestNetSyncHandleMessageTxPrivacyToken(t *testing.T) {
 	<-time.Tick(1 * time.Second)
 	netSync.cMessage <- msg
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res := netSync.handleCacheTx(*msg.Transaction.Hash())
 	if !res {
 		t.Error("Transaction should be in cache")
 	}
@@ -510,11 +510,11 @@ func TestHandleCacheBlock(t *testing.T) {
 	})
 	consensus.ch = make(chan interface{})
 	hash := common.HashH([]byte{0})
-	res := netSync.HandleCacheBlock(hash.String())
+	res := netSync.handleCacheBlock(hash.String())
 	if res {
 		t.Fatal("Hash should not be in cache")
 	}
-	res = netSync.HandleCacheBlock(hash.String())
+	res = netSync.handleCacheBlock(hash.String())
 	if !res {
 		t.Fatal("Hash should be in cache")
 	}
@@ -534,7 +534,7 @@ func TestNetSyncHandleMessageBeaconBlock(t *testing.T) {
 	netSync.Start()
 	netSync.cMessage <- &wire.MessageBlockBeacon{Block: &block}
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheBlock("b" + block.Hash().String())
+	res := netSync.handleCacheBlock("b" + block.Hash().String())
 	if !res {
 		t.Fatal("Block should be in pool")
 	}
@@ -556,7 +556,7 @@ func TestNetSyncHandleMessageShardBlock(t *testing.T) {
 	netSync.Start()
 	netSync.cMessage <- &wire.MessageBlockShard{Block: &block}
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheBlock("s" + block.Hash().String())
+	res := netSync.handleCacheBlock("s" + block.Hash().String())
 	if !res {
 		t.Fatal("Block should be in pool")
 	}
@@ -578,7 +578,7 @@ func TestNetSyncHandleMessageShardToBeacon(t *testing.T) {
 	netSync.Start()
 	netSync.cMessage <- &wire.MessageShardToBeacon{Block: &block}
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheBlock("s2b" + block.Hash().String())
+	res := netSync.handleCacheBlock("s2b" + block.Hash().String())
 	if !res {
 		t.Fatal("Block should be in pool")
 	}
@@ -600,7 +600,7 @@ func TestNetSyncHandleMessageCrossShard(t *testing.T) {
 	netSync.Start()
 	netSync.cMessage <- &wire.MessageCrossShard{Block: &block}
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheBlock("c" + block.Hash().String())
+	res := netSync.handleCacheBlock("c" + block.Hash().String())
 	if !res {
 		t.Fatal("Block should be in pool")
 	}
@@ -636,7 +636,7 @@ func TestNetSyncQueueTx(t *testing.T) {
 	}()
 	netSync.QueueTx(pr, msg, done)
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res := netSync.handleCacheTx(*msg.Transaction.Hash())
 	if res {
 		t.Error("Transaction should NOT be in cache")
 	}
@@ -647,7 +647,7 @@ func TestNetSyncQueueTx(t *testing.T) {
 	netSync.Start()
 	netSync.QueueTx(pr, msg, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res = netSync.handleCacheTx(*msg.Transaction.Hash())
 	if !res {
 		t.Error("Transaction should be in cache")
 	}
@@ -683,7 +683,7 @@ func TestNetSyncQueueTxToken(t *testing.T) {
 	}()
 	netSync.QueueTxToken(pr, msg, done)
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res := netSync.handleCacheTx(*msg.Transaction.Hash())
 	if res {
 		t.Error("Transaction should NOT be in cache")
 	}
@@ -694,7 +694,7 @@ func TestNetSyncQueueTxToken(t *testing.T) {
 	netSync.Start()
 	netSync.QueueTxToken(pr, msg, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res = netSync.handleCacheTx(*msg.Transaction.Hash())
 	if !res {
 		t.Error("Transaction should be in cache")
 	}
@@ -730,7 +730,7 @@ func TestNetSyncQueueTxPrivacyToken(t *testing.T) {
 	}()
 	netSync.QueueTxPrivacyToken(pr, msg, done)
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res := netSync.handleCacheTx(*msg.Transaction.Hash())
 	if res {
 		t.Error("Transaction should NOT be in cache")
 	}
@@ -741,7 +741,7 @@ func TestNetSyncQueueTxPrivacyToken(t *testing.T) {
 	netSync.Start()
 	netSync.QueueTxPrivacyToken(pr, msg, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheTx(*msg.Transaction.Hash())
+	res = netSync.handleCacheTx(*msg.Transaction.Hash())
 	if !res {
 		t.Error("Transaction should be in cache")
 	}
@@ -777,7 +777,7 @@ func TestNetSyncQueueBlock(t *testing.T) {
 	}()
 	netSync.QueueBlock(pr, msgCrossShardBlock, done)
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheBlock("c" + crossShardBlock.Header.Hash().String())
+	res := netSync.handleCacheBlock("c" + crossShardBlock.Header.Hash().String())
 	if res {
 		t.Error("Block should NOT be in cache")
 	}
@@ -786,7 +786,7 @@ func TestNetSyncQueueBlock(t *testing.T) {
 	}()
 	netSync.QueueBlock(pr, msgShardToBeaconBlock, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("s2b" + shardToBeaconBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("s2b" + shardToBeaconBlock.Header.Hash().String())
 	if res {
 		t.Error("Block should NOT be in cache")
 	}
@@ -795,7 +795,7 @@ func TestNetSyncQueueBlock(t *testing.T) {
 	}()
 	netSync.QueueBlock(pr, msgShardBlock, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("s" + shardBlock.Header.Hash().String())
 	if res {
 		t.Error("Block should NOT be in cache")
 	}
@@ -804,7 +804,7 @@ func TestNetSyncQueueBlock(t *testing.T) {
 	}()
 	netSync.QueueBlock(pr, msgBeaconBlock, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("b" + beaconBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("b" + beaconBlock.Header.Hash().String())
 	if res {
 		t.Error("Block should NOT be in cache")
 	}
@@ -815,25 +815,25 @@ func TestNetSyncQueueBlock(t *testing.T) {
 	netSync.Start()
 	netSync.QueueBlock(pr, msgCrossShardBlock, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("c" + crossShardBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("c" + crossShardBlock.Header.Hash().String())
 	if !res {
 		t.Error("Block should be in cache")
 	}
 	netSync.QueueBlock(pr, msgShardToBeaconBlock, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("s2b" + shardToBeaconBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("s2b" + shardToBeaconBlock.Header.Hash().String())
 	if !res {
 		t.Error("Block should be in cache")
 	}
 	netSync.QueueBlock(pr, msgShardBlock, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("s" + shardBlock.Header.Hash().String())
 	if !res {
 		t.Error("Block should be in cache")
 	}
 	netSync.QueueBlock(pr, msgBeaconBlock, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("b" + beaconBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("b" + beaconBlock.Header.Hash().String())
 	if !res {
 		t.Error("Block should be in cache")
 	}
@@ -974,7 +974,7 @@ func TestNetSyncQueueMessage(t *testing.T) {
 	}()
 	netSync.QueueMessage(pr, msgPing, done)
 	<-time.Tick(1 * time.Second)
-	res := netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+	res := netSync.handleCacheBlock("s" + shardBlock.Header.Hash().String())
 	if res {
 		t.Error("Block should NOT be in cache")
 	}
@@ -985,7 +985,7 @@ func TestNetSyncQueueMessage(t *testing.T) {
 	netSync.Start()
 	netSync.QueueMessage(pr, msgPing, done)
 	<-time.Tick(1 * time.Second)
-	res = netSync.HandleCacheBlock("s" + shardBlock.Header.Hash().String())
+	res = netSync.handleCacheBlock("s" + shardBlock.Header.Hash().String())
 	if !res {
 		t.Error("Block should be in cache")
 	}
@@ -1044,7 +1044,7 @@ func TestNetSyncHandleMessageBFTMsg(t *testing.T) {
 		Consensus:     consensus,
 	})
 	consensus.ch = make(chan interface{})
-	go netSync.HandleMessageBFTMsg(msgPing)
+	go netSync.handleMessageBFTMsg(msgPing)
 	now := time.Now()
 out:
 	for {
