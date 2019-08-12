@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/pkg/errors"
 )
 
 type swapProof struct {
@@ -103,7 +104,7 @@ func getBeaconSwapProofOnBridge(
 	insts := bridgeBlock.Body.Instructions
 	_, instID := findCommSwapInst(insts, metadata.BeaconSwapConfirmMeta)
 	if instID < 0 {
-		return nil, fmt.Errorf("cannot find beacon swap instruction in brinstIDge block")
+		return nil, fmt.Errorf("cannot find beacon swap instruction in bridge block")
 	}
 
 	block := &shardBlock{ShardBlock: bridgeBlock}
@@ -313,7 +314,8 @@ func (bb *beaconBlock) Sig() string {
 
 // SignerPubkeys finds the pubkeys of all signers of a beacon block
 func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	commsRaw, err := db.FetchBeaconCommitteeByHeight(bb.Header.Height)
+	// Fetch with height-1 because BestStateBeacon is updated before saving committee to database => new committee is saved instead of the one signing this block
+	commsRaw, err := db.FetchBeaconCommitteeByHeight(bb.Header.Height - 1)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -376,20 +378,16 @@ func (sb *shardBlock) ValidatorsIdx(idx int) []int {
 
 // SignerPubkeys finds the pubkeys of all signers of a shard block
 func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	commsRaw, err := db.FetchCommitteeByHeight(sb.Header.Height)
+	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	commsRaw, err := db.FetchCommitteeFromShardBestState(bridgeID, sb.Header.Height)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	comms := make(map[byte][]string)
-	err = json.Unmarshal(commsRaw, &comms)
+	comm := []string{}
+	err = json.Unmarshal(commsRaw, &comm)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	comm, ok := comms[sb.Header.ShardID]
-	if !ok {
-		return nil, nil, fmt.Errorf("no committee member found for shard block")
+		return nil, nil, errors.WithStack(err)
 	}
 
 	signerIdxs := sb.ValidatorsIdx(1) // List of signers

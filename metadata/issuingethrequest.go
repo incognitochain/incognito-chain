@@ -161,9 +161,10 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	if ethReceipt == nil {
 		return [][]string{}, errors.Errorf("The eth proof's receipt could not be null.")
 	}
+	txReqID := *(tx.Hash())
 	actionContent := map[string]interface{}{
 		"meta":       *iReq,
-		"txReqId":    *(tx.Hash()),
+		"txReqId":    txReqID,
 		"ethReceipt": *ethReceipt,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
@@ -172,6 +173,12 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
+
+	fmt.Println("hahaha txreqid: ", txReqID)
+	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BRIDGE_REQUEST_PROCESSING_STATUS))
+	if err != nil {
+		return [][]string{}, err
+	}
 	return [][]string{action}, nil
 }
 

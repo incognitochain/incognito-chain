@@ -598,7 +598,9 @@ func (serverObj Server) Start() {
 	}
 
 	Logger.log.Debug("Starting server")
-	serverObj.CheckForceUpdateSourceCode()
+	if common.CheckForce {
+		serverObj.CheckForceUpdateSourceCode()
+	}
 	if cfg.TestNet {
 		Logger.log.Critical("************************" +
 			"* Testnet is active *" +
