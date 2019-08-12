@@ -157,18 +157,17 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	//fmt.Printf("#inputCoins: %d\n", len(inputCoins))
 	tx := transaction.Tx{}
 	err = tx.Init(
-		&senderKeySet.PrivateKey,
-		paymentInfos,
-		inputCoins,
-		realFee,
-		hasPrivacyCoin,
-		*rpcServer.config.Database,
-		nil, // use for prv coin -> nil is valid
-		meta,
-	)
+		transaction.NewTxPrivacyInitParams(&senderKeySet.PrivateKey,
+			paymentInfos,
+			inputCoins,
+			realFee,
+			hasPrivacyCoin,
+			*rpcServer.config.Database,
+			nil, // use for prv coin -> nil is valid
+			meta))
 	// END create tx
 
-	if err.(*transaction.TransactionError) != nil {
+	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
@@ -308,18 +307,17 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 
 	tx := &transaction.TxCustomToken{}
 	err = tx.Init(
-		&senderKeySet.PrivateKey,
-		nil,
-		inputCoins,
-		realFee,
-		tokenParams,
-		//listCustomTokens,
-		*rpcServer.config.Database,
-		metaData,
-		hasPrivacyCoin,
-		shardIDSender,
-	)
-	if err.(*transaction.TransactionError) != nil {
+		transaction.NewTxNormalTokenInitParam(&senderKeySet.PrivateKey,
+			nil,
+			inputCoins,
+			realFee,
+			tokenParams,
+			//listCustomTokens,
+			*rpcServer.config.Database,
+			metaData,
+			hasPrivacyCoin,
+			shardIDSender))
+	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
@@ -450,19 +448,18 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 
 	tx := &transaction.TxCustomTokenPrivacy{}
 	err = tx.Init(
-		&senderKeySet.PrivateKey,
-		nil,
-		inputCoins,
-		realFeePrv,
-		tokenParams,
-		*rpcServer.config.Database,
-		metaData,
-		hasPrivacyCoin,
-		hasPrivacyToken,
-		shardIDSender,
-	)
+		transaction.NewTxPrivacyTokenInitParams(&senderKeySet.PrivateKey,
+			nil,
+			inputCoins,
+			realFeePrv,
+			tokenParams,
+			*rpcServer.config.Database,
+			metaData,
+			hasPrivacyCoin,
+			hasPrivacyToken,
+			shardIDSender))
 
-	if err.(*transaction.TransactionError) != nil {
+	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 
@@ -520,7 +517,7 @@ func (rpcServer HttpServer) estimateFee(
 	if feeEstimator, ok := rpcServer.config.FeeEstimator[shardID]; ok {
 		limitFee = feeEstimator.GetLimitFee()
 	}
-	estimateTxSizeInKb = transaction.EstimateTxSize(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee)
+	estimateTxSizeInKb = transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacy, metadata, customTokenParams, privacyCustomTokenParams, limitFee))
 
 	realFee = uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
 	return realFee, estimateFeeCoinPerKb, estimateTxSizeInKb
@@ -529,7 +526,7 @@ func (rpcServer HttpServer) estimateFee(
 func (rpcServer HttpServer) filterMemPoolOutCoinsToSpent(outCoins []*privacy.OutputCoin) (remainOutputCoins []*privacy.OutputCoin, err error) {
 	remainOutputCoins = make([]*privacy.OutputCoin, 0)
 	for _, outCoin := range outCoins {
-		if rpcServer.config.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.SerialNumber.Compress()) == nil {
+		if rpcServer.config.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().Compress()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
@@ -547,11 +544,11 @@ func (rpcServer HttpServer) chooseBestOutCoinsToSpent(outCoins []*privacy.Output
 	outCoinsUnderLimit := make([]*privacy.OutputCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if outCoin.CoinDetails.Value < amount {
+		if outCoin.CoinDetails.GetValue() < amount {
 			outCoinsUnderLimit = append(outCoinsUnderLimit, outCoin)
 		} else if outCoinOverLimit == nil {
 			outCoinOverLimit = outCoin
-		} else if outCoinOverLimit.CoinDetails.Value > outCoin.CoinDetails.Value {
+		} else if outCoinOverLimit.CoinDetails.GetValue() > outCoin.CoinDetails.GetValue() {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		} else {
 			remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
@@ -560,22 +557,22 @@ func (rpcServer HttpServer) chooseBestOutCoinsToSpent(outCoins []*privacy.Output
 	}
 
 	sort.Slice(outCoinsUnderLimit, func(i, j int) bool {
-		return outCoinsUnderLimit[i].CoinDetails.Value < outCoinsUnderLimit[j].CoinDetails.Value
+		return outCoinsUnderLimit[i].CoinDetails.GetValue() < outCoinsUnderLimit[j].CoinDetails.GetValue()
 	})
 
 	for _, outCoin := range outCoinsUnderLimit {
 		if totalResultOutputCoinAmount < amount {
-			totalResultOutputCoinAmount += outCoin.CoinDetails.Value
+			totalResultOutputCoinAmount += outCoin.CoinDetails.GetValue()
 			resultOutputCoins = append(resultOutputCoins, outCoin)
 		} else {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}
 
-	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.Value > 2*amount || totalResultOutputCoinAmount < amount) {
+	if outCoinOverLimit != nil && (outCoinOverLimit.CoinDetails.GetValue() > 2*amount || totalResultOutputCoinAmount < amount) {
 		remainOutputCoins = append(remainOutputCoins, resultOutputCoins...)
 		resultOutputCoins = []*privacy.OutputCoin{outCoinOverLimit}
-		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.Value
+		totalResultOutputCoinAmount = outCoinOverLimit.CoinDetails.GetValue()
 	} else if outCoinOverLimit != nil {
 		remainOutputCoins = append(remainOutputCoins, outCoinOverLimit)
 	}
