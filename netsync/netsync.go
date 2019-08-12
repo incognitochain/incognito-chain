@@ -431,9 +431,9 @@ func (netSync *NetSync) handleMessageGetBlockShard(msg *wire.MessageGetBlockShar
 		return
 	}
 	if msg.ByHash {
-		netSync.getBlkShardByHashAndSend(peerID, 0, msg.BlkHashes, 0)
+		netSync.getBlockShardByHashAndSend(peerID, blockShard, msg.BlkHashes, 0)
 	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, 0, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
+		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, blockShard, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
 	}
 }
 
@@ -459,9 +459,9 @@ func (netSync *NetSync) handleMessageGetShardToBeacon(msg *wire.MessageGetShardT
 		return
 	}
 	if msg.ByHash {
-		netSync.getBlkShardByHashAndSend(peerID, 2, msg.BlkHashes, 0)
+		netSync.getBlockShardByHashAndSend(peerID, shardToBeacon, msg.BlkHashes, 0)
 	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, 2, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
+		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, shardToBeacon, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
 	}
 }
 
@@ -473,9 +473,9 @@ func (netSync *NetSync) handleMessageGetCrossShard(msg *wire.MessageGetCrossShar
 		return
 	}
 	if msg.ByHash {
-		netSync.getBlkShardByHashAndSend(peerID, 1, msg.BlkHashes, msg.ToShardID)
+		netSync.getBlockShardByHashAndSend(peerID, crossShard, msg.BlkHashes, msg.ToShardID)
 	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, 1, msg.BySpecificHeight, msg.FromShardID, msg.BlkHeights, msg.ToShardID)
+		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, crossShard, msg.BySpecificHeight, msg.FromShardID, msg.BlkHeights, msg.ToShardID)
 	}
 }
 
