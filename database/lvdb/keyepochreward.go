@@ -11,17 +11,17 @@ import (
  * @param tokenID: currency unit
  * @return ([]byte, error): Key, error of this process
  */
-func NewKeyAddShardRewardRequest(
+func newKeyAddShardRewardRequest(
 	epoch uint64,
 	shardID byte,
 	tokenID common.Hash,
-) ([]byte, error) {
+) []byte {
 	res := []byte{}
-	res = append(res, ShardRequestRewardPrefix...)
+	res = append(res, shardRequestRewardPrefix...)
 	res = append(res, common.Uint64ToBytes(epoch)...)
 	res = append(res, shardID)
 	res = append(res, tokenID.GetBytes()...)
-	return res, nil
+	return res
 }
 
 /**
@@ -30,13 +30,13 @@ func NewKeyAddShardRewardRequest(
  * @param tokenID: currency unit
  * @return ([]byte, error): Key, error of this process
  */
-func NewKeyAddCommitteeReward(
+func newKeyAddCommitteeReward(
 	committeeAddress []byte,
 	tokenID common.Hash,
-) ([]byte, error) {
+) []byte {
 	res := []byte{}
-	res = append(res, CommitteeRewardPrefix...)
+	res = append(res, committeeRewardPrefix...)
 	res = append(res, committeeAddress...)
 	res = append(res, tokenID.GetBytes()...)
-	return res, nil
+	return res
 }

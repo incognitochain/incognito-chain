@@ -63,7 +63,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 			}
 		case common.TxCustomTokenType:
 			{
-				tx = &transaction.TxCustomToken{}
+				tx = &transaction.TxNormalToken{}
 				parseErr = json.Unmarshal(txTempJson, &tx)
 			}
 		case common.TxCustomTokenPrivacyType:

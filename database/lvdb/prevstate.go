@@ -193,7 +193,7 @@ func (db *db) DeleteTransactionIndex(txId common.Hash) error {
 
 }
 
-func (db *db) DeleteCustomToken(tokenID common.Hash) error {
+func (db *db) DeleteNormalToken(tokenID common.Hash) error {
 	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
@@ -202,8 +202,8 @@ func (db *db) DeleteCustomToken(tokenID common.Hash) error {
 	return nil
 }
 
-func (db *db) DeleteCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
-	key := db.GetKey(string(TokenPrefix), tokenID)
+func (db *db) DeleteNormalTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
+	key := db.GetKey(string(tokenPrefix), tokenID)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
@@ -218,7 +218,7 @@ func (db *db) DeleteCustomTokenTx(tokenID common.Hash, txIndex int32, shardID by
 	return nil
 }
 
-func (db *db) DeletePrivacyCustomToken(tokenID common.Hash) error {
+func (db *db) DeletePrivacyToken(tokenID common.Hash) error {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
@@ -227,8 +227,8 @@ func (db *db) DeletePrivacyCustomToken(tokenID common.Hash) error {
 	return nil
 }
 
-func (db *db) DeletePrivacyCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
-	key := db.GetKey(string(PrivacyTokenPrefix), tokenID)
+func (db *db) DeletePrivacyTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
+	key := db.GetKey(string(privacyTokenPrefix), tokenID)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
@@ -243,8 +243,8 @@ func (db *db) DeletePrivacyCustomTokenTx(tokenID common.Hash, txIndex int32, sha
 	return nil
 }
 
-func (db *db) DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error {
-	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
+func (db *db) DeletePrivacyTokenCrossShard(tokenID common.Hash) error {
+	key := db.GetKey(string(privacyTokenCrossShardPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
 		return err
@@ -347,7 +347,7 @@ func (db *db) RestoreBridgedTokenByTokenID(tokenID common.Hash) error {
 	}
 
 	if err := db.Put(key, tokenWithAmtBytes); err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return nil
 }
@@ -356,21 +356,18 @@ func (db *db) RestoreBridgedTokenByTokenID(tokenID common.Hash) error {
 
 func (db *db) BackupShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key, err := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
-	if err != nil {
-		return err
-	}
+	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	backupKey = append(backupKey, key...)
 	curValue, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		err := db.Put(backupKey, common.Uint64ToBytes(0))
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	} else {
 		err := db.Put(backupKey, curValue)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	}
 
@@ -378,21 +375,18 @@ func (db *db) BackupShardRewardRequest(epoch uint64, shardID byte, tokenID commo
 }
 func (db *db) BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
-	if err != nil {
-		return err
-	}
+	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
 	backupKey = append(backupKey, key...)
 	curValue, err := db.lvdb.Get(key, nil)
 	if err != nil {
 		err := db.Put(backupKey, common.Uint64ToBytes(0))
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	} else {
 		err := db.Put(backupKey, curValue)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	}
 
@@ -400,36 +394,30 @@ func (db *db) BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash
 }
 func (db *db) RestoreShardRewardRequest(epoch uint64, shardID byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key, err := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
-	if err != nil {
-		return err
-	}
+	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	backupKey = append(backupKey, key...)
 	bakValue, err := db.lvdb.Get(backupKey, nil)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	err = db.Put(key, bakValue)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 
 	return nil
 }
 func (db *db) RestoreCommitteeReward(committeeAddress []byte, tokenID common.Hash) error {
 	backupKey := getPrevPrefix(true, 0)
-	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
-	if err != nil {
-		return err
-	}
+	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
 	backupKey = append(backupKey, key...)
 	bakValue, err := db.lvdb.Get(backupKey, nil)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	err = db.Put(key, bakValue)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 
 	return nil
