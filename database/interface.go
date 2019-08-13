@@ -96,7 +96,6 @@ type DatabaseInterface interface {
 	ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]uint64, error)
 	BackupSerialNumbersLen(tokenID common.Hash, shardID byte) error
 	RestoreSerialNumber(tokenID common.Hash, shardID byte, serialNumbers [][]byte) error
-	// DeleteSerialNumber(tokenID common.Hash, data []byte, shardID byte) error
 	CleanSerialNumbers() error
 
 	// PedersenCommitment
