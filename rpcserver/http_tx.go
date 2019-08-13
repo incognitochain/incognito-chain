@@ -300,7 +300,7 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 		}
 	case common.TxCustomTokenType:
 		{
-			tempTx := tx.(*transaction.TxCustomToken)
+			tempTx := tx.(*transaction.TxNormalToken)
 			result = &jsonresult.TransactionDetail{
 				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
@@ -495,7 +495,7 @@ func (httpServer *HttpServer) handleSendRawCustomTokenTransaction(params interfa
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
 
-	tx := transaction.TxCustomToken{}
+	tx := transaction.TxNormalToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -950,7 +950,7 @@ func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interf
 	if err != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	tx := transaction.TxCustomToken{}
+	tx := transaction.TxNormalToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {

@@ -305,7 +305,7 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		err := tx.InitTxSalary(params.amount, params.payToAddress, params.payByPrivateKey, params.db, params.meta)
 		return tx, err
 	case CustomTokenType:
-		tx := &TxCustomToken{}
+		tx := &TxNormalToken{}
 		receiver := &TxTokenVout{
 			PaymentAddress: *params.payToAddress,
 			Value:          params.amount,
