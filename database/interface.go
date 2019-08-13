@@ -157,8 +157,8 @@ type DatabaseInterface interface {
 	RestoreBridgedTokenByTokenID(tokenID common.Hash) error
 
 	// Incognito -> Ethereum relay
-	StoreBurningConfirm(txID []byte, height uint64) error
-	GetBurningConfirm(txID []byte) (uint64, error)
+	StoreBurningConfirm(txID common.Hash, height uint64) error
+	GetBurningConfirm(txID common.Hash) (uint64, error)
 
 	// Decentralized bridge
 	IsBridgeTokenExistedByType(incTokenID common.Hash, isCentralized bool) (bool, error)

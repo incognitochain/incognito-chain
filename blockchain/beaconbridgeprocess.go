@@ -282,7 +282,7 @@ func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
-		if err := bc.config.DataBase.StoreBurningConfirm(txID[:], block.Header.Height); err != nil {
+		if err := bc.config.DataBase.StoreBurningConfirm(*txID, block.Header.Height); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}
