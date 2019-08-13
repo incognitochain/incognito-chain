@@ -452,13 +452,13 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			isPaidByPRV := false
 			isPaidPartiallyPRV := false
 			// check PRV element and pToken element
-			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit {
+			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit {
 				// tx contain PRV data -> check with PRV fee
 				// @notice: check limit fee but apply for token fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
 					if txPrivacyToken.GetTxFeeToken() == 0 || // not paid with token -> use PRV for paying fee
-						txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
+						txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
 						// paid all with PRV
 						ok := txPrivacyToken.CheckTransactionFee(limitFee)
 						if !ok {
@@ -482,7 +482,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				}
 				isPaidByPRV = true
 			}
-			if txPrivacyToken.TxTokenPrivacyData.TxNormal.Proof != nil {
+			if txPrivacyToken.TxPrivacyTokenData.TxNormal.Proof != nil {
 				limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
 				if limitFeeToken > 0 {
 					if !isPaidByPRV {
