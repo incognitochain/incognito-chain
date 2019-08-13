@@ -22,7 +22,7 @@ import (
 // Dev or end-user can use this class tx to create an token type which use personal purpose
 type TxNormalToken struct {
 	Tx                            // inherit from normal tx of PRV(supporting privacy)
-	TxTokenData TxNormalTokenData // vin - vout format
+	TxTokenData TxNormalTokenData `json:"TxTokenData"` // vin - vout format
 
 	// Template data variable to process logic
 	listUtxo   map[common.Hash]TxNormalToken
