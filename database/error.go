@@ -50,6 +50,17 @@ const (
 	GetTransactionIndexByIdError
 	StoreTxByPublicKeyError
 	GetTxByPublicKeyError
+
+	// Beacon
+	StoreCrossShardNextHeightError
+	HasCrossShardNextHeightError
+	FetchCrossShardNextHeightError
+	StoreBeaconBlockError
+	HasBeaconBlockError
+	FetchBeaconBlockError
+	StoreBeaconBlockIndexError
+	GetIndexOfBeaconBlockError
+	DeleteBeaconBlockError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -100,6 +111,17 @@ var ErrCodeMessage = map[int]struct {
 	GetTransactionIndexByIdError: {-8001, "Get transaction index by id error id=%+v"},
 	StoreTxByPublicKeyError:      {-8002, "Store tx by public key error tx=%+v pubkey=%+v shardID=%+v"},
 	GetTxByPublicKeyError:        {-8003, "Get tx by public key error publlic key = %+v"},
+
+	// -9xxx beacon
+	StoreCrossShardNextHeightError: {-9000, "Cannot store cross shard next height"},
+	HasCrossShardNextHeightError:   {-9001, "Has cross shard next height"},
+	FetchCrossShardNextHeightError: {-9002, "Fetch cross shard next height error"},
+	StoreBeaconBlockError:          {-9003, "Store beacon block error"},
+	HasBeaconBlockError:            {-9004, "Has beacon block error"},
+	FetchBeaconBlockError:          {-9005, "Fetch beacon block error"},
+	StoreBeaconBlockIndexError:     {-9006, "Store beacon block index"},
+	GetIndexOfBeaconBlockError:     {-9007, "Get index of beacon block error hash=%+v"},
+	DeleteBeaconBlockError:         {-9008, "Delete beacon block error hash=%+v index=%+v"},
 }
 
 type DatabaseError struct {
