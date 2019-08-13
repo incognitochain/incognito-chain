@@ -585,13 +585,13 @@ func TestDb_StoreCustomToken(t *testing.T) {
 	tokenID := common.Hash{}
 	data := []byte{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}
 
-	err := db.StoreCustomToken(tokenID, data)
+	err := db.StoreNormalToken(tokenID, data)
 	assert.Equal(t, err, nil)
 
 	err = db.StorePrivacyCustomToken(tokenID, data)
 	assert.Equal(t, err, nil)
 
-	dataTemp, err := db.ListCustomToken()
+	dataTemp, err := db.ListNormalToken()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(dataTemp), 1)
 
@@ -599,13 +599,13 @@ func TestDb_StoreCustomToken(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(dataTemp), 1)
 
-	err = db.DeleteCustomToken(tokenID)
+	err = db.DeleteNormalToken(tokenID)
 	assert.Equal(t, err, nil)
 
 	err = db.DeletePrivacyCustomToken(tokenID)
 	assert.Equal(t, err, nil)
 
-	dataTemp, err = db.ListCustomToken()
+	dataTemp, err = db.ListNormalToken()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(dataTemp), 0)
 
@@ -613,7 +613,7 @@ func TestDb_StoreCustomToken(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(dataTemp), 0)
 
-	err = db.StoreCustomToken(tokenID, data)
+	err = db.StoreNormalToken(tokenID, data)
 	assert.Equal(t, err, nil)
 
 	err = db.StorePrivacyCustomToken(tokenID, data)
@@ -625,13 +625,13 @@ func TestDb_StoreCustomToken(t *testing.T) {
 	has = db.PrivacyCustomTokenIDExisted(tokenID)
 	assert.Equal(t, true, has)
 
-	err = db.StoreCustomTokenTx(tokenID, 0, 1, 0, data)
+	err = db.StoreNormalTokenTx(tokenID, 0, 1, 0, data)
 	assert.Equal(t, err, nil)
 
 	temp, err := db.CustomTokenTxs(tokenID)
 	assert.Equal(t, 1, len(temp))
 
-	err = db.DeleteCustomTokenTx(tokenID, 0, 0, 1)
+	err = db.DeleteNormalTokenTx(tokenID, 0, 0, 1)
 	assert.Equal(t, err, nil)
 
 	temp, err = db.CustomTokenTxs(tokenID)

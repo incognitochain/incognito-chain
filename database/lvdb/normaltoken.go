@@ -19,7 +19,7 @@ import (
 // StoreCustomToken - store data about custom token
 // Key: token-init-{tokenID}
 // Value: txHash
-func (db *db) StoreCustomToken(tokenID common.Hash, txHash []byte) error {
+func (db *db) StoreNormalToken(tokenID common.Hash, txHash []byte) error {
 	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	if err := db.Put(key, txHash); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, err)
@@ -27,7 +27,7 @@ func (db *db) StoreCustomToken(tokenID common.Hash, txHash []byte) error {
 	return nil
 }
 
-func (db *db) StoreCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
+func (db *db) StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
 	key := db.GetKey(string(tokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
@@ -58,7 +58,7 @@ func (db *db) CustomTokenIDExisted(tokenID common.Hash) bool {
 /*
 	Return list of txhash
 */
-func (db *db) ListCustomToken() ([][]byte, error) {
+func (db *db) ListNormalToken() ([][]byte, error) {
 	result := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(tokenInitPrefix), nil)
 	for iter.Next() {
