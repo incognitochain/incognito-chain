@@ -690,7 +690,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		case transaction.CustomTokenInit:
 			{
 				Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, privacyCustomTokenTx.TxTokenPrivacyData.PropertySymbol, privacyCustomTokenTx.TxTokenPrivacyData.PropertyName)
-				err = blockchain.config.DataBase.StorePrivacyCustomToken(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, privacyCustomTokenTx.Hash()[:])
+				err = blockchain.config.DataBase.StorePrivacyToken(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, privacyCustomTokenTx.Hash()[:])
 				if err != nil {
 					return err
 				}
@@ -700,7 +700,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = blockchain.config.DataBase.StorePrivacyCustomTokenTx(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, privacyCustomTokenTx.Hash()[:])
+		err = blockchain.config.DataBase.StorePrivacyTokenTx(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, privacyCustomTokenTx.Hash()[:])
 		if err != nil {
 			return err
 		}
@@ -772,7 +772,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 				// json.Unmarshal(tokenDataBytes, &crossShardTokenPrivacyMetaData)
 				// fmt.Println("New Token CrossShardTokenPrivacyMetaData", crossShardTokenPrivacyMetaDatla)
 
-				if err := blockchain.config.DataBase.StorePrivacyCustomTokenCrossShard(*tokenID, tokenDataBytes); err != nil {
+				if err := blockchain.config.DataBase.StorePrivacyTokenCrossShard(*tokenID, tokenDataBytes); err != nil {
 					return err
 				}
 			}
@@ -1095,11 +1095,11 @@ func (blockchain *BlockChain) CustomTokenIDExisted(tokenID *common.Hash) bool {
 
 // Check Privacy Custom token ID is existed
 func (blockchain *BlockChain) PrivacyCustomTokenIDExisted(tokenID *common.Hash) bool {
-	return blockchain.config.DataBase.PrivacyCustomTokenIDExisted(*tokenID)
+	return blockchain.config.DataBase.PrivacyTokenIDExisted(*tokenID)
 }
 
 func (blockchain *BlockChain) PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool {
-	return blockchain.config.DataBase.PrivacyCustomTokenIDCrossShardExisted(*tokenID)
+	return blockchain.config.DataBase.PrivacyTokenIDCrossShardExisted(*tokenID)
 }
 
 // ListCustomToken - return all custom token which existed in network
@@ -1126,11 +1126,11 @@ func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxC
 
 // ListCustomToken - return all custom token which existed in network
 func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]CrossShardTokenPrivacyMetaData, error) {
-	data, err := blockchain.config.DataBase.ListPrivacyCustomToken()
+	data, err := blockchain.config.DataBase.ListPrivacyToken()
 	if err != nil {
 		return nil, nil, err
 	}
-	crossShardData, err := blockchain.config.DataBase.ListPrivacyCustomTokenCrossShard()
+	crossShardData, err := blockchain.config.DataBase.ListPrivacyTokenCrossShard()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1174,7 +1174,7 @@ func (blockchain *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]com
 
 // GetPrivacyCustomTokenTxsHash - return list hash of tx which relate to custom token
 func (blockchain *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
-	txHashesInByte, err := blockchain.config.DataBase.PrivacyCustomTokenTxs(*tokenID)
+	txHashesInByte, err := blockchain.config.DataBase.PrivacyTokenTxs(*tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -2088,13 +2088,13 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 		switch privacyCustomTokenTx.TxTokenPrivacyData.Type {
 		case transaction.CustomTokenInit:
 			{
-				err = blockchain.config.DataBase.DeletePrivacyCustomToken(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID)
+				err = blockchain.config.DataBase.DeletePrivacyToken(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		err = blockchain.config.DataBase.DeletePrivacyCustomTokenTx(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
+		err = blockchain.config.DataBase.DeletePrivacyTokenTx(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
 		if err != nil {
 			return err
 		}
@@ -2129,7 +2129,7 @@ func (blockchain *BlockChain) restoreFromCrossTxViewPoint(block *ShardBlock) err
 
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		tokenID := privacyCustomTokenSubView.tokenID
-		if err := blockchain.config.DataBase.DeletePrivacyCustomTokenCrossShard(*tokenID); err != nil {
+		if err := blockchain.config.DataBase.DeletePrivacyTokenCrossShard(*tokenID); err != nil {
 			return err
 		}
 		err = blockchain.restoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)

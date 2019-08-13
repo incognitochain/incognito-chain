@@ -14,7 +14,7 @@ import (
 // StorePrivacyCustomToken - store data about privacy custom token when init
 // Key: privacy-token-init-{tokenID}
 // Value: txHash
-func (db *db) StorePrivacyCustomToken(tokenID common.Hash, txHash []byte) error {
+func (db *db) StorePrivacyToken(tokenID common.Hash, txHash []byte) error {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	if err := db.Put(key, txHash); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, err)
@@ -22,7 +22,7 @@ func (db *db) StorePrivacyCustomToken(tokenID common.Hash, txHash []byte) error 
 	return nil
 }
 
-func (db *db) StorePrivacyCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
+func (db *db) StorePrivacyTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
 	key := db.GetKey(string(privacyTokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
@@ -38,7 +38,7 @@ func (db *db) StorePrivacyCustomTokenTx(tokenID common.Hash, shardID byte, block
 	return nil
 }
 
-func (db *db) PrivacyCustomTokenIDExisted(tokenID common.Hash) bool {
+func (db *db) PrivacyTokenIDExisted(tokenID common.Hash) bool {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	data, err := db.Get(key)
 	if err != nil {
@@ -50,7 +50,7 @@ func (db *db) PrivacyCustomTokenIDExisted(tokenID common.Hash) bool {
 	return true
 }
 
-func (db *db) PrivacyCustomTokenIDCrossShardExisted(tokenID common.Hash) bool {
+func (db *db) PrivacyTokenIDCrossShardExisted(tokenID common.Hash) bool {
 	key := db.GetKey(string(privacyTokenCrossShardPrefix), tokenID)
 	data, err := db.Get(key)
 	if err != nil {
@@ -65,7 +65,7 @@ func (db *db) PrivacyCustomTokenIDCrossShardExisted(tokenID common.Hash) bool {
 /*
 	Return list of txhash
 */
-func (db *db) ListPrivacyCustomToken() ([][]byte, error) {
+func (db *db) ListPrivacyToken() ([][]byte, error) {
 	result := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(privacyTokenInitPrefix), nil)
 	for iter.Next() {
@@ -80,7 +80,7 @@ func (db *db) ListPrivacyCustomToken() ([][]byte, error) {
 	return result, nil
 }
 
-func (db *db) PrivacyCustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
+func (db *db) PrivacyTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
 	result := make([]common.Hash, 0)
 	key := db.GetKey(string(privacyTokenPrefix), tokenID)
 	// PubKey = token-{tokenID}
@@ -98,7 +98,7 @@ func (db *db) PrivacyCustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) 
 	return result, nil
 }
 
-func (db *db) StorePrivacyCustomTokenCrossShard(tokenID common.Hash, tokenValue []byte) error {
+func (db *db) StorePrivacyTokenCrossShard(tokenID common.Hash, tokenValue []byte) error {
 	key := db.GetKey(string(privacyTokenCrossShardPrefix), tokenID)
 	if err := db.Put(key, tokenValue); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, err)
@@ -110,7 +110,7 @@ func (db *db) StorePrivacyCustomTokenCrossShard(tokenID common.Hash, tokenValue 
 	Return all data of token
 
 */
-func (db *db) ListPrivacyCustomTokenCrossShard() ([][]byte, error) {
+func (db *db) ListPrivacyTokenCrossShard() ([][]byte, error) {
 	result := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(privacyTokenCrossShardPrefix), nil)
 	for iter.Next() {

@@ -138,19 +138,19 @@ type DatabaseInterface interface {
 	GetNormalTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error)                   // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 
 	// privacy Custom token
-	StorePrivacyCustomToken(tokenID common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
-	DeletePrivacyCustomToken(tokenID common.Hash) error
-	StorePrivacyCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error
-	DeletePrivacyCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error
-	ListPrivacyCustomToken() ([][]byte, error)                        // get list all custom token which issued in network
-	PrivacyCustomTokenIDExisted(tokenID common.Hash) bool             // check privacy tokenID existed in network
-	PrivacyCustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) // from token id get all custom txs
+	StorePrivacyToken(tokenID common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
+	DeletePrivacyToken(tokenID common.Hash) error
+	StorePrivacyTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error
+	DeletePrivacyTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error
+	ListPrivacyToken() ([][]byte, error)                        // get list all custom token which issued in network
+	PrivacyTokenIDExisted(tokenID common.Hash) bool             // check privacy tokenID existed in network
+	PrivacyTokenTxs(tokenID common.Hash) ([]common.Hash, error) // from token id get all custom txs
 
 	// Privacy token for Cross Shard
-	StorePrivacyCustomTokenCrossShard(tokenID common.Hash, tokenValue []byte) error // store custom token cross shard privacy
-	ListPrivacyCustomTokenCrossShard() ([][]byte, error)
-	PrivacyCustomTokenIDCrossShardExisted(tokenID common.Hash) bool
-	DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error
+	StorePrivacyTokenCrossShard(tokenID common.Hash, tokenValue []byte) error // store custom token cross shard privacy
+	ListPrivacyTokenCrossShard() ([][]byte, error)
+	PrivacyTokenIDCrossShardExisted(tokenID common.Hash) bool
+	DeletePrivacyTokenCrossShard(tokenID common.Hash) error
 
 	// Centralized bridge
 	BackupBridgedTokenByTokenID(tokenID common.Hash) error
