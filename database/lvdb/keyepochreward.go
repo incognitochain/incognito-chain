@@ -17,7 +17,7 @@ func newKeyAddShardRewardRequest(
 	tokenID common.Hash,
 ) []byte {
 	res := []byte{}
-	res = append(res, ShardRequestRewardPrefix...)
+	res = append(res, shardRequestRewardPrefix...)
 	res = append(res, common.Uint64ToBytes(epoch)...)
 	res = append(res, shardID)
 	res = append(res, tokenID.GetBytes()...)
@@ -35,7 +35,7 @@ func newKeyAddCommitteeReward(
 	tokenID common.Hash,
 ) []byte {
 	res := []byte{}
-	res = append(res, CommitteeRewardPrefix...)
+	res = append(res, committeeRewardPrefix...)
 	res = append(res, committeeAddress...)
 	res = append(res, tokenID.GetBytes()...)
 	return res

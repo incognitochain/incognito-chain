@@ -203,7 +203,7 @@ func (db *db) DeleteCustomToken(tokenID common.Hash) error {
 }
 
 func (db *db) DeleteCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
-	key := db.GetKey(string(TokenPrefix), tokenID)
+	key := db.GetKey(string(tokenPrefix), tokenID)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
@@ -228,7 +228,7 @@ func (db *db) DeletePrivacyCustomToken(tokenID common.Hash) error {
 }
 
 func (db *db) DeletePrivacyCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
-	key := db.GetKey(string(PrivacyTokenPrefix), tokenID)
+	key := db.GetKey(string(privacyTokenPrefix), tokenID)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
@@ -244,7 +244,7 @@ func (db *db) DeletePrivacyCustomTokenTx(tokenID common.Hash, txIndex int32, sha
 }
 
 func (db *db) DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error {
-	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
+	key := db.GetKey(string(privacyTokenCrossShardPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
 		return err
