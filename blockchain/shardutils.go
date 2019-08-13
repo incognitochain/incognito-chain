@@ -119,11 +119,7 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 	Action Generate From Transaction:
 	- Stake
 */
-func CreateShardInstructionsFromTransactionAndInstruction(
-	transactions []metadata.Transaction,
-	bc *BlockChain,
-	shardID byte,
-) (instructions [][]string, err error) {
+func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPubKey := []string{}
 	stakeBeaconPubKey := []string{}
@@ -193,11 +189,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 }
 
 // build actions from txs and ins at shard
-func buildActionsFromMetadata(
-	txs []metadata.Transaction,
-	bc *BlockChain,
-	shardID byte,
-) ([][]string, error) {
+func buildActionsFromMetadata(txs []metadata.Transaction, bc *BlockChain, shardID byte) ([][]string, error) {
 	actions := [][]string{}
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
@@ -385,10 +377,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 // 1. (Privacy) PRV: Output coin
 // 2. Tx Custom Token: Tx Token Data
 // 3. Privacy Custom Token: Token Data + Output coin
-func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.OutputCoin,
-	[]transaction.TxTokenData,
-	[]ContentCrossShardTokenPrivacyData,
-) {
+func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.OutputCoin, []transaction.TxTokenData, []ContentCrossShardTokenPrivacyData) {
 	coinList := []privacy.OutputCoin{}
 	txTokenDataMap := make(map[common.Hash]*transaction.TxTokenData)
 	txTokenPrivacyDataMap := make(map[common.Hash]*ContentCrossShardTokenPrivacyData)
