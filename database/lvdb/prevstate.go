@@ -347,7 +347,7 @@ func (db *db) RestoreBridgedTokenByTokenID(tokenID common.Hash) error {
 	}
 
 	if err := db.Put(key, tokenWithAmtBytes); err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return nil
 }
@@ -362,12 +362,12 @@ func (db *db) BackupShardRewardRequest(epoch uint64, shardID byte, tokenID commo
 	if err != nil {
 		err := db.Put(backupKey, common.Uint64ToBytes(0))
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	} else {
 		err := db.Put(backupKey, curValue)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	}
 
@@ -381,12 +381,12 @@ func (db *db) BackupCommitteeReward(committeeAddress []byte, tokenID common.Hash
 	if err != nil {
 		err := db.Put(backupKey, common.Uint64ToBytes(0))
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	} else {
 		err := db.Put(backupKey, curValue)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	}
 
@@ -398,11 +398,11 @@ func (db *db) RestoreShardRewardRequest(epoch uint64, shardID byte, tokenID comm
 	backupKey = append(backupKey, key...)
 	bakValue, err := db.lvdb.Get(backupKey, nil)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	err = db.Put(key, bakValue)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 
 	return nil
@@ -413,11 +413,11 @@ func (db *db) RestoreCommitteeReward(committeeAddress []byte, tokenID common.Has
 	backupKey = append(backupKey, key...)
 	bakValue, err := db.lvdb.Get(backupKey, nil)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	err = db.Put(key, bakValue)
 	if err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 
 	return nil
