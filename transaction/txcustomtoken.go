@@ -265,7 +265,10 @@ func (customTokenTx TxCustomToken) ValidateTxByItself(
 	shardID byte,
 ) (bool, error) {
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return false, err
+	}
 	if customTokenTx.TxTokenData.Type == CustomTokenInit {
 		if ok, err := customTokenTx.Tx.ValidateTransaction(hasPrivacy, db, shardID, prvCoinID); !ok {
 			return false, err
@@ -536,7 +539,7 @@ func (txCustomToken *TxCustomToken) Init(params *NormalTokenInitParam) error {
 				//		return NewTransactionErr(CustomTokenExistedError, nil)
 				//	}
 				//}
-				existed := params.db.CustomTokenIDExisted(newHashInitToken)
+				existed := params.db.NormalTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token is Existed", newHashInitToken)
 					return NewTransactionErr(CustomTokenExistedError, nil)
@@ -563,7 +566,7 @@ func (txCustomToken *TxCustomToken) Init(params *NormalTokenInitParam) error {
 		//if _, ok := listCustomTokens[*propertyID]; !ok {
 		//	return NewTransactionErr(UnexpectedError, errors.New("invalid Token ID"))
 		//}
-		existed := params.db.CustomTokenIDExisted(*propertyID)
+		existed := params.db.NormalTokenIDExisted(*propertyID)
 		if !existed {
 			return NewTransactionErr(UnexpectedError, errors.New("invalid Token ID"))
 		}

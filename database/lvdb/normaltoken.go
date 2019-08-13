@@ -43,7 +43,7 @@ func (db *db) StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight 
 	return nil
 }
 
-func (db *db) CustomTokenIDExisted(tokenID common.Hash) bool {
+func (db *db) NormalTokenIDExisted(tokenID common.Hash) bool {
 	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	data, err := db.Get(key)
 	if err != nil {
@@ -73,7 +73,7 @@ func (db *db) ListNormalToken() ([][]byte, error) {
 	return result, nil
 }
 
-func (db *db) CustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
+func (db *db) NormalTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
 	result := make([]common.Hash, 0)
 	key := db.GetKey(string(tokenPrefix), tokenID)
 	// PubKey = token-{tokenID}
@@ -94,7 +94,7 @@ func (db *db) CustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
 /*
 	Return a list of all address with balance > 0
 */
-func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error) {
+func (db *db) GetNormalTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error) {
 	results := make(map[string]uint64)
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
@@ -105,7 +105,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID common.Hash) (map[st
 		value := string(iter.Value())
 		keys := strings.Split(key, string(Splitter))
 		values := strings.Split(value, string(Splitter))
-		database.Logger.Log.Info("GetCustomTokenPaymentAddressesBalance, utxo information", value)
+		database.Logger.Log.Info("GetNormalTokenPaymentAddressesBalance, utxo information", value)
 		if strings.Compare(values[1], string(Unspent)) == 0 {
 			// Uncomment this to get balance of all account
 			paymentAddress := privacy.PaymentAddress{}
@@ -134,7 +134,7 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID common.Hash) (map[st
 	Get a list of UTXO of one address
 	Return a list of UTXO, each UTXO has format: txHash-index
 */
-func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) {
+func (db *db) GetNormalTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) {
 	prefix := TokenPaymentAddressPrefix
 	prefix = append(prefix, Splitter...)
 	prefix = append(prefix, []byte(tokenID.String())...)
