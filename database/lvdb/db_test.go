@@ -111,9 +111,9 @@ func TestDb_StoreShardBlock(t *testing.T) {
 		fail, err := db.FetchBlock(common.Hash{})
 		assert.NotEqual(t, nil, err)
 		assert.Equal(t, 0, len(fail))
+		_, err = db.FetchBlock(*block.Hash())
+		assert.Equal(t, err, nil)
 		// TODO
-		//blockInBytes, err := db.FetchBlock(*block.Hash())
-		//assert.Equal(t, err, nil)
 		//blockNew := blockchain.ShardBlock{}
 		//err = json.Unmarshal(blockInBytes, &blockNew)
 		//assert.Equal(t, err, nil)
