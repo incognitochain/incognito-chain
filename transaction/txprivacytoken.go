@@ -22,7 +22,7 @@ import (
 // so that user need to spend a lot fee to create this class tx
 type TxCustomTokenPrivacy struct {
 	Tx                                    // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
-	TxTokenPrivacyData TxPrivacyTokenData // supporting privacy format
+	TxTokenPrivacyData TxPrivacyTokenData `json:"TxTokenPrivacyData"` // supporting privacy format
 
 	// private field, not use for json parser, only use as temp variable
 	cachedHash *common.Hash // cached hash data of tx
