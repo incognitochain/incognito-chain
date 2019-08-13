@@ -619,7 +619,7 @@ func TestDb_StoreCustomToken(t *testing.T) {
 	err = db.StorePrivacyCustomToken(tokenID, data)
 	assert.Equal(t, err, nil)
 
-	has := db.CustomTokenIDExisted(tokenID)
+	has := db.NormalTokenIDExisted(tokenID)
 	assert.Equal(t, true, has)
 
 	has = db.PrivacyCustomTokenIDExisted(tokenID)
@@ -628,13 +628,13 @@ func TestDb_StoreCustomToken(t *testing.T) {
 	err = db.StoreNormalTokenTx(tokenID, 0, 1, 0, data)
 	assert.Equal(t, err, nil)
 
-	temp, err := db.CustomTokenTxs(tokenID)
+	temp, err := db.NormalTokenTxs(tokenID)
 	assert.Equal(t, 1, len(temp))
 
 	err = db.DeleteNormalTokenTx(tokenID, 0, 0, 1)
 	assert.Equal(t, err, nil)
 
-	temp, err = db.CustomTokenTxs(tokenID)
+	temp, err = db.NormalTokenTxs(tokenID)
 	assert.Equal(t, 0, len(temp))
 
 	err = db.StorePrivacyCustomTokenTx(tokenID, 0, 1, 0, data)
@@ -666,14 +666,14 @@ func TestDb_StoreCustomToken(t *testing.T) {
 	paymentAddressValue := strconv.Itoa(int(value)) + string(lvdb.Splitter) + string(lvdb.Unspent) + string(lvdb.Splitter)
 	err = db.Put(paymentAddressKey, []byte(paymentAddressValue))
 	assert.Equal(t, nil, err)
-	dataBalance, err := db.GetCustomTokenPaymentAddressesBalance(tokenID)
+	dataBalance, err := db.GetNormalTokenPaymentAddressesBalance(tokenID)
 	assert.Equal(t, nil, err)
 	balance, ok := dataBalance["1Uv2gqs6nSLdkwrhTGZmFZJBTLSUqjWHiqLjddzuqNRbtT1dYQbtmo29B7ceJsZRQNS1rrT8eRSRAkFuMWpxpnm8JXaZmnfky3pS6rCxL"]
 	assert.Equal(t, true, ok)
 	assert.Equal(t, uint64(10), uint64(balance))
 
 	p, _, _ := base58.Base58Check{}.Decode("1Uv2gqs6nSLdkwrhTGZmFZJBTLSUqjWHiqLjddzuqNRbtT1dYQbtmo29B7ceJsZRQNS1rrT8eRSRAkFuMWpxpnm8JXaZmnfky3pS6rCxL")
-	dataUTXO, err := db.GetCustomTokenPaymentAddressUTXO(tokenID, p)
+	dataUTXO, err := db.GetNormalTokenPaymentAddressUTXO(tokenID, p)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 1, len(dataUTXO))
 }
