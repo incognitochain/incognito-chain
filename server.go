@@ -197,7 +197,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			panic("miningkeys can't be empty in this node mode")
 		}
 	}
-	serverObj.pusubManager = pubsub
+	serverObj.pusubManager = pubsubManager
 	serverObj.beaconPool = mempool.GetBeaconPool()
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
@@ -340,7 +340,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ChainParams:   chainParams,
 		FeeEstimator:  serverObj.feeEstimator,
 		MaxTx:         cfg.TxPoolMaxTx,
-		PubSubManager: pubsub,
+		PubSubManager: pubsubManager,
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
@@ -357,7 +357,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
 
 	// Init Net Sync manager to process messages
-	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
+	serverObj.netSync = &netsync.NetSync{}
+	serverObj.netSync.Init(&netsync.NetSyncConfig{
 		BlockChain:        serverObj.blockChain,
 		ChainParam:        chainParams,
 		TxMemPool:         serverObj.memPool,
@@ -370,12 +371,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		RoleInCommittees:  -1,
 	})
 	// Create a connection manager.
-	var peer *peer.Peer
+	var listenPeer *peer.Peer
 	if !cfg.DisableListen {
 		var err error
 
 		// this is initializing our listening peer
-		peer, err = serverObj.InitListenerPeer(serverObj.addrManager, listenAddrs)
+		listenPeer, err = serverObj.InitListenerPeer(serverObj.addrManager, listenAddrs)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -392,7 +393,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	connManager := connmanager.New(&connmanager.Config{
 		OnInboundAccept:      serverObj.InboundPeerConnected,
 		OnOutboundConnection: serverObj.OutboundPeerConnected,
-		ListenerPeer:         peer,
+		ListenerPeer:         listenPeer,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 		ExternalAddress:      cfg.ExternalAddress,
@@ -452,7 +453,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Database:        &serverObj.dataBase,
 			MiningKeys:      cfg.MiningKeys,
 			NetSync:         serverObj.netSync,
-			PubSubManager:   pubsub,
+			PubSubManager:   pubsubManager,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -534,8 +535,10 @@ func (serverObj *Server) Stop() error {
 		}
 	}
 
-	//serverObj.consensusEngine.Stop()
-
+	err := serverObj.consensusEngine.Stop()
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
 	return nil
@@ -640,7 +643,10 @@ func (serverObj Server) Start() {
 
 	go serverObj.blockChain.Synker.Start()
 	if serverObj.memPool != nil {
-		serverObj.memPool.LoadOrResetDatabaseMempool()
+		err := serverObj.memPool.LoadOrResetDatabaseMempool()
+		if err != nil {
+			Logger.log.Error(err)
+		}
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
 	}
