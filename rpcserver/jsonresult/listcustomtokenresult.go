@@ -16,7 +16,7 @@ type CustomToken struct {
 	ListTxs   []string `json:"ListTxs"`
 }
 
-func (customToken *CustomToken) Init(obj transaction.TxCustomToken) {
+func (customToken *CustomToken) Init(obj transaction.TxNormalToken) {
 	customToken.ID = obj.TxTokenData.PropertyID.String()
 	customToken.Symbol = obj.TxTokenData.PropertySymbol
 	customToken.Name = obj.TxTokenData.PropertyName
