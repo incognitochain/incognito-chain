@@ -18,11 +18,11 @@ import (
 // TxCustomTokenPrivacy is class tx which is inherited from P tx(supporting privacy) for fee
 // and contain data(with supporting privacy format) to support issuing and transfer a custom token(token from end-user, look like erc-20)
 // Dev or end-user can use this class tx to create an token type which use personal purpose
-// TxCustomTokenPrivacy is an advance format of TxCustomToken
+// TxCustomTokenPrivacy is an advance format of TxNormalToken
 // so that user need to spend a lot fee to create this class tx
 type TxCustomTokenPrivacy struct {
 	Tx                                    // inherit from normal tx of P(supporting privacy) with a high fee to ensure that tx could contain a big data of privacy for token
-	TxTokenPrivacyData TxTokenPrivacyData // supporting privacy format
+	TxTokenPrivacyData TxPrivacyTokenData // supporting privacy format
 
 	// private field, not use for json parser, only use as temp variable
 	cachedHash *common.Hash // cached hash data of tx
@@ -99,8 +99,8 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTxActualSize() uint64 {
 	tokenDataSize += uint64(len(txCustomTokenPrivacy.TxTokenPrivacyData.PropertyName))
 	tokenDataSize += uint64(len(txCustomTokenPrivacy.TxTokenPrivacyData.PropertySymbol))
 	tokenDataSize += uint64(len(txCustomTokenPrivacy.TxTokenPrivacyData.PropertyID))
-	tokenDataSize += 4 // for TxTokenPrivacyData.Type
-	tokenDataSize += 8 // for TxTokenPrivacyData.Amount
+	tokenDataSize += 4 // for TxPrivacyTokenData.Type
+	tokenDataSize += 8 // for TxPrivacyTokenData.Amount
 
 	meta := txCustomTokenPrivacy.Metadata
 	if meta != nil {
@@ -116,8 +116,8 @@ func (tx TxCustomTokenPrivacy) GetTxPrivacyTokenActualSize() uint64 {
 	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertyName))
 	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertySymbol))
 	tokenDataSize += uint64(len(tx.TxTokenPrivacyData.PropertyID))
-	tokenDataSize += 4 // for TxTokenPrivacyData.Type
-	tokenDataSize += 8 // for TxTokenPrivacyData.Amount
+	tokenDataSize += 4 // for TxPrivacyTokenData.Type
+	tokenDataSize += 8 // for TxPrivacyTokenData.Amount
 
 	meta := tx.TxTokenPrivacyData.TxNormal.Metadata
 	if meta != nil {
@@ -221,7 +221,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 		// case init a new privacy custom token
 		{
 			handled = true
-			txCustomTokenPrivacy.TxTokenPrivacyData = TxTokenPrivacyData{
+			txCustomTokenPrivacy.TxTokenPrivacyData = TxPrivacyTokenData{
 				Type:           params.tokenParams.TokenTxType,
 				PropertyName:   params.tokenParams.PropertyName,
 				PropertySymbol: params.tokenParams.PropertySymbol,
@@ -308,7 +308,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
 			}
 			Logger.log.Debugf("Token %+v wil be transfered with", propertyID)
-			txCustomTokenPrivacy.TxTokenPrivacyData = TxTokenPrivacyData{
+			txCustomTokenPrivacy.TxTokenPrivacyData = TxPrivacyTokenData{
 				Type:           params.tokenParams.TokenTxType,
 				PropertyName:   params.tokenParams.PropertyName,
 				PropertySymbol: params.tokenParams.PropertySymbol,

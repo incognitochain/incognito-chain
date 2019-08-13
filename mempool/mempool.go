@@ -515,7 +515,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		{
 			// Only check like normal tx with PRV
 			limitFee := tp.config.FeeEstimator[shardID].limitFee
-			txCustomToken := tx.(*transaction.TxCustomToken)
+			txCustomToken := tx.(*transaction.TxNormalToken)
 			if limitFee > 0 {
 				ok := txCustomToken.CheckTransactionFee(limitFee)
 				if !ok {
@@ -603,7 +603,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	foundTokenID := -1
 	tokenID := ""
 	if tx.GetType() == common.TxCustomTokenType {
-		customTokenTx := tx.(*transaction.TxCustomToken)
+		customTokenTx := tx.(*transaction.TxNormalToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID = customTokenTx.TxTokenData.PropertyID.String()
 			tp.tokenIDMtx.RLock()
@@ -780,7 +780,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 	}
 	if tx.GetType() == common.TxCustomTokenType {
-		customTokenTx := tx.(*transaction.TxCustomToken)
+		customTokenTx := tx.(*transaction.TxNormalToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
 			tp.addTokenIDToList(*txHash, tokenID)
