@@ -317,10 +317,10 @@ func (shardBlock *ShardBlock) CreateShardToBeaconBlock(bc *BlockChain) *ShardToB
 	// block.R = blk.R
 	// block.ProducerSig = blk.ProducerSig
 
-	block.ValidationData = blk.ValidationData
-	block.Header = blk.Header
-	block.Instructions = blk.Body.Instructions
-	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(blk.Header.PreviousBlockHash)
+	block.ValidationData = shardBlock.ValidationData
+	block.Header = shardBlock.Header
+	block.Instructions = shardBlock.Body.Instructions
+	previousShardBlockByte, err := bc.config.DataBase.FetchBlock(shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
@@ -380,8 +380,8 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 	// crossShard.R = block.R
 	// crossShard.ProducerSig = block.ProducerSig
 
-	crossShard.ValidationData = block.ValidationData
-	crossShard.Header = block.Header
+	crossShard.ValidationData = shardBlock.ValidationData
+	crossShard.Header = shardBlock.Header
 	crossShard.MerklePathShard = merklePathShard
 	crossShard.CrossOutputCoin = crossOutputCoin
 	crossShard.CrossTxTokenData = crossTxTokenData
