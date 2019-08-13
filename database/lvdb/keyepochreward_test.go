@@ -33,11 +33,7 @@ func TestNewKeyAddShardRewardRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewKeyAddShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.tokenID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewKeyAddShardRewardRequest() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := newKeyAddShardRewardRequest(tt.args.epoch, tt.args.shardID, tt.args.tokenID)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewKeyAddShardRewardRequest() = %v, want %v", got, tt.want)
 			}
@@ -68,11 +64,7 @@ func TestNewKeyAddCommitteeReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewKeyAddCommitteeReward(tt.args.committeeAddress, tt.args.tokenID)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewKeyAddCommitteeReward() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := newKeyAddCommitteeReward(tt.args.committeeAddress, tt.args.tokenID)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewKeyAddCommitteeReward() = %v, want %v", got, tt.want)
 			}
