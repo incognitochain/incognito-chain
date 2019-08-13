@@ -126,28 +126,28 @@ type DatabaseInterface interface {
 	GetFeeEstimator(shardID byte) ([]byte, error)
 	CleanFeeEstimator() error
 
-	// Custom token
-	StoreNormalToken(tokenID common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
+	// Normal token
+	StoreNormalToken(tokenID common.Hash, data []byte) error // store normal token. Param: tokenID, txInitToken-id, data tx
 	DeleteNormalToken(tokenID common.Hash) error
-	StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store custom token tx. Param: tokenID, shardID, block height, tx-id, data tx
+	StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error // store normal token tx. Param: tokenID, shardID, block height, tx-id, data tx
 	DeleteNormalTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error
-	ListNormalToken() ([][]byte, error)                                                                     // get list all custom token which issued in network, return init tx hash
+	ListNormalToken() ([][]byte, error)                                                                     // get list all normal token which issued in network, return init tx hash
 	NormalTokenIDExisted(tokenID common.Hash) bool                                                          // check tokenID existed in network, return init tx hash
-	NormalTokenTxs(tokenID common.Hash) ([]common.Hash, error)                                              // from token id get all custom txs
+	NormalTokenTxs(tokenID common.Hash) ([]common.Hash, error)                                              // from token id get all normal txs
 	GetNormalTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) // get list of utxo of an paymentaddress.pubkey of a token
 	GetNormalTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error)                   // get balance of all paymentaddress of a token (only return payment address with balance > 0)
 
-	// privacy Custom token
-	StorePrivacyToken(tokenID common.Hash, data []byte) error // store custom token. Param: tokenID, txInitToken-id, data tx
+	// privacy token
+	StorePrivacyToken(tokenID common.Hash, data []byte) error // store privacy token. Param: tokenID, txInitToken-id, data tx
 	DeletePrivacyToken(tokenID common.Hash) error
 	StorePrivacyTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error
 	DeletePrivacyTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error
-	ListPrivacyToken() ([][]byte, error)                        // get list all custom token which issued in network
+	ListPrivacyToken() ([][]byte, error)                        // get list all privacy token which issued in network
 	PrivacyTokenIDExisted(tokenID common.Hash) bool             // check privacy tokenID existed in network
-	PrivacyTokenTxs(tokenID common.Hash) ([]common.Hash, error) // from token id get all custom txs
+	PrivacyTokenTxs(tokenID common.Hash) ([]common.Hash, error) // from token id get all privacy token txs
 
 	// Privacy token for Cross Shard
-	StorePrivacyTokenCrossShard(tokenID common.Hash, tokenValue []byte) error // store custom token cross shard privacy
+	StorePrivacyTokenCrossShard(tokenID common.Hash, tokenValue []byte) error // store privacy token cross shard privacy
 	ListPrivacyTokenCrossShard() ([][]byte, error)
 	PrivacyTokenIDCrossShardExisted(tokenID common.Hash) bool
 	DeletePrivacyTokenCrossShard(tokenID common.Hash) error
