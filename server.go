@@ -190,7 +190,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	var err error
 	// init an pubsub manager
-	var pubsub = pubsub.NewPubSubManager()
+	var pubsubManager = pubsub.NewPubSubManager()
 	serverObj.miningKeys = cfg.MiningKeys
 	if serverObj.miningKeys == "" {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
@@ -245,7 +245,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		// UserKeySet:        serverObj.userKeySet,
 		NodeMode:        cfg.NodeMode,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:   pubsub,
+		PubSubManager:   pubsubManager,
 		RandomClient:    randomClient,
 		ConsensusEngine: serverObj.consensusEngine,
 	})
@@ -535,7 +535,7 @@ func (serverObj *Server) Stop() error {
 		}
 	}
 
-	err := serverObj.consensusEngine.Stop()
+	err := serverObj.consensusEngine.Stop("all")
 	if err != nil {
 		Logger.log.Error(err)
 	}

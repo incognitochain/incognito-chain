@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/privacy"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -42,7 +40,7 @@ import (
 	Sign:
 		Sign block and update validator index, agg sig
 */
-func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeacon map[byte]uint64) (*BeaconBlock, error) {
+func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
 	// lock blockchain
 	blockGenerator.chain.chainLock.Lock()
 	defer blockGenerator.chain.chainLock.Unlock()
@@ -69,7 +67,9 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeacon m
 	} else {
 		epoch = beaconBestState.Epoch
 	}
-	beaconBlock.Header.ProducerAddress = *producerAddress
+	committee := blockGenerator.chain.BestState.Beacon.GetBeaconCommittee()
+	producerPosition := (blockGenerator.chain.BestState.Beacon.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
+	beaconBlock.Header.Producer = committee[producerPosition]
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = epoch
@@ -207,8 +207,8 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		for index, shardBlock := range shardBlocks {
 			currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 			// hash := shardBlock.Header.Hash()
-			err1 := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock.Hash(), currentCommittee, shardBlock.ValidationData, beaconBestState.ShardConsensusAlgorithm[shardID])
-			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err1 == nil)
+			err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock.Hash(), currentCommittee, shardBlock.ValidationData, beaconBestState.ShardConsensusAlgorithm[shardID])
+			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
 			if err != nil {
 				break
 			}
