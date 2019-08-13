@@ -143,7 +143,7 @@ func TestBuildCoinbaseTxByCoinID(t *testing.T) {
 	txCustomToken, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{1}, CustomTokenType, "Custom Token", 0))
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
-	assert.Equal(t, uint64(10), txCustomToken.(*TxCustomToken).TxTokenData.Vouts[0].Value)
+	assert.Equal(t, uint64(10), txCustomToken.(*TxNormalToken).TxTokenData.Vouts[0].Value)
 	assert.Equal(t, common.Hash{1}.String(), txCustomToken.GetTokenID().String())
 
 	txCustomTokenPrivacy, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&paymentAddress, 10, &key.KeySet.PrivateKey, db, nil, common.Hash{2}, CustomTokenPrivacyType, "Custom Token", 0))

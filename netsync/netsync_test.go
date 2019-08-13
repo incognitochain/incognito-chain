@@ -451,7 +451,7 @@ func TestNetSyncHandleMessageTxToken(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error parse tx", err)
 	}
-	tx := transaction.TxCustomToken{}
+	tx := transaction.TxNormalToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		t.Fatal("Error umarshall tx")
@@ -671,7 +671,7 @@ func TestNetSyncQueueTxToken(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error parse tx", err)
 	}
-	var tx transaction.TxCustomToken
+	var tx transaction.TxNormalToken
 	err = json.Unmarshal(rawTxBytes, &tx)
 	msg := &wire.MessageTxToken{Transaction: &tx}
 	// no start net sync

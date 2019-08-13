@@ -28,7 +28,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 		for _, tx := range txs {
 			go func(tx metadata.Transaction) {
 				if tx.GetType() == common.TxCustomTokenType {
-					customTokenTx := tx.(*transaction.TxCustomToken)
+					customTokenTx := tx.(*transaction.TxNormalToken)
 					if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
 						errCh <- nil
 						return
@@ -64,7 +64,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 			return err
 		}
 		if tx.GetType() == common.TxCustomTokenType {
-			customTokenTx := tx.(*transaction.TxCustomToken)
+			customTokenTx := tx.(*transaction.TxNormalToken)
 			if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 				tokenID := customTokenTx.TxTokenData.PropertyID.String()
 				tp.tokenIDMtx.Lock()

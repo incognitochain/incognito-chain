@@ -555,10 +555,10 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	4. Return total fee of tx
 */
 // get valid tx for specific shard and their fee, also return unvalid tx
-func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *privacy.PrivateKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxTokenData) {
+func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *privacy.PrivateKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxNormalTokenData) {
 	var keys []int
 	txs := []metadata.Transaction{}
-	txTokenDataList := []transaction.TxTokenData{}
+	txTokenDataList := []transaction.TxNormalTokenData{}
 	for k := range crossTxTokenDataMap {
 		keys = append(keys, int(k))
 	}
@@ -572,7 +572,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 			for _, txTokenData := range crossTxTokenData.TxTokenData {
 
 				if privatekey != nil {
-					tx := &transaction.TxCustomToken{}
+					tx := &transaction.TxNormalToken{}
 					tokenParam := &transaction.CustomTokenParamTx{
 						PropertyID:     txTokenData.PropertyID.String(),
 						PropertyName:   txTokenData.PropertyName,

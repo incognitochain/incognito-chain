@@ -658,9 +658,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 					panic(err)
 				}
 				//If don't exist then create
-				if _, ok := listCustomToken[customTokenTx.TxTokenData.PropertyID]; !ok {
-					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
-					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				if _, ok := listCustomToken[customTokenTx.TxNormalTokenData.PropertyID]; !ok {
+					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxNormalTokenData.PropertyID, customTokenTx.TxNormalTokenData.PropertySymbol, customTokenTx.TxNormalTokenData.PropertyName)
+					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxNormalTokenData.PropertyID, customTokenTx.Hash()[:])
 				}*/
 			}
 		case transaction.CustomTokenTransfer:
@@ -670,7 +670,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
-		//fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxTokenData.Vins, customTokenTx.TxTokenData.Vouts)
+		//fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxNormalTokenData.Vins, customTokenTx.TxNormalTokenData.Vouts)
 		Logger.log.Info("Store Custom Token History")
 		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx, block.Header.ShardID)
 		if err != nil {
@@ -828,7 +828,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 // 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
 //   H: value-spent/unspent
 */
-func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken, shardID byte) error {
+func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxNormalToken, shardID byte) error {
 	Splitter := lvdb.Splitter
 	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
 	unspent := lvdb.Unspent
@@ -1103,12 +1103,12 @@ func (blockchain *BlockChain) PrivacyCustomTokenIDCrossShardExisted(tokenID *com
 }
 
 // ListCustomToken - return all custom token which existed in network
-func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
+func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error) {
 	data, err := blockchain.config.DataBase.ListNormalToken()
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[common.Hash]transaction.TxCustomToken)
+	result := make(map[common.Hash]transaction.TxNormalToken)
 	for _, txData := range data {
 		hash := common.Hash{}
 		hash.SetBytes(txData)
@@ -1118,7 +1118,7 @@ func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxC
 		if err != nil {
 			return nil, NewBlockChainError(UnExpectedError, err)
 		}
-		txCustomToken := tx.(*transaction.TxCustomToken)
+		txCustomToken := tx.(*transaction.TxNormalToken)
 		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
 	}
 	return result, nil
