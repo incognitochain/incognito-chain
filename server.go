@@ -704,7 +704,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 					if err != nil {
 						continue
 					}
-					customTokenTx := tx.(*transaction.TxCustomToken)
+					customTokenTx := tx.(*transaction.TxNormalToken)
 					txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
 					err = serverObj.PushMessageToAll(txMsg)
 					if err == nil {

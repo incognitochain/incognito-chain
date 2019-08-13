@@ -8,7 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	privacy "github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
@@ -117,9 +117,6 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if iReq.Type != IssuingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
-	if len(iReq.TokenID) != common.HashSize {
-		return false, false, errors.New("Wrong request info's token id")
-	}
 	if iReq.TokenName == "" {
 		return false, false, errors.New("Wrong request info's token name")
 	}
@@ -155,7 +152,7 @@ func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetrie
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingRequestMeta), actionContentBase64Str}
 	// track the request status to leveldb
-	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BRIDGE_REQUEST_PROCESSING_STATUS))
+	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
 		return [][]string{}, err
 	}
