@@ -356,7 +356,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 				return instructions, shardPendingValidator, shardCommittee, err
 			}
 			// Generate instruction storing merkle root of validators pubkey and send to beacon
-			bridgeID := byte(common.BRIDGE_SHARD_ID)
+			bridgeID := byte(common.BridgeShardID)
 			if shardID == bridgeID {
 				startHeight := blockchain.BestState.Shard[shardID].ShardHeight + 2
 				bridgeSwapConfirmInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
@@ -374,7 +374,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 	}
 	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
 	// Also, pick BurningConfirm inst and save to bridge block
-	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	bridgeID := byte(common.BridgeShardID)
 	if shardID == bridgeID {
 		prevBlock := blockchain.BestState.Shard[shardID].BestBlock
 		commPubkeyInst := pickBeaconSwapConfirmInst(beaconBlocks)
