@@ -416,7 +416,7 @@ func (netSync *NetSync) handleMessageShardToBeacon(msg *wire.MessageShardToBeaco
 	}
 }
 
-func (netSync *NetSync) HandleMessageBFTMsg(msg *wire.MessageBFT) {
+func (netSync *NetSync) handleMessageBFTMsg(msg *wire.MessageBFT) {
 	Logger.log.Info("Handling new message BFTMsg")
 	if err := msg.VerifyMsgSanity(); err != nil {
 		Logger.log.Error(err)

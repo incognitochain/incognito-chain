@@ -17,12 +17,12 @@ const (
 )
 
 type peer struct {
-	id         string
-	rawAddress string
-	publicKey  string
-    publickeyType string
-	firstPing  time.Time
-	lastPing   time.Time
+	id            string
+	rawAddress    string
+	publicKey     string
+	publickeyType string
+	firstPing     time.Time
+	lastPing      time.Time
 }
 
 // rpcServer provides a concurrent safe RPC server to a bootnode server.
