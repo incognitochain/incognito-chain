@@ -393,21 +393,21 @@ func TestDb_StoreCommitteeByHeight(t *testing.T) {
 		assert.Equal(t, err, nil)
 
 		shardCommittee := make(map[byte][]string)
-		data, err := db.FetchCommitteeByHeight(100)
+		data, err := db.FetchShardCommitteeByHeight(100)
 		assert.Equal(t, err, nil)
 		err = json.Unmarshal(data, &shardCommittee)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, shardCommittee[0][0], "committee1")
 		assert.Equal(t, shardCommittee[0][1], "committee2")
 
-		has, err := db.HasCommitteeByHeight(100)
+		has, err := db.HasShardCommitteeByHeight(100)
 		assert.Equal(t, has, true)
 		assert.Equal(t, err, nil)
 
 		err = db.DeleteCommitteeByHeight(100)
 		assert.Equal(t, err, nil)
 
-		has, err = db.HasCommitteeByHeight(100)
+		has, err = db.HasShardCommitteeByHeight(100)
 		assert.Equal(t, has, false)
 		assert.Equal(t, err, nil)
 	} else {
