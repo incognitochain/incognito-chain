@@ -170,7 +170,7 @@ func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Tr
 // -------------- Blockchain retriever's implementation --------------
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
 func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
-	txHashesInByte, err := blockchain.config.DataBase.CustomTokenTxs(*tokenID)
+	txHashesInByte, err := blockchain.config.DataBase.NormalTokenTxs(*tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -1019,7 +1019,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset incognitokey.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	data, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressUTXO(*tokenID, receiverKeyset.PaymentAddress.Bytes())
+	data, err := blockchain.config.DataBase.GetNormalTokenPaymentAddressUTXO(*tokenID, receiverKeyset.PaymentAddress.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -1090,7 +1090,7 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 
 // Check Custom token ID is existed
 func (blockchain *BlockChain) CustomTokenIDExisted(tokenID *common.Hash) bool {
-	return blockchain.config.DataBase.CustomTokenIDExisted(*tokenID)
+	return blockchain.config.DataBase.NormalTokenIDExisted(*tokenID)
 }
 
 // Check Privacy Custom token ID is existed
@@ -1161,7 +1161,7 @@ func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transact
 
 // GetCustomTokenTxsHash - return list hash of tx which relate to custom token
 func (blockchain *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
-	txHashesInByte, err := blockchain.config.DataBase.CustomTokenTxs(*tokenID)
+	txHashesInByte, err := blockchain.config.DataBase.NormalTokenTxs(*tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -1187,7 +1187,7 @@ func (blockchain *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash)
 
 // GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
 func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
-	result, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressesBalance(*tokenID)
+	result, err := blockchain.config.DataBase.GetNormalTokenPaymentAddressesBalance(*tokenID)
 	if err != nil {
 		return nil, err
 	}
