@@ -636,7 +636,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		case transaction.CustomTokenInit:
 			{
 				Logger.log.Info("Store custom token when it is issued", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
-				err = blockchain.config.DataBase.StoreCustomToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				err = blockchain.config.DataBase.StoreNormalToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
 				if err != nil {
 					return err
 				}
@@ -648,7 +648,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 				//If don't exist then create
 				if !existedToken {
 					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
-					err = blockchain.config.DataBase.StoreCustomToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+					err = blockchain.config.DataBase.StoreNormalToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
 					if err != nil {
 						Logger.log.Error("CreateAndSaveTxViewPointFromBlock", err)
 					}
@@ -677,7 +677,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			// Skip double spend
 			return err
 		}
-		err = blockchain.config.DataBase.StoreCustomTokenTx(customTokenTx.TxTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
+		err = blockchain.config.DataBase.StoreNormalTokenTx(customTokenTx.TxTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
 		if err != nil {
 			return err
 		}
@@ -1104,7 +1104,7 @@ func (blockchain *BlockChain) PrivacyCustomTokenIDCrossShardExisted(tokenID *com
 
 // ListCustomToken - return all custom token which existed in network
 func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
-	data, err := blockchain.config.DataBase.ListCustomToken()
+	data, err := blockchain.config.DataBase.ListNormalToken()
 	if err != nil {
 		return nil, err
 	}
@@ -2062,20 +2062,20 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				err = blockchain.config.DataBase.DeleteCustomToken(customTokenTx.TxTokenData.PropertyID)
+				err = blockchain.config.DataBase.DeleteNormalToken(customTokenTx.TxTokenData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		case transaction.CustomTokenCrossShard:
 			{
-				err = blockchain.config.DataBase.DeleteCustomToken(customTokenTx.TxTokenData.PropertyID)
+				err = blockchain.config.DataBase.DeleteNormalToken(customTokenTx.TxTokenData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		err = blockchain.config.DataBase.DeleteCustomTokenTx(customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
+		err = blockchain.config.DataBase.DeleteNormalTokenTx(customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
 		if err != nil {
 			return err
 		}
