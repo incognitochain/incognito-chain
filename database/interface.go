@@ -22,10 +22,10 @@ type DatabaseInterface interface {
 	Close() error
 
 	// Process on Block data
-	StoreShardBlock(interface{}, common.Hash, byte) error
-	FetchBlock(common.Hash) ([]byte, error)
-	HasBlock(common.Hash) (bool, error)
-	DeleteBlock(common.Hash, uint64, byte) error
+	StoreShardBlock(v interface{}, hash common.Hash, shardID byte) error
+	FetchBlock(hash common.Hash) ([]byte, error)
+	HasBlock(hash common.Hash) (bool, error)
+	DeleteBlock(hash common.Hash, idx uint64, shardID byte) error
 
 	// Process on Incomming Cross shard data
 	StoreIncomingCrossShard(shardID byte, crossShardID byte, blkHeight uint64, crossBlkHash common.Hash) error
@@ -40,25 +40,25 @@ type DatabaseInterface interface {
 	DeleteAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) error
 
 	// Beacon
-	StoreBeaconBlock(interface{}, common.Hash) error
-	FetchBeaconBlock(common.Hash) ([]byte, error)
-	HasBeaconBlock(common.Hash) (bool, error)
-	DeleteBeaconBlock(common.Hash, uint64) error
+	StoreBeaconBlock(v interface{}, hash common.Hash) error
+	FetchBeaconBlock(hash common.Hash) ([]byte, error)
+	HasBeaconBlock(hash common.Hash) (bool, error)
+	DeleteBeaconBlock(hash common.Hash, idx uint64) error
 
 	//Crossshard
-	StoreCrossShardNextHeight(byte, byte, uint64, uint64) error
-	FetchCrossShardNextHeight(byte, byte, uint64) (uint64, error)
-	RestoreCrossShardNextHeights(byte, byte, uint64) error
+	StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error
+	FetchCrossShardNextHeight(fromShard, toShard byte, curHeight uint64) (uint64, error)
+	RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeight uint64) error
 
 	// Block index
-	StoreShardBlockIndex(common.Hash, uint64, byte) error
-	GetIndexOfBlock(common.Hash) (uint64, byte, error)
-	GetBlockByIndex(uint64, byte) (common.Hash, error)
+	StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte) error
+	GetIndexOfBlock(hash common.Hash) (uint64, byte, error)
+	GetBlockByIndex(idx uint64, shardID byte) (common.Hash, error)
 
 	// Block index for beacon
-	StoreBeaconBlockIndex(common.Hash, uint64) error
-	GetIndexOfBeaconBlock(common.Hash) (uint64, error)
-	GetBeaconBlockHashByIndex(uint64) (common.Hash, error)
+	StoreBeaconBlockIndex(hash common.Hash, idx uint64) error
+	GetIndexOfBeaconBlock(hash common.Hash) (uint64, error)
+	GetBeaconBlockHashByIndex(idx uint64) (common.Hash, error)
 
 	// Transaction index
 	StoreTransactionIndex(txId common.Hash, blockHash common.Hash, indexInBlock int) error
@@ -66,19 +66,19 @@ type DatabaseInterface interface {
 	DeleteTransactionIndex(txId common.Hash) error
 
 	// Best state of Prev
-	StorePrevBestState([]byte, bool, byte) error
-	FetchPrevBestState(bool, byte) ([]byte, error)
-	CleanBackup(bool, byte) error
+	StorePrevBestState(val []byte, isBeacon bool, shardID byte) error
+	FetchPrevBestState(isBeacon bool, shardID byte) ([]byte, error)
+	CleanBackup(isBeacon bool, shardID byte) error
 
 	// Best state of shard chain
-	StoreShardBestState(interface{}, byte) error
-	FetchShardBestState(byte) ([]byte, error)
+	StoreShardBestState(v interface{}, shardID byte) error
+	FetchShardBestState(shardID byte) ([]byte, error)
 	CleanShardBestState() error
 	StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error
 	FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error)
 
 	// Best state of beacon chain
-	StoreBeaconBestState(interface{}) error
+	StoreBeaconBestState(v interface{}) error
 	FetchBeaconBestState() ([]byte, error)
 	CleanBeaconBestState() error
 
@@ -122,8 +122,8 @@ type DatabaseInterface interface {
 	GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 
 	// Fee estimator
-	StoreFeeEstimator([]byte, byte) error
-	GetFeeEstimator(byte) ([]byte, error)
+	StoreFeeEstimator(val []byte, shardID byte) error
+	GetFeeEstimator(shardID byte) ([]byte, error)
 	CleanFeeEstimator() error
 
 	// Custom token
@@ -161,12 +161,16 @@ type DatabaseInterface interface {
 	GetBurningConfirm(txID []byte) (uint64, error)
 
 	// Decentralized bridge
-	IsBridgeTokenExistedByType(common.Hash, bool) (bool, error)
-	InsertETHTxHashIssued([]byte) error
-	IsETHTxHashIssued([]byte) (bool, error)
-	CanProcessTokenPair([]byte, common.Hash) (bool, error)
-	CanProcessCIncToken(common.Hash) (bool, error)
-	UpdateBridgeTokenInfo(common.Hash, []byte, bool, uint64, string) error
+	IsBridgeTokenExistedByType(incTokenID common.Hash, isCentralized bool) (bool, error)
+	InsertETHTxHashIssued(uniqETHTx []byte) error
+	IsETHTxHashIssued(uniqETHTx []byte) (bool, error)
+	CanProcessTokenPair(externalTokenID []byte, incTokenID common.Hash) (bool, error)
+	CanProcessCIncToken(incTokenID common.Hash) (bool, error)
+	UpdateBridgeTokenInfo(incTokenID common.Hash,
+		externalTokenID []byte,
+		isCentralized bool,
+		updatingAmt uint64,
+		updateType string) error
 	GetAllBridgeTokens() ([]byte, error)
 	TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error
 	GetBridgeReqWithStatus(txReqID common.Hash) (byte, error)

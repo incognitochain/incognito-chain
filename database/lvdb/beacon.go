@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (db *db) StoreCrossShardNextHeight(fromShard, toShard byte, curHeight uint64, nextHeight uint64) error {
+func (db *db) StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error {
 	//ncsh-{fromShard}-{toShard}-{curHeight} = nextHeight
 	key := append(nextCrossShardKeyPrefix, fromShard)
 	key = append(key, []byte("-")...)
@@ -39,7 +39,7 @@ func (db *db) HasCrossShardNextHeight(key []byte) (bool, error) {
 	}
 }
 
-func (db *db) FetchCrossShardNextHeight(fromShard, toShard byte, curHeight uint64) (uint64, error) {
+func (db *db) FetchCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64) (uint64, error) {
 	//ncsh-{fromShard}-{toShard}-{curHeight} = nextHeight
 	key := append(nextCrossShardKeyPrefix, fromShard)
 	key = append(key, []byte("-")...)

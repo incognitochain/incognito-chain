@@ -389,25 +389,25 @@ func TestDb_StoreCommitteeByHeight(t *testing.T) {
 		bestState.Beacon.ShardCommittee[0] = make([]string, 0)
 		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], "committee1")
 		bestState.Beacon.ShardCommittee[0] = append(bestState.Beacon.ShardCommittee[0], "committee2")
-		err := db.StoreCommitteeByEpoch(block.Header.Height, bestState.Beacon.GetShardCommittee())
+		err := db.StoreBeaconCommitteeByHeight(block.Header.Height, bestState.Beacon.GetShardCommittee())
 		assert.Equal(t, err, nil)
 
 		shardCommittee := make(map[byte][]string)
-		data, err := db.FetchCommitteeByEpoch(100)
+		data, err := db.FetchCommitteeByHeight(100)
 		assert.Equal(t, err, nil)
 		err = json.Unmarshal(data, &shardCommittee)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, shardCommittee[0][0], "committee1")
 		assert.Equal(t, shardCommittee[0][1], "committee2")
 
-		has, err := db.HasCommitteeByEpoch(100)
+		has, err := db.HasCommitteeByHeight(100)
 		assert.Equal(t, has, true)
 		assert.Equal(t, err, nil)
 
-		err = db.DeleteCommitteeByEpoch(100)
+		err = db.DeleteCommitteeByHeight(100)
 		assert.Equal(t, err, nil)
 
-		has, err = db.HasCommitteeByEpoch(100)
+		has, err = db.HasCommitteeByHeight(100)
 		assert.Equal(t, has, false)
 		assert.Equal(t, err, nil)
 	} else {
