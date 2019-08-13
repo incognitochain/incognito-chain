@@ -118,7 +118,6 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 /*
 	Action Generate From Transaction:
 	- Stake
-	- Stable param: set, del,...
 */
 func CreateShardInstructionsFromTransactionAndInstruction(
 	transactions []metadata.Transaction,
@@ -130,6 +129,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	stakeBeaconPubKey := []string{}
 	stakeShardTxID := []string{}
 	stakeBeaconTxID := []string{}
+	stakeShardRewardReceiver := []string{}
+	stakeBeaconRewardReceiver := []string{}
 	instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
 	if err != nil {
 		return nil, err
@@ -137,9 +138,15 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
+			var rewardReceiverPaymentAddress string
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if stakingMetadata.IsRewardFunder {
+				rewardReceiverPaymentAddress = stakingMetadata.FunderPaymentAddress
+			} else {
+				rewardReceiverPaymentAddress = stakingMetadata.CandidatePaymentAddress
 			}
 			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
 			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
@@ -150,10 +157,17 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeShardPubKey = append(stakeShardPubKey, pkb58)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
+			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
 		case metadata.BeaconStakingMeta:
+			var rewardReceiverPaymentAddress string
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if stakingMetadata.IsRewardFunder {
+				rewardReceiverPaymentAddress = stakingMetadata.FunderPaymentAddress
+			} else {
+				rewardReceiverPaymentAddress = stakingMetadata.CandidatePaymentAddress
 			}
 			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
 			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
@@ -164,14 +178,15 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
+			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
 		}
 	}
 	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
-		instruction := []string{StakeAction, strings.Join(stakeShardPubKey, ","), "shard", strings.Join(stakeShardTxID, ",")}
+		instruction := []string{StakeAction, strings.Join(stakeShardPubKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ",")}
 		instructions = append(instructions, instruction)
 	}
 	if !reflect.DeepEqual(stakeBeaconPubKey, []string{}) {
-		instruction := []string{StakeAction, strings.Join(stakeBeaconPubKey, ","), "beacon", strings.Join(stakeBeaconTxID, ",")}
+		instruction := []string{StakeAction, strings.Join(stakeBeaconPubKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ",")}
 		instructions = append(instructions, instruction)
 	}
 	return instructions, nil
