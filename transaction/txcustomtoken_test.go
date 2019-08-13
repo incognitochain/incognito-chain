@@ -44,7 +44,7 @@ func TestTxCustomToken(t *testing.T) {
 		t.Error(err)
 	}
 
-	db.StoreCustomToken(common.PRVCoinID, tx.Hash()[:])
+	db.StoreNormalToken(common.PRVCoinID, tx.Hash()[:])
 
 	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},
