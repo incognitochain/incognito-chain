@@ -193,7 +193,7 @@ func (db *db) DeleteTransactionIndex(txId common.Hash) error {
 
 }
 
-func (db *db) DeleteCustomToken(tokenID common.Hash) error {
+func (db *db) DeleteNormalToken(tokenID common.Hash) error {
 	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	err := db.Delete(key)
 	if err != nil {
@@ -202,7 +202,7 @@ func (db *db) DeleteCustomToken(tokenID common.Hash) error {
 	return nil
 }
 
-func (db *db) DeleteCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
+func (db *db) DeleteNormalTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
 	key := db.GetKey(string(tokenPrefix), tokenID)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
