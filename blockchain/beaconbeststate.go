@@ -81,6 +81,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.CandidateBeaconWaitingForCurrentRandom = []string{}
 	beaconBestState.CandidateShardWaitingForNextRandom = []string{}
 	beaconBestState.CandidateBeaconWaitingForNextRandom = []string{}
+	beaconBestState.RewardReceiver = make(map[string]string)
 	beaconBestState.ShardCommittee = make(map[byte][]string)
 	beaconBestState.ShardPendingValidator = make(map[byte][]string)
 	beaconBestState.Params = make(map[string]string)
