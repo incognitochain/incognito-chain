@@ -174,10 +174,7 @@ func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalRe
 	return nil
 }
 
-func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
-	beaconBlocks []*BeaconBlock,
-	shardID byte,
-) error {
+func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks []*BeaconBlock, shardID byte) error {
 
 	shardCommittee := make(map[byte][]string)
 	isInit := false

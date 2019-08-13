@@ -263,7 +263,7 @@ func (db *db) GetAcceptedShardToBeacon(shardID byte, shardBlkHash common.Hash) (
 }
 
 func (db *db) StoreBeaconCommitteeByHeight(height uint64, v interface{}) error {
-	//key: bea-s-com-ep-{height}
+	//key: bea-com-ep-{height}
 	//value: all shard committee
 	key := append(beaconPrefix)
 	key = append(key, committeePrefix...)
@@ -277,6 +277,25 @@ func (db *db) StoreBeaconCommitteeByHeight(height uint64, v interface{}) error {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
 
+	if err := db.lvdb.Put(key, val, nil); err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+	}
+	return nil
+}
+
+func (db *db) StoreRewardReceiverByHeight(height uint64, v interface{}) error {
+	//key: bea-rewardreceiver-ep-{height}
+	//value: all reward receiver payment address
+	key := append(beaconPrefix)
+	key = append(key, rewardReceiverPrefix...)
+	key = append(key, heightPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, height)
+	key = append(key, buf[:]...)
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+	}
 	if err := db.lvdb.Put(key, val, nil); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
@@ -322,6 +341,23 @@ func (db *db) FetchCommitteeByHeight(height uint64) ([]byte, error) {
 func (db *db) FetchBeaconCommitteeByHeight(height uint64) ([]byte, error) {
 	key := append(beaconPrefix)
 	key = append(key, committeePrefix...)
+	key = append(key, heightPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, height)
+	key = append(key, buf[:]...)
+
+	b, err := db.lvdb.Get(key, nil)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
+	}
+	return b, nil
+}
+
+func (db *db) FetchRewardReceiverByHeight(height uint64) ([]byte, error) {
+	//key: bea-rewardreceiver-ep-{height}
+	//value: all reward receiver payment address
+	key := append(beaconPrefix)
+	key = append(key, rewardReceiverPrefix...)
 	key = append(key, heightPrefix...)
 	buf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(buf, height)

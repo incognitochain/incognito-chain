@@ -121,8 +121,8 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 */
 func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
 	// Generate stake action
-	stakeShardPubKey := []string{}
-	stakeBeaconPubKey := []string{}
+	stakeShardPublicKey := []string{}
+	stakeBeaconPublicKey := []string{}
 	stakeShardTxID := []string{}
 	stakeBeaconTxID := []string{}
 	stakeShardRewardReceiver := []string{}
@@ -151,7 +151,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			}
 			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			stakeShardPubKey = append(stakeShardPubKey, pkb58)
+			stakeShardPublicKey = append(stakeShardPublicKey, pkb58)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
 		case metadata.BeaconStakingMeta:
@@ -172,17 +172,23 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			}
 			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
+			stakeBeaconPublicKey = append(stakeBeaconPublicKey, pkb58)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
 		}
 	}
-	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
-		instruction := []string{StakeAction, strings.Join(stakeShardPubKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ",")}
+	if !reflect.DeepEqual(stakeShardPublicKey, []string{}) {
+		if len(stakeShardPublicKey) != len(stakeShardTxID) && len(stakeShardTxID) != len(stakeShardRewardReceiver) {
+			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver)))
+		}
+		instruction := []string{StakeAction, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ",")}
 		instructions = append(instructions, instruction)
 	}
-	if !reflect.DeepEqual(stakeBeaconPubKey, []string{}) {
-		instruction := []string{StakeAction, strings.Join(stakeBeaconPubKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ",")}
+	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
+		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) {
+			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver)))
+		}
+		instruction := []string{StakeAction, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ",")}
 		instructions = append(instructions, instruction)
 	}
 	return instructions, nil
