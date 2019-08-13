@@ -333,8 +333,8 @@ func (beaconBestState *BeaconBestState) GetValidStakers(tempStaker []string) []s
 	- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 	- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 	Stake format:
-	- ["stake" "pubkey1,pubkey2,..." "shard"]
-	- ["stake" "pubkey1,pubkey2,..." "beacon"]
+	- ["stake" "pubkey1,pubkey2,..." "shard" "txStakeHash1, txStakeHash2,..." "txStakeRewardReceiver1, txStakeRewardReceiver2,..."]
+	- ["stake" "pubkey1,pubkey2,..." "beacon" "txStakeHash1, txStakeHash2,..." "txStakeRewardReceiver1, txStakeRewardReceiver2,..."]
 
 */
 func (blockChain *BlockChain) GetShardStateFromBlock(
@@ -359,6 +359,8 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 	stakeShard := []string{}
 	stakeBeaconTx := []string{}
 	stakeShardTx := []string{}
+	stakeShardRewardReceiver := []string{}
+	stakeBeaconRewardReceiver := []string{}
 	acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
 	acceptedRewardInstructions, err := acceptedBlockRewardInfo.GetStringFormat()
 	if err != nil {
@@ -426,6 +428,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 				for i, v := range strings.Split(stakePublicKey[1], ",") {
 					if common.IndexOfStr(v, stakeShard) > -1 {
 						stakeShardTx = append(stakeShardTx, strings.Split(stakePublicKey[3], ",")[i])
+						stakeShardRewardReceiver = append(stakeShardRewardReceiver, strings.Split(stakePublicKey[4], ",")[i])
 					}
 				}
 			} else {
@@ -433,16 +436,17 @@ func (blockChain *BlockChain) GetShardStateFromBlock(
 				for i, v := range strings.Split(stakePublicKey[1], ",") {
 					if common.IndexOfStr(v, stakeBeacon) > -1 {
 						stakeBeaconTx = append(stakeBeaconTx, strings.Split(stakePublicKey[3], ",")[i])
+						stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, strings.Split(stakePublicKey[4], ",")[i])
 					}
 				}
 			}
 		}
 	}
 	if len(stakeShard) > 0 {
-		stakeInstructions = append(stakeInstructions, []string{StakeAction, strings.Join(stakeShard, ","), "shard", strings.Join(stakeShardTx, ",")})
+		stakeInstructions = append(stakeInstructions, []string{StakeAction, strings.Join(stakeShard, ","), "shard", strings.Join(stakeShardTx, ","), strings.Join(stakeShardRewardReceiver, ",")})
 	}
 	if len(stakeBeacon) > 0 {
-		stakeInstructions = append(stakeInstructions, []string{StakeAction, strings.Join(stakeBeacon, ","), "beacon", strings.Join(stakeBeaconTx, ",")})
+		stakeInstructions = append(stakeInstructions, []string{StakeAction, strings.Join(stakeBeacon, ","), "beacon", strings.Join(stakeBeaconTx, ","), strings.Join(stakeBeaconRewardReceiver, ",")})
 	}
 	// Process Swap Instruction from Shard Block
 	// Validate swap instruction => extract only valid swap instruction
