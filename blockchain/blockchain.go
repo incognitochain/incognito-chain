@@ -1020,39 +1020,40 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset incognitokey.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
 	data, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressUTXO(*tokenID, receiverKeyset.PaymentAddress.Bytes())
-	fmt.Println(data)
 	if err != nil {
 		return nil, err
 	}
-	splitter := []byte("-[-]-")
-	unspent := []byte("unspent")
 	voutList := []transaction.TxTokenVout{}
-	for key, value := range data {
-		keys := strings.Split(key, string(splitter))
-		values := strings.Split(value, string(splitter))
-		// values: [amount-value, spent/unspent]
-		// get unspent transaction output
-		if strings.Compare(values[1], string(unspent)) == 0 {
-			vout := transaction.TxTokenVout{}
-			vout.PaymentAddress = receiverKeyset.PaymentAddress
-			txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
-			if err != nil {
-				return nil, err
+	if len(data) > 0 {
+		splitter := []byte("-[-]-")
+		unspent := []byte("unspent")
+		for key, value := range data {
+			keys := strings.Split(key, string(splitter))
+			values := strings.Split(value, string(splitter))
+			// values: [amount-value, spent/unspent]
+			// get unspent transaction output
+			if strings.Compare(values[1], string(unspent)) == 0 {
+				vout := transaction.TxTokenVout{}
+				vout.PaymentAddress = receiverKeyset.PaymentAddress
+				txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
+				if err != nil {
+					return nil, err
+				}
+				vout.SetTxCustomTokenID(*txHash)
+				voutIndexByte := []byte(keys[4])
+				voutIndex, err := common.BytesToInt32(voutIndexByte)
+				if err != nil {
+					return nil, err
+				}
+				vout.SetIndex(int(voutIndex))
+				value, err := strconv.Atoi(values[0])
+				if err != nil {
+					return nil, err
+				}
+				vout.Value = uint64(value)
+				Logger.log.Info("GetCustomTokenPaymentAddressUTXO VOUT", vout)
+				voutList = append(voutList, vout)
 			}
-			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])
-			voutIndex, err := common.BytesToInt32(voutIndexByte)
-			if err != nil {
-				return nil, err
-			}
-			vout.SetIndex(int(voutIndex))
-			value, err := strconv.Atoi(values[0])
-			if err != nil {
-				return nil, err
-			}
-			vout.Value = uint64(value)
-			Logger.log.Info("GetCustomTokenPaymentAddressUTXO VOUT", vout)
-			voutList = append(voutList, vout)
 		}
 	}
 	return voutList, nil
