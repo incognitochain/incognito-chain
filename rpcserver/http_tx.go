@@ -350,7 +350,7 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
 				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
 			}
-			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
+			tokenData, _ := json.MarshalIndent(tempTx.TxPrivacyTokenData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -656,11 +656,11 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 	for tokenID, tx := range temps {
 		tokenIDs[tokenID] = 0
 		item := jsonresult.CustomTokenBalance{}
-		item.Name = tx.TxTokenPrivacyData.PropertyName
-		item.Symbol = tx.TxTokenPrivacyData.PropertySymbol
-		item.TokenID = tx.TxTokenPrivacyData.PropertyID.String()
+		item.Name = tx.TxPrivacyTokenData.PropertyName
+		item.Symbol = tx.TxPrivacyTokenData.PropertySymbol
+		item.TokenID = tx.TxPrivacyTokenData.PropertyID.String()
 		item.TokenImage = common.Render([]byte(item.TokenID))
-		tokenID := tx.TxTokenPrivacyData.PropertyID
+		tokenID := tx.TxPrivacyTokenData.PropertyID
 
 		balance := uint64(0)
 		// get balance for accountName in wallet
@@ -1235,9 +1235,9 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 	result := jsonresult.CreateTransactionCustomTokenResult{
 		ShardID:         tx.Tx.PubKeyLastByteSender,
 		TxID:            tx.Hash().String(),
-		TokenID:         tx.TxTokenPrivacyData.PropertyID.String(),
-		TokenName:       tx.TxTokenPrivacyData.PropertyName,
-		TokenAmount:     tx.TxTokenPrivacyData.Amount,
+		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
+		TokenName:       tx.TxPrivacyTokenData.PropertyName,
+		TokenAmount:     tx.TxPrivacyTokenData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	Logger.log.Debugf("handleCreateRawPrivacyCustomTokenTransaction result: %+v", result)
@@ -1293,9 +1293,9 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	}
 	result := jsonresult.CreateTransactionCustomTokenResult{
 		TxID:        tx.Hash().String(),
-		TokenID:     tx.TxTokenPrivacyData.PropertyID.String(),
-		TokenName:   tx.TxTokenPrivacyData.PropertyName,
-		TokenAmount: tx.TxTokenPrivacyData.Amount,
+		TokenID:     tx.TxPrivacyTokenData.PropertyID.String(),
+		TokenName:   tx.TxPrivacyTokenData.PropertyName,
+		TokenAmount: tx.TxPrivacyTokenData.Amount,
 		ShardID:     common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
 	}
 	Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", result)
