@@ -1,16 +1,13 @@
 package lvdb
 
 import (
-	"github.com/incognitochain/incognito-chain/common/base58"
+	"math/big"
 	"strconv"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
-
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
-
-	"math/big"
-
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
