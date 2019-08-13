@@ -601,7 +601,10 @@ func (txCustomToken *TxCustomToken) Init(params *NormalTokenInitParam) error {
 
 func (txCustomToken TxCustomToken) GetTxCustomTokenSignature(keyset incognitokey.KeySet) ([]byte, error) {
 	buff := new(bytes.Buffer)
-	json.NewEncoder(buff).Encode(txCustomToken)
+	err := json.NewEncoder(buff).Encode(txCustomToken)
+	if err != nil {
+		return nil, err
+	}
 	return keyset.Sign(buff.Bytes())
 }
 
