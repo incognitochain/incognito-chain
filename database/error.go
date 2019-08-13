@@ -77,6 +77,10 @@ const (
 	BridgeUnexpectedError
 	InsertETHTxHashIssuedError
 	IsETHTxHashIssuedError
+
+	// reward
+	GetCommitteeRewardError
+	RemoveCommitteeRewardError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -153,7 +157,11 @@ var ErrCodeMessage = map[int]struct {
 	// -10xxx bridge
 	BridgeUnexpectedError:      {-10000, "Insert ETH tx hash issued error"},
 	InsertETHTxHashIssuedError: {-10001, "Insert ETH tx hash issued error"},
-	IsETHTxHashIssuedError:     {-100002, "Is eth tx hash issued error"},
+	IsETHTxHashIssuedError:     {-10002, "Is eth tx hash issued error"},
+
+	// -11xxx reward
+	GetCommitteeRewardError:    {-11000, "Get committee reward error"},
+	RemoveCommitteeRewardError: {-11001, "Remove committee reward error"},
 }
 
 type DatabaseError struct {
