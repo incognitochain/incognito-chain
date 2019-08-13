@@ -274,10 +274,10 @@ func (db *db) GetBridgeReqWithStatus(txReqID common.Hash) (byte, error) {
 	key := append(bridgePrefix, txReqID[:]...)
 	bridgeRedStatusBytes, dbErr := db.lvdb.Get(key, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
-		return common.BRIDGE_REQUEST_NOT_FOUND_STATUS, database.NewDatabaseError(database.BridgeUnexpectedError, dbErr)
+		return common.BridgeRequestNotFoundStatus, database.NewDatabaseError(database.BridgeUnexpectedError, dbErr)
 	}
 	if len(bridgeRedStatusBytes) == 0 {
-		return common.BRIDGE_REQUEST_NOT_FOUND_STATUS, nil
+		return common.BridgeRequestNotFoundStatus, nil
 	}
 	return bridgeRedStatusBytes[0], nil
 }
