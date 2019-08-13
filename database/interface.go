@@ -87,7 +87,7 @@ type DatabaseInterface interface {
 	StoreRewardReceiverByHeight(uint64, interface{}) error
 	StoreBeaconCommitteeByHeight(uint64, interface{}) error
 	DeleteCommitteeByHeight(uint64) error
-	FetchCommitteeByHeight(uint64) ([]byte, error)
+	FetchShardCommitteeByHeight(uint64) ([]byte, error)
 	FetchRewardReceiverByHeight(uint64) ([]byte, error)
 	FetchBeaconCommitteeByHeight(uint64) ([]byte, error)
 	HasCommitteeByHeight(uint64) (bool, error)
@@ -168,11 +168,7 @@ type DatabaseInterface interface {
 	IsETHTxHashIssued(uniqETHTx []byte) (bool, error)
 	CanProcessTokenPair(externalTokenID []byte, incTokenID common.Hash) (bool, error)
 	CanProcessCIncToken(incTokenID common.Hash) (bool, error)
-	UpdateBridgeTokenInfo(incTokenID common.Hash,
-		externalTokenID []byte,
-		isCentralized bool,
-		updatingAmt uint64,
-		updateType string) error
+	UpdateBridgeTokenInfo(incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmt uint64, updateType string) error
 	GetAllBridgeTokens() ([]byte, error)
 	TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error
 	GetBridgeReqWithStatus(txReqID common.Hash) (byte, error)
