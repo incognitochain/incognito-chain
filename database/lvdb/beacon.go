@@ -24,7 +24,7 @@ func (db *db) StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight 
 	binary.LittleEndian.PutUint64(buf, nextHeight)
 
 	if err := db.Put(key, buf); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "Cannot store cross shard next height"))
+		return database.NewDatabaseError(database.StoreCrossShardNextHeightError, err)
 	}
 
 	return nil
@@ -33,7 +33,7 @@ func (db *db) StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight 
 func (db *db) HasCrossShardNextHeight(key []byte) (bool, error) {
 	exist, err := db.HasValue(key)
 	if err != nil {
-		return false, err
+		return false, database.NewDatabaseError(database.HasCrossShardNextHeightError, err)
 	} else {
 		return exist, nil
 	}
@@ -50,11 +50,11 @@ func (db *db) FetchCrossShardNextHeight(fromShard byte, toShard byte, curHeight 
 	key = append(key, curHeightBytes...)
 
 	if _, err := db.HasCrossShardNextHeight(key); err != nil {
-		return 0, err
+		return 0, database.NewDatabaseError(database.FetchCrossShardNextHeightError, err)
 	}
 	info, err := db.Get(key)
 	if err != nil {
-		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return 0, database.NewDatabaseError(database.FetchCrossShardNextHeightError, err)
 	}
 	var nextHeight uint64
 	binary.Read(bytes.NewReader(info[:8]), binary.LittleEndian, &nextHeight)
@@ -73,13 +73,13 @@ func (db *db) StoreBeaconBlock(v interface{}, hash common.Hash) error {
 	}
 	val, err := json.Marshal(v)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
+		return database.NewDatabaseError(database.StoreBeaconBlockError, err)
 	}
 	if err := db.Put(keyBeaconBlock, keyBlockHash); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+		return database.NewDatabaseError(database.StoreBeaconBlockError, err)
 	}
 	if err := db.Put(keyBlockHash, val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+		return database.NewDatabaseError(database.StoreBeaconBlockError, err)
 	}
 	return nil
 }
@@ -88,12 +88,12 @@ func (db *db) HasBeaconBlock(hash common.Hash) (bool, error) {
 	key := append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
 	_, err := db.HasValue(key)
 	if err != nil {
-		return false, err
+		return false, database.NewDatabaseError(database.HasBeaconBlockError, err)
 	} else {
 		keyB := append(blockKeyPrefix, hash[:]...)
 		existsB, err := db.HasValue(keyB)
 		if err != nil {
-			return false, err
+			return false, database.NewDatabaseError(database.HasBeaconBlockError, err)
 		} else {
 			return existsB, nil
 		}
@@ -102,13 +102,13 @@ func (db *db) HasBeaconBlock(hash common.Hash) (bool, error) {
 
 func (db *db) FetchBeaconBlock(hash common.Hash) ([]byte, error) {
 	if _, err := db.HasBeaconBlock(hash); err != nil {
-		return []byte{}, err
+		return []byte{}, database.NewDatabaseError(database.FetchBeaconBlockError, err)
 	}
 	// b-{hash}
 	keyBlockHash := db.GetKey(string(blockKeyPrefix), hash)
 	block, err := db.Get(keyBlockHash)
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return nil, database.NewDatabaseError(database.FetchBeaconBlockError, err)
 	}
 	ret := make([]byte, len(block))
 	copy(ret, block)
@@ -121,12 +121,12 @@ func (db *db) StoreBeaconBlockIndex(hash common.Hash, idx uint64) error {
 	//{bea-i-{hash}}:index
 	key := append(append(beaconPrefix, blockKeyIdxPrefix...), hash[:]...)
 	if err := db.Put(key, buf); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return database.NewDatabaseError(database.StoreBeaconBlockIndexError, err)
 	}
 	//bea-i-{index}:[hash]
 	beaconBuf := append(append(beaconPrefix, blockKeyIdxPrefix...), buf...)
 	if err := db.Put(beaconBuf, hash[:]); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
+		return database.NewDatabaseError(database.StoreBeaconBlockIndexError, err)
 	}
 	return nil
 }
@@ -136,12 +136,12 @@ func (db *db) GetIndexOfBeaconBlock(hash common.Hash) (uint64, error) {
 	b, err := db.Get(key)
 	//{bea-i-[hash]}:index
 	if err != nil {
-		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
+		return 0, database.NewDatabaseError(database.GetIndexOfBeaconBlockError, err, hash.String())
 	}
 
 	var idx uint64
 	if err := binary.Read(bytes.NewReader(b[:8]), binary.LittleEndian, &idx); err != nil {
-		return 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "binary.Read"))
+		return 0, database.NewDatabaseError(database.GetIndexOfBeaconBlockError, err, hash.String())
 	}
 	return idx, nil
 }
@@ -156,11 +156,11 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 	)
 	err := db.Delete(keyBeaconBlock)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+		return database.NewDatabaseError(database.DeleteBeaconBlockError, err, hash.String(), idx)
 	}
 	err = db.Delete(keyBlockHash)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+		return database.NewDatabaseError(database.DeleteBeaconBlockError, err, hash.String(), idx)
 	}
 
 	// delete by index
@@ -168,7 +168,7 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 	keyIndex := append(append(beaconPrefix, blockKeyIdxPrefix...), hash[:]...)
 	err = db.Delete(keyIndex)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return database.NewDatabaseError(database.DeleteBeaconBlockError, err, hash.String(), idx)
 	}
 
 	// index -> {hash}
@@ -176,7 +176,7 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 	binary.LittleEndian.PutUint64(buf, idx)
 	err = db.Delete(buf)
 	if err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return database.NewDatabaseError(database.DeleteBeaconBlockError, err, hash.String(), idx)
 	}
 	return nil
 }
