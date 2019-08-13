@@ -11,7 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type TxTokenPrivacyData struct {
+type TxPrivacyTokenData struct {
 	TxNormal       Tx          // used for privacy functionality
 	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
 	PropertyName   string
@@ -22,7 +22,7 @@ type TxTokenPrivacyData struct {
 	Amount   uint64 // init amount
 }
 
-func (txTokenPrivacyData TxTokenPrivacyData) String() string {
+func (txTokenPrivacyData TxPrivacyTokenData) String() string {
 	record := txTokenPrivacyData.PropertyName
 	record += txTokenPrivacyData.PropertySymbol
 	record += fmt.Sprintf("%d", txTokenPrivacyData.Amount)
@@ -43,7 +43,7 @@ func (txTokenPrivacyData TxTokenPrivacyData) String() string {
 	return record
 }
 
-func (txTokenPrivacyData TxTokenPrivacyData) JSONString() string {
+func (txTokenPrivacyData TxPrivacyTokenData) JSONString() string {
 	data, err := json.MarshalIndent(txTokenPrivacyData, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
@@ -53,7 +53,7 @@ func (txTokenPrivacyData TxTokenPrivacyData) JSONString() string {
 }
 
 // Hash - return hash of custom token data, be used as Token ID
-func (txTokenPrivacyData TxTokenPrivacyData) Hash() (*common.Hash, error) {
+func (txTokenPrivacyData TxPrivacyTokenData) Hash() (*common.Hash, error) {
 	hash := common.HashH([]byte(txTokenPrivacyData.String()))
 	return &hash, nil
 }

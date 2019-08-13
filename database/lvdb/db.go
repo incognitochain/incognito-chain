@@ -11,6 +11,7 @@ type db struct {
 	lvdb *leveldb.DB
 }
 
+// key prefix
 var (
 	prevShardPrefix         = []byte("prevShd-")
 	prevBeaconPrefix        = []byte("prevBea-")
@@ -34,16 +35,13 @@ var (
 	commitmentsPrefix            = []byte("commitments-")
 	outcoinsPrefix               = []byte("outcoins-")
 	snderivatorsPrefix           = []byte("snderivators-")
-	bestBlockKey                 = []byte("bestBlock")
-	feeEstimator                 = []byte("feeEstimator")
-	Splitter                     = []byte("-[-]-")
-	TokenPrefix                  = []byte("token-")
-	PrivacyTokenPrefix           = []byte("privacy-token-")
-	PrivacyTokenCrossShardPrefix = []byte("privacy-cross-token-")
-	TokenPaymentAddressPrefix    = []byte("token-paymentaddress-")
+	bestBlockKeyPrefix           = []byte("bestBlock")
+	feeEstimatorPrefix           = []byte("feeEstimator")
+	tokenPrefix                  = []byte("token-")
+	privacyTokenPrefix           = []byte("privacy-token-")
+	privacyTokenCrossShardPrefix = []byte("privacy-cross-token-")
 	tokenInitPrefix              = []byte("token-init-")
 	privacyTokenInitPrefix       = []byte("privacy-token-init-")
-	rewared                      = []byte("reward")
 
 	// multisigs
 	multisigsPrefix = []byte("multisigs")
@@ -52,20 +50,24 @@ var (
 	bridgePrefix              = []byte("bridge-")
 	centralizedBridgePrefix   = []byte("centralizedbridge-")
 	decentralizedBridgePrefix = []byte("decentralizedbridge-")
-	ethTxHashIssued           = []byte("ethtxhashissued-")
+	ethTxHashIssuedPrefix     = []byte("ethtxhashissued-")
 
 	// Incognito -> Ethereum relayer
 	burnConfirmPrefix = []byte("burnConfirm-")
 
-	Spent      = []byte("spent")
-	Unspent    = []byte("unspent")
-	Mintable   = []byte("mintable")
-	UnMintable = []byte("unmintable")
-
 	//epoch reward
-	ShardRequestRewardPrefix        = []byte("shardrequestreward-")
-	BeaconBlockProposeCounterPrefix = []byte("beaconblockproposecounter-")
-	CommitteeRewardPrefix           = []byte("committee-reward-")
+	shardRequestRewardPrefix = []byte("shardrequestreward-")
+	committeeRewardPrefix    = []byte("committee-reward-")
+
+	// public variable
+	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
+	Splitter                  = []byte("-[-]-")
+)
+
+// value
+var (
+	Spent   = []byte("spent")
+	Unspent = []byte("unspent")
 )
 
 func open(dbPath string) (database.DatabaseInterface, error) {
@@ -140,12 +142,12 @@ func (db db) GetKey(keyType string, key common.Hash) []byte {
 		dbkey = append(outcoinsPrefix, key[:]...)
 	case string(snderivatorsPrefix):
 		dbkey = append(snderivatorsPrefix, key[:]...)
-	case string(TokenPrefix):
-		dbkey = append(TokenPrefix, key[:]...)
-	case string(PrivacyTokenPrefix):
-		dbkey = append(PrivacyTokenPrefix, key[:]...)
-	case string(PrivacyTokenCrossShardPrefix):
-		dbkey = append(PrivacyTokenCrossShardPrefix, key[:]...)
+	case string(tokenPrefix):
+		dbkey = append(tokenPrefix, key[:]...)
+	case string(privacyTokenPrefix):
+		dbkey = append(privacyTokenPrefix, key[:]...)
+	case string(privacyTokenCrossShardPrefix):
+		dbkey = append(privacyTokenCrossShardPrefix, key[:]...)
 	case string(tokenInitPrefix):
 		dbkey = append(tokenInitPrefix, key[:]...)
 	case string(privacyTokenInitPrefix):

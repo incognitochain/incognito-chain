@@ -473,7 +473,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	}
 	// convert to inputcoins
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
-	tx := &transaction.TxCustomToken{}
+	tx := &transaction.TxNormalToken{}
 	err1 := tx.Init(
 		transaction.NewTxNormalTokenInitParam(&senderKeySet.KeySet.PrivateKey,
 			nil,

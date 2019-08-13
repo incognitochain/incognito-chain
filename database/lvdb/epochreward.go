@@ -3,6 +3,7 @@ package lvdb
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/database"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
@@ -20,25 +21,23 @@ func (db *db) AddShardRewardRequest(
 	rewardAmount uint64,
 	tokenID common.Hash,
 ) error {
-	key, err := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
-	if err != nil {
-		return err
-	}
+	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	oldValue, err := db.Get(key)
 	if err != nil {
 		err1 := db.Put(key, common.Uint64ToBytes(rewardAmount))
-		////fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 1- - - %+v\n", err1)
 		if err1 != nil {
-			return err1
+			return database.NewDatabaseError(database.UnexpectedError, err1)
 		}
 	} else {
 		newValue, err := common.BytesToUint64(oldValue)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 		newValue += rewardAmount
 		err = db.Put(key, common.Uint64ToBytes(newValue))
-		////fmt.Printf("[ndh]-[ERROR] AddShardRewardRequest 2- - - %+v\n", err)
+		if err != nil {
+			return database.NewDatabaseError(database.UnexpectedError, err)
+		}
 	}
 	return nil
 }
@@ -55,14 +54,16 @@ func (db *db) GetRewardOfShardByEpoch(
 	shardID byte,
 	tokenID common.Hash,
 ) (uint64, error) {
-	key, _ := NewKeyAddShardRewardRequest(epoch, shardID, tokenID)
+	key := newKeyAddShardRewardRequest(epoch, shardID, tokenID)
 	rewardAmount, err := db.Get(key)
 	if err != nil {
-		////fmt.Printf("[ndh]-[ERROR] 1 --- %+v\n", err)
 		return 0, nil
 	}
-	////fmt.Printf("[ndh] - - - %+v\n", rewardAmount)
-	return common.BytesToUint64(rewardAmount)
+	value, err := common.BytesToUint64(rewardAmount)
+	if err != nil {
+		return 0, database.NewDatabaseError(database.UnexpectedError, err)
+	}
+	return value, nil
 }
 
 /**
@@ -77,25 +78,22 @@ func (db *db) AddCommitteeReward(
 	amount uint64,
 	tokenID common.Hash,
 ) error {
-	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
-	if err != nil {
-		return err
-	}
+	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
 	oldValue, isExist := db.Get(key)
 	if isExist != nil {
 		err := db.Put(key, common.Uint64ToBytes(amount))
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	} else {
 		newValue, err := common.BytesToUint64(oldValue)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 		newValue += amount
 		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.UnexpectedError, err)
 		}
 	}
 	return nil
@@ -104,14 +102,14 @@ func (db *db) AddCommitteeReward(
 // ListCommitteeReward - get reward on tokenID of all committee
 func (db *db) ListCommitteeReward() map[string]map[common.Hash]uint64 {
 	result := make(map[string]map[common.Hash]uint64)
-	iterator := db.lvdb.NewIterator(util.BytesPrefix(CommitteeRewardPrefix), nil)
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(committeeRewardPrefix), nil)
 	for iterator.Next() {
 		key := make([]byte, len(iterator.Key()))
 		copy(key, iterator.Key())
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		reward, _ := common.BytesToUint64(value)
-		publicKeyInByte := key[len(CommitteeRewardPrefix) : len(CommitteeRewardPrefix)+33]
+		publicKeyInByte := key[len(committeeRewardPrefix) : len(committeeRewardPrefix)+33]
 		publicKeyInBase58Check := base58.Base58Check{}.Encode(publicKeyInByte, 0x0)
 		tokenIDBytes := key[len(key)-32:]
 		tokenID, _ := common.Hash{}.NewHash(tokenIDBytes)
@@ -133,16 +131,17 @@ func (db *db) GetCommitteeReward(
 	committeeAddress []byte,
 	tokenID common.Hash,
 ) (uint64, error) {
-	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
-	if err != nil {
-		return 0, err
-	}
+	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
 	value, isExist := db.Get(key)
 	if isExist != nil {
 		return 0, nil
 	}
 
-	return common.BytesToUint64(value)
+	val, err := common.BytesToUint64(value)
+	if err != nil {
+		return 0, database.NewDatabaseError(database.GetCommitteeRewardError, err)
+	}
+	return val, nil
 }
 
 /**
@@ -157,15 +156,12 @@ func (db *db) RemoveCommitteeReward(
 	amount uint64,
 	tokenID common.Hash,
 ) error {
-	key, err := NewKeyAddCommitteeReward(committeeAddress, tokenID)
-	if err != nil {
-		return err
-	}
+	key := newKeyAddCommitteeReward(committeeAddress, tokenID)
 	oldValue, isExist := db.Get(key)
 	if isExist == nil {
 		newValue, err := common.BytesToUint64(oldValue)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.RemoveCommitteeRewardError, err)
 		}
 		if amount < newValue {
 			newValue -= amount
@@ -174,7 +170,7 @@ func (db *db) RemoveCommitteeReward(
 		}
 		err = db.Put(key, common.Uint64ToBytes(newValue))
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.RemoveCommitteeRewardError, err)
 		}
 	}
 	return nil
