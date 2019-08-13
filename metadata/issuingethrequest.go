@@ -175,7 +175,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
 	fmt.Println("hahaha txreqid: ", txReqID)
-	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BRIDGE_REQUEST_PROCESSING_STATUS))
+	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
 		return [][]string{}, err
 	}
@@ -194,9 +194,9 @@ func GetETHHeader(
 	params := []interface{}{ethBlockHash, false}
 	var getBlockByNumberRes GetBlockByNumberRes
 	err := rpcClient.RPCCall(
-		common.ETHERERUM_LIGHT_NODE_PROTOCOL,
-		common.ETHERERUM_LIGHT_NODE_HOST,
-		common.ETHERERUM_LIGHT_NODE_PORT,
+		common.EthereumLightNodeProtocol,
+		common.EthereumLightNodeHost,
+		common.EthereumLightNodePort,
 		"eth_getBlockByHash",
 		params,
 		&getBlockByNumberRes,
@@ -257,7 +257,7 @@ func PickNParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]
 		return nil, nil
 	}
 	for _, log := range constructedReceipt.Logs {
-		if bytes.Equal(rCommon.HexToAddress(common.ETH_CONTRACT_ADDR_STR).Bytes(), log.Address.Bytes()) {
+		if bytes.Equal(rCommon.HexToAddress(common.EthContractAddressStr).Bytes(), log.Address.Bytes()) {
 			logData = log.Data
 			break
 		}
