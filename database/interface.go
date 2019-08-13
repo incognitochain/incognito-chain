@@ -86,9 +86,9 @@ type DatabaseInterface interface {
 	StoreShardCommitteeByHeight(height uint64, v interface{}) error
 	StoreBeaconCommitteeByHeight(height uint64, v interface{}) error
 	DeleteCommitteeByHeight(blkEpoch uint64) error
-	FetchCommitteeByHeight(height uint64) ([]byte, error)
+	FetchShardCommitteeByHeight(height uint64) ([]byte, error)
 	FetchBeaconCommitteeByHeight(height uint64) ([]byte, error)
-	HasCommitteeByHeight(height uint64) (bool, error)
+	HasShardCommitteeByHeight(height uint64) (bool, error)
 
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error

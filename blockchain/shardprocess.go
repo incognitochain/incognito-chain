@@ -276,7 +276,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		}
 	}
 	tokenIDsfromTxs := make([]common.Hash, 0)
-	for tokenID, _ := range totalTxsFee {
+	for tokenID := range totalTxsFee {
 		tokenIDsfromTxs = append(tokenIDsfromTxs, tokenID)
 	}
 	sort.Slice(tokenIDsfromTxs, func(i int, j int) bool {
@@ -284,7 +284,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		return res == -1
 	})
 	tokenIDsfromBlock := make([]common.Hash, 0)
-	for tokenID, _ := range shardBlock.Header.TotalTxsFee {
+	for tokenID := range shardBlock.Header.TotalTxsFee {
 		tokenIDsfromBlock = append(tokenIDsfromBlock, tokenID)
 	}
 	sort.Slice(tokenIDsfromBlock, func(i int, j int) bool {
@@ -307,7 +307,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	if len(crossShards) != len(shardBlock.Header.CrossShardBitMap) {
 		return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect number of cross shardID is %+v but get %+v", len(shardBlock.Header.CrossShardBitMap), len(crossShards)))
 	}
-	for index, _ := range crossShards {
+	for index := range crossShards {
 		if crossShards[index] != shardBlock.Header.CrossShardBitMap[index] {
 			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is %+v but get %+v", index, shardBlock.Header.CrossShardBitMap[index], crossShards[index]))
 		}
@@ -441,7 +441,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 						return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
 					}
 					startHeight = nextHeight
-					temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(toShardCrossShardBlock.Header.BeaconHeight)
+					temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(toShardCrossShardBlock.Header.BeaconHeight)
 					if err != nil {
 						return NewBlockChainError(FetchShardCommitteeError, err)
 					}
