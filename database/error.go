@@ -72,6 +72,11 @@ const (
 	FetchShardCommitteeByHeightError
 	FetchBeaconCommitteeByHeightError
 	HasShardCommitteeByHeightError
+
+	// Bridge
+	BridgeUnexpectedError
+	InsertETHTxHashIssuedError
+	IsETHTxHashIssuedError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -144,6 +149,11 @@ var ErrCodeMessage = map[int]struct {
 	FetchShardCommitteeByHeightError:  {-9017, "Fetch committee by height=%+v error"},
 	FetchBeaconCommitteeByHeightError: {-9018, "Fetch beacon committee by height=%+v error"},
 	HasShardCommitteeByHeightError:    {-9019, "Has committee shard by height error"},
+
+	// -10xxx bridge
+	BridgeUnexpectedError:      {-10000, "Insert ETH tx hash issued error"},
+	InsertETHTxHashIssuedError: {-10001, "Insert ETH tx hash issued error"},
+	IsETHTxHashIssuedError:     {-100002, "Is eth tx hash issued error"},
 }
 
 type DatabaseError struct {
