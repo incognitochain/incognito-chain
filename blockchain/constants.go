@@ -85,7 +85,9 @@ const (
 // for beacon
 // public key
 var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
+var PreSelectBeaconNodeTestnetSerializedPaymentAddress = []string{}
 var PreSelectShardNodeTestnetSerializedPubkey = []string{}
+var PreSelectShardNodeTestnetSerializedPaymentAddress = []string{}
 
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
@@ -116,11 +118,13 @@ func init() {
 
 	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
 		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKey)
+		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAdd)
 	}
 
 	for i := 0; i < TestNetActiveShards; i++ {
 		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
 			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKey)
+			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAdd)
 		}
 	}
 }

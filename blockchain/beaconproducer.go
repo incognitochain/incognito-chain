@@ -404,7 +404,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 			tempStakePublicKey = make([]string, len(newShardCandidate))
 			copy(tempStakePublicKey, newShardCandidate[:])
 		}
-		if len(tempStakePublicKey) != len(stakeInstruction[3]) && len(stakeInstruction[3]) != len(stakeInstruction[4]) {
+		if len(tempStakePublicKey) != len(strings.Split(stakeInstruction[3], ",")) && len(strings.Split(stakeInstruction[3], ",")) != len(strings.Split(stakeInstruction[4], ",")) {
 			continue
 		}
 		tempStakePublicKey = blockChain.BestState.Beacon.GetValidStakers(tempStakePublicKey)
