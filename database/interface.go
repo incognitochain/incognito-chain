@@ -84,9 +84,11 @@ type DatabaseInterface interface {
 
 	// Commitee with epoch
 	StoreShardCommitteeByHeight(uint64, interface{}) error
+	StoreRewardReceiverByHeight(uint64, interface{}) error
 	StoreBeaconCommitteeByHeight(uint64, interface{}) error
 	DeleteCommitteeByHeight(uint64) error
 	FetchCommitteeByHeight(uint64) ([]byte, error)
+	FetchRewardReceiverByHeight(uint64) ([]byte, error)
 	FetchBeaconCommitteeByHeight(uint64) ([]byte, error)
 	HasCommitteeByHeight(uint64) (bool, error)
 

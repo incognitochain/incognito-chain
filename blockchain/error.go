@@ -140,6 +140,8 @@ const (
 	InitSalaryTransactionError
 	RemoveOldDataAfterProcessingError
 	WrongMetadataTypeError
+	StakeInstructionError
+	StoreRewardReceiverByHeightError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -264,6 +266,8 @@ var ErrCodeMessage = map[int]struct {
 	InitSalaryTransactionError:                        {-1115, "Init Salary Transaction Error"},
 	RemoveOldDataAfterProcessingError:                 {-1116, "Remove Old Data After Processing Error"},
 	WrongMetadataTypeError:                            {-1117, "Wrong Metadata Type Error"},
+	StakeInstructionError:                             {-1118, "Stake Instruction Error"},
+	StoreRewardReceiverByHeightError:                  {-1119, "Store Reward Receiver By Height Error"},
 }
 
 type BlockChainError struct {
