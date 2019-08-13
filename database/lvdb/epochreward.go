@@ -102,14 +102,14 @@ func (db *db) AddCommitteeReward(
 // ListCommitteeReward - get reward on tokenID of all committee
 func (db *db) ListCommitteeReward() map[string]map[common.Hash]uint64 {
 	result := make(map[string]map[common.Hash]uint64)
-	iterator := db.lvdb.NewIterator(util.BytesPrefix(CommitteeRewardPrefix), nil)
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(committeeRewardPrefix), nil)
 	for iterator.Next() {
 		key := make([]byte, len(iterator.Key()))
 		copy(key, iterator.Key())
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		reward, _ := common.BytesToUint64(value)
-		publicKeyInByte := key[len(CommitteeRewardPrefix) : len(CommitteeRewardPrefix)+33]
+		publicKeyInByte := key[len(committeeRewardPrefix) : len(committeeRewardPrefix)+33]
 		publicKeyInBase58Check := base58.Base58Check{}.Encode(publicKeyInByte, 0x0)
 		tokenIDBytes := key[len(key)-32:]
 		tokenID, _ := common.Hash{}.NewHash(tokenIDBytes)
