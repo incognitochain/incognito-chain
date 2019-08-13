@@ -213,7 +213,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			return
 		}
 
-		temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(block.Header.BeaconHeight)
+		temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(block.Header.BeaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 			return

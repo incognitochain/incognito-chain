@@ -83,7 +83,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdCustomToken:
 		msg = &MessageTxToken{
-			Transaction: &transaction.TxCustomToken{},
+			Transaction: &transaction.TxNormalToken{},
 		}
 		break
 	case CmdPrivacyCustomToken:
