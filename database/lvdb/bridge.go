@@ -106,7 +106,7 @@ func (db *db) CanProcessTokenPair(
 		var bridgeTokenInfo BridgeTokenInfo
 		err := json.Unmarshal(contentBytes, &bridgeTokenInfo)
 		if err != nil {
-			return false, err
+			return false, database.NewDatabaseError(database.BridgeUnexpectedError, err)
 		}
 		if bytes.Equal(bridgeTokenInfo.ExternalTokenID[:], externalTokenID[:]) {
 			return true, nil
@@ -123,7 +123,7 @@ func (db *db) CanProcessTokenPair(
 		var bridgeTokenInfo BridgeTokenInfo
 		err := json.Unmarshal(itemBytes, &bridgeTokenInfo)
 		if err != nil {
-			return false, err
+			return false, database.NewDatabaseError(database.BridgeUnexpectedError, err)
 		}
 		if !bytes.Equal(bridgeTokenInfo.ExternalTokenID, externalTokenID) {
 			continue
