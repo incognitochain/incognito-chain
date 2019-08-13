@@ -13,20 +13,20 @@ type db struct {
 
 // key prefix
 var (
-	prevShardPrefix         = []byte("prevShd-")
-	prevBeaconPrefix        = []byte("prevBea-")
-	beaconPrefix            = []byte("bea-")
-	beaconBestBlockkey      = []byte("bea-bestBlock")
-	committeePrefix         = []byte("com-")
-	rewardReceiverPrefix    = []byte("rewardreceiver-")
-	heightPrefix            = []byte("ep-") // TODO rename key value
-	shardIDPrefix           = []byte("s-")
-	blockKeyPrefix          = []byte("b-")
-	blockHeaderKeyPrefix    = []byte("bh-")
-	blockKeyIdxPrefix       = []byte("i-")
-	crossShardKeyPrefix     = []byte("csh-")
-	nextCrossShardKeyPrefix = []byte("ncsh-")
-	shardPrefix             = []byte("shd-")
+	prevShardPrefix          = []byte("prevShd-")
+	prevBeaconPrefix         = []byte("prevBea-")
+	beaconPrefix             = []byte("bea-")
+	beaconBestBlockkeyPrefix = []byte("bea-bestBlock")
+	committeePrefix          = []byte("com-")
+	rewardReceiverPrefix     = []byte("rewardreceiver-")
+	heightPrefix             = []byte("ep-") // TODO rename key value
+	shardIDPrefix            = []byte("s-")
+	blockKeyPrefix           = []byte("b-")
+	blockHeaderKeyPrefix     = []byte("bh-")
+	blockKeyIdxPrefix        = []byte("i-")
+	crossShardKeyPrefix      = []byte("csh-")
+	nextCrossShardKeyPrefix  = []byte("ncsh-")
+	shardPrefix              = []byte("shd-")
 
 	shardToBeaconKeyPrefix       = []byte("stb-")
 	transactionKeyPrefix         = []byte("tx-")
