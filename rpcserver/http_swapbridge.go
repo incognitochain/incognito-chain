@@ -88,7 +88,7 @@ func findBridgeBlockWithInst(
 	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
 ) (*blockchain.ShardBlock, int, error) {
-	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	bridgeID := byte(common.BridgeShardID)
 	for _, state := range beaconBlock.Body.ShardState[bridgeID] {
 		bridgeBlock, _, err := getShardAndBeaconBlocks(state.Height, bc, db)
 		if err != nil {
