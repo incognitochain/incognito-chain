@@ -281,12 +281,12 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				//NOTICE: @merman update PropertyID calculated from hash of tokendata and shardID
 				newHashInitToken := common.HashH(append(hashInitToken.GetBytes(), params.shardID))
 				Logger.log.Debug("New Privacy Token %+v ", newHashInitToken)
-				existed := params.db.PrivacyCustomTokenIDExisted(newHashInitToken)
+				existed := params.db.PrivacyTokenIDExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedError, errors.New("this token is existed in network"))
 				}
-				existed = params.db.PrivacyCustomTokenIDCrossShardExisted(newHashInitToken)
+				existed = params.db.PrivacyTokenIDCrossShardExisted(newHashInitToken)
 				if existed {
 					Logger.log.Error("INIT Tx Custom Token Privacy is Existed(crossshard)", newHashInitToken)
 					return NewTransactionErr(TokenIDExistedByCrossShardError, errors.New("this token is existed in network via cross shard"))
@@ -302,8 +302,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			// fee always 0 and reuse function of normal tx for custom token ID
 			temp := Tx{}
 			propertyID, _ := common.Hash{}.NewHashFromStr(params.tokenParams.PropertyID)
-			existed := params.db.PrivacyCustomTokenIDExisted(*propertyID)
-			existedCross := params.db.PrivacyCustomTokenIDCrossShardExisted(*propertyID)
+			existed := params.db.PrivacyTokenIDExisted(*propertyID)
+			existedCross := params.db.PrivacyTokenIDCrossShardExisted(*propertyID)
 			if !existed && !existedCross {
 				return NewTransactionErr(TokenIDExistedError, errors.New("invalid Token ID"))
 			}
