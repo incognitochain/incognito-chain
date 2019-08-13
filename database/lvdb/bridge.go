@@ -23,7 +23,7 @@ type BridgeTokenInfo struct {
 func (db *db) InsertETHTxHashIssued(
 	uniqETHTx []byte,
 ) error {
-	key := append(ethTxHashIssued, uniqETHTx...)
+	key := append(ethTxHashIssuedPrefix, uniqETHTx...)
 	dbErr := db.Put(key, []byte{1})
 	if dbErr != nil {
 		return database.NewDatabaseError(database.InsertETHTxHashIssuedError, errors.Wrap(dbErr, "db.lvdb.put"))
@@ -34,7 +34,7 @@ func (db *db) InsertETHTxHashIssued(
 func (db *db) IsETHTxHashIssued(
 	uniqETHTx []byte,
 ) (bool, error) {
-	key := append(ethTxHashIssued, uniqETHTx...)
+	key := append(ethTxHashIssuedPrefix, uniqETHTx...)
 	contentBytes, dbErr := db.lvdb.Get(key, nil)
 	if dbErr != nil && dbErr != lvdberr.ErrNotFound {
 		return false, database.NewDatabaseError(database.IsETHTxHashIssuedError, errors.Wrap(dbErr, "db.lvdb.Get"))

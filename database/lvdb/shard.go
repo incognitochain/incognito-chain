@@ -160,7 +160,7 @@ func (db *db) StoreShardBestState(v interface{}, shardID byte) error {
 	if err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "json.Marshal"))
 	}
-	key := append(bestBlockKey, shardID)
+	key := append(bestBlockKeyPrefix, shardID)
 	if err := db.Put(key, val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.put"))
 	}
@@ -168,7 +168,7 @@ func (db *db) StoreShardBestState(v interface{}, shardID byte) error {
 }
 
 func (db *db) FetchShardBestState(shardID byte) ([]byte, error) {
-	key := append(bestBlockKey, shardID)
+	key := append(bestBlockKeyPrefix, shardID)
 	block, err := db.Get(key)
 	if err != nil {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.get"))
@@ -178,7 +178,7 @@ func (db *db) FetchShardBestState(shardID byte) ([]byte, error) {
 
 func (db *db) CleanShardBestState() error {
 	for shardID := byte(0); shardID < common.MAX_SHARD_NUMBER; shardID++ {
-		key := append(bestBlockKey, shardID)
+		key := append(bestBlockKeyPrefix, shardID)
 		err := db.Delete(key)
 		if err != nil {
 			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.delete"))
