@@ -448,7 +448,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 				continue
 			}
 			startHeight = nextHeight
-			temp, err := blockGenerator.chain.config.DataBase.FetchCommitteeByHeight(blk.Header.BeaconHeight)
+			temp, err := blockGenerator.chain.config.DataBase.FetchShardCommitteeByHeight(blk.Header.BeaconHeight)
 			if err != nil {
 				break
 			}

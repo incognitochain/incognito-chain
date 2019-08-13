@@ -681,10 +681,6 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		if err != nil {
 			return err
 		}
-
-		if err != nil {
-			return err
-		}
 	}
 
 	// check privacy custom token
@@ -1072,7 +1068,7 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 	}
 	block, _, err1 := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
-		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
+		//Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(UnExpectedError, err1)
 	}
 	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
@@ -1791,7 +1787,7 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks [
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(epoch * common.EPOCH)
+						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * common.EPOCH)
 						if err != nil {
 							return err
 						}
@@ -2013,7 +2009,7 @@ func (blockchain *BlockChain) restoreDatabaseFromBeaconInstruction(beaconBlocks 
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(epoch * common.EPOCH)
+						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * common.EPOCH)
 						if err != nil {
 							return err
 						}
@@ -2373,7 +2369,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 				}
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
-			for key, _ := range acceptedBlkRewardInfo.TxsFee {
+			for key := range acceptedBlkRewardInfo.TxsFee {
 				err = blockchain.config.DataBase.BackupShardRewardRequest(block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
 				if err != nil {
 					return err
