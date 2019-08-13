@@ -61,7 +61,7 @@ func (db *db) CanProcessCIncToken(
 		return false, database.NewDatabaseError(database.BridgeUnexpectedError, err)
 	}
 	privacyCustomTokenExisted := db.PrivacyTokenIDExisted(incTokenID)
-	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(incTokenID)
+	privacyCustomTokenCrossShardExisted := db.PrivacyTokenIDCrossShardExisted(incTokenID)
 	if !cBridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
 		return false, nil
 	}
@@ -91,7 +91,7 @@ func (db *db) CanProcessTokenPair(
 	}
 	fmt.Println("INFO: whether inc token was existed in decentralized token set: ", dBridgeTokenExisted)
 	privacyCustomTokenExisted := db.PrivacyTokenIDExisted(incTokenID)
-	privacyCustomTokenCrossShardExisted := db.PrivacyCustomTokenIDCrossShardExisted(incTokenID)
+	privacyCustomTokenCrossShardExisted := db.PrivacyTokenIDCrossShardExisted(incTokenID)
 	if !dBridgeTokenExisted && (privacyCustomTokenExisted || privacyCustomTokenCrossShardExisted) {
 		fmt.Println("WARNING: failed at condition 1: ", dBridgeTokenExisted, privacyCustomTokenExisted, privacyCustomTokenCrossShardExisted)
 		return false, nil
