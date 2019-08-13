@@ -10,11 +10,14 @@ type Handler struct {
 	rpcServer *RpcServer
 }
 
-type PingArgs struct {
-	RawAddress    string
-	PublicKeyType string
-	PublicKey     string
-	SignData      string
+func (s Handler) GetPeers(args string, responseMessagePeers *[]wire.RawPeer) error {
+	fmt.Println(args)
+	// return note list
+	for _, p := range s.rpcServer.peers {
+		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publicKey})
+	}
+	fmt.Println("Response", *responseMessagePeers)
+	return nil
 }
 
 // Ping - handler func which receive data from rpc client,
@@ -31,8 +34,8 @@ func (s Handler) Ping(args *PingArgs, responseMessagePeers *[]wire.RawPeer) erro
 	s.rpcServer.peersMtx.Lock()
 	defer s.rpcServer.peersMtx.Unlock()
 	// return note list
-	for _, p := range s.rpcServer.Peers {
-		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.RawAddress, p.PublicKeyType, p.PublicKey})
+	for _, p := range s.rpcServer.peers {
+		*responseMessagePeers = append(*responseMessagePeers, wire.RawPeer{p.rawAddress, p.publicKeyType, p.publicKey})
 	}
 	fmt.Println("Response", *responseMessagePeers)
 	return nil
