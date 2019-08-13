@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/databasemp"
+	"github.com/pkg/errors"
 	"log"
 	"strconv"
 	"strings"
@@ -20,7 +22,7 @@ import (
 func (db *db) StoreCustomToken(tokenID common.Hash, txHash []byte) error {
 	key := db.GetKey(string(tokenInitPrefix), tokenID)
 	if err := db.Put(key, txHash); err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return nil
 }
@@ -31,7 +33,7 @@ func (db *db) StoreCustomToken(tokenID common.Hash, txHash []byte) error {
 func (db *db) StorePrivacyCustomToken(tokenID common.Hash, txHash []byte) error {
 	key := db.GetKey(string(privacyTokenInitPrefix), tokenID) // token-init-{tokenID}
 	if err := db.Put(key, txHash); err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return nil
 }
@@ -47,7 +49,7 @@ func (db *db) StoreCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight 
 	key = append(key, bs...)
 	log.Println(string(key))
 	if err := db.Put(key, txHash); err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return nil
 }
@@ -63,7 +65,7 @@ func (db *db) StorePrivacyCustomTokenTx(tokenID common.Hash, shardID byte, block
 	key = append(key, bs...)
 	log.Println(string(key))
 	if err := db.Put(key, txHash); err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return nil
 }
@@ -116,6 +118,9 @@ func (db *db) ListCustomToken() ([][]byte, error) {
 		result = append(result, value)
 	}
 	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return result, nil
 }
 
@@ -131,6 +136,9 @@ func (db *db) ListPrivacyCustomToken() ([][]byte, error) {
 		result = append(result, value)
 	}
 	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return result, nil
 }
 
@@ -146,6 +154,9 @@ func (db *db) CustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
 		result = append(result, *hash)
 	}
 	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return result, nil
 }
 
@@ -161,6 +172,9 @@ func (db *db) PrivacyCustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) 
 		result = append(result, *hash)
 	}
 	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return result, nil
 }
 
@@ -197,6 +211,9 @@ func (db *db) GetCustomTokenPaymentAddressesBalance(tokenID common.Hash) (map[st
 		}
 	}
 	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return results, nil
 }
 
@@ -220,13 +237,16 @@ func (db *db) GetCustomTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddre
 		results[key] = value
 	}
 	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return results, nil
 }
 
 func (db *db) StorePrivacyCustomTokenCrossShard(tokenID common.Hash, tokenValue []byte) error {
 	key := db.GetKey(string(PrivacyTokenCrossShardPrefix), tokenID)
 	if err := db.Put(key, tokenValue); err != nil {
-		return err
+		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
 	return nil
 }
@@ -244,5 +264,8 @@ func (db *db) ListPrivacyCustomTokenCrossShard() ([][]byte, error) {
 		result = append(result, value)
 	}
 	iter.Release()
+	if err := iter.Error(); err != nil {
+		return nil, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "iter.Error"))
+	}
 	return result, nil
 }
