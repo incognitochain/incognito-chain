@@ -247,8 +247,8 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
-				subView.tokenID = &tx.TxTokenPrivacyData.PropertyID
-				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxTokenPrivacyData.TxNormal.Proof, subView.tokenID)
+				subView.tokenID = &tx.TxPrivacyTokenData.PropertyID
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}
