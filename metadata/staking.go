@@ -3,8 +3,6 @@ package metadata
 import (
 	"bytes"
 	"errors"
-	"strings"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -50,17 +48,17 @@ func (stakingMetadata *StakingMetadata) ValidateTxWithBlockChain(txr Transaction
 	pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 	tempStaker := []string{pkb58}
 	for _, committees := range SC {
-		tempStaker = GetValidStaker(committees, tempStaker)
+		tempStaker = common.GetValidStaker(committees, tempStaker)
 	}
 	for _, validators := range SPV {
-		tempStaker = GetValidStaker(validators, tempStaker)
+		tempStaker = common.GetValidStaker(validators, tempStaker)
 	}
-	tempStaker = GetValidStaker(BC, tempStaker)
-	tempStaker = GetValidStaker(BPV, tempStaker)
-	tempStaker = GetValidStaker(CBWFCR, tempStaker)
-	tempStaker = GetValidStaker(CBWFNR, tempStaker)
-	tempStaker = GetValidStaker(CSWFCR, tempStaker)
-	tempStaker = GetValidStaker(CSWFNR, tempStaker)
+	tempStaker = common.GetValidStaker(BC, tempStaker)
+	tempStaker = common.GetValidStaker(BPV, tempStaker)
+	tempStaker = common.GetValidStaker(CBWFCR, tempStaker)
+	tempStaker = common.GetValidStaker(CBWFNR, tempStaker)
+	tempStaker = common.GetValidStaker(CSWFCR, tempStaker)
+	tempStaker = common.GetValidStaker(CSWFNR, tempStaker)
 	if len(tempStaker) == 0 {
 		return false, errors.New("invalid Staker, This pubkey may staked already")
 	}
@@ -104,22 +102,6 @@ func (stakingMetadata *StakingMetadata) ValidateSanityData(bcr BlockchainRetriev
 }
 func (stakingMetadata *StakingMetadata) GetType() int {
 	return stakingMetadata.Type
-}
-func GetValidStaker(committees []string, stakers []string) []string {
-	validStaker := []string{}
-	for _, staker := range stakers {
-		flag := false
-		for _, committee := range committees {
-			if strings.Compare(staker, committee) == 0 {
-				flag = true
-				break
-			}
-		}
-		if !flag {
-			validStaker = append(validStaker, staker)
-		}
-	}
-	return validStaker
 }
 
 func (stakingMetadata *StakingMetadata) CalculateSize() uint64 {
