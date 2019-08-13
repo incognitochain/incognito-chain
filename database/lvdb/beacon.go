@@ -186,7 +186,7 @@ func (db *db) StoreBeaconBestState(v interface{}) error {
 	if err != nil {
 		return database.NewDatabaseError(database.StoreBeaconBestStateError, err)
 	}
-	key := beaconBestBlockkey
+	key := beaconBestBlockkeyPrefix
 	if err := db.Put(key, val); err != nil {
 		return database.NewDatabaseError(database.StoreBeaconBestStateError, err)
 	}
@@ -194,7 +194,7 @@ func (db *db) StoreBeaconBestState(v interface{}) error {
 }
 
 func (db *db) FetchBeaconBestState() ([]byte, error) {
-	key := beaconBestBlockkey
+	key := beaconBestBlockkeyPrefix
 	block, err := db.Get(key)
 	if err != nil {
 		return nil, database.NewDatabaseError(database.FetchBeaconBestStateError, err)
@@ -203,7 +203,7 @@ func (db *db) FetchBeaconBestState() ([]byte, error) {
 }
 
 func (db *db) CleanBeaconBestState() error {
-	key := beaconBestBlockkey
+	key := beaconBestBlockkeyPrefix
 	err := db.Delete(key)
 	if err != nil {
 		return database.NewDatabaseError(database.CleanBeaconBestStateError, err)

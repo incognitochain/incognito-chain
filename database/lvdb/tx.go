@@ -377,7 +377,7 @@ func (db *db) CleanSNDerivator() error {
 
 // StoreFeeEstimator - Store data for FeeEstimator object
 func (db *db) StoreFeeEstimator(val []byte, shardID byte) error {
-	if err := db.Put(append(feeEstimator, shardID), val); err != nil {
+	if err := db.Put(append(feeEstimatorPrefix, shardID), val); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "StoreFeeEstimator"))
 	}
 	return nil
@@ -385,7 +385,7 @@ func (db *db) StoreFeeEstimator(val []byte, shardID byte) error {
 
 // GetFeeEstimator - Get data for FeeEstimator object as a json in byte format
 func (db *db) GetFeeEstimator(shardID byte) ([]byte, error) {
-	b, err := db.Get(append(feeEstimator, shardID))
+	b, err := db.Get(append(feeEstimatorPrefix, shardID))
 	if err != nil {
 		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "GetFeeEstimator"))
 	}
@@ -394,7 +394,7 @@ func (db *db) GetFeeEstimator(shardID byte) ([]byte, error) {
 
 // CleanFeeEstimator - Clear FeeEstimator
 func (db *db) CleanFeeEstimator() error {
-	iter := db.lvdb.NewIterator(util.BytesPrefix(feeEstimator), nil)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(feeEstimatorPrefix), nil)
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
