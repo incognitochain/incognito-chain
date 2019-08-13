@@ -83,12 +83,12 @@ type DatabaseInterface interface {
 	CleanBeaconBestState() error
 
 	// Commitee with epoch
-	StoreShardCommitteeByHeight(uint64, interface{}) error
-	StoreBeaconCommitteeByHeight(uint64, interface{}) error
-	DeleteCommitteeByHeight(uint64) error
-	FetchCommitteeByHeight(uint64) ([]byte, error)
-	FetchBeaconCommitteeByHeight(uint64) ([]byte, error)
-	HasCommitteeByHeight(uint64) (bool, error)
+	StoreShardCommitteeByHeight(height uint64, v interface{}) error
+	StoreBeaconCommitteeByHeight(height uint64, v interface{}) error
+	DeleteCommitteeByHeight(blkEpoch uint64) error
+	FetchCommitteeByHeight(height uint64) ([]byte, error)
+	FetchBeaconCommitteeByHeight(height uint64) ([]byte, error)
+	HasCommitteeByHeight(height uint64) (bool, error)
 
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error
