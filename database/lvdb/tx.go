@@ -23,18 +23,13 @@ func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, sh
 	var lenData int64
 	len, err := db.GetSerialNumbersLength(tokenID, shardID)
 	if err != nil && len == nil {
-		return err
+		return database.NewDatabaseError(database.StoreSerialNumbersError, err)
 	}
 	if len == nil {
 		lenData = 0
 	} else {
 		lenData = len.Int64()
 	}
-	/*if ("799a461a4132fffac562feb34adb1778389b0a846581034bffc9e89f9218e3d5" == tokenID.String()) {
-		//panic(1111)
-		a := 1
-		_ = a
-	}*/
 	for _, s := range serialNumbers {
 		newIndex := big.NewInt(lenData).Bytes()
 		if lenData == 0 {
@@ -43,12 +38,12 @@ func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, sh
 		// keySpec1 store serialNumber and index
 		keySpec1 := append(key, s...)
 		if err := db.Put(keySpec1, newIndex); err != nil {
-			return err
+			return database.NewDatabaseError(database.StoreSerialNumbersError, err)
 		}
 		// keyStoreLen store last index of array serialNumber
 		keyStoreLen := append(key, []byte("len")...)
 		if err := db.Put(keyStoreLen, newIndex); err != nil {
-			return err
+			return database.NewDatabaseError(database.StoreSerialNumbersError, err)
 		}
 		lenData++
 	}
@@ -62,7 +57,7 @@ func (db *db) HasSerialNumber(tokenID common.Hash, serialNumber []byte, shardID 
 	keySpec := append(key, serialNumber...)
 	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, err
+		return false, database.NewDatabaseError(database.HasSerialNumberError, err)
 	} else {
 		return hasValue, nil
 	}
@@ -99,7 +94,7 @@ func (db *db) GetSerialNumbersLength(tokenID common.Hash, shardID byte) (*big.In
 	keyStoreLen := append(key, []byte("len")...)
 	hasValue, err := db.HasValue(keyStoreLen)
 	if err != nil {
-		return nil, err
+		return nil, database.NewDatabaseError(database.GetSerialNumbersLengthError, err)
 	} else {
 		if !hasValue {
 			return nil, nil
@@ -122,12 +117,12 @@ func (db *db) CleanSerialNumbers() error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+			return database.NewDatabaseError(database.CleanSerialNumbersError, err)
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+		return database.NewDatabaseError(database.CleanSerialNumbersError, err)
 	}
 	return nil
 }
@@ -145,10 +140,6 @@ func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoin
 		keyTemp := make([]byte, len(key))
 		copy(keyTemp, key)
 		keyTemp = append(keyTemp, common.HashB(outputCoin)...)
-		/* deprecated
-		if err := db.Put(keyTemp, outputCoin); err != nil {
-			return err
-		}*/
 		// Put to batch
 		batchData = append(batchData, database.BatchData{
 			Key:   keyTemp,
@@ -158,7 +149,7 @@ func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoin
 	if len(batchData) > 0 {
 		err := db.PutBatch(batchData)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.StoreOutputCoinsError, err)
 		}
 	}
 
@@ -178,7 +169,7 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 	var lenData uint64
 	len, err := db.GetCommitmentLength(tokenID, shardID)
 	if err != nil && len == nil {
-		return err
+		return database.NewDatabaseError(database.StoreCommitmentsError, err)
 	}
 	if len == nil {
 		lenData = 0
@@ -193,17 +184,17 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 		// keySpec1 use for create proof random
 		keySpec1 := append(key, newIndex...)
 		if err := db.Put(keySpec1, c); err != nil {
-			return err
+			return database.NewDatabaseError(database.StoreCommitmentsError, err)
 		}
 		// keySpec2 use for validate
 		keySpec2 := append(key, c...)
 		if err := db.Put(keySpec2, newIndex); err != nil {
-			return err
+			return database.NewDatabaseError(database.StoreCommitmentsError, err)
 		}
 
 		// len of commitment array
 		if err := db.Put(keySpec3, newIndex); err != nil {
-			return err
+			return database.NewDatabaseError(database.StoreCommitmentsError, err)
 		}
 		lenData++
 	}
@@ -218,7 +209,7 @@ func (db *db) HasCommitment(tokenID common.Hash, commitment []byte, shardID byte
 	keySpec := append(key, commitment...)
 	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, err
+		return false, database.NewDatabaseError(database.HasCommitmentError, err, commitment, shardID, tokenID.String())
 	} else {
 		return hasValue, nil
 	}
@@ -235,7 +226,7 @@ func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, sh
 	}
 	_, err := db.Get(keySpec)
 	if err != nil {
-		return false, err
+		return false, database.NewDatabaseError(database.HasCommitmentError, err)
 	} else {
 		return true, nil
 	}
