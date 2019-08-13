@@ -139,6 +139,7 @@ const (
 	WalletKeySerializedError
 	InitSalaryTransactionError
 	RemoveOldDataAfterProcessingError
+	WrongMetadataTypeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -262,6 +263,7 @@ var ErrCodeMessage = map[int]struct {
 	WalletKeySerializedError:                          {-1114, "Wallet Key Serialized Error"},
 	InitSalaryTransactionError:                        {-1115, "Init Salary Transaction Error"},
 	RemoveOldDataAfterProcessingError:                 {-1116, "Remove Old Data After Processing Error"},
+	WrongMetadataTypeError:                            {-1117, "Wrong Metadata Type Error"},
 }
 
 type BlockChainError struct {
