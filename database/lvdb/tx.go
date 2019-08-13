@@ -21,14 +21,14 @@ func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, sh
 	key = append(key, shardID)
 
 	var lenData int64
-	len, err := db.GetSerialNumbersLength(tokenID, shardID)
-	if err != nil && len == nil {
+	lenSerialNumber, err := db.GetSerialNumbersLength(tokenID, shardID)
+	if err != nil && lenSerialNumber == nil {
 		return database.NewDatabaseError(database.StoreSerialNumbersError, err)
 	}
-	if len == nil {
+	if lenSerialNumber == nil {
 		lenData = 0
 	} else {
-		lenData = len.Int64()
+		lenData = lenSerialNumber.Int64()
 	}
 	for _, s := range serialNumbers {
 		newIndex := big.NewInt(lenData).Bytes()
@@ -57,7 +57,7 @@ func (db *db) HasSerialNumber(tokenID common.Hash, serialNumber []byte, shardID 
 	keySpec := append(key, serialNumber...)
 	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, database.NewDatabaseError(database.HasSerialNumberError, err)
+		return false, database.NewDatabaseError(database.HasSerialNumberError, err, serialNumber, shardID, tokenID)
 	} else {
 		return hasValue, nil
 	}
@@ -167,14 +167,14 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 	copy(keySpec3, temp)
 
 	var lenData uint64
-	len, err := db.GetCommitmentLength(tokenID, shardID)
-	if err != nil && len == nil {
+	lenCommitment, err := db.GetCommitmentLength(tokenID, shardID)
+	if err != nil && lenCommitment == nil {
 		return database.NewDatabaseError(database.StoreCommitmentsError, err)
 	}
-	if len == nil {
+	if lenCommitment == nil {
 		lenData = 0
 	} else {
-		lenData = len.Uint64()
+		lenData = lenCommitment.Uint64()
 	}
 	for _, c := range commitments {
 		newIndex := new(big.Int).SetUint64(lenData).Bytes()
@@ -226,17 +226,15 @@ func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, sh
 	}
 	_, err := db.Get(keySpec)
 	if err != nil {
-		return false, database.NewDatabaseError(database.HasCommitmentError, err)
+		return false, database.NewDatabaseError(database.HasCommitmentInexError, err, commitmentIndex, shardID, tokenID)
 	} else {
 		return true, nil
 	}
-	return false, nil
 }
 
 func (db *db) GetCommitmentByIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
 	key := db.GetKey(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
-	//keySpec := make([]byte, len(key))
 	var keySpec []byte
 	if commitmentIndex == 0 {
 		keySpec = append(key, byte(0))
@@ -245,11 +243,10 @@ func (db *db) GetCommitmentByIndex(tokenID common.Hash, commitmentIndex uint64, 
 	}
 	data, err := db.Get(keySpec)
 	if err != nil {
-		return data, err
+		return data, database.NewDatabaseError(database.GetCommitmentByIndexError, err, commitmentIndex, shardID, tokenID)
 	} else {
 		return data, nil
 	}
-	return data, nil
 }
 
 // GetCommitmentIndex - return index of commitment in db list
@@ -259,11 +256,10 @@ func (db *db) GetCommitmentIndex(tokenID common.Hash, commitment []byte, shardID
 	keySpec := append(key, commitment...)
 	data, err := db.Get(keySpec)
 	if err != nil {
-		return nil, err
+		return nil, database.NewDatabaseError(database.GetCommitmentIndexError, err, commitment, shardID, tokenID)
 	} else {
 		return new(big.Int).SetBytes(data), nil
 	}
-	return nil, nil
 }
 
 // GetCommitmentIndex - return index of commitment in db list
@@ -273,14 +269,14 @@ func (db *db) GetCommitmentLength(tokenID common.Hash, shardID byte) (*big.Int, 
 	keySpec := append(key, []byte("len")...)
 	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return nil, err
+		return nil, database.NewDatabaseError(database.GetCommitmentLengthError, err)
 	} else {
 		if !hasValue {
 			return nil, nil
 		} else {
 			data, err := db.Get(keySpec)
 			if err != nil {
-				return nil, err
+				return nil, database.NewDatabaseError(database.GetCommitmentLengthError, err)
 			} else {
 				lenArray := new(big.Int).SetBytes(data)
 				lenArray = lenArray.Add(lenArray, new(big.Int).SetInt64(1))
@@ -301,7 +297,7 @@ func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID by
 	arrDatabyPubkey := make([][]byte, 0)
 	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	if iter.Error() != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
+		return nil, database.NewDatabaseError(database.GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
 	}
 	for iter.Next() {
 		value := make([]byte, len(iter.Value()))
@@ -318,12 +314,12 @@ func (db *db) CleanCommitments() error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+			return database.NewDatabaseError(database.CleanCommitmentError, err)
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+		return database.NewDatabaseError(database.CleanCommitmentError, err)
 	}
 	return nil
 }
@@ -339,10 +335,6 @@ func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID 
 		keySpec := make([]byte, len(key))
 		copy(keySpec, key)
 		keySpec = append(keySpec, snd...)
-		// deprecated
-		/*if err := db.Put(keySpec, []byte{}); err != nil {
-			return err
-		}*/
 		batchData = append(batchData, database.BatchData{
 			Key:   keySpec,
 			Value: []byte{},
@@ -351,7 +343,7 @@ func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID 
 	if len(batchData) > 0 {
 		err := db.PutBatch(batchData)
 		if err != nil {
-			return err
+			return database.NewDatabaseError(database.StoreSNDerivatorsError, err)
 		}
 	}
 	return nil
@@ -364,7 +356,7 @@ func (db *db) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bo
 	keySpec := append(key, data...)
 	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, err
+		return false, database.NewDatabaseError(database.HasSNDerivatorError, err, data, shardID, tokenID)
 	} else {
 		return hasValue, nil
 	}
@@ -376,12 +368,12 @@ func (db *db) CleanSNDerivator() error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+			return database.NewDatabaseError(database.CleanSNDerivatorError, err)
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+		return database.NewDatabaseError(database.CleanSNDerivatorError, err)
 	}
 	return nil
 }
@@ -389,7 +381,7 @@ func (db *db) CleanSNDerivator() error {
 // StoreFeeEstimator - Store data for FeeEstimator object
 func (db *db) StoreFeeEstimator(val []byte, shardID byte) error {
 	if err := db.Put(append(feeEstimator, shardID), val); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.Put"))
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "StoreFeeEstimator"))
 	}
 	return nil
 }
@@ -398,7 +390,7 @@ func (db *db) StoreFeeEstimator(val []byte, shardID byte) error {
 func (db *db) GetFeeEstimator(shardID byte) ([]byte, error) {
 	b, err := db.Get(append(feeEstimator, shardID))
 	if err != nil {
-		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
+		return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "GetFeeEstimator"))
 	}
 	return b, err
 }
@@ -409,12 +401,12 @@ func (db *db) CleanFeeEstimator() error {
 	for iter.Next() {
 		err := db.Delete(iter.Key())
 		if err != nil {
-			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
+			return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "CleanFeeEstimator"))
 		}
 	}
 	iter.Release()
 	if err := iter.Error(); err != nil {
-		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "iter.Error"))
+		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "CleanFeeEstimator"))
 	}
 	return nil
 }
@@ -429,7 +421,7 @@ func (db *db) StoreTransactionIndex(txId common.Hash, blockHash common.Hash, ind
 	key := string(transactionKeyPrefix) + txId.String()
 	value := blockHash.String() + string(Splitter) + strconv.Itoa(index)
 	if err := db.Put([]byte(key), []byte(value)); err != nil {
-		return err
+		return database.NewDatabaseError(database.StoreTransactionIndexError, err, txId.String(), blockHash.String(), index)
 	}
 
 	return nil
@@ -443,21 +435,21 @@ func (db *db) GetTransactionIndexById(txId common.Hash) (common.Hash, int, *data
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
-		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.GetTransactionIndexByIdError, err, txId.String())
 	}
 
 	res, err := db.Get([]byte(key))
 	if err != nil {
-		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.GetTransactionIndexByIdError, err, txId.String())
 	}
 	reses := strings.Split(string(res), (string(Splitter)))
 	hash, err := common.Hash{}.NewHashFromStr(reses[0])
 	if err != nil {
-		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.GetTransactionIndexByIdError, err, txId.String())
 	}
 	index, err := strconv.Atoi(reses[1])
 	if err != nil {
-		return common.Hash{}, -1, database.NewDatabaseError(database.UnexpectedError, err)
+		return common.Hash{}, -1, database.NewDatabaseError(database.GetTransactionIndexByIdError, err, txId.String())
 	}
 	return *hash, index, nil
 }
@@ -472,7 +464,7 @@ func (db *db) StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byt
 
 	if err := db.Put(key, []byte{}); err != nil {
 		database.Logger.Log.Debug("StoreTxByPublicKey", err)
-		return err
+		return database.NewDatabaseError(database.StoreTxByPublicKeyError, err, txID.String(), publicKey, shardID)
 	}
 
 	return nil
@@ -494,7 +486,7 @@ func (db *db) GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 		err := txID.SetBytes(key[33 : 33+32])
 		if err != nil {
 			database.Logger.Log.Debugf("Err at GetTxByPublicKey", err)
-			return nil, err
+			return nil, database.NewDatabaseError(database.GetTxByPublicKeyError, err, publicKey)
 		}
 		result[shardID] = append(result[shardID], txID)
 	}
