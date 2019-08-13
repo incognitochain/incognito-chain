@@ -123,7 +123,7 @@ func (httpServer *HttpServer) handleDumpPrivkey(params interface{}, closeChan <-
 	if !ok {
 		return nil, nil
 	}
-	result := httpServer.config.Wallet.DumpPrivkey(paramTemp)
+	result := httpServer.config.Wallet.DumpPrivateKey(paramTemp)
 	return result, nil
 }
 
@@ -254,11 +254,12 @@ func (httpServer *HttpServer) handleGetBalanceByPaymentAddress(params interface{
 	// get balance for accountName in wallet
 	lastByte := accountWithPaymentAddress.KeySet.PaymentAddress.Pk[len(accountWithPaymentAddress.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
+
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err1 != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err1)
+	}
 	outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&accountWithPaymentAddress.KeySet, shardIDSender, prvCoinID)
 	Logger.log.Debugf("OutCoins: %+v", outcoints)
 	Logger.log.Debugf("shardIDSender: %+v", shardIDSender)
@@ -317,7 +318,10 @@ func (httpServer *HttpServer) handleGetBalance(params interface{}, closeChan <-c
 	}
 
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err1 != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err1)
+	}
 	if accountName == "*" {
 		// get balance for all accounts in wallet
 		for _, account := range httpServer.config.Wallet.MasterAccount.Child {
@@ -401,7 +405,10 @@ func (httpServer *HttpServer) handleGetReceivedByAccount(params interface{}, clo
 			lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
 			prvCoinID := &common.Hash{}
-			prvCoinID.SetBytes(common.PRVCoinID[:])
+			err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
+			if err1 != nil {
+				return nil, NewRPCError(ErrTokenIsInvalid, err1)
+			}
 			outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
 			if err != nil {
 				return nil, NewRPCError(ErrUnexpected, err)
@@ -571,7 +578,10 @@ func (httpServer *HttpServer) buildRawDefragmentAccountTransaction(params interf
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err1 != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err1)
+	}
 	outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
