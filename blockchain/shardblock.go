@@ -41,7 +41,7 @@ type CrossShardBlock struct {
 	// Cross Shard data for PRV
 	CrossOutputCoin []privacy.OutputCoin
 	// Cross Shard Data for Custom Token Tx
-	CrossTxTokenData []transaction.TxTokenData
+	CrossTxTokenData []transaction.TxNormalTokenData
 	// Cross Shard For Custom token privacy
 	CrossTxTokenPrivacyData []ContentCrossShardTokenPrivacyData
 }
