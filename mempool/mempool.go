@@ -452,13 +452,13 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			isPaidByPRV := false
 			isPaidPartiallyPRV := false
 			// check PRV element and pToken element
-			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit {
+			if txPrivacyToken.Tx.Proof != nil || txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit {
 				// tx contain PRV data -> check with PRV fee
 				// @notice: check limit fee but apply for token fee
 				limitFee := tp.config.FeeEstimator[shardID].limitFee
 				if limitFee > 0 {
 					if txPrivacyToken.GetTxFeeToken() == 0 || // not paid with token -> use PRV for paying fee
-						txPrivacyToken.TxTokenPrivacyData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
+						txPrivacyToken.TxPrivacyTokenData.Type == transaction.CustomTokenInit { // or init token -> need to use PRV for paying fee
 						// paid all with PRV
 						ok := txPrivacyToken.CheckTransactionFee(limitFee)
 						if !ok {
@@ -482,7 +482,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				}
 				isPaidByPRV = true
 			}
-			if txPrivacyToken.TxTokenPrivacyData.TxNormal.Proof != nil {
+			if txPrivacyToken.TxPrivacyTokenData.TxNormal.Proof != nil {
 				limitFeeToken := tp.config.FeeEstimator[shardID].limitFeeToken
 				if limitFeeToken > 0 {
 					if !isPaidByPRV {
@@ -515,7 +515,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 		{
 			// Only check like normal tx with PRV
 			limitFee := tp.config.FeeEstimator[shardID].limitFee
-			txCustomToken := tx.(*transaction.TxCustomToken)
+			txCustomToken := tx.(*transaction.TxNormalToken)
 			if limitFee > 0 {
 				ok := txCustomToken.CheckTransactionFee(limitFee)
 				if !ok {
@@ -603,7 +603,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	foundTokenID := -1
 	tokenID := ""
 	if tx.GetType() == common.TxCustomTokenType {
-		customTokenTx := tx.(*transaction.TxCustomToken)
+		customTokenTx := tx.(*transaction.TxNormalToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID = customTokenTx.TxTokenData.PropertyID.String()
 			tp.tokenIDMtx.RLock()
@@ -780,7 +780,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 	}
 	if tx.GetType() == common.TxCustomTokenType {
-		customTokenTx := tx.(*transaction.TxCustomToken)
+		customTokenTx := tx.(*transaction.TxNormalToken)
 		if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 			tokenID := customTokenTx.TxTokenData.PropertyID.String()
 			tp.addTokenIDToList(*txHash, tokenID)

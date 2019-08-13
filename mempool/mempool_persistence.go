@@ -46,10 +46,10 @@ func (tp *TxPool) AddTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 				return err
 			}
 		}
-	//==================For PRV & TxCustomToken Transfer
+	//==================For PRV & TxNormalToken Transfer
 	case common.TxCustomTokenType:
 		{
-			customTokenTx := tx.(*transaction.TxCustomToken)
+			customTokenTx := tx.(*transaction.TxNormalToken)
 			valueTx, err := json.Marshal(customTokenTx)
 			if err != nil {
 				return err
@@ -164,7 +164,7 @@ func UnMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byt
 		}
 	case common.TxCustomTokenType:
 		{
-			customTokenTx := transaction.TxCustomToken{}
+			customTokenTx := transaction.TxNormalToken{}
 			err := json.Unmarshal(valueTx, &customTokenTx)
 			if err != nil {
 				return nil, err
