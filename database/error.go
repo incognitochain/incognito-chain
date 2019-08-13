@@ -20,6 +20,19 @@ const (
 	BlockExisted
 	UnexpectedError
 	KeyExisted
+
+	// Serial Number Error
+	StoreSerialNumbersError
+	GetSerialNumbersLengthError
+	HasSerialNumberError
+	CleanSerialNumbersError
+
+	// Output coin
+	StoreOutputCoinsError
+
+	// Commitment
+	StoreCommitmentsError
+	HasCommitmentError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -40,26 +53,39 @@ var ErrCodeMessage = map[int]struct {
 	BlockExisted:      {-3001, "Block already existed"},
 	UnexpectedError:   {-3002, "Unexpected error"},
 	KeyExisted:        {-3003, "PubKey already existed in database"},
+
+	// -4xxx serial number
+	StoreSerialNumbersError:     {-4000, "Store serial number error"},
+	GetSerialNumbersLengthError: {-4001, "Get serial numbers length error"},
+	HasSerialNumberError:        {-4002, "Has serial number error"},
+	CleanSerialNumbersError:     {-4003, "Clean serial numbers"},
+
+	// -5xxx output coin
+	StoreOutputCoinsError: {-5000, "Store output coin error"},
+
+	// -6xxx commitment
+	StoreCommitmentsError: {-6000, "Store commitment error"},
+	HasCommitmentError:    {-6001, "Has commitment error %+v"},
 }
 
 type DatabaseError struct {
 	err     error
-	code    int
-	message string
+	Code    int
+	Message string
 }
 
 func (e DatabaseError) GetErrorCode() int {
-	return e.code
+	return e.Code
 }
 
 func (e DatabaseError) Error() string {
-	return fmt.Sprintf("%d: %+v", e.code, e.err)
+	return fmt.Sprintf("%d: %+v", e.Code, e.err)
 }
 
-func NewDatabaseError(key int, err error) *DatabaseError {
+func NewDatabaseError(key int, err error, params ...interface{}) *DatabaseError {
 	return &DatabaseError{
 		err:     errors.Wrap(err, ErrCodeMessage[key].message),
-		code:    ErrCodeMessage[key].Code,
-		message: ErrCodeMessage[key].message,
+		Code:    ErrCodeMessage[key].Code,
+		Message: fmt.Sprintf(ErrCodeMessage[key].message, params),
 	}
 }
