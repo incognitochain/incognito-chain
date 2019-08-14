@@ -20,6 +20,7 @@ type Params struct {
 	BasicReward            uint64
 	RewardHalflife         uint64
 	Epoch                  uint64
+	RandomTime             uint64
 }
 
 type GenesisParams struct {
@@ -64,6 +65,7 @@ func init() {
 		BasicReward:        TestnetBasicReward,
 		RewardHalflife:     TestnetRewardHalflife,
 		Epoch:              10,
+		RandomTime:         5,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -89,5 +91,6 @@ func init() {
 		BasicReward:        MainnetBasicReward,
 		RewardHalflife:     MainnetRewardHalflife,
 		Epoch:              10,
+		RandomTime:         5,
 	}
 }
