@@ -9,18 +9,19 @@ var (
 	beaconPrefix             = []byte("bea-")
 	beaconBestBlockkeyPrefix = []byte("bea-bestBlock")
 	committeePrefix          = []byte("com-")
+	rewardReceiverPrefix     = []byte("rewardreceiver-")
 	heightPrefix             = []byte("ep-") // TODO rename key value
 	shardIDPrefix            = []byte("s-")
 	blockKeyPrefix           = []byte("b-")
-	//blockHeaderKeyPrefix     = []byte("bh-")
-	blockKeyIdxPrefix       = []byte("i-")
-	crossShardKeyPrefix     = []byte("csh-")
-	nextCrossShardKeyPrefix = []byte("ncsh-")
-	shardPrefix             = []byte("shd-")
+	blockHeaderKeyPrefix     = []byte("bh-")
+	blockKeyIdxPrefix        = []byte("i-")
+	crossShardKeyPrefix      = []byte("csh-")
+	nextCrossShardKeyPrefix  = []byte("ncsh-")
+	shardPrefix              = []byte("shd-")
 
-	shardToBeaconKeyPrefix = []byte("stb-")
-	transactionKeyPrefix   = []byte("tx-")
-	//privateKeyPrefix             = []byte("prk-")
+	shardToBeaconKeyPrefix       = []byte("stb-")
+	transactionKeyPrefix         = []byte("tx-")
+	privateKeyPrefix             = []byte("prk-")
 	serialNumbersPrefix          = []byte("serinalnumbers-")
 	commitmentsPrefix            = []byte("commitments-")
 	outcoinsPrefix               = []byte("outcoins-")
@@ -34,7 +35,7 @@ var (
 	privacyTokenInitPrefix       = []byte("privacy-token-init-")
 
 	// multisigs
-	//multisigsPrefix = []byte("multisigs")
+	multisigsPrefix = []byte("multisigs")
 
 	// centralized bridge
 	bridgePrefix              = []byte("bridge-")
