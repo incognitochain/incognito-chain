@@ -448,7 +448,11 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 				continue
 			}
 			startHeight = nextHeight
-			temp, err := blockGenerator.chain.config.DataBase.FetchShardCommitteeByHeight(blk.Header.BeaconHeight)
+			beaconHeight, err := blockGenerator.chain.FindBeaconHeightForCrossShardBlock(blk.Header.BeaconHeight, blk.Header.ShardID, blk.Header.Height)
+			if err != nil {
+				break
+			}
+			temp, err := blockGenerator.chain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
 			if err != nil {
 				break
 			}
@@ -606,4 +610,24 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 		}
 	}
 	return txs, txTokenDataList
+}
+
+/*
+	Find Beacon Block with compatible shard states of cross shard block
+*/
+func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(startHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
+	for {
+		beaconBlock, err := blockchain.GetBeaconBlockByHeight(startHeight)
+		if err != nil {
+			return 0, NewBlockChainError(FetchBeaconBlockError, err)
+		}
+		if shardStates, ok := beaconBlock.Body.ShardState[fromShardID]; ok {
+			for _, shardState := range shardStates {
+				if shardState.Height == crossShardBlockHeight {
+					return beaconBlock.Header.Height, nil
+				}
+			}
+		}
+		startHeight += 1
+	}
 }
