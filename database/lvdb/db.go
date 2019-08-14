@@ -10,65 +10,6 @@ type db struct {
 	lvdb *leveldb.DB
 }
 
-// key prefix
-var (
-	prevShardPrefix          = []byte("prevShd-")
-	prevBeaconPrefix         = []byte("prevBea-")
-	beaconPrefix             = []byte("bea-")
-	beaconBestBlockkeyPrefix = []byte("bea-bestBlock")
-	committeePrefix          = []byte("com-")
-	rewardReceiverPrefix     = []byte("rewardreceiver-")
-	heightPrefix             = []byte("ep-") // TODO rename key value
-	shardIDPrefix            = []byte("s-")
-	blockKeyPrefix           = []byte("b-")
-	blockHeaderKeyPrefix     = []byte("bh-")
-	blockKeyIdxPrefix        = []byte("i-")
-	crossShardKeyPrefix      = []byte("csh-")
-	nextCrossShardKeyPrefix  = []byte("ncsh-")
-	shardPrefix              = []byte("shd-")
-
-	shardToBeaconKeyPrefix       = []byte("stb-")
-	transactionKeyPrefix         = []byte("tx-")
-	privateKeyPrefix             = []byte("prk-")
-	serialNumbersPrefix          = []byte("serinalnumbers-")
-	commitmentsPrefix            = []byte("commitments-")
-	outcoinsPrefix               = []byte("outcoins-")
-	snderivatorsPrefix           = []byte("snderivators-")
-	bestBlockKeyPrefix           = []byte("bestBlock")
-	feeEstimatorPrefix           = []byte("feeEstimator")
-	tokenPrefix                  = []byte("token-")
-	privacyTokenPrefix           = []byte("privacy-token-")
-	privacyTokenCrossShardPrefix = []byte("privacy-cross-token-")
-	tokenInitPrefix              = []byte("token-init-")
-	privacyTokenInitPrefix       = []byte("privacy-token-init-")
-
-	// multisigs
-	multisigsPrefix = []byte("multisigs")
-
-	// centralized bridge
-	bridgePrefix              = []byte("bridge-")
-	centralizedBridgePrefix   = []byte("centralizedbridge-")
-	decentralizedBridgePrefix = []byte("decentralizedbridge-")
-	ethTxHashIssuedPrefix     = []byte("ethtxhashissued-")
-
-	// Incognito -> Ethereum relayer
-	burnConfirmPrefix = []byte("burnConfirm-")
-
-	//epoch reward
-	shardRequestRewardPrefix = []byte("shardrequestreward-")
-	committeeRewardPrefix    = []byte("committee-reward-")
-
-	// public variable
-	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
-	Splitter                  = []byte("-[-]-")
-)
-
-// value
-var (
-	Spent   = []byte("spent")
-	Unspent = []byte("unspent")
-)
-
 func open(dbPath string) (database.DatabaseInterface, error) {
 	lvdb, err := leveldb.OpenFile(dbPath, nil)
 	if err != nil {
