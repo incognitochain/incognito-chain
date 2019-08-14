@@ -39,7 +39,7 @@ func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey stri
 
 	contentStr, err := json.Marshal(beaconRewardInfo)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(BeaconBlockRewardBuildInstructionForBeaconBlockRewardError, err)
 	}
 
 	returnedInst := []string{
@@ -56,7 +56,7 @@ func NewBeaconBlockRewardInfoFromStr(inst string) (*BeaconRewardInfo, error) {
 	Ins := &BeaconRewardInfo{}
 	err := json.Unmarshal([]byte(inst), Ins)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError, err)
 	}
 	return Ins, nil
 }
