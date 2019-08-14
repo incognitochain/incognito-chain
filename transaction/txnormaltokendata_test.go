@@ -19,7 +19,7 @@ func TestCreateCustomTokenReceiverArray(t *testing.T) {
 
 func TestTxTokenData(t *testing.T) {
 	paymentAddress, _ := wallet.Base58CheckDeserialize("1Uv3BkYiWy9Mjt1yBa4dXBYKo3az22TeCVEpeXN93ieJ8qhrTDuUZBzsPZWjjP2AeRQnjw1y18iFPHTRuAqqufwVC1vNUAWs4wHFbbWC2")
-	data := TxTokenData{
+	data := TxNormalTokenData{
 		PropertyID:     common.PRVCoinID,
 		PropertyName:   "PRV Coin",
 		PropertySymbol: "PRV",

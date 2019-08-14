@@ -42,7 +42,8 @@ var _ = func() (_ struct{}) {
 
 // Just test flow of this function, other type with be test in later case
 func TestNetSyncGetBlkShardByHashAndSend(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:        bc,
 		PubSubManager:     pb,
 		Server:            server,
@@ -52,12 +53,13 @@ func TestNetSyncGetBlkShardByHashAndSend(t *testing.T) {
 		ShardToBeaconPool: shardToBeaconPool,
 	})
 	// type 0: shard block
-	netSync.GetBlkShardByHashAndSend(peerID, 0, []common.Hash{hash0, hash1, hash2}, 1)
+	netSync.getBlockShardByHashAndSend(peerID, blockShard, []common.Hash{hash0, hash1, hash2}, 1)
 }
 
 // Just test flow of this function, other type with be test in later case
 func TestNetSyncCreateBlkShardMsgByType(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:        bc,
 		PubSubManager:     pb,
 		Server:            server,
@@ -67,30 +69,31 @@ func TestNetSyncCreateBlkShardMsgByType(t *testing.T) {
 		ShardToBeaconPool: shardToBeaconPool,
 	})
 	// type 0: shard block
-	_, err := netSync.CreateBlkShardMsgByType(shardBlockNoCrossShard, 0, 1)
+	_, err := netSync.createBlockShardMsgByType(shardBlockNoCrossShard, 0, 1)
 	if err != nil {
 		t.Error("Error create shard block msg", err)
 	}
 	// type 1: shard block
-	_, err = netSync.CreateBlkShardMsgByType(shardBlockNoCrossShard, 1, 1)
+	_, err = netSync.createBlockShardMsgByType(shardBlockNoCrossShard, 1, 1)
 	if err == nil {
 		t.Error("Should have no outcoin", err)
 	}
 	// type 1: shard block
-	_, err = netSync.CreateBlkShardMsgByType(shardBlockCrossShard01, 1, 1)
+	_, err = netSync.createBlockShardMsgByType(shardBlockCrossShard01, 1, 1)
 	if err == nil {
 		// no cross output coin
 		t.Error("Should NOT create cross shard block ", err)
 	}
 	//// type 2: shard block
-	_, err = netSync.CreateBlkShardMsgByType(shardBlockNoCrossShard, 2, 1)
+	_, err = netSync.createBlockShardMsgByType(shardBlockNoCrossShard, 2, 1)
 	if err != nil {
 		t.Error("Error create shard block msg", err)
 	}
 }
 
 func TestNetSyncGetBlkBeaconByHashAndSend(t *testing.T) {
-	netSync := NetSync{}.New(&NetSyncConfig{
+	netSync := NetSync{}
+	netSync.Init(&NetSyncConfig{
 		BlockChain:        bc,
 		PubSubManager:     pb,
 		Server:            server,
@@ -99,5 +102,5 @@ func TestNetSyncGetBlkBeaconByHashAndSend(t *testing.T) {
 		CrossShardPool:    crossShardPool,
 		ShardToBeaconPool: shardToBeaconPool,
 	})
-	netSync.GetBlkBeaconByHashAndSend(peerID, []common.Hash{hash0, hash1, hash2})
+	netSync.getBlockBeaconByHashAndSend(peerID, []common.Hash{hash0, hash1, hash2})
 }
