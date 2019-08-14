@@ -20,7 +20,7 @@ import (
 // Key: token-init-{tokenID}
 // Value: txHash
 func (db *db) StoreNormalToken(tokenID common.Hash, txHash []byte) error {
-	key := db.GetKey(string(tokenInitPrefix), tokenID)
+	key := addPrefixToKeyHash(string(tokenInitPrefix), tokenID)
 	if err := db.Put(key, txHash); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, err)
 	}
@@ -28,7 +28,7 @@ func (db *db) StoreNormalToken(tokenID common.Hash, txHash []byte) error {
 }
 
 func (db *db) StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
-	key := db.GetKey(string(tokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
+	key := addPrefixToKeyHash(string(tokenPrefix), tokenID) // token-{tokenID}-shardID-(999999999-blockHeight)-(999999999-txIndex)
 	key = append(key, shardID)
 	bs := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bs, bigNumber-blockHeight)
@@ -44,7 +44,7 @@ func (db *db) StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight 
 }
 
 func (db *db) NormalTokenIDExisted(tokenID common.Hash) bool {
-	key := db.GetKey(string(tokenInitPrefix), tokenID)
+	key := addPrefixToKeyHash(string(tokenInitPrefix), tokenID)
 	data, err := db.Get(key)
 	if err != nil {
 		return false
@@ -75,7 +75,7 @@ func (db *db) ListNormalToken() ([][]byte, error) {
 
 func (db *db) NormalTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
 	result := make([]common.Hash, 0)
-	key := db.GetKey(string(tokenPrefix), tokenID)
+	key := addPrefixToKeyHash(string(tokenPrefix), tokenID)
 	// PubKey = token-{tokenID}
 	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	log.Println(string(key))
