@@ -23,6 +23,9 @@ const (
 	IssuingRequestValidateSanityDataError
 	IssuingRequestBuildReqActionsError
 	IssuingRequestVerifyProofAndParseReceipt
+
+	BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError
+	BeaconBlockRewardBuildInstructionForBeaconBlockRewardError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -48,6 +51,10 @@ var ErrCodeMessage = map[int]struct {
 	IssuingRequestValidateSanityDataError:       {-2005, "Validate sanity data error"},
 	IssuingRequestBuildReqActionsError:          {-2006, "Build request action error"},
 	IssuingRequestVerifyProofAndParseReceipt:    {-2007, "Verify proof and parse receipt"},
+
+	// -3xxx beacon block reward
+	BeaconBlockRewardNewBeaconBlockRewardInfoFromStrError:      {-3000, "Can not new beacon block reward from string"},
+	BeaconBlockRewardBuildInstructionForBeaconBlockRewardError: {-3001, "Can not build instruction for beacon block reward"},
 }
 
 type MetadataTxError struct {
