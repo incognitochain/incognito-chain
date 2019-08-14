@@ -143,6 +143,7 @@ const (
 	StakeInstructionError
 	StoreRewardReceiverByHeightError
 	CreateNormalTokenTxForCrossShardError
+	SnapshotCommitteeError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -270,6 +271,7 @@ var ErrCodeMessage = map[int]struct {
 	StakeInstructionError:                             {-1118, "Stake Instruction Error"},
 	StoreRewardReceiverByHeightError:                  {-1119, "Store Reward Receiver By Height Error"},
 	CreateNormalTokenTxForCrossShardError:             {-1120, "Create Normal Token Tx For Cross Shard Error"},
+	SnapshotCommitteeError:                            {-1121, "Snapshot Committee Error"},
 }
 
 type BlockChainError struct {
