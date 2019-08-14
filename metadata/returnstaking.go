@@ -123,7 +123,7 @@ func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 	}
 
 	if !inSwapper {
-		fmt.Println("SA: swaper public address", spa, insts[2])
+		Logger.log.Debug("SA: swaper public address", spa, insts[2])
 		return false, errors.Errorf("Public address is not in swap instruction")
 	}
 
