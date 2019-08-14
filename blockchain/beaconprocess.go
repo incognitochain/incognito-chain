@@ -54,7 +54,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 		return err
 	}
 	// Update best state with new block
-	if err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch); err != nil {
+	if err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime); err != nil {
 		return err
 	}
 	// Post verififcation: verify new beaconstate with corresponding block
@@ -110,7 +110,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 	Logger.log.Infof("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
-	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch); err != nil {
+	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime); err != nil {
 		return err
 	}
 	if !isValidated {
@@ -320,7 +320,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 			return NewBlockChainError(GetShardBlocksError, fmt.Errorf("Expect to get more than %+v ShardToBeaconBlock but only get %+v", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks)))
 		}
 	}
-	tempInstruction := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height, stakeInstructions, swapInstructions, blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedBlockRewardInstructions, blockchain.config.ChainParams.Epoch)
+	tempInstruction := blockchain.BestState.Beacon.GenerateInstruction(beaconBlock.Header.Height, stakeInstructions, swapInstructions,
+		blockchain.BestState.Beacon.CandidateShardWaitingForCurrentRandom,
+		bridgeInstructions,
+		acceptedBlockRewardInstructions,
+		blockchain.config.ChainParams.Epoch,
+		blockchain.config.ChainParams.RandomTime)
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
@@ -491,7 +496,7 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBlock, chainParamEpoch uint64) error {
+func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBlock, chainParamEpoch uint64, randomTime uint64) error {
 	beaconBestState.lock.Lock()
 	defer beaconBestState.lock.Unlock()
 	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
@@ -530,9 +535,9 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *Beaco
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
 		// Before get random from bitcoin
-	} else if beaconBestState.BeaconHeight%chainParamEpoch >= common.RANDOM_TIME {
+	} else if beaconBestState.BeaconHeight%chainParamEpoch >= randomTime {
 		// After get random from bitcoin
-		if beaconBestState.BeaconHeight%chainParamEpoch == common.RANDOM_TIME {
+		if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
 			// snapshot candidate list
 			beaconBestState.CandidateShardWaitingForCurrentRandom = beaconBestState.CandidateShardWaitingForNextRandom
 			beaconBestState.CandidateBeaconWaitingForCurrentRandom = beaconBestState.CandidateBeaconWaitingForNextRandom

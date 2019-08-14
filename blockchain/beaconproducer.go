@@ -81,7 +81,8 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	//=====END Build Header Essential Data=====
 	//============Build body===================
 	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
-	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch)
+	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom,
+		bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch, blockGenerator.chain.config.ChainParams.RandomTime)
 	if len(rewardByEpochInstruction) != 0 {
 		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	}
@@ -96,7 +97,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	//============End Build Body================
 	//============Build Header Hash=============
 	// Process new block with beststate
-	err = beaconBestState.updateBeaconBestState(beaconBlock, blockGenerator.chain.config.ChainParams.Epoch)
+	err = beaconBestState.updateBeaconBestState(beaconBlock, blockGenerator.chain.config.ChainParams.Epoch, blockGenerator.chain.config.ChainParams.RandomTime)
 	if err != nil {
 		return nil, err
 	}
@@ -250,6 +251,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	bridgeInstructions [][]string,
 	acceptedRewardInstructions [][]string,
 	chainParamEpoch uint64,
+	randomTime uint64,
 ) [][]string {
 	instructions := [][]string{}
 	instructions = append(instructions, bridgeInstructions...)
@@ -282,7 +284,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	//=======Stake
 	// ["stake", "pubkey.....", "shard" or "beacon"]
 	instructions = append(instructions, stakers...)
-	if newBeaconHeight%uint64(chainParamEpoch) > uint64(common.RANDOM_TIME) && !beaconBestState.IsGetRandomNumber {
+	if newBeaconHeight%uint64(chainParamEpoch) > randomTime && !beaconBestState.IsGetRandomNumber {
 		//=================================
 		// COMMENT FOR TESTING
 		//var err error
