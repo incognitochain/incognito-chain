@@ -3,7 +3,6 @@ package metadata
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -90,7 +89,7 @@ func GetETHHeader(
 		return nil, err
 	}
 	if getBlockByNumberRes.RPCError != nil {
-		fmt.Printf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
+		Logger.log.Debugf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
 		return nil, nil
 	}
 	return getBlockByNumberRes.Result, nil
