@@ -15,6 +15,7 @@ type AccountWallet struct {
 	Child      []AccountWallet
 	IsImported bool
 }
+
 type Wallet struct {
 	Seed          []byte
 	Entropy       []byte
@@ -55,8 +56,8 @@ func (wallet *Wallet) Init(passPhrase string, numOfAccount uint32, name string) 
 
 	mnemonicGen := MnemonicGenerator{}
 	wallet.Name = name
-	wallet.Entropy, _ = mnemonicGen.NewEntropy(128)
-	wallet.Mnemonic, _ = mnemonicGen.NewMnemonic(wallet.Entropy)
+	wallet.Entropy, _ = mnemonicGen.newEntropy(128)
+	wallet.Mnemonic, _ = mnemonicGen.newMnemonic(wallet.Entropy)
 	wallet.Seed = mnemonicGen.NewSeed(wallet.Mnemonic, passPhrase)
 	wallet.PassPhrase = passPhrase
 
@@ -138,7 +139,10 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*Acco
 			Name:  accountName,
 		}
 		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
-		wallet.Save(wallet.PassPhrase)
+		err := wallet.Save(wallet.PassPhrase)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 		return &account, nil
 
 	} else {
@@ -153,7 +157,10 @@ func (wallet *Wallet) CreateNewAccount(accountName string, shardID *byte) (*Acco
 			Name:  accountName,
 		}
 		wallet.MasterAccount.Child = append(wallet.MasterAccount.Child, account)
-		wallet.Save(wallet.PassPhrase)
+		err := wallet.Save(wallet.PassPhrase)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 		return &account, nil
 	}
 }
@@ -174,7 +181,10 @@ func (wallet *Wallet) RemoveAccount(privateKeyStr string, passPhrase string) err
 	for i, account := range wallet.MasterAccount.Child {
 		if account.Key.Base58CheckSerialize(PriKeyType) == privateKeyStr {
 			wallet.MasterAccount.Child = append(wallet.MasterAccount.Child[:i], wallet.MasterAccount.Child[i+1:]...)
-			wallet.Save(passPhrase)
+			err := wallet.Save(passPhrase)
+			if err != nil {
+				Logger.log.Error(err)
+			}
 			return nil
 		}
 	}
@@ -207,8 +217,8 @@ func (wallet *Wallet) ImportAccount(privateKeyStr string, accountName string, pa
 		return nil, err
 	}
 
-	Logger.log.Infof("Pub-key : %s", keyWallet.Base58CheckSerialize(PaymentAddressType))
-	Logger.log.Infof("Readonly-key : %s", keyWallet.Base58CheckSerialize(ReadonlyKeyType))
+	Logger.log.Debugf("Pub-key : %s", keyWallet.Base58CheckSerialize(PaymentAddressType))
+	Logger.log.Debugf("Readonly-key : %s", keyWallet.Base58CheckSerialize(ReadonlyKeyType))
 
 	account := AccountWallet{
 		Key:        *keyWallet,
@@ -243,7 +253,7 @@ func (wallet *Wallet) Save(password string) error {
 	}
 
 	// encrypt data
-	cipherText, err := EncryptByPassPhrase(password, data)
+	cipherText, err := encryptByPassPhrase(password, data)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewWalletError(UnexpectedErr, err)
@@ -266,7 +276,7 @@ func (wallet *Wallet) LoadWallet(password string) error {
 	if err != nil {
 		return NewWalletError(ReadFileErr, err)
 	}
-	bufBytes, err := DecryptByPassPhrase(password, string(bytesData))
+	bufBytes, err := decryptByPassPhrase(password, string(bytesData))
 	if err != nil {
 		return NewWalletError(AESDecryptErr, err)
 	}
@@ -283,7 +293,7 @@ func (wallet *Wallet) LoadWallet(password string) error {
 // and returns KeySerializedData object contains PrivateKey
 // which is corresponding to paymentAddrSerialized in all wallet accounts
 // If there is not any wallet account corresponding to paymentAddrSerialized, it returns empty KeySerializedData object
-func (wallet *Wallet) DumpPrivkey(paymentAddrSerialized string) KeySerializedData {
+func (wallet *Wallet) DumpPrivateKey(paymentAddrSerialized string) KeySerializedData {
 	for _, account := range wallet.MasterAccount.Child {
 		address := account.Key.Base58CheckSerialize(PaymentAddressType)
 		if address == paymentAddrSerialized {
@@ -347,7 +357,7 @@ func (wallet *Wallet) ListAccounts() map[string]AccountWallet {
 }
 
 // ContainPubKey checks whether the wallet contains any account with pubKey or not
-func (wallet *Wallet) ContainPubKey(pubKey []byte) bool {
+func (wallet *Wallet) ContainPublicKey(pubKey []byte) bool {
 	for _, account := range wallet.MasterAccount.Child {
 		if bytes.Equal(account.Key.KeySet.PaymentAddress.Pk[:], pubKey) {
 			return true
