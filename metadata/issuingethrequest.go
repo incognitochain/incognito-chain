@@ -52,12 +52,12 @@ type GetBlockByNumberRes struct {
 func ParseETHIssuingInstContent(instContentStr string) (*IssuingETHReqAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(IssuingEthRequestDecodeInstructionError, err)
 	}
 	var issuingETHReqAction IssuingETHReqAction
 	err = json.Unmarshal(contentBytes, &issuingETHReqAction)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(IssuingEthRequestUnmarshalJsonError, err)
 	}
 	return &issuingETHReqAction, nil
 }
@@ -95,7 +95,7 @@ func NewIssuingETHRequestFromMap(
 
 	incTokenID, err := common.Hash{}.NewHashFromStr(data["IncTokenID"].(string))
 	if err != nil {
-		return nil, errors.Errorf("TokenID incorrect")
+		return nil, NewMetadataTxError(IssuingEthRequestNewIssuingETHRequestFromMapEror, errors.Errorf("TokenID incorrect"))
 	}
 
 	req, _ := NewIssuingETHRequest(
@@ -116,7 +116,7 @@ func (iReq *IssuingETHRequest) ValidateTxWithBlockChain(
 ) (bool, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
-		return false, err
+		return false, NewMetadataTxError(IssuingEthRequestValidateTxWithBlockChainError, err)
 	}
 	if ethReceipt == nil {
 		return false, errors.Errorf("The eth proof's receipt could not be null.")
@@ -126,7 +126,7 @@ func (iReq *IssuingETHRequest) ValidateTxWithBlockChain(
 
 func (iReq *IssuingETHRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(iReq.ProofStrs) == 0 {
-		return false, false, errors.New("Wrong request info's proof")
+		return false, false, NewMetadataTxError(IssuingEthRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
 	}
 	return true, true, nil
 }
@@ -156,10 +156,10 @@ func (iReq *IssuingETHRequest) Hash() *common.Hash {
 func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
-		return [][]string{}, err
+		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
 	}
 	if ethReceipt == nil {
-		return [][]string{}, errors.Errorf("The eth proof's receipt could not be null.")
+		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, errors.Errorf("The eth proof's receipt could not be null."))
 	}
 	txReqID := *(tx.Hash())
 	actionContent := map[string]interface{}{
@@ -169,7 +169,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
-		return [][]string{}, err
+		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
@@ -177,7 +177,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	Logger.log.Debug("hahaha txreqid: ", txReqID)
 	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
-		return [][]string{}, err
+		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
 	}
 	return [][]string{action}, nil
 }
@@ -189,11 +189,11 @@ func (iReq *IssuingETHRequest) CalculateSize() uint64 {
 func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
 	ethHeader, err := GetETHHeader(iReq.BlockHash)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
 	}
 	if ethHeader == nil {
 		Logger.log.Info("WARNING: Could not find out the ETH block header with the hash: ", iReq.BlockHash)
-		return nil, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", iReq.BlockHash.String())
+		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", iReq.BlockHash.String()))
 	}
 	keybuf := new(bytes.Buffer)
 	keybuf.Reset()
@@ -211,13 +211,13 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	val, _, err := trie.VerifyProof(ethHeader.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
 		fmt.Printf("WARNING: ETH issuance proof verification failed: %v", err)
-		return nil, err
+		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
 	}
 	// Decode value from VerifyProof into Receipt
 	constructedReceipt := new(types.Receipt)
 	err = rlp.DecodeBytes(val, constructedReceipt)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
 	}
 	return constructedReceipt, nil
 }
@@ -229,7 +229,7 @@ func ParseETHLogData(data []byte) (map[string]interface{}, error) {
 	}
 	dataMap := map[string]interface{}{}
 	if err = abiIns.UnpackIntoMap(dataMap, "Deposit", data); err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(UnexpectedError, err)
 	}
 	return dataMap, nil
 }
