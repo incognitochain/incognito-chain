@@ -943,7 +943,10 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
 }
 func (blockchain *BlockChain) verifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
 	txTokenDataListFromTxs := []transaction.TxNormalTokenData{}
-	_, txTokenDataList := blockchain.createCustomTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
+	_, txTokenDataList, err := blockchain.createNormalTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
+	if err != nil {
+		return err
+	}
 	hash, err := calHashFromTxTokenDataList(txTokenDataList)
 	if err != nil {
 		return err
