@@ -2,6 +2,7 @@ package wire
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 	"time"
 
@@ -11,12 +12,8 @@ import (
 	peer "github.com/libp2p/go-libp2p-peer"
 )
 
-// list message type
+// list cmd type in message header
 const (
-	TypicalMessageSize = 1000
-	MessageHeaderSize  = 24
-	MessageCmdTypeSize = 12
-
 	CmdGetBlockBeacon     = "getblkbeacon"
 	CmdGetBlockShard      = "getblkshard"
 	CmdGetCrossShard      = "getcrossshd"
@@ -51,7 +48,7 @@ const (
 type Message interface {
 	Hash() string
 	MessageType() string
-	MaxPayloadLength(int) int
+	MaxPayloadLength(version int) int // update version can change length of message
 	JsonSerialize() ([]byte, error)
 	JsonDeserialize(string) error
 	SetSenderID(peer.ID) error
@@ -86,7 +83,7 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		break
 	case CmdCustomToken:
 		msg = &MessageTxToken{
-			Transaction: &transaction.TxCustomToken{},
+			Transaction: &transaction.TxNormalToken{},
 		}
 		break
 	case CmdPrivacyCustomToken:
@@ -226,6 +223,6 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 	case reflect.TypeOf(&MessageMsgCheckResp{}):
 		return CmdMsgCheckResp, nil
 	default:
-		return "", fmt.Errorf("unhandled this message type [%s]", msgType)
+		return common.EmptyString, fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
 }
