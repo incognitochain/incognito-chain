@@ -74,7 +74,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 }
 
 func GetETHHeader(
-	//bcr BlockchainRetriever,
 	ethBlockHash rCommon.Hash,
 ) (*types.Header, error) {
 	rpcClient := rpccaller.NewRPCClient()
