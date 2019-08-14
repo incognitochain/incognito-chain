@@ -57,14 +57,14 @@ func (db *db) FetchCrossShardNextHeight(fromShard byte, toShard byte, curHeight 
 		return 0, database.NewDatabaseError(database.FetchCrossShardNextHeightError, err)
 	}
 	var nextHeight uint64
-	binary.Read(bytes.NewReader(info[:8]), binary.LittleEndian, &nextHeight)
-	return nextHeight, nil
+	err = binary.Read(bytes.NewReader(info[:8]), binary.LittleEndian, &nextHeight)
+	return nextHeight, err
 }
 
 func (db *db) StoreBeaconBlock(v interface{}, hash common.Hash) error {
 	var (
 		// b-{hash}
-		keyBlockHash = db.GetKey(string(blockKeyPrefix), hash)
+		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
 		// bea-b-{hash}
 		keyBeaconBlock = append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
 	)
@@ -105,7 +105,7 @@ func (db *db) FetchBeaconBlock(hash common.Hash) ([]byte, error) {
 		return []byte{}, database.NewDatabaseError(database.FetchBeaconBlockError, err)
 	}
 	// b-{hash}
-	keyBlockHash := db.GetKey(string(blockKeyPrefix), hash)
+	keyBlockHash := addPrefixToKeyHash(string(blockKeyPrefix), hash)
 	block, err := db.Get(keyBlockHash)
 	if err != nil {
 		return nil, database.NewDatabaseError(database.FetchBeaconBlockError, err)
@@ -152,7 +152,7 @@ func (db *db) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
 		// bea-b-{hash}
 		keyBeaconBlock = append(append(beaconPrefix, blockKeyPrefix...), hash[:]...)
 		// b-{hash}
-		keyBlockHash = db.GetKey(string(blockKeyPrefix), hash)
+		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
 	)
 	err := db.Delete(keyBeaconBlock)
 	if err != nil {
