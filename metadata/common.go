@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
 
@@ -68,4 +72,29 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		return nil, err
 	}
 	return md, nil
+}
+
+func GetETHHeader(
+	//bcr BlockchainRetriever,
+	ethBlockHash rCommon.Hash,
+) (*types.Header, error) {
+	rpcClient := rpccaller.NewRPCClient()
+	params := []interface{}{ethBlockHash, false}
+	var getBlockByNumberRes GetBlockByNumberRes
+	err := rpcClient.RPCCall(
+		common.EthereumLightNodeProtocol,
+		common.EthereumLightNodeHost,
+		common.EthereumLightNodePort,
+		"eth_getBlockByHash",
+		params,
+		&getBlockByNumberRes,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if getBlockByNumberRes.RPCError != nil {
+		fmt.Printf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
+		return nil, nil
+	}
+	return getBlockByNumberRes.Result, nil
 }
