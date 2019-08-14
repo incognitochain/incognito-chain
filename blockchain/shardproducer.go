@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -87,19 +86,20 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	//Fetch beacon block from height
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.config.DataBase, blockGenerator.chain.BestState.Shard[shardID].BeaconHeight+1, beaconHeight)
 	if err != nil {
-		Logger.log.Error(err)
 		return nil, err
 	}
 	//======Get Transaction For new Block================
 	// Get Cross output coin from other shard && produce cross shard transaction
 	crossTransactions, crossTxTokenData := blockGenerator.getCrossShardData(shardID, blockGenerator.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
-	crossTxTokenTransactions, _ := blockGenerator.chain.createCustomTokenTxForCrossShard(&producerKeySet.PrivateKey, crossTxTokenData, shardID)
+	crossTxTokenTransactions, _, err := blockGenerator.chain.createNormalTokenTxForCrossShard(&producerKeySet.PrivateKey, crossTxTokenData, shardID)
+	if err != nil {
+		return nil, err
+	}
 	transactionsForNewBlock = append(transactionsForNewBlock, crossTxTokenTransactions...)
 	// Get Transaction for new block
 	blockCreationLeftOver := common.MinShardBlkCreation.Nanoseconds() - time.Since(start).Nanoseconds()
 	txsToAddFromBlock, err := blockGenerator.getTransactionForNewBlock(&producerKeySet.PrivateKey, shardID, blockGenerator.chain.config.DataBase, beaconBlocks, blockCreationLeftOver)
 	if err != nil {
-		Logger.log.Error(err, reflect.TypeOf(err), reflect.ValueOf(err))
 		return nil, err
 	}
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
@@ -206,7 +206,6 @@ func (blockGenerator *BlockGenerator) FinalizeShardBlock(blk *ShardBlock, produc
 	blockHash := blk.Header.Hash()
 	producerSig, err := producerKeyset.SignDataInBase58CheckEncode(blockHash.GetBytes())
 	if err != nil {
-		Logger.log.Error(err)
 		return NewBlockChainError(ProduceSignatureError, err)
 	}
 	blk.ProducerSig = producerSig
@@ -555,7 +554,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	4. Return total fee of tx
 */
 // get valid tx for specific shard and their fee, also return unvalid tx
-func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *privacy.PrivateKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxNormalTokenData) {
+func (blockchain *BlockChain) createNormalTokenTxForCrossShard(privatekey *privacy.PrivateKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxNormalTokenData, error) {
 	var keys []int
 	txs := []metadata.Transaction{}
 	txTokenDataList := []transaction.TxNormalTokenData{}
@@ -593,7 +592,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 							false,
 							shardID))
 					if err != nil {
-						panic("")
+						return []metadata.Transaction{}, []transaction.TxNormalTokenData{}, NewBlockChainError(CreateNormalTokenTxForCrossShardError, err)
 					}
 					txs = append(txs, tx)
 				} else {
@@ -605,5 +604,5 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 			}
 		}
 	}
-	return txs, txTokenDataList
+	return txs, txTokenDataList, nil
 }
