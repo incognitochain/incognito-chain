@@ -64,8 +64,8 @@ func init() {
 		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
 		BasicReward:        TestnetBasicReward,
 		RewardHalflife:     TestnetRewardHalflife,
-		Epoch:              10,
-		RandomTime:         5,
+		Epoch:              TestnetEpoch,
+		RandomTime:         TestnetRandomTime,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -90,7 +90,7 @@ func init() {
 		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
 		BasicReward:        MainnetBasicReward,
 		RewardHalflife:     MainnetRewardHalflife,
-		Epoch:              10,
-		RandomTime:         5,
+		Epoch:              MainnetEpoch,
+		RandomTime:         MainnetRandomTime,
 	}
 }
