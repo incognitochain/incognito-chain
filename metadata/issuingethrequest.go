@@ -174,7 +174,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
-	fmt.Println("hahaha txreqid: ", txReqID)
+	Logger.log.Info("hahaha txreqid: ", txReqID)
 	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
 		return [][]string{}, err
@@ -192,7 +192,7 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, err
 	}
 	if ethHeader == nil {
-		fmt.Println("WARNING: Could not find out the ETH block header with the hash: ", iReq.BlockHash)
+		Logger.log.Info("WARNING: Could not find out the ETH block header with the hash: ", iReq.BlockHash)
 		return nil, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", iReq.BlockHash.String())
 	}
 	keybuf := new(bytes.Buffer)
@@ -226,7 +226,7 @@ func PickNParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]
 	logData := []byte{}
 	logLen := len(constructedReceipt.Logs)
 	if logLen == 0 {
-		fmt.Println("WARNING: LOG data is invalid.")
+		Logger.log.Info("WARNING: LOG data is invalid.")
 		return nil, nil
 	}
 	for _, log := range constructedReceipt.Logs {

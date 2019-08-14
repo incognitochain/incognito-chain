@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -86,13 +85,13 @@ func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			fmt.Println("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Info("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 		var issuingAcceptedInst IssuingAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
 		if err != nil {
-			fmt.Println("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Info("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 
