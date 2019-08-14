@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"strconv"
 	"strings"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/pkg/errors"
 )
 
@@ -114,7 +114,7 @@ func (iReq *IssuingETHRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	db database.DatabaseInterface,
 ) (bool, error) {
-	ethReceipt, err := iReq.verifyProofAndParseReceipt(bcr)
+	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return false, err
 	}
@@ -154,7 +154,7 @@ func (iReq *IssuingETHRequest) Hash() *common.Hash {
 }
 
 func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	ethReceipt, err := iReq.verifyProofAndParseReceipt(bcr)
+	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return [][]string{}, err
 	}
@@ -174,7 +174,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
-	fmt.Println("hahaha txreqid: ", txReqID)
+	Logger.log.Debug("hahaha txreqid: ", txReqID)
 	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
 		return [][]string{}, err
@@ -186,40 +186,13 @@ func (iReq *IssuingETHRequest) CalculateSize() uint64 {
 	return calculateSize(iReq)
 }
 
-func GetETHHeader(
-	bcr BlockchainRetriever,
-	ethBlockHash rCommon.Hash,
-) (*types.Header, error) {
-	rpcClient := bcr.GetRPCClient()
-	params := []interface{}{ethBlockHash, false}
-	var getBlockByNumberRes GetBlockByNumberRes
-	err := rpcClient.RPCCall(
-		common.EthereumLightNodeProtocol,
-		common.EthereumLightNodeHost,
-		common.EthereumLightNodePort,
-		"eth_getBlockByHash",
-		params,
-		&getBlockByNumberRes,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if getBlockByNumberRes.RPCError != nil {
-		fmt.Printf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
-		return nil, nil
-	}
-	return getBlockByNumberRes.Result, nil
-}
-
-func (iReq *IssuingETHRequest) verifyProofAndParseReceipt(
-	bcr BlockchainRetriever,
-) (*types.Receipt, error) {
-	ethHeader, err := GetETHHeader(bcr, iReq.BlockHash)
+func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
+	ethHeader, err := GetETHHeader(iReq.BlockHash)
 	if err != nil {
 		return nil, err
 	}
 	if ethHeader == nil {
-		fmt.Println("WARNING: Could not find out the ETH block header with the hash: ", iReq.BlockHash)
+		Logger.log.Info("WARNING: Could not find out the ETH block header with the hash: ", iReq.BlockHash)
 		return nil, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", iReq.BlockHash.String())
 	}
 	keybuf := new(bytes.Buffer)
@@ -247,25 +220,6 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt(
 		return nil, err
 	}
 	return constructedReceipt, nil
-}
-
-func PickNParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]interface{}, error) {
-	logData := []byte{}
-	logLen := len(constructedReceipt.Logs)
-	if logLen == 0 {
-		fmt.Println("WARNING: LOG data is invalid.")
-		return nil, nil
-	}
-	for _, log := range constructedReceipt.Logs {
-		if bytes.Equal(rCommon.HexToAddress(common.EthContractAddressStr).Bytes(), log.Address.Bytes()) {
-			logData = log.Data
-			break
-		}
-	}
-	if len(logData) == 0 {
-		return nil, nil
-	}
-	return ParseETHLogData(logData)
 }
 
 func ParseETHLogData(data []byte) (map[string]interface{}, error) {

@@ -182,7 +182,7 @@ func (sbsRes *BeaconBlockSalaryRes) Hash() *common.Hash {
 // 	}
 
 // 	if beaconSalaryInfo.BeaconSalary != tx.CalculateTxValue() {
-// 		//fmt.Println("SA: beacon salary info", beaconSalaryInfo)
+// 		//Logger.log.Info("SA: beacon salary info", beaconSalaryInfo)
 // 		return false, errors.Errorf("Salary amount in BeaconBlockSalaryResponse tx %s is not matched to instruction's %d %d", tx.Hash().String(), beaconSalaryInfo.BeaconSalary, tx.CalculateTxValue())
 // 	}
 
