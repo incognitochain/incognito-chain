@@ -1,7 +1,6 @@
 package lvdb
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -125,33 +124,4 @@ func (db *db) Get(key []byte) ([]byte, error) {
 		return nil, database.NewDatabaseError(database.LvDbNotFound, errors.Wrap(err, "db.lvdb.Get"))
 	}
 	return value, nil
-}
-
-func (db db) GetKey(keyType string, key common.Hash) []byte {
-	var dbkey []byte
-	switch keyType {
-	case string(blockKeyPrefix):
-		dbkey = append(blockKeyPrefix, key[:]...)
-	case string(blockKeyIdxPrefix):
-		dbkey = append(blockKeyIdxPrefix, key[:]...)
-	case string(serialNumbersPrefix):
-		dbkey = append(serialNumbersPrefix, key[:]...)
-	case string(commitmentsPrefix):
-		dbkey = append(commitmentsPrefix, key[:]...)
-	case string(outcoinsPrefix):
-		dbkey = append(outcoinsPrefix, key[:]...)
-	case string(snderivatorsPrefix):
-		dbkey = append(snderivatorsPrefix, key[:]...)
-	case string(tokenPrefix):
-		dbkey = append(tokenPrefix, key[:]...)
-	case string(privacyTokenPrefix):
-		dbkey = append(privacyTokenPrefix, key[:]...)
-	case string(privacyTokenCrossShardPrefix):
-		dbkey = append(privacyTokenCrossShardPrefix, key[:]...)
-	case string(tokenInitPrefix):
-		dbkey = append(tokenInitPrefix, key[:]...)
-	case string(privacyTokenInitPrefix):
-		dbkey = append(privacyTokenInitPrefix, key[:]...)
-	}
-	return dbkey
 }

@@ -24,7 +24,7 @@ import (
 func (db *db) StoreShardBlock(v interface{}, hash common.Hash, shardID byte) error {
 	var (
 		// key: b-{blockhash}:block
-		keyBlockHash = db.GetKey(string(blockKeyPrefix), hash)
+		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
 		// key: s-{shardID}b-{[blockhash]}:b-{blockhash}
 		keyShardBlock = append(append(shardIDPrefix, shardID), keyBlockHash...)
 	)
@@ -48,7 +48,7 @@ func (db *db) StoreShardBlock(v interface{}, hash common.Hash, shardID byte) err
 	Query a block existence by hash. Return true if block exist otherwise false
 */
 func (db *db) HasBlock(hash common.Hash) (bool, error) {
-	exists, err := db.HasValue(db.GetKey(string(blockKeyPrefix), hash))
+	exists, err := db.HasValue(addPrefixToKeyHash(string(blockKeyPrefix), hash))
 	if err != nil {
 		return false, err
 	} else {
@@ -60,7 +60,7 @@ func (db *db) HasBlock(hash common.Hash) (bool, error) {
 	Query a block by hash. Return block if existence
 */
 func (db *db) FetchBlock(hash common.Hash) ([]byte, error) {
-	block, err := db.lvdb.Get(db.GetKey(string(blockKeyPrefix), hash), nil)
+	block, err := db.lvdb.Get(addPrefixToKeyHash(string(blockKeyPrefix), hash), nil)
 	if err != nil {
 		if err == lvdberr.ErrNotFound {
 			return nil, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -86,7 +86,7 @@ func (db *db) StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte) e
 	binary.LittleEndian.PutUint64(buf, idx)
 	buf[8] = shardID
 	//{i-[hash]}:index-shardID
-	if err := db.Put(db.GetKey(string(blockKeyIdxPrefix), hash), buf); err != nil {
+	if err := db.Put(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash), buf); err != nil {
 		return database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.put"))
 	}
 	//{index-shardID}:[hash]
@@ -99,7 +99,7 @@ func (db *db) StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte) e
 func (db *db) GetIndexOfBlock(hash common.Hash) (uint64, byte, error) {
 	var idx uint64
 	var shardID byte
-	b, err := db.Get(db.GetKey(string(blockKeyIdxPrefix), hash))
+	b, err := db.Get(addPrefixToKeyHash(string(blockKeyIdxPrefix), hash))
 	//{i-[hash]}:index-shardID
 	if err != nil {
 		return 0, 0, database.NewDatabaseError(database.UnexpectedError, errors.Wrap(err, "db.lvdb.get"))
@@ -122,11 +122,11 @@ func (db *db) DeleteBlock(hash common.Hash, idx uint64, shardID byte) error {
 	var (
 		err error
 		// key: b-{blockhash}:block
-		keyBlockHash = db.GetKey(string(blockKeyPrefix), hash)
+		keyBlockHash = addPrefixToKeyHash(string(blockKeyPrefix), hash)
 		// key: s-{shardID}b-{[blockhash]}:b-{blockhash}
 		keyShardBlock = append(append(shardIDPrefix, shardID), keyBlockHash...)
 		//{i-[hash]}:index-shardID
-		keyBlockIndex = db.GetKey(string(blockKeyIdxPrefix), hash)
+		keyBlockIndex = addPrefixToKeyHash(string(blockKeyIdxPrefix), hash)
 	)
 	//{index-shardID}: hash
 	var buf = make([]byte, 9)

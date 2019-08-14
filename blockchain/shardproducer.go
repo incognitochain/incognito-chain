@@ -76,7 +76,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	}
 	epoch := beaconBlock.Header.Epoch
 	if epoch-blockGenerator.chain.BestState.Shard[shardID].Epoch > 1 {
-		beaconHeight = blockGenerator.chain.BestState.Shard[shardID].Epoch * common.EPOCH
+		beaconHeight = blockGenerator.chain.BestState.Shard[shardID].Epoch * blockGenerator.chain.config.ChainParams.Epoch
 		newBeaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 		if err != nil {
 			return nil, err
@@ -344,7 +344,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		swapInstruction       = []string{}
 		err                   error
 	)
-	if beaconHeight%common.EPOCH == 0 {
+	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 {
 		if len(shardPendingValidator) > 0 {
 			Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 			Logger.log.Info("ShardCommittee", shardCommittee)
