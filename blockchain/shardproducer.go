@@ -508,7 +508,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
-		panic("TempTxPool Is not Empty")
+		return []metadata.Transaction{}, []metadata.Transaction{}, 0
 	}
 	currentSize := uint64(0)
 	for _, tx := range sourceTxns {
