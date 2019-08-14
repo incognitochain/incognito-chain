@@ -37,8 +37,6 @@ func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey stri
 		BeaconReward:   reward,
 	}
 
-	// beaconRewardInfo.InfoHash = beaconRewardInfo.hash()
-
 	contentStr, err := json.Marshal(beaconRewardInfo)
 	if err != nil {
 		return nil, err
@@ -132,59 +130,3 @@ func (sbsRes *BeaconBlockSalaryRes) Hash() *common.Hash {
 	hash := common.HashH([]byte(record))
 	return &hash
 }
-
-// func (sbsRes *BeaconBlockSalaryRes) VerifyMinerCreatedTxBeforeGettingInBlock(
-// 	txsInBlock []Transaction,
-// 	txsUsed []int,
-// 	insts [][]string,
-// 	instUsed []int,
-// 	shardID byte,
-// 	tx Transaction,
-// 	bcr BlockchainRetriever,
-// ) (bool, error) {
-// 	instIdx := -1
-// 	var beaconSalaryInfo BeaconSalaryInfo
-// 	for i, inst := range insts {
-// 		if instUsed[i] > 0 {
-// 			continue
-// 		}
-// 		if inst[0] != strconv.Itoa(BeaconSalaryRequestMeta) {
-// 			continue
-// 		}
-// 		if inst[1] != strconv.Itoa(int(shardID)) {
-// 			continue
-// 		}
-// 		if inst[2] != "beaconSalaryInst" {
-// 			continue
-// 		}
-// 		contentStr := inst[3]
-// 		err := json.Unmarshal([]byte(contentStr), &beaconSalaryInfo)
-// 		if err != nil {
-// 			return false, err
-// 		}
-
-// 		if !bytes.Equal(beaconSalaryInfo.InfoHash[:], sbsRes.InfoHash[:]) {
-// 			continue
-// 		}
-// 		instIdx = i
-// 		instUsed[i] += 1
-// 		break
-// 	}
-// 	if instIdx == -1 {
-// 		return false, errors.Errorf("no instruction found for BeaconBlockSalaryResponse tx %s", tx.Hash().String())
-// 	}
-// 	if (!bytes.Equal(beaconSalaryInfo.PayToAddress.Pk[:], sbsRes.ProducerAddress.Pk[:])) ||
-// 		(!bytes.Equal(beaconSalaryInfo.PayToAddress.Tk[:], sbsRes.ProducerAddress.Tk[:])) {
-// 		return false, errors.Errorf("Producer address in BeaconBlockSalaryResponse tx %s is not matched to instruction's", tx.Hash().String())
-// 	}
-// 	if beaconSalaryInfo.BeaconBlockHeight != sbsRes.BeaconBlockHeight {
-// 		return false, errors.Errorf("ShardBlockHeight in BeaconBlockSalaryResponse tx %s is not matched to instruction's", tx.Hash().String())
-// 	}
-
-// 	if beaconSalaryInfo.BeaconSalary != tx.CalculateTxValue() {
-// 		//Logger.log.Info("SA: beacon salary info", beaconSalaryInfo)
-// 		return false, errors.Errorf("Salary amount in BeaconBlockSalaryResponse tx %s is not matched to instruction's %d %d", tx.Hash().String(), beaconSalaryInfo.BeaconSalary, tx.CalculateTxValue())
-// 	}
-
-// 	return true, nil
-// }
