@@ -12,6 +12,7 @@ type GetBestBlockItem struct {
 	BlockProducer    string `json:"BlockProducer"`
 	BlockProducerSig string `json:"BlockProducerSig"`
 	Epoch            uint64 `json:"Epoch"`
+	Time             int64  `json:"Time"`
 }
 
 type GetBestBlockHashResult struct {

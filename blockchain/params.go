@@ -19,17 +19,21 @@ type Params struct {
 	GenesisShardBlock      *ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward            uint64
 	RewardHalflife         uint64
+	Epoch                  uint64
+	RandomTime             uint64
 }
 
 type GenesisParams struct {
-	InitialPaymentAddress               string
-	InitialIncognito                    []string
-	FeePerTxKb                          uint64
-	RandomNumber                        uint64
-	PreSelectBeaconNodeSerializedPubkey []string
-	PreSelectBeaconNode                 []string
-	PreSelectShardNodeSerializedPubkey  []string
-	PreSelectShardNode                  []string
+	InitialPaymentAddress                       string
+	InitialIncognito                            []string
+	FeePerTxKb                                  uint64
+	RandomNumber                                uint64
+	PreSelectBeaconNodeSerializedPubkey         []string
+	PreSelectBeaconNodeSerializedPaymentAddress []string
+	PreSelectBeaconNode                         []string
+	PreSelectShardNodeSerializedPubkey          []string
+	PreSelectShardNodeSerializedPaymentAddress  []string
+	PreSelectShardNode                          []string
 }
 
 var ChainTestParam = Params{}
@@ -38,11 +42,12 @@ var ChainMainParam = Params{}
 // FOR TESTNET
 func init() {
 	var genesisParamsTestnetNew = GenesisParams{
-		InitialPaymentAddress:               TestnetGenesisBlockPaymentAddress,
-		RandomNumber:                        0,
-		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeTestnetSerializedPubkey,
-		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeTestnetSerializedPubkey,
-
+		InitialPaymentAddress:                       TestnetGenesisBlockPaymentAddress,
+		RandomNumber:                                0,
+		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
+		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeTestnetSerializedPaymentAddress,
+		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeTestnetSerializedPubkey,
+		PreSelectShardNodeSerializedPaymentAddress:  PreSelectShardNodeTestnetSerializedPaymentAddress,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
 		//InitialIncognito: IntegrationTestInitPRV,
 		InitialIncognito: TestnetInitPRV,
@@ -62,6 +67,8 @@ func init() {
 		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
 		BasicReward:        TestnetBasicReward,
 		RewardHalflife:     TestnetRewardHalflife,
+		Epoch:              TestnetEpoch,
+		RandomTime:         TestnetRandomTime,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -86,5 +93,7 @@ func init() {
 		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
 		BasicReward:        MainnetBasicReward,
 		RewardHalflife:     MainnetRewardHalflife,
+		Epoch:              MainnetEpoch,
+		RandomTime:         MainnetRandomTime,
 	}
 }

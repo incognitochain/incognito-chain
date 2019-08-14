@@ -16,7 +16,7 @@ type CustomToken struct {
 	ListTxs   []string `json:"ListTxs"`
 }
 
-func (customToken *CustomToken) Init(obj transaction.TxCustomToken) {
+func (customToken *CustomToken) Init(obj transaction.TxNormalToken) {
 	customToken.ID = obj.TxTokenData.PropertyID.String()
 	customToken.Symbol = obj.TxTokenData.PropertySymbol
 	customToken.Name = obj.TxTokenData.PropertyName
@@ -25,11 +25,11 @@ func (customToken *CustomToken) Init(obj transaction.TxCustomToken) {
 }
 
 func (customToken *CustomToken) InitPrivacy(obj transaction.TxCustomTokenPrivacy) {
-	customToken.ID = obj.TxTokenPrivacyData.PropertyID.String()
-	customToken.Symbol = obj.TxTokenPrivacyData.PropertySymbol
-	customToken.Name = obj.TxTokenPrivacyData.PropertyName
-	customToken.Amount = obj.TxTokenPrivacyData.Amount
-	customToken.Image = common.Render(obj.TxTokenPrivacyData.PropertyID[:])
+	customToken.ID = obj.TxPrivacyTokenData.PropertyID.String()
+	customToken.Symbol = obj.TxPrivacyTokenData.PropertySymbol
+	customToken.Name = obj.TxPrivacyTokenData.PropertyName
+	customToken.Amount = obj.TxPrivacyTokenData.Amount
+	customToken.Image = common.Render(obj.TxPrivacyTokenData.PropertyID[:])
 	customToken.IsPrivacy = true
 }
 
