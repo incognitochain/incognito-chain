@@ -41,10 +41,10 @@ func (e *PubSubError) Init(key int, err error) {
 	e.Err = errors.Wrap(err, e.Message)
 }
 
-func NewPubSubError(key int, err error) *PubSubError {
+func NewPubSubError(key int, err error, params ...interface{}) *PubSubError {
 	return &PubSubError{
 		Code:    ErrCodeMessage[key].Code,
-		Message: ErrCodeMessage[key].Message,
+		Message: fmt.Sprintf(ErrCodeMessage[key].Message, params),
 		Err:     errors.Wrap(err, ErrCodeMessage[key].Message),
 	}
 }
