@@ -174,7 +174,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, bcr BlockchainRet
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
 
-	Logger.log.Info("hahaha txreqid: ", txReqID)
+	Logger.log.Debug("hahaha txreqid: ", txReqID)
 	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
 		return [][]string{}, err
@@ -226,7 +226,7 @@ func PickNParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]
 	logData := []byte{}
 	logLen := len(constructedReceipt.Logs)
 	if logLen == 0 {
-		Logger.log.Info("WARNING: LOG data is invalid.")
+		Logger.log.Debug("WARNING: LOG data is invalid.")
 		return nil, nil
 	}
 	for _, log := range constructedReceipt.Logs {
