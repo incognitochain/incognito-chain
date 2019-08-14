@@ -16,17 +16,15 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/pubsub"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/rpccaller"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
@@ -46,8 +44,8 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
-	RPCClient        *rpccaller.RPCClient
-	IsTest           bool
+	//RPCClient        *rpccaller.RPCClient
+	IsTest bool
 }
 
 type BestState struct {
@@ -1397,9 +1395,13 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	return nil
 }
 
-func (blockchain *BlockChain) GetRPCClient() *rpccaller.RPCClient {
+/*func (blockchain BlockChain) GetRPCClient() *rpccaller.RPCClient {
 	return blockchain.RPCClient
 }
+
+func (blockchain *BlockChain) SetRPCClientChain(rpcClient *rpccaller.RPCClient) {
+	blockchain.RPCClient = rpcClient
+}*/
 
 func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	payToAddress *privacy.PaymentAddress,

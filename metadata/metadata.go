@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/rpccaller"
 )
 
 type MetadataBase struct {
@@ -130,7 +129,7 @@ type BlockchainRetriever interface {
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
-	GetRPCClient() *rpccaller.RPCClient
+	//GetRPCClient() *rpccaller.RPCClient
 }
 
 // Interface for all types of metadata in tx
