@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"strconv"
 	"strings"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/pkg/errors"
 )
 
@@ -186,35 +186,10 @@ func (iReq *IssuingETHRequest) CalculateSize() uint64 {
 	return calculateSize(iReq)
 }
 
-func GetETHHeader(
-	bcr BlockchainRetriever,
-	ethBlockHash rCommon.Hash,
-) (*types.Header, error) {
-	rpcClient := bcr.GetRPCClient()
-	params := []interface{}{ethBlockHash, false}
-	var getBlockByNumberRes GetBlockByNumberRes
-	err := rpcClient.RPCCall(
-		common.EthereumLightNodeProtocol,
-		common.EthereumLightNodeHost,
-		common.EthereumLightNodePort,
-		"eth_getBlockByHash",
-		params,
-		&getBlockByNumberRes,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if getBlockByNumberRes.RPCError != nil {
-		fmt.Printf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
-		return nil, nil
-	}
-	return getBlockByNumberRes.Result, nil
-}
-
 func (iReq *IssuingETHRequest) verifyProofAndParseReceipt(
 	bcr BlockchainRetriever,
 ) (*types.Receipt, error) {
-	ethHeader, err := GetETHHeader(bcr, iReq.BlockHash)
+	ethHeader, err := GetETHHeader(iReq.BlockHash)
 	if err != nil {
 		return nil, err
 	}
