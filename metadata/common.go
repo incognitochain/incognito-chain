@@ -30,25 +30,18 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	switch int(mtTemp["Type"].(float64)) {
 	case IssuingRequestMeta:
 		md = &IssuingRequest{}
-
 	case IssuingResponseMeta:
 		md = &IssuingResponse{}
-
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
-
 	case IssuingETHRequestMeta:
 		md = &IssuingETHRequest{}
-
 	case IssuingETHResponseMeta:
 		md = &IssuingETHResponse{}
-
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
-
 	case BurningRequestMeta:
 		md = &BurningRequest{}
-
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
