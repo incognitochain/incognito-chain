@@ -1,13 +1,11 @@
 package metadata
 
 import (
-	"encoding/json"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/rpccaller"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {
@@ -16,14 +14,6 @@ type MetadataBase struct {
 
 func NewMetadataBase(thisType int) *MetadataBase {
 	return &MetadataBase{Type: thisType}
-}
-
-func calculateSize(meta Metadata) uint64 {
-	metaBytes, err := json.Marshal(meta)
-	if err != nil {
-		return 0
-	}
-	return uint64(len(metaBytes))
 }
 
 func (mb *MetadataBase) IsMinerCreatedMetaType() bool {
@@ -130,7 +120,7 @@ type BlockchainRetriever interface {
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
-	GetRPCClient() *rpccaller.RPCClient
+	//GetRPCClient() *rpccaller.RPCClient
 }
 
 // Interface for all types of metadata in tx
