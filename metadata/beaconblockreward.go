@@ -75,23 +75,6 @@ type BeaconBlockSalaryInfo struct {
 	InfoHash          *common.Hash
 }
 
-func NewBeaconBlockSalaryRes(
-	beaconBlockHeight uint64,
-	producerAddress *privacy.PaymentAddress,
-	infoHash *common.Hash,
-	metaType int,
-) *BeaconBlockSalaryRes {
-	metadataBase := MetadataBase{
-		Type: metaType,
-	}
-	return &BeaconBlockSalaryRes{
-		BeaconBlockHeight: beaconBlockHeight,
-		ProducerAddress:   producerAddress,
-		InfoHash:          infoHash,
-		MetadataBase:      metadataBase,
-	}
-}
-
 func (sbsRes *BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
