@@ -33,6 +33,8 @@ const (
 	Mainnet            = 0x01
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
+	MainnetEpoch       = 30000
+    MainnetRandomTime  = 15000
 
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
@@ -68,6 +70,8 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
+	TestnetEpoch       = 10
+    TestnetRandomTime  = 5
 
 	TestNetShardCommitteeSize     = 16
 	TestNetMinShardCommitteeSize  = 4
