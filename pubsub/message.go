@@ -1,14 +1,15 @@
 package pubsub
 
 type Message struct {
-	Topic           string
-	Value           interface{}
+	Value interface{}
+
+	topic           string
 	unSendSubscribe []chan interface{}
 }
 
 func NewMessage(topic string, value interface{}) *Message {
 	return &Message{
-		Topic: topic,
+		topic: topic,
 		Value: value,
 	}
 }
