@@ -136,7 +136,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	logMap, err := metadata.PickNParseLogMapFromReceipt(ethReceipt)
+	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil

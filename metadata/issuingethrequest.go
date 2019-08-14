@@ -222,25 +222,6 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	return constructedReceipt, nil
 }
 
-func PickNParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]interface{}, error) {
-	logData := []byte{}
-	logLen := len(constructedReceipt.Logs)
-	if logLen == 0 {
-		Logger.log.Debug("WARNING: LOG data is invalid.")
-		return nil, nil
-	}
-	for _, log := range constructedReceipt.Logs {
-		if bytes.Equal(rCommon.HexToAddress(common.EthContractAddressStr).Bytes(), log.Address.Bytes()) {
-			logData = log.Data
-			break
-		}
-	}
-	if len(logData) == 0 {
-		return nil, nil
-	}
-	return ParseETHLogData(logData)
-}
-
 func ParseETHLogData(data []byte) (map[string]interface{}, error) {
 	abiIns, err := abi.JSON(strings.NewReader(common.ABIJSON))
 	if err != nil {
