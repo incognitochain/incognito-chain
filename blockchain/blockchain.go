@@ -1788,7 +1788,7 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks [
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * common.EPOCH)
+						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
 						if err != nil {
 							return err
 						}
@@ -2010,7 +2010,7 @@ func (blockchain *BlockChain) restoreDatabaseFromBeaconInstruction(beaconBlocks 
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * common.EPOCH)
+						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
 						if err != nil {
 							return err
 						}
