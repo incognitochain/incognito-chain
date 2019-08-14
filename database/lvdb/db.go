@@ -1,7 +1,6 @@
 package lvdb
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -10,64 +9,6 @@ import (
 type db struct {
 	lvdb *leveldb.DB
 }
-
-// key prefix
-var (
-	prevShardPrefix          = []byte("prevShd-")
-	prevBeaconPrefix         = []byte("prevBea-")
-	beaconPrefix             = []byte("bea-")
-	beaconBestBlockkeyPrefix = []byte("bea-bestBlock")
-	committeePrefix          = []byte("com-")
-	heightPrefix             = []byte("ep-") // TODO rename key value
-	shardIDPrefix            = []byte("s-")
-	blockKeyPrefix           = []byte("b-")
-	blockHeaderKeyPrefix     = []byte("bh-")
-	blockKeyIdxPrefix        = []byte("i-")
-	crossShardKeyPrefix      = []byte("csh-")
-	nextCrossShardKeyPrefix  = []byte("ncsh-")
-	shardPrefix              = []byte("shd-")
-
-	shardToBeaconKeyPrefix       = []byte("stb-")
-	transactionKeyPrefix         = []byte("tx-")
-	privateKeyPrefix             = []byte("prk-")
-	serialNumbersPrefix          = []byte("serinalnumbers-")
-	commitmentsPrefix            = []byte("commitments-")
-	outcoinsPrefix               = []byte("outcoins-")
-	snderivatorsPrefix           = []byte("snderivators-")
-	bestBlockKeyPrefix           = []byte("bestBlock")
-	feeEstimatorPrefix           = []byte("feeEstimator")
-	tokenPrefix                  = []byte("token-")
-	privacyTokenPrefix           = []byte("privacy-token-")
-	privacyTokenCrossShardPrefix = []byte("privacy-cross-token-")
-	tokenInitPrefix              = []byte("token-init-")
-	privacyTokenInitPrefix       = []byte("privacy-token-init-")
-
-	// multisigs
-	multisigsPrefix = []byte("multisigs")
-
-	// centralized bridge
-	bridgePrefix              = []byte("bridge-")
-	centralizedBridgePrefix   = []byte("centralizedbridge-")
-	decentralizedBridgePrefix = []byte("decentralizedbridge-")
-	ethTxHashIssuedPrefix     = []byte("ethtxhashissued-")
-
-	// Incognito -> Ethereum relayer
-	burnConfirmPrefix = []byte("burnConfirm-")
-
-	//epoch reward
-	shardRequestRewardPrefix = []byte("shardrequestreward-")
-	committeeRewardPrefix    = []byte("committee-reward-")
-
-	// public variable
-	TokenPaymentAddressPrefix = []byte("token-paymentaddress-")
-	Splitter                  = []byte("-[-]-")
-)
-
-// value
-var (
-	Spent   = []byte("spent")
-	Unspent = []byte("unspent")
-)
 
 func open(dbPath string) (database.DatabaseInterface, error) {
 	lvdb, err := leveldb.OpenFile(dbPath, nil)
@@ -124,33 +65,4 @@ func (db *db) Get(key []byte) ([]byte, error) {
 		return nil, database.NewDatabaseError(database.LvDbNotFound, errors.Wrap(err, "db.lvdb.Get"))
 	}
 	return value, nil
-}
-
-func (db db) GetKey(keyType string, key common.Hash) []byte {
-	var dbkey []byte
-	switch keyType {
-	case string(blockKeyPrefix):
-		dbkey = append(blockKeyPrefix, key[:]...)
-	case string(blockKeyIdxPrefix):
-		dbkey = append(blockKeyIdxPrefix, key[:]...)
-	case string(serialNumbersPrefix):
-		dbkey = append(serialNumbersPrefix, key[:]...)
-	case string(commitmentsPrefix):
-		dbkey = append(commitmentsPrefix, key[:]...)
-	case string(outcoinsPrefix):
-		dbkey = append(outcoinsPrefix, key[:]...)
-	case string(snderivatorsPrefix):
-		dbkey = append(snderivatorsPrefix, key[:]...)
-	case string(tokenPrefix):
-		dbkey = append(tokenPrefix, key[:]...)
-	case string(privacyTokenPrefix):
-		dbkey = append(privacyTokenPrefix, key[:]...)
-	case string(privacyTokenCrossShardPrefix):
-		dbkey = append(privacyTokenCrossShardPrefix, key[:]...)
-	case string(tokenInitPrefix):
-		dbkey = append(tokenInitPrefix, key[:]...)
-	case string(privacyTokenInitPrefix):
-		dbkey = append(privacyTokenInitPrefix, key[:]...)
-	}
-	return dbkey
 }
