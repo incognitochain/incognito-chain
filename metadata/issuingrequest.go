@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/pkg/errors"
 )
 
 // only centralized website can send this type of tx
@@ -72,18 +72,18 @@ func NewIssuingRequest(
 func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	tokenID, err := common.Hash{}.NewHashFromStr(data["TokenID"].(string))
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.Errorf("TokenID incorrect"))
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenID incorrect"))
 	}
 
 	tokenName, ok := data["TokenName"].(string)
 	if !ok {
-		return nil, errors.Errorf("TokenName incorrect")
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenName incorrect"))
 	}
 
 	depositedAmt := uint64(data["DepositedAmount"].(float64))
 	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.Errorf("ReceiveAddress incorrect"))
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
 	}
 
 	return NewIssuingRequest(
