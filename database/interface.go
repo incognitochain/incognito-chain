@@ -62,7 +62,7 @@ type DatabaseInterface interface {
 
 	// Transaction index
 	StoreTransactionIndex(txId common.Hash, blockHash common.Hash, indexInBlock int) error
-	GetTransactionIndexById(txId common.Hash) (common.Hash, int, *DatabaseError)
+	GetTransactionIndexById(txId common.Hash) (common.Hash, int, error)
 	DeleteTransactionIndex(txId common.Hash) error
 
 	// Best state of Prev
@@ -83,12 +83,14 @@ type DatabaseInterface interface {
 	CleanBeaconBestState() error
 
 	// Commitee with epoch
-	StoreShardCommitteeByHeight(height uint64, v interface{}) error
-	StoreBeaconCommitteeByHeight(height uint64, v interface{}) error
-	DeleteCommitteeByHeight(blkEpoch uint64) error
-	FetchShardCommitteeByHeight(height uint64) ([]byte, error)
-	FetchBeaconCommitteeByHeight(height uint64) ([]byte, error)
-	HasShardCommitteeByHeight(height uint64) (bool, error)
+	StoreShardCommitteeByHeight(uint64, interface{}) error
+	StoreRewardReceiverByHeight(uint64, interface{}) error
+	StoreBeaconCommitteeByHeight(uint64, interface{}) error
+	DeleteCommitteeByHeight(uint64) error
+	FetchShardCommitteeByHeight(uint64) ([]byte, error)
+	FetchRewardReceiverByHeight(uint64) ([]byte, error)
+	FetchBeaconCommitteeByHeight(uint64) ([]byte, error)
+	HasCommitteeByHeight(uint64) (bool, error)
 
 	// SerialNumber
 	StoreSerialNumbers(tokenID common.Hash, serialNumber [][]byte, shardID byte) error
@@ -166,11 +168,7 @@ type DatabaseInterface interface {
 	IsETHTxHashIssued(uniqETHTx []byte) (bool, error)
 	CanProcessTokenPair(externalTokenID []byte, incTokenID common.Hash) (bool, error)
 	CanProcessCIncToken(incTokenID common.Hash) (bool, error)
-	UpdateBridgeTokenInfo(incTokenID common.Hash,
-		externalTokenID []byte,
-		isCentralized bool,
-		updatingAmt uint64,
-		updateType string) error
+	UpdateBridgeTokenInfo(incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmt uint64, updateType string) error
 	GetAllBridgeTokens() ([]byte, error)
 	TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error
 	GetBridgeReqWithStatus(txReqID common.Hash) (byte, error)

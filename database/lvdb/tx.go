@@ -427,7 +427,8 @@ func (db *db) StoreTransactionIndex(txId common.Hash, blockHash common.Hash, ind
 /*
   Get Transaction by ID
 */
-func (db *db) GetTransactionIndexById(txId common.Hash) (common.Hash, int, *database.DatabaseError) {
+
+func (db *db) GetTransactionIndexById(txId common.Hash) (common.Hash, int, error) {
 	key := string(transactionKeyPrefix) + txId.String()
 	_, err := db.HasValue([]byte(key))
 	if err != nil {
