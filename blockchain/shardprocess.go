@@ -230,10 +230,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive shardBlock has timestamp must be greater than %+v but get %+v", previousShardBlock.Header.Timestamp, shardBlock.Header.Timestamp))
 	}
 	// Verify transaction root
-	txMerkle := Merkle{}.BuildMerkleTreeStore(shardBlock.Body.Transactions)
+	txMerkleTree := Merkle{}.BuildMerkleTreeStore(shardBlock.Body.Transactions)
 	txRoot := &common.Hash{}
-	if len(txMerkle) > 0 {
-		txRoot = txMerkle[len(txMerkle)-1]
+	if len(txMerkleTree) > 0 {
+		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
 	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))

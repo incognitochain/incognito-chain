@@ -232,17 +232,17 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 			blockGenerator.chain.config.CRemovedTxs <- tx
 		}
 	}()
-	var respTxsBeacon []metadata.Transaction
-	var errCh chan error
-	errCh = make(chan error)
+	var responsedTxsBeacon []metadata.Transaction
+	var cError chan error
+	cError = make(chan error)
 	go func() {
 		var err error
-		respTxsBeacon, err = blockGenerator.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
-		errCh <- err
+		responsedTxsBeacon, err = blockGenerator.buildResponseTxsFromBeaconInstructions(beaconBlocks, privatekey, shardID)
+		cError <- err
 	}()
 	nilCount := 0
 	for {
-		err := <-errCh
+		err := <-cError
 		if err != nil {
 			return nil, err
 		}
@@ -251,17 +251,13 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 			break
 		}
 	}
-	txsToAdd = append(txsToAdd, respTxsBeacon...)
+	txsToAdd = append(txsToAdd, responsedTxsBeacon...)
 	return txsToAdd, nil
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
-	beaconBlocks []*BeaconBlock,
-	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
-) ([]metadata.Transaction, error) {
-	resTxs := []metadata.Transaction{}
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
+	responsedTxs := []metadata.Transaction{}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
@@ -271,7 +267,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 						Logger.log.Error(err)
 						continue
 					}
-					resTxs = append(resTxs, tx)
+					responsedTxs = append(responsedTxs, tx)
 				}
 
 			}
@@ -303,11 +299,11 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				return nil, err
 			}
 			if newTx != nil {
-				resTxs = append(resTxs, newTx)
+				responsedTxs = append(responsedTxs, newTx)
 			}
 		}
 	}
-	return resTxs, nil
+	return responsedTxs, nil
 }
 
 /*
@@ -318,7 +314,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 	shardPendingValidator := blockchain.BestState.Shard[shardID].ShardPendingValidator
 	assignInstructions := GetAssignInstructionFromBeaconBlock(beaconBlocks, shardID)
 	if len(assignInstructions) != 0 {
-		Logger.log.Critical("Shard Block Producer AssignInstructions ", assignInstructions)
+		Logger.log.Info("Shard Block Producer Assign Instructions ", assignInstructions)
 	}
 	for _, assignInstruction := range assignInstructions {
 		shardPendingValidator = append(shardPendingValidator, strings.Split(assignInstruction[1], ",")...)
@@ -517,9 +513,8 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			txsProcessTimeInBlockCreation = blockCreationTime - time.Duration(50*time.Millisecond).Nanoseconds()
 		}
 		elasped = time.Since(startTime).Nanoseconds()
-		// @txsProcessTimeInBlockCreation is a constant for this current version
 		if elasped >= txsProcessTimeInBlockCreation {
-			Logger.log.Critical("Shard Producer/Elapsed, Break: ", elasped)
+			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
