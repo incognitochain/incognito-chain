@@ -39,12 +39,12 @@ type IssuingAcceptedInst struct {
 func ParseIssuingInstContent(instContentStr string) (*IssuingReqAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(IssuingRequestDecodeInstructionError, err)
 	}
 	var issuingReqAction IssuingReqAction
 	err = json.Unmarshal(contentBytes, &issuingReqAction)
 	if err != nil {
-		return nil, err
+		return nil, NewMetadataTxError(IssuingRequestUnmarshalJsonError, err)
 	}
 	return &issuingReqAction, nil
 }
@@ -72,7 +72,7 @@ func NewIssuingRequest(
 func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	tokenID, err := common.Hash{}.NewHashFromStr(data["TokenID"].(string))
 	if err != nil {
-		return nil, errors.Errorf("TokenID incorrect")
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.Errorf("TokenID incorrect"))
 	}
 
 	tokenName, ok := data["TokenName"].(string)
@@ -83,7 +83,7 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	depositedAmt := uint64(data["DepositedAmount"].(float64))
 	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
 	if err != nil {
-		return nil, errors.Errorf("ReceiveAddress incorrect")
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.Errorf("ReceiveAddress incorrect"))
 	}
 
 	return NewIssuingRequest(
@@ -102,23 +102,23 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	db database.DatabaseInterface,
 ) (bool, error) {
 	if !bytes.Equal(txr.GetSigPubKey(), common.CentralizedWebsitePubKey) {
-		return false, errors.New("the issuance request must be called by centralized website")
+		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}
 	return true, nil
 }
 
 func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(iReq.ReceiverAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's receiver address")
+		return false, false, NewMetadataTxError(IssuingRequestValidateSanityDataError, errors.New("Wrong request info's receiver address"))
 	}
 	if iReq.DepositedAmount == 0 {
 		return false, false, errors.New("Wrong request info's deposited amount")
 	}
 	if iReq.Type != IssuingRequestMeta {
-		return false, false, errors.New("Wrong request info's meta type")
+		return false, false, NewMetadataTxError(IssuingRequestValidateSanityDataError, errors.New("Wrong request info's meta type"))
 	}
 	if iReq.TokenName == "" {
-		return false, false, errors.New("Wrong request info's token name")
+		return false, false, NewMetadataTxError(IssuingRequestValidateSanityDataError, errors.New("Wrong request info's token name"))
 	}
 	return true, true, nil
 }
@@ -147,14 +147,14 @@ func (iReq *IssuingRequest) BuildReqActions(tx Transaction, bcr BlockchainRetrie
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
-		return [][]string{}, err
+		return [][]string{}, NewMetadataTxError(IssuingRequestBuildReqActionsError, err)
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(IssuingRequestMeta), actionContentBase64Str}
 	// track the request status to leveldb
 	err = bcr.GetDatabase().TrackBridgeReqWithStatus(txReqID, byte(common.BridgeRequestProcessingStatus))
 	if err != nil {
-		return [][]string{}, err
+		return [][]string{}, NewMetadataTxError(IssuingRequestBuildReqActionsError, err)
 	}
 	return [][]string{action}, nil
 }
