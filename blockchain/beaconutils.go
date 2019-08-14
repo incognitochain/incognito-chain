@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -226,4 +227,26 @@ func getStakeValidatorArrayString(v []string) ([]string, []string) {
 		}
 	}
 	return beacon, shard
+}
+func snapshotCommittee(beaconCommittee []string, allShardCommittee map[byte][]string) ([]string, map[byte][]string, error) {
+	snapshotBeaconCommittee := []string{}
+	snapshotAllShardCommittee := make(map[byte][]string)
+	for _, committee := range beaconCommittee {
+		snapshotBeaconCommittee = append(snapshotBeaconCommittee, committee)
+	}
+	for shardID, shardCommittee := range allShardCommittee {
+		clonedShardCommittee := []string{}
+		snapshotAllShardCommittee[shardID] = []string{}
+		for _, committee := range shardCommittee {
+			clonedShardCommittee = append(clonedShardCommittee, committee)
+		}
+		snapshotAllShardCommittee[shardID] = clonedShardCommittee
+	}
+	if !reflect.DeepEqual(beaconCommittee, snapshotBeaconCommittee) {
+		return []string{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", beaconCommittee, snapshotBeaconCommittee)
+	}
+	if !reflect.DeepEqual(allShardCommittee, snapshotAllShardCommittee) {
+		return []string{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", allShardCommittee, snapshotAllShardCommittee)
+	}
+	return snapshotBeaconCommittee, snapshotAllShardCommittee, nil
 }
