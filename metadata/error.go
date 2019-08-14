@@ -15,6 +15,14 @@ const (
 	IssuingEthRequestValidateSanityDataError
 	IssuingEthRequestBuildReqActionsError
 	IssuingEthRequestVerifyProofAndParseReceipt
+
+	IssuingRequestDecodeInstructionError
+	IssuingRequestUnmarshalJsonError
+	IssuingRequestNewIssuingRequestFromMapEror
+	IssuingRequestValidateTxWithBlockChainError
+	IssuingRequestValidateSanityDataError
+	IssuingRequestBuildReqActionsError
+	IssuingRequestVerifyProofAndParseReceipt
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -31,6 +39,15 @@ var ErrCodeMessage = map[int]struct {
 	IssuingEthRequestValidateSanityDataError:         {-1005, "Validate sanity data error"},
 	IssuingEthRequestBuildReqActionsError:            {-1006, "Build request action error"},
 	IssuingEthRequestVerifyProofAndParseReceipt:      {-1007, "Verify proof and parse receipt"},
+
+	// -2xxx issuing eth request
+	IssuingRequestDecodeInstructionError:        {-2001, "Can not decode instruction"},
+	IssuingRequestUnmarshalJsonError:            {-2002, "Can not unmarshall json"},
+	IssuingRequestNewIssuingRequestFromMapEror:  {-2003, "Can no new issuing eth request from map"},
+	IssuingRequestValidateTxWithBlockChainError: {-2004, "Validate tx with block chain error"},
+	IssuingRequestValidateSanityDataError:       {-2005, "Validate sanity data error"},
+	IssuingRequestBuildReqActionsError:          {-2006, "Build request action error"},
+	IssuingRequestVerifyProofAndParseReceipt:    {-2007, "Verify proof and parse receipt"},
 }
 
 type MetadataTxError struct {
