@@ -14,7 +14,7 @@ import (
 
 // StoreSerialNumbers - store list serialNumbers by shardID
 func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, shardID byte) error {
-	key := db.GetKey(string(serialNumbersPrefix), tokenID)
+	key := addPrefixToKeyHash(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 
 	var lenData int64
@@ -49,7 +49,7 @@ func (db *db) StoreSerialNumbers(tokenID common.Hash, serialNumbers [][]byte, sh
 
 // HasSerialNumber - Check serialNumber in list SerialNumbers by shardID
 func (db *db) HasSerialNumber(tokenID common.Hash, serialNumber []byte, shardID byte) (bool, error) {
-	key := db.GetKey(string(serialNumbersPrefix), tokenID)
+	key := addPrefixToKeyHash(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, serialNumber...)
 	hasValue, err := db.HasValue(keySpec)
@@ -63,7 +63,7 @@ func (db *db) HasSerialNumber(tokenID common.Hash, serialNumber []byte, shardID 
 // ListSerialNumber -  return all serial number and its index
 func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
 	result := make(map[string]uint64)
-	key := db.GetKey(string(serialNumbersPrefix), tokenID)
+	key := addPrefixToKeyHash(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 
 	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
@@ -86,7 +86,7 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 
 // GetCommitmentIndex - return index of commitment in db list
 func (db *db) GetSerialNumbersLength(tokenID common.Hash, shardID byte) (*big.Int, error) {
-	key := db.GetKey(string(serialNumbersPrefix), tokenID)
+	key := addPrefixToKeyHash(string(serialNumbersPrefix), tokenID)
 	key = append(key, shardID)
 	keyStoreLen := append(key, []byte("len")...)
 	hasValue, err := db.HasValue(keyStoreLen)
@@ -128,7 +128,7 @@ func (db *db) CleanSerialNumbers() error {
 // key: [outcoinsPrefix][tokenID][shardID][hash(output)]
 // value: output in bytes
 func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
-	key := db.GetKey(string(outcoinsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
 
 	key = append(key, publicKey...)
@@ -155,7 +155,7 @@ func (db *db) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoin
 
 // StoreCommitments - store list commitments by shardID
 func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [][]byte, shardID byte) error {
-	key := db.GetKey(string(commitmentsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 
 	// keySpec3 store last index of array commitment
@@ -201,7 +201,7 @@ func (db *db) StoreCommitments(tokenID common.Hash, pubkey []byte, commitments [
 
 // HasCommitment - Check commitment in list commitments by shardID
 func (db *db) HasCommitment(tokenID common.Hash, commitment []byte, shardID byte) (bool, error) {
-	key := db.GetKey(string(commitmentsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, commitment...)
 	hasValue, err := db.HasValue(keySpec)
@@ -213,7 +213,7 @@ func (db *db) HasCommitment(tokenID common.Hash, commitment []byte, shardID byte
 }
 
 func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
-	key := db.GetKey(string(commitmentsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	var keySpec []byte
 	if commitmentIndex == 0 {
@@ -230,7 +230,7 @@ func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, sh
 }
 
 func (db *db) GetCommitmentByIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error) {
-	key := db.GetKey(string(commitmentsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	var keySpec []byte
 	if commitmentIndex == 0 {
@@ -248,7 +248,7 @@ func (db *db) GetCommitmentByIndex(tokenID common.Hash, commitmentIndex uint64, 
 
 // GetCommitmentIndex - return index of commitment in db list
 func (db *db) GetCommitmentIndex(tokenID common.Hash, commitment []byte, shardID byte) (*big.Int, error) {
-	key := db.GetKey(string(commitmentsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, commitment...)
 	data, err := db.Get(keySpec)
@@ -261,7 +261,7 @@ func (db *db) GetCommitmentIndex(tokenID common.Hash, commitment []byte, shardID
 
 // GetCommitmentIndex - return index of commitment in db list
 func (db *db) GetCommitmentLength(tokenID common.Hash, shardID byte) (*big.Int, error) {
-	key := db.GetKey(string(commitmentsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, []byte("len")...)
 	hasValue, err := db.HasValue(keySpec)
@@ -287,7 +287,7 @@ func (db *db) GetCommitmentLength(tokenID common.Hash, shardID byte) (*big.Int, 
 // key: [outcoinsPrefix][tokenID][shardID][hash(output)]
 // value: output in bytes
 func (db *db) GetOutcoinsByPubkey(tokenID common.Hash, pubkey []byte, shardID byte) ([][]byte, error) {
-	key := db.GetKey(string(outcoinsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(outcoinsPrefix), tokenID)
 	key = append(key, shardID)
 
 	key = append(key, pubkey...)
@@ -323,7 +323,7 @@ func (db *db) CleanCommitments() error {
 
 // StoreSNDerivators - store list serialNumbers by shardID
 func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID byte) error {
-	key := db.GetKey(string(snderivatorsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
 
 	// "snderivator-data:nil"
@@ -348,7 +348,7 @@ func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID 
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by shardID
 func (db *db) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error) {
-	key := db.GetKey(string(snderivatorsPrefix), tokenID)
+	key := addPrefixToKeyHash(string(snderivatorsPrefix), tokenID)
 	key = append(key, shardID)
 	keySpec := append(key, data...)
 	hasValue, err := db.HasValue(keySpec)
