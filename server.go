@@ -39,7 +39,6 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
-	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -484,7 +483,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 		// init rpc client instance and stick to Blockchain object
 		// in order to communicate to external services (ex. eth light node)
-		serverObj.blockgen.SetRPCClientChain(rpccaller.NewRPCClient())
+		//serverObj.blockChain.SetRPCClientChain(rpccaller.NewRPCClient())
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
