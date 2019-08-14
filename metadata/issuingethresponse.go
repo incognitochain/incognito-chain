@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/pkg/errors"
 )
 
 type IssuingETHResponse struct {
@@ -131,7 +132,7 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, errors.Errorf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String())
+		return false, errors.New(fmt.Sprintf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil
