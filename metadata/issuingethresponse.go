@@ -98,13 +98,13 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 		var issuingETHAcceptedInst IssuingETHAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 
