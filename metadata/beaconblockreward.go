@@ -23,13 +23,6 @@ type BeaconRewardInfo struct {
 	// InfoHash       *common.Hash
 }
 
-// func (beaconRewardInfo *BeaconRewardInfo) hash() *common.Hash {
-// 	record := string(beaconRewardInfo.BeaconReward)
-// 	record += beaconRewardInfo.PayToPublicKey
-// 	hash := common.HashH([]byte(record))
-// 	return &hash
-// }
-
 func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey string) ([]string, error) {
 	b, _, _ := base58.Base58Check{}.Decode(payToPublicKey)
 	beaconRewardInfo := BeaconRewardInfo{
