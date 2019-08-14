@@ -655,9 +655,9 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 	if instruction[0] == SwapAction {
 		Logger.log.Info("Swap Instruction", instruction)
 		inPubkeys := strings.Split(instruction[1], ",")
+		Logger.log.Info("Swap Instruction In Public Keys", inPubkeys)
 		outPubkeys := strings.Split(instruction[2], ",")
-		Logger.log.Info("Swap Instruction inPubkeys", inPubkeys)
-		Logger.log.Info("Swap Instruction outPubkeys", outPubkeys)
+		Logger.log.Info("Swap Instruction Out Public Keys", outPubkeys)
 		if instruction[3] == "shard" {
 			temp, err := strconv.Atoi(instruction[4])
 			if err != nil {
@@ -677,6 +677,9 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 			}
 			// delete out public key out of current committees
 			if len(instruction[2]) > 0 {
+				for _, value := range outPubkeys {
+					delete(beaconBestState.RewardReceiver, value)
+				}
 				tempShardCommittees, err := RemoveValidator(beaconBestState.ShardCommittee[shardID], outPubkeys)
 				if err != nil {
 					return NewBlockChainError(ProcessSwapInstructionError, err), false, []string{}, []string{}
@@ -696,6 +699,10 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 				beaconBestState.BeaconCommittee = append(beaconBestState.BeaconCommittee, inPubkeys...)
 			}
 			if len(instruction[2]) > 0 {
+				// delete reward receiver
+				for _, value := range outPubkeys {
+					delete(beaconBestState.RewardReceiver, value)
+				}
 				tempBeaconCommittes, err := RemoveValidator(beaconBestState.BeaconCommittee, outPubkeys)
 				if err != nil {
 					return NewBlockChainError(ProcessSwapInstructionError, err), false, []string{}, []string{}
@@ -710,13 +717,27 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 	// get staking candidate list and store
 	// store new staking candidate
 	if instruction[0] == StakeAction && instruction[2] == "beacon" {
-		beacon := strings.Split(instruction[1], ",")
-		newBeaconCandidate = append(newBeaconCandidate, beacon...)
+		beaconCandidates := strings.Split(instruction[1], ",")
+		beaconRewardReceivers := strings.Split(instruction[4], ",")
+		if len(beaconCandidates) != len(beaconRewardReceivers) {
+			return NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect Beacon Candidate (lenght %+v) and Beacon Reward Receiver (lenght %+v) have equal lenght", beaconCandidates, beaconRewardReceivers)), false, []string{}, []string{}
+		}
+		for index, candidate := range beaconCandidates {
+			beaconBestState.RewardReceiver[candidate] = beaconRewardReceivers[index]
+		}
+		newBeaconCandidate = append(newBeaconCandidate, beaconCandidates...)
 		return nil, false, newBeaconCandidate, newShardCandidate
 	}
 	if instruction[0] == StakeAction && instruction[2] == "shard" {
-		shard := strings.Split(instruction[1], ",")
-		newShardCandidate = append(newShardCandidate, shard...)
+		shardCandidates := strings.Split(instruction[1], ",")
+		shardRewardReceivers := strings.Split(instruction[4], ",")
+		if len(shardCandidates) != len(shardRewardReceivers) {
+			return NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect Beacon Candidate (lenght %+v) and Beacon Reward Receiver (lenght %+v) have equal lenght", shardCandidates, shardRewardReceivers)), false, []string{}, []string{}
+		}
+		for index, candidate := range shardCandidates {
+			beaconBestState.RewardReceiver[candidate] = shardRewardReceivers[index]
+		}
+		newShardCandidate = append(newShardCandidate, shardCandidates...)
 		return nil, false, newBeaconCandidate, newShardCandidate
 	}
 	return nil, false, []string{}, []string{}
@@ -738,6 +759,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock) 
 	}
 	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(beaconBlock.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
 		return NewBlockChainError(StoreBeaconCommitteeByHeightError, err)
+	}
+	if err := blockchain.config.DataBase.StoreRewardReceiverByHeight(beaconBlock.Header.Height, blockchain.BestState.Beacon.RewardReceiver); err != nil {
+		return NewBlockChainError(StoreRewardReceiverByHeightError, err)
 	}
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {

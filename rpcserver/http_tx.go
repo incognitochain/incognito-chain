@@ -1334,15 +1334,21 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	//var err error
-	if len(paramsArray) < 5 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Empty staking type component"))
+	if len(paramsArray) != 7 {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
 	}
 	stakingType, ok := paramsArray[4].(float64)
-
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid staking type component"))
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
 	}
-
+	candidatePaymentAddress, ok := paramsArray[5].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+	}
+	isRewardFunder, ok := paramsArray[6].(bool)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+	}
 	senderKeyParam := paramsArray[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
@@ -1357,9 +1363,8 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard)
-
-	tx, err := httpServer.buildRawTransaction(params, metadata)
+	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), candidatePaymentAddress, httpServer.config.ChainParams.StakingAmountShard, isRewardFunder)
+	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
