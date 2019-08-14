@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -343,7 +345,10 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	txFeeToken := tx.GetTxFeeToken()
 	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
 	startAdd := time.Now()
-	tp.addTx(txD, isStore)
+	err = tp.addTx(txD, isStore)
+	if err != nil {
+		return nil, nil, err
+	}
 	if isNewTransaction {
 		Logger.log.Infof("Add New Txs Into Pool %+v FROM SHARD %+v\n", *tx.Hash(), shardID)
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
@@ -626,9 +631,19 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	foundPubkey := -1
 	if tx.GetMetadata() != nil {
 		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-			pubkey = base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+			}
+			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+			if err != nil || candidateWallet == nil {
+				return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
+			}
+			pk := candidateWallet.KeySet.PaymentAddress.Pk
+			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			tp.candidateMtx.RLock()
-			foundPubkey = common.IndexOfStrInHashMap(pubkey, tp.PoolCandidate)
+			foundPubkey = common.IndexOfStrInHashMap(pkb58, tp.PoolCandidate)
 			tp.candidateMtx.RUnlock()
 		}
 	}
@@ -669,7 +684,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFee = float64(tx.GetTxFee())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee {
-					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee == 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -678,7 +693,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
-					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFeeToken, replaceFeeToken)), true
 				}
 				isReplaced = true
 			} else if txDescToBeReplaced.Desc.Fee > 0 && txDescToBeReplaced.Desc.FeeToken > 0 {
@@ -690,7 +705,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				replaceFeeToken = float64(tx.GetTxFeeToken())
 				// not a higher enough fee than return error
 				if baseReplaceFee*tp.ReplaceFeeRatio >= replaceFee || baseReplaceFeeToken*tp.ReplaceFeeRatio >= replaceFeeToken {
-					return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
+					return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Expect fee to be greater or equal than %+v but get %+v ", baseReplaceFee, replaceFee)), true
 				}
 				isReplaced = true
 			}
@@ -706,7 +721,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				}
 				return nil, true
 			} else {
-				return NewMempoolTxError(RejectReplacementTx, fmt.Errorf("Unexpected error occur")), true
+				return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Unexpected error occur")), true
 			}
 		} else {
 			//found no tx to be replaced
@@ -724,7 +739,7 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 // #2: store into db
 // #3: default nil, contain input coins hash, which are used for creating this tx
 */
-func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
+func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	if isStore {
@@ -770,8 +785,18 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		switch metadataType {
 		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
 			{
-				publicKey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-				tp.addCandidateToList(*txHash, publicKey)
+				stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+				if !ok {
+					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+				}
+				candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+				candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+				if err != nil || candidateWallet == nil {
+					return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
+				}
+				pk := candidateWallet.KeySet.PaymentAddress.Pk
+				pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+				tp.addCandidateToList(*txHash, pkb58)
 			}
 		default:
 			{
@@ -787,6 +812,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) {
 		}
 	}
 	Logger.log.Infof("Add Transaction %+v Successs \n", txHash.String())
+	return nil
 }
 
 // Check relay shard and public key role before processing transaction

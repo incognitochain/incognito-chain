@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"sort"
 	"strconv"
@@ -60,7 +62,6 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 				lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
 				shardID := common.GetShardIDFromLastByte(lastByte)
 				byteMap[common.GetShardIDFromLastByte(shardID)] = 1
-				//fmt.Println("CS: header has output coin to shard", shardID)
 			}
 		}
 
@@ -117,18 +118,15 @@ func CreateSwapAction(pendingValidator []string, commitees []string, committeeSi
 /*
 	Action Generate From Transaction:
 	- Stake
-	- Stable param: set, del,...
 */
-func CreateShardInstructionsFromTransactionAndInstruction(
-	transactions []metadata.Transaction,
-	bc *BlockChain,
-	shardID byte,
-) (instructions [][]string, err error) {
+func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
 	// Generate stake action
-	stakeShardPubKey := []string{}
-	stakeBeaconPubKey := []string{}
+	stakeShardPublicKey := []string{}
+	stakeBeaconPublicKey := []string{}
 	stakeShardTxID := []string{}
 	stakeBeaconTxID := []string{}
+	stakeShardRewardReceiver := []string{}
+	stakeBeaconRewardReceiver := []string{}
 	instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
 	if err != nil {
 		return nil, err
@@ -136,34 +134,68 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
-			pk := tx.GetProof().GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
+			var rewardReceiverPaymentAddress string
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if stakingMetadata.IsRewardFunder {
+				rewardReceiverPaymentAddress = stakingMetadata.FunderPaymentAddress
+			} else {
+				rewardReceiverPaymentAddress = stakingMetadata.CandidatePaymentAddress
+			}
+			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+			if err != nil || candidateWallet == nil {
+				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
+			}
+			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			stakeShardPubKey = append(stakeShardPubKey, pkb58)
+			stakeShardPublicKey = append(stakeShardPublicKey, pkb58)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
+			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
 		case metadata.BeaconStakingMeta:
-			pk := tx.GetProof().GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
+			var rewardReceiverPaymentAddress string
+			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+			if !ok {
+				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
+			}
+			if stakingMetadata.IsRewardFunder {
+				rewardReceiverPaymentAddress = stakingMetadata.FunderPaymentAddress
+			} else {
+				rewardReceiverPaymentAddress = stakingMetadata.CandidatePaymentAddress
+			}
+			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+			if err != nil || candidateWallet == nil {
+				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
+			}
+			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			stakeBeaconPubKey = append(stakeBeaconPubKey, pkb58)
+			stakeBeaconPublicKey = append(stakeBeaconPublicKey, pkb58)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
+			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
 		}
 	}
-	if !reflect.DeepEqual(stakeShardPubKey, []string{}) {
-		instruction := []string{StakeAction, strings.Join(stakeShardPubKey, ","), "shard", strings.Join(stakeShardTxID, ",")}
+	if !reflect.DeepEqual(stakeShardPublicKey, []string{}) {
+		if len(stakeShardPublicKey) != len(stakeShardTxID) && len(stakeShardTxID) != len(stakeShardRewardReceiver) {
+			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver)))
+		}
+		instruction := []string{StakeAction, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ",")}
 		instructions = append(instructions, instruction)
 	}
-	if !reflect.DeepEqual(stakeBeaconPubKey, []string{}) {
-		instruction := []string{StakeAction, strings.Join(stakeBeaconPubKey, ","), "beacon", strings.Join(stakeBeaconTxID, ",")}
+	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
+		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) {
+			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver)))
+		}
+		instruction := []string{StakeAction, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ",")}
 		instructions = append(instructions, instruction)
 	}
 	return instructions, nil
 }
 
 // build actions from txs and ins at shard
-func buildActionsFromMetadata(
-	txs []metadata.Transaction,
-	bc *BlockChain,
-	shardID byte,
-) ([][]string, error) {
+func buildActionsFromMetadata(txs []metadata.Transaction, bc *BlockChain, shardID byte) ([][]string, error) {
 	actions := [][]string{}
 	for _, tx := range txs {
 		meta := tx.GetMetadata()
@@ -351,10 +383,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 // 1. (Privacy) PRV: Output coin
 // 2. Tx Custom Token: Tx Token Data
 // 3. Privacy Custom Token: Token Data + Output coin
-func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.OutputCoin,
-	[]transaction.TxNormalTokenData,
-	[]ContentCrossShardTokenPrivacyData,
-) {
+func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.OutputCoin, []transaction.TxNormalTokenData, []ContentCrossShardTokenPrivacyData) {
 	coinList := []privacy.OutputCoin{}
 	txTokenDataMap := make(map[common.Hash]*transaction.TxNormalTokenData)
 	txTokenPrivacyDataMap := make(map[common.Hash]*ContentCrossShardTokenPrivacyData)
