@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -213,19 +212,7 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			return
 		}
 
-		temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(block.Header.BeaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
-		shardCommittee := make(map[byte][]string)
-		err = json.Unmarshal(temp, &shardCommittee)
-		if err != nil {
-			Logger.log.Error(err)
-			return
-		}
-
-		if err = ValidateAggSignature(block.ValidatorsIndex, shardCommittee[block.Header.ShardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+		if err = ValidateAggSignature(block.ValidatorsIndex, blockchain.BestState.Beacon.GetAShardCommittee(block.Header.ShardID), block.AggregatedSig, block.R, block.Hash()); err != nil {
 			Logger.log.Error(err)
 			return
 		}
