@@ -19,7 +19,7 @@ var ErrCodeMessage = map[int]struct {
 	UnexpectedError:        {-1000, "Unexpected Error"},
 	UnmashallJsonError:     {-1001, "Umarshall Json Error"},
 	MashallJsonError:       {-1002, "Marshall Json Error"},
-	UnregisteredTopicError: {-1002, "Subcribed Topic Not Found Error"},
+	UnregisteredTopicError: {-1003, "Subcribed Topic Not Found Error"},
 }
 
 type PubSubError struct {
