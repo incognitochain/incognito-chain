@@ -28,9 +28,6 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 	var md Metadata
 	switch int(mtTemp["Type"].(float64)) {
-	case ResponseBaseMeta:
-		md = &ResponseBase{}
-
 	case IssuingRequestMeta:
 		md = &IssuingRequest{}
 
