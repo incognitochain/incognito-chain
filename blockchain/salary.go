@@ -160,7 +160,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	if err != nil {
 		return nil, err
 	}
-	epochEndDevReward := DurationHalfLifeRewardForDev / common.EPOCH
+	epochEndDevReward := DurationHalfLifeRewardForDev / blockchain.config.ChainParams.Epoch
 	forDev := epochEndDevReward >= epoch
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
@@ -310,7 +310,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * common.EPOCH)
+						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
 						if err != nil {
 							return err
 						}

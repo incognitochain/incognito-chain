@@ -82,9 +82,7 @@ const (
 
 // CONSENSUS
 const (
-	EPOCH       = 10
-	RANDOM_TIME = 5
-	OFFSET      = 1
+	OFFSET = 1
 
 	NODEMODE_RELAY  = "relay"
 	NODEMODE_SHARD  = "shard"

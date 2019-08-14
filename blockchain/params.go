@@ -19,6 +19,8 @@ type Params struct {
 	GenesisShardBlock      *ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward            uint64
 	RewardHalflife         uint64
+	Epoch                  uint64
+	RandomTime             uint64
 }
 
 type GenesisParams struct {
@@ -62,6 +64,8 @@ func init() {
 		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
 		BasicReward:        TestnetBasicReward,
 		RewardHalflife:     TestnetRewardHalflife,
+		Epoch:              TestnetEpoch,
+		RandomTime:         TestnetRandomTime,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -86,5 +90,7 @@ func init() {
 		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
 		BasicReward:        MainnetBasicReward,
 		RewardHalflife:     MainnetRewardHalflife,
+		Epoch:              MainnetEpoch,
+		RandomTime:         MainnetRandomTime,
 	}
 }
