@@ -6,7 +6,6 @@ import (
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
@@ -82,9 +81,9 @@ func GetETHHeader(
 	params := []interface{}{ethBlockHash, false}
 	var getBlockByNumberRes GetBlockByNumberRes
 	err := rpcClient.RPCCall(
-		common.EthereumLightNodeProtocol,
-		common.EthereumLightNodeHost,
-		common.EthereumLightNodePort,
+		EthereumLightNodeProtocol,
+		EthereumLightNodeHost,
+		EthereumLightNodePort,
 		"eth_getBlockByHash",
 		params,
 		&getBlockByNumberRes,
