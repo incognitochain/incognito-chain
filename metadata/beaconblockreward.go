@@ -2,15 +2,13 @@ package metadata
 
 import (
 	"encoding/json"
-
-	// "errors"
+	"errors"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/pkg/errors"
 )
 
 type BlockRewardAcceptInstruction struct {
