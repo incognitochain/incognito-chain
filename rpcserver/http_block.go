@@ -350,6 +350,7 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 			TotalTxs:         bestState.TotalTxns,
 			BlockProducer:    bestState.BestBlock.Header.ProducerAddress.String(),
 			BlockProducerSig: bestState.BestBlock.ProducerSig,
+			Time:             bestState.BestBlock.Header.Timestamp,
 		}
 	}
 
@@ -359,6 +360,7 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		BlockProducer:    beaconBestState.BestBlock.Header.ProducerAddress.String(),
 		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
 		Epoch:            beaconBestState.Epoch,
+		Time:             beaconBestState.BestBlock.Header.Timestamp,
 	}
 	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
