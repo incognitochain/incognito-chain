@@ -1,11 +1,13 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
@@ -95,4 +97,23 @@ func GetETHHeader(
 		return nil, nil
 	}
 	return getBlockByNumberRes.Result, nil
+}
+
+func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]interface{}, error) {
+	logData := []byte{}
+	logLen := len(constructedReceipt.Logs)
+	if logLen == 0 {
+		Logger.log.Debug("WARNING: LOG data is invalid.")
+		return nil, nil
+	}
+	for _, log := range constructedReceipt.Logs {
+		if bytes.Equal(rCommon.HexToAddress(common.EthContractAddressStr).Bytes(), log.Address.Bytes()) {
+			logData = log.Data
+			break
+		}
+	}
+	if len(logData) == 0 {
+		return nil, nil
+	}
+	return ParseETHLogData(logData)
 }
