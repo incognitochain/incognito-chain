@@ -1,11 +1,11 @@
 package metadata
 
 import (
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
 
 type MetadataBase struct {
