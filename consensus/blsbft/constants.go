@@ -5,7 +5,7 @@ import "time"
 const (
 	PROPOSE  = "PROPOSE"
 	LISTEN   = "LISTEN"
-	AGREE    = "AGREE"
+	VOTE     = "VOTE"
 	NEWROUND = "NEWROUND"
 )
 
