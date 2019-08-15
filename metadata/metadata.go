@@ -6,6 +6,20 @@ import (
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
 
+// Interface for all types of metadata in tx
+type Metadata interface {
+	GetType() int
+	Hash() *common.Hash
+	CheckTransactionFee(Transaction, uint64) bool
+	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
+	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
+	ValidateMetadataByItself() bool
+	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
+	CalculateSize() uint64
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, *AccumulatedValues) (bool, error)
+	IsMinerCreatedMetaType() bool
+}
+
 // This is tx struct which is really saved in tx mempool
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
@@ -44,20 +58,6 @@ type BlockchainRetriever interface {
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
-}
-
-// Interface for all types of metadata in tx
-type Metadata interface {
-	GetType() int
-	Hash() *common.Hash
-	CheckTransactionFee(Transaction, uint64) bool
-	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
-	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
-	ValidateMetadataByItself() bool
-	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
-	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, *AccumulatedValues) (bool, error)
-	IsMinerCreatedMetaType() bool
 }
 
 // Interface for all type of transaction
