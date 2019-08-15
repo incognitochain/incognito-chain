@@ -400,29 +400,19 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 /*
 	getCrossShardData get cross shard data from cross shard block
 		1. Get Cross Shard Block and Validate
-			- Get Valid Shard Block from Cross Shard Pool
-			- Get Current Cross Shard State: ShardHeight
-			- Get Current Cross Shard Bitmap Height: BestCrossShard.BeaconHeight
-			- Get Shard Committee for Cross Shard Block via Beacon Height
+			a. Get Valid Cross Shard Block from Cross Shard Pool
+			b. Get Current Cross Shard State: Last Cross Shard Block From other Shard (FS) to this shard (TS) (Ex: last cross shard block from Shard 0 to Shard 1)
+			c. Get Next Cross Shard Block Height from other Shard (FS) to this shard (TS)
 			   + Using FetchCrossShardNextHeight function in Database to determine next block height
+			d. Fetch Other Shard (FS) Committee at Next Cross Shard Block Height for Validation
 		2. Validate
-			- Greater than current cross shard state
-			- Cross Shard Block Signature
-			- Next Cross Shard Block via Beacon Bytemap:
-					When a shard block is created (ex: shard 1 create block A), it will
-					- Send ShardToBeacon Block (A1) to beacon,
-						=> ShardToBeacon Block then will be executed and store as ShardState in beacon
-					- Send CrossShard Block (A2) to other shard if existed
-						=> CrossShard Will be process into CrossTransaction
-					=> A1 and A2 must have the same header
-					- Check if A1 indicates that if A2 is exist or not via CrossShardByteMap
-					AND ALSO, check A2 is the only cross shard block after the most recent processed cross shard block
-					=====> Store Current and Next cross shard block in DB
-		3. if miss Cross Shard Block according to beacon bytemap then stop discard the rest
+			a. Get Next Cross Shard Height from Database
+			a. Cross Shard Block Height is Next Cross Shard Height from Database (if miss Cross Shard Block according to beacon bytemap then stop discard the rest)
+			b. Verify Cross Shard Block Signature
 		4. After validation:
-			- Process valid block
-			- Extract cross output
-			- Divide Output coin into 2 type (Cross Output Coin, Cross Output Custom Token) and return value
+			- Process valid block to extract:
+				+ Cross output coin
+				+ Cross Normal Token
 */
 func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) (map[byte][]CrossTransaction, map[byte][]CrossTxTokenData) {
 	crossTransactions := make(map[byte][]CrossTransaction)
