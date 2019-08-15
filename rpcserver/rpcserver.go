@@ -79,7 +79,7 @@ type RpcServerConfig struct {
 	}
 	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool *mempool.ShardToBeaconPool
-	CrossShardPool    *mempool.CrossShardPool_v2
+	CrossShardPool    *mempool.CrossShardPool
 	RPCMaxClients     int
 	RPCMaxWSClients   int
 	RPCQuirks         bool
