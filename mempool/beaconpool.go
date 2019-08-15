@@ -36,7 +36,7 @@ var beaconPool *BeaconPool = nil
 
 func init() {
 	go func() {
-		mainLoopTime := time.Duration(BEACON_POOL_MAIN_LOOP_TIME) * time.Millisecond
+		mainLoopTime := time.Duration(beaconPoolMainLoopTime)
 		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
 			GetBeaconPool().RemoveBlock(blockchain.GetBeaconBestState().BeaconHeight)
@@ -64,9 +64,9 @@ func GetBeaconPool() *BeaconPool {
 		beaconPool.pendingPool = make(map[uint64]*blockchain.BeaconBlock)
 		beaconPool.conflictedPool = make(map[common.Hash]*blockchain.BeaconBlock)
 		beaconPool.config = BeaconPoolConfig{
-			MaxValidBlock:   MAX_VALID_BEACON_BLK_IN_POOL,
-			MaxPendingBlock: MAX_PENDING_BEACON_BLK_IN_POOL,
-			CacheSize:       BEACON_CACHE_SIZE,
+			MaxValidBlock:   maxValidBeaconBlockInPool,
+			MaxPendingBlock: maxPendingBeaconBlockInPool,
+			CacheSize:       beaconCacheSize,
 		}
 		beaconPool.cache, _ = lru.New(beaconPool.config.CacheSize)
 	}
