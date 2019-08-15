@@ -3,11 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -151,8 +152,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			}
 			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			pkJoin := pkb58 + meta.BLSPublicKey
-			stakeShardPubKey = append(stakeShardPubKey, pkJoin)
+			pkJoin := pkb58 + stakingMetadata.BLSPublicKey
+			stakeShardRewardReceiver = append(stakeShardRewardReceiver, pkJoin)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
 		case metadata.BeaconStakingMeta:
@@ -173,8 +174,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			}
 			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			pkJoin := pkb58 + meta.BLSPublicKey
-			stakeBeaconPubKey = append(stakeBeaconPubKey, pkJoin)
+			pkJoin := pkb58 + stakingMetadata.BLSPublicKey
+			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, pkJoin)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
 		}

@@ -10,6 +10,7 @@ import (
 	main2 "github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/mempool"

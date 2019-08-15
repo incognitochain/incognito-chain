@@ -23,8 +23,8 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	publicKey, _ := blockGenerator.chain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 	_, committeeShardID := blockGenerator.chain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
 
-	fmt.Println("SA: get tx for ", swaperPubKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
-	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swaperPubKey]
+	fmt.Println("SA: get tx for ", swapPublicKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
+	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swapPublicKey]
 	if !ok {
 		return nil, NewBlockChainError(GetStakingTransactionError, errors.New("No staking tx in best state"))
 	}

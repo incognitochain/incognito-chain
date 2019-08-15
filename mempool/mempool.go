@@ -3,9 +3,6 @@ package mempool
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
-	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strings"
 	"sync"
@@ -14,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"

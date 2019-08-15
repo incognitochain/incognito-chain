@@ -416,3 +416,24 @@ func (block ShardBlock) GetRound() int {
 func (block ShardBlock) GetRoundKey() string {
 	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
 }
+
+func (block *CrossShardBlock) AddValidationField(validateData string) error {
+	block.ValidationData = validateData
+	return nil
+}
+
+func (shardBlock *CrossShardBlock) GetHeight() uint64 {
+	return shardBlock.Header.Height
+}
+
+func (block *CrossShardBlock) GetValidationField() string {
+	return block.ValidationData
+}
+
+func (block CrossShardBlock) GetRound() int {
+	return block.Header.Round
+}
+
+func (block CrossShardBlock) GetRoundKey() string {
+	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
+}

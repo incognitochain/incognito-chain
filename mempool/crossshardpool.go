@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/database"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -183,7 +184,8 @@ func (pool *CrossShardPool) AddCrossShardBlock(block *blockchain.CrossShardBlock
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
 		return nil, pool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
 	}
-	if err := blockchain.ValidateAggSignature(block.ValidatorsIndex, shardCommittee[shardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+
+	if err := consensus.AvailableConsensus[block.Header.ConsensusType].ValidateCommitteeSig(block); err != nil {
 		return nil, pool.shardID, err
 	}
 
