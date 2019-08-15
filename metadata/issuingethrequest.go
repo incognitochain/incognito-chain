@@ -108,7 +108,7 @@ func NewIssuingETHRequestFromMap(
 	return req, nil
 }
 
-func (iReq *IssuingETHRequest) ValidateTxWithBlockChain(
+func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
@@ -124,14 +124,14 @@ func (iReq *IssuingETHRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (iReq *IssuingETHRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iReq IssuingETHRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(iReq.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(IssuingEthRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
 	}
 	return true, true, nil
 }
 
-func (iReq *IssuingETHRequest) ValidateMetadataByItself() bool {
+func (iReq IssuingETHRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != IssuingETHRequestMeta {
 		return false
 	}

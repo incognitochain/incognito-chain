@@ -66,17 +66,17 @@ type BeaconBlockSalaryInfo struct {
 	InfoHash          *common.Hash
 }
 
-func (sbsRes *BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (sbsRes BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes *BeaconBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (sbsRes *BeaconBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(sbsRes.ProducerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
@@ -89,7 +89,7 @@ func (sbsRes *BeaconBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, 
 	return false, true, nil
 }
 
-func (sbsRes *BeaconBlockSalaryRes) ValidateMetadataByItself() bool {
+func (sbsRes BeaconBlockSalaryRes) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
