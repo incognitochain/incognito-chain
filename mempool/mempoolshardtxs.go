@@ -119,7 +119,7 @@ func (tp *TxPool) validateTxIndependentProperties(tx metadata.Transaction) error
 		return nil
 	}
 	// check version
-	ok := tx.CheckTxVersion(MaxVersion)
+	ok := tx.CheckTxVersion(maxVersion)
 	if !ok {
 		return NewMempoolTxError(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
 	}

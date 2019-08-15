@@ -55,6 +55,7 @@ type TxDesc struct {
 	StartTime       time.Time       //Unix Time that transaction enter mempool
 	IsFowardMessage bool
 }
+
 type TxPool struct {
 	// The following variables must only be used atomically.
 	config                    Config
@@ -75,9 +76,10 @@ type TxPool struct {
 	IsBlockGenStarted         bool
 	IsUnlockMempool           bool
 	ReplaceFeeRatio           float64
+
 	//for testing
 	IsTest       bool
-	DuplicateTxs map[common.Hash]uint64 //For testing
+	duplicateTxs map[common.Hash]uint64 //For testing
 }
 
 /*
@@ -90,7 +92,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolTokenID = make(map[common.Hash]string)
 	tp.PoolCandidate = make(map[common.Hash]string)
-	tp.DuplicateTxs = make(map[common.Hash]uint64)
+	tp.duplicateTxs = make(map[common.Hash]uint64)
 	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
 	tp.ScanTime = defaultScanTime
@@ -106,6 +108,7 @@ func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction, cRem
 	tp.CPendingTxs = cPendingTxs
 	tp.CRemoveTxs = cRemoveTxs
 }
+
 func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 	if tp.config.PersistMempool {
 		Logger.log.Critical("Turn on Mempool Persistence Database")
@@ -117,7 +120,7 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 // LoadOrResetDatabaseMempool - Load and reset database of mempool when start node
 func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	if !tp.config.IsLoadFromMempool {
-		err := tp.ResetDatabaseMempool()
+		err := tp.resetDatabaseMempool()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
 			return NewMempoolTxError(DatabaseError, err)
@@ -125,7 +128,7 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 			Logger.log.Critical("Successfully Reset from database")
 		}
 	} else {
-		txDescs, err := tp.LoadDatabaseMP()
+		txDescs, err := tp.loadDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
 			return NewMempoolTxError(DatabaseError, err)
@@ -159,6 +162,7 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 		}
 	}
 }
+
 func (tp *TxPool) monitorPool() {
 	if tp.config.TxLifeTime == 0 {
 		return
@@ -180,7 +184,10 @@ func (tp *TxPool) monitorPool() {
 			tp.removeTx(txDesc.Desc.Tx)
 			tp.removeCandidateByTxHash(txHash)
 			tp.removeTokenIDByTxHash(txHash)
-			tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
+			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
+			if err != nil {
+				Logger.log.Error(err)
+			}
 			txSize := txDesc.Desc.Tx.GetTxActualSize()
 			go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxPoolRemoveAfterLifeTime,
@@ -667,6 +674,7 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	}
 	return false
 }
+
 func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error, bool) {
 	// calculate match serial number list in pool for replaced tx
 	serialNumberHashList := tx.ListSerialNumbersHashH()
@@ -744,7 +752,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	if isStore {
-		err := tp.AddTransactionToDatabaseMempool(txHash, *txD)
+		err := tp.addTransactionToDatabaseMempool(txHash, *txD)
 		if err != nil {
 			Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
 		} else {
@@ -860,7 +868,10 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		}
 		startTime := txDesc.StartTime
 		if tp.config.PersistMempool {
-			tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+			err := tp.removeTransactionFromDatabaseMP(tx.Hash())
+			if err != nil {
+				Logger.log.Error(err)
+			}
 		}
 		go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 			metrics.Measurement:      metrics.TxPoolRemovedTimeDetails,
@@ -957,6 +968,7 @@ func (tp *TxPool) addCandidateToList(txHash common.Hash, candidate string) {
 	defer tp.candidateMtx.Unlock()
 	tp.PoolCandidate[txHash] = candidate
 }
+
 func (tp *TxPool) removeCandidateByTxHash(txHash common.Hash) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
@@ -964,6 +976,7 @@ func (tp *TxPool) removeCandidateByTxHash(txHash common.Hash) {
 		delete(tp.PoolCandidate, txHash)
 	}
 }
+
 func (tp *TxPool) RemoveCandidateList(candidate []string) {
 	tp.candidateMtx.Lock()
 	defer tp.candidateMtx.Unlock()
@@ -986,6 +999,7 @@ func (tp *TxPool) addTokenIDToList(txHash common.Hash, tokenID string) {
 	defer tp.tokenIDMtx.Unlock()
 	tp.poolTokenID[txHash] = tokenID
 }
+
 func (tp *TxPool) removeTokenIDByTxHash(txHash common.Hash) {
 	tp.tokenIDMtx.Lock()
 	defer tp.tokenIDMtx.Unlock()
