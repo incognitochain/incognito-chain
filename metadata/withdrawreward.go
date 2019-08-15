@@ -51,7 +51,7 @@ func NewWithDrawRewardResponse(txRequestID *common.Hash) (Metadata, error) {
 	}, nil
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) Hash() *common.Hash {
+func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
 	return withDrawRewardResponse.TxRequest
 }
 

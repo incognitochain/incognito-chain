@@ -60,7 +60,7 @@ func (sbsRes ReturnStakingMetadata) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (sbsRes *ReturnStakingMetadata) Hash() *common.Hash {
+func (sbsRes ReturnStakingMetadata) Hash() *common.Hash {
 	record := sbsRes.StakerAddress.String()
 	record += sbsRes.TxID
 

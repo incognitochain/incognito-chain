@@ -94,7 +94,7 @@ func (sbsRes BeaconBlockSalaryRes) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (sbsRes *BeaconBlockSalaryRes) Hash() *common.Hash {
+func (sbsRes BeaconBlockSalaryRes) Hash() *common.Hash {
 	record := sbsRes.ProducerAddress.String()
 	record += string(sbsRes.BeaconBlockHeight)
 	record += sbsRes.InfoHash.String()
