@@ -39,7 +39,7 @@ func (mb MetadataBase) GetType() int {
 	return mb.Type
 }
 
-func (mb *MetadataBase) Hash() *common.Hash {
+func (mb MetadataBase) Hash() *common.Hash {
 	record := strconv.Itoa(mb.Type)
 	hash := common.HashH([]byte(record))
 	return &hash
