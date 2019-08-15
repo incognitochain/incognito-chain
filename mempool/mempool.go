@@ -76,9 +76,10 @@ type TxPool struct {
 	IsBlockGenStarted         bool
 	IsUnlockMempool           bool
 	ReplaceFeeRatio           float64
+
 	//for testing
 	IsTest       bool
-	DuplicateTxs map[common.Hash]uint64 //For testing
+	duplicateTxs map[common.Hash]uint64 //For testing
 }
 
 /*
@@ -91,7 +92,7 @@ func (tp *TxPool) Init(cfg *Config) {
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolTokenID = make(map[common.Hash]string)
 	tp.PoolCandidate = make(map[common.Hash]string)
-	tp.DuplicateTxs = make(map[common.Hash]uint64)
+	tp.duplicateTxs = make(map[common.Hash]uint64)
 	_, subChanRole, _ := tp.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
 	tp.config.RoleInCommitteesEvent = subChanRole
 	tp.ScanTime = defaultScanTime
