@@ -38,7 +38,7 @@ func (mb *MetadataBase) Process() error {
 	return nil
 }
 
-func (mb *MetadataBase) GetType() int {
+func (mb MetadataBase) GetType() int {
 	return mb.Type
 }
 
