@@ -67,9 +67,9 @@ var InitBeaconPoolTest = func(pubsubManager *pubsub.PubSubManager) {
 	beaconPoolTest.pendingPool = make(map[uint64]*blockchain.BeaconBlock)
 	beaconPoolTest.conflictedPool = make(map[common.Hash]*blockchain.BeaconBlock)
 	beaconPoolTest.config = BeaconPoolConfig{
-		MaxValidBlock:   MAX_VALID_BEACON_BLK_IN_POOL,
-		MaxPendingBlock: MAX_PENDING_BEACON_BLK_IN_POOL,
-		CacheSize:       BEACON_CACHE_SIZE,
+		MaxValidBlock:   maxValidBeaconBlockInPool,
+		MaxPendingBlock: maxPendingBeaconBlockInPool,
+		CacheSize:       beaconCacheSize,
 	}
 	beaconPoolTest.cache, _ = lru.New(beaconPool.config.CacheSize)
 	beaconPoolTest.PubSubManager = pubsubManager
@@ -83,7 +83,7 @@ var _ = func() (_ struct{}) {
 	InitBeaconPoolTest(pbBeaconPool)
 	go pbBeaconPool.Start()
 	oldBlockHash := common.Hash{}
-	for i := testLatestValidHeight + 1; i < MAX_VALID_BEACON_BLK_IN_POOL+testLatestValidHeight+2; i++ {
+	for i := testLatestValidHeight + 1; i < maxValidBeaconBlockInPool+testLatestValidHeight+2; i++ {
 		beaconBlock := &blockchain.BeaconBlock{
 			Header: blockchain.BeaconHeader{
 				Height: uint64(i),
@@ -95,7 +95,7 @@ var _ = func() (_ struct{}) {
 		oldBlockHash = beaconBlock.Header.Hash()
 		validBeaconBlocks = append(validBeaconBlocks, beaconBlock)
 	}
-	for i := MAX_VALID_BEACON_BLK_IN_POOL + testLatestValidHeight + 2; i < MAX_VALID_BEACON_BLK_IN_POOL+MAX_PENDING_BEACON_BLK_IN_POOL+testLatestValidHeight+3; i++ {
+	for i := maxValidBeaconBlockInPool + testLatestValidHeight + 2; i < maxValidBeaconBlockInPool+maxPendingBeaconBlockInPool+testLatestValidHeight+3; i++ {
 		beaconBlock := &blockchain.BeaconBlock{
 			Header: blockchain.BeaconHeader{
 				Height: uint64(i),
@@ -118,9 +118,9 @@ func ResetBeaconPool() {
 	beaconPool.pendingPool = make(map[uint64]*blockchain.BeaconBlock)
 	beaconPool.conflictedPool = make(map[common.Hash]*blockchain.BeaconBlock)
 	beaconPool.config = BeaconPoolConfig{
-		MaxValidBlock:   MAX_VALID_BEACON_BLK_IN_POOL,
-		MaxPendingBlock: MAX_PENDING_BEACON_BLK_IN_POOL,
-		CacheSize:       BEACON_CACHE_SIZE,
+		MaxValidBlock:   maxValidBeaconBlockInPool,
+		MaxPendingBlock: maxPendingBeaconBlockInPool,
+		CacheSize:       beaconCacheSize,
 	}
 	beaconPool.cache, _ = lru.New(beaconPool.config.CacheSize)
 	InitBeaconPool(pbBeaconPool)
@@ -141,13 +141,13 @@ func TestGetbeaconPool(t *testing.T) {
 	if beaconPool.conflictedPool == nil {
 		t.Fatal("Invalid Conflicted Pool")
 	}
-	if beaconPool.config.MaxValidBlock != MAX_VALID_BEACON_BLK_IN_POOL {
+	if beaconPool.config.MaxValidBlock != maxValidBeaconBlockInPool {
 		t.Fatal("Invalid Max Valid Pool")
 	}
-	if beaconPool.config.MaxPendingBlock != MAX_PENDING_BEACON_BLK_IN_POOL {
+	if beaconPool.config.MaxPendingBlock != maxPendingBeaconBlockInPool {
 		t.Fatal("Invalid Max Pending Pool")
 	}
-	if beaconPool.config.CacheSize != BEACON_CACHE_SIZE {
+	if beaconPool.config.CacheSize != beaconCacheSize {
 		t.Fatal("Invalid Beacon Cache Size")
 	}
 	if beaconPool.cache == nil {
@@ -469,8 +469,8 @@ func TestBeaconPoolAddBeaconBlock(t *testing.T) {
 			t.Fatalf("Block %+v should be added into pool but get %+v", block.Header.Height, err)
 		}
 	}
-	if len(beaconPoolTest.validPool) != MAX_VALID_BEACON_BLK_IN_POOL {
-		t.Fatalf("Expected number of block %+v in valid pool but get %+v", MAX_VALID_BEACON_BLK_IN_POOL, len(beaconPoolTest.validPool))
+	if len(beaconPoolTest.validPool) != maxValidBeaconBlockInPool {
+		t.Fatalf("Expected number of block %+v in valid pool but get %+v", maxValidBeaconBlockInPool, len(beaconPoolTest.validPool))
 	}
 	if len(beaconPoolTest.pendingPool) != 1 {
 		t.Fatalf("Expected number of block %+v in pending pool but get %+v", 1, len(beaconPoolTest.pendingPool))
@@ -496,8 +496,8 @@ func TestBeaconPoolAddBeaconBlock(t *testing.T) {
 			}
 		}
 	}
-	if len(beaconPoolTest.pendingPool) != MAX_PENDING_BEACON_BLK_IN_POOL {
-		t.Fatalf("Expected number of block %+v in pending pool but get %+v", MAX_PENDING_BEACON_BLK_IN_POOL, len(beaconPoolTest.pendingPool))
+	if len(beaconPoolTest.pendingPool) != maxPendingBeaconBlockInPool {
+		t.Fatalf("Expected number of block %+v in pending pool but get %+v", maxPendingBeaconBlockInPool, len(beaconPoolTest.pendingPool))
 	}
 }
 

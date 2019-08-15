@@ -108,7 +108,7 @@ var _ = func() (_ struct{}) {
 	InitShardPoolTest(pbShardPool)
 	go pbShardPool.Start()
 	oldBlockHash := common.Hash{}
-	for i := testLatestValidHeight + 1; i < MAX_VALID_BEACON_BLK_IN_POOL+testLatestValidHeight+2; i++ {
+	for i := testLatestValidHeight + 1; i < maxValidBeaconBlockInPool+testLatestValidHeight+2; i++ {
 		shardBlock := &blockchain.ShardBlock{
 			Header: blockchain.ShardHeader{
 				ShardID: 0,
@@ -121,7 +121,7 @@ var _ = func() (_ struct{}) {
 		oldBlockHash = shardBlock.Header.Hash()
 		validShardBlocks = append(validShardBlocks, shardBlock)
 	}
-	for i := MAX_VALID_BEACON_BLK_IN_POOL + testLatestValidHeight + 2; i < MAX_VALID_BEACON_BLK_IN_POOL+MAX_PENDING_BEACON_BLK_IN_POOL+testLatestValidHeight+3; i++ {
+	for i := maxValidBeaconBlockInPool + testLatestValidHeight + 2; i < maxValidBeaconBlockInPool+maxPendingBeaconBlockInPool+testLatestValidHeight+3; i++ {
 		shardBlock := &blockchain.ShardBlock{
 			Header: blockchain.ShardHeader{
 				ShardID: 0,
@@ -663,8 +663,8 @@ func TestShardPoolAddBeaconBlock(t *testing.T) {
 			}
 		}
 	}
-	if len(shardPoolTest.pendingPool) != MAX_PENDING_BEACON_BLK_IN_POOL {
-		t.Fatalf("Expected number of block %+v in pending pool but get %+v", MAX_PENDING_BEACON_BLK_IN_POOL, len(shardPoolTest.pendingPool))
+	if len(shardPoolTest.pendingPool) != maxPendingBeaconBlockInPool {
+		t.Fatalf("Expected number of block %+v in pending pool but get %+v", maxPendingBeaconBlockInPool, len(shardPoolTest.pendingPool))
 	}
 }
 
