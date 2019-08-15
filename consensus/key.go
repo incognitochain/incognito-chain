@@ -25,8 +25,10 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 	return nil
 }
 func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
-	if engine.CurrentMiningChain != "" {
-		return engine.ChainConsensusList[engine.CurrentMiningChain].GetUserPublicKey(), engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
+	if engine != nil && engine.CurrentMiningChain != "" {
+		if _, ok := engine.ChainConsensusList[engine.CurrentMiningChain]; ok {
+			return engine.ChainConsensusList[engine.CurrentMiningChain].GetUserPublicKey(), engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
+		}
 	}
 	return "", ""
 }
