@@ -16,38 +16,45 @@ import (
 )
 
 /*
-	Load beststate + block of current block from cache to create new block
-	Because final beststate height should behind highest block 1
-	For example: current height block: 91, final beststate should be 90, new block height is 92
-
-	Block Produce:
-	* Clone Current Best State
-	* Build Essential Header Data:
-		1. Producer: Get Producer Address value from input parameters
-		2. Version: Get Proper version value
-		3. Epoch: Increase Epoch if next height mod epoch is 1 (begin of new epoch), otherwise use current epoch value
-		4. Height: Previous block height + 1
-		5. Round: Get Round Value from consensus
-		6. Previous Block Hash: Get Current Best Block Hash
-	* Build Body:
-		1. Build Reward Instruction:
+	I. Block Produce:
+	1. Clone Current Best State
+	2. Build Essential Header Data:
+		a. Producer: Get Producer Address value from input parameters
+		b. Version: Get Proper version value
+		c. Epoch: Increase Epoch if next height mod epoch is 1 (begin of new epoch), otherwise use current epoch value
+		d. Height: Previous block height + 1
+		e. Round: Get Round Value from consensus
+		f. Previous Block Hash: Get Current Best Block Hash
+	3. Build Body:
+		a. Build Reward Instruction:
 			- These instruction will only be built at the begining of each epoch (for previous committee)
-		2. Get Shard State:
-			- Shard State Vulue from beaconblockpool
-			- Shard State Hash
-			- Get new staker from shard(beacon or pool) -> help to create Instruction
-			- Swap validator from shard -> help to create Instruction
-		8. Create Instruction:
-			- Instruction value -> body
-			- Instruction Hash -> Header
-		9. Process Instruction with best state:
-			- Create Validator Root -> Header
-			- Create BeaconCandidate Root -> Header
-	Sign:
-		Sign block and update validator index, agg sig
+		b. Get Shard State and Instruction:
+			- These information will be extracted from all shard block, which got from shard to beacon pool
+		c. Create Instruction:
+			- Instruction created from beacon data
+			- Instruction created from shard instructions
+	4. Update Cloned Beacon Best State to Build Root Hash for Header
+		+ Beacon Root Hash will be calculated from new beacon best state (beacon best state after process by this new block)
+		+ Some data may changed if beacon best state is updated:
+			+ Beacon Committee, Pending Validator, Candidate List
+			+ Shard Committee, Pending Validator, Candidate List
+	5. Build Root Hash in Header
+		a. Beacon Committee and Validator Root Hash: Hash from Beacon Committee and Pending Validator
+		b. Beacon Caiddate Root Hash: Hash from Beacon candidate list
+		c. Shard Committee and Validator Root Hash: Hash from Shard Committee and Pending Validator
+		d. Shard Caiddate Root Hash: Hash from Shard candidate list
+		+ These Root Hash will be used to verify that, either Two arbitray Nodes have the same data
+			after they update beacon best state by new block.
+		e. ShardStateHash: shard states from blocks of all shard
+		f. InstructionHash: from instructions in beacon block body
+		g. InstructionMerkleRoot
+	II. Block Finalize:
+	1. Add Block Timestamp
+	2. Calculate block Producer Signature
+		+ Block Producer Signature is calculated from hash block header
+		+ Block Producer Signature is not included in block header
 */
 func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.PaymentAddress, round int, shardsToBeaconLimit map[byte]uint64) (*BeaconBlock, error) {
-	// lock blockchain
 	blockGenerator.chain.chainLock.Lock()
 	defer blockGenerator.chain.chainLock.Unlock()
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", blockGenerator.chain.BestState.Beacon.BeaconHeight+1)
