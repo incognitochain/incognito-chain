@@ -100,7 +100,7 @@ func (stakingMetadata *StakingMetadata) ValidateSanityData(bcr BlockchainRetriev
 	}
 	return true, true, nil
 }
-func (stakingMetadata *StakingMetadata) GetType() int {
+func (stakingMetadata StakingMetadata) GetType() int {
 	return stakingMetadata.Type
 }
 
