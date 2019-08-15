@@ -45,10 +45,9 @@ var defaultConfig = ShardPoolConfig{
 func init() {
 	go func() {
 		mainLoopTime := time.Duration(shardPoolMainLoopTime)
-		ticker := time.Tick(mainLoopTime)
-		for t := range ticker {
-			Logger.log.Trace(t)
-			for k := range shardPoolMap {
+		ticker := time.NewTicker(mainLoopTime)
+		for _ = range ticker.C {
+			for k, _ := range shardPoolMap {
 				GetShardPool(k).RemoveBlock(blockchain.GetBestStateShard(k).ShardHeight)
 				GetShardPool(k).CleanOldBlock(blockchain.GetBestStateShard(k).ShardHeight)
 				GetShardPool(k).PromotePendingPool()
