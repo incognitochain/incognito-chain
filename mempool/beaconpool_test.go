@@ -595,25 +595,25 @@ func TestBeaconPoolCleanOldBlock(t *testing.T) {
 	if len(beaconPoolTest.conflictedPool) != 1 {
 		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
 	}
-	beaconPoolTest.CleanOldBlock(2)
+	beaconPoolTest.cleanOldBlock(2)
 	if len(beaconPoolTest.pendingPool) != 4 {
 		t.Fatalf("Expected number of block 4 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
 	}
 	if len(beaconPoolTest.conflictedPool) != 1 {
 		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
 	}
-	beaconPoolTest.CleanOldBlock(3)
+	beaconPoolTest.cleanOldBlock(3)
 	if len(beaconPoolTest.pendingPool) != 3 {
 		t.Fatalf("Expected number of block 3 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
 	}
 	if len(beaconPoolTest.conflictedPool) != 1 {
 		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
 	}
-	beaconPoolTest.CleanOldBlock(5)
+	beaconPoolTest.cleanOldBlock(5)
 	if len(beaconPoolTest.conflictedPool) != 1 {
 		t.Fatalf("Expected number of block 1 in pending pool but get %+v", len(beaconPoolTest.conflictedPool))
 	}
-	beaconPoolTest.CleanOldBlock(6)
+	beaconPoolTest.cleanOldBlock(6)
 	if len(beaconPoolTest.pendingPool) != 0 {
 		t.Fatalf("Expected number of block 0 in pending pool but get %+v", len(beaconPoolTest.pendingPool))
 	}

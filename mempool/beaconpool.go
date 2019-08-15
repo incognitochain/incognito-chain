@@ -38,7 +38,7 @@ func init() {
 		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
 			GetBeaconPool().RemoveBlock(blockchain.GetBeaconBestState().BeaconHeight)
-			GetBeaconPool().CleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
+			GetBeaconPool().cleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
 			GetBeaconPool().PromotePendingPool()
 		}
 	}()
@@ -70,78 +70,79 @@ func GetBeaconPool() *BeaconPool {
 	}
 	return beaconPool
 }
-func (self *BeaconPool) Start(cQuit chan struct{}) {
+
+func (beaconPool *BeaconPool) Start(cQuit chan struct{}) {
 	for {
 		select {
-		case msg := <-self.RoleInCommitteesEvent:
+		case msg := <-beaconPool.RoleInCommitteesEvent:
 			role, ok := msg.Value.(bool)
 			if !ok {
 				continue
 			}
-			self.mtx.Lock()
-			self.RoleInCommittees = role
-			self.mtx.Unlock()
+			beaconPool.mtx.Lock()
+			beaconPool.RoleInCommittees = role
+			beaconPool.mtx.Unlock()
 		case <-cQuit:
-			self.mtx.Lock()
-			self.RoleInCommittees = false
-			self.mtx.Unlock()
+			beaconPool.mtx.Lock()
+			beaconPool.RoleInCommittees = false
+			beaconPool.mtx.Unlock()
 			return
 		}
 	}
 }
-func (self *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
-	if self.latestValidHeight < lastestBeaconHeight {
-		self.latestValidHeight = lastestBeaconHeight
+
+func (beaconPool *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
+	if beaconPool.latestValidHeight < lastestBeaconHeight {
+		beaconPool.latestValidHeight = lastestBeaconHeight
 	}
 }
 
-func (self *BeaconPool) GetBeaconState() uint64 {
-	return self.latestValidHeight
+func (beaconPool *BeaconPool) GetBeaconState() uint64 {
+	return beaconPool.latestValidHeight
 }
 
-func (self *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
-	go self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
-	err := self.validateBeaconBlock(block, false)
+func (beaconPool *BeaconPool) AddBeaconBlock(block *blockchain.BeaconBlock) error {
+	beaconPool.mtx.Lock()
+	defer beaconPool.mtx.Unlock()
+	go beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
+	err := beaconPool.validateBeaconBlock(block, false)
 	if err != nil {
 		return err
 	}
-	self.insertNewBeaconBlockToPool(block)
-	self.promotePendingPool()
-	//self.CleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
+	beaconPool.insertNewBeaconBlockToPool(block)
+	beaconPool.promotePendingPool()
 	return nil
 }
 
-func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPending bool) error {
+func (beaconPool *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPending bool) error {
 	//If receive old block, it will ignore
-	if _, ok := self.cache.Get(block.Header.Hash()); ok {
-		if nextBlock, ok := self.pendingPool[block.Header.Height+1]; ok {
-			self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, nextBlock.Header.PreviousBlockHash))
+	if _, ok := beaconPool.cache.Get(block.Header.Hash()); ok {
+		if nextBlock, ok := beaconPool.pendingPool[block.Header.Height+1]; ok {
+			beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, nextBlock.Header.PreviousBlockHash))
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive Old Block, this block maybe insert to blockchain already or invalid because of fork: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
-	if block.Header.Height <= self.latestValidHeight {
-		if self.latestValidHeight-block.Header.Height < 2 {
-			self.conflictedPool[block.Header.Hash()] = block
+	if block.Header.Height <= beaconPool.latestValidHeight {
+		if beaconPool.latestValidHeight-block.Header.Height < 2 {
+			beaconPool.conflictedPool[block.Header.Hash()] = block
 		}
 		return NewBlockPoolError(OldBlockError, errors.New("Receive old block: "+fmt.Sprintf("%d", block.Header.Height)))
 	}
 	// if next valid block then check max valid pool
-	if self.latestValidHeight+1 == block.Header.Height {
-		if len(self.validPool) >= self.config.MaxValidBlock && len(self.pendingPool) >= self.config.MaxPendingBlock {
+	if beaconPool.latestValidHeight+1 == block.Header.Height {
+		if len(beaconPool.validPool) >= beaconPool.config.MaxValidBlock && len(beaconPool.pendingPool) >= beaconPool.config.MaxPendingBlock {
 			return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max valid pool and pending pool"))
 		}
 	}
 	if !isPending {
 		//If block already in pool, it will ignore
-		_, ok := self.pendingPool[block.Header.Height]
+		_, ok := beaconPool.pendingPool[block.Header.Height]
 		if ok {
 			return NewBlockPoolError(DuplicateBlockError, errors.New("Receive duplicate block in pending pool: "+fmt.Sprintf("%d", block.Header.Height)))
 		}
 		// if not next valid block then check max pending pool
-		if block.Header.Height > self.latestValidHeight {
-			if len(self.pendingPool) >= self.config.MaxPendingBlock {
+		if block.Header.Height > beaconPool.latestValidHeight {
+			if len(beaconPool.pendingPool) >= beaconPool.config.MaxPendingBlock {
 				return NewBlockPoolError(MaxPoolSizeError, errors.New("Exceed max invalid pending pool"))
 			}
 		}
@@ -156,63 +157,64 @@ func (self *BeaconPool) validateBeaconBlock(block *blockchain.BeaconBlock, isPen
 	3. Pending pool has next block,
 	4. and next block has previous hash == this block hash
 */
-func (self *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock) bool {
+func (beaconPool *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.BeaconBlock) bool {
 	// Condition 1: check height
-	if block.Header.Height == self.latestValidHeight+1 {
+	if block.Header.Height == beaconPool.latestValidHeight+1 {
 		// Condition 2: check pool capacity
-		if len(self.validPool) < self.config.MaxValidBlock {
+		if len(beaconPool.validPool) < beaconPool.config.MaxValidBlock {
 			nextHeight := block.Header.Height + 1
 			// Condition 3: check next block
-			if nextBlock, ok := self.pendingPool[nextHeight]; ok {
+			if nextBlock, ok := beaconPool.pendingPool[nextHeight]; ok {
 				preHash := &nextBlock.Header.PreviousBlockHash
 				blockHeader := block.Header.Hash()
 				// Condition 4: next block should point to this block
 				if preHash.IsEqual(&blockHeader) {
-					self.validPool = append(self.validPool, block)
-					self.updateLatestBeaconState()
+					beaconPool.validPool = append(beaconPool.validPool, block)
+					beaconPool.updateLatestBeaconState()
 					return true
 				} else {
-					self.cache.Add(block.Header.Hash(), block)
-					self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, preHash))
+					beaconPool.cache.Add(block.Header.Hash(), block)
+					beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestBeaconBlockByHashTopic, preHash))
 				}
 			} else {
 				// no next block found then push to pending pool
-				self.pendingPool[block.Header.Height] = block
+				beaconPool.pendingPool[block.Header.Height] = block
 			}
-		} else if len(self.pendingPool) < self.config.MaxPendingBlock {
-			self.pendingPool[block.Header.Height] = block
+		} else if len(beaconPool.pendingPool) < beaconPool.config.MaxPendingBlock {
+			beaconPool.pendingPool[block.Header.Height] = block
 			return false
 		}
 	} else {
-		self.pendingPool[block.Header.Height] = block
+		beaconPool.pendingPool[block.Header.Height] = block
 		return false
 	}
 	return false
 }
-func (self *BeaconPool) updateLatestBeaconState() {
-	if len(self.validPool) > 0 {
-		self.latestValidHeight = self.validPool[len(self.validPool)-1].Header.Height
+
+func (beaconPool *BeaconPool) updateLatestBeaconState() {
+	if len(beaconPool.validPool) > 0 {
+		beaconPool.latestValidHeight = beaconPool.validPool[len(beaconPool.validPool)-1].Header.Height
 	} else {
-		self.latestValidHeight = blockchain.GetBeaconBestState().BeaconHeight
+		beaconPool.latestValidHeight = blockchain.GetBeaconBestState().BeaconHeight
 	}
 }
 
 // Check block in pending block then add to valid pool if block is valid
-func (self *BeaconPool) promotePendingPool() {
+func (beaconPool *BeaconPool) promotePendingPool() {
 	for {
 		// get next height
-		nextHeight := self.latestValidHeight + 1
+		nextHeight := beaconPool.latestValidHeight + 1
 		// retrieve next height block in pending
-		if block, ok := self.pendingPool[nextHeight]; ok {
+		if block, ok := beaconPool.pendingPool[nextHeight]; ok {
 			// validate next block
-			err := self.validateBeaconBlock(block, true)
+			err := beaconPool.validateBeaconBlock(block, true)
 			if err != nil {
 				break
 			}
 			// insert next block into valid pool
-			isSuccess := self.insertNewBeaconBlockToPool(block)
+			isSuccess := beaconPool.insertNewBeaconBlockToPool(block)
 			if isSuccess {
-				delete(self.pendingPool, nextHeight)
+				delete(beaconPool.pendingPool, nextHeight)
 			} else {
 				break
 			}
@@ -221,140 +223,110 @@ func (self *BeaconPool) promotePendingPool() {
 		}
 	}
 }
-func (self *BeaconPool) PromotePendingPool() {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
-	self.promotePendingPool()
+
+func (beaconPool *BeaconPool) PromotePendingPool() {
+	beaconPool.mtx.Lock()
+	defer beaconPool.mtx.Unlock()
+	beaconPool.promotePendingPool()
 }
-func (self *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
-	self.removeBlock(lastBlockHeight)
+
+func (beaconPool *BeaconPool) RemoveBlock(lastBlockHeight uint64) {
+	beaconPool.mtx.Lock()
+	defer beaconPool.mtx.Unlock()
+	beaconPool.removeBlock(lastBlockHeight)
 }
 
 //@Notice: Remove should set latest valid height
 //Because normal beacon node may not have these block to remove
-func (self *BeaconPool) removeBlock(latestBlockHeight uint64) {
-	for index, block := range self.validPool {
+func (beaconPool *BeaconPool) removeBlock(latestBlockHeight uint64) {
+	for index, block := range beaconPool.validPool {
 		if block.Header.Height <= latestBlockHeight {
-			if index == len(self.validPool)-1 {
-				self.validPool = []*blockchain.BeaconBlock{}
+			if index == len(beaconPool.validPool)-1 {
+				beaconPool.validPool = []*blockchain.BeaconBlock{}
 			}
 			continue
 		} else {
-			self.validPool = self.validPool[index:]
+			beaconPool.validPool = beaconPool.validPool[index:]
 			break
 		}
 	}
-	self.updateLatestBeaconState()
+	beaconPool.updateLatestBeaconState()
 }
 
-func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
+func (beaconPool *BeaconPool) cleanOldBlock(latestBlockHeight uint64) {
+	beaconPool.mtx.Lock()
+	defer beaconPool.mtx.Unlock()
 	toBeRemovedHeight := []uint64{}
 	toBeRemovedHash := []common.Hash{}
-	for height := range self.pendingPool {
+	for height := range beaconPool.pendingPool {
 		if height <= latestBlockHeight {
 			toBeRemovedHeight = append(toBeRemovedHeight, height)
 		}
 	}
-	for hash, block := range self.conflictedPool {
+	for hash, block := range beaconPool.conflictedPool {
 		if block.Header.Height < latestBlockHeight-2 {
 			toBeRemovedHash = append(toBeRemovedHash, hash)
 		}
 	}
 	for _, height := range toBeRemovedHeight {
-		delete(self.pendingPool, height)
+		delete(beaconPool.pendingPool, height)
 	}
 	for _, hash := range toBeRemovedHash {
-		delete(self.conflictedPool, hash)
+		delete(beaconPool.conflictedPool, hash)
 	}
 }
 
-func (self *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
-	if self.RoleInCommittees {
-		if len(self.validPool) == 0 {
-			if block, ok := self.pendingPool[self.latestValidHeight+1]; ok {
+func (beaconPool *BeaconPool) GetValidBlock() []*blockchain.BeaconBlock {
+	beaconPool.mtx.RLock()
+	defer beaconPool.mtx.RUnlock()
+	if beaconPool.RoleInCommittees {
+		if len(beaconPool.validPool) == 0 {
+			if block, ok := beaconPool.pendingPool[beaconPool.latestValidHeight+1]; ok {
 				return []*blockchain.BeaconBlock{block}
 			}
 		}
 	}
-	return self.validPool
+	return beaconPool.validPool
 }
 
-func (self *BeaconPool) GetValidBlockHash() []common.Hash {
-	finalBlocks := []common.Hash{}
-	blks := self.GetValidBlock()
-	for _, blk := range blks {
-		finalBlocks = append(finalBlocks, *blk.Hash())
-	}
-	return finalBlocks
-}
-
-func (self *BeaconPool) GetValidBlockHeight() []uint64 {
+func (beaconPool *BeaconPool) GetValidBlockHeight() []uint64 {
 	finalBlocks := []uint64{}
-	blks := self.GetValidBlock()
+	blks := beaconPool.GetValidBlock()
 	for _, blk := range blks {
 		finalBlocks = append(finalBlocks, blk.Header.Height)
 	}
 	return finalBlocks
 }
 
-func (self *BeaconPool) GetLatestValidBlockHeight() uint64 {
-	finalBlocks := uint64(0)
-	blks := self.GetValidBlock()
-	for _, blk := range blks {
-		finalBlocks = blk.Header.Height
-	}
-	return finalBlocks
+func (beaconPool *BeaconPool) GetPoolLen() uint64 {
+	beaconPool.mtx.RLock()
+	defer beaconPool.mtx.RUnlock()
+	return uint64(len(beaconPool.validPool) + len(beaconPool.pendingPool))
 }
 
-func (self *BeaconPool) GetPoolLen() uint64 {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
-	return uint64(len(self.validPool) + len(self.pendingPool))
-}
-
-func (self *BeaconPool) GetAllBlockHeight() []uint64 {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
+func (beaconPool *BeaconPool) GetAllBlockHeight() []uint64 {
+	beaconPool.mtx.RLock()
+	defer beaconPool.mtx.RUnlock()
 	blockHeights := []uint64{}
-	for _, block := range self.validPool {
+	for _, block := range beaconPool.validPool {
 		blockHeights = append(blockHeights, block.Header.Height)
 	}
-	for _, block := range self.pendingPool {
+	for _, block := range beaconPool.pendingPool {
 		blockHeights = append(blockHeights, block.Header.Height)
 	}
 
 	return blockHeights
 }
-func (self *BeaconPool) GetPendingBlockHeight() []uint64 {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
+
+func (beaconPool *BeaconPool) GetPendingBlockHeight() []uint64 {
+	beaconPool.mtx.RLock()
+	defer beaconPool.mtx.RUnlock()
 	blocks := []uint64{}
-	for _, block := range self.pendingPool {
+	for _, block := range beaconPool.pendingPool {
 		blocks = append(blocks, block.Header.Height)
 	}
 	sort.Slice(blocks, func(i, j int) bool {
 		return blocks[i] < blocks[j]
 	})
 	return blocks
-}
-func (self *BeaconPool) GetBlockByHeight(height uint64) *blockchain.BeaconBlock {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
-	for _, block := range self.validPool {
-		if block.Header.Height == height {
-			return block
-		}
-	}
-	for _, block := range self.pendingPool {
-		if block.Header.Height == height {
-			return block
-		}
-	}
-	return nil
 }
