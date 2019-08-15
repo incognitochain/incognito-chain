@@ -20,17 +20,19 @@ import (
 	Because final beststate height should behind highest block 1
 	For example: current height block: 91, final beststate should be 90, new block height is 92
 
-	Create Block (Body and Header)
-	* Header:
-		1. Create Producer: public key of child 0 or from config
-		2. Create Version: load current version
-		3. Create Height: prev block height + 1
-		4. Create Epoch: Epoch ++ if height % epoch 0
-		5. Create timestamp: now
-		6. Attach previous block hash
-
-	* Header & Body
-		7. Create Shard State:
+	Block Produce:
+	* Clone Current Best State
+	* Build Essential Header Data:
+		1. Producer: Get Producer Address value from input parameters
+		2. Version: Get Proper version value
+		3. Epoch: Increase Epoch if next height mod epoch is 1 (begin of new epoch), otherwise use current epoch value
+		4. Height: Previous block height + 1
+		5. Round: Get Round Value from consensus
+		6. Previous Block Hash: Get Current Best Block Hash
+	* Build Body:
+		1. Build Reward Instruction:
+			- These instruction will only be built at the begining of each epoch (for previous committee)
+		2. Get Shard State:
 			- Shard State Vulue from beaconblockpool
 			- Shard State Hash
 			- Get new staker from shard(beacon or pool) -> help to create Instruction
@@ -50,10 +52,11 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	defer blockGenerator.chain.chainLock.Unlock()
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", blockGenerator.chain.BestState.Beacon.BeaconHeight+1)
 	//============Init Variable============
-	beaconBlock := NewBeaconBlock()
-	beaconBestState := NewBeaconBestState()
 	var err error
 	var epoch uint64
+	beaconBlock := NewBeaconBlock()
+	beaconBestState := NewBeaconBestState()
+	rewardByEpochInstruction := [][]string{}
 	// produce new block with current beststate
 	err = beaconBestState.cloneBeaconBestState(blockGenerator.chain.BestState.Beacon)
 	if err != nil {
@@ -61,25 +64,26 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(producerAddress *privacy.Pa
 	}
 	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
 	//======Build Header Essential Data=======
-	rewardByEpochInstruction := [][]string{}
-	if (beaconBestState.BeaconHeight+1)%uint64(blockGenerator.chain.config.ChainParams.Epoch) == 1 {
-		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBestState.Epoch)
-		if err != nil {
-			return nil, NewBlockChainError(BuildRewardInstructionError, err)
-		}
+	beaconBlock.Header.ProducerAddress = *producerAddress
+	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
+	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
+	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
 		epoch = beaconBestState.Epoch + 1
 	} else {
 		epoch = beaconBestState.Epoch
 	}
-	beaconBlock.Header.ProducerAddress = *producerAddress
-	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
-	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	beaconBlock.Header.Epoch = epoch
 	beaconBlock.Header.Round = round
 	beaconBlock.Header.PreviousBlockHash = beaconBestState.BestBlockHash
 	BLogger.log.Infof("Producing block: %d (epoch %d)", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	//============Build body===================
+	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
+		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBestState.Epoch)
+		if err != nil {
+			return nil, NewBlockChainError(BuildRewardInstructionError, err)
+		}
+	}
 	tempShardState, staker, swap, bridgeInstructions, acceptedRewardInstructions := blockGenerator.GetShardState(beaconBestState, shardsToBeaconLimit)
 	tempInstruction := beaconBestState.GenerateInstruction(beaconBlock.Header.Height, staker, swap, beaconBestState.CandidateShardWaitingForCurrentRandom,
 		bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch, blockGenerator.chain.config.ChainParams.RandomTime)
@@ -202,8 +206,8 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 			Logger.log.Infof(" %+v ", shardBlocks.Header.Height)
 		}
 		//=======
+		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 		for index, shardBlock := range shardBlocks {
-			currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 			hash := shardBlock.Header.Hash()
 			err := ValidateAggSignature(shardBlock.ValidatorsIndex, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
 			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
@@ -352,7 +356,8 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
 	acceptedRewardInstructions, err := acceptedBlockRewardInfo.GetStringFormat()
 	if err != nil {
-		panic("Can't create acceptedRewardInstructions")
+		// if err then ignore accepted reward instruction
+		acceptedRewardInstructions = []string{}
 	}
 	//Get Shard State from Block
 	shardState := ShardState{}
@@ -363,16 +368,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	shardStates[shardID] = shardState
 	instructions := shardBlock.Instructions
 	Logger.log.Info(instructions)
-	// Validate swap instruction => for testing
-	for _, l := range shardBlock.Instructions {
-		if len(l) > 0 {
-			if l[0] == SwapAction {
-				if l[3] != "shard" || l[4] != strconv.Itoa(int(shardID)) {
-					panic("Swap instruction is invalid")
-				}
-			}
-		}
-	}
 	if len(instructions) != 0 {
 		Logger.log.Infof("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
 	}
@@ -383,6 +378,12 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 				stakeInstructionFromShardBlock = append(stakeInstructionFromShardBlock, l)
 			}
 			if l[0] == SwapAction {
+				//- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
+				//- ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
+				// only allow shard to swap committee for it self
+				if l[3] == "shard" && len(l) != 5 && l[4] != strconv.Itoa(int(shardID)) {
+					continue
+				}
 				swapInstructionFromShardBlock = append(swapInstructionFromShardBlock, l)
 			}
 		}
