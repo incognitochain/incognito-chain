@@ -12,7 +12,7 @@ type AccumulatedValues struct {
 	CBridgeTokens    []*common.Hash
 }
 
-func (ac *AccumulatedValues) CanProcessTokenPair(
+func (ac AccumulatedValues) CanProcessTokenPair(
 	externalTokenID []byte,
 	incTokenID common.Hash,
 ) (bool, error) {
@@ -38,7 +38,7 @@ func (ac *AccumulatedValues) CanProcessTokenPair(
 	return true, nil
 }
 
-func (ac *AccumulatedValues) CanProcessCIncToken(
+func (ac AccumulatedValues) CanProcessCIncToken(
 	incTokenID common.Hash,
 ) bool {
 	incTokenIDStr := incTokenID.String()
