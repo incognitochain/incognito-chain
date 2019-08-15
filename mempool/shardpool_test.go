@@ -83,9 +83,9 @@ var InitShardPoolTest = func(pubsubManager *pubsub.PubSubManager) {
 	shardPoolTest.pendingPool = make(map[uint64]*blockchain.ShardBlock)
 	shardPoolTest.conflictedPool = make(map[common.Hash]*blockchain.ShardBlock)
 	shardPoolTest.config = ShardPoolConfig{
-		MaxValidBlock:   MAX_VALID_SHARD_BLK_IN_POOL,
-		MaxPendingBlock: MAX_PENDING_SHARD_BLK_IN_POOL,
-		CacheSize:       SHARD_CACHE_SIZE,
+		MaxValidBlock:   maxValidShardBlockInPool,
+		MaxPendingBlock: maxPendingShardBlockInPool,
+		CacheSize:       shardCacheSize,
 	}
 	shardPoolTest.cache, _ = lru.New(beaconPool.config.CacheSize)
 	shardPoolTest.PubSubManager = pubsubManager
@@ -179,13 +179,13 @@ func TestInitShardPool(t *testing.T) {
 		if shardPoolMap[shardID].conflictedPool == nil {
 			t.Fatal("Invalid Conflicted Pool")
 		}
-		if shardPoolMap[shardID].config.MaxValidBlock != MAX_VALID_SHARD_BLK_IN_POOL {
+		if shardPoolMap[shardID].config.MaxValidBlock != maxValidShardBlockInPool {
 			t.Fatal("Invalid Max Valid Pool")
 		}
-		if shardPoolMap[shardID].config.MaxPendingBlock != MAX_PENDING_SHARD_BLK_IN_POOL {
+		if shardPoolMap[shardID].config.MaxPendingBlock != maxPendingShardBlockInPool {
 			t.Fatal("Invalid Max Pending Pool")
 		}
-		if shardPoolMap[shardID].config.CacheSize != SHARD_CACHE_SIZE {
+		if shardPoolMap[shardID].config.CacheSize != shardCacheSize {
 			t.Fatal("Invalid Shard Cache Size")
 		}
 		if shardPoolMap[shardID].cache == nil {
@@ -560,8 +560,8 @@ func TestShardPoolPromotePendingPool(t *testing.T) {
 	}
 	shardPoolTest.pendingPool[validShardBlocks[len(validShardBlocks)-1].Header.Height] = validShardBlocks[len(validShardBlocks)-1]
 	shardPoolTest.promotePendingPool()
-	if len(shardPoolTest.validPool) != MAX_VALID_SHARD_BLK_IN_POOL {
-		t.Fatalf("Shoud have %+v block in valid pool but get %+v ", MAX_VALID_SHARD_BLK_IN_POOL, len(shardPoolTest.validPool))
+	if len(shardPoolTest.validPool) != maxValidShardBlockInPool {
+		t.Fatalf("Shoud have %+v block in valid pool but get %+v ", maxValidShardBlockInPool, len(shardPoolTest.validPool))
 	}
 	InitShardPoolTest(pbShardPool)
 	blockchain.GetBeaconBestState().SetBestShardHeight(0, validShardBlocks[len(validShardBlocks)-1].Header.Height+1)
@@ -636,8 +636,8 @@ func TestShardPoolAddBeaconBlock(t *testing.T) {
 			t.Fatalf("Block %+v should be added into pool but get %+v", block.Header.Height, err)
 		}
 	}
-	if len(shardPoolTest.validPool) != MAX_VALID_SHARD_BLK_IN_POOL {
-		t.Fatalf("Expected number of block %+v in valid pool but get %+v", MAX_VALID_SHARD_BLK_IN_POOL, len(shardPoolTest.validPool))
+	if len(shardPoolTest.validPool) != maxValidShardBlockInPool {
+		t.Fatalf("Expected number of block %+v in valid pool but get %+v", maxValidShardBlockInPool, len(shardPoolTest.validPool))
 	}
 	if len(shardPoolTest.pendingPool) != 1 {
 		t.Fatalf("Expected number of block %+v in pending pool but get %+v", 1, len(shardPoolTest.pendingPool))
