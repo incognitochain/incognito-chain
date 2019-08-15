@@ -61,7 +61,7 @@ func (engine *Engine) Start() error {
 				return
 			default:
 				time.Sleep(time.Millisecond * 100)
-
+				// fmt.Println(engine)
 				// if !engine.config.BlockChain.Synker.IsLatest(false, 0) {
 				// 	userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, 0)
 				// 	if userRole == common.SHARD_ROLE {
@@ -195,9 +195,8 @@ func (engine *Engine) GetUserRole() (string, int) {
 		userRole, _ := engine.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
 		if engine.CurrentMiningChain == common.BEACON_CHAINKEY {
 			return userRole, -1
-		} else {
-			return userRole, int(engine.Chains[engine.CurrentMiningChain].GetShardID())
 		}
+		return userRole, int(engine.Chains[engine.CurrentMiningChain].GetShardID())
 	}
 	return "", 0
 }
