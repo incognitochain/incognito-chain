@@ -18,8 +18,8 @@ type TempDesc struct {
 	FeePerKB      int32
 }
 
-// AddTransactionToDatabaseMempool - Add a transaction data into mempool database
-func (tp *TxPool) AddTransactionToDatabaseMempool(txHash *common.Hash, txDesc TxDesc) error {
+// addTransactionToDatabaseMempool - Add a transaction data into mempool database
+func (tp *TxPool) addTransactionToDatabaseMempool(txHash *common.Hash, txDesc TxDesc) error {
 	tx := txDesc.Desc.Tx
 	tempDesc := TempDesc{
 		StartTime:     txDesc.StartTime,
@@ -83,27 +83,27 @@ func (tp *TxPool) AddTransactionToDatabaseMempool(txHash *common.Hash, txDesc Tx
 	return nil
 }
 
-// GetTransactionFromDatabaseMempool - get tx from mempool database
-func (tp *TxPool) GetTransactionFromDatabaseMempool(txHash *common.Hash) (*TxDesc, error) {
+// getTransactionFromDatabaseMempool - get tx from mempool database
+func (tp *TxPool) getTransactionFromDatabaseMempool(txHash *common.Hash) (*TxDesc, error) {
 	value, err := tp.config.DataBaseMempool.GetTransaction(txHash)
 	values := strings.Split(string(value), string(lvdb.Splitter))
 	if len(values) != 3 {
 		return nil, err
 	}
-	txDesc, err := UnMarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
+	txDesc, err := unMarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
 	if err != nil {
 		return nil, err
 	}
 	return txDesc, nil
 }
 
-// ResetDatabaseMempool - reset data in data mempool
-func (tp *TxPool) ResetDatabaseMempool() error {
+// resetDatabaseMempool - reset data in data mempool
+func (tp *TxPool) resetDatabaseMempool() error {
 	return tp.config.DataBaseMempool.Reset()
 }
 
-// LoadDatabaseMP - Get all tx in mempool database persistence
-func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
+// loadDatabaseMP - Get all tx in mempool database persistence
+func (tp *TxPool) loadDatabaseMP() ([]TxDesc, error) {
 	txDescs := []TxDesc{}
 	allTxHashes, allTxs, err := tp.config.DataBaseMempool.Load()
 	ttl := time.Duration(tp.config.TxLifeTime) * time.Second
@@ -112,35 +112,50 @@ func (tp *TxPool) LoadDatabaseMP() ([]TxDesc, error) {
 	}
 	for index, tx := range allTxs {
 		values := strings.Split(string(tx), string(lvdb.Splitter))
-		txDesc, err := UnMarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
+		txDesc, err := unMarshallTxDescFromDatabase(values[0], []byte(values[1]), []byte(values[2]))
 		if err != nil {
+			Logger.log.Error(err)
 			txHash, err := common.Hash{}.NewHash(allTxHashes[index][3:])
 			if err != nil {
+				Logger.log.Error(err)
 				continue
 			}
 			// fail to ummarshall transaction then remove
-			tp.RemoveTransactionFromDatabaseMP(txHash)
+			err1 := tp.removeTransactionFromDatabaseMP(txHash)
+			if err1 != nil {
+				Logger.log.Error(err1)
+			}
 			continue
 		}
 		//if transaction is timeout then remove
 		if time.Since(txDesc.StartTime) > ttl {
-			tp.RemoveTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
+			err1 := tp.removeTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
+			if err1 != nil {
+				Logger.log.Error(err1)
+			}
 		}
 		//if not validated by current blockchain db then remove
 		err = tp.validateTransaction(txDesc.Desc.Tx)
 		if err != nil {
-			tp.RemoveTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
+			Logger.log.Error(err)
+			err1 := tp.removeTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())
+			if err1 != nil {
+				Logger.log.Error(err1)
+			}
 			continue
 		}
 
-		tp.addTx(txDesc, false)
+		err = tp.addTx(txDesc, false)
+		if err != nil {
+			Logger.log.Error(err)
+		}
 		txDescs = append(txDescs, *txDesc)
 	}
 	return txDescs, nil
 }
 
-// RemoveTransactionFromDatabaseMP - remove tx from mempool db persistence
-func (tp *TxPool) RemoveTransactionFromDatabaseMP(txHash *common.Hash) error {
+// removeTransactionFromDatabaseMP - remove tx from mempool db persistence
+func (tp *TxPool) removeTransactionFromDatabaseMP(txHash *common.Hash) error {
 	if has, _ := tp.config.DataBaseMempool.HasTransaction(txHash); has {
 		err := tp.config.DataBaseMempool.RemoveTransaction(txHash)
 		return err
@@ -148,8 +163,8 @@ func (tp *TxPool) RemoveTransactionFromDatabaseMP(txHash *common.Hash) error {
 	return nil
 }
 
-// UnMarshallTxDescFromDatabase - convert tx data in mempool database persistence into TxDesc
-func UnMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byte) (*TxDesc, error) {
+// unMarshallTxDescFromDatabase - convert tx data in mempool database persistence into TxDesc
+func unMarshallTxDescFromDatabase(txType string, valueTx []byte, valueDesc []byte) (*TxDesc, error) {
 	txDesc := TxDesc{}
 	switch txType {
 	case common.TxNormalType:
