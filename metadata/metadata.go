@@ -1,85 +1,23 @@
 package metadata
 
 import (
-	"strconv"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 )
 
-type MetadataBase struct {
-	Type int
-}
-
-func NewMetadataBase(thisType int) *MetadataBase {
-	return &MetadataBase{Type: thisType}
-}
-
-func (mb *MetadataBase) IsMinerCreatedMetaType() bool {
-	metaType := mb.GetType()
-	for _, mType := range minerCreatedMetaTypes {
-		if metaType == mType {
-			return true
-		}
-	}
-	return false
-}
-
-func (mb *MetadataBase) CalculateSize() uint64 {
-	return 0
-}
-
-func (mb *MetadataBase) Validate() error {
-	return nil
-}
-
-func (mb *MetadataBase) Process() error {
-	return nil
-}
-
-func (mb *MetadataBase) GetType() int {
-	return mb.Type
-}
-
-func (mb *MetadataBase) Hash() *common.Hash {
-	record := strconv.Itoa(mb.Type)
-	hash := common.HashH([]byte(record))
-	return &hash
-}
-
-func (mb *MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64) bool {
-	txFee := tx.GetTxFee()
-	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return !(txFee < fullFee)
-}
-
-func (mb *MetadataBase) VerifyMultiSigs(
-	tx Transaction,
-	db database.DatabaseInterface,
-) (bool, error) {
-	return true, nil
-}
-
-func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
-	return [][]string{}, nil
-}
-
-func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever BlockchainRetriever) error {
-	return nil
-}
-
-func (mb *MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instsUsed []int,
-	shardID byte,
-	txr Transaction,
-	bcr BlockchainRetriever,
-	accumulatedValues *AccumulatedValues,
-) (bool, error) {
-	return true, nil
+// Interface for all types of metadata in tx
+type Metadata interface {
+	GetType() int
+	Hash() *common.Hash
+	CheckTransactionFee(Transaction, uint64) bool
+	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
+	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
+	ValidateMetadataByItself() bool
+	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
+	CalculateSize() uint64
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, *AccumulatedValues) (bool, error)
+	IsMinerCreatedMetaType() bool
 }
 
 // This is tx struct which is really saved in tx mempool
@@ -120,24 +58,6 @@ type BlockchainRetriever interface {
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
-	//GetRPCClient() *rpccaller.RPCClient
-}
-
-// Interface for all types of metadata in tx
-type Metadata interface {
-	GetType() int
-	Hash() *common.Hash
-	CheckTransactionFee(Transaction, uint64) bool
-	ValidateTxWithBlockChain(tx Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error)
-	// isContinue, ok, err
-	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
-	ValidateMetadataByItself() bool
-	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
-	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
-	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
-	CalculateSize() uint64
-	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, *AccumulatedValues) (bool, error)
-	IsMinerCreatedMetaType() bool
 }
 
 // Interface for all type of transaction
