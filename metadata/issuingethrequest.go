@@ -131,7 +131,7 @@ func (iReq IssuingETHRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tr
 	return true, true, nil
 }
 
-func (iReq *IssuingETHRequest) ValidateMetadataByItself() bool {
+func (iReq IssuingETHRequest) ValidateMetadataByItself() bool {
 	if iReq.Type != IssuingETHRequestMeta {
 		return false
 	}

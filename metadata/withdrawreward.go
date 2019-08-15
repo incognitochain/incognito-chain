@@ -87,7 +87,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(bcr Blockc
 	return false, true, nil
 }
 
-func (withDrawRewardRequest *WithDrawRewardRequest) ValidateMetadataByItself() bool {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
@@ -119,7 +119,7 @@ func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(bcr Bloc
 	return false, true, nil
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) ValidateMetadataByItself() bool {
+func (withDrawRewardResponse WithDrawRewardResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }

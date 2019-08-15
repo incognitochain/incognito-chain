@@ -88,7 +88,7 @@ func (cReq ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 	return true, true, nil
 }
 
-func (cReq *ContractingRequest) ValidateMetadataByItself() bool {
+func (cReq ContractingRequest) ValidateMetadataByItself() bool {
 	return cReq.Type == ContractingRequestMeta
 }
 
