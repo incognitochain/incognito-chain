@@ -32,13 +32,13 @@ var (
 			PreviousBlockHash: shardToBeaconBlock2.Header.Hash(),
 		},
 	}
-	shardToBeaconBlock3Forked = &blockchain.ShardToBeaconBlock{
+	/*shardToBeaconBlock3Forked = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
 			ShardID:           0,
 			Height:            3,
 			PreviousBlockHash: shardToBeaconBlock2Forked.Header.Hash(),
 		},
-	}
+	}*/
 	shardToBeaconBlock4 = &blockchain.ShardToBeaconBlock{
 		Header: blockchain.ShardHeader{
 			ShardID:           0,
@@ -84,13 +84,14 @@ var InitShardToBeaconPoolTest = func() {
 	shardToBeaconPoolTest.latestValidHeightMutex = new(sync.RWMutex)
 	shardToBeaconPoolTest.latestValidHeight = make(map[byte]uint64)
 }
-var ResetShardToBeaconPool = func() {
+
+/*var ResetShardToBeaconPool = func() {
 	shardToBeaconPool = new(ShardToBeaconPool)
 	shardToBeaconPool.pool = make(map[byte][]*blockchain.ShardToBeaconBlock)
 	shardToBeaconPool.mtx = new(sync.RWMutex)
 	shardToBeaconPool.latestValidHeight = make(map[byte]uint64)
 	shardToBeaconPool.latestValidHeightMutex = new(sync.RWMutex)
-}
+}*/
 var _ = func() (_ struct{}) {
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
@@ -234,7 +235,7 @@ func TestShardToBeaconPoolGetShardState(t *testing.T) {
 }
 func TestShardToBeaconPoolCheckLatestValidHeightValidity(t *testing.T) {
 	InitShardToBeaconPoolTest()
-	for shardID, _ := range shardToBeaconPoolTest.latestValidHeight {
+	for shardID := range shardToBeaconPoolTest.latestValidHeight {
 		shardToBeaconPoolTest.latestValidHeight[shardID] = 0
 	}
 	for i := 0; i < 255; i++ {
