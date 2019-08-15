@@ -159,7 +159,7 @@ func ResetMempoolTest() {
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolTokenID = make(map[common.Hash]string)
 	tp.PoolCandidate = make(map[common.Hash]string)
-	tp.DuplicateTxs = make(map[common.Hash]uint64)
+	tp.duplicateTxs = make(map[common.Hash]uint64)
 	tp.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 	tp.IsUnlockMempool = false
