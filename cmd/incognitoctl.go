@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"log"
 	"os"
@@ -30,13 +29,4 @@ func main() {
 		log.Println("Parse component error", err.Error())
 		os.Exit(-1)
 	}
-}
-
-func parseToJsonString(data interface{}) ([]byte, error) {
-	result, err := json.MarshalIndent(data, "", "\t")
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	return result, nil
 }

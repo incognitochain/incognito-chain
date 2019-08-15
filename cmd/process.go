@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"strconv"
 	"strings"
@@ -8,6 +9,15 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 )
+
+func parseToJsonString(data interface{}) ([]byte, error) {
+	result, err := json.MarshalIndent(data, "", "\t")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	return result, nil
+}
 
 func processCmd() {
 	switch cfg.Command {
