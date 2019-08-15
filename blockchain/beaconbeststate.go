@@ -53,6 +53,8 @@ type BeaconBestState struct {
 	ActiveShards                           int                  `json:"ActiveShards"`
 	ConsensusAlgorithm                     string               `json:"ConsensusAlgorithm"`
 	ShardConsensusAlgorithm                map[byte]string      `json:"ShardConsensusAlgorithm"`
+	// key: public key of committee, value: payment address reward receiver
+	RewardReceiver         map[string]string `json:"RewardReceiver"`        // map candidate/committee -> reward receiver
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -85,6 +87,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.CandidateBeaconWaitingForCurrentRandom = []string{}
 	beaconBestState.CandidateShardWaitingForNextRandom = []string{}
 	beaconBestState.CandidateBeaconWaitingForNextRandom = []string{}
+	beaconBestState.RewardReceiver = make(map[string]string)
 	beaconBestState.ShardCommittee = make(map[byte][]string)
 	beaconBestState.ShardPendingValidator = make(map[byte][]string)
 	beaconBestState.Params = make(map[string]string)

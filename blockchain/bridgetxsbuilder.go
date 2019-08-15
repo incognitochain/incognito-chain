@@ -136,7 +136,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	logMap, err := metadata.PickNParseLogMapFromReceipt(ethReceipt)
+	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil
@@ -187,7 +187,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 	amount := uint64(0)
-	if bytes.Equal(rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes(), ethereumToken) {
+	if bytes.Equal(rCommon.HexToAddress(common.EthAddrStr).Bytes(), ethereumToken) {
 		// convert amt from wei (10^18) to nano eth (10^9)
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else { // ERC20

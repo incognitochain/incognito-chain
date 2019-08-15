@@ -123,7 +123,7 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	tx := transaction.TxCustomToken{}
+	tx := transaction.TxNormalToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	fmt.Printf("%+v\n", tx)
 	if err != nil {

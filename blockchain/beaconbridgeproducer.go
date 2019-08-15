@@ -83,7 +83,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 	}
 	md := burningReqAction.Meta
 	txID := burningReqAction.RequestedTxID // to prevent double-release token
-	shardID := byte(common.BRIDGE_SHARD_ID)
+	shardID := byte(common.BridgeShardID)
 
 	// Convert to external tokenID
 	tokenID, err := findExternalTokenID(&md.TokenID, db)
@@ -93,7 +93,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)
-	if bytes.Equal(tokenID, rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes()) {
+	if bytes.Equal(tokenID, rCommon.HexToAddress(common.EthAddrStr).Bytes()) {
 		// Convert Gwei to Wei for Ether
 		amount = amount.Mul(amount, big.NewInt(1000000000))
 	}
