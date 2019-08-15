@@ -35,7 +35,7 @@ import (
 	- pending cross shard block will enter valid pool until
 	 + Beacon state confirm the next valid cross shard block height
 */
-type CrossShardPool_v2 struct {
+type CrossShardPool struct {
 	shardID         byte                                   // pool shard ID
 	validPool       map[byte][]*blockchain.CrossShardBlock // cross shard block from all other shard to this shard
 	pendingPool     map[byte][]*blockchain.CrossShardBlock // cross shard block from all other shard to this shard
@@ -46,7 +46,7 @@ type CrossShardPool_v2 struct {
 	// Cross Shard Pool using database to detect either is valid or pending
 }
 
-var crossShardPoolMap = make(map[byte]*CrossShardPool_v2)
+var crossShardPoolMap = make(map[byte]*CrossShardPool)
 
 func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db database.DatabaseInterface) {
 	for i := 0; i < 255; i++ {
@@ -56,10 +56,10 @@ func InitCrossShardPool(pool map[byte]blockchain.CrossShardPool, db database.Dat
 	}
 }
 
-func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
+func GetCrossShardPool(shardID byte) *CrossShardPool {
 	p, ok := crossShardPoolMap[shardID]
 	if ok == false {
-		p = new(CrossShardPool_v2)
+		p = new(CrossShardPool)
 		p.shardID = shardID
 		p.validPool = make(map[byte][]*blockchain.CrossShardBlock)
 		p.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
@@ -71,14 +71,14 @@ func GetCrossShardPool(shardID byte) *CrossShardPool_v2 {
 
 // Validate pending pool again, to move pending block to valid block
 // When receive new cross shard block or new beacon state arrive
-func (pool *CrossShardPool_v2) UpdatePool() map[byte]uint64 {
+func (pool *CrossShardPool) UpdatePool() map[byte]uint64 {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 	expectedHeight := pool.updatePool()
 	return expectedHeight
 }
 
-func (pool *CrossShardPool_v2) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
+func (pool *CrossShardPool) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
 	nextHeight, err := pool.db.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
 	if err != nil {
 		return 0
@@ -86,7 +86,7 @@ func (pool *CrossShardPool_v2) GetNextCrossShardHeight(fromShard, toShard byte, 
 	return nextHeight
 
 }
-func (pool *CrossShardPool_v2) updatePool() map[byte]uint64 {
+func (pool *CrossShardPool) updatePool() map[byte]uint64 {
 	pool.crossShardState = blockchain.GetBestStateShard(pool.shardID).BestCrossShard
 	pool.removeBlockByHeight(pool.crossShardState)
 	expectedHeight := make(map[byte]uint64)
@@ -146,7 +146,7 @@ func (pool *CrossShardPool_v2) updatePool() map[byte]uint64 {
 	3. Duplicate block in pending or valid
 	4. Signature
 */
-func (pool *CrossShardPool_v2) AddCrossShardBlock(block *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
+func (pool *CrossShardPool) AddCrossShardBlock(block *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
 
@@ -187,7 +187,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(block *blockchain.CrossShardBl
 		return nil, pool.shardID, err
 	}
 
-	if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
+	if len(pool.pendingPool[shardID]) > maxPendingCrossShardInPool {
 		if pool.pendingPool[shardID][len(pool.pendingPool[shardID])-1].Header.Height > block.Header.Height {
 			pool.pendingPool[shardID] = pool.pendingPool[shardID][:len(pool.pendingPool[shardID])-1]
 		} else {
@@ -204,13 +204,13 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(block *blockchain.CrossShardBl
 	return expectedHeight, pool.shardID, nil
 }
 
-func (self *CrossShardPool_v2) RemoveBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
+func (self *CrossShardPool) RemoveBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
 	self.mtx.Lock()
 	defer self.mtx.Unlock()
 	self.removeBlockByHeight(removeSinceBlkHeight)
 }
 
-func (self *CrossShardPool_v2) removeBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
+func (self *CrossShardPool) removeBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
 	for shardID, blks := range self.validPool {
 		removeIndex := 0
 		for _, blk := range blks {
@@ -238,7 +238,7 @@ func (self *CrossShardPool_v2) removeBlockByHeight(removeSinceBlkHeight map[byte
 	}
 }
 
-func (self *CrossShardPool_v2) GetValidBlock(limit map[byte]uint64) map[byte][]*blockchain.CrossShardBlock {
+func (self *CrossShardPool) GetValidBlock(limit map[byte]uint64) map[byte][]*blockchain.CrossShardBlock {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
 	finalBlocks := make(map[byte][]*blockchain.CrossShardBlock)
@@ -254,7 +254,7 @@ func (self *CrossShardPool_v2) GetValidBlock(limit map[byte]uint64) map[byte][]*
 	return finalBlocks
 }
 
-func (self *CrossShardPool_v2) GetValidBlockHash() map[byte][]common.Hash {
+func (self *CrossShardPool) GetValidBlockHash() map[byte][]common.Hash {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
 	finalBlockHash := make(map[byte][]common.Hash)
@@ -266,7 +266,7 @@ func (self *CrossShardPool_v2) GetValidBlockHash() map[byte][]common.Hash {
 	return finalBlockHash
 }
 
-func (self *CrossShardPool_v2) GetValidBlockHeight() map[byte][]uint64 {
+func (self *CrossShardPool) GetValidBlockHeight() map[byte][]uint64 {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
@@ -278,7 +278,7 @@ func (self *CrossShardPool_v2) GetValidBlockHeight() map[byte][]uint64 {
 	return finalBlockHeight
 }
 
-func (self *CrossShardPool_v2) GetPendingBlockHeight() map[byte][]uint64 {
+func (self *CrossShardPool) GetPendingBlockHeight() map[byte][]uint64 {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
@@ -290,7 +290,7 @@ func (self *CrossShardPool_v2) GetPendingBlockHeight() map[byte][]uint64 {
 	return finalBlockHeight
 }
 
-func (self *CrossShardPool_v2) GetAllBlockHeight() map[byte][]uint64 {
+func (self *CrossShardPool) GetAllBlockHeight() map[byte][]uint64 {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
@@ -309,7 +309,7 @@ func (self *CrossShardPool_v2) GetAllBlockHeight() map[byte][]uint64 {
 	return finalBlockHeight
 }
 
-func (self *CrossShardPool_v2) GetLatestValidBlockHeight() map[byte]uint64 {
+func (self *CrossShardPool) GetLatestValidBlockHeight() map[byte]uint64 {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
 	finalBlockHeight := make(map[byte]uint64)
@@ -324,7 +324,7 @@ func (self *CrossShardPool_v2) GetLatestValidBlockHeight() map[byte]uint64 {
 	return finalBlockHeight
 }
 
-func (self *CrossShardPool_v2) GetBlockByHeight(_shardID byte, height uint64) *blockchain.CrossShardBlock {
+func (self *CrossShardPool) GetBlockByHeight(_shardID byte, height uint64) *blockchain.CrossShardBlock {
 	self.mtx.RLock()
 	defer self.mtx.RUnlock()
 	for shardID, blkItems := range self.validPool {
