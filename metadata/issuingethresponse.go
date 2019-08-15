@@ -76,7 +76,7 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
