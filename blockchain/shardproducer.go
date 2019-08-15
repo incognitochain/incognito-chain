@@ -19,22 +19,28 @@ import (
 /*
 	Create New block Shard
 	1. Identify Beacon State for this Shard Block: Beacon Hash & Beacon Height & Epoch
-		+ Get New Beacon Block from Beacon Best State
-		+ New Beacon Block must have the same epoch with shard block
-		+ Or greater than Shard Block epoch exact 1 value if current Best Beacon Block of Shard State is the last beacon block in that epoch
+		+ Get Beacon Block (B) from Beacon Best State (from Beacon Chain of Shard Node)
+		+ Beacon Block (B) must have the same epoch With New Shard Block (S):
+		+ If Beacon Block (B) have different height previous shard block PS (previous of S)
+		Then Beacon Block (B) epoch greater than Shard Block (S) epoch exact 1 value
+		BUT This only works if Shard Best State have the Beacon Height divisible by epoch
 		+ Ex: 1 epoch has 50 block
-			Ex1:
-			shard block 10:
+		Example 1:
+			shard block with
+				height 10,
 				epoch: 1,
 				beacon block height: 49
-			then shard block with height is 11 must have
+			then shard block with
+				height 11 must have
 				epoch: 1,
 				beacon block height: must be 49 or 50
-			Ex2:
-			shard block 10:
+		Example 2:
+			shard block with
+				height 10,
 				epoch: 1,
 				beacon block height: 50
-			then shard block with height is 11 can have 2 major option:
+			then shard block with
+				height is 11 can have 2 option:
 				a. epoch: 1, if beacon block height remain 50
 				b. epoch: 2, and beacon block must in range from 51-100
 				Can have beacon block with height > 100
@@ -392,10 +398,10 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 }
 
 /*
-	Build CrossTransaction
-		1. Get information for CrossShardBlock Validation
-			- Get Valid Shard Block from Pool
-			- Get Current Cross Shard State: BestCrossShard.ShardHeight
+	getCrossShardData get cross shard data from cross shard block
+		1. Get Cross Shard Block and Validate
+			- Get Valid Shard Block from Cross Shard Pool
+			- Get Current Cross Shard State: ShardHeight
 			- Get Current Cross Shard Bitmap Height: BestCrossShard.BeaconHeight
 			- Get Shard Committee for Cross Shard Block via Beacon Height
 			   + Using FetchCrossShardNextHeight function in Database to determine next block height
@@ -418,32 +424,31 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			- Extract cross output
 			- Divide Output coin into 2 type (Cross Output Coin, Cross Output Custom Token) and return value
 */
-func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) (map[byte][]CrossTransaction, map[byte][]CrossTxTokenData) {
+func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64, crossShards map[byte]uint64) (map[byte][]CrossTransaction, map[byte][]CrossTxTokenData) {
 	crossTransactions := make(map[byte][]CrossTransaction)
 	crossTxTokenData := make(map[byte][]CrossTxTokenData)
 	// get cross shard block
-	allCrossShardBlock := blockGenerator.crossShardPool[shardID].GetValidBlock(crossShards)
+	allCrossShardBlock := blockGenerator.crossShardPool[toShard].GetValidBlock(crossShards)
 	// Get Cross Shard Block
 	for fromShard, crossShardBlock := range allCrossShardBlock {
 		sort.SliceStable(crossShardBlock[:], func(i, j int) bool {
 			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
 		})
 		indexs := []int{}
-		toShard := shardID
 		startHeight := blockGenerator.chain.BestState.Shard[toShard].BestCrossShard[fromShard]
-		for index, blk := range crossShardBlock {
-			if blk.Header.Height <= startHeight {
+		for index, crossShardBlock := range crossShardBlock {
+			if crossShardBlock.Header.Height <= startHeight {
 				break
 			}
 			nextHeight, err := blockGenerator.chain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
 			if err != nil {
 				break
 			}
-			if nextHeight != blk.Header.Height {
+			if nextHeight != crossShardBlock.Header.Height {
 				continue
 			}
 			startHeight = nextHeight
-			beaconHeight, err := blockGenerator.chain.FindBeaconHeightForCrossShardBlock(blk.Header.BeaconHeight, blk.Header.ShardID, blk.Header.Height)
+			beaconHeight, err := blockGenerator.chain.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
 			if err != nil {
 				break
 			}
@@ -456,7 +461,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 			if err != nil {
 				break
 			}
-			err = blk.VerifyCrossShardBlock(shardCommittee[blk.Header.ShardID])
+			err = crossShardBlock.VerifyCrossShardBlock(shardCommittee[crossShardBlock.Header.ShardID])
 			if err != nil {
 				break
 			}
