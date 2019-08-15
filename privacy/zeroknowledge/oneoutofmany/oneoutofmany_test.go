@@ -40,12 +40,12 @@ func TestPKOneOfMany(t *testing.T) {
 	for i := 0; i < privacy.CommitmentRingSize; i++ {
 		snDerivators[i] = privacy.RandScalar()
 		randoms[i] = privacy.RandScalar()
-		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.SND)
+		commitments[i] = privacy.PedCom.CommitAtIndex(snDerivators[i], randoms[i], privacy.PedersenSndIndex)
 	}
 
 	// create Commitment to zero at indexIsZero
 	snDerivators[indexIsZero] = big.NewInt(0)
-	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.SND)
+	commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(snDerivators[indexIsZero], randoms[indexIsZero], privacy.PedersenSndIndex)
 
 	witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
 	start := time.Now()
@@ -70,10 +70,11 @@ func TestPKOneOfMany(t *testing.T) {
 
 	// verify the proof
 	start = time.Now()
-	res := proof.Verify()
+	res, err := proof.Verify()
 	end = time.Since(start)
 	fmt.Printf("One out of many verification time: %v\n", end)
 	assert.Equal(t, true, res)
+	assert.Equal(t, nil, err)
 }
 
 func TestGetCoefficient(t *testing.T) {
@@ -83,6 +84,6 @@ func TestGetCoefficient(t *testing.T) {
 	a[1] = new(big.Int).SetBytes([]byte{144, 245, 78, 232, 93, 155, 71, 49, 175, 154, 78, 81, 146, 120, 171, 74, 88, 99, 196, 61, 124, 156, 35, 55, 39, 22, 189, 111, 108, 236, 3, 131})
 	a[2] = new(big.Int).SetBytes([]byte{224, 15, 114, 83, 56, 148, 202, 7, 187, 99, 242, 4, 2, 168, 169, 168, 44, 174, 215, 111, 119, 162, 172, 44, 225, 97, 236, 240, 242, 233, 148, 49})
 
-	res := GetCoefficient([]byte{0, 1, 1}, 3, 3, a, []byte{0, 1, 1})
+	res := getCoefficient([]byte{0, 1, 1}, 3, 3, a, []byte{0, 1, 1})
 	fmt.Printf("res: %v\n", res.Bytes())
 }

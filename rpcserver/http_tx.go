@@ -104,17 +104,17 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		item := make([]jsonresult.OutCoin, 0)
 
 		for _, outCoin := range outputCoins {
-			if outCoin.CoinDetails.Value == 0 {
+			if outCoin.CoinDetails.GetValue() == 0 {
 				continue
 			}
 			item = append(item, jsonresult.OutCoin{
 				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
-				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.PublicKey.Compress(), common.ZeroByte),
-				Value:          strconv.FormatUint(outCoin.CoinDetails.Value, 10),
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.Info[:], common.ZeroByte),
-				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.CoinCommitment.Compress(), common.ZeroByte),
-				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.Randomness.Bytes(), common.ZeroByte),
-				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.SNDerivator.Bytes(), common.ZeroByte),
+				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
+				Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
+				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
+				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
+				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
+				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
 			})
 		}
 		result.Outputs[readonlyKeyStr] = item
@@ -288,8 +288,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -319,8 +319,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 			}
 			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
 			result.CustomTokenData = string(txCustomData)
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
 			}
 			if tempTx.Metadata != nil {
 				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
@@ -348,8 +348,8 @@ func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, 
 				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
 				Info:        string(tempTx.Info),
 			}
-			if result.Proof != nil && len(result.Proof.InputCoins) > 0 && result.Proof.InputCoins[0].CoinDetails.PublicKey != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.InputCoins[0].CoinDetails.PublicKey.Compress(), common.ZeroByte)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
 			}
 			tokenData, _ := json.MarshalIndent(tempTx.TxTokenPrivacyData, "", "\t")
 			result.PrivacyCustomTokenData = string(tokenData)
@@ -675,7 +675,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		for _, out := range outcoints {
-			balance += out.CoinDetails.Value
+			balance += out.CoinDetails.GetValue()
 		}
 
 		item.Amount = balance
@@ -708,7 +708,7 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		for _, out := range outcoints {
-			balance += out.CoinDetails.Value
+			balance += out.CoinDetails.GetValue()
 		}
 
 		item.Amount = balance
@@ -769,7 +769,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			for _, out := range outcoints {
-				totalValue += out.CoinDetails.Value
+				totalValue += out.CoinDetails.GetValue()
 			}
 		}
 	}
@@ -783,7 +783,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 				return nil, NewRPCError(ErrUnexpected, err)
 			}
 			for _, out := range outcoints {
-				totalValue += out.CoinDetails.Value
+				totalValue += out.CoinDetails.GetValue()
 			}
 		}
 	}
@@ -1012,29 +1012,29 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		}
 		temp := big.Int{}
 		temp.SetString(out.Value, 10)
+		coin := &privacy.Coin{}
+		coin.SetValue(temp.Uint64())
 		i := &privacy.OutputCoin{
-			CoinDetails: &privacy.Coin{
-				Value: temp.Uint64(),
-			},
+			CoinDetails: coin,
 		}
 		RandomnessInBytes, _, _ := base58.Base58Check{}.Decode(out.Randomness)
-		i.CoinDetails.Randomness = new(big.Int).SetBytes(RandomnessInBytes)
+		i.CoinDetails.SetRandomness(new(big.Int).SetBytes(RandomnessInBytes))
 
 		SNDerivatorInBytes, _, _ := base58.Base58Check{}.Decode(out.SNDerivator)
-		i.CoinDetails.SNDerivator = new(big.Int).SetBytes(SNDerivatorInBytes)
+		i.CoinDetails.SetSNDerivator(new(big.Int).SetBytes(SNDerivatorInBytes))
 
 		CoinCommitmentBytes, _, _ := base58.Base58Check{}.Decode(out.CoinCommitment)
 		CoinCommitment := &privacy.EllipticPoint{}
 		_ = CoinCommitment.Decompress(CoinCommitmentBytes)
-		i.CoinDetails.CoinCommitment = CoinCommitment
+		i.CoinDetails.SetCoinCommitment(CoinCommitment)
 
 		PublicKeyBytes, _, _ := base58.Base58Check{}.Decode(out.PublicKey)
 		PublicKey := &privacy.EllipticPoint{}
 		_ = PublicKey.Decompress(PublicKeyBytes)
-		i.CoinDetails.PublicKey = PublicKey
+		i.CoinDetails.SetPublicKey(PublicKey)
 
 		InfoBytes, _, _ := base58.Base58Check{}.Decode(out.Info)
-		i.CoinDetails.Info = InfoBytes
+		i.CoinDetails.SetInfo(InfoBytes)
 
 		usableOutputCoins = append(usableOutputCoins, i)
 	}
@@ -1205,7 +1205,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(httpServer.config.Database)
-		ok, err := db.HasSNDerivator(*tokenID, privacy.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize), shardIDSender)
+		ok, err := db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize), shardIDSender)
 		if ok && err == nil {
 			// SnD in db
 			result = append(result, true)

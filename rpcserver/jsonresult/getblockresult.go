@@ -70,7 +70,7 @@ func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock,
 	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
 	// getBlockResult.BlockProducerSign = block.ProducerSig
 	getBlockResult.ValidationData = block.ValidationData
-	getBlockResult.ConsensusType = block.ConsensusType
+	getBlockResult.ConsensusType = block.Header.ConsensusType
 	getBlockResult.Epoch = block.Header.Epoch
 	getBlockResult.Round = block.Header.Round
 	getBlockResult.Time = block.Header.Timestamp
@@ -83,7 +83,7 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 	// getBlockResult.BlockProducerSign = block.ProducerSig
 	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
 	getBlockResult.ValidationData = block.ValidationData
-	getBlockResult.ConsensusType = block.ConsensusType
+	getBlockResult.ConsensusType = block.Header.ConsensusType
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Version = block.Header.Version
@@ -113,9 +113,9 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 	if len(block.Body.Transactions) > 0 {
 		for _, tx := range block.Body.Transactions {
 			if tx.GetMetadataType() == metadata.ShardBlockReward {
-				getBlockResult.Reward += tx.GetProof().OutputCoins[0].CoinDetails.Value
+				getBlockResult.Reward += tx.GetProof().GetOutputCoins()[0].CoinDetails.GetValue()
 			} else if tx.GetMetadataType() == metadata.BeaconSalaryResponseMeta {
-				getBlockResult.RewardBeacon += tx.GetProof().OutputCoins[0].CoinDetails.Value
+				getBlockResult.RewardBeacon += tx.GetProof().GetOutputCoins()[0].CoinDetails.GetValue()
 			}
 		}
 	}
