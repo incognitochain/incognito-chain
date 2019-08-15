@@ -66,6 +66,7 @@ const (
 	InstructionMerkleRootError
 	FetchBeaconBlockHashError
 	FetchBeaconBlockError
+	FetchShardBlockError
 	BeaconBlockNotCompatibleError
 	SwapInstructionError
 	TransactionCreatedByMinerError
@@ -128,6 +129,19 @@ const (
 	StoreBeaconBlockError
 	StoreBeaconBlockIndexError
 	StoreCommitteeFromShardBestStateError
+	GetStakingTransactionError
+	DecodeHashError
+	GetTransactionFromDatabaseError
+	ProcessBridgeInstructionError
+	UpdateDatabaseWithBlockRewardInfoError
+	CreateCrossShardBlockError
+	VerifyCrossShardBlockShardTxRootError
+	WalletKeySerializedError
+	InitSalaryTransactionError
+	RemoveOldDataAfterProcessingError
+	WrongMetadataTypeError
+	StakeInstructionError
+	StoreRewardReceiverByHeightError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -233,13 +247,27 @@ var ErrCodeMessage = map[int]struct {
 	BeaconCommitteeAndPendingValidatorRootError:       {-1096, "Beacon Committee And Pending Validator Root Hash Error"},
 	ShardCommitteeAndPendingValidatorRootError:        {-1097, "Shard Committee And Pending Validator Root Hash Error"},
 	ShardCandidateRootError:                           {-1098, "Shard Candidate Root Hash Error"},
-	ProcessRandomInstructionError:                     {-1100, "Process Random Instruction Error"},
-	ProcessSwapInstructionError:                       {-1101, "Process Swap Instruction Error"},
-	AssignValidatorToShardError:                       {-1102, "Assign Validator To Shard Error"},
-	ShuffleBeaconCandidateError:                       {-1103, "Shuffle Beacon Candidate Error"},
-	CleanBackUpError:                                  {-1104, "Clean Back Up Error"},
-	BackUpBestStateError:                              {-1105, "Back Up Best State Error"},
-	StoreCommitteeFromShardBestStateError:             {-1106, "Store Committee From ShardBestState Error"},
+	ProcessRandomInstructionError:                     {-1099, "Process Random Instruction Error"},
+	ProcessSwapInstructionError:                       {-1100, "Process Swap Instruction Error"},
+	AssignValidatorToShardError:                       {-1101, "Assign Validator To Shard Error"},
+	ShuffleBeaconCandidateError:                       {-1102, "Shuffle Beacon Candidate Error"},
+	CleanBackUpError:                                  {-1103, "Clean Back Up Error"},
+	BackUpBestStateError:                              {-1104, "Back Up Best State Error"},
+	ProcessBridgeInstructionError:                     {-1105, "Process Bridge Instruction Error"},
+	UpdateDatabaseWithBlockRewardInfoError:            {-1106, "Update Database With Block Reward Info Error"},
+	CreateCrossShardBlockError:                        {-1107, "Create Cross Shard Block Error"},
+	VerifyCrossShardBlockShardTxRootError:             {-1108, "Verify Cross Shard Block ShardTxRoot Error"},
+	StoreCommitteeFromShardBestStateError:             {-1109, "Store Committee From ShardBestState Error"},
+	GetStakingTransactionError:                        {-1110, "Get Staking Transaction Error"},
+	DecodeHashError:                                   {-1111, "Decode Hash Error"},
+	GetTransactionFromDatabaseError:                   {-1112, "Get Transaction From Database Error"},
+	FetchShardBlockError:                              {-1113, "Fetch Shard Block Error"},
+	WalletKeySerializedError:                          {-1114, "Wallet Key Serialized Error"},
+	InitSalaryTransactionError:                        {-1115, "Init Salary Transaction Error"},
+	RemoveOldDataAfterProcessingError:                 {-1116, "Remove Old Data After Processing Error"},
+	WrongMetadataTypeError:                            {-1117, "Wrong Metadata Type Error"},
+	StakeInstructionError:                             {-1118, "Stake Instruction Error"},
+	StoreRewardReceiverByHeightError:                  {-1119, "Store Reward Receiver By Height Error"},
 }
 
 type BlockChainError struct {

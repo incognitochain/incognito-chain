@@ -1,0 +1,83 @@
+[
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "createandsendstakingtransaction",
+      "context": false,
+      "params": [
+        "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+        {
+          "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":1750000000000
+        },
+        10,
+        0,
+        63,
+        "1Uv2AicsBXdpiWqpNMpe12sJVo6oBP98MBdCzurbwkei3FrexJCiL4NHzx159ew1wn25pXK3UHM4E3yokiKC82JLG4sRdii31qUusGa7K",
+        true
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    },
+    "store": {
+      "TxIDStake": "TxID"
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribependingtransaction",
+      "context": true,
+      "params": ["TxIDStake"],
+      "type": "ws",
+      "wait": 600
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribeshardcandidatebypublickey",
+      "context": false,
+      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
+      "type": "ws",
+      "wait": 10000
+    },
+    "output": {
+      "error": null,
+      "response": true
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribeshardpendingvalidatorbypublickey",
+      "context": false,
+      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
+      "type": "ws",
+      "wait": 10000
+    },
+    "output": {
+      "error": null,
+      "response": true
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribeshardcommitteebypublickey",
+      "context": false,
+      "params": ["156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN"],
+      "type": "ws",
+      "wait": 10000
+    },
+    "output": {
+      "error": null,
+      "response": true
+    }
+  }
+]

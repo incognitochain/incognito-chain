@@ -199,7 +199,7 @@ func buildSwapConfirmInstruction(meta int, currentValidators []string, startHeig
 	// Save number of validators as bytes and parse on Ethereum
 	numVals := big.NewInt(int64(len(currentValidators)))
 
-	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	bridgeID := byte(common.BridgeShardID)
 	instContent := base58.Base58Check{}.Encode(comm, 0x00)
 	return []string{
 		strconv.Itoa(meta),

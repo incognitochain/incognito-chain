@@ -1,11 +1,6 @@
 package main
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/database"
-	"github.com/incognitochain/incognito-chain/mempool"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"io"
 	"log"
 	"os"
@@ -13,6 +8,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/pubsub"
 )
 
 func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, error) {
@@ -62,7 +63,7 @@ func makeBlockChain(databaseDir string, testNet bool) (*blockchain.BlockChain, e
 }
 
 //default chainDataDir is data/testnet/block
-func BackupShardChain(bc *blockchain.BlockChain, shardID byte, outDatadir string, fileName string) error {
+func backupShardChain(bc *blockchain.BlockChain, shardID byte, outDatadir string, fileName string) error {
 	if fileName == "" {
 		fileName = "export-incognito-shard-" + strconv.Itoa(int(shardID))
 	}
@@ -82,7 +83,8 @@ func BackupShardChain(bc *blockchain.BlockChain, shardID byte, outDatadir string
 	log.Printf("Backup Shard %+v Chain, file %+v", shardID, file)
 	return nil
 }
-func BackupBeaconChain(bc *blockchain.BlockChain, outDatadir string, fileName string) error {
+
+func backupBeaconChain(bc *blockchain.BlockChain, outDatadir string, fileName string) error {
 	if fileName == "" {
 		fileName = "export-incognito-beacon"
 	}
@@ -135,9 +137,6 @@ func RestoreShardChain(bc *blockchain.BlockChain, filename string) error {
 	log.Println(fileHanlder.Name())
 	defer fileHanlder.Close()
 	var reader io.Reader = fileHanlder
-	if err != nil {
-		return err
-	}
 	for {
 		numberOfByteToRead := make([]byte, 8)
 		_, err := reader.Read(numberOfByteToRead)
@@ -188,7 +187,8 @@ func RestoreShardChain(bc *blockchain.BlockChain, filename string) error {
 	log.Printf("Restore Shard %+v Chain Successfully", shardID)
 	return nil
 }
-func RestoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
+
+func restoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 	// Watch for Ctrl-C while the import is running.
 	// If a signal is received, the import will stop at the next batch.
 	interrupt := make(chan os.Signal, 1)
@@ -219,9 +219,6 @@ func RestoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 	log.Println(fh.Name())
 	defer fh.Close()
 	var reader io.Reader = fh
-	if err != nil {
-		return err
-	}
 	for {
 		numberOfByteToRead := make([]byte, 8)
 		_, err := reader.Read(numberOfByteToRead)
