@@ -69,7 +69,7 @@ func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever Bl
 	return nil
 }
 
-func (mb *MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,

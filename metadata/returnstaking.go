@@ -71,7 +71,7 @@ func (sbsRes *ReturnStakingMetadata) Hash() *common.Hash {
 }
 
 //validate in shard block
-func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (sbsRes ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
