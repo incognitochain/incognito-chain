@@ -95,7 +95,7 @@ type Config struct {
 		ValidateProducerSig(block common.BlockInterface, consensusType string) error
 		ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error
 		// GetBlockProducerPubKeyB58(validationData string, consensusType string) string
-		GetUserMiningKey() string
+		GetCurrentMiningPublicKey() (string, string)
 	}
 }
 

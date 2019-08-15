@@ -1,6 +1,8 @@
 package consensus
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wire"
 
@@ -28,13 +30,43 @@ type ConsensusInterface interface {
 
 	ValidateProducerPosition(block common.BlockInterface) error
 	ValidateProducerSig(block common.BlockInterface) error
-	ValidateCommitteeSig(block common.BlockInterface) error
+	// ValidateCommitteeSig(block common.BlockInterface) error
+
+	LoadUserKey(string) error
+	GetUserPublicKey() string
+	GetUserPrivateKey() string
+	SignData(data []byte) (string, error)
+	ValidateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error
+	ValidateSingleSig(dataHash *common.Hash, sig string, pubkey string) error
 }
 
-// type KeyInterface interface{
-// 	LoadKey(string) error
-// 	GetPublicKey() string
-// 	GetPrivateKey() string
-// 	SigData(data []byte) (string,error)
-// 	VerifyData(data []byte,sig []byte )
+type ChainInterface interface {
+	GetConsensusEngine() ConsensusInterface
+	PushMessageToValidators(wire.Message) error
+	GetLastBlockTimeStamp() uint64
+	GetBlkMinTime() time.Duration
+	IsReady() bool
+	GetHeight() uint64
+	GetCommitteeSize() int
+	GetCommittee() []string
+	GetPubKeyCommitteeIndex(string) int
+	GetLastProposerIndex() int
+	// GetNodePubKey() string
+	CreateNewBlock(round int) common.BlockInterface
+	InsertBlk(interface{}, bool)
+	ValidateBlock(interface{}) error
+	ValidateBlockSanity(interface{}) error
+	ValidateBlockWithBlockChain(interface{}) error
+	GetActiveShardNumber() int
+	GetPubkeyRole(pubkey string, round int) (string, byte)
+	GetShardID() byte
+}
+
+// type MultisigSchemeInterface interface {
+// 	LoadUserKey(string) error
+// 	GetUserPublicKey() string
+// 	GetUserPrivateKey() string
+// 	SignData(data []byte) (string, error)
+// 	ValidateAggSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error
+// 	ValidateSingleSig(dataHash *common.Hash, sig string, pubkey string) error
 // }
