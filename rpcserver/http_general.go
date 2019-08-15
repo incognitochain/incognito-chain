@@ -600,6 +600,7 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 	}
 	stackingType := int(arrayParams[0].(float64))
 	amount := uint64(0)
+	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", httpServer.config.ChainParams.StakingAmountShard, true)
 	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", httpServer.config.ChainParams.StakingAmountShard, "")
 	if stackingType == 1 {
 		amount = stakingData.GetBeaconStakeAmount()

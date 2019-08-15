@@ -1,0 +1,83 @@
+[
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "createandsendstakingtransaction",
+      "context": false,
+      "params": [
+        "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM",
+        {
+          "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c":5250000000000
+        },
+        10,
+        0,
+        64,
+        "1Uv3B8RVFJi9dJjLUKPTx9tAy2ozZ3aPhRktfban527RqJ8MoeF3LMVesYUCSdZKnS56vRfPPz59x2Bou5yF3aFChdLx77RaQZWWCg1WK",
+        true
+      ]
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    },
+    "store": {
+      "TxIDStake": "TxID"
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribependingtransaction",
+      "context": true,
+      "params": ["TxIDStake"],
+      "type": "ws",
+      "wait": 600
+    },
+    "output": {
+      "error": null,
+      "response": {}
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribebeaconcandidatebypublickey",
+      "context": false,
+      "params": ["16dgSNJETEoXc4ayNmpcmUyZfYQJRZHHTSWhCj1Huhy1JHhf5Xi"],
+      "type": "ws",
+      "wait": 10000
+    },
+    "output": {
+      "error": null,
+      "response": true
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribebeaconpendingvalidatorbypublickey",
+      "context": false,
+      "params": ["16dgSNJETEoXc4ayNmpcmUyZfYQJRZHHTSWhCj1Huhy1JHhf5Xi"],
+      "type": "ws",
+      "wait": 10000
+    },
+    "output": {
+      "error": null,
+      "response": true
+    }
+  },
+  {
+    "node": "shard0-0",
+    "input": {
+      "command": "subcribebeaconcommitteebypublickey",
+      "context": false,
+      "params": ["16dgSNJETEoXc4ayNmpcmUyZfYQJRZHHTSWhCj1Huhy1JHhf5Xi"],
+      "type": "ws",
+      "wait": 10000
+    },
+    "output": {
+      "error": null,
+      "response": true
+    }
+  }
+]

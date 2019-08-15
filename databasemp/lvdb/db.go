@@ -1,7 +1,6 @@
 package lvdb
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/pkg/errors"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -9,17 +8,6 @@ import (
 
 type db struct {
 	lvdb *leveldb.DB
-}
-
-var (
-	txKeyPrefix = []byte("tx-")
-	Splitter    = []byte("-[-]-")
-)
-
-func (db *db) GetKey(key interface{}) []byte {
-	var dbkey []byte
-	dbkey = append(txKeyPrefix, key.(*common.Hash)[:]...)
-	return dbkey
 }
 
 func open(dbPath string) (databasemp.DatabaseInterface, error) {

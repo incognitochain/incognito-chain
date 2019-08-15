@@ -131,11 +131,11 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBe
 			numValidPedingBlk = 0
 		}
 		numInValidPedingBlk := len(self.pool[shardID]) - numValidPedingBlk + 1
-		if numValidPedingBlk >= MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL {
+		if numValidPedingBlk >= maxValidShardToBeaconBlockInPool {
 			return 0, 0, NewBlockPoolError(MaxPoolSizeError, errors.New("exceed max valid block"))
 		}
 		lastBlockInPool := self.pool[shardID][len(self.pool[shardID])-1]
-		if numInValidPedingBlk >= MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL {
+		if numInValidPedingBlk >= maxInvalidShardToBeaconBlockInPool {
 			//If invalid block is better than current invalid block
 			if lastBlockInPool.Header.Height > blockHeight {
 				//remove latest block and add better invalid to pool
@@ -155,8 +155,8 @@ func (self *ShardToBeaconPool) AddShardToBeaconBlock(block *blockchain.ShardToBe
 	//@NOTICE: check logic again
 	if self.pool[shardID][0].Header.Height > self.latestValidHeight[shardID] {
 		offset := self.pool[shardID][0].Header.Height - self.latestValidHeight[shardID]
-		if offset > MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL {
-			offset = MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL
+		if offset > maxValidShardToBeaconBlockInPool {
+			offset = maxValidShardToBeaconBlockInPool
 		}
 		return self.latestValidHeight[shardID] + 1, self.latestValidHeight[shardID] + offset, nil
 	}
