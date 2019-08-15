@@ -76,7 +76,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(producerKeySet *incognitokey
 	}
 	epoch := beaconBlock.Header.Epoch
 	if epoch-blockGenerator.chain.BestState.Shard[shardID].Epoch > 1 {
-		beaconHeight = blockGenerator.chain.BestState.Shard[shardID].Epoch * common.EPOCH
+		beaconHeight = blockGenerator.chain.BestState.Shard[shardID].Epoch * blockGenerator.chain.config.ChainParams.Epoch
 		newBeaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 		if err != nil {
 			return nil, err
@@ -269,7 +269,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(
 				for _, v := range strings.Split(l[2], ",") {
 					tx, err := blockGenerator.buildReturnStakingAmountTx(v, producerPrivateKey)
 					if err != nil {
-						Logger.log.Error("SA:", err)
+						Logger.log.Error(err)
 						continue
 					}
 					resTxs = append(resTxs, tx)
@@ -344,7 +344,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		swapInstruction       = []string{}
 		err                   error
 	)
-	if beaconHeight%common.EPOCH == 0 {
+	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 {
 		if len(shardPendingValidator) > 0 {
 			Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 			Logger.log.Info("ShardCommittee", shardCommittee)
@@ -356,7 +356,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 				return instructions, shardPendingValidator, shardCommittee, err
 			}
 			// Generate instruction storing merkle root of validators pubkey and send to beacon
-			bridgeID := byte(common.BRIDGE_SHARD_ID)
+			bridgeID := byte(common.BridgeShardID)
 			if shardID == bridgeID {
 				startHeight := blockchain.BestState.Shard[shardID].ShardHeight + 2
 				bridgeSwapConfirmInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
@@ -374,7 +374,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 	}
 	// Pick instruction with merkle root of beacon committee's pubkeys and save to bridge block
 	// Also, pick BurningConfirm inst and save to bridge block
-	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	bridgeID := byte(common.BridgeShardID)
 	if shardID == bridgeID {
 		prevBlock := blockchain.BestState.Shard[shardID].BestBlock
 		commPubkeyInst := pickBeaconSwapConfirmInst(beaconBlocks)
@@ -448,7 +448,11 @@ func (blockGenerator *BlockGenerator) getCrossShardData(shardID byte, lastBeacon
 				continue
 			}
 			startHeight = nextHeight
-			temp, err := blockGenerator.chain.config.DataBase.FetchCommitteeByHeight(blk.Header.BeaconHeight)
+			beaconHeight, err := blockGenerator.chain.FindBeaconHeightForCrossShardBlock(blk.Header.BeaconHeight, blk.Header.ShardID, blk.Header.Height)
+			if err != nil {
+				break
+			}
+			temp, err := blockGenerator.chain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
 			if err != nil {
 				break
 			}
@@ -508,7 +512,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
-		panic("TempTxPool Is not Empty")
+		return []metadata.Transaction{}, []metadata.Transaction{}, 0
 	}
 	currentSize := uint64(0)
 	for _, tx := range sourceTxns {
@@ -555,10 +559,10 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	4. Return total fee of tx
 */
 // get valid tx for specific shard and their fee, also return unvalid tx
-func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *privacy.PrivateKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxTokenData) {
+func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *privacy.PrivateKey, crossTxTokenDataMap map[byte][]CrossTxTokenData, shardID byte) ([]metadata.Transaction, []transaction.TxNormalTokenData) {
 	var keys []int
 	txs := []metadata.Transaction{}
-	txTokenDataList := []transaction.TxTokenData{}
+	txTokenDataList := []transaction.TxNormalTokenData{}
 	for k := range crossTxTokenDataMap {
 		keys = append(keys, int(k))
 	}
@@ -572,7 +576,7 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 			for _, txTokenData := range crossTxTokenData.TxTokenData {
 
 				if privatekey != nil {
-					tx := &transaction.TxCustomToken{}
+					tx := &transaction.TxNormalToken{}
 					tokenParam := &transaction.CustomTokenParamTx{
 						PropertyID:     txTokenData.PropertyID.String(),
 						PropertyName:   txTokenData.PropertyName,
@@ -606,4 +610,24 @@ func (blockchain *BlockChain) createCustomTokenTxForCrossShard(privatekey *priva
 		}
 	}
 	return txs, txTokenDataList
+}
+
+/*
+	Find Beacon Block with compatible shard states of cross shard block
+*/
+func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(startHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
+	for {
+		beaconBlock, err := blockchain.GetBeaconBlockByHeight(startHeight)
+		if err != nil {
+			return 0, NewBlockChainError(FetchBeaconBlockError, err)
+		}
+		if shardStates, ok := beaconBlock.Body.ShardState[fromShardID]; ok {
+			for _, shardState := range shardStates {
+				if shardState.Height == crossShardBlockHeight {
+					return beaconBlock.Header.Height, nil
+				}
+			}
+		}
+		startHeight += 1
+	}
 }
