@@ -95,7 +95,7 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	)
 }
 
-func (iReq *IssuingRequest) ValidateTxWithBlockChain(
+func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,

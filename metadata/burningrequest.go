@@ -46,7 +46,7 @@ func NewBurningRequest(
 	return burningReq, nil
 }
 
-func (bReq *BurningRequest) ValidateTxWithBlockChain(
+func (bReq BurningRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
@@ -81,10 +81,6 @@ func (bReq *BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if len(bReq.TokenID) != common.HashSize {
-		return false, false, errors.New("Wrong request info's token id")
-	}
-
 	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
 	}

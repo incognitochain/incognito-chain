@@ -47,7 +47,7 @@ func (iRes IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64
 	return true
 }
 
-func (iRes *IssuingETHResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (iRes IssuingETHResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return false, nil
 }
