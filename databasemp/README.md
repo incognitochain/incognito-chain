@@ -1,10 +1,10 @@
-# Mempool Persistence Database (mpdb)
+# Mempool Persistence Database (MPDB)
 ## Introduction
-mpdb is a leveldb, which seperated from the main leveldb. 
+Mempool Persistence Database is a leveldb, which seperated from the main leveldb. 
 This database only store transactions in mempool.
 
 Transactions in mempool is stored in Memory (RAM), they will be erased when node is turned off or crashed.
-So, mpdb is used to stored current transactions in mempool. If transaction is removed in mempool for any reason, it will be removed out of mpdb as well.
+So, MPDB is used to stored current transactions in mempool. If transaction is removed in mempool for any reason, it will be removed out of mpdb as well.
 
 This feature can be turn on and off by using config.
 ## Feature

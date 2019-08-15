@@ -136,7 +136,7 @@ func (chain *BlockChain) processBurningReq(
 	}
 	amt := big.NewInt(0).SetBytes(amountBytes)
 	amount := uint64(0)
-	if bytes.Equal(externalTokenID, rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes()) {
+	if bytes.Equal(externalTokenID, rCommon.HexToAddress(common.EthAddrStr).Bytes()) {
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else {
 		amount = amt.Uint64()
@@ -174,7 +174,7 @@ func (chain *BlockChain) processIssuingETHReq(
 			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
 			return nil, nil
 		}
-		err = chain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BRIDGE_REQUEST_REJECTED_STATUS)
+		err = chain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus)
 		if err != nil {
 			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
 		}
@@ -229,7 +229,7 @@ func (chain *BlockChain) processIssuingReq(
 			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
 			return nil, nil
 		}
-		err = chain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BRIDGE_REQUEST_REJECTED_STATUS)
+		err = chain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus)
 		if err != nil {
 			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
 		}
@@ -282,7 +282,7 @@ func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
-		if err := bc.config.DataBase.StoreBurningConfirm(txID[:], block.Header.Height); err != nil {
+		if err := bc.config.DataBase.StoreBurningConfirm(*txID, block.Header.Height); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}
@@ -293,13 +293,18 @@ func (bc *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock) error {
 	db := bc.config.DataBase
 	for _, tx := range block.Body.Transactions {
 		metaType := tx.GetMetadataType()
-		var err error
+		var reqTxID common.Hash
 		if metaType == metadata.IssuingETHResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingETHResponse)
-			err = db.TrackBridgeReqWithStatus(meta.RequestedTxID, common.BRIDGE_REQUEST_ACCEPTED_STATUS)
-			if err != nil {
-				return err
-			}
+			reqTxID = meta.RequestedTxID
+		} else if metaType == metadata.IssuingResponseMeta {
+			meta := tx.GetMetadata().(*metadata.IssuingResponse)
+			reqTxID = meta.RequestedTxID
+		}
+		var err error
+		err = db.TrackBridgeReqWithStatus(reqTxID, common.BridgeRequestAcceptedStatus)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

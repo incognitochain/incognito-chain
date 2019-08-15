@@ -52,7 +52,10 @@ if [ "$1" == "shard-stake-2" ]; then
 ./incognito --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rsURTpYQMp3978j2nvYXTbuMa9H7MfLTA4PCJoxyweZNWRR3beMEtsoLBBbc473Bv8NE3uKUXcVA2Jnh6sPhTEnFfmQEpY8opeFytoM" --nodemode "auto" --datadir "data/shard-stake-2" --listen "127.0.0.1:9438" --externaladdress "127.0.0.1:9438" --norpcauth --rpclisten "127.0.0.1:9347"
 fi
 if [ "$1" == "shard-stake-3" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rzcRLXhra2ouQo4yCZiQt1iEoZdRkD3m6fixXqCLzygjo28L3isePdPjPbXJ7zcxgyxbiNuF4Ex15NFCHVLwHhJD7QL7AHUfUsH78AP" --nodemode "auto" --datadir "data/shard-stake-3" --listen "0.0.0.0:9447" --externaladdress "0.0.0.0:9447" --norpcauth --rpclisten "0.0.0.0:9345"
+./incognito --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8rotpPVSeHrknwVUTLQgy2avatUWKh2oV9EjVMw6eEtwyJT1FsrHGzvBaLpHL4gPVfJjuSUWvTtiTKuWGNNwGuLo8SHCgfA36ttJ5J7u" --nodemode "auto" --datadir "data/shard-stake-3" --listen "0.0.0.0:9447" --externaladdress "0.0.0.0:9447" --norpcauth --rpclisten "0.0.0.0:9348"
+fi
+if [ "$1" == "shard-stake-4" ]; then
+./incognito --discoverpeersaddress "127.0.0.1:9330" --privatekey "112t8roEu1K8gUXF3cyRBv1GSGHDXNaSFh45sxgCCSi4Q6KWbW91DtYFqJdAP5MFBJEziejirb4cdDhE2Mxi4PSg8wf277vnCryQyL3VtBK2" --nodemode "auto" --datadir "data/shard-stake-4" --listen "0.0.0.0:9448" --externaladdress "0.0.0.0:9448" --norpcauth --rpclisten "0.0.0.0:9349"
 fi
 ####full node
 # ./incognito --discoverpeersaddress "0.0.0.0:9330" --nodemode "relay" --relayshards "all" --datadir "data/fullnode" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9343"
@@ -68,8 +71,8 @@ if [ "$1" == "shard1-proposer" ]; then
 ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rrEEcDQBMnUM5J17qniHZZmckmr8LGCv9nBjP9x5wmGFGUryKTNvEAf1jh2wwW69rxwtANq4m8JmzowfKVPayUHPmAKdwQw5718GKuH" --nodemode "auto" --datadir "data/shard-1" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9338" --enablewallet --wallet "wallet2" --walletpassphrase "12345678" --walletautoinit
 fi
 # Beacon, Role: Proposer
-if [ "$1" == "beacon-proposer" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8ruLZgaV3ze37GRikKn8QVnrJDJ5C9Dhtou66vyeBfBDSJ6ZGRSg3k4qTwTjm14kgvwuFX3aAqeU64cGiixDh1ip4nvnmW7xHbSuXpwB" --nodemode "auto" --datadir "data/beacon" --listen "0.0.0.0:9423" --externaladdress "0.0.0.0:9423" --norpcauth --rpclisten "0.0.0.0:9340"
+if [ "$1" == "shard2-proposer" ]; then
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rotpPVSeHrknwVUTLQgy2avatUWKh2oV9EjVMw6eEtwyJT1FsrHGzvBaLpHL4gPVfJjuSUWvTtiTKuWGNNwGuLo8SHCgfA36ttJ5J7u" --nodemode "auto" --datadir "data/beacon" --listen "0.0.0.0:9423" --externaladdress "0.0.0.0:9423" --norpcauth --rpclisten "0.0.0.0:9340"
 fi
 # Relay node
 if [ "$1" == "relaynode" ]; then

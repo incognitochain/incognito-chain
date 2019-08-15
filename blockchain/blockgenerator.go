@@ -6,7 +6,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/rpccaller"
 )
 
 type BlockGenerator struct {
@@ -79,7 +78,4 @@ func (blockGenerator *BlockGenerator) GetPendingTxsV2() []metadata.Transaction {
 		pendingTxs = append(pendingTxs, tx)
 	}
 	return pendingTxs
-}
-func (blockGenerator *BlockGenerator) SetRPCClientChain(rpcClient *rpccaller.RPCClient) {
-	blockGenerator.chain.RPCClient = rpcClient
 }

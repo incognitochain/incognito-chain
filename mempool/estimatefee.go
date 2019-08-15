@@ -166,7 +166,7 @@ func NewFeeEstimator(maxRollback, minRegisteredBlocks uint32, limitFee uint64, l
 	return &FeeEstimator{
 		maxRollback:         maxRollback,
 		minRegisteredBlocks: minRegisteredBlocks,
-		lastKnownHeight:     UnminedHeight,
+		lastKnownHeight:     unminedHeight,
 		binSize:             estimateFeeBinSize,
 		maxReplacements:     estimateFeeMaxReplacements,
 		observed:            make(map[common.Hash]*observedTransaction),
@@ -183,7 +183,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 
 	// If we haven't seen a block yet we don't know when this one arrived,
 	// so we ignore it.
-	if ef.lastKnownHeight == UnminedHeight {
+	if ef.lastKnownHeight == unminedHeight {
 		return
 	}
 
@@ -203,7 +203,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 			feeRate:         NewCoinPerKilobyte(uint64(t.Desc.Fee), size),
 			feeRateForToken: feeRateForToken,
 			observed:        t.Desc.Height,
-			mined:           UnminedHeight,
+			mined:           unminedHeight,
 		}
 		Logger.log.Info("Observe Transaction success", t.Desc.Tx.Hash())
 	}
@@ -218,7 +218,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 	ef.cached = nil
 
 	height := block.Header.Height
-	if height != ef.lastKnownHeight+1 && ef.lastKnownHeight != UnminedHeight {
+	if height != ef.lastKnownHeight+1 && ef.lastKnownHeight != unminedHeight {
 		Logger.log.Errorf("RegisterBlock: intermediate block not recorded; current height is %d; new height is %d, shardID %d",
 			ef.lastKnownHeight, height, block.Header.ShardID)
 		return fmt.Errorf("RegisterBlock: intermediate block not recorded; current height is %d; new height is %d",
@@ -269,7 +269,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 
 		// This shouldn't happen if the fee estimator works correctly,
 		// but return an error if it does.
-		if o.mined != UnminedHeight {
+		if o.mined != unminedHeight {
 			Logger.log.Error("RegisterBlock: Estimate fee: transaction ", t.String(), " has already been mined", block.Header.ShardID, t.String())
 			return errors.New("Transaction has already been mined")
 		}
@@ -310,7 +310,7 @@ func (ef *FeeEstimator) RegisterBlock(block *blockchain.ShardBlock) error {
 
 	// Go through the mempool for txs that have been in too long.
 	for hash, o := range ef.observed {
-		if o.mined == UnminedHeight && height-o.observed >= estimateFeeDepth {
+		if o.mined == unminedHeight && height-o.observed >= estimateFeeDepth {
 			delete(ef.observed, hash)
 		}
 	}
@@ -408,7 +408,7 @@ func (ef *FeeEstimator) rollback() {
 			prev := bin[counter]
 
 			if prev.mined == ef.lastKnownHeight {
-				prev.mined = UnminedHeight
+				prev.mined = unminedHeight
 
 				bin[counter] = o
 
@@ -434,7 +434,7 @@ func (ef *FeeEstimator) rollback() {
 			prev := ef.bin[i][j]
 
 			if prev.mined == ef.lastKnownHeight {
-				prev.mined = UnminedHeight
+				prev.mined = unminedHeight
 
 				newBin := append(ef.bin[i][0:j], ef.bin[i][j+1:l]...)
 				// leak but it causes a panic when it is uncommented.
