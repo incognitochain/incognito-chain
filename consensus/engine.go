@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -19,11 +18,13 @@ type Engine struct {
 	started            bool
 	Node               nodeInterface
 	ChainConsensusList map[string]ConsensusInterface
-	Chains             map[string]chain.ChainInterface
+	Chains             map[string]ChainInterface
 	CurrentMiningChain string
 	Blockchain         *blockchain.BlockChain
 	BlockGen           *blockchain.BlockGenerator
-	MiningKeys         map[string]string
+	// userMiningPublicKeys map[string]string
+	// MiningKeys         map[string]string
+
 }
 
 func New(node nodeInterface, blockchain *blockchain.BlockChain, blockgen *blockchain.BlockGenerator) *Engine {
@@ -31,6 +32,10 @@ func New(node nodeInterface, blockchain *blockchain.BlockChain, blockgen *blockc
 		Node:       node,
 		Blockchain: blockchain,
 		BlockGen:   blockgen,
+	}
+	err := engine.LoadMiningKeys(node.GetMiningKeys())
+	if err != nil {
+		panic(err)
 	}
 	return &engine
 }
@@ -47,9 +52,7 @@ func (engine *Engine) Start() error {
 		return errors.New("Consensus engine is already started")
 	}
 	Logger.log.Info("starting consensus...")
-	// if engine.Node.GetMiningKeys() == "" {
-	// 	return errors.New("MiningKeys can't be empty")
-	// }
+
 	engine.cQuit = make(chan struct{})
 	go func() {
 		for {
@@ -169,7 +172,7 @@ func (engine *Engine) ValidateBlockWithConsensus(block common.BlockInterface, ch
 }
 
 func (engine *Engine) ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error {
-	return nil
+	return engine.ChainConsensusList[consensusType].ValidateAggregatedSig(blockHash, validationData, committee)
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {
@@ -181,22 +184,21 @@ func (engine *Engine) IsOngoing(chainName string) bool {
 }
 
 func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
-
-	// switch msg.MessageType() {
-	// case wire.CmdBFTPropose:
-	// 	rawProposeMsg := msg.(*wire.MessageBFTProposeV2)
-	// 	if ConsensusManager.ChainList[rawProposeMsg.ChainKey].GetConsensusEngine().IsRun() {
-	// 		ConsensusManager.ChainList[rawProposeMsg.ChainKey].GetConsensusEngine().ReceiveProposeMsg(convertProposeMsg(rawProposeMsg))
-	// 	}
-	// case wire.CmdBFTPrepare:
-	// 	rawPrepareMsg := msg.(*wire.MessageBFTPrepareV2)
-	// 	if ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().IsRun() {
-	// 		ConsensusManager.ChainList[rawPrepareMsg.ChainKey].GetConsensusEngine().ReceivePrepareMsg(convertPrepareMsg(rawPrepareMsg))
-	// 	}
-	// }
+	if engine.CurrentMiningChain == msg.ChainKey {
+		engine.ChainConsensusList[msg.ChainKey].ProcessBFTMsg(msg)
+	}
 }
 
 func (engine *Engine) GetUserRole() (string, int) {
+	if engine.CurrentMiningChain != "" {
+		publicKey, _ := engine.GetCurrentMiningPublicKey()
+		userRole, _ := engine.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
+		if engine.CurrentMiningChain == common.BEACON_CHAINKEY {
+			return userRole, -1
+		} else {
+			return userRole, int(engine.Chains[engine.CurrentMiningChain].GetShardID())
+		}
+	}
 	return "", 0
 }
 
@@ -247,6 +249,6 @@ func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensus
 	return nil
 }
 
-func (engine *Engine) GetUserMiningKey() string {
-	return ""
-}
+// func (engine *Engine) GetUserMiningKey() string {
+// 	return ""
+// }
