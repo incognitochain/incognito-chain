@@ -127,7 +127,7 @@ func (iReq IssuingRequest) ValidateMetadataByItself() bool {
 	return iReq.Type == IssuingRequestMeta
 }
 
-func (iReq *IssuingRequest) Hash() *common.Hash {
+func (iReq IssuingRequest) Hash() *common.Hash {
 	record := iReq.ReceiverAddress.String()
 	record += iReq.TokenID.String()
 	record += string(iReq.DepositedAmount)

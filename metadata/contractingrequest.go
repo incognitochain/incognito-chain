@@ -92,7 +92,7 @@ func (cReq ContractingRequest) ValidateMetadataByItself() bool {
 	return cReq.Type == ContractingRequestMeta
 }
 
-func (cReq *ContractingRequest) Hash() *common.Hash {
+func (cReq ContractingRequest) Hash() *common.Hash {
 	record := cReq.MetadataBase.Hash().String()
 	record += cReq.BurnerAddress.String()
 	record += cReq.TokenID.String()

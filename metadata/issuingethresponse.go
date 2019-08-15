@@ -61,7 +61,7 @@ func (iRes IssuingETHResponse) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (iRes *IssuingETHResponse) Hash() *common.Hash {
+func (iRes IssuingETHResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
 	record += string(iRes.UniqETHTx)
 	record += string(iRes.ExternalTokenID)
