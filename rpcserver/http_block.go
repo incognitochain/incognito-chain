@@ -355,6 +355,7 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 			// BlockProducer:    bestState.BestBlock.Header.ProducerAddress.String(),
 			// BlockProducerSig: bestState.BestBlock.ProducerSig,
 			ValidationData: bestState.BestBlock.ValidationData,
+			Time:             bestState.BestBlock.Header.Timestamp,
 		}
 	}
 
@@ -365,6 +366,7 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		// BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
 		ValidationData: beaconBestState.BestBlock.ValidationData,
 		Epoch:          beaconBestState.Epoch,
+		Time:             beaconBestState.BestBlock.Header.Timestamp,
 	}
 	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
@@ -565,7 +567,7 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 	flag := false
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetType() == common.TxCustomTokenType {
-			customTokenTx := tx.(*transaction.TxCustomToken)
+			customTokenTx := tx.(*transaction.TxNormalToken)
 			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
 				if !flag {
 					flag = true //has cross shard block

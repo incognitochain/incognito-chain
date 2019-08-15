@@ -137,7 +137,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 				m := make(map[common.Hash]uint64)
 				for _, tx := range shardBlock.Body.Transactions {
 					if tx.GetType() == common.TxCustomTokenType {
-						txCustomToken, ok := tx.(*transaction.TxCustomToken)
+						txCustomToken, ok := tx.(*transaction.TxNormalToken)
 						if !ok {
 							err := NewRPCError(ErrSubcribe, fmt.Errorf("%+v, expect type %+v", ErrParseTransaction, common.TxCustomTokenType))
 							cResult <- RpcSubResult{Error: err}

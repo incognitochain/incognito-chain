@@ -453,6 +453,23 @@ func GetENV(key, fallback string) string {
 	return value
 }
 
+func GetValidStaker(committees []string, stakers []string) []string {
+	validStaker := []string{}
+	for _, staker := range stakers {
+		flag := false
+		for _, committee := range committees {
+			if strings.Compare(staker, committee) == 0 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			validStaker = append(validStaker, staker)
+		}
+	}
+	return validStaker
+}
+
 func GetShardChainKey(shardID byte) string {
 	return SHARD_CHAINKEY + "-" + string(shardID)
 }
