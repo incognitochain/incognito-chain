@@ -55,7 +55,7 @@ func (sbsRes ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, 
 	return false, true, nil
 }
 
-func (sbsRes *ReturnStakingMetadata) ValidateMetadataByItself() bool {
+func (sbsRes ReturnStakingMetadata) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }

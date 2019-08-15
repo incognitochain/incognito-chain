@@ -33,7 +33,7 @@ func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidateP
 
 /*
  */
-func (stakingMetadata *StakingMetadata) ValidateMetadataByItself() bool {
+func (stakingMetadata StakingMetadata) ValidateMetadataByItself() bool {
 	return (stakingMetadata.Type == ShardStakingMeta || stakingMetadata.Type == BeaconStakingMeta)
 }
 

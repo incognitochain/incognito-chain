@@ -56,7 +56,7 @@ func (iRes IssuingETHResponse) ValidateSanityData(bcr BlockchainRetriever, txr T
 	return false, true, nil
 }
 
-func (iRes *IssuingETHResponse) ValidateMetadataByItself() bool {
+func (iRes IssuingETHResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
