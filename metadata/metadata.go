@@ -54,13 +54,6 @@ func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64)
 	return !(txFee < fullFee)
 }
 
-func (mb *MetadataBase) VerifyMultiSigs(
-	tx Transaction,
-	db database.DatabaseInterface,
-) (bool, error) {
-	return true, nil
-}
-
 func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	return [][]string{}, nil
 }
@@ -128,7 +121,6 @@ type Metadata interface {
 	// isContinue, ok, err
 	ValidateSanityData(bcr BlockchainRetriever, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool
-	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
 	CalculateSize() uint64
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, *AccumulatedValues) (bool, error)
