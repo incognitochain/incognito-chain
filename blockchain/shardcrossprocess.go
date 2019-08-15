@@ -17,7 +17,7 @@ type CrossOutputCoin struct {
 type CrossTxTokenData struct {
 	BlockHeight uint64
 	BlockHash   common.Hash
-	TxTokenData []transaction.TxTokenData
+	TxTokenData []transaction.TxNormalTokenData
 }
 type CrossTokenPrivacyData struct {
 	BlockHeight      uint64

@@ -14,16 +14,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
-)
-
-// func getMiningReward(isForBeacon bool, blkHeight uint64) uint64 {
-// 	return 0
-// }
-
 func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
-	swaperPubKey string,
+	swapPublicKey string,
 	blkProducerPrivateKey *privacy.PrivateKey,
 ) (metadata.Transaction, error) {
 	// addressBytes := blockGenerator.chain.config.UserKeySet.PaymentAddress.Pk
@@ -34,47 +26,40 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	fmt.Println("SA: get tx for ", swaperPubKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
 	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swaperPubKey]
 	if !ok {
-		return nil, NewBlockChainError(UnExpectedError, errors.New("No staking tx in best state"))
+		return nil, NewBlockChainError(GetStakingTransactionError, errors.New("No staking tx in best state"))
 	}
-
 	var txHash = &common.Hash{}
-	(&common.Hash{}).Decode(txHash, tx)
-
+	err := (&common.Hash{}).Decode(txHash, tx)
+	if err != nil {
+		return nil, NewBlockChainError(DecodeHashError, err)
+	}
 	blockHash, index, err := blockGenerator.chain.config.DataBase.GetTransactionIndexById(*txHash)
 	if err != nil {
-		abc := NewBlockChainError(UnExpectedError, err)
-		Logger.log.Error(abc)
-		return nil, abc
+		return nil, NewBlockChainError(GetTransactionFromDatabaseError, err)
 	}
-	block, _, err1 := blockGenerator.chain.GetShardBlockByHash(blockHash)
-	if err1 != nil {
-		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
-		return nil, NewBlockChainError(UnExpectedError, err1)
+	shardBlock, _, err := blockGenerator.chain.GetShardBlockByHash(blockHash)
+	if err != nil || shardBlock == nil {
+		Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
+		return nil, NewBlockChainError(FetchShardBlockError, err)
 	}
-
-	txData := block.Body.Transactions[index]
-
-	keyWallet, err2 := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress)
-	if err2 != nil {
-		fmt.Println("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), committeeShardID)
-		return nil, NewBlockChainError(UnExpectedError, err2)
+	txData := shardBlock.Body.Transactions[index]
+	keyWallet, err := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress)
+	if err != nil {
+		Logger.log.Error("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), committeeShardID)
+		return nil, NewBlockChainError(WalletKeySerializedError, err)
 	}
-
-	fmt.Println("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).PaymentAddress, committeeShardID)
+	Logger.log.Info("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress, committeeShardID)
 	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
-
 	if paymentShardID != committeeShardID {
-		return nil, NewBlockChainError(UnExpectedError, errors.New("Not from this shard"))
+		return nil, NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", committeeShardID))
 	}
-
 	returnStakingMeta := metadata.NewReturnStaking(
 		tx,
 		keyWallet.KeySet.PaymentAddress,
 		metadata.ReturnStakingMeta,
 	)
-
 	returnStakingTx := new(transaction.Tx)
-	err1 = returnStakingTx.InitTxSalary(
+	err = returnStakingTx.InitTxSalary(
 		txData.CalculateTxValue(),
 		&keyWallet.KeySet.PaymentAddress,
 		blkProducerPrivateKey,
@@ -83,63 +68,11 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	)
 	//modify the type of the salary transaction
 	returnStakingTx.Type = common.TxReturnStakingType
-
-	if err1 != nil {
-		return nil, err1
+	if err != nil {
+		return nil, NewBlockChainError(InitSalaryTransactionError, err)
 	}
 	return returnStakingTx, nil
 }
-
-// func (blockgen *BlockGenerator) buildBeaconSalaryRes(
-// 	instType string,
-// 	contentStr string,
-// 	blkProducerPrivateKey *privacy.PrivateKey,
-// ) ([]metadata.Transaction, error) {
-
-// 	var beaconSalaryInfo metadata.BeaconSalaryInfo
-// 	err := json.Unmarshal([]byte(contentStr), &beaconSalaryInfo)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if beaconSalaryInfo.PayToAddress == nil || beaconSalaryInfo.InfoHash == nil {
-// 		return nil, errors.Errorf("Can not Parse from contentStr")
-// 	}
-
-// 	salaryResMeta := metadata.NewBeaconBlockSalaryRes(
-// 		beaconSalaryInfo.BeaconBlockHeight,
-// 		beaconSalaryInfo.PayToAddress,
-// 		beaconSalaryInfo.InfoHash,
-// 		metadata.BeaconSalaryResponseMeta,
-// 	)
-
-// 	salaryResTx := new(transaction.Tx)
-// 	err = salaryResTx.InitTxSalary(
-// 		beaconSalaryInfo.BeaconSalary,
-// 		beaconSalaryInfo.PayToAddress,
-// 		blkProducerPrivateKey,
-// 		blockgen.chain.config.DataBase,
-// 		salaryResMeta,
-// 	)
-// 	//fmt.Println("SA: beacon salary", beaconSalaryInfo, salaryResTx.CalculateTxValue(), salaryResTx.Hash().String())
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return []metadata.Transaction{salaryResTx}, nil
-// }
-
-// func (blockgen *BlockGenerator) buildBeaconRewardTx(inst metadata.BeaconSalaryInfo, producerPriKey *privacy.PrivateKey) error {
-// 	n := inst.BeaconBlockHeight / blockgen.chain.config.ChainParams.RewardHalflife
-// 	reward := blockgen.chain.config.ChainParams.BasicReward
-// 	for ; n > 0; n-- {
-// 		reward /= 2
-// 	}
-// 	txCoinBase := new(transaction.Tx)
-// 	// err := txCoinBase.InitTxSalary(reward, inst.PayToAddress, producerPriKey, db)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
 
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
 	n := blkHeight / blockchain.config.ChainParams.RewardHalflife
@@ -161,7 +94,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	if err != nil {
 		return nil, err
 	}
-	epochEndDevReward := DurationHalfLifeRewardForDev / common.EPOCH
+	epochEndDevReward := DurationHalfLifeRewardForDev / blockchain.config.ChainParams.Epoch
 	forDev := epochEndDevReward >= epoch
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
@@ -243,10 +176,7 @@ func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalRe
 	return nil
 }
 
-func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
-	beaconBlocks []*BeaconBlock,
-	shardID byte,
-) error {
+func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks []*BeaconBlock, shardID byte) error {
 
 	shardCommittee := make(map[byte][]string)
 	isInit := false
@@ -311,7 +241,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(epoch * common.EPOCH)
+						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
 						if err != nil {
 							return err
 						}

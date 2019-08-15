@@ -51,16 +51,16 @@ func NewWithDrawRewardResponse(txRequestID *common.Hash) (Metadata, error) {
 	}, nil
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) Hash() *common.Hash {
+func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
 	return withDrawRewardResponse.TxRequest
 }
 
-func (withDrawRewardRequest *WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
 
-func (withDrawRewardRequest *WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	if txr.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
@@ -83,11 +83,11 @@ func (withDrawRewardRequest *WithDrawRewardRequest) ValidateTxWithBlockChain(txr
 	return true, nil
 }
 
-func (withDrawRewardRequest *WithDrawRewardRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (withDrawRewardRequest *WithDrawRewardRequest) ValidateMetadataByItself() bool {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
@@ -115,11 +115,11 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	return true, nil
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) ValidateMetadataByItself() bool {
+func (withDrawRewardResponse WithDrawRewardResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
