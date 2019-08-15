@@ -151,12 +151,14 @@ func (beaconBestState *BeaconBestState) GetBestHeightOfShard(shardID byte) uint6
 	return beaconBestState.BestShardHeight[shardID]
 }
 
+// GetAShardCommittee TODO
 func (beaconBestState *BeaconBestState) GetAShardCommittee(shardID byte) []string {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	return beaconBestState.ShardCommittee[shardID]
 }
 
+// GetShardCommittee TODO
 func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]string) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
