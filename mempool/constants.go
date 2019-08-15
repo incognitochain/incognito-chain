@@ -20,24 +20,19 @@ const (
 
 // Shard to beacon pool
 const (
-	MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL   = 1000
-	MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL = 2000
+	maxValidShardToBeaconBlockInPool   = 1000
+	maxInvalidShardToBeaconBlockInPool = 2000
 )
 
 // Shard pool
 const (
-	MAX_VALID_SHARD_BLK_IN_POOL   = 10000
-	MAX_PENDING_SHARD_BLK_IN_POOL = 10000
-	SHARD_CACHE_SIZE              = 2000
-	SHARD_POOL_MAIN_LOOP_TIME     = 500 // count in milisecond
+	maxValidShardBlockInPool   = 10000
+	maxPendingShardBlockInPool = 10000
+	shardCacheSize             = 2000
+	shardPoolMainLoopTime      = 500 * time.Millisecond // count in milisecond
 )
 
 // Cross Shard Pool
 const (
-	MAX_PENDING_CROSS_SHARD_IN_POOL = 2000 //per shardID
-
-	/*MAX_VALID_CROSS_SHARD_IN_POOL = 1000
-	VALID_CROSS_SHARD_BLOCK       = 0
-	INVALID_CROSS_SHARD_BLOCK     = -1
-	PENDING_CROSS_SHARD_BLOCK     = -2*/
+	maxPendingCrossShardInPool = 2000 //per shardID
 )

@@ -187,7 +187,7 @@ func (pool *CrossShardPool_v2) AddCrossShardBlock(block *blockchain.CrossShardBl
 		return nil, pool.shardID, err
 	}
 
-	if len(pool.pendingPool[shardID]) > MAX_PENDING_CROSS_SHARD_IN_POOL {
+	if len(pool.pendingPool[shardID]) > maxPendingCrossShardInPool {
 		if pool.pendingPool[shardID][len(pool.pendingPool[shardID])-1].Header.Height > block.Header.Height {
 			pool.pendingPool[shardID] = pool.pendingPool[shardID][:len(pool.pendingPool[shardID])-1]
 		} else {
