@@ -32,17 +32,17 @@ func NewReturnStaking(
 	}
 }
 
-func (sbsRes *ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes *ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (sbsRes *ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(sbsRes.StakerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
@@ -55,12 +55,12 @@ func (sbsRes *ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever,
 	return false, true, nil
 }
 
-func (sbsRes *ReturnStakingMetadata) ValidateMetadataByItself() bool {
+func (sbsRes ReturnStakingMetadata) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
 
-func (sbsRes *ReturnStakingMetadata) Hash() *common.Hash {
+func (sbsRes ReturnStakingMetadata) Hash() *common.Hash {
 	record := sbsRes.StakerAddress.String()
 	record += sbsRes.TxID
 
@@ -71,7 +71,7 @@ func (sbsRes *ReturnStakingMetadata) Hash() *common.Hash {
 }
 
 //validate in shard block
-func (sbsRes *ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (sbsRes ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,

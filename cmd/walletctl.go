@@ -2,10 +2,11 @@ package main
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 var walletObj *wallet.Wallet
@@ -38,7 +39,11 @@ func createWallet() error {
 			log.Println(err)
 			return nil
 		}
-		walletObj.Save(cfg.WalletPassphrase)
+		err2 := walletObj.Save(cfg.WalletPassphrase)
+		if err2 != nil {
+			log.Println(err)
+			return nil
+		}
 		log.Printf("Create wallet successfully with name: %s", cfg.WalletName)
 		return nil
 	} else {
@@ -53,7 +58,7 @@ func listAccounts() (interface{}, error) {
 	}
 	accounts := walletObj.ListAccounts()
 	result := []string{}
-	for accountName, _ := range accounts {
+	for accountName := range accounts {
 		result = append(result, accountName)
 	}
 	return result, err
