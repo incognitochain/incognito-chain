@@ -49,7 +49,7 @@ func (iRes IssuingResponse) ValidateMetadataByItself() bool {
 	return true
 }
 
-func (iRes *IssuingResponse) Hash() *common.Hash {
+func (iRes IssuingResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
 	record += iRes.MetadataBase.Hash().String()
 
