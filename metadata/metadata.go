@@ -16,7 +16,7 @@ func NewMetadataBase(thisType int) *MetadataBase {
 	return &MetadataBase{Type: thisType}
 }
 
-func (mb *MetadataBase) IsMinerCreatedMetaType() bool {
+func (mb MetadataBase) IsMinerCreatedMetaType() bool {
 	metaType := mb.GetType()
 	for _, mType := range minerCreatedMetaTypes {
 		if metaType == mType {
@@ -63,10 +63,6 @@ func (mb *MetadataBase) VerifyMultiSigs(
 
 func (mb *MetadataBase) BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error) {
 	return [][]string{}, nil
-}
-
-func (mb *MetadataBase) ProcessWhenInsertBlockShard(tx Transaction, retriever BlockchainRetriever) error {
-	return nil
 }
 
 func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(
@@ -134,7 +130,6 @@ type Metadata interface {
 	ValidateMetadataByItself() bool
 	VerifyMultiSigs(Transaction, database.DatabaseInterface) (bool, error)
 	BuildReqActions(tx Transaction, bcr BlockchainRetriever, shardID byte) ([][]string, error)
-	ProcessWhenInsertBlockShard(tx Transaction, bcr BlockchainRetriever) error
 	CalculateSize() uint64
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, Transaction, BlockchainRetriever, *AccumulatedValues) (bool, error)
 	IsMinerCreatedMetaType() bool
