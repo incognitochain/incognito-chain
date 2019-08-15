@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
@@ -104,9 +103,4 @@ func (e *BLSBFT) CreateValidationData(blockHash common.Hash, privateKey string, 
 
 func (e *BLSBFT) FinalizedValidationData(block chain.BlockInterface, sigs []string) error {
 	return nil
-}
-
-func (e BLSBFT) NewInstance() consensus.ConsensusInterface {
-	var newInstance BLSBFT
-	return &newInstance
 }
