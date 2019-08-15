@@ -97,7 +97,7 @@ func (bReq BurningRequest) ValidateMetadataByItself() bool {
 	return bReq.Type == BurningRequestMeta
 }
 
-func (bReq *BurningRequest) Hash() *common.Hash {
+func (bReq BurningRequest) Hash() *common.Hash {
 	record := bReq.MetadataBase.Hash().String()
 	record += bReq.BurnerAddress.String()
 	record += bReq.TokenID.String()

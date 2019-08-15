@@ -1195,11 +1195,11 @@ func (tp *TxPool) calPoolSize() uint64 {
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------
-func (tp *TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
+func (tp TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
 	return tp.poolSerialNumbersHashList
 }
 
-func (tp *TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
+func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 	txsInMem := make(map[common.Hash]metadata.TxDesc)
 	for hash, txDesc := range tp.pool {
 		txsInMem[hash] = txDesc.Desc
