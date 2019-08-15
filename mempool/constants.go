@@ -1,5 +1,7 @@
 package mempool
 
+import "time"
+
 const (
 	// unminedHeight is the height used for the "block" height field of the
 	// contextual transaction information provided in a transaction store
@@ -10,10 +12,10 @@ const (
 
 // Beacon pool
 const (
-	MAX_VALID_BEACON_BLK_IN_POOL   = 10000
-	MAX_PENDING_BEACON_BLK_IN_POOL = 10000
-	BEACON_CACHE_SIZE              = 2000
-	BEACON_POOL_MAIN_LOOP_TIME     = 500 // count in milisecond
+	maxValidBeaconBlockInPool   = 10000
+	maxPendingBeaconBlockInPool = 10000
+	beaconCacheSize             = 2000
+	beaconPoolMainLoopTime      = 500 * time.Millisecond // count in milisecond
 )
 
 // Shard to beacon pool
