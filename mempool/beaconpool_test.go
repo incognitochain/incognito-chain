@@ -54,10 +54,10 @@ var (
 			PreviousBlockHash: beaconBlock6.Header.Hash(),
 		},
 	}
-	pendingBeaconBlocks      = []*blockchain.BeaconBlock{}
-	validBeaconBlocks        = []*blockchain.BeaconBlock{}
-	defaultLatestValidHeight = uint64(1)
-	testLatestValidHeight    = uint64(4)
+	pendingBeaconBlocks = []*blockchain.BeaconBlock{}
+	validBeaconBlocks   = []*blockchain.BeaconBlock{}
+	//defaultLatestValidHeight = uint64(1)
+	testLatestValidHeight = uint64(4)
 )
 
 var InitBeaconPoolTest = func(pubsubManager *pubsub.PubSubManager) {
