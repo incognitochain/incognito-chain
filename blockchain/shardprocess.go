@@ -724,17 +724,17 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	10. Check duplicate staker public key in block
 	11. Check duplicate Init Custom Token in block
 */
-func (blockChain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction) error {
 	if len(txs) == 0 {
 		return nil
 	}
-	isEmpty := blockChain.config.TempTxPool.EmptyPool()
+	isEmpty := blockchain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
-	defer blockChain.config.TempTxPool.EmptyPool()
+	defer blockchain.config.TempTxPool.EmptyPool()
 
-	err := blockChain.config.TempTxPool.ValidateTxList(txs)
+	err := blockchain.config.TempTxPool.ValidateTxList(txs)
 	if err != nil {
 		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
 		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
