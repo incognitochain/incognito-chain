@@ -149,7 +149,7 @@ func verifyHashFromShardState(allShardState map[byte][]ShardState, hash common.H
 	}
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
-func calHashFromTxTokenDataList(txTokenDataList []transaction.TxTokenData) (common.Hash, error) {
+func calHashFromTxTokenDataList(txTokenDataList []transaction.TxNormalTokenData) (common.Hash, error) {
 	hashes := []common.Hash{}
 	sort.SliceStable(txTokenDataList[:], func(i, j int) bool {
 		return txTokenDataList[i].PropertyID.String() < txTokenDataList[j].PropertyID.String()

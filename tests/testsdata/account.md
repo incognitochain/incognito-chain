@@ -23,6 +23,15 @@
 - Payment Address: `1Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn41Uv3aYQj3dgMYiVfQNBjHX1YrX4cZn4cNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aErcNcNBdKbKa8jR3LQ2CDkV5yn9T5wxq7KoSGkLBALgFL7rqVPhy1jb6FCFJtAxigiKj3xCA7aEr`
 - Public Key: `17FYHpLygyHdtQcf6oUnJCLYGDMgswYwDWHBtWPA9Di6oM9yvqB`
 - Balance: `0`
+#### Get funding from other address in stake transaction
+ Acc Beacon:
+- PublicKey: `16dgSNJETEoXc4ayNmpcmUyZfYQJRZHHTSWhCj1Huhy1JHhf5Xi`
+- PaymentAddress: `1Uv3B8RVFJi9dJjLUKPTx9tAy2ozZ3aPhRktfban527RqJ8MoeF3LMVesYUCSdZKnS56vRfPPz59x2Bou5yF3aFChdLx77RaQZWWCg1WK`
+- PrivateKey: `112t8roEu1K8gUXF3cyRBv1GSGHDXNaSFh45sxgCCSi4Q6KWbW91DtYFqJdAP5MFBJEziejirb4cdDhE2Mxi4PSg8wf277vnCryQyL3VtBK2`
+ Acc Shard:
+- PublicKey: `156Dn56RgP6mTFSPaZkqoFMuNanVsr8NABsfkXdHv6YejnB15pN`
+- PaymentAddress: `1Uv2AicsBXdpiWqpNMpe12sJVo6oBP98MBdCzurbwkei3FrexJCiL4NHzx159ew1wn25pXK3UHM4E3yokiKC82JLG4sRdii31qUusGa7K`
+- PrivateKey: `112t8rotpPVSeHrknwVUTLQgy2avatUWKh2oV9EjVMw6eEtwyJT1FsrHGzvBaLpHL4gPVfJjuSUWvTtiTKuWGNNwGuLo8SHCgfA36ttJ5J7u`
 ## Shard 1
 ### Receiver
 #### Cross Normal Transaction
