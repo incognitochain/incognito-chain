@@ -95,7 +95,7 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	)
 }
 
-func (iReq *IssuingRequest) ValidateTxWithBlockChain(
+func (iReq IssuingRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
@@ -107,7 +107,7 @@ func (iReq *IssuingRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iReq IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(iReq.ReceiverAddress.Pk) == 0 {
 		return false, false, NewMetadataTxError(IssuingRequestValidateSanityDataError, errors.New("Wrong request info's receiver address"))
 	}
@@ -123,7 +123,7 @@ func (iReq *IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	return true, true, nil
 }
 
-func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
+func (iReq IssuingRequest) ValidateMetadataByItself() bool {
 	return iReq.Type == IssuingRequestMeta
 }
 

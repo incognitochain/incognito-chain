@@ -33,11 +33,11 @@ func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidateP
 
 /*
  */
-func (stakingMetadata *StakingMetadata) ValidateMetadataByItself() bool {
+func (stakingMetadata StakingMetadata) ValidateMetadataByItself() bool {
 	return (stakingMetadata.Type == ShardStakingMeta || stakingMetadata.Type == BeaconStakingMeta)
 }
 
-func (stakingMetadata *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
+func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
 	candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
 	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
@@ -71,7 +71,7 @@ func (stakingMetadata *StakingMetadata) ValidateTxWithBlockChain(txr Transaction
 	// Receiver Is Burning Address
 	//
 */
-func (stakingMetadata *StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if txr.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
@@ -100,7 +100,7 @@ func (stakingMetadata *StakingMetadata) ValidateSanityData(bcr BlockchainRetriev
 	}
 	return true, true, nil
 }
-func (stakingMetadata *StakingMetadata) GetType() int {
+func (stakingMetadata StakingMetadata) GetType() int {
 	return stakingMetadata.Type
 }
 
