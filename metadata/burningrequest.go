@@ -93,7 +93,7 @@ func (bReq BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	return true, true, nil
 }
 
-func (bReq *BurningRequest) ValidateMetadataByItself() bool {
+func (bReq BurningRequest) ValidateMetadataByItself() bool {
 	return bReq.Type == BurningRequestMeta
 }
 

@@ -123,7 +123,7 @@ func (iReq IssuingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	return true, true, nil
 }
 
-func (iReq *IssuingRequest) ValidateMetadataByItself() bool {
+func (iReq IssuingRequest) ValidateMetadataByItself() bool {
 	return iReq.Type == IssuingRequestMeta
 }
 

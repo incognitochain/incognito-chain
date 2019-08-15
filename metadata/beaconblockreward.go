@@ -89,7 +89,7 @@ func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(bcr BlockchainRetriever, t
 	return false, true, nil
 }
 
-func (sbsRes *BeaconBlockSalaryRes) ValidateMetadataByItself() bool {
+func (sbsRes BeaconBlockSalaryRes) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
