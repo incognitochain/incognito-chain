@@ -55,7 +55,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) Hash() *common.Hash {
 	return withDrawRewardResponse.TxRequest
 }
 
-func (withDrawRewardRequest *WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }

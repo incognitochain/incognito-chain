@@ -32,7 +32,7 @@ func NewReturnStaking(
 	}
 }
 
-func (sbsRes *ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
 }
