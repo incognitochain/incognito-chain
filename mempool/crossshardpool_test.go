@@ -86,8 +86,8 @@ var (
 		},
 		ToShardID: 1,
 	}
-	pendingCrossShardBlocks = []*blockchain.CrossShardBlock{}
-	validCrossShardBlocks   = []*blockchain.CrossShardBlock{}
+	//pendingCrossShardBlocks = []*blockchain.CrossShardBlock{}
+	//validCrossShardBlocks   = []*blockchain.CrossShardBlock{}
 )
 var _ = func() (_ struct{}) {
 	for i := 0; i < 255; i++ {

@@ -254,7 +254,7 @@ func (self *BeaconPool) CleanOldBlock(latestBlockHeight uint64) {
 	defer self.mtx.Unlock()
 	toBeRemovedHeight := []uint64{}
 	toBeRemovedHash := []common.Hash{}
-	for height, _ := range self.pendingPool {
+	for height := range self.pendingPool {
 		if height <= latestBlockHeight {
 			toBeRemovedHeight = append(toBeRemovedHeight, height)
 		}
