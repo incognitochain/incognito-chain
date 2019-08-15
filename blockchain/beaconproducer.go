@@ -335,7 +335,7 @@ func (beaconBestState *BeaconBestState) GetValidStakers(tempStaker []string) []s
 	- ["stake" "pubkey1,pubkey2,..." "beacon" "txStakeHash1, txStakeHash2,..." "txStakeRewardReceiver1, txStakeRewardReceiver2,..."]
 
 */
-func (blockChain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, shardBlock *ShardToBeaconBlock, shardID byte) (map[byte]ShardState, [][]string, map[byte][][]string, [][]string, []string) {
+func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, shardBlock *ShardToBeaconBlock, shardID byte) (map[byte]ShardState, [][]string, map[byte][][]string, [][]string, []string) {
 	//Variable Declaration
 	shardStates := make(map[byte]ShardState)
 	stakeInstructions := [][]string{}
@@ -410,7 +410,7 @@ func (blockChain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		if len(tempStakePublicKey) != len(strings.Split(stakeInstruction[3], ",")) && len(strings.Split(stakeInstruction[3], ",")) != len(strings.Split(stakeInstruction[4], ",")) {
 			continue
 		}
-		tempStakePublicKey = blockChain.BestState.Beacon.GetValidStakers(tempStakePublicKey)
+		tempStakePublicKey = blockchain.BestState.Beacon.GetValidStakers(tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(stakeShard, tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(stakeBeacon, tempStakePublicKey)
 		if len(tempStakePublicKey) > 0 {
@@ -462,12 +462,12 @@ func (blockChain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	if len(shardBlock.Instructions) > 0 || shardBlock.Header.Height%10 == 0 {
 		BLogger.log.Debugf("Included shardID %d, block %d, insts: %s", shardID, shardBlock.Header.Height, shardBlock.Instructions)
 	}
-	bridgeInstructionForBlock, err := blockChain.buildBridgeInstructions(
+	bridgeInstructionForBlock, err := blockchain.buildBridgeInstructions(
 		shardID,
 		shardBlock.Instructions,
 		newBeaconHeight,
 		//beaconBestState,
-		blockChain.config.DataBase,
+		blockchain.config.DataBase,
 	)
 	if err != nil {
 		BLogger.log.Errorf("Build bridge instructions failed: %s", err.Error())
