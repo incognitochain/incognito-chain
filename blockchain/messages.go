@@ -135,10 +135,10 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
 			// blkHash := newBlk.Header.Hash()
-			confident, err := blockchain.config.ConsensusEngine.ValidateBlockWithConsensus(newBlk, common.BEACON_CHAINKEY, newBlk.ConsensusType)
+
+			err := blockchain.config.ConsensusEngine.ValidateProducerSig(newBlk, newBlk.Header.ConsensusType)
 			// err := incognitokey.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
-			if confident == 0 {
-				fmt.Println("Beacon block validate err", err)
+			if err != nil {
 				Logger.log.Error(err)
 				return
 			} else {

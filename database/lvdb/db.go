@@ -24,6 +24,7 @@ var (
 	blockKeyIdxPrefix       = []byte("i-")
 	crossShardKeyPrefix     = []byte("csh-")
 	nextCrossShardKeyPrefix = []byte("ncsh-")
+	shardPrefix             = []byte("shd-")
 
 	shardToBeaconKeyPrefix       = []byte("stb-")
 	transactionKeyPrefix         = []byte("tx-")
@@ -47,6 +48,7 @@ var (
 	multisigsPrefix = []byte("multisigs")
 
 	// centralized bridge
+	bridgePrefix              = []byte("bridge-")
 	centralizedBridgePrefix   = []byte("centralizedbridge-")
 	decentralizedBridgePrefix = []byte("decentralizedbridge-")
 	ethTxHashIssued           = []byte("ethtxhashissued-")

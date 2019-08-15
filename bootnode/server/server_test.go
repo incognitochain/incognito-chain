@@ -32,7 +32,7 @@ func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
 	}
 	args.SignData = signDataB58
 	rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
-	if len(rpcServer.Peers) == 0 {
+	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
 }
@@ -62,12 +62,12 @@ func TestRpcServer_RemovePeerByPbk(t *testing.T) {
 	}
 	args.SignData = signDataB58
 	rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
-	if len(rpcServer.Peers) == 0 {
+	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
 
 	rpcServer.RemovePeerByPbk(args.PublicKey)
-	if len(rpcServer.Peers) > 0 {
+	if len(rpcServer.peers) > 0 {
 		t.Error("RemovePeerByPbk fail")
 	}
 }
@@ -97,13 +97,13 @@ func TestRpcServer_PeerHeartBeat(t *testing.T) {
 	}
 	args.SignData = signDataB58
 	rpcServer.AddOrUpdatePeer(args.RawAddress, args.PublicKey, args.SignData)
-	if len(rpcServer.Peers) == 0 {
+	if len(rpcServer.peers) == 0 {
 		t.Error("AddOrUpdatePeer fail")
 	}
 
 	go rpcServer.PeerHeartBeat(6)
 	for {
-		if len(rpcServer.Peers) == 0 {
+		if len(rpcServer.peers) == 0 {
 			t.Log("PeerHeartBeat")
 			return
 		}
