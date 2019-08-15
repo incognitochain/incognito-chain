@@ -42,26 +42,26 @@ func NewIssuingETHResponse(
 	}
 }
 
-func (iRes *IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (iRes IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes *IssuingETHResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (iRes IssuingETHResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (iRes *IssuingETHResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iRes IssuingETHResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (iRes *IssuingETHResponse) ValidateMetadataByItself() bool {
+func (iRes IssuingETHResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
 
-func (iRes *IssuingETHResponse) Hash() *common.Hash {
+func (iRes IssuingETHResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
 	record += string(iRes.UniqETHTx)
 	record += string(iRes.ExternalTokenID)
@@ -76,7 +76,7 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
