@@ -37,7 +37,7 @@ func (stakingMetadata *StakingMetadata) ValidateMetadataByItself() bool {
 	return (stakingMetadata.Type == ShardStakingMeta || stakingMetadata.Type == BeaconStakingMeta)
 }
 
-func (stakingMetadata *StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
+func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
 	candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
 	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)

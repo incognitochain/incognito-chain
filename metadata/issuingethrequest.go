@@ -108,7 +108,7 @@ func NewIssuingETHRequestFromMap(
 	return req, nil
 }
 
-func (iReq *IssuingETHRequest) ValidateTxWithBlockChain(
+func (iReq IssuingETHRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
