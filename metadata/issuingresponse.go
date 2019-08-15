@@ -30,7 +30,7 @@ func NewIssuingResponse(requestedTxID common.Hash, metaType int) *IssuingRespons
 	}
 }
 
-func (iRes *IssuingResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (iRes IssuingResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
 }
