@@ -1640,7 +1640,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
 
-	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetMiningPublicKey()
+	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	// signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		_, shardID := serverObj.consensusEngine.GetUserRole()

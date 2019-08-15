@@ -28,7 +28,8 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 ) (metadata.Transaction, error) {
 	// addressBytes := blockGenerator.chain.config.UserKeySet.PaymentAddress.Pk
 	//shardID := common.GetShardIDFromLastByte(addressBytes[len(addressBytes)-1])
-	_, committeeShardID := blockGenerator.chain.BestState.Beacon.GetPubkeyRole(blockGenerator.chain.config.ConsensusEngine.GetUserMiningKey(), 0)
+	publicKey, _ := blockGenerator.chain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	_, committeeShardID := blockGenerator.chain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
 
 	fmt.Println("SA: get tx for ", swaperPubKey, GetBestStateShard(committeeShardID).StakingTx, committeeShardID)
 	tx, ok := GetBestStateShard(committeeShardID).StakingTx[swaperPubKey]
