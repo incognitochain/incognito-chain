@@ -36,15 +36,15 @@ var shardPoolMap = make(map[byte]*ShardPool)
 var shardPoolMapMu sync.Mutex
 
 var defaultConfig = ShardPoolConfig{
-	MaxValidBlock:   MAX_VALID_SHARD_BLK_IN_POOL,
-	MaxPendingBlock: MAX_PENDING_SHARD_BLK_IN_POOL,
-	CacheSize:       SHARD_CACHE_SIZE,
+	MaxValidBlock:   maxValidShardBlockInPool,
+	MaxPendingBlock: maxPendingShardBlockInPool,
+	CacheSize:       shardCacheSize,
 }
 
 //@NOTICE: Shard pool will always be empty when node start
 func init() {
 	go func() {
-		mainLoopTime := time.Duration(SHARD_POOL_MAIN_LOOP_TIME) * time.Millisecond
+		mainLoopTime := time.Duration(shardPoolMainLoopTime)
 		ticker := time.Tick(mainLoopTime)
 		for _ = range ticker {
 			for k, _ := range shardPoolMap {

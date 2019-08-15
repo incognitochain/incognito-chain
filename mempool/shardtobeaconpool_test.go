@@ -106,7 +106,7 @@ var _ = func() (_ struct{}) {
 	InitShardToBeaconPool()
 	InitShardToBeaconPoolTest()
 	oldBlockHash := common.Hash{}
-	for i := 1; i < MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL+2; i++ {
+	for i := 1; i < maxValidShardToBeaconBlockInPool+2; i++ {
 		shardToBeaconBlock := &blockchain.ShardToBeaconBlock{
 			Header: blockchain.ShardHeader{
 				ShardID: 0,
@@ -119,7 +119,7 @@ var _ = func() (_ struct{}) {
 		oldBlockHash = shardToBeaconBlock.Header.Hash()
 		validShardToBeaconBlocks = append(validShardToBeaconBlocks, shardToBeaconBlock)
 	}
-	for i := MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL + 2; i < MAX_VALID_SHARD_TO_BEACON_BLK_IN_POOL+MAX_INVALID_SHARD_TO_BEACON_BLK_IN_POOL+3; i++ {
+	for i := maxValidShardToBeaconBlockInPool + 2; i < maxValidShardToBeaconBlockInPool+maxInvalidShardToBeaconBlockInPool+3; i++ {
 		shardToBeaconBlock := &blockchain.ShardToBeaconBlock{
 			Header: blockchain.ShardHeader{
 				ShardID: 0,
