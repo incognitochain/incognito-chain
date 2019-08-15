@@ -13,7 +13,7 @@ import (
 var (
 	dbCrossShard          database.DatabaseInterface
 	bestShardStateShard1  *blockchain.ShardBestState
-	crossShardPoolMapTest = make(map[byte]*CrossShardPool_v2)
+	crossShardPoolMapTest = make(map[byte]*CrossShardPool)
 	crossShardBlock2      = &blockchain.CrossShardBlock{
 		Header: blockchain.ShardHeader{
 			ShardID:   0,
@@ -92,7 +92,7 @@ var (
 var _ = func() (_ struct{}) {
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
-		pool := new(CrossShardPool_v2)
+		pool := new(CrossShardPool)
 		pool.shardID = shardID
 		pool.validPool = make(map[byte][]*blockchain.CrossShardBlock)
 		pool.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
@@ -129,7 +129,7 @@ var _ = func() (_ struct{}) {
 func ResetCrossShardPoolTest() {
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
-		pool := new(CrossShardPool_v2)
+		pool := new(CrossShardPool)
 		pool.shardID = shardID
 		pool.validPool = make(map[byte][]*blockchain.CrossShardBlock)
 		pool.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
