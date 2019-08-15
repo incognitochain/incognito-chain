@@ -60,7 +60,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transa
 	return true
 }
 
-func (withDrawRewardRequest *WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	if txr.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
