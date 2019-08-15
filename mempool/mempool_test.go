@@ -369,9 +369,9 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	paymentAddress, _ := senderKeySet.Serialize(wallet.PaymentAddressType)
 	var stakingMetadata *metadata.StakingMetadata
 	if isBeacon {
-		stakingMetadata, _ = metadata.NewStakingMetadata(64, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard)
+		stakingMetadata, _ = metadata.NewStakingMetadata(64, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, true)
 	} else {
-		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard)
+		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, true)
 	}
 	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, stakingMetadata, nil, nil, 1))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
