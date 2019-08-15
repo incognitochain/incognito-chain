@@ -10,4 +10,12 @@ const (
 	restoreChain           = "restorechain"
 )
 
-var CmdList = []string{createWalletCmd, listWalletAccountCmd, getWalletAccountCmd, createWalletAccountCmd, getPrivacyTokenID, backupChain, restoreChain}
+var CmdList = []string{
+	createWalletCmd,
+	listWalletAccountCmd,
+	getWalletAccountCmd,
+	createWalletAccountCmd,
+	getPrivacyTokenID,
+	backupChain,
+	restoreChain,
+}
