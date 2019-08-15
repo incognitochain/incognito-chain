@@ -283,7 +283,7 @@ func (db *db) StoreBeaconCommitteeByHeight(height uint64, v interface{}) error {
 	return nil
 }
 
-func (db *db) StoreCommitteeByHeight(height uint64, v interface{}) error {
+func (db *db) StoreShardCommitteeByHeight(height uint64, v interface{}) error {
 	//key: bea-s-com-ep-{height}
 	//value: all shard committee
 	key := append(beaconPrefix, shardIDPrefix...)

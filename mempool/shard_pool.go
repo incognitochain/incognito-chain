@@ -276,7 +276,7 @@ func (self *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) b
 						}
 					} else {
 						msg := strconv.Itoa(int(block.Header.ShardID))
-						msg += fmt.Sprint("%+v", block.Header.PreviousBlockHash)
+						msg += fmt.Sprintf("%+v", block.Header.PreviousBlockHash)
 						self.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestShardBlockByHashTopic, msg))
 					}
 					return false
