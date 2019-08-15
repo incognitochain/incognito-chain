@@ -42,7 +42,7 @@ func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bc
 	return false, nil
 }
 
-func (sbsRes *ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if len(sbsRes.StakerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}
