@@ -62,7 +62,7 @@ func (iRes *IssuingResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes *IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (iRes IssuingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
