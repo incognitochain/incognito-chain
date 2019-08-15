@@ -3,13 +3,14 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"sync"
+	"time"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"sort"
-	"sync"
-	"time"
 )
 
 type BeaconPoolConfig struct {
@@ -17,6 +18,7 @@ type BeaconPoolConfig struct {
 	MaxPendingBlock int
 	CacheSize       int
 }
+
 type BeaconPool struct {
 	validPool             []*blockchain.BeaconBlock          // valid, ready to insert into blockchain
 	pendingPool           map[uint64]*blockchain.BeaconBlock // not ready to insert into blockchain, there maybe many blocks exists at one height
@@ -97,7 +99,7 @@ func (beaconPool *BeaconPool) SetBeaconState(lastestBeaconHeight uint64) {
 	}
 }
 
-func (beaconPool *BeaconPool) GetBeaconState() uint64 {
+func (beaconPool BeaconPool) GetBeaconState() uint64 {
 	return beaconPool.latestValidHeight
 }
 
