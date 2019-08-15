@@ -119,7 +119,7 @@ func (tp *TxPool) AnnouncePersisDatabaseMempool() {
 // LoadOrResetDatabaseMempool - Load and reset database of mempool when start node
 func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 	if !tp.config.IsLoadFromMempool {
-		err := tp.ResetDatabaseMempool()
+		err := tp.resetDatabaseMempool()
 		if err != nil {
 			Logger.log.Errorf("Fail to reset mempool database, error: %+v \n", err)
 			return NewMempoolTxError(DatabaseError, err)
@@ -127,7 +127,7 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 			Logger.log.Critical("Successfully Reset from database")
 		}
 	} else {
-		txDescs, err := tp.LoadDatabaseMP()
+		txDescs, err := tp.loadDatabaseMP()
 		if err != nil {
 			Logger.log.Errorf("Fail to load mempool database, error: %+v \n", err)
 			return NewMempoolTxError(DatabaseError, err)
@@ -750,7 +750,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	if isStore {
-		err := tp.AddTransactionToDatabaseMempool(txHash, *txD)
+		err := tp.addTransactionToDatabaseMempool(txHash, *txD)
 		if err != nil {
 			Logger.log.Errorf("Fail to add tx %+v to mempool database %+v \n", *txHash, err)
 		} else {
@@ -866,7 +866,7 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		}
 		startTime := txDesc.StartTime
 		if tp.config.PersistMempool {
-			err := tp.RemoveTransactionFromDatabaseMP(tx.Hash())
+			err := tp.removeTransactionFromDatabaseMP(tx.Hash())
 			if err != nil {
 				Logger.log.Error(err)
 			}

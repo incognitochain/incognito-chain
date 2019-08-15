@@ -1136,22 +1136,22 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txStakingBeacon.Hash())
 	}
 
-	tx1Data, err := tp.GetTransactionFromDatabaseMempool(tx1.Hash())
+	tx1Data, err := tp.getTransactionFromDatabaseMempool(tx1.Hash())
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx1Data)
 	assert.Equal(t, tx1.Hash(), tx1Data.Desc.Tx.Hash())
 
-	tx1Data, err = tp.GetTransactionFromDatabaseMempool(&common.Hash{})
+	tx1Data, err = tp.getTransactionFromDatabaseMempool(&common.Hash{})
 	assert.NotEqual(t, nil, err)
 
-	err = tp.RemoveTransactionFromDatabaseMP(tx1.Hash())
+	err = tp.removeTransactionFromDatabaseMP(tx1.Hash())
 	assert.Equal(t, nil, err)
 	isOk, err := tp.config.DataBaseMempool.HasTransaction(tx1.Hash())
 	assert.Equal(t, nil, err)
 	assert.Equal(t, false, isOk)
 
 	tp.config.TxLifeTime = 100000000000
-	listTx, err := tp.LoadDatabaseMP()
+	listTx, err := tp.loadDatabaseMP()
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 0, len(listTx))
 
