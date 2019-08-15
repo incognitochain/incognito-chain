@@ -598,6 +598,29 @@ func (_m *DatabaseInterface) FetchCommitteeByHeight(_a0 uint64) ([]byte, error) 
 	return r0, r1
 }
 
+// FetchCommitteeFromShardBestState provides a mock function with given fields: shardID, shardHeight
+func (_m *DatabaseInterface) FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error) {
+	ret := _m.Called(shardID, shardHeight)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(byte, uint64) []byte); ok {
+		r0 = rf(shardID, shardHeight)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(byte, uint64) error); ok {
+		r1 = rf(shardID, shardHeight)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // FetchCrossShardNextHeight provides a mock function with given fields: _a0, _a1, _a2
 func (_m *DatabaseInterface) FetchCrossShardNextHeight(_a0 byte, _a1 byte, _a2 uint64) (uint64, error) {
 	ret := _m.Called(_a0, _a1, _a2)
@@ -771,6 +794,27 @@ func (_m *DatabaseInterface) GetBlockByIndex(_a0 uint64, _a1 byte) (common.Hash,
 	var r1 error
 	if rf, ok := ret.Get(1).(func(uint64, byte) error); ok {
 		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetBridgeReqWithStatus provides a mock function with given fields: txReqID
+func (_m *DatabaseInterface) GetBridgeReqWithStatus(txReqID common.Hash) (byte, error) {
+	ret := _m.Called(txReqID)
+
+	var r0 byte
+	if rf, ok := ret.Get(0).(func(common.Hash) byte); ok {
+		r0 = rf(txReqID)
+	} else {
+		r0 = ret.Get(0).(byte)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(txReqID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1762,13 +1806,13 @@ func (_m *DatabaseInterface) StoreCommitments(tokenID common.Hash, pubkey []byte
 	return r0
 }
 
-// StoreCommitteeByHeight provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) StoreCommitteeByHeight(_a0 uint64, _a1 interface{}) error {
-	ret := _m.Called(_a0, _a1)
+// StoreCommitteeFromShardBestState provides a mock function with given fields: shardID, shardHeight, v
+func (_m *DatabaseInterface) StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error {
+	ret := _m.Called(shardID, shardHeight, v)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(uint64, interface{}) error); ok {
-		r0 = rf(_a0, _a1)
+	if rf, ok := ret.Get(0).(func(byte, uint64, interface{}) error); ok {
+		r0 = rf(shardID, shardHeight, v)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1986,6 +2030,20 @@ func (_m *DatabaseInterface) StoreShardBlockIndex(_a0 common.Hash, _a1 uint64, _
 	return r0
 }
 
+// StoreShardCommitteeByHeight provides a mock function with given fields: _a0, _a1
+func (_m *DatabaseInterface) StoreShardCommitteeByHeight(_a0 uint64, _a1 interface{}) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64, interface{}) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StoreTransactionIndex provides a mock function with given fields: txId, blockHash, indexInBlock
 func (_m *DatabaseInterface) StoreTransactionIndex(txId common.Hash, blockHash common.Hash, indexInBlock int) error {
 	ret := _m.Called(txId, blockHash, indexInBlock)
@@ -2014,13 +2072,27 @@ func (_m *DatabaseInterface) StoreTxByPublicKey(publicKey []byte, txID common.Ha
 	return r0
 }
 
-// UpdateBridgeTokenInfo provides a mock function with given fields: _a0, _a1, _a2
-func (_m *DatabaseInterface) UpdateBridgeTokenInfo(_a0 common.Hash, _a1 []byte, _a2 bool) error {
-	ret := _m.Called(_a0, _a1, _a2)
+// TrackBridgeReqWithStatus provides a mock function with given fields: txReqID, status
+func (_m *DatabaseInterface) TrackBridgeReqWithStatus(txReqID common.Hash, status byte) error {
+	ret := _m.Called(txReqID, status)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, []byte, bool) error); ok {
-		r0 = rf(_a0, _a1, _a2)
+	if rf, ok := ret.Get(0).(func(common.Hash, byte) error); ok {
+		r0 = rf(txReqID, status)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateBridgeTokenInfo provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
+func (_m *DatabaseInterface) UpdateBridgeTokenInfo(_a0 common.Hash, _a1 []byte, _a2 bool, _a3 uint64, _a4 string) error {
+	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(common.Hash, []byte, bool, uint64, string) error); ok {
+		r0 = rf(_a0, _a1, _a2, _a3, _a4)
 	} else {
 		r0 = ret.Error(0)
 	}

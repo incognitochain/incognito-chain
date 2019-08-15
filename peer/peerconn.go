@@ -205,7 +205,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 		return NewPeerError(MessageTypeError, err, nil)
 	}
 
-	if len(jsonDecodeBytes) > message.MaxPayloadLength(1) {
+	if len(jsonDecodeBytes) > message.MaxPayloadLength(wire.Version) {
 		Logger.log.Errorf("Msg size exceed MsgType %s max size, size %+v | max allow is %+v \n", commandType, len(jsonDecodeBytes), message.MaxPayloadLength(1))
 		return NewPeerError(MessageTypeError, err, nil)
 	}
@@ -218,7 +218,10 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 				fS := messageHeader[wire.MessageCmdTypeSize+1]
 				if *cShard != fS {
 					if peerConn.config.MessageListeners.PushRawBytesToShard != nil {
-						peerConn.config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
+						err1 := peerConn.config.MessageListeners.PushRawBytesToShard(peerConn, &jsonDecodeBytesRaw, *cShard)
+						if err1 != nil {
+							Logger.log.Error(err1)
+						}
 					}
 					return NewPeerError(CheckForwardError, err, nil)
 				}
@@ -228,7 +231,10 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 			fT := messageHeader[wire.MessageCmdTypeSize]
 			if fT == MessageToBeacon && cRole != "beacon" {
 				if peerConn.config.MessageListeners.PushRawBytesToBeacon != nil {
-					peerConn.config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
+					err1 := peerConn.config.MessageListeners.PushRawBytesToBeacon(peerConn, &jsonDecodeBytesRaw)
+					if err1 != nil {
+						Logger.log.Error(err1)
+					}
 				}
 				return NewPeerError(CheckForwardError, err, nil)
 			}
@@ -362,9 +368,15 @@ func (peerConn *PeerConn) processMessageForEachType(messageType reflect.Type, me
 			peerConn.config.MessageListeners.OnPeerState(peerConn, message.(*wire.MessagePeerState))
 		}
 	case reflect.TypeOf(&wire.MessageMsgCheck{}):
-		peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
+		err1 := peerConn.handleMsgCheck(message.(*wire.MessageMsgCheck))
+		if err1 != nil {
+			Logger.log.Error(err1)
+		}
 	case reflect.TypeOf(&wire.MessageMsgCheckResp{}):
-		peerConn.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
+		err1 := peerConn.handleMsgCheckResp(message.(*wire.MessageMsgCheckResp))
+		if err1 != nil {
+			Logger.log.Error(err1)
+		}
 	default:
 		errorMessage := fmt.Sprintf("InMessageHandler Received unhandled message of type % from %v", messageType, peerConn)
 		Logger.log.Error(errorMessage)
@@ -436,8 +448,9 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 						continue
 					}
 
-					// add 24 bytes headerBytes into messageHex
+					// Add 24 bytes headerBytes into messageHex
 					headerBytes := make([]byte, wire.MessageHeaderSize)
+					// add command type of message
 					cmdType, messageErr := wire.GetCmdType(reflect.TypeOf(outMsg.message))
 					if messageErr != nil {
 						Logger.log.Error("Can not get cmd type for " + outMsg.message.MessageType())
@@ -445,8 +458,10 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 						continue
 					}
 					copy(headerBytes[:], []byte(cmdType))
+					// add forward type of message at 13st byte
 					copy(headerBytes[wire.MessageCmdTypeSize:], []byte{outMsg.forwardType})
 					if outMsg.forwardValue != nil {
+						// add forward value at 14st byte
 						copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{*outMsg.forwardValue})
 					}
 					messageBytes = append(messageBytes, headerBytes...)
