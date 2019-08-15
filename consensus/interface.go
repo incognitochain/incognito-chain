@@ -30,14 +30,14 @@ type ConsensusInterface interface {
 
 	ValidateProducerPosition(block common.BlockInterface) error
 	ValidateProducerSig(block common.BlockInterface) error
-	// ValidateCommitteeSig(block common.BlockInterface) error
+	ValidateCommitteeSig(block common.BlockInterface) error
 
 	LoadUserKey(string) error
 	GetUserPublicKey() string
 	GetUserPrivateKey() string
-	SignData(data []byte) (string, error)
-	ValidateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error
-	ValidateSingleSig(dataHash *common.Hash, sig string, pubkey string) error
+	// SignData(data []byte) (string, error)
+	// ValidateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error
+	// ValidateSingleSig(dataHash *common.Hash, sig string, pubkey string) error
 }
 
 type ChainInterface interface {

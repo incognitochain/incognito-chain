@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	bls "github.com/incognitochain/incognito-chain/consensus/blsmultisig"
@@ -20,8 +21,7 @@ type StakingMetadata struct {
 	BLSPublicKey string
 }
 
-func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, isRewardFunder bool) (*StakingMetadata, error) {
-func NewStakingMetadata(stakingType int, paymentAdd string, stakingAmountShard uint64, blsPublicKey string) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, blsPublicKey string, isRewardFunder bool) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
@@ -32,9 +32,8 @@ func NewStakingMetadata(stakingType int, paymentAdd string, stakingAmountShard u
 		CandidatePaymentAddress: candidatePaymentAddress,
 		StakingAmountShard:      stakingAmountShard,
 		IsRewardFunder:          isRewardFunder,
+		BLSPublicKey:            blsPublicKey,
 	}, nil
-
-	return &StakingMetadata{*metadataBase, paymentAdd, stakingAmountShard, blsPublicKey}, nil
 }
 
 /*
@@ -92,7 +91,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetrieve
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
-	if !bls.ChkPKSt(sm.BLSPublicKey) {
+	if !bls.ChkPKSt(stakingMetadata.BLSPublicKey) {
 		return false, false, errors.New("invalid BLS PublicKey")
 	}
 	if stakingMetadata.Type == ShardStakingMeta && amount != bcr.GetStakingAmountShard() {
