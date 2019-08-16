@@ -6,7 +6,7 @@ import (
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
-	// engine.userMiningPublicKeys = make(map[string]string)
+	engine.userMiningPublicKeys = make(map[string]string)
 	keys := strings.Split(keysString, "|")
 	for _, key := range keys {
 		keyParts := strings.Split(key, ":")
@@ -16,7 +16,7 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 				if err != nil {
 					panic(err)
 				}
-				// engine.userMiningPublicKeys[keyParts[0]] = AvailableConsensus[keyParts[0]].GetUserPublicKey()
+				engine.userMiningPublicKeys[keyParts[0]] = AvailableConsensus[keyParts[0]].GetUserPublicKey()
 			} else {
 				return errors.New("Consensus type for this key isn't exist " + keyParts[0])
 			}
@@ -24,10 +24,10 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 	}
 	return nil
 }
-func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
-	if engine != nil && engine.CurrentMiningChain != "" {
-		if _, ok := engine.ChainConsensusList[engine.CurrentMiningChain]; ok {
-			return engine.ChainConsensusList[engine.CurrentMiningChain].GetUserPublicKey(), engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
+func (engined *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
+	if engined != nil && engined.CurrentMiningChain != "" {
+		if _, ok := engined.ChainConsensusList[engined.CurrentMiningChain]; ok {
+			return engined.ChainConsensusList[engined.CurrentMiningChain].GetUserPublicKey(), engined.ChainConsensusList[engined.CurrentMiningChain].GetConsensusName()
 		}
 	}
 	return "", ""
