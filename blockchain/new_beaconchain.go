@@ -88,3 +88,11 @@ func (chain *BeaconChain) ValidateBlockSanity(common.BlockInterface) error {
 func (chain *BeaconChain) ValidateBlockWithBlockChain(common.BlockInterface) error {
 	return nil
 }
+
+func (chain *BeaconChain) GetConsensusType() string {
+	return chain.BestState.ConsensusAlgorithm
+}
+
+func (chain *BeaconChain) GetShardID() int {
+	return -1
+}

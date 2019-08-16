@@ -60,6 +60,7 @@ type ChainInterface interface {
 	GetActiveShardNumber() int
 	GetPubkeyRole(pubkey string, round int) (string, byte)
 	GetShardID() byte
+	GetConsensusType() string
 }
 
 // type MultisigSchemeInterface interface {
