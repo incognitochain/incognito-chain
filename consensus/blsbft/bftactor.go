@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
-	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -48,7 +47,7 @@ type BLSBFT struct {
 	NextHeight uint64
 
 	// UserKeySet        *incognitokey.KeySet
-	UserKeySet      *bls.KeySet
+	UserKeySet      *blsKeySet
 	State           string
 	NotYetSendAgree bool
 
@@ -129,7 +128,7 @@ func (e *BLSBFT) Start() {
 				// e.PrepareMsgs[sig.RoundKey][sig.Pubkey] = SigStatus{sig.IsOk, false, sig.ContentSig}
 
 			case <-ticker:
-				if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPubkeyB58()) == -1 {
+				if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58()) == -1 {
 					continue
 				}
 
