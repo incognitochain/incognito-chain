@@ -55,6 +55,7 @@ func (engine *Engine) Start() error {
 
 	engine.cQuit = make(chan struct{})
 	go func() {
+		engine.watchConsensusState()
 		for {
 			select {
 			case <-engine.cQuit:
@@ -163,14 +164,6 @@ func RegisterConsensus(name string, consensus ConsensusInterface) error {
 	return nil
 }
 
-// func (engine *Engine) ValidateBlockWithConsensus(block common.BlockInterface, chainName string, consensusType string) error {
-// 	consensusModule, ok := engine.ChainConsensusList[chainName]
-// 	if ok && !consensusModule.IsOngoing() {
-// 		consensusModule.ValidateBlock(block)
-// 	}
-// 	return nil
-// }
-
 func (engine *Engine) ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error {
 	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(blockHash, committee, validationData)
 }
@@ -205,49 +198,6 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 	return nil
 }
 
-// func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
-// 	proposeMsg := bft.ProposeMsg{
-// 		ChainKey:   msg.ChainKey,
-// 		ContentSig: msg.ContentSig,
-// 		Pubkey:     msg.Pubkey,
-// 		Timestamp:  msg.Timestamp,
-// 		RoundKey:   msg.RoundKey,
-// 	}
-// 	if strings.Index(msg.ChainKey, BEACON_CHAINKEY) > -1 { //beacon
-// 		blk := &blockchain.BeaconBlock{}
-// 		err := json.Unmarshal([]byte(msg.Block), &blk)
-// 		if err != nil {
-// 			fmt.Println("BFT: unmarshal beacon propose msg fail", err)
-// 		}
-// 		proposeMsg.Block = blk
-// 	} else { //shard
-// 		blk := &blockchain.ShardBlock{}
-// 		err := json.Unmarshal([]byte(msg.Block), &blk)
-// 		if err != nil {
-// 			fmt.Println("BFT: unmarshal shard propose msg fail", err)
-// 		}
-// 		proposeMsg.Block = blk
-// 	}
-// 	return proposeMsg
-// }
-
-// func convertPrepareMsg(msg *wire.MessageBFTPrepareV2) bft.PrepareMsg {
-// 	prepareMsg := bft.PrepareMsg{
-// 		ChainKey:   msg.ChainKey,
-// 		ContentSig: msg.ContentSig,
-// 		Pubkey:     msg.Pubkey,
-// 		Timestamp:  msg.Timestamp,
-// 		RoundKey:   msg.RoundKey,
-// 		IsOk:       msg.IsOk,
-// 		BlkHash:    msg.BlkHash,
-// 	}
-// 	return prepareMsg
-// }
-
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
 	return nil
 }
-
-// func (engine *Engine) GetUserMiningKey() string {
-// 	return ""
-// }
