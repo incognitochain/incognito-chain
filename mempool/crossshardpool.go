@@ -185,7 +185,7 @@ func (pool *CrossShardPool) AddCrossShardBlock(block *blockchain.CrossShardBlock
 		return nil, pool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
 	}
 
-	if err := consensus.AvailableConsensus[block.Header.ConsensusType].ValidateCommitteeSig(block); err != nil {
+	if err := consensus.AvailableConsensus[block.Header.ConsensusType].ValidateCommitteeSig(block.Hash(), shardCommittee[block.Header.ShardID], block.ValidationData); err != nil {
 		return nil, pool.shardID, err
 	}
 
