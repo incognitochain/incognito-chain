@@ -44,7 +44,7 @@ const (
 	DefaultFastStartup            = true
 	DefaultNodeMode               = common.NODEMODE_RELAY
 	DefaultEnableMining           = true
-	DefaultTxPoolTTL              = uint(86400) * 10 // in second
+	DefaultTxPoolTTL              = uint(43200) // 12 hours
 	DefaultTxPoolMaxTx            = uint64(100000)
 	DefaultLimitFee               = uint64(0)
 	DefaultLimitFeeToken          = uint64(0)
