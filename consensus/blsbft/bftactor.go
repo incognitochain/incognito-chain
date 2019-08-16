@@ -2,7 +2,6 @@ package blsbft
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -145,11 +144,11 @@ func (e *BLSBFT) Start() {
 				switch e.State {
 				case LISTEN:
 					// timeout or vote nil?
-					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
-					if e.Blocks[roundKey] != nil && e.validatePreSignBlock(e.Blocks[roundKey]) != nil {
-						e.Block = e.Blocks[roundKey]
-						e.enterAgreePhase()
-					}
+					// roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
+					// if e.Blocks[roundKey] != nil && e.validatePreSignBlock(e.Blocks[roundKey]) != nil {
+					// 	e.Block = e.Blocks[roundKey]
+					// 	e.enterAgreePhase()
+					// }
 
 				case VOTE:
 
