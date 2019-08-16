@@ -197,7 +197,7 @@ func (blockchain *BlockChain) initChainState() error {
 	// Determine the state of the chain database. We may need to initialize
 	// everything from scratch or upgrade certain buckets.
 	var initialized bool
-
+	blockchain.Chain = make(map[string]ChainInterface)
 	blockchain.BestState = &BestState{
 		Beacon: nil,
 		Shard:  make(map[byte]*ShardBestState),
@@ -227,8 +227,9 @@ func (blockchain *BlockChain) initChainState() error {
 		if err != nil {
 			return err
 		}
-
 	}
+	var beaconChain BeaconChain
+	blockchain.Chain[common.BEACON_CHAINKEY] = &beaconChain
 
 	for shard := 1; shard <= blockchain.BestState.Beacon.ActiveShards; shard++ {
 		shardID := byte(shard - 1)

@@ -7,11 +7,11 @@ import (
 )
 
 type ShardChain struct {
-	BestState       *ShardBestState
-	BlockGen        *BlockGenerator
-	Blockchain      *BlockChain
-	ChainConsensus  ConsensusInterface
-	ConsensusEngine ConsensusEngineInterface
+	BestState  *ShardBestState
+	BlockGen   *BlockGenerator
+	Blockchain *BlockChain
+	// ChainConsensus  ConsensusInterface
+	// ConsensusEngine ConsensusEngineInterface
 }
 
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
@@ -47,7 +47,7 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 	return chain.BestState.ShardProposerIdx
 }
 
-func (chain *ShardChain) CreateNewBlock(round int) BlockInterface {
+func (chain *ShardChain) CreateNewBlock(round int) common.BlockInterface {
 	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil
