@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"github.com/pkg/errors"
 )
 
 type swapProof struct {
@@ -22,11 +20,8 @@ type swapProof struct {
 	instPathIsLeft []bool
 	instRoot       string
 	blkData        string
-	signerSig      string
-	pubkeys        []string
+	signerSigs     []string
 	sigIdxs        []int
-	rIdxs          []int
-	r              string
 }
 
 // handleGetBeaconSwapProof returns a proof of a new beacon committee (for a given bridge block height)
@@ -111,13 +106,11 @@ func getBeaconSwapProofOnBridge(
 }
 
 type block interface {
-	SignerPubkeys(database.DatabaseInterface) ([][]byte, []int, error)
 	InstructionMerkleRoot() []byte
 	MetaHash() []byte
 	Hash() []byte
-	R() string
-	Sig() string
-	ValidatorsIdx(int) []int
+	Sig() []string
+	ValidatorsIdx() []int
 }
 
 // buildProofForBlock builds a swapProof for an instruction in a block (beacon or shard)
@@ -127,16 +120,6 @@ func buildProofForBlock(
 	id int,
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
-	// Get committee pubkey and signature
-	pubkeys, signerIdxs, err := blk.SignerPubkeys(db)
-	if err != nil {
-		return nil, err
-	}
-	signerPubkeys := make([]string, len(pubkeys))
-	for i, pk := range pubkeys {
-		signerPubkeys[i] = hex.EncodeToString(pk)
-	}
-
 	// Build merkle proof for instruction in bridge block
 	instProof := buildInstProof(insts, id)
 
@@ -145,15 +128,18 @@ func buildProofForBlock(
 	metaHash := blk.MetaHash()
 
 	// Get sig data
-	r, _, err := base58.Base58Check{}.Decode(blk.R())
-	if err != nil {
-		return nil, err
+	bSigs := blk.Sig()
+	sigs := []string{}
+	for _, s := range bSigs {
+		sig, _, err := base58.Base58Check{}.Decode(s)
+		if err != nil {
+			return nil, err
+		}
+		sigs = append(sigs, hex.EncodeToString(sig))
 	}
-	sig, _, err := base58.Base58Check{}.Decode(blk.Sig())
-	if err != nil {
-		return nil, err
-	}
-	rIdxs := blk.ValidatorsIdx(0)
+
+	// Get index of signers
+	signerIdxs := blk.ValidatorsIdx()
 
 	return &swapProof{
 		inst:           insts[id],
@@ -161,11 +147,8 @@ func buildProofForBlock(
 		instPathIsLeft: instProof.left,
 		instRoot:       instRoot,
 		blkData:        hex.EncodeToString(metaHash[:]),
-		signerSig:      hex.EncodeToString(sig),
-		pubkeys:        signerPubkeys,
-		rIdxs:          rIdxs,
+		signerSigs:     sigs,
 		sigIdxs:        signerIdxs,
-		r:              hex.EncodeToString(r),
 	}, nil
 }
 
@@ -299,43 +282,12 @@ func (bb *beaconBlock) Hash() []byte {
 	return h[:]
 }
 
-func (bb *beaconBlock) R() string {
-	// return bb.BeaconBlock.R
-	return ""
-}
-
-func (bb *beaconBlock) Sig() string {
+func (bb *beaconBlock) Sig() []string {
 	// return bb.BeaconBlock.AggregatedSig
-	return ""
+	return []string{}
 }
 
-// SignerPubkeys finds the pubkeys of all signers of a beacon block
-func (bb *beaconBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	// Fetch with height-1 because BestStateBeacon is updated before saving committee to database => new committee is saved instead of the one signing this block
-	commsRaw, err := db.FetchBeaconCommitteeByHeight(bb.Header.Height - 1)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	comm := []string{}
-	err = json.Unmarshal(commsRaw, &comm)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	signerIdxs := bb.ValidatorsIdx(1) // List of signers
-	pubkeys := make([][]byte, len(comm))
-	for i, pkRaw := range comm {
-		pubkey, _, err := base58.Base58Check{}.Decode(pkRaw)
-		if err != nil {
-			return nil, nil, err
-		}
-		pubkeys[i] = pubkey
-	}
-	return pubkeys, signerIdxs, nil
-}
-
-func (bb *beaconBlock) ValidatorsIdx(idx int) []int {
+func (bb *beaconBlock) ValidatorsIdx() []int {
 	// return bb.BeaconBlock.ValidatorsIdx[idx]
 	return []int{}
 }
@@ -358,45 +310,14 @@ func (sb *shardBlock) Hash() []byte {
 	return h[:]
 }
 
-func (sb *shardBlock) R() string {
-	// return sb.ShardBlock.R
-	return ""
-}
-
-func (sb *shardBlock) Sig() string {
+func (sb *shardBlock) Sig() []string {
 	// return sb.ShardBlock.AggregatedSig
-	return ""
+	return []string{}
 }
 
-func (sb *shardBlock) ValidatorsIdx(idx int) []int {
+func (sb *shardBlock) ValidatorsIdx() []int {
 	// return sb.ShardBlock.ValidatorsIdx[idx]
 	return []int{}
-}
-
-// SignerPubkeys finds the pubkeys of all signers of a shard block
-func (sb *shardBlock) SignerPubkeys(db database.DatabaseInterface) ([][]byte, []int, error) {
-	bridgeID := byte(common.BRIDGE_SHARD_ID)
-	commsRaw, err := db.FetchCommitteeFromShardBestState(bridgeID, sb.Header.Height)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	comm := []string{}
-	err = json.Unmarshal(commsRaw, &comm)
-	if err != nil {
-		return nil, nil, errors.WithStack(err)
-	}
-
-	signerIdxs := sb.ValidatorsIdx(1) // List of signers
-	pubkeys := make([][]byte, len(comm))
-	for i, pkRaw := range comm {
-		pubkey, _, err := base58.Base58Check{}.Decode(pkRaw)
-		if err != nil {
-			return nil, nil, err
-		}
-		pubkeys[i] = pubkey
-	}
-	return pubkeys, signerIdxs, nil
 }
 
 // buildSignersProof builds the merkle proofs for some elements in a list of pubkeys
@@ -446,20 +367,14 @@ func buildProofResult(
 		BeaconInstPathIsLeft: beaconInstProof.instPathIsLeft,
 		BeaconInstRoot:       beaconInstProof.instRoot,
 		BeaconBlkData:        beaconInstProof.blkData,
-		BeaconSignerSig:      beaconInstProof.signerSig,
-		BeaconPubkeys:        beaconInstProof.pubkeys,
-		BeaconRIdxs:          beaconInstProof.rIdxs,
+		BeaconSigs:           beaconInstProof.signerSigs,
 		BeaconSigIdxs:        beaconInstProof.sigIdxs,
-		BeaconR:              beaconInstProof.r,
 
 		BridgeInstPath:       bridgeInstProof.instPath,
 		BridgeInstPathIsLeft: bridgeInstProof.instPathIsLeft,
 		BridgeInstRoot:       bridgeInstProof.instRoot,
 		BridgeBlkData:        bridgeInstProof.blkData,
-		BridgeSignerSig:      bridgeInstProof.signerSig,
-		BridgePubkeys:        bridgeInstProof.pubkeys,
-		BridgeRIdxs:          bridgeInstProof.rIdxs,
+		BridgeSigs:           bridgeInstProof.signerSigs,
 		BridgeSigIdxs:        bridgeInstProof.sigIdxs,
-		BridgeR:              bridgeInstProof.r,
 	}
 }
