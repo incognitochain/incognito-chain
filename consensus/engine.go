@@ -163,17 +163,16 @@ func RegisterConsensus(name string, consensus ConsensusInterface) error {
 	return nil
 }
 
-func (engine *Engine) ValidateBlockWithConsensus(block common.BlockInterface, chainName string, consensusType string) error {
-	consensusModule, ok := engine.ChainConsensusList[chainName]
-	if ok && !consensusModule.IsOngoing() {
-		consensusModule.ValidateBlock(block)
-	}
-	return nil
-}
+// func (engine *Engine) ValidateBlockWithConsensus(block common.BlockInterface, chainName string, consensusType string) error {
+// 	consensusModule, ok := engine.ChainConsensusList[chainName]
+// 	if ok && !consensusModule.IsOngoing() {
+// 		consensusModule.ValidateBlock(block)
+// 	}
+// 	return nil
+// }
 
 func (engine *Engine) ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error {
-	// return engine.ChainConsensusList[consensusType].ValidateAggregatedSig(blockHash, validationData, committee)
-	return nil
+	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(blockHash, committee, validationData)
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {

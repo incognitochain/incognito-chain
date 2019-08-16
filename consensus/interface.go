@@ -26,11 +26,11 @@ type ConsensusInterface interface {
 
 	ProcessBFTMsg(msg *wire.MessageBFT)
 
-	ValidateBlock(block common.BlockInterface) error
+	// ValidateBlock(block common.BlockInterface) error
 
-	ValidateProducerPosition(block common.BlockInterface) error
-	ValidateProducerSig(block common.BlockInterface) error
-	ValidateCommitteeSig(block common.BlockInterface) error
+	// ValidateProducerPosition(block common.BlockInterface) error
+	ValidateProducerSig(blockHash *common.Hash, validationData string) error
+	ValidateCommitteeSig(blockHash *common.Hash, committee []string, validationData string) error
 
 	LoadUserKey(string) error
 	GetUserPublicKey() string
