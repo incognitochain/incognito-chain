@@ -167,8 +167,9 @@ func (tp *TxPool) monitorPool() {
 	if tp.config.TxLifeTime == 0 {
 		return
 	}
-	for {
-		<-time.Tick(tp.ScanTime)
+	ticker := time.NewTicker(tp.ScanTime)
+	defer ticker.Stop()
+	for _ = range ticker.C {
 		tp.mtx.Lock()
 		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}

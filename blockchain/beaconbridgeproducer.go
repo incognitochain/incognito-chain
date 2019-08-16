@@ -16,7 +16,7 @@ import (
 )
 
 // build instructions at beacon chain before syncing to shards
-func (blockChain *BlockChain) buildBridgeInstructions(
+func (blockchain *BlockChain) buildBridgeInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconHeight uint64,
@@ -44,13 +44,13 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 		newInst := [][]string{}
 		switch metaType {
 		case metadata.ContractingRequestMeta:
-			newInst, err = blockChain.buildInstructionsForContractingReq(contentStr, shardID, metaType)
+			newInst, err = blockchain.buildInstructionsForContractingReq(contentStr, shardID, metaType)
 
 		case metadata.IssuingRequestMeta:
-			newInst, err = blockChain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
+			newInst, err = blockchain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
 
 		case metadata.IssuingETHRequestMeta:
-			newInst, err = blockChain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
+			newInst, err = blockchain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
