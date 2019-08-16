@@ -229,6 +229,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
 	}
+
+	// Init consensus engine
+	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
+
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,
 		DataBase:    serverObj.dataBase,
@@ -351,9 +355,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if err != nil {
 		return err
 	}
-
-	// Init consensus engine
-	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = &netsync.NetSync{}

@@ -18,11 +18,12 @@ type Engine struct {
 	started            bool
 	Node               nodeInterface
 	ChainConsensusList map[string]ConsensusInterface
-	Chains             map[string]ChainInterface
-	CurrentMiningChain string
-	Blockchain         *blockchain.BlockChain
-	BlockGen           *blockchain.BlockGenerator
-	// userMiningPublicKeys map[string]string
+	// Chains               map[string]ChainInterface
+	CurrentMiningChain   string
+	Blockchain           *blockchain.BlockChain
+	BlockGen             *blockchain.BlockGenerator
+	userMiningPublicKeys map[string]string
+	chainCommitteeChange chan string
 	// MiningKeys         map[string]string
 
 }
@@ -41,8 +42,26 @@ func New(node nodeInterface, blockchain *blockchain.BlockChain, blockgen *blockc
 }
 
 //watchConsensusState will watch MiningKey Role as well as chain consensus type
-func (engine *Engine) watchConsensusState() {
+func (engine *Engine) watchConsensusCommittee() {
+	Logger.log.Info("start watching consensus committee...")
+	engine.chainCommitteeChange = make(chan string)
 
+	for {
+		select {
+		case <-engine.cQuit:
+		case chainName := <-engine.chainCommitteeChange:
+			consensusType := engine.Blockchain.Chains[chainName].GetConsensusType()
+			userPublicKey, ok := engine.userMiningPublicKeys[consensusType]
+			if !ok {
+				continue
+			}
+			if engine.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey) > 0 {
+				if engine.CurrentMiningChain != chainName {
+					engine.CurrentMiningChain = chainName
+				}
+			}
+		}
+	}
 }
 
 func (engine *Engine) Start() error {
@@ -55,62 +74,20 @@ func (engine *Engine) Start() error {
 
 	engine.cQuit = make(chan struct{})
 	go func() {
-		engine.watchConsensusState()
+		go engine.watchConsensusCommittee()
 		for {
 			select {
 			case <-engine.cQuit:
 				return
 			default:
-				time.Sleep(time.Millisecond * 100)
-				// fmt.Println(engine)
-				// if !engine.config.BlockChain.Synker.IsLatest(false, 0) {
-				// 	userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, 0)
-				// 	if userRole == common.SHARD_ROLE {
-				// 		go engine.NotifyShardRole(int(shardID))
-				// 		go engine.NotifyBeaconRole(false)
-				// 	} else {
-				// 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-				// 			go engine.NotifyBeaconRole(true)
-				// 			go engine.NotifyShardRole(-1)
-				// 		}
-				// 	}
-				// } else {
-				// 	if !engine.config.Server.IsEnableMining() {
-				// 		time.Sleep(time.Second * 1)
-				// 		continue
-				// 	}
-				// 	userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, engine.currentBFTRound)
-				// 	if engine.config.NodeMode == common.NODEMODE_BEACON && userRole == common.SHARD_ROLE {
-				// 		userRole = common.EmptyString
-				// 	}
-				// 	if engine.config.NodeMode == common.NODEMODE_SHARD && userRole != common.SHARD_ROLE {
-				// 		userRole = common.EmptyString
-				// 	}
-				// 	engine.userLayer = userRole
-				// 	switch userRole {
-				// 	case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
-				// 		engine.userLayer = common.BEACON_ROLE
-				// 	}
-				// 	engine.config.Server.UpdateConsensusState(engine.userLayer, engine.userPk, nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.GetShardCommittee())
-				// 	switch engine.userLayer {
-				// 	case common.BEACON_ROLE:
-				// 		if engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO {
-				// 			engine.config.BlockChain.ConsensusOngoing = true
-				// 			engine.execBeaconRole()
-				// 			engine.config.BlockChain.ConsensusOngoing = false
-				// 		}
-				// 	case common.SHARD_ROLE:
-				// 		if engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO {
-				// 			if engine.config.BlockChain.Synker.IsLatest(true, shardID) {
-				// 				engine.config.BlockChain.ConsensusOngoing = true
-				// 				engine.execShardRole(shardID)
-				// 				engine.config.BlockChain.ConsensusOngoing = false
-				// 			}
-				// 		}
-				// 	case common.EmptyString:
-				// 		time.Sleep(time.Second * 1)
-				// 	}
-				// }
+				time.Sleep(time.Millisecond * 500)
+				for chainName, consensus := range engine.ChainConsensusList {
+					if chainName == engine.CurrentMiningChain {
+						consensus.Start()
+					} else {
+						consensus.Stop()
+					}
+				}
 			}
 		}
 	}()
@@ -185,11 +162,11 @@ func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
 func (engine *Engine) GetUserRole() (string, int) {
 	if engine.CurrentMiningChain != "" {
 		publicKey, _ := engine.GetCurrentMiningPublicKey()
-		userRole, _ := engine.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
+		userRole, _ := engine.Blockchain.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
 		if engine.CurrentMiningChain == common.BEACON_CHAINKEY {
 			return userRole, -1
 		}
-		return userRole, int(engine.Chains[engine.CurrentMiningChain].GetShardID())
+		return userRole, engine.Blockchain.Chains[engine.CurrentMiningChain].GetShardID()
 	}
 	return "", 0
 }
