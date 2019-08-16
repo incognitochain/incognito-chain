@@ -22,7 +22,6 @@ type swapProof struct {
 	instPathIsLeft []bool
 	instRoot       string
 	blkData        string
-	blkHash        string
 	signerSig      string
 	pubkeys        []string
 	sigIdxs        []int
@@ -144,7 +143,6 @@ func buildProofForBlock(
 	// Get meta hash and block hash
 	instRoot := hex.EncodeToString(blk.InstructionMerkleRoot())
 	metaHash := blk.MetaHash()
-	blkHash := blk.Hash()
 
 	// Get sig data
 	r, _, err := base58.Base58Check{}.Decode(blk.R())
@@ -163,7 +161,6 @@ func buildProofForBlock(
 		instPathIsLeft: instProof.left,
 		instRoot:       instRoot,
 		blkData:        hex.EncodeToString(metaHash[:]),
-		blkHash:        hex.EncodeToString(blkHash[:]),
 		signerSig:      hex.EncodeToString(sig),
 		pubkeys:        signerPubkeys,
 		rIdxs:          rIdxs,
@@ -449,7 +446,6 @@ func buildProofResult(
 		BeaconInstPathIsLeft: beaconInstProof.instPathIsLeft,
 		BeaconInstRoot:       beaconInstProof.instRoot,
 		BeaconBlkData:        beaconInstProof.blkData,
-		BeaconBlkHash:        beaconInstProof.blkHash,
 		BeaconSignerSig:      beaconInstProof.signerSig,
 		BeaconPubkeys:        beaconInstProof.pubkeys,
 		BeaconRIdxs:          beaconInstProof.rIdxs,
@@ -460,7 +456,6 @@ func buildProofResult(
 		BridgeInstPathIsLeft: bridgeInstProof.instPathIsLeft,
 		BridgeInstRoot:       bridgeInstProof.instRoot,
 		BridgeBlkData:        bridgeInstProof.blkData,
-		BridgeBlkHash:        bridgeInstProof.blkHash,
 		BridgeSignerSig:      bridgeInstProof.signerSig,
 		BridgePubkeys:        bridgeInstProof.pubkeys,
 		BridgeRIdxs:          bridgeInstProof.rIdxs,
