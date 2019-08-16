@@ -3,6 +3,7 @@ package connmanager
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -22,6 +23,8 @@ func TestGetCommitteeByShard(t *testing.T) {
 	if len(commitee) == 0 {
 		t.Error("Can not getCommitteeByShard")
 	}
+	assert.Equal(t, "c", commitee[0])
+	assert.Equal(t, "d", commitee[1])
 	commitee = consensusState.getCommitteeByShard(1)
 	if len(commitee) > 0 {
 		t.Error("Can not getCommitteeByShard")
