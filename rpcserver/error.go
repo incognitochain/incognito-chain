@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 )
 
@@ -90,7 +91,7 @@ var _, _ error = RPCError{}, (*RPCError)(nil)
 // Error returns a string describing the RPC error.  This satisifies the
 // builtin error interface.
 func (e RPCError) Error() string {
-	return fmt.Sprintf("%d: %+v", e.Code, e.err)
+	return fmt.Sprintf("%d: %+v %+v", e.Code, e.err, e.StackTrace)
 }
 
 func (e RPCError) GetErr() error {
