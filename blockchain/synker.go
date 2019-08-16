@@ -733,6 +733,7 @@ func (synker *Synker) GetPoolsState() {
 		userPK        string
 	)
 	userPK, _ = synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+
 	if userPK != "" {
 		userRole, userShardID = synker.blockchain.BestState.Beacon.GetPubkeyRole(userPK, synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
 		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userPK, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)

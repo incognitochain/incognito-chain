@@ -125,6 +125,7 @@ type FeeEstimator interface {
 
 type ChainInterface interface {
 	GetChainName() string
+	GetConsensusType() string
 	// GetChainConsensus() ConsensusInterface
 	GetLastBlockTimeStamp() int64
 	GetMinBlkInterval() time.Duration
@@ -144,6 +145,7 @@ type ChainInterface interface {
 	ValidateBlock(common.BlockInterface) error
 	ValidateBlockSanity(common.BlockInterface) error
 	ValidateBlockWithBlockChain(common.BlockInterface) error
+	GetShardID() int
 }
 
 type BestStateInterface interface {
