@@ -186,7 +186,7 @@ func (crossShardPool *CrossShardPool) AddCrossShardBlock(crossShardBlock *blockc
 	}
 	shardCommittee := make(map[byte][]string)
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
-		return nil, crossShardPool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
+		return nil, crossShardPool.shardID, NewBlockPoolError(UnmarshalShardCommitteeError, errors.New("Fail to unmarshal shard committee"))
 	}
 	if err := blockchain.ValidateAggSignature(crossShardBlock.ValidatorsIndex, shardCommittee[shardID], crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
 		return nil, crossShardPool.shardID, err
@@ -196,7 +196,7 @@ func (crossShardPool *CrossShardPool) AddCrossShardBlock(crossShardBlock *blockc
 		if crossShardPool.pendingPool[shardID][len(crossShardPool.pendingPool[shardID])-1].Header.Height > crossShardBlock.Header.Height {
 			crossShardPool.pendingPool[shardID] = crossShardPool.pendingPool[shardID][:len(crossShardPool.pendingPool[shardID])-1]
 		} else {
-			return nil, crossShardPool.shardID, NewBlockPoolError(MaxPoolSizeError, errors.New("Reach max pending cross shard block"))
+			return nil, crossShardPool.shardID, NewBlockPoolError(MaxPoolSizeError, fmt.Errorf("Reach max pending cross shard block %+v", maxPendingCrossShardInPool))
 		}
 	}
 
@@ -209,6 +209,53 @@ func (crossShardPool *CrossShardPool) AddCrossShardBlock(crossShardBlock *blockc
 	return expectedHeight, crossShardPool.shardID, nil
 }
 
+/*
+	validateCrossShardBlock with these following conditions:
+	1. Destination Shard of Cross Shard Block match Cross Shard Pool ID
+	2. Check Cross Shard BLock Height With Current Cross Shard Pool State
+	3. Check Shard Block existence in Pool or Blockchain by Cross Shard Block Height
+	4. Validate Agg Signature of Cross Shard Block
+*/
+func (crossShardPool *CrossShardPool) validateCrossShardBlock(crossShardBlock *blockchain.CrossShardBlock) error {
+	if crossShardBlock.ToShardID != crossShardPool.shardID {
+		return NewBlockPoolError(WrongShardIDError, errors.New("This crossShardPool cannot receive this cross shard block, this block for another shard "+strconv.Itoa(int(crossShardBlock.Header.Height))))
+	}
+	//If receive old block, it will ignore
+	startHeight := crossShardPool.crossShardState[crossShardBlock.Header.ShardID]
+	if crossShardBlock.Header.Height <= startHeight {
+		return NewBlockPoolError(OldBlockError, errors.New("receive old block"))
+	}
+	//If block already in crossShardPool, it will ignore
+	for _, blkItem := range crossShardPool.validPool[crossShardBlock.Header.ShardID] {
+		if blkItem.Header.Height == crossShardBlock.Header.Height {
+			return NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
+		}
+	}
+	for _, blkItem := range crossShardPool.pendingPool[crossShardBlock.Header.ShardID] {
+		if blkItem.Header.Height == crossShardBlock.Header.Height {
+			return NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
+		}
+	}
+	// find beacon block height to get shard committee
+	beaconHeight, err := crossShardPool.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
+	if err != nil {
+		return NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, fmt.Errorf("No Beacon Block For Cross Shard Block %+v from Shard %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
+	}
+	// get shard committee from database
+	shardCommitteeByte, err := crossShardPool.db.FetchShardCommitteeByHeight(beaconHeight)
+	if err != nil {
+		return NewBlockPoolError(DatabaseError, fmt.Errorf("No Committee For Cross Shard Block %+v from ShardID %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
+	}
+	shardCommittee := make(map[byte][]string)
+	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
+		return NewBlockPoolError(UnmarshalShardCommitteeError, errors.New("Fail to unmarshal shard committee"))
+	}
+	// validate agg signature
+	if err := blockchain.ValidateAggSignature(crossShardBlock.ValidatorsIndex, shardCommittee[crossShardBlock.Header.ShardID], crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
+		return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, err)
+	}
+	return nil
+}
 func (crossShardPool *CrossShardPool) RemoveBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
 	crossShardPool.mtx.Lock()
 	defer crossShardPool.mtx.Unlock()
