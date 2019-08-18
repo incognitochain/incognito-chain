@@ -43,6 +43,7 @@ type CrossShardPool struct {
 	crossShardState map[byte]uint64                        // cross shard state (marked the current state of cross shard block from all shard)
 	mtx             *sync.RWMutex
 	db              database.DatabaseInterface
+	isTest          bool
 	// When beacon chain confirm new cross shard block, it will store these block height in database
 	// Cross Shard Pool using database to detect either is valid or pending
 }
@@ -66,6 +67,7 @@ func GetCrossShardPool(shardID byte) *CrossShardPool {
 		p.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
 		p.mtx = new(sync.RWMutex)
 		crossShardPoolMap[shardID] = p
+		p.isTest = false
 	}
 	return p
 }
@@ -153,6 +155,9 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockBeforeSignatureVali
 
 // Validate Agg Signature of Cross Shard Block
 func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShardBlock *blockchain.CrossShardBlock) error {
+	if crossShardPool.isTest {
+		return nil
+	}
 	// find beacon block height to get shard committee
 	beaconHeight, err := crossShardPool.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, crossShardBlock.Header.ShardID, crossShardBlock.Header.Height)
 	if err != nil {
