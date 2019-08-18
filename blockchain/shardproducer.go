@@ -604,9 +604,9 @@ func (blockchain *BlockChain) createNormalTokenTxForCrossShard(privatekey *priva
 /*
 	Find Beacon Block with compatible shard states of cross shard block
 */
-func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(startHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
+func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
 	for {
-		beaconBlock, err := blockchain.GetBeaconBlockByHeight(startHeight)
+		beaconBlock, err := blockchain.GetBeaconBlockByHeight(beaconHeight)
 		if err != nil {
 			return 0, NewBlockChainError(FetchBeaconBlockError, err)
 		}
@@ -617,6 +617,6 @@ func (blockchain *BlockChain) FindBeaconHeightForCrossShardBlock(startHeight uin
 				}
 			}
 		}
-		startHeight += 1
+		beaconHeight += 1
 	}
 }
