@@ -71,36 +71,36 @@ func GetCrossShardPool(shardID byte) *CrossShardPool {
 
 // Validate pending pool again, to move pending block to valid block
 // When receive new cross shard block or new beacon state arrive
-func (pool *CrossShardPool) UpdatePool() map[byte]uint64 {
-	pool.mtx.Lock()
-	defer pool.mtx.Unlock()
-	expectedHeight := pool.updatePool()
+func (crossShardPool *CrossShardPool) UpdatePool() map[byte]uint64 {
+	crossShardPool.mtx.Lock()
+	defer crossShardPool.mtx.Unlock()
+	expectedHeight := crossShardPool.updatePool()
 	return expectedHeight
 }
 
-func (pool *CrossShardPool) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
-	nextHeight, err := pool.db.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+func (crossShardPool *CrossShardPool) GetNextCrossShardHeight(fromShard, toShard byte, startHeight uint64) uint64 {
+	nextHeight, err := crossShardPool.db.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
 	if err != nil {
 		return 0
 	}
 	return nextHeight
 
 }
-func (pool *CrossShardPool) updatePool() map[byte]uint64 {
-	pool.crossShardState = blockchain.GetBestStateShard(pool.shardID).BestCrossShard
-	pool.removeBlockByHeight(pool.crossShardState)
+func (crossShardPool *CrossShardPool) updatePool() map[byte]uint64 {
+	crossShardPool.crossShardState = blockchain.GetBestStateShard(crossShardPool.shardID).BestCrossShard
+	crossShardPool.removeBlockByHeight(crossShardPool.crossShardState)
 	expectedHeight := make(map[byte]uint64)
-	for blkShardID, blks := range pool.pendingPool {
-		startHeight := pool.crossShardState[blkShardID]
-		if len(pool.validPool[blkShardID]) > 0 {
-			startHeight = pool.validPool[blkShardID][len(pool.validPool[blkShardID])-1].Header.Height
+	for blkShardID, blks := range crossShardPool.pendingPool {
+		startHeight := crossShardPool.crossShardState[blkShardID]
+		if len(crossShardPool.validPool[blkShardID]) > 0 {
+			startHeight = crossShardPool.validPool[blkShardID][len(crossShardPool.validPool[blkShardID])-1].Header.Height
 		}
 		index := 0
 		removeIndex := 0
 		for _, blk := range blks {
 			//only when beacon confirm (save next cross shard height), we make cross shard block valid
 			//if waitHeight > blockHeight, remove that block
-			waitHeight := pool.GetNextCrossShardHeight(blkShardID, pool.shardID, startHeight)
+			waitHeight := crossShardPool.GetNextCrossShardHeight(blkShardID, crossShardPool.shardID, startHeight)
 			if waitHeight > blk.Header.Height {
 				removeIndex++
 				index++
@@ -116,9 +116,9 @@ func (pool *CrossShardPool) updatePool() map[byte]uint64 {
 		}
 		if index > 0 || removeIndex > 0 {
 			var valid []*blockchain.CrossShardBlock
-			valid, pool.pendingPool[blkShardID] = pool.pendingPool[blkShardID][removeIndex:index], pool.pendingPool[blkShardID][index:]
+			valid, crossShardPool.pendingPool[blkShardID] = crossShardPool.pendingPool[blkShardID][removeIndex:index], crossShardPool.pendingPool[blkShardID][index:]
 			if len(valid) > 0 {
-				pool.validPool[blkShardID] = append(pool.validPool[blkShardID], valid...)
+				crossShardPool.validPool[blkShardID] = append(crossShardPool.validPool[blkShardID], valid...)
 			}
 		}
 	}
@@ -126,12 +126,12 @@ func (pool *CrossShardPool) updatePool() map[byte]uint64 {
 	//===============For log
 	validPoolHeight := make(map[byte][]uint64)
 	pendingPoolHeight := make(map[byte][]uint64)
-	for shardID, blocks := range pool.validPool {
+	for shardID, blocks := range crossShardPool.validPool {
 		for _, block := range blocks {
 			validPoolHeight[shardID] = append(validPoolHeight[shardID], block.Header.Height)
 		}
 	}
-	for shardID, blocks := range pool.pendingPool {
+	for shardID, blocks := range crossShardPool.pendingPool {
 		for _, block := range blocks {
 			pendingPoolHeight[shardID] = append(pendingPoolHeight[shardID], block.Header.Height)
 		}
@@ -146,72 +146,72 @@ func (pool *CrossShardPool) updatePool() map[byte]uint64 {
 	3. Duplicate block in pending or valid
 	4. Signature
 */
-func (pool *CrossShardPool) AddCrossShardBlock(block *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
-	pool.mtx.Lock()
-	defer pool.mtx.Unlock()
+func (crossShardPool *CrossShardPool) AddCrossShardBlock(block *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
+	crossShardPool.mtx.Lock()
+	defer crossShardPool.mtx.Unlock()
 
 	shardID := block.Header.ShardID
 	blockHeight := block.Header.Height
 
 	Logger.log.Criticalf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blockHeight, shardID)
-	if block.ToShardID != pool.shardID {
-		return nil, pool.shardID, NewBlockPoolError(WrongShardIDError, errors.New("This pool cannot receive this cross shard block, this block for another shard "+strconv.Itoa(int(block.Header.Height))))
+	if block.ToShardID != crossShardPool.shardID {
+		return nil, crossShardPool.shardID, NewBlockPoolError(WrongShardIDError, errors.New("This crossShardPool cannot receive this cross shard block, this block for another shard "+strconv.Itoa(int(block.Header.Height))))
 	}
 
 	//If receive old block, it will ignore
-	startHeight := pool.crossShardState[shardID]
+	startHeight := crossShardPool.crossShardState[shardID]
 	if blockHeight <= startHeight {
-		return nil, pool.shardID, NewBlockPoolError(OldBlockError, errors.New("receive old block"))
+		return nil, crossShardPool.shardID, NewBlockPoolError(OldBlockError, errors.New("receive old block"))
 	}
 
-	//If block already in pool, it will ignore
-	for _, blkItem := range pool.validPool[shardID] {
+	//If block already in crossShardPool, it will ignore
+	for _, blkItem := range crossShardPool.validPool[shardID] {
 		if blkItem.Header.Height == blockHeight {
-			return nil, pool.shardID, NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
+			return nil, crossShardPool.shardID, NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
 		}
 	}
-	for _, blkItem := range pool.pendingPool[shardID] {
+	for _, blkItem := range crossShardPool.pendingPool[shardID] {
 		if blkItem.Header.Height == blockHeight {
-			return nil, pool.shardID, NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
+			return nil, crossShardPool.shardID, NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
 		}
 	}
-	shardCommitteeByte, err := pool.db.FetchShardCommitteeByHeight(block.Header.BeaconHeight)
+	shardCommitteeByte, err := crossShardPool.db.FetchShardCommitteeByHeight(block.Header.BeaconHeight)
 	if err != nil {
-		return nil, pool.shardID, NewBlockPoolError(DatabaseError, errors.New("No committee for this epoch"))
+		return nil, crossShardPool.shardID, NewBlockPoolError(DatabaseError, errors.New("No committee for this epoch"))
 	}
 	shardCommittee := make(map[byte][]string)
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
-		return nil, pool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
+		return nil, crossShardPool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
 	}
 	if err := blockchain.ValidateAggSignature(block.ValidatorsIndex, shardCommittee[shardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
-		return nil, pool.shardID, err
+		return nil, crossShardPool.shardID, err
 	}
 
-	if len(pool.pendingPool[shardID]) > maxPendingCrossShardInPool {
-		if pool.pendingPool[shardID][len(pool.pendingPool[shardID])-1].Header.Height > block.Header.Height {
-			pool.pendingPool[shardID] = pool.pendingPool[shardID][:len(pool.pendingPool[shardID])-1]
+	if len(crossShardPool.pendingPool[shardID]) > maxPendingCrossShardInPool {
+		if crossShardPool.pendingPool[shardID][len(crossShardPool.pendingPool[shardID])-1].Header.Height > block.Header.Height {
+			crossShardPool.pendingPool[shardID] = crossShardPool.pendingPool[shardID][:len(crossShardPool.pendingPool[shardID])-1]
 		} else {
-			return nil, pool.shardID, NewBlockPoolError(MaxPoolSizeError, errors.New("Reach max pending cross shard block"))
+			return nil, crossShardPool.shardID, NewBlockPoolError(MaxPoolSizeError, errors.New("Reach max pending cross shard block"))
 		}
 	}
 
-	pool.pendingPool[shardID] = append(pool.pendingPool[shardID], block)
-	sort.Slice(pool.pendingPool[shardID], func(i, j int) bool {
-		return pool.pendingPool[shardID][i].Header.Height < pool.pendingPool[shardID][j].Header.Height
+	crossShardPool.pendingPool[shardID] = append(crossShardPool.pendingPool[shardID], block)
+	sort.Slice(crossShardPool.pendingPool[shardID], func(i, j int) bool {
+		return crossShardPool.pendingPool[shardID][i].Header.Height < crossShardPool.pendingPool[shardID][j].Header.Height
 	})
 	Logger.log.Infof("Finish Verify Cross Shard Block %+v from shard %+v \n", blockHeight, shardID)
-	expectedHeight := pool.updatePool()
-	return expectedHeight, pool.shardID, nil
+	expectedHeight := crossShardPool.updatePool()
+	return expectedHeight, crossShardPool.shardID, nil
 }
 
-func (self *CrossShardPool) RemoveBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
-	self.mtx.Lock()
-	defer self.mtx.Unlock()
-	self.removeBlockByHeight(removeSinceBlkHeight)
+func (crossShardPool *CrossShardPool) RemoveBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
+	crossShardPool.mtx.Lock()
+	defer crossShardPool.mtx.Unlock()
+	crossShardPool.removeBlockByHeight(removeSinceBlkHeight)
 }
 
-func (self *CrossShardPool) removeBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
-	for shardID, blks := range self.validPool {
+func (crossShardPool *CrossShardPool) removeBlockByHeight(removeSinceBlkHeight map[byte]uint64) {
+	for shardID, blks := range crossShardPool.validPool {
 		removeIndex := 0
 		for _, blk := range blks {
 			if blk.Header.Height <= removeSinceBlkHeight[shardID] {
@@ -221,10 +221,10 @@ func (self *CrossShardPool) removeBlockByHeight(removeSinceBlkHeight map[byte]ui
 				break
 			}
 		}
-		self.validPool[shardID] = self.validPool[shardID][removeIndex:]
+		crossShardPool.validPool[shardID] = crossShardPool.validPool[shardID][removeIndex:]
 	}
 
-	for shardID, blks := range self.pendingPool {
+	for shardID, blks := range crossShardPool.pendingPool {
 		removeIndex := 0
 		for _, blk := range blks {
 			if blk.Header.Height <= removeSinceBlkHeight[shardID] {
@@ -234,15 +234,15 @@ func (self *CrossShardPool) removeBlockByHeight(removeSinceBlkHeight map[byte]ui
 				break
 			}
 		}
-		self.pendingPool[shardID] = self.pendingPool[shardID][removeIndex:]
+		crossShardPool.pendingPool[shardID] = crossShardPool.pendingPool[shardID][removeIndex:]
 	}
 }
 
-func (self *CrossShardPool) GetValidBlock(limit map[byte]uint64) map[byte][]*blockchain.CrossShardBlock {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
+func (crossShardPool *CrossShardPool) GetValidBlock(limit map[byte]uint64) map[byte][]*blockchain.CrossShardBlock {
+	crossShardPool.mtx.RLock()
+	defer crossShardPool.mtx.RUnlock()
 	finalBlocks := make(map[byte][]*blockchain.CrossShardBlock)
-	for shardID, blks := range self.validPool {
+	for shardID, blks := range crossShardPool.validPool {
 		for _, blk := range blks {
 			if limit != nil && limit[shardID] != 0 && limit[shardID] < blk.Header.Height {
 				break
@@ -254,11 +254,11 @@ func (self *CrossShardPool) GetValidBlock(limit map[byte]uint64) map[byte][]*blo
 	return finalBlocks
 }
 
-func (self *CrossShardPool) GetValidBlockHash() map[byte][]common.Hash {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
+func (crossShardPool *CrossShardPool) GetValidBlockHash() map[byte][]common.Hash {
+	crossShardPool.mtx.RLock()
+	defer crossShardPool.mtx.RUnlock()
 	finalBlockHash := make(map[byte][]common.Hash)
-	for shardID, blkItems := range self.validPool {
+	for shardID, blkItems := range crossShardPool.validPool {
 		for _, blk := range blkItems {
 			finalBlockHash[shardID] = append(finalBlockHash[shardID], *blk.Hash())
 		}
@@ -266,11 +266,11 @@ func (self *CrossShardPool) GetValidBlockHash() map[byte][]common.Hash {
 	return finalBlockHash
 }
 
-func (self *CrossShardPool) GetValidBlockHeight() map[byte][]uint64 {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
+func (crossShardPool *CrossShardPool) GetValidBlockHeight() map[byte][]uint64 {
+	crossShardPool.mtx.RLock()
+	defer crossShardPool.mtx.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
-	for shardID, blkItems := range self.validPool {
+	for shardID, blkItems := range crossShardPool.validPool {
 		for _, blk := range blkItems {
 			finalBlockHeight[shardID] = append(finalBlockHeight[shardID], blk.Header.Height)
 		}
@@ -278,11 +278,11 @@ func (self *CrossShardPool) GetValidBlockHeight() map[byte][]uint64 {
 	return finalBlockHeight
 }
 
-func (self *CrossShardPool) GetPendingBlockHeight() map[byte][]uint64 {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
+func (crossShardPool *CrossShardPool) GetPendingBlockHeight() map[byte][]uint64 {
+	crossShardPool.mtx.RLock()
+	defer crossShardPool.mtx.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
-	for shardID, blkItems := range self.pendingPool {
+	for shardID, blkItems := range crossShardPool.pendingPool {
 		for _, blk := range blkItems {
 			finalBlockHeight[shardID] = append(finalBlockHeight[shardID], blk.Header.Height)
 		}
@@ -290,18 +290,18 @@ func (self *CrossShardPool) GetPendingBlockHeight() map[byte][]uint64 {
 	return finalBlockHeight
 }
 
-func (self *CrossShardPool) GetAllBlockHeight() map[byte][]uint64 {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
+func (crossShardPool *CrossShardPool) GetAllBlockHeight() map[byte][]uint64 {
+	crossShardPool.mtx.RLock()
+	defer crossShardPool.mtx.RUnlock()
 	finalBlockHeight := make(map[byte][]uint64)
 
-	for shardID, blkItems := range self.validPool {
+	for shardID, blkItems := range crossShardPool.validPool {
 		for _, blk := range blkItems {
 			finalBlockHeight[shardID] = append(finalBlockHeight[shardID], blk.Header.Height)
 		}
 	}
 
-	for shardID, blkItems := range self.pendingPool {
+	for shardID, blkItems := range crossShardPool.pendingPool {
 		for _, blk := range blkItems {
 			finalBlockHeight[shardID] = append(finalBlockHeight[shardID], blk.Header.Height)
 		}
@@ -309,11 +309,11 @@ func (self *CrossShardPool) GetAllBlockHeight() map[byte][]uint64 {
 	return finalBlockHeight
 }
 
-func (self *CrossShardPool) GetLatestValidBlockHeight() map[byte]uint64 {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
+func (crossShardPool *CrossShardPool) GetLatestValidBlockHeight() map[byte]uint64 {
+	crossShardPool.mtx.RLock()
+	defer crossShardPool.mtx.RUnlock()
 	finalBlockHeight := make(map[byte]uint64)
-	for shardID, blkItems := range self.validPool {
+	for shardID, blkItems := range crossShardPool.validPool {
 		if len(blkItems) > 0 {
 			finalBlockHeight[shardID] = blkItems[len(blkItems)-1].Header.Height
 		} else {
@@ -324,10 +324,10 @@ func (self *CrossShardPool) GetLatestValidBlockHeight() map[byte]uint64 {
 	return finalBlockHeight
 }
 
-func (self *CrossShardPool) GetBlockByHeight(_shardID byte, height uint64) *blockchain.CrossShardBlock {
-	self.mtx.RLock()
-	defer self.mtx.RUnlock()
-	for shardID, blkItems := range self.validPool {
+func (crossShardPool *CrossShardPool) GetBlockByHeight(_shardID byte, height uint64) *blockchain.CrossShardBlock {
+	crossShardPool.mtx.RLock()
+	defer crossShardPool.mtx.RUnlock()
+	for shardID, blkItems := range crossShardPool.validPool {
 		if shardID != _shardID {
 			continue
 		}
@@ -338,7 +338,7 @@ func (self *CrossShardPool) GetBlockByHeight(_shardID byte, height uint64) *bloc
 		}
 	}
 
-	for shardID, blkItems := range self.pendingPool {
+	for shardID, blkItems := range crossShardPool.pendingPool {
 		if shardID != _shardID {
 			continue
 		}
@@ -348,6 +348,29 @@ func (self *CrossShardPool) GetBlockByHeight(_shardID byte, height uint64) *bloc
 			}
 		}
 	}
-
 	return nil
+}
+
+func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(startHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
+	for {
+		hashBlock, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
+		if err != nil {
+			return nil, err
+		}
+		block, _, err := blockchain.GetBeaconBlockByHash(hashBlock)
+		if err != nil {
+			return nil, err
+		}
+		if err != nil {
+			return 0, NewBlockChainError(FetchBeaconBlockError, err)
+		}
+		if shardStates, ok := beaconBlock.Body.ShardState[fromShardID]; ok {
+			for _, shardState := range shardStates {
+				if shardState.Height == crossShardBlockHeight {
+					return beaconBlock.Header.Height, nil
+				}
+			}
+		}
+		startHeight += 1
+	}
 }
