@@ -229,7 +229,11 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
 	}
-
+	// Init block template generator
+	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
+	if err != nil {
+		return err
+	}
 	// Init consensus engine
 	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
 
@@ -238,6 +242,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		DataBase:    serverObj.dataBase,
 		MemCache:    serverObj.memCache,
 		//MemCache:          nil,
+		BlockGen:          serverObj.blockgen,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,
@@ -349,12 +354,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	//===============
 
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
-
-	// Init block template generator
-	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
-	if err != nil {
-		return err
-	}
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = &netsync.NetSync{}

@@ -471,5 +471,5 @@ func GetValidStaker(committees []string, stakers []string) []string {
 }
 
 func GetShardChainKey(shardID byte) string {
-	return SHARD_CHAINKEY + "-" + string(shardID)
+	return SHARD_CHAINKEY + "-" + strconv.Itoa(int(shardID))
 }

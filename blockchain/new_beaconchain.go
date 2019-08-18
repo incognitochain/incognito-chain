@@ -96,3 +96,18 @@ func (chain *BeaconChain) GetConsensusType() string {
 func (chain *BeaconChain) GetShardID() int {
 	return -1
 }
+
+func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]string {
+	var result map[string]map[string][]string
+	result = make(map[string]map[string][]string)
+
+	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]string)
+	result[chain.BestState.ConsensusAlgorithm][common.BEACON_CHAINKEY] = append([]string{}, chain.BestState.BeaconCommittee...)
+	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
+		if _, ok := result[consensusType]; !ok {
+			result[consensusType] = make(map[string][]string)
+		}
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]string{}, chain.BestState.ShardCommittee[shardID]...)
+	}
+	return result
+}
