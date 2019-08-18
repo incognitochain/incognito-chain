@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -19,9 +20,9 @@ type Engine struct {
 	Node               nodeInterface
 	ChainConsensusList map[string]ConsensusInterface
 	// Chains               map[string]ChainInterface
-	CurrentMiningChain   string
-	Blockchain           *blockchain.BlockChain
-	BlockGen             *blockchain.BlockGenerator
+	CurrentMiningChain string
+	Blockchain         *blockchain.BlockChain
+	// BlockGen             *blockchain.BlockGenerator
 	userMiningPublicKeys map[string]string
 	chainCommitteeChange chan string
 	// MiningKeys         map[string]string
@@ -32,7 +33,6 @@ func New(node nodeInterface, blockchain *blockchain.BlockChain, blockgen *blockc
 	engine := Engine{
 		Node:       node,
 		Blockchain: blockchain,
-		BlockGen:   blockgen,
 	}
 	err := engine.LoadMiningKeys(node.GetMiningKeys())
 	if err != nil {
@@ -41,10 +41,27 @@ func New(node nodeInterface, blockchain *blockchain.BlockChain, blockgen *blockc
 	return &engine
 }
 
+func (engine *Engine) CommitteeChange(chainName string) {
+	engine.chainCommitteeChange <- chainName
+}
+
 //watchConsensusState will watch MiningKey Role as well as chain consensus type
 func (engine *Engine) watchConsensusCommittee() {
 	Logger.log.Info("start watching consensus committee...")
 	engine.chainCommitteeChange = make(chan string)
+	allcommittee := engine.Blockchain.Chains[common.BEACON_CHAINKEY].(BeaconInterface).GetAllCommittees()
+	for consensusType, publickey := range engine.userMiningPublicKeys {
+		if engine.CurrentMiningChain != "" {
+			break
+		}
+		if committees, ok := allcommittee[consensusType]; ok {
+			for chainName, committee := range committees {
+				if common.IndexOfStr(publickey, committee) != -1 {
+					engine.CurrentMiningChain = chainName
+				}
+			}
+		}
+	}
 
 	for {
 		select {
@@ -81,6 +98,7 @@ func (engine *Engine) Start() error {
 				return
 			default:
 				time.Sleep(time.Millisecond * 500)
+				fmt.Println("current mining chain", engine.CurrentMiningChain)
 				for chainName, consensus := range engine.ChainConsensusList {
 					if chainName == engine.CurrentMiningChain {
 						consensus.Start()

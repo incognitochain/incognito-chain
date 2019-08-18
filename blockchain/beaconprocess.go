@@ -628,9 +628,14 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		newShardCandidate = append(newShardCandidate, tempNewShardCandidate...)
 	}
 	beaconBestState.BeaconCommittee = make([]string, beaconBestState.MaxBeaconCommitteeSize)
-	copy(beaconBestState.BeaconCommittee, newBeaconCandidate[:beaconBestState.MaxBeaconCommitteeSize])
+	copy(beaconBestState.BeaconCommittee, newBeaconCandidate[:len(newBeaconCandidate)])
+
+	beaconBestState.ConsensusAlgorithm = common.BLS_CONSENSUS
+
+	beaconBestState.ShardConsensusAlgorithm = make(map[byte]string)
 	for shardID := 0; shardID < beaconBestState.ActiveShards; shardID++ {
 		beaconBestState.ShardCommittee[byte(shardID)] = append(beaconBestState.ShardCommittee[byte(shardID)], newShardCandidate[shardID*beaconBestState.MinShardCommitteeSize:(shardID+1)*beaconBestState.MinShardCommitteeSize]...)
+		beaconBestState.ShardConsensusAlgorithm[byte(shardID)] = common.BLS_CONSENSUS
 	}
 	beaconBestState.Epoch = 1
 	return nil

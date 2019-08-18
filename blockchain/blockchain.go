@@ -56,6 +56,7 @@ type Config struct {
 	RelayShards       []byte
 	NodeMode          string
 	ShardToBeaconPool ShardToBeaconPool
+	BlockGen          *BlockGenerator
 	CrossShardPool    map[byte]CrossShardPool
 	BeaconPool        BeaconPool
 	ShardPool         map[byte]ShardPool
@@ -228,7 +229,12 @@ func (blockchain *BlockChain) initChainState() error {
 			return err
 		}
 	}
-	var beaconChain BeaconChain
+	beaconChain := BeaconChain{
+		BestState:  GetBeaconBestState(),
+		BlockGen:   blockchain.config.BlockGen,
+		ChainName:  common.BEACON_CHAINKEY,
+		Blockchain: blockchain,
+	}
 	blockchain.Chains[common.BEACON_CHAINKEY] = &beaconChain
 
 	for shard := 1; shard <= blockchain.BestState.Beacon.ActiveShards; shard++ {
@@ -257,8 +263,14 @@ func (blockchain *BlockChain) initChainState() error {
 			if err != nil {
 				return err
 			}
-
 		}
+		shardChain := ShardChain{
+			BestState:  GetBestStateShard(shardID),
+			BlockGen:   blockchain.config.BlockGen,
+			ChainName:  common.GetShardChainKey(shardID),
+			Blockchain: blockchain,
+		}
+		blockchain.Chains[shardChain.ChainName] = &shardChain
 	}
 
 	return nil
@@ -270,9 +282,6 @@ func (blockchain *BlockChain) initChainState() error {
 // the genesis block, so it must only be called on an uninitialized database.
 */
 func (blockchain *BlockChain) initShardState(shardID byte) error {
-	log.Println(blockchain)
-	log.Println(blockchain.BestState)
-	log.Println(blockchain.BestState.Shard[0])
 	blockchain.BestState.Shard[shardID] = NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams)
 	// Create a new block from genesis block and set it as best block of chain
 	initBlock := ShardBlock{}
