@@ -15,6 +15,7 @@ type ValidationData struct {
 	ProducerSig    string
 	ValidatiorsIdx []int
 	AggSig         string
+	BridgeSig      []string
 }
 
 func DecodeValidationData(data string) (*ValidationData, error) {
