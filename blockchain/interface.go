@@ -126,7 +126,6 @@ type FeeEstimator interface {
 type ChainInterface interface {
 	GetChainName() string
 	GetConsensusType() string
-	// GetChainConsensus() ConsensusInterface
 	GetLastBlockTimeStamp() int64
 	GetMinBlkInterval() time.Duration
 	GetMaxBlkCreateTime() time.Duration
