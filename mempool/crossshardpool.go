@@ -3,6 +3,7 @@ package mempool
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 	"sync"
@@ -146,16 +147,16 @@ func (crossShardPool *CrossShardPool) updatePool() map[byte]uint64 {
 	3. Duplicate block in pending or valid
 	4. Signature
 */
-func (crossShardPool *CrossShardPool) AddCrossShardBlock(block *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
+func (crossShardPool *CrossShardPool) AddCrossShardBlock(crossShardBlock *blockchain.CrossShardBlock) (map[byte]uint64, byte, error) {
 	crossShardPool.mtx.Lock()
 	defer crossShardPool.mtx.Unlock()
 
-	shardID := block.Header.ShardID
-	blockHeight := block.Header.Height
+	shardID := crossShardBlock.Header.ShardID
+	blockHeight := crossShardBlock.Header.Height
 
 	Logger.log.Criticalf("Receiver Block %+v from shard %+v at Cross Shard Pool \n", blockHeight, shardID)
-	if block.ToShardID != crossShardPool.shardID {
-		return nil, crossShardPool.shardID, NewBlockPoolError(WrongShardIDError, errors.New("This crossShardPool cannot receive this cross shard block, this block for another shard "+strconv.Itoa(int(block.Header.Height))))
+	if crossShardBlock.ToShardID != crossShardPool.shardID {
+		return nil, crossShardPool.shardID, NewBlockPoolError(WrongShardIDError, errors.New("This crossShardPool cannot receive this cross shard block, this block for another shard "+strconv.Itoa(int(crossShardBlock.Header.Height))))
 	}
 
 	//If receive old block, it will ignore
@@ -175,27 +176,31 @@ func (crossShardPool *CrossShardPool) AddCrossShardBlock(block *blockchain.Cross
 			return nil, crossShardPool.shardID, NewBlockPoolError(DuplicateBlockError, errors.New("receive duplicate block"))
 		}
 	}
-	shardCommitteeByte, err := crossShardPool.db.FetchShardCommitteeByHeight(block.Header.BeaconHeight)
+	beaconHeight, err := crossShardPool.FindBeaconHeightForCrossShardBlock(crossShardBlock.Header.BeaconHeight, shardID, blockHeight)
 	if err != nil {
-		return nil, crossShardPool.shardID, NewBlockPoolError(DatabaseError, errors.New("No committee for this epoch"))
+		return nil, crossShardPool.shardID, NewBlockPoolError(FindBeaconHeightForCrossShardBlockError, fmt.Errorf("No Beacon Block For Cross Shard Block %+v from Shard %+v", blockHeight, shardID))
+	}
+	shardCommitteeByte, err := crossShardPool.db.FetchShardCommitteeByHeight(beaconHeight)
+	if err != nil {
+		return nil, crossShardPool.shardID, NewBlockPoolError(DatabaseError, fmt.Errorf("No Committee For Cross Shard Block %+v from ShardID %+v", blockHeight, shardID))
 	}
 	shardCommittee := make(map[byte][]string)
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
 		return nil, crossShardPool.shardID, NewBlockPoolError(UnmarshalError, errors.New("Fail to unmarshal shard committee"))
 	}
-	if err := blockchain.ValidateAggSignature(block.ValidatorsIndex, shardCommittee[shardID], block.AggregatedSig, block.R, block.Hash()); err != nil {
+	if err := blockchain.ValidateAggSignature(crossShardBlock.ValidatorsIndex, shardCommittee[shardID], crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
 		return nil, crossShardPool.shardID, err
 	}
 
 	if len(crossShardPool.pendingPool[shardID]) > maxPendingCrossShardInPool {
-		if crossShardPool.pendingPool[shardID][len(crossShardPool.pendingPool[shardID])-1].Header.Height > block.Header.Height {
+		if crossShardPool.pendingPool[shardID][len(crossShardPool.pendingPool[shardID])-1].Header.Height > crossShardBlock.Header.Height {
 			crossShardPool.pendingPool[shardID] = crossShardPool.pendingPool[shardID][:len(crossShardPool.pendingPool[shardID])-1]
 		} else {
 			return nil, crossShardPool.shardID, NewBlockPoolError(MaxPoolSizeError, errors.New("Reach max pending cross shard block"))
 		}
 	}
 
-	crossShardPool.pendingPool[shardID] = append(crossShardPool.pendingPool[shardID], block)
+	crossShardPool.pendingPool[shardID] = append(crossShardPool.pendingPool[shardID], crossShardBlock)
 	sort.Slice(crossShardPool.pendingPool[shardID], func(i, j int) bool {
 		return crossShardPool.pendingPool[shardID][i].Header.Height < crossShardPool.pendingPool[shardID][j].Header.Height
 	})
@@ -351,18 +356,20 @@ func (crossShardPool *CrossShardPool) GetBlockByHeight(_shardID byte, height uin
 	return nil
 }
 
-func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(startHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
+func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(beaconHeight uint64, fromShardID byte, crossShardBlockHeight uint64) (uint64, error) {
 	for {
-		hashBlock, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
+		beaconBlockHash, err := crossShardPool.db.GetBeaconBlockHashByIndex(beaconHeight)
 		if err != nil {
-			return nil, err
+			return 0, NewBlockPoolError(GetBeaconBlockHashFromDatabaseError, err)
 		}
-		block, _, err := blockchain.GetBeaconBlockByHash(hashBlock)
+		beaconBlockBytes, err := crossShardPool.db.FetchBeaconBlock(beaconBlockHash)
 		if err != nil {
-			return nil, err
+			return 0, NewBlockPoolError(FetchBeaconBlockFromDatabaseError, err)
 		}
+		beaconBlock := blockchain.NewBeaconBlock()
+		err = json.Unmarshal(beaconBlockBytes, beaconBlock)
 		if err != nil {
-			return 0, NewBlockChainError(FetchBeaconBlockError, err)
+			return 0, NewBlockPoolError(UnmarshalBeaconBlockError, err)
 		}
 		if shardStates, ok := beaconBlock.Body.ShardState[fromShardID]; ok {
 			for _, shardState := range shardStates {
@@ -371,6 +378,6 @@ func (crossShardPool *CrossShardPool) FindBeaconHeightForCrossShardBlock(startHe
 				}
 			}
 		}
-		startHeight += 1
+		beaconHeight += 1
 	}
 }
