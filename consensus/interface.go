@@ -41,26 +41,32 @@ type ConsensusInterface interface {
 }
 
 type ChainInterface interface {
-	GetConsensusEngine() ConsensusInterface
-	PushMessageToValidators(wire.Message) error
-	GetLastBlockTimeStamp() uint64
-	GetBlkMinTime() time.Duration
+	GetChainName() string
+	GetConsensusType() string
+	GetLastBlockTimeStamp() int64
+	GetMinBlkInterval() time.Duration
+	GetMaxBlkCreateTime() time.Duration
 	IsReady() bool
-	GetHeight() uint64
+	GetActiveShardNumber() int
+
+	GetPubkeyRole(pubkey string, round int) (string, byte)
+	CurrentHeight() uint64
 	GetCommitteeSize() int
 	GetCommittee() []string
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
-	// GetNodePubKey() string
+
 	CreateNewBlock(round int) common.BlockInterface
-	InsertBlk(interface{}, bool)
-	ValidateBlock(interface{}) error
-	ValidateBlockSanity(interface{}) error
-	ValidateBlockWithBlockChain(interface{}) error
-	GetActiveShardNumber() int
-	GetPubkeyRole(pubkey string, round int) (string, byte)
-	GetShardID() byte
-	GetConsensusType() string
+	InsertBlk(common.BlockInterface, bool)
+	ValidateBlock(common.BlockInterface) error
+	ValidateBlockSanity(common.BlockInterface) error
+	ValidateBlockWithBlockChain(common.BlockInterface) error
+	GetShardID() int
+}
+
+type BeaconInterface interface {
+	ChainInterface
+	GetAllCommittees() map[string]map[string][]string
 }
 
 // type MultisigSchemeInterface interface {
