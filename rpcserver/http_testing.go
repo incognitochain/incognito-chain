@@ -15,9 +15,11 @@ import (
 type txs struct {
 	Txs []string `json:"Txs"`
 }
+
 func (httpServer *HttpServer) handleTestHttpServer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	return nil, nil
 }
+
 /*
 For testing and benchmark only
 */
@@ -91,7 +93,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 		switch txType {
 		case "cstoken":
 			{
-				var tx transaction.TxCustomToken
+				var tx transaction.TxNormalToken
 				err = json.Unmarshal(rawTxBytes, &tx)
 				if err != nil {
 					fail++
@@ -266,7 +268,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 		switch txType {
 		case "cstoken":
 			{
-				var tx transaction.TxCustomToken
+				var tx transaction.TxNormalToken
 				err = json.Unmarshal(rawTxBytes, &tx)
 				if err != nil {
 					fail++

@@ -52,7 +52,7 @@ func GeneratePrivateKey(seed []byte) PrivateKey {
 // GeneratePublicKey computes a 33-byte public-key corresponding to a spending key
 func GeneratePublicKey(privateKey []byte) PublicKey {
 	var publicKey EllipticPoint
-	publicKey.X, publicKey.Y = Curve.ScalarBaseMult(privateKey)
+	publicKey.x, publicKey.y = Curve.ScalarBaseMult(privateKey)
 	return publicKey.Compress()
 }
 
@@ -70,7 +70,7 @@ func GenerateReceivingKey(privateKey []byte) ReceivingKey {
 // GenerateTransmissionKey computes a 33-byte transmission key corresponding to a receiving key
 func GenerateTransmissionKey(receivingKey []byte) TransmissionKey {
 	var transmissionKey EllipticPoint
-	transmissionKey.X, transmissionKey.Y = Curve.ScalarBaseMult(receivingKey)
+	transmissionKey.x, transmissionKey.y = Curve.ScalarBaseMult(receivingKey)
 	return transmissionKey.Compress()
 }
 

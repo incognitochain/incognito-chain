@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
@@ -267,10 +268,28 @@ func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, close
 func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	ethBlockHash := arrayParams[0].(string)
-	bc := httpServer.config.BlockChain
-	ethHeader, err := metadata.GetETHHeader(bc, rCommon.HexToHash(ethBlockHash))
+	//bc := httpServer.config.BlockChain
+	ethHeader, err := metadata.GetETHHeader(rCommon.HexToHash(ethBlockHash))
 	if err != nil {
 		return false, NewRPCError(ErrUnexpected, err)
 	}
 	return ethHeader, nil
+}
+
+func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	db := httpServer.config.BlockChain.GetDatabase()
+	arrayParams := common.InterfaceSlice(params)
+	data := arrayParams[0].(map[string]interface{})
+	txReqID, err := common.Hash{}.NewHashFromStr(data["TxReqID"].(string))
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+
+	fmt.Println("hahaha rpc txReqID: ", txReqID)
+
+	status, err := db.GetBridgeReqWithStatus(*txReqID)
+	if err != nil {
+		return false, NewRPCError(ErrUnexpected, err)
+	}
+	return status, nil
 }

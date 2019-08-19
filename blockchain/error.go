@@ -66,6 +66,7 @@ const (
 	InstructionMerkleRootError
 	FetchBeaconBlockHashError
 	FetchBeaconBlockError
+	FetchShardBlockError
 	BeaconBlockNotCompatibleError
 	SwapInstructionError
 	TransactionCreatedByMinerError
@@ -79,6 +80,10 @@ const (
 	VerifyCrossShardCustomTokenError
 	ShardCommitteeRootHashError
 	ShardPendingValidatorRootHashError
+	BeaconCommitteeAndPendingValidatorRootError
+	ShardCommitteeAndPendingValidatorRootError
+	ShardCandidateRootError
+	BeaconCandidateRootError
 	StoreShardBlockError
 	StoreBestStateError
 	FetchAndStoreTransactionError
@@ -88,6 +93,55 @@ const (
 	SwapValidatorError
 	CrossShardBitMapError
 	ShardCommitteeLengthAndCommitteeIndexError
+	UpdateBridgeIssuanceStatusError
+	BeaconCommitteeLengthAndCommitteeIndexError
+	BuildRewardInstructionError
+	GenerateBeaconCommitteeAndValidatorRootError
+	GenerateShardCommitteeAndValidatorRootError
+	GenerateBeaconCandidateRootError
+	GenerateShardCandidateRootError
+	GenerateShardStateError
+	GenerateShardCommitteeError
+	GenerateShardPendingValidatorError
+	ProduceSignatureError
+	BeaconBestStateBestBlockNotCompatibleError
+	BeaconBlockProducerError
+	BeaconBlockSignatureError
+	WrongEpochError
+	GenerateInstructionHashError
+	GetShardBlocksError
+	ShardStateHeightError
+	ShardStateCrossShardBitMapError
+	ShardBlockSignatureError
+	ShardBestStateBeaconHeightNotCompatibleError
+	BeaconBestStateBestShardHeightNotCompatibleError
+	ProcessRandomInstructionError
+	ProcessSwapInstructionError
+	AssignValidatorToShardError
+	ShuffleBeaconCandidateError
+	CleanBackUpError
+	BackUpBestStateError
+	StoreAcceptedShardToBeaconError
+	StoreCrossShardNextHeightError
+	StoreShardCommitteeByHeightError
+	StoreBeaconCommitteeByHeightError
+	StoreBeaconBestStateError
+	StoreBeaconBlockError
+	StoreBeaconBlockIndexError
+	StoreCommitteeFromShardBestStateError
+	GetStakingTransactionError
+	DecodeHashError
+	GetTransactionFromDatabaseError
+	ProcessBridgeInstructionError
+	UpdateDatabaseWithBlockRewardInfoError
+	CreateCrossShardBlockError
+	VerifyCrossShardBlockShardTxRootError
+	WalletKeySerializedError
+	InitSalaryTransactionError
+	RemoveOldDataAfterProcessingError
+	WrongMetadataTypeError
+	StakeInstructionError
+	StoreRewardReceiverByHeightError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -107,7 +161,7 @@ var ErrCodeMessage = map[int]struct {
 	CanNotCheckDoubleSpendError:                       {-1010, "CanNotCheckDoubleSpend Error"},
 	HashError:                                         {-1011, "Hash error"},
 	WrongVersionError:                                 {-1012, "Version error"},
-	WrongBlockHeightError:                             {-1013, "Block height error"},
+	WrongBlockHeightError:                             {-1013, "Wrong Block Height Error"},
 	DatabaseError:                                     {-1014, "Database Error"},
 	EpochError:                                        {-1015, "Epoch Error"},
 	WrongTimestampError:                               {-1016, "Timestamp Error"},
@@ -170,6 +224,50 @@ var ErrCodeMessage = map[int]struct {
 	SwapValidatorError:                                {-1073, "Swap Validator Error"},
 	CrossShardBitMapError:                             {-1074, "Cross Shard Bitmap Error"},
 	ShardCommitteeLengthAndCommitteeIndexError:        {-1075, "Shard Committee Length And Committee Index Error"},
+	BuildRewardInstructionError:                       {-1076, "Build Reward Transaction Error"},
+	GenerateBeaconCommitteeAndValidatorRootError:      {-1077, "Generate Beacon Committee And Validator Root Error"},
+	GenerateShardCommitteeAndValidatorRootError:       {-1078, "Generate Shard Committee And Validator Root Error"},
+	GenerateBeaconCandidateRootError:                  {-1079, "Generate Beacon Candidate Root Error"},
+	GenerateShardCandidateRootError:                   {-1080, "Generate Shard Candidate Root Error"},
+	GenerateShardStateError:                           {-1081, "Generate Shard State Error"},
+	GenerateShardCommitteeError:                       {-1082, "Generate Shard Committee Root Error"},
+	GenerateShardPendingValidatorError:                {-1083, "Generate Shard Pending Validator Root Error"},
+	ProduceSignatureError:                             {-1084, "Produce Signature Error"},
+	BeaconBestStateBestBlockNotCompatibleError:        {-1085, "New Beacon Block and Beacon Best State Is NOT Compatible"},
+	BeaconBlockProducerError:                          {-1086, "Beacon Block Producer Error"},
+	BeaconBlockSignatureError:                         {-1087, "Beacon Block Signature Error"},
+	WrongEpochError:                                   {-1088, "Wrong Epoch Error"},
+	GenerateInstructionHashError:                      {-1089, "Generate Instruction Hash Error"},
+	ShardStateHeightError:                             {-1090, "Generate Instruction Hash Error"},
+	ShardStateCrossShardBitMapError:                   {-1091, "Shard State Cross Shard BitMap Error"},
+	BeaconCommitteeLengthAndCommitteeIndexError:       {-1092, "Shard Committee Length And Committee Index Error"},
+	ShardBlockSignatureError:                          {-1093, "Shard Block Signature Error"},
+	ShardBestStateBeaconHeightNotCompatibleError:      {-1094, "Shard BestState Beacon Height Not Compatible Error"},
+	BeaconBestStateBestShardHeightNotCompatibleError:  {-1095, "Beacon BestState Best Shard Height Not Compatible Error"},
+	BeaconCommitteeAndPendingValidatorRootError:       {-1096, "Beacon Committee And Pending Validator Root Hash Error"},
+	ShardCommitteeAndPendingValidatorRootError:        {-1097, "Shard Committee And Pending Validator Root Hash Error"},
+	ShardCandidateRootError:                           {-1098, "Shard Candidate Root Hash Error"},
+	ProcessRandomInstructionError:                     {-1099, "Process Random Instruction Error"},
+	ProcessSwapInstructionError:                       {-1100, "Process Swap Instruction Error"},
+	AssignValidatorToShardError:                       {-1101, "Assign Validator To Shard Error"},
+	ShuffleBeaconCandidateError:                       {-1102, "Shuffle Beacon Candidate Error"},
+	CleanBackUpError:                                  {-1103, "Clean Back Up Error"},
+	BackUpBestStateError:                              {-1104, "Back Up Best State Error"},
+	ProcessBridgeInstructionError:                     {-1105, "Process Bridge Instruction Error"},
+	UpdateDatabaseWithBlockRewardInfoError:            {-1106, "Update Database With Block Reward Info Error"},
+	CreateCrossShardBlockError:                        {-1107, "Create Cross Shard Block Error"},
+	VerifyCrossShardBlockShardTxRootError:             {-1108, "Verify Cross Shard Block ShardTxRoot Error"},
+	StoreCommitteeFromShardBestStateError:             {-1109, "Store Committee From ShardBestState Error"},
+	GetStakingTransactionError:                        {-1110, "Get Staking Transaction Error"},
+	DecodeHashError:                                   {-1111, "Decode Hash Error"},
+	GetTransactionFromDatabaseError:                   {-1112, "Get Transaction From Database Error"},
+	FetchShardBlockError:                              {-1113, "Fetch Shard Block Error"},
+	WalletKeySerializedError:                          {-1114, "Wallet Key Serialized Error"},
+	InitSalaryTransactionError:                        {-1115, "Init Salary Transaction Error"},
+	RemoveOldDataAfterProcessingError:                 {-1116, "Remove Old Data After Processing Error"},
+	WrongMetadataTypeError:                            {-1117, "Wrong Metadata Type Error"},
+	StakeInstructionError:                             {-1118, "Stake Instruction Error"},
+	StoreRewardReceiverByHeightError:                  {-1119, "Store Reward Receiver By Height Error"},
 }
 
 type BlockChainError struct {

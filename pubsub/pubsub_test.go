@@ -8,7 +8,7 @@ import (
 
 func TestNewMessage(t *testing.T) {
 	msg := NewMessage(TestTopic, 1)
-	if msg.Topic != TestTopic {
+	if msg.topic != TestTopic {
 		t.Error("Wrong Topic")
 	}
 	value, ok := msg.Value.(int)
@@ -26,7 +26,7 @@ func TestRegisterNewSubcriber(t *testing.T) {
 	if err != nil {
 		t.Errorf("Counter error %+v \n", err)
 	}
-	subMap, ok := pubsubManager.SubscriberList[TestTopic]
+	subMap, ok := pubsubManager.subscriberList[TestTopic]
 	if !ok {
 		t.Error("Can not get subcribe map by topic")
 	}
@@ -56,7 +56,7 @@ func TestUnsubcribe(t *testing.T) {
 	var pubsubManager = NewPubSubManager()
 	id, _, _ := pubsubManager.RegisterNewSubscriber(TestTopic)
 	pubsubManager.Unsubscribe(TestTopic, id)
-	subMap, ok := pubsubManager.SubscriberList[TestTopic]
+	subMap, ok := pubsubManager.subscriberList[TestTopic]
 	if !ok {
 		t.Error("Can not get subcribe map by topic")
 	}
@@ -67,14 +67,14 @@ func TestUnsubcribe(t *testing.T) {
 func TestPublishMessage(t *testing.T) {
 	var pubsubManager = NewPubSubManager()
 	pubsubManager.PublishMessage(NewMessage(TestTopic, "abc"))
-	msgs, ok := pubsubManager.MessageBroker[TestTopic]
+	msgs, ok := pubsubManager.messageBroker[TestTopic]
 	if !ok {
 		t.Error("No Message found with this topic")
 	}
 	if len(msgs) != 1 {
-		t.Errorf("Should have only 1 message %+v \n", len(pubsubManager.MessageBroker[TestTopic]))
+		t.Errorf("Should have only 1 message %+v \n", len(pubsubManager.messageBroker[TestTopic]))
 	}
-	if msgs[0].Topic != TestTopic {
+	if msgs[0].topic != TestTopic {
 		t.Error("Wrong Topic")
 	}
 	valueInterface := msgs[0].Value
@@ -98,7 +98,7 @@ func TestMessageBroken(t *testing.T) {
 	go func(event chan *Message) {
 		defer wg.Done()
 		for msg := range event {
-			topic := msg.Topic
+			topic := msg.topic
 			if topic != TestTopic {
 				t.Error("Wrong subcription topic")
 			}
