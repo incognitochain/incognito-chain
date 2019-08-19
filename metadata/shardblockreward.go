@@ -52,7 +52,7 @@ func BuildInstForShardReward(reward map[common.Hash]uint64, epoch uint64, shardI
 	returnedInst := []string{
 		strconv.Itoa(ShardBlockRewardRequestMeta),
 		strconv.Itoa(int(shardID)),
-		"shardRewardInst",
+		"shardRewardInst", //TODO: change to constant
 		string(contentStr),
 	}
 	resIns = append(resIns, returnedInst)

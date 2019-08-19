@@ -1,6 +1,7 @@
 package aggregaterange
 
 import (
+	"github.com/pkg/errors"
 	"math/big"
 	"sync"
 
@@ -27,7 +28,7 @@ type AggregatedRangeProof struct {
 	innerProductProof *InnerProductProof
 }
 
-func (proof *AggregatedRangeProof) ValidateSanity() bool {
+func (proof AggregatedRangeProof) ValidateSanity() bool {
 	for i := 0; i < len(proof.cmsValue); i++ {
 		if !proof.cmsValue[i].IsSafe() {
 			return false
@@ -59,10 +60,14 @@ func (proof *AggregatedRangeProof) ValidateSanity() bool {
 }
 
 func (proof *AggregatedRangeProof) Init() {
-	proof.a = new(privacy.EllipticPoint).Zero()
-	proof.s = new(privacy.EllipticPoint).Zero()
-	proof.t1 = new(privacy.EllipticPoint).Zero()
-	proof.t2 = new(privacy.EllipticPoint).Zero()
+	proof.a = new(privacy.EllipticPoint)
+	proof.a.Zero()
+	proof.s = new(privacy.EllipticPoint)
+	proof.s.Zero()
+	proof.t1 = new(privacy.EllipticPoint)
+	proof.t1.Zero()
+	proof.t2 = new(privacy.EllipticPoint)
+	proof.t2.Zero()
 	proof.tauX = new(big.Int)
 	proof.tHat = new(big.Int)
 	proof.mu = new(big.Int)
@@ -111,9 +116,9 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	res = append(res, proof.t1.Compress()...)
 	res = append(res, proof.t2.Compress()...)
 
-	res = append(res, privacy.AddPaddingBigInt(proof.tauX, common.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.tHat, common.BigIntSize)...)
-	res = append(res, privacy.AddPaddingBigInt(proof.mu, common.BigIntSize)...)
+	res = append(res, common.AddPaddingBigInt(proof.tauX, common.BigIntSize)...)
+	res = append(res, common.AddPaddingBigInt(proof.tHat, common.BigIntSize)...)
+	res = append(res, common.AddPaddingBigInt(proof.mu, common.BigIntSize)...)
 	res = append(res, proof.innerProductProof.Bytes()...)
 
 	//privacy.Logger.Log.Debugf("BYTES ------------ %v\n", res)
@@ -218,7 +223,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 
 	proof.cmsValue = make([]*privacy.EllipticPoint, numValue)
 	for i := 0; i < numValue; i++ {
-		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.VALUE)
+		proof.cmsValue[i] = privacy.PedCom.CommitAtIndex(values[i], rands[i], privacy.PedersenValueIndex)
 	}
 
 	n := maxExp
@@ -249,7 +254,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	A = A.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(alpha))
+	A = A.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(alpha))
 	proof.a = A
 
 	// Random blinding vectors sL, sR
@@ -268,7 +273,7 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	if err != nil {
 		return nil, err
 	}
-	S = S.Add(privacy.PedCom.G[privacy.RAND].ScalarMult(rho))
+	S = S.Add(privacy.PedCom.G[privacy.PedersenRandomnessIndex].ScalarMult(rho))
 	proof.s = S
 
 	// challenge y, z
@@ -369,8 +374,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	tau1 := privacy.RandScalar()
 	tau2 := privacy.RandScalar()
 
-	proof.t1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.VALUE)
-	proof.t2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.VALUE)
+	proof.t1 = privacy.PedCom.CommitAtIndex(t1, tau1, privacy.PedersenValueIndex)
+	proof.t2 = privacy.PedCom.CommitAtIndex(t2, tau2, privacy.PedersenValueIndex)
 
 	// challenge x = hash(G || H || A || S || T1 || T2)
 	x := generateChallengeForAggRange(AggParam, [][]byte{proof.a.Compress(), proof.s.Compress(), proof.t1.Compress(), proof.t2.Compress()})
@@ -451,14 +456,16 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	return proof, nil
 }
 
-func (proof AggregatedRangeProof) Verify() bool {
+func (proof AggregatedRangeProof) Verify() (bool, error) {
 	numValue := len(proof.cmsValue)
 	numValuePad := pad(numValue)
 
 	tmpcmsValue := proof.cmsValue
 
 	for i := numValue; i < numValuePad; i++ {
-		tmpcmsValue = append(tmpcmsValue, new(privacy.EllipticPoint).Zero())
+		zero := new(privacy.EllipticPoint)
+		zero.Zero()
+		tmpcmsValue = append(tmpcmsValue, zero)
 	}
 
 	AggParam := newBulletproofParams(numValuePad)
@@ -501,7 +508,7 @@ func (proof AggregatedRangeProof) Verify() bool {
 	// innerProduct1 = <1^(n*m), y^(n*m)>
 	innerProduct1, err := innerProduct(oneVector, yVector)
 	if err != nil {
-		return false
+		return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
 	}
 
 	deltaYZ.Mul(deltaYZ, innerProduct1)
@@ -509,7 +516,7 @@ func (proof AggregatedRangeProof) Verify() bool {
 	// innerProduct2 = <1^n, 2^n>
 	innerProduct2, err := innerProduct(oneVectorN, twoVectorN)
 	if err != nil {
-		return false
+		return false, privacy.NewPrivacyErr(privacy.CalInnerProductErr, err)
 	}
 
 	sum := big.NewInt(0)
@@ -524,14 +531,14 @@ func (proof AggregatedRangeProof) Verify() bool {
 	deltaYZ.Sub(deltaYZ, sum)
 	deltaYZ.Mod(deltaYZ, privacy.Curve.Params().N)
 
-	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.VALUE)
+	left1 := privacy.PedCom.CommitAtIndex(proof.tHat, proof.tauX, privacy.PedersenValueIndex)
 
 	var temp1, temp2, temp3 *privacy.EllipticPoint
 
 	wg.Add(3)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-		temp1 = privacy.PedCom.G[privacy.VALUE].ScalarMult(deltaYZ)
+		temp1 = privacy.PedCom.G[privacy.PedersenValueIndex].ScalarMult(deltaYZ)
 	}(&wg)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
@@ -550,11 +557,15 @@ func (proof AggregatedRangeProof) Verify() bool {
 	}
 
 	if !left1.IsEqual(right1) {
-		//privacy.Logger.Log.Error("Statement 1 failed:")
-		//privacy.Logger.Log.Error("Left 1: %v\n", left1)
-		//privacy.Logger.Log.Error("Right 1: %v\n", right1)
-		return false
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
+		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
-	return proof.innerProductProof.Verify(AggParam)
+	innerProductArgValid := proof.innerProductProof.Verify(AggParam)
+	if !innerProductArgValid {
+		privacy.Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
+		return false, errors.New("verify aggregated range proof statement 2 failed")
+	}
+
+	return true, nil
 }

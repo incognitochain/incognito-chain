@@ -24,7 +24,7 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	db := *httpServer.config.Database
 
 	// Get block height from txID
-	height, err := db.GetBurningConfirm(txID[:])
+	height, err := db.GetBurningConfirm(*txID)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, fmt.Errorf("proof of tx not found"))
 	}
@@ -36,7 +36,7 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBurnProofOnBridge(txID, bridgeBlock, bc, db)
+	bridgeInstProof, err := getBurnProofOnBridge(txID, bridgeBlock, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -58,7 +58,6 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 func getBurnProofOnBridge(
 	txID *common.Hash,
 	bridgeBlock *blockchain.ShardBlock,
-	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
@@ -116,11 +115,11 @@ func findBeaconBlockWithBurnInst(beaconBlocks []*blockchain.BeaconBlock, inst []
 func findBurnConfirmInst(insts [][]string, txID *common.Hash) ([]string, int) {
 	instType := strconv.Itoa(metadata.BurningConfirmMeta)
 	for i, inst := range insts {
-		if inst[0] != instType {
+		if inst[0] != instType || len(inst) < 5 {
 			continue
 		}
 
-		h, err := common.Hash{}.NewHashFromStr(inst[len(inst)-2])
+		h, err := common.Hash{}.NewHashFromStr(inst[5])
 		if err != nil {
 			continue
 		}
