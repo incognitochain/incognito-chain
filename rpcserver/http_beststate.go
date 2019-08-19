@@ -47,8 +47,7 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 	if !ok || result == nil {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard given by ID not existed"))
 	}
-	valueResult := *result
-	valueResult.BestBlock = nil
+	valueResult := jsonresult.NewGetShardBestState(result)
 	Logger.log.Debugf("handleGetShardBestState result: %+v", result)
 	return valueResult, nil
 }
@@ -80,13 +79,8 @@ func (httpServer *HttpServer) handleGetCommitteeList(params interface{}, closeCh
 	shardCommittee := httpServer.config.BlockChain.BestState.Beacon.GetShardCommittee()
 	shardPendingValidator := httpServer.config.BlockChain.BestState.Beacon.GetShardPendingValidator()
 	epoch := httpServer.config.BlockChain.BestState.Beacon.Epoch
-	result := jsonresult.CommitteeListsResult{
-		Epoch:                  epoch,
-		BeaconCommittee:        beaconCommittee,
-		BeaconPendingValidator: beaconPendingValidator,
-		ShardCommittee:         shardCommittee,
-		ShardPendingValidator:  shardPendingValidator,
-	}
+
+	result := jsonresult.NewCommitteeListsResult(epoch, shardCommittee, shardPendingValidator, beaconCommittee, beaconPendingValidator)
 	Logger.log.Debugf("handleGetCommitteeList result: %+v", result)
 	return result, nil
 }
