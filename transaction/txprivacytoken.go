@@ -408,13 +408,15 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 // ValidateSanityData - validate sanity data of PRV and pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
 	// validate sanity data for PRV
-	result, err := txCustomTokenPrivacy.Tx.validateNormalTxSanityData()
+	//result, err := txCustomTokenPrivacy.Tx.validateNormalTxSanityData()
+	result, err := txCustomTokenPrivacy.Tx.ValidateSanityData(bcr)
 	if err != nil {
 		return result, NewTransactionErr(InvalidSanityDataPRVError, err)
 	}
 	// validate sanity for pToken
 
-	result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.validateNormalTxSanityData()
+	//result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.validateNormalTxSanityData()
+	result, err = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateSanityData(bcr)
 	if err != nil {
 		return result, NewTransactionErr(InvalidSanityDataPrivacyTokenError, err)
 	}
