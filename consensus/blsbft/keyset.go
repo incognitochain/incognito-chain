@@ -18,7 +18,7 @@ func (keyset *blsKeySet) GetPrivateKeyBase58() string {
 	return base58.Base58Check{}.Encode(keyset.PrivateKey, common.ZeroByte)
 }
 
-func (keyset *blsKeySet) SignData(data []byte) (string, error) {
+func (keyset *blsKeySet) SignData(data *common.Hash) (string, error) {
 	return "", nil
 }
 func (keyset *blsKeySet) validateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error {

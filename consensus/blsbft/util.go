@@ -12,15 +12,15 @@ func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
 
 func (e *BLSBFT) waitForNextRound() {
 	timeSinceLastBlk := e.getTimeSinceLastBlock()
-	if timeSinceLastBlk > e.Chain.GetBlkMinTime() {
+	if timeSinceLastBlk > e.Chain.GetMinBlkInterval() {
 		return
 	}
 	//TODO: chunk time sleep into small time chunk -> if change view during sleep => break it
-	time.Sleep(e.Chain.GetBlkMinTime() - timeSinceLastBlk)
+	time.Sleep(e.Chain.GetMinBlkInterval() - timeSinceLastBlk)
 }
 
 func (e *BLSBFT) setState(state string) {
-	e.State = state
+	e.RoundData.State = state
 }
 
 func (e *BLSBFT) getCurrentRound() int {
@@ -28,10 +28,10 @@ func (e *BLSBFT) getCurrentRound() int {
 }
 
 func (e *BLSBFT) isInTimeFrame() bool {
-	if e.Chain.GetHeight()+1 != e.NextHeight {
+	if e.Chain.CurrentHeight()+1 != e.RoundData.NextHeight {
 		return false
 	}
-	if e.getTimeSinceLastBlock() > TIMEOUT && e.getCurrentRound() != e.Round {
+	if e.getTimeSinceLastBlock() > TIMEOUT && e.getCurrentRound() != e.RoundData.Round {
 		return false
 	}
 	return true
@@ -42,7 +42,7 @@ func (e *BLSBFT) getMajorityVote(votes map[string]SigStatus) int {
 	approve := 0
 	reject := 0
 	for k, v := range votes {
-		if !v.Verified && bls.ValidateSingleSig(e.Block.Hash(), v.SigContent, k) != nil {
+		if !v.Verified && bls.ValidateSingleSig(e.RoundData.Block.Hash(), v.SigContent, k) != nil {
 			delete(votes, k)
 			continue
 		}
@@ -63,14 +63,11 @@ func (e *BLSBFT) getMajorityVote(votes map[string]SigStatus) int {
 	return 0
 }
 
-func (e *BLSBFT) validateAndSendVote() {
-	// if e.Chain.ValidateBlock(e.Block) == nil {
-	// 	msg, _ := MakeBFTPrepareMsg(true, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
-	// 	go e.Chain.PushMessageToValidator(msg)
-	// } else {
-	// 	msg, _ := MakeBFTPrepareMsg(false, e.ChainKey, e.Block.Hash().String(), fmt.Sprint(e.NextHeight, "_", e.Round), e.UserKeySet)
-	// 	go e.Chain.PushMessageToValidator(msg)
-	// }
+func (e *BLSBFT) sendVote() {
+	sig, _ := e.UserKeySet.SignData(e.RoundData.Block.Hash())
+	MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, sig, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+	// go e.Node.PushMessageToChain(msg)
+	e.RoundData.NotYetSendVote = false
 }
 
 // func (e *BLSBFT) getTimeout() time.Duration {

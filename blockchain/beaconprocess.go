@@ -108,8 +108,15 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	// }
 	Logger.log.Infof("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
+
+	oldCommittee := append([]string{}, blockchain.BestState.Beacon.BeaconCommittee...)
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime); err != nil {
 		return err
+	}
+	newCommittee := append([]string{}, blockchain.BestState.Beacon.BeaconCommittee...)
+	isChanged := common.CompareStringArray(oldCommittee, newCommittee)
+	if isChanged {
+		go blockchain.config.ConsensusEngine.CommitteeChange(common.BEACON_CHAINKEY)
 	}
 	if !isValidated {
 		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
