@@ -344,34 +344,34 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 	if blockchain.IsTest {
 		return &BeaconBlock{}, nil
 	}
-	hashBlock, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
+	beaconBlockHash, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
 	if err != nil {
 		return nil, err
 	}
-	block, _, err := blockchain.GetBeaconBlockByHash(hashBlock)
+	beaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconBlockHash)
 	if err != nil {
 		return nil, err
 	}
-	return block, nil
+	return beaconBlock, nil
 }
 
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetBeaconBlockByHash(hash common.Hash) (*BeaconBlock, uint64, error) {
+func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) (*BeaconBlock, uint64, error) {
 	if blockchain.IsTest {
 		return &BeaconBlock{}, 2, nil
 	}
-	blockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(hash)
+	beaconBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(beaconBlockHash)
 	if err != nil {
 		return nil, 0, err
 	}
-	block := BeaconBlock{}
-	err = json.Unmarshal(blockBytes, &block)
+	beaconBlock := NewBeaconBlock()
+	err = json.Unmarshal(beaconBlockBytes, beaconBlock)
 	if err != nil {
 		return nil, 0, err
 	}
-	return &block, uint64(len(blockBytes)), nil
+	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 
 /*
