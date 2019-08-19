@@ -42,53 +42,53 @@ type ProofDetail struct {
 
 func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 	proofDetail.InputCoins = make([]*CoinDetail, 0)
-	for _, input := range proof.InputCoins {
+	for _, input := range proof.GetInputCoins() {
 		in := CoinDetail{
 			CoinDetails: Coin{},
 		}
 		if input.CoinDetails != nil {
-			in.CoinDetails.Value = input.CoinDetails.Value
-			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.Info, 0x0)
-			if input.CoinDetails.CoinCommitment != nil {
-				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.CoinCommitment.Compress(), 0x0)
+			in.CoinDetails.Value = input.CoinDetails.GetValue()
+			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.GetInfo(), 0x0)
+			if input.CoinDetails.GetCoinCommitment() != nil {
+				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.GetCoinCommitment().Compress(), 0x0)
 			}
-			if input.CoinDetails.Randomness != nil {
-				in.CoinDetails.Randomness = *input.CoinDetails.Randomness
+			if input.CoinDetails.GetRandomness() != nil {
+				in.CoinDetails.Randomness = *input.CoinDetails.GetRandomness()
 			}
-			if input.CoinDetails.SNDerivator != nil {
-				in.CoinDetails.SNDerivator = *input.CoinDetails.SNDerivator
+			if input.CoinDetails.GetSNDerivator() != nil {
+				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivator()
 			}
-			if input.CoinDetails.SerialNumber != nil {
-				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.SerialNumber.Compress(), 0x0)
+			if input.CoinDetails.GetSerialNumber() != nil {
+				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.GetSerialNumber().Compress(), 0x0)
 			}
-			if input.CoinDetails.PublicKey != nil {
-				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.PublicKey.Compress(), 0x0)
+			if input.CoinDetails.GetPublicKey() != nil {
+				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.GetPublicKey().Compress(), 0x0)
 			}
 		}
 		proofDetail.InputCoins = append(proofDetail.InputCoins, &in)
 	}
 
-	for _, output := range proof.OutputCoins {
+	for _, output := range proof.GetOutputCoins() {
 		out := CoinDetail{
 			CoinDetails: Coin{},
 		}
 		if output.CoinDetails != nil {
-			out.CoinDetails.Value = output.CoinDetails.Value
-			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.Info, 0x0)
-			if output.CoinDetails.CoinCommitment != nil {
-				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.CoinCommitment.Compress(), 0x0)
+			out.CoinDetails.Value = output.CoinDetails.GetValue()
+			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.GetInfo(), 0x0)
+			if output.CoinDetails.GetCoinCommitment() != nil {
+				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.GetCoinCommitment().Compress(), 0x0)
 			}
-			if output.CoinDetails.Randomness != nil {
-				out.CoinDetails.Randomness = *output.CoinDetails.Randomness
+			if output.CoinDetails.GetRandomness() != nil {
+				out.CoinDetails.Randomness = *output.CoinDetails.GetRandomness()
 			}
-			if output.CoinDetails.SNDerivator != nil {
-				out.CoinDetails.SNDerivator = *output.CoinDetails.SNDerivator
+			if output.CoinDetails.GetSNDerivator() != nil {
+				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivator()
 			}
-			if output.CoinDetails.SerialNumber != nil {
-				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.SerialNumber.Compress(), 0x0)
+			if output.CoinDetails.GetSerialNumber() != nil {
+				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.GetSerialNumber().Compress(), 0x0)
 			}
-			if output.CoinDetails.PublicKey != nil {
-				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.PublicKey.Compress(), 0x0)
+			if output.CoinDetails.GetPublicKey() != nil {
+				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.GetPublicKey().Compress(), 0x0)
 			}
 			if output.CoinDetailsEncrypted != nil {
 				out.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), 0x0)

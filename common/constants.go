@@ -16,6 +16,7 @@ const (
 	HashSize          = 32 // bytes
 	MaxHashStringSize = HashSize * 2
 	Base58_Version    = 0
+	CheckForce        = true
 )
 
 // size data for incognito key and signature
@@ -31,6 +32,7 @@ const (
 	SigPubKeySize    = 33
 	SigNoPrivacySize = 64
 	SigPrivacySize   = 96
+	IncPubKeyB58Size = 51
 )
 
 // for exit code
@@ -57,7 +59,6 @@ var (
 
 // for mining consensus
 const (
-	MaxTxsInBlock        = 1000
 	MinBeaconBlkInterval = 10 * time.Second //second
 	MinShardBlkInterval  = 10 * time.Second //second => process block in
 	MinShardBlkCreation  = 4 * time.Second  //second => process block in
@@ -82,9 +83,7 @@ const (
 
 // CONSENSUS
 const (
-	EPOCH       = 50
-	RANDOM_TIME = 25
-	OFFSET      = 1
+	OFFSET = 1
 
 	NODEMODE_RELAY  = "relay"
 	NODEMODE_SHARD  = "shard"
@@ -104,22 +103,17 @@ const (
 
 // Ethereum Decentralized bridge
 const (
-	ABIJSON = `[{"name": "Deposit", "inputs": [{"type": "address", "name": "_token", "indexed": false}, {"type": "string", "name": "_incognito_address", "indexed": false}, {"type": "uint256", "name": "_amount", "indexed": false, "unit": "wei"}], "anonymous": false, "type": "event"}, {"name": "Withdraw", "inputs": [{"type": "address", "name": "_token", "indexed": false}, {"type": "address", "name": "_to", "indexed": false}, {"type": "uint256", "name": "_amount", "indexed": false, "unit": "wei"}], "anonymous": false, "type": "event"}, {"name": "NotifyString", "inputs": [{"type": "string", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyBytes32", "inputs": [{"type": "bytes32", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyBool", "inputs": [{"type": "bool", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyUint256", "inputs": [{"type": "uint256", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyAddress", "inputs": [{"type": "address", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"outputs": [], "inputs": [{"type": "address", "name": "incognitoProxyAddress"}], "constant": false, "payable": false, "type": "constructor"}, {"name": "deposit", "outputs": [], "inputs": [{"type": "string", "name": "incognito_address"}], "constant": false, "payable": true, "type": "function", "gas": 25690}, {"name": "depositERC20", "outputs": [], "inputs": [{"type": "address", "name": "token"}, {"type": "uint256", "name": "amount"}, {"type": "string", "name": "incognito_address"}], "constant": false, "payable": false, "type": "function", "gas": 27797}, {"name": "parseBurnInst", "outputs": [{"type": "uint256", "name": "out"}, {"type": "address", "name": "out"}, {"type": "address", "name": "out"}, {"type": "uint256", "name": "out"}], "inputs": [{"type": "bytes", "name": "inst"}], "constant": true, "payable": false, "type": "function", "gas": 2681}, {"name": "withdraw", "outputs": [], "inputs": [{"type": "bytes", "name": "inst"}, {"type": "uint256", "name": "beaconHeight"}, {"type": "bytes32[8]", "name": "beaconInstPath"}, {"type": "bool[8]", "name": "beaconInstPathIsLeft"}, {"type": "int128", "name": "beaconInstPathLen"}, {"type": "bytes32", "name": "beaconInstRoot"}, {"type": "bytes32", "name": "beaconBlkData"}, {"type": "bytes32", "name": "beaconBlkHash"}, {"type": "uint256", "name": "beaconSignerSig"}, {"type": "int128", "name": "beaconNumR"}, {"type": "uint256[8]", "name": "beaconXs"}, {"type": "uint256[8]", "name": "beaconYs"}, {"type": "int128[8]", "name": "beaconRIdxs"}, {"type": "int128", "name": "beaconNumSig"}, {"type": "uint256[8]", "name": "beaconSigIdxs"}, {"type": "uint256", "name": "beaconRx"}, {"type": "uint256", "name": "beaconRy"}, {"type": "bytes", "name": "beaconR"}, {"type": "uint256", "name": "bridgeHeight"}, {"type": "bytes32[8]", "name": "bridgeInstPath"}, {"type": "bool[8]", "name": "bridgeInstPathIsLeft"}, {"type": "int128", "name": "bridgeInstPathLen"}, {"type": "bytes32", "name": "bridgeInstRoot"}, {"type": "bytes32", "name": "bridgeBlkData"}, {"type": "bytes32", "name": "bridgeBlkHash"}, {"type": "uint256", "name": "bridgeSignerSig"}, {"type": "int128", "name": "bridgeNumR"}, {"type": "uint256[8]", "name": "bridgeXs"}, {"type": "uint256[8]", "name": "bridgeYs"}, {"type": "int128[8]", "name": "bridgeRIdxs"}, {"type": "int128", "name": "bridgeNumSig"}, {"type": "uint256[8]", "name": "bridgeSigIdxs"}, {"type": "uint256", "name": "bridgeRx"}, {"type": "uint256", "name": "bridgeRy"}, {"type": "bytes", "name": "bridgeR"}], "constant": false, "payable": false, "type": "function", "gas": 100530}, {"name": "withdrawed", "outputs": [{"type": "bool", "name": "out"}], "inputs": [{"type": "bytes32", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 736}, {"name": "incognito", "outputs": [{"type": "address", "unit": "Incognito_proxy", "name": "out"}], "inputs": [], "constant": true, "payable": false, "type": "function", "gas": 633}]`
-
-	BRIDGE_SHARD_ID = 1
-
-	ETH_ADDR_STR          = "0x0000000000000000000000000000000000000000"
-	ETH_CONTRACT_ADDR_STR = "0xCd5fD8129c04437D85E5c1913878fb22b9E3E8f7"
-
-	ETHERERUM_LIGHT_NODE_PROTOCOL = "http"
-	ETHERERUM_LIGHT_NODE_PORT     = "8545"
+	ABIJSON               = `[{"name": "Deposit", "inputs": [{"type": "address", "name": "_token", "indexed": false}, {"type": "string", "name": "_incognito_address", "indexed": false}, {"type": "uint256", "name": "_amount", "indexed": false, "unit": "wei"}], "anonymous": false, "type": "event"}, {"name": "Withdraw", "inputs": [{"type": "address", "name": "_token", "indexed": false}, {"type": "address", "name": "_to", "indexed": false}, {"type": "uint256", "name": "_amount", "indexed": false, "unit": "wei"}], "anonymous": false, "type": "event"}, {"name": "NotifyString", "inputs": [{"type": "string", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyBytes32", "inputs": [{"type": "bytes32", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyBool", "inputs": [{"type": "bool", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyUint256", "inputs": [{"type": "uint256", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"name": "NotifyAddress", "inputs": [{"type": "address", "name": "content", "indexed": false}], "anonymous": false, "type": "event"}, {"outputs": [], "inputs": [{"type": "address", "name": "incognitoProxyAddress"}], "constant": false, "payable": false, "type": "constructor"}, {"name": "deposit", "outputs": [], "inputs": [{"type": "string", "name": "incognito_address"}], "constant": false, "payable": true, "type": "function", "gas": 25690}, {"name": "depositERC20", "outputs": [], "inputs": [{"type": "address", "name": "token"}, {"type": "uint256", "name": "amount"}, {"type": "string", "name": "incognito_address"}], "constant": false, "payable": false, "type": "function", "gas": 27797}, {"name": "parseBurnInst", "outputs": [{"type": "uint256", "name": "out"}, {"type": "address", "name": "out"}, {"type": "address", "name": "out"}, {"type": "uint256", "name": "out"}], "inputs": [{"type": "bytes", "name": "inst"}], "constant": true, "payable": false, "type": "function", "gas": 2681}, {"name": "withdraw", "outputs": [], "inputs": [{"type": "bytes", "name": "inst"}, {"type": "uint256", "name": "beaconHeight"}, {"type": "bytes32[8]", "name": "beaconInstPath"}, {"type": "bool[8]", "name": "beaconInstPathIsLeft"}, {"type": "int128", "name": "beaconInstPathLen"}, {"type": "bytes32", "name": "beaconInstRoot"}, {"type": "bytes32", "name": "beaconBlkData"}, {"type": "bytes32", "name": "beaconBlkHash"}, {"type": "uint256", "name": "beaconSignerSig"}, {"type": "int128", "name": "beaconNumR"}, {"type": "uint256[8]", "name": "beaconXs"}, {"type": "uint256[8]", "name": "beaconYs"}, {"type": "int128[8]", "name": "beaconRIdxs"}, {"type": "int128", "name": "beaconNumSig"}, {"type": "uint256[8]", "name": "beaconSigIdxs"}, {"type": "uint256", "name": "beaconRx"}, {"type": "uint256", "name": "beaconRy"}, {"type": "bytes", "name": "beaconR"}, {"type": "uint256", "name": "bridgeHeight"}, {"type": "bytes32[8]", "name": "bridgeInstPath"}, {"type": "bool[8]", "name": "bridgeInstPathIsLeft"}, {"type": "int128", "name": "bridgeInstPathLen"}, {"type": "bytes32", "name": "bridgeInstRoot"}, {"type": "bytes32", "name": "bridgeBlkData"}, {"type": "bytes32", "name": "bridgeBlkHash"}, {"type": "uint256", "name": "bridgeSignerSig"}, {"type": "int128", "name": "bridgeNumR"}, {"type": "uint256[8]", "name": "bridgeXs"}, {"type": "uint256[8]", "name": "bridgeYs"}, {"type": "int128[8]", "name": "bridgeRIdxs"}, {"type": "int128", "name": "bridgeNumSig"}, {"type": "uint256[8]", "name": "bridgeSigIdxs"}, {"type": "uint256", "name": "bridgeRx"}, {"type": "uint256", "name": "bridgeRy"}, {"type": "bytes", "name": "bridgeR"}], "constant": false, "payable": false, "type": "function", "gas": 100530}, {"name": "withdrawed", "outputs": [{"type": "bool", "name": "out"}], "inputs": [{"type": "bytes32", "name": "arg0"}], "constant": true, "payable": false, "type": "function", "gas": 736}, {"name": "incognito", "outputs": [{"type": "address", "unit": "Incognito_proxy", "name": "out"}], "inputs": [], "constant": true, "payable": false, "type": "function", "gas": 633}]`
+	BridgeShardID         = 1
+	EthAddrStr            = "0x0000000000000000000000000000000000000000"
+	EthContractAddressStr = "0xe97f7d3f866cb8200941082c887c7ae5eeab1f58"
 )
 
-var (
-	// if the blockchain is running in Docker container
-	// then using GETH_NAME env's value (aka geth container name)
-	// otherwise using localhost
-	ETHERERUM_LIGHT_NODE_HOST = GetENV("GETH_NAME", "127.0.0.1")
+const (
+	BridgeRequestNotFoundStatus   = 0
+	BridgeRequestProcessingStatus = 1
+	BridgeRequestAcceptedStatus   = 2
+	BridgeRequestRejectedStatus   = 3
 )
 
 const (

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/pkg/errors"
 )
 
 type IssuingETHResponse struct {
@@ -42,26 +42,26 @@ func NewIssuingETHResponse(
 	}
 }
 
-func (iRes *IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
+func (iRes IssuingETHResponse) CheckTransactionFee(tr Transaction, minFee uint64) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes *IssuingETHResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (iRes IssuingETHResponse) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (iRes *IssuingETHResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (iRes IssuingETHResponse) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (iRes *IssuingETHResponse) ValidateMetadataByItself() bool {
+func (iRes IssuingETHResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return true
 }
 
-func (iRes *IssuingETHResponse) Hash() *common.Hash {
+func (iRes IssuingETHResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
 	record += string(iRes.UniqETHTx)
 	record += string(iRes.ExternalTokenID)
@@ -76,7 +76,7 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -99,13 +99,13 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			fmt.Println("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 		var issuingETHAcceptedInst IssuingETHAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 		if err != nil {
-			fmt.Println("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
 			continue
 		}
 
@@ -119,7 +119,7 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		addressStr := issuingETHAcceptedInst.ReceiverAddrStr
 		key, err := wallet.Base58CheckDeserialize(addressStr)
 		if err != nil {
-			fmt.Println("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
 		_, pk, paidAmount, assetID := tx.GetTransferData()
@@ -132,7 +132,7 @@ func (iRes *IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, errors.Errorf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String())
+		return false, errors.New(fmt.Sprintf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil

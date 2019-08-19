@@ -64,10 +64,10 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
 							proccessedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin, &keyWallet.KeySet, senderShardID, &common.PRVCoinID)
 							if value, ok := m[senderShardID]; ok {
-								value += proccessedOutputCoin.CoinDetails.Value
+								value += proccessedOutputCoin.CoinDetails.GetValue()
 								m[senderShardID] = value
 							} else {
-								m[senderShardID] = proccessedOutputCoin.CoinDetails.Value
+								m[senderShardID] = proccessedOutputCoin.CoinDetails.GetValue()
 							}
 						}
 					}
@@ -137,7 +137,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 				m := make(map[common.Hash]uint64)
 				for _, tx := range shardBlock.Body.Transactions {
 					if tx.GetType() == common.TxCustomTokenType {
-						txCustomToken, ok := tx.(*transaction.TxCustomToken)
+						txCustomToken, ok := tx.(*transaction.TxNormalToken)
 						if !ok {
 							err := NewRPCError(ErrSubcribe, fmt.Errorf("%+v, expect type %+v", ErrParseTransaction, common.TxCustomTokenType))
 							cResult <- RpcSubResult{Error: err}
@@ -231,10 +231,10 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 										m[senderShardID] = make(map[common.Hash]uint64)
 									}
 									if value, ok := m[senderShardID][crossTokenPrivacyData.PropertyID]; ok {
-										value += proccessedOutputCoin.CoinDetails.Value
+										value += proccessedOutputCoin.CoinDetails.GetValue()
 										m[senderShardID][crossTokenPrivacyData.PropertyID] = value
 									} else {
-										m[senderShardID][crossTokenPrivacyData.PropertyID] = proccessedOutputCoin.CoinDetails.Value
+										m[senderShardID][crossTokenPrivacyData.PropertyID] = proccessedOutputCoin.CoinDetails.GetValue()
 									}
 								}
 							}

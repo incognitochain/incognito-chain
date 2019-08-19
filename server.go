@@ -32,7 +32,6 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
-	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -190,14 +189,14 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	var err error
 	// init an pubsub manager
-	var pubsub = pubsub.NewPubSubManager()
+	var pubsubManager = pubsub.NewPubSubManager()
 	serverObj.miningKeys = cfg.MiningKeys
 	if serverObj.miningKeys == "" {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
 			panic("miningkeys can't be empty in this node mode")
 		}
 	}
-	serverObj.pusubManager = pubsub
+	serverObj.pusubManager = pubsubManager
 	serverObj.beaconPool = mempool.GetBeaconPool()
 	serverObj.shardToBeaconPool = mempool.GetShardToBeaconPool()
 	serverObj.crossShardPool = make(map[byte]blockchain.CrossShardPool)
@@ -230,11 +229,20 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
 	}
+	// Init block template generator
+	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
+	if err != nil {
+		return err
+	}
+	// Init consensus engine
+	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
+
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,
 		DataBase:    serverObj.dataBase,
 		MemCache:    serverObj.memCache,
 		//MemCache:          nil,
+		BlockGen:          serverObj.blockgen,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,
@@ -245,7 +253,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		// UserKeySet:        serverObj.userKeySet,
 		NodeMode:        cfg.NodeMode,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:   pubsub,
+		PubSubManager:   pubsubManager,
 		RandomClient:    randomClient,
 		ConsensusEngine: serverObj.consensusEngine,
 	})
@@ -340,24 +348,16 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		ChainParams:   chainParams,
 		FeeEstimator:  serverObj.feeEstimator,
 		MaxTx:         cfg.TxPoolMaxTx,
-		PubSubManager: pubsub,
+		PubSubManager: pubsubManager,
 	})
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
 
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
 
-	// Init block template generator
-	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
-	if err != nil {
-		return err
-	}
-
-	// Init consensus engine
-	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
-
 	// Init Net Sync manager to process messages
-	serverObj.netSync = netsync.NetSync{}.New(&netsync.NetSyncConfig{
+	serverObj.netSync = &netsync.NetSync{}
+	serverObj.netSync.Init(&netsync.NetSyncConfig{
 		BlockChain:        serverObj.blockChain,
 		ChainParam:        chainParams,
 		TxMemPool:         serverObj.memPool,
@@ -370,12 +370,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		RoleInCommittees:  -1,
 	})
 	// Create a connection manager.
-	var peer *peer.Peer
+	var listenPeer *peer.Peer
 	if !cfg.DisableListen {
 		var err error
 
 		// this is initializing our listening peer
-		peer, err = serverObj.InitListenerPeer(serverObj.addrManager, listenAddrs)
+		listenPeer, err = serverObj.InitListenerPeer(serverObj.addrManager, listenAddrs)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
@@ -392,7 +392,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	connManager := connmanager.New(&connmanager.Config{
 		OnInboundAccept:      serverObj.InboundPeerConnected,
 		OnOutboundConnection: serverObj.OutboundPeerConnected,
-		ListenerPeer:         peer,
+		ListenerPeer:         listenPeer,
 		DiscoverPeers:        cfg.DiscoverPeers,
 		DiscoverPeersAddress: cfg.DiscoverPeersAddress,
 		ExternalAddress:      cfg.ExternalAddress,
@@ -452,14 +452,14 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			Database:        &serverObj.dataBase,
 			MiningKeys:      cfg.MiningKeys,
 			NetSync:         serverObj.netSync,
-			PubSubManager:   pubsub,
+			PubSubManager:   pubsubManager,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
 
 		// init rpc client instance and stick to Blockchain object
 		// in order to communicate to external services (ex. eth light node)
-		serverObj.blockgen.SetRPCClientChain(rpccaller.NewRPCClient())
+		//serverObj.blockChain.SetRPCClientChain(rpccaller.NewRPCClient())
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
@@ -534,8 +534,10 @@ func (serverObj *Server) Stop() error {
 		}
 	}
 
-	//serverObj.consensusEngine.Stop()
-
+	err := serverObj.consensusEngine.Stop("all")
+	if err != nil {
+		Logger.log.Error(err)
+	}
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)
 	return nil
@@ -598,7 +600,9 @@ func (serverObj Server) Start() {
 	}
 
 	Logger.log.Debug("Starting server")
-	serverObj.CheckForceUpdateSourceCode()
+	if common.CheckForce {
+		serverObj.CheckForceUpdateSourceCode()
+	}
 	if cfg.TestNet {
 		Logger.log.Critical("************************" +
 			"* Testnet is active *" +
@@ -638,7 +642,10 @@ func (serverObj Server) Start() {
 
 	go serverObj.blockChain.Synker.Start()
 	if serverObj.memPool != nil {
-		serverObj.memPool.LoadOrResetDatabaseMempool()
+		err := serverObj.memPool.LoadOrResetDatabaseMempool()
+		if err != nil {
+			Logger.log.Error(err)
+		}
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
 	}
@@ -685,7 +692,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 					if err != nil {
 						continue
 					}
-					customTokenTx := tx.(*transaction.TxCustomToken)
+					customTokenTx := tx.(*transaction.TxNormalToken)
 					txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
 					err = serverObj.PushMessageToAll(txMsg)
 					if err == nil {
@@ -1632,7 +1639,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
 
-	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetMiningPublicKey()
+	publicKeyInBase58CheckEncode, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	// signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		_, shardID := serverObj.consensusEngine.GetUserRole()

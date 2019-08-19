@@ -7,7 +7,7 @@ import (
 )
 
 func (httpServer *HttpServer) handleStartProfiling(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	var f, err = os.Create("/data/profiling.prof")
+	var f, err = os.OpenFile("/data/profiling.prof", os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}

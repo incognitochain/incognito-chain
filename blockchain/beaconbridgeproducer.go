@@ -19,7 +19,7 @@ import (
 func (blockChain *BlockChain) buildBridgeInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
-	beaconBestState *BeaconBestState,
+	beaconHeight uint64,
 	db database.DatabaseInterface,
 ) ([][]string, error) {
 	accumulatedValues := &metadata.AccumulatedValues{
@@ -28,7 +28,6 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 		CBridgeTokens:    []*common.Hash{},
 	}
 	instructions := [][]string{}
-	beaconHeight := beaconBestState.BeaconHeight
 	for _, inst := range shardBlockInstructions {
 		if len(inst) < 2 {
 			continue
@@ -45,7 +44,7 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 		newInst := [][]string{}
 		switch metaType {
 		case metadata.ContractingRequestMeta:
-			newInst = [][]string{inst}
+			newInst, err = blockChain.buildInstructionsForContractingReq(contentStr, shardID, metaType)
 
 		case metadata.IssuingRequestMeta:
 			newInst, err = blockChain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
@@ -55,7 +54,7 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(inst, beaconHeight+1, db)
+			burningConfirm, err = buildBurningConfirmInst(inst, beaconHeight, db)
 			newInst = [][]string{burningConfirm}
 
 		default:
@@ -84,7 +83,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 	}
 	md := burningReqAction.Meta
 	txID := burningReqAction.RequestedTxID // to prevent double-release token
-	shardID := byte(common.BRIDGE_SHARD_ID)
+	shardID := byte(common.BridgeShardID)
 
 	// Convert to external tokenID
 	tokenID, err := findExternalTokenID(&md.TokenID, db)
@@ -94,7 +93,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)
-	if bytes.Equal(tokenID, rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes()) {
+	if bytes.Equal(tokenID, rCommon.HexToAddress(common.EthAddrStr).Bytes()) {
 		// Convert Gwei to Wei for Ether
 		amount = amount.Mul(amount, big.NewInt(1000000000))
 	}
@@ -109,6 +108,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 		md.RemoteAddress,
 		base58.Base58Check{}.Encode(amount.Bytes(), 0x00),
 		txID.String(),
+		base58.Base58Check{}.Encode(md.TokenID[:], 0x00),
 		base58.Base58Check{}.Encode(h.Bytes(), 0x00),
 	}, nil
 }

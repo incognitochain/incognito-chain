@@ -11,19 +11,20 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                   = 1
-	RANDOM_NUMBER             = 3
-	SHARD_BLOCK_VERSION       = 1
-	BEACON_BLOCK_VERSION      = 1
-	DefaultMaxBlkReqPerPeer   = 600
-	DefaultMaxBlkReqPerTime   = 1200
-	MinCommitteeSize          = 3                // min size to run bft
-	DefaultBroadcastStateTime = 2 * time.Second  // in second
-	DefaultStateUpdateTime    = 3 * time.Second  // in second
-	DefaultMaxBlockSyncTime   = 1 * time.Second  // in second
-	DefaultCacheCleanupTime   = 30 * time.Second // in second
-	WorkerNumber              = 5
-	MAX_S2B_BLOCK             = 50
+	VERSION                      = 1
+	RANDOM_NUMBER                = 3
+	SHARD_BLOCK_VERSION          = 1
+	BEACON_BLOCK_VERSION         = 1
+	DefaultMaxBlkReqPerPeer      = 600
+	DefaultMaxBlkReqPerTime      = 1200
+	MinCommitteeSize             = 3                // min size to run bft
+	DefaultBroadcastStateTime    = 2 * time.Second  // in second
+	DefaultStateUpdateTime       = 3 * time.Second  // in second
+	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
+	DefaultCacheCleanupTime      = 30 * time.Second // in second
+	WorkerNumber                 = 5
+	MAX_S2B_BLOCK                = 50
+	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 )
 
 // CONSTANT for network MAINNET
@@ -32,6 +33,8 @@ const (
 	Mainnet            = 0x01
 	MainetName         = "mainnet"
 	MainnetDefaultPort = "9333"
+	MainnetEpoch       = 30000
+	MainnetRandomTime  = 15000
 
 	MainNetShardCommitteeSize  = 3
 	MainNetBeaconCommitteeSize = 3
@@ -67,12 +70,14 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
+	TestnetEpoch       = 10
+	TestnetRandomTime  = 5
 
 	TestNetShardCommitteeSize     = 16
-	TestNetMinShardCommitteeSize  = 4
+	TestNetMinShardCommitteeSize  = 1
 	TestNetBeaconCommitteeSize    = 4
-	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 2
+	TestNetMinBeaconCommitteeSize = 1
+	TestNetActiveShards           = 1
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
@@ -84,7 +89,9 @@ const (
 // for beacon
 // public key
 var PreSelectBeaconNodeTestnetSerializedPubkey = []string{}
+var PreSelectBeaconNodeTestnetSerializedPaymentAddress = []string{}
 var PreSelectShardNodeTestnetSerializedPubkey = []string{}
+var PreSelectShardNodeTestnetSerializedPaymentAddress = []string{}
 
 func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
@@ -99,6 +106,7 @@ func init() {
 		PrivateKey string
 		PaymentAdd string
 		PubKey     string
+		PubKeyBLS  string
 	}
 
 	type KeyList struct {
@@ -114,12 +122,14 @@ func init() {
 	}
 
 	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
-		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKey)
+		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKeyBLS)
+		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAdd)
 	}
 
 	for i := 0; i < TestNetActiveShards; i++ {
 		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
-			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKey)
+			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKeyBLS)
+			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAdd)
 		}
 	}
 }

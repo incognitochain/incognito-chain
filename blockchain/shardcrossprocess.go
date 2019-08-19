@@ -17,7 +17,7 @@ type CrossOutputCoin struct {
 type CrossTxTokenData struct {
 	BlockHeight uint64
 	BlockHash   common.Hash
-	TxTokenData []transaction.TxTokenData
+	TxTokenData []transaction.TxNormalTokenData
 }
 type CrossTokenPrivacyData struct {
 	BlockHeight      uint64
@@ -101,7 +101,7 @@ func (crossTransaction CrossTransaction) Hash() common.Hash {
 	- MerklePath
 */
 func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockChain, committees []string) error {
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committees, crossShardBlock.ConsensusType); err != nil {
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock.Hash(), committees, crossShardBlock.ValidationData, crossShardBlock.Header.ConsensusType); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {
