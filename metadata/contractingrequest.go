@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -62,9 +63,9 @@ func (cReq ContractingRequest) ValidateTxWithBlockChain(
 func (cReq ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	// if reflect.TypeOf(txr).String() == "*transaction.Tx" {
-	// 	return true, true, nil
-	// }
+	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
+		return true, true, nil
+	}
 
 	if cReq.Type != ContractingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
@@ -75,12 +76,12 @@ func (cReq ContractingRequest) ValidateSanityData(bcr BlockchainRetriever, txr T
 	if cReq.BurnedAmount == 0 {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	// if !txr.IsCoinsBurning() {
-	// 	return false, false, errors.New("Must send coin to burning address")
-	// }
-	// if cReq.BurnedAmount != txr.CalculateTxValue() {
-	// 	return false, false, errors.New("BurnedAmount incorrect")
-	// }
+	if !txr.IsCoinsBurning() {
+		return false, false, errors.New("Must send coin to burning address")
+	}
+	if cReq.BurnedAmount != txr.CalculateTxValue() {
+		return false, false, errors.New("BurnedAmount incorrect")
+	}
 	if !bytes.Equal(txr.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
 		return false, false, errors.New("BurnerAddress incorrect")
 	}
