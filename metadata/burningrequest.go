@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -65,9 +64,10 @@ func (bReq BurningRequest) ValidateTxWithBlockChain(
 func (bReq BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	// 	fmt.Println("DeBridge log: ValidateSanityData in BurningRequest skip")
+	// 	return true, true, nil
+	// }
 
 	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
 		return false, false, err
@@ -81,12 +81,12 @@ func (bReq BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Trans
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if !txr.IsCoinsBurning() {
-		return false, false, errors.New("Must send coin to burning address")
-	}
-	if bReq.BurningAmount != txr.CalculateTxValue() {
-		return false, false, errors.New("BurningAmount incorrect")
-	}
+	// if !txr.IsCoinsBurning() {
+	// 	return false, false, errors.New("Must send coin to burning address")
+	// }
+	// if bReq.BurningAmount != txr.CalculateTxValue() {
+	// 	return false, false, errors.New("BurningAmount incorrect")
+	// }
 	if !bytes.Equal(txr.GetSigPubKey()[:], bReq.BurnerAddress.Pk[:]) {
 		return false, false, errors.New("BurnerAddress incorrect")
 	}
