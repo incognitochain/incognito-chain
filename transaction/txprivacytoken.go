@@ -407,6 +407,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(
 
 // ValidateSanityData - validate sanity data of PRV and pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(bcr metadata.BlockchainRetriever) (bool, error) {
+	meta := txCustomTokenPrivacy.Tx.Metadata
+	if meta != nil {
+		isContinued, ok, err := meta.ValidateSanityData(bcr, &txCustomTokenPrivacy)
+		if err != nil || !ok || !isContinued {
+			return ok, err
+		}
+	}
+
 	// validate sanity data for PRV
 	//result, err := txCustomTokenPrivacy.Tx.validateNormalTxSanityData()
 	result, err := txCustomTokenPrivacy.Tx.ValidateSanityData(bcr)
@@ -564,7 +572,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsCoinsBurning() bool {
 	//  validate receiver with burning address
 	senderPKBytes := []byte{}
 	if len(proof.GetInputCoins()) > 0 {
-		senderPKBytes = txCustomTokenPrivacy.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
+		senderPKBytes = proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	}
 	keyWalletBurningAccount, _ := wallet.Base58CheckDeserialize(common.BurningAddress)
 	keysetBurningAccount := keyWalletBurningAccount.KeySet
