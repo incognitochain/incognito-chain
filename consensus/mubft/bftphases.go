@@ -363,7 +363,7 @@ phase:
 					protocol.forwardMsg(msgCommit)
 					if len(phaseData.Sigs[R]) > (2 * len(protocol.RoundData.Committee) / 3) {
 						cmTimeout.Stop()
-						fmt.Println("BFT: Collected enough Sig", time.Since(protocol.startTime).Seconds())
+						fmt.Println("BFT: Collected enough Sig", R, len(phaseData.Sigs[R]), msgCommit.(*wire.MessageBFTCommit).Pubkey)
 						protocol.closeTimeoutCh()
 					}
 				}
