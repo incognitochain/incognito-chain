@@ -145,7 +145,7 @@ func main() {
 	// usage.
 	debug.SetGCPercent(30)
 	if os.Getenv("Profiling") != "" {
-		http.ListenAndServe(os.Getenv("Profiling"), nil)
+		http.ListenAndServe(":"+os.Getenv("Profiling"), nil)
 	}
 
 	// Up some limits.
