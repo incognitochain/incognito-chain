@@ -2,13 +2,12 @@ package blsbft
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
-	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
+	"github.com/incognitochain/incognito-chain/wire"
 )
 
 const (
@@ -24,7 +23,7 @@ type ProposeMsg struct {
 	RoundKey   string
 }
 
-type PrepareMsg struct {
+type VoteMsg struct {
 	ChainKey   string
 	IsOk       bool
 	Pubkey     string
@@ -48,17 +47,19 @@ type BLSBFT struct {
 	NextHeight uint64
 
 	// UserKeySet        *incognitokey.KeySet
-	UserKeySet      *bls.KeySet
+	UserKeySet      *blsKeySet
 	State           string
 	NotYetSendAgree bool
 
 	Block chain.BlockInterface
 
-	ProposeMsgCh chan ProposeMsg
-	PrepareMsgCh chan PrepareMsg
-	StopCh       chan int
+	BFTMessageCh     chan wire.MessageBFT
+	ProposeMessageCh chan ProposeMsg
+	VoteMessageCh    chan VoteMsg
 
-	PrepareMsgs map[string]map[string]SigStatus
+	StopCh chan int
+
+	// PrepareMsgs map[string]map[string]SigStatus
 
 	Blocks map[string]chain.BlockInterface
 
@@ -74,11 +75,11 @@ func (e *BLSBFT) GetConsensusName() string {
 }
 
 func (e *BLSBFT) ReceiveProposeMsg(msg interface{}) {
-	e.ProposeMsgCh <- msg.(ProposeMsg)
+	// e.ProposeMsgCh <- msg.(ProposeMsg)
 }
 
-func (e *BLSBFT) ReceivePrepareMsg(msg interface{}) {
-	e.PrepareMsgCh <- msg.(PrepareMsg)
+func (e *BLSBFT) ReceiveVoteMsg(msg interface{}) {
+	// e.PrepareMsgCh <- msg.(PrepareMsg)
 }
 
 func (e *BLSBFT) Stop() {
@@ -93,11 +94,11 @@ func (e *BLSBFT) Stop() {
 func (e *BLSBFT) Start() {
 	e.isOngoing = false
 	e.StopCh = make(chan int)
-	e.PrepareMsgs = map[string]map[string]SigStatus{}
+	// e.PrepareMsgs = map[string]map[string]SigStatus{}
 	e.Blocks = map[string]chain.BlockInterface{}
 
-	e.ProposeMsgCh = make(chan ProposeMsg)
-	e.PrepareMsgCh = make(chan PrepareMsg)
+	e.ProposeMessageCh = make(chan ProposeMsg)
+	e.VoteMessageCh = make(chan VoteMsg)
 
 	ticker := time.Tick(100 * time.Millisecond)
 
@@ -107,7 +108,7 @@ func (e *BLSBFT) Start() {
 			select {
 			case <-e.StopCh:
 				return
-			case b := <-e.ProposeMsgCh:
+			case b := <-e.ProposeMessageCh:
 				round := b.Block.GetRound()
 				if round < e.Round {
 					continue
@@ -119,14 +120,15 @@ func (e *BLSBFT) Start() {
 
 				}
 
-			case sig := <-e.PrepareMsgCh:
-				if e.PrepareMsgs[sig.RoundKey] == nil {
-					e.PrepareMsgs[sig.RoundKey] = map[string]SigStatus{}
-				}
-				e.PrepareMsgs[sig.RoundKey][sig.Pubkey] = SigStatus{sig.IsOk, false, sig.ContentSig}
+			case vote := <-e.VoteMessageCh:
+				_ = vote
+				// if e.PrepareMsgs[sig.RoundKey] == nil {
+				// 	e.PrepareMsgs[sig.RoundKey] = map[string]SigStatus{}
+				// }
+				// e.PrepareMsgs[sig.RoundKey][sig.Pubkey] = SigStatus{sig.IsOk, false, sig.ContentSig}
 
 			case <-ticker:
-				if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPubkeyB58()) == -1 {
+				if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58()) == -1 {
 					continue
 				}
 
@@ -141,24 +143,24 @@ func (e *BLSBFT) Start() {
 				switch e.State {
 				case LISTEN:
 					// timeout or vote nil?
-					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
-					if e.Blocks[roundKey] != nil && e.validatePreSignBlock(e.Blocks[roundKey]) != nil {
-						e.Block = e.Blocks[roundKey]
-						e.enterAgreePhase()
-					}
+					// roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
+					// if e.Blocks[roundKey] != nil && e.validatePreSignBlock(e.Blocks[roundKey]) != nil {
+					// 	e.Block = e.Blocks[roundKey]
+					// 	e.enterAgreePhase()
+					// }
 
-				case AGREE:
+				case VOTE:
 
-					if e.NotYetSendAgree {
-						e.validateAndSendVote()
-					}
+					// if e.NotYetSendAgree {
+					// 	e.validateAndSendVote()
+					// }
 
-					roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
-					if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == 1 {
-						//TODO: aggregate sigs
-						e.Chain.InsertBlk(e.Block, true)
-						e.enterNewRound()
-					}
+					// roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
+					// if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == 1 {
+					// 	//TODO: aggregate sigs
+					// 	e.Chain.InsertBlk(e.Block, true)
+					// 	e.enterNewRound()
+					// }
 					//if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == -1 {
 					//	e.Chain.InsertBlk(e.Block, false)
 					//	e.enterNewRound()
@@ -194,10 +196,10 @@ func (e *BLSBFT) enterListenPhase() {
 }
 
 func (e *BLSBFT) enterAgreePhase() {
-	if !e.isInTimeFrame() || e.State == AGREE {
+	if !e.isInTimeFrame() || e.State == VOTE {
 		return
 	}
-	e.setState(AGREE)
+	e.setState(VOTE)
 	e.validateAndSendVote()
 }
 
@@ -227,6 +229,11 @@ func (e *BLSBFT) enterNewRound() {
 	// 	e.enterListenPhase()
 	// }
 
+}
+
+func (e BLSBFT) NewInstance() consensus.ConsensusInterface {
+	var newInstance BLSBFT
+	return &newInstance
 }
 
 func init() {

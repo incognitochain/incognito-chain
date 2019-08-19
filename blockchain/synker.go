@@ -232,10 +232,10 @@ func (synker *Synker) stopSyncUnnecessaryShard() {
 
 func (synker *Synker) stopSyncShard(shardID byte) error {
 	if synker.blockchain.config.NodeMode == common.NODEMODE_AUTO || synker.blockchain.config.NodeMode == common.NODEMODE_SHARD {
-		userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(synker.blockchain.config.ConsensusEngine.GetUserMiningKey(), synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
-		if userRole == common.SHARD_ROLE && shardID == userShardID {
-			return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
-		}
+		// userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(synker.blockchain.config.ConsensusEngine.GetUserMiningKey(), synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
+		// if userRole == common.SHARD_ROLE && shardID == userShardID {
+		// 	return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
+		// }
 	}
 	if _, ok := synker.Status.Shards[shardID]; ok {
 		if common.IndexOfByte(shardID, synker.blockchain.config.RelayShards) < 0 {
@@ -269,7 +269,7 @@ func (synker *Synker) UpdateState() {
 		userShardRole string
 		userPK        string
 	)
-	userMiningKey := synker.blockchain.config.ConsensusEngine.GetUserMiningKey()
+	userMiningKey, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 	if userMiningKey != "" {
 		userRole, userShardID = beaconStateClone.GetPubkeyRole(userMiningKey, beaconStateClone.BestBlock.Header.Round)
 		synker.syncShard(userShardID)
@@ -732,7 +732,8 @@ func (synker *Synker) GetPoolsState() {
 		userShardRole string
 		userPK        string
 	)
-	userPK = synker.blockchain.config.ConsensusEngine.GetUserMiningKey()
+	userPK, _ = synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+
 	if userPK != "" {
 		userRole, userShardID = synker.blockchain.BestState.Beacon.GetPubkeyRole(userPK, synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
 		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userPK, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
@@ -857,7 +858,6 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 func (synker *Synker) GetClosestShardToBeaconPoolState() map[byte]uint64 {
 	synker.States.Lock()
 	result := make(map[byte]uint64)
-	fmt.Println("ClosestShardToBeaconPoolState", synker.States.ClosestState.ShardToBeaconPool)
 	for shardID, height := range synker.States.ClosestState.ShardToBeaconPool {
 		result[shardID] = height
 	}

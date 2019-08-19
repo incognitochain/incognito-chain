@@ -341,7 +341,7 @@ func Test_db_DeleteCustomToken(t *testing.T) {
 			db := &db{
 				lvdb: tt.fields.lvdb,
 			}
-			if err := db.DeleteCustomToken(tt.args.tokenID); (err != nil) != tt.wantErr {
+			if err := db.DeleteNormalToken(tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.DeleteCustomToken() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -371,7 +371,7 @@ func Test_db_DeleteCustomTokenTx(t *testing.T) {
 			db := &db{
 				lvdb: tt.fields.lvdb,
 			}
-			if err := db.DeleteCustomTokenTx(tt.args.tokenID, tt.args.txIndex, tt.args.shardID, tt.args.blockHeight); (err != nil) != tt.wantErr {
+			if err := db.DeleteNormalTokenTx(tt.args.tokenID, tt.args.txIndex, tt.args.shardID, tt.args.blockHeight); (err != nil) != tt.wantErr {
 				t.Errorf("db.DeleteCustomTokenTx() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -398,7 +398,7 @@ func Test_db_DeletePrivacyCustomToken(t *testing.T) {
 			db := &db{
 				lvdb: tt.fields.lvdb,
 			}
-			if err := db.DeletePrivacyCustomToken(tt.args.tokenID); (err != nil) != tt.wantErr {
+			if err := db.DeletePrivacyToken(tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.DeletePrivacyCustomToken() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -428,7 +428,7 @@ func Test_db_DeletePrivacyCustomTokenTx(t *testing.T) {
 			db := &db{
 				lvdb: tt.fields.lvdb,
 			}
-			if err := db.DeletePrivacyCustomTokenTx(tt.args.tokenID, tt.args.txIndex, tt.args.shardID, tt.args.blockHeight); (err != nil) != tt.wantErr {
+			if err := db.DeletePrivacyTokenTx(tt.args.tokenID, tt.args.txIndex, tt.args.shardID, tt.args.blockHeight); (err != nil) != tt.wantErr {
 				t.Errorf("db.DeletePrivacyCustomTokenTx() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -455,7 +455,7 @@ func Test_db_DeletePrivacyCustomTokenCrossShard(t *testing.T) {
 			db := &db{
 				lvdb: tt.fields.lvdb,
 			}
-			if err := db.DeletePrivacyCustomTokenCrossShard(tt.args.tokenID); (err != nil) != tt.wantErr {
+			if err := db.DeletePrivacyTokenCrossShard(tt.args.tokenID); (err != nil) != tt.wantErr {
 				t.Errorf("db.DeletePrivacyCustomTokenCrossShard() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

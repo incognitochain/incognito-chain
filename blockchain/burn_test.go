@@ -23,6 +23,8 @@ const (
 	txid          = "16d4660274a74fe286ba3060b500f0fc698d1e3a144779149e9c7fbc512f6cd9"
 )
 
+var incToken, _ = common.Hash{}.NewHashFromStr("1234ac4a9b9e0707957e21725381e39866ae247000000000000000000000000")
+
 func TestPickBurningConfirm(t *testing.T) {
 	testCases := []struct {
 		desc   string
@@ -36,7 +38,7 @@ func TestPickBurningConfirm(t *testing.T) {
 		},
 		{
 			desc:   "Check height",
-			insts:  [][]string{setupBurningConfirmInst(123)},
+			insts:  [][]string{setupBurningConfirmInst(123, incToken[:])},
 			height: 456,
 			num:    1,
 		},
@@ -61,7 +63,7 @@ func TestPickBurningConfirm(t *testing.T) {
 	}
 }
 
-func setupBurningConfirmInst(height int64) []string {
+func setupBurningConfirmInst(height int64, token []byte) []string {
 	return []string{
 		"72",
 		"1",
@@ -69,6 +71,7 @@ func setupBurningConfirmInst(height int64) []string {
 		remoteAddress,
 		encode58(big.NewInt(2000).Bytes()),
 		txid,
+		encode58(token),
 		encode58(big.NewInt(int64(height)).Bytes()),
 	}
 }
@@ -126,9 +129,9 @@ func TestDecodeInstruction(t *testing.T) {
 		},
 		{
 			desc: "Valid BurningConfirm inst",
-			inst: setupBurningConfirmInst(123),
+			inst: setupBurningConfirmInst(123, incToken[:]),
 			err:  false,
-			leng: 163,
+			leng: 195,
 		},
 	}
 
@@ -178,7 +181,7 @@ func TestDecodeBurningConfirmInst(t *testing.T) {
 		},
 		{
 			desc: "Valid inst",
-			inst: setupBurningConfirmInst(123),
+			inst: setupBurningConfirmInst(123, incToken[:]),
 			err:  false,
 			out: &confirm{
 				meta:   []byte{byte('7'), byte('2')},
@@ -187,6 +190,7 @@ func TestDecodeBurningConfirmInst(t *testing.T) {
 				addr:   addr,
 				amount: 2000,
 				txid:   tx[:],
+				inc:    incToken[:],
 				height: 123,
 			},
 		},
@@ -215,30 +219,34 @@ type confirm struct {
 	addr   []byte
 	amount uint64
 	txid   []byte
+	inc    []byte
 	height uint64
 }
 
 func checkDecodedBurningConfirmInst(t *testing.T, a, e *confirm) {
 	if !bytes.Equal(a.meta, e.meta) {
-		t.Error(errors.Errorf("expect meta = %v, got %v", e.meta, a.meta))
+		t.Errorf("%+v", errors.Errorf("expect meta = %v, got %v", e.meta, a.meta))
 	}
 	if a.shard != e.shard {
-		t.Error(errors.Errorf("expect shard = %v, got %v", e.shard, a.shard))
+		t.Errorf("%+v", errors.Errorf("expect shard = %v, got %v", e.shard, a.shard))
 	}
 	if !bytes.Equal(a.token, e.token) {
-		t.Error(errors.Errorf("expect token = %v, got %v", e.token, a.token))
+		t.Errorf("%+v", errors.Errorf("expect token = %v, got %v", e.token, a.token))
 	}
 	if !bytes.Equal(a.addr, e.addr) {
-		t.Error(errors.Errorf("expect addr = %x, got %x", e.addr, a.addr))
+		t.Errorf("%+v", errors.Errorf("expect addr = %x, got %x", e.addr, a.addr))
 	}
 	if a.amount != e.amount {
-		t.Error(errors.Errorf("expect amount = %d, got %d", e.amount, a.amount))
+		t.Errorf("%+v", errors.Errorf("expect amount = %d, got %d", e.amount, a.amount))
 	}
 	if !bytes.Equal(a.txid, e.txid) {
-		t.Error(errors.Errorf("expect txid = %x, got %x", e.txid, a.txid))
+		t.Errorf("%+v", errors.Errorf("expect txid = %x, got %x", e.txid, a.txid))
+	}
+	if !bytes.Equal(a.inc, e.inc) {
+		t.Errorf("%+v", errors.Errorf("expect inc = %x, got %x", e.inc, a.inc))
 	}
 	if a.height != e.height {
-		t.Error(errors.Errorf("expect height = %d, got %d", e.height, a.height))
+		t.Errorf("%+v", errors.Errorf("expect height = %d, got %d", e.height, a.height))
 	}
 }
 
@@ -250,12 +258,14 @@ func parseBurningConfirmInst(inst []byte) *confirm {
 		addr:   inst[35:67],
 		amount: big.NewInt(0).SetBytes(inst[67:99]).Uint64(),
 		txid:   inst[99:131],
-		height: big.NewInt(0).SetBytes(inst[131:163]).Uint64(),
+		inc:    inst[131:163],
+		height: big.NewInt(0).SetBytes(inst[163:195]).Uint64(),
 	}
 }
 
 func TestBuildBridgeInst(t *testing.T) {
 	height := uint64(123)
+	token := common.Hash{2}
 	testCases := []struct {
 		desc  string
 		insts [][]string
@@ -274,7 +284,7 @@ func TestBuildBridgeInst(t *testing.T) {
 		{
 			desc:  "ERC20",
 			insts: [][]string{setupBurningRequest(2)},
-			out:   [][]string{setupBurningConfirmInst(int64(height) + 1)},
+			out:   [][]string{setupBurningConfirmInst(int64(height), token[:])},
 		},
 	}
 
@@ -284,7 +294,7 @@ func TestBuildBridgeInst(t *testing.T) {
 			insts, err := bc.buildBridgeInstructions(
 				0,
 				tc.insts,
-				&BeaconBestState{BeaconHeight: height},
+				height,
 				setupDB(t),
 			)
 			if err != nil {
@@ -329,6 +339,7 @@ func TestBurnConfirmScaleAmount(t *testing.T) {
 				t.Error(err)
 			}
 
+			token := common.Hash{tc.id}
 			expected := []string{
 				"72",
 				"1",
@@ -336,6 +347,7 @@ func TestBurnConfirmScaleAmount(t *testing.T) {
 				remoteAddress,
 				encode58(big.NewInt(tc.amount).Bytes()),
 				txid,
+				encode58(token[:]),
 				encode58(big.NewInt(int64(height)).Bytes()),
 			}
 			checkBurningConfirmInst(t, c, expected)
@@ -363,7 +375,7 @@ func setupBurningRequest(id byte) []string {
 func checkBurningConfirmInst(t *testing.T, got, exp []string) {
 	for i, s := range got {
 		if s != exp[i] {
-			t.Error(errors.Errorf("expected inst[%d] = %s, got %s", i, exp[i], s))
+			t.Errorf("%+v", errors.Errorf("expected inst[%d] = %s, got %s", i, exp[i], s))
 		}
 	}
 }
