@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 
@@ -66,7 +65,6 @@ func (bReq BurningRequest) ValidateTxWithBlockChain(
 func (bReq BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		fmt.Println("DeBridge log: ValidateSanityData in BurningRequest skip")
 		return true, true, nil
 	}
 
