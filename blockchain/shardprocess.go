@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -132,8 +133,14 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	// 		}
 	// 	}
 	// }
+	oldCommittee := append([]string{}, blockchain.BestState.Shard[shardID].ShardCommittee...)
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(shardBlock, beaconBlocks); err != nil {
 		return err
+	}
+	newCommittee := append([]string{}, blockchain.BestState.Shard[shardID].ShardCommittee...)
+	isChanged := common.CompareStringArray(oldCommittee, newCommittee)
+	if isChanged {
+		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if !isValidated {
@@ -613,6 +620,7 @@ func (shardBestState *ShardBestState) initShardBestState(genesisShardBlock *Shar
 	if err != nil {
 		return err
 	}
+	shardBestState.ConsensusAlgorithm = common.BLS_CONSENSUS
 	return nil
 }
 func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock) {
