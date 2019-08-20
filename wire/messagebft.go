@@ -13,6 +13,7 @@ const (
 )
 
 type MessageBFT struct {
+	Type      string
 	Content   []byte
 	ChainKey  string
 	Timestamp int64

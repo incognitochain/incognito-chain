@@ -5,7 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
+func (blockchain *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	insts [][]string,
 	txs []metadata.Transaction,
 	shardID byte,
@@ -20,7 +20,7 @@ func (bc *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 		CBridgeTokens:    []*common.Hash{},
 	}
 	for _, tx := range txs {
-		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, bc, accumulatedValues)
+		ok, err := tx.VerifyMinerCreatedTxBeforeGettingInBlock(txs, txsUsed, insts, instUsed, shardID, blockchain, accumulatedValues)
 		if err != nil {
 			return nil, err
 		}

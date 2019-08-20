@@ -7,4 +7,5 @@ type BlockInterface interface {
 	GetValidationField() string
 	GetRound() int
 	GetRoundKey() string
+	GetInstructions() [][]string
 }

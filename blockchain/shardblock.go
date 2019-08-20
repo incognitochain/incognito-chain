@@ -437,3 +437,11 @@ func (block CrossShardBlock) GetRound() int {
 func (block CrossShardBlock) GetRoundKey() string {
 	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
 }
+
+func (block ShardBlock) GetInstructions() [][]string {
+	return block.Body.Instructions
+}
+
+func (block CrossShardBlock) GetInstructions() [][]string {
+	return [][]string{}
+}

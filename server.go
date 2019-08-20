@@ -1734,3 +1734,13 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 func (serverObj *Server) GetMiningKeys() string {
 	return cfg.MiningKeys
 }
+
+func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
+	chainID := chain.GetShardID()
+	if chainID == -1 {
+		serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{})
+	} else {
+		serverObj.PushMessageToShard(msg, byte(chainID), map[libp2p.ID]bool{})
+	}
+	return nil
+}
