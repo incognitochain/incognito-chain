@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/database"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -174,9 +173,9 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShar
 		return NewBlockPoolError(UnmarshalShardCommitteeError, errors.New("Fail to unmarshal shard committee"))
 	}
 	// validate agg signature
-	if err := blockchain.ValidateAggSignature(crossShardBlock.ValidatorsIndex, shardCommittee[crossShardBlock.Header.ShardID], crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
-		return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, err)
-	}
+	// if err := blockchain.ValidateAggSignature(crossShardBlock.ValidatorsIndex, shardCommittee[crossShardBlock.Header.ShardID], crossShardBlock.AggregatedSig, crossShardBlock.R, crossShardBlock.Hash()); err != nil {
+	// 	return NewBlockPoolError(ValidateAggSignatureForCrossShardBlockError, err)
+	// }
 	return nil
 }
 
