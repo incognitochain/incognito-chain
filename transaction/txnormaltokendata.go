@@ -100,10 +100,10 @@ func (txObj TxTokenVout) GetTxCustomTokenID() common.Hash {
 	return txObj.txCustomTokenID
 }
 
-// TxTokenData - main struct which contain vin and vout array for transferring or issuing custom token
+// TxNormalTokenData - main struct which contain vin and vout array for transferring or issuing custom token
 // of course, it also contain token metadata: name, symbol, id(hash of token data)
-type TxTokenData struct {
-	PropertyID     common.Hash // = hash of TxTokenData data
+type TxNormalTokenData struct {
+	PropertyID     common.Hash // = hash of TxNormalTokenData data
 	PropertyName   string
 	PropertySymbol string
 	Type           int    // action type [init, transfer, crossShard (used only for crossShard msg)]
@@ -113,7 +113,7 @@ type TxTokenData struct {
 	Vouts          []TxTokenVout
 }
 
-func (txObj TxTokenData) String() string {
+func (txObj TxNormalTokenData) String() string {
 	record := txObj.PropertyName
 	record += txObj.PropertySymbol
 	record += fmt.Sprintf("%d", txObj.Amount)
@@ -128,7 +128,7 @@ func (txObj TxTokenData) String() string {
 	return record
 }
 
-func (txObj TxTokenData) JSONString() string {
+func (txObj TxNormalTokenData) JSONString() string {
 	data, err := json.MarshalIndent(txObj, "", "\t")
 	if err != nil {
 		Logger.log.Error(err)
@@ -138,7 +138,7 @@ func (txObj TxTokenData) JSONString() string {
 }
 
 // Hash - return hash of token data, be used as Token ID
-func (txObj TxTokenData) Hash() (*common.Hash, error) {
+func (txObj TxNormalTokenData) Hash() (*common.Hash, error) {
 	if txObj.Vouts == nil {
 		return nil, errors.New("Vout is empty")
 	}
