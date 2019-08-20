@@ -3,7 +3,6 @@ package common
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/pkg/errors"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -424,9 +425,9 @@ func (s *ErrorSaver) Save(errs ...error) error {
 	if s.err != nil {
 		return s.err
 	}
-	for _, err := range errs {
+	for i, err := range errs {
 		if err != nil {
-			s.err = err
+			s.err = errors.WithMessagef(err, "errSaver #%d", i)
 			return s.err
 		}
 	}
