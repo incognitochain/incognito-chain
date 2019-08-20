@@ -1,6 +1,9 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -76,12 +79,28 @@ func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte)
 	return "", 0
 }
 
-func (chain *BeaconChain) ValidateBlock(block common.BlockInterface) error {
-	_ = block
+func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
+	var beaconBestState BeaconBestState
+	beaconBlock := block.(*BeaconBlock)
+	chain.BestState.cloneBeaconBestState(&beaconBestState)
+	producerPublicKey := beaconBlock.Header.Producer
+	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+	}
+
 	return nil
 }
 
-func (chain *BeaconChain) ValidateBlockSanity(common.BlockInterface) error {
+func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []string) error {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
+		return err
+	}
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, chain.GetConsensusType()); err != nil {
+		return nil
+	}
+
 	return nil
 }
 
@@ -110,4 +129,13 @@ func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]string {
 		result[consensusType][common.GetShardChainKey(shardID)] = append([]string{}, chain.BestState.ShardCommittee[shardID]...)
 	}
 	return result
+}
+
+func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
+	var beaconBlk BeaconBlock
+	err := json.Unmarshal(blockString, &beaconBlk)
+	if err != nil {
+		return nil, err
+	}
+	return beaconBlk, nil
 }

@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -60,12 +61,7 @@ func (chain *ShardChain) CreateNewBlock(round int) common.BlockInterface {
 	return newBlock
 }
 
-func (chain *ShardChain) ValidateBlock(block common.BlockInterface) error {
-	_ = block
-	return nil
-}
-
-func (chain *ShardChain) ValidateBlockSanity(block common.BlockInterface) error {
+func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
 	_ = block
 	return nil
 }
@@ -95,5 +91,15 @@ func (chain *ShardChain) GetShardID() int {
 }
 
 func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	chain.GetCommittee()
 	return "", 0
+}
+
+func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
+	var shardBlk ShardBlock
+	err := json.Unmarshal(blockString, &shardBlk)
+	if err != nil {
+		return nil, err
+	}
+	return shardBlk, nil
 }

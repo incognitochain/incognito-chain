@@ -302,15 +302,14 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(beaconBlo
 			for index, shardBlock := range shardBlocks {
 				currentCommittee := blockchain.BestState.Beacon.GetAShardCommittee(shardID)
 				currentPendingValidator := blockchain.BestState.Beacon.GetAShardPendingValidator(shardID)
-				hash := shardBlock.Header.Hash()
 				// err := ValidateAggSignature(shardBlock.ValidatorsIndex, currentCommittee, shardBlock.AggregatedSig, shardBlock.R, &hash)
-				err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(&hash, currentCommittee, shardBlock.ValidationData, beaconBestState.ShardConsensusAlgorithm[shardID])
+				err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 				if index == 0 && err != nil {
 					currentCommittee, _, _, _, err = SwapValidator(currentPendingValidator, currentCommittee, blockchain.BestState.Beacon.MaxShardCommitteeSize, common.OFFSET)
 					if err != nil {
 						return NewBlockChainError(SwapValidatorError, fmt.Errorf("Failed to swap validator when try to verify shard to beacon block %+v, error %+v", shardBlock.Header.Height, err))
 					}
-					err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(&hash, currentCommittee, shardBlock.ValidationData, beaconBestState.ShardConsensusAlgorithm[shardID])
+					err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, currentCommittee, beaconBestState.ShardConsensusAlgorithm[shardID])
 					if err != nil {
 						return NewBlockChainError(SignatureError, fmt.Errorf("Failed to verify Signature of Shard To Beacon Block %+v, error %+v", shardBlock.Header.Height, err))
 					}
