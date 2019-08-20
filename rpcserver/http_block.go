@@ -287,7 +287,7 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 	shardIDParam := int(shardIDParamTemp)
 	if shardIDParam != -1 {
 		result := make([]jsonresult.GetBlockResult, 0)
-		bestBlock := httpServer.config.BlockChain.BestState.Shard[byte(shardIDParam)].BestBlock
+		bestBlock := httpServer.config.BlockChain.BestState.GetClonedShardBestState()[byte(shardIDParam)].BestBlock
 		previousHash := bestBlock.Hash()
 		for numBlock > 0 {
 			numBlock--
@@ -309,7 +309,7 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 		return result, nil
 	} else {
 		result := make([]jsonresult.GetBlocksBeaconResult, 0)
-		bestBlock := httpServer.config.BlockChain.BestState.Beacon.BestBlock
+		bestBlock := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState().BestBlock
 		previousHash := bestBlock.Hash()
 		for numBlock > 0 {
 			numBlock--
@@ -341,7 +341,8 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
 		ActiveShards: httpServer.config.ChainParams.ActiveShards,
 	}
-	for shardID, bestState := range httpServer.config.BlockChain.BestState.Shard {
+	shards := httpServer.config.BlockChain.BestState.GetClonedShardBestState()
+	for shardID, bestState := range shards {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:           bestState.BestBlock.Header.Height,
 			Hash:             bestState.BestBlockHash.String(),
@@ -352,7 +353,7 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		}
 	}
 
-	beaconBestState := httpServer.config.BlockChain.BestState.Beacon
+	beaconBestState := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
 		Height:           beaconBestState.BestBlock.Header.Height,
 		Hash:             beaconBestState.BestBlock.Hash().String(),
