@@ -88,41 +88,6 @@ type FeeEstimator interface {
 	RegisterBlock(block *ShardBlock) error
 }
 
-// type ConsensusEngineInterface interface {
-// 	IsOngoing(chainkey string) bool
-
-// 	GetMiningPublicKey() (publickey string, keyType string)
-// 	SignDataWithMiningKey(data []byte) (string, error)
-
-// 	ValidateProducerPosition(block BlockInterface, chain ChainInterface) error
-// 	ValidateProducerSig(block BlockInterface, chain ChainInterface) error
-// 	ValidateCommitteeSig(block BlockInterface, chain ChainInterface) error
-
-// 	VerifyData(data []byte, sig string, publicKey string, consensusType string) error
-
-// 	SwitchConsensus(chainkey string, consensus string) error
-// }
-
-// type ConsensusInterface interface {
-// 	NewInstance() ConsensusInterface
-// 	GetConsensusName() string
-
-// 	ValidateBlock(block BlockInterface) error
-// 	IsOngoing() bool
-// 	ValidateProducerPosition(block BlockInterface) error
-// 	ValidateProducerSig(block BlockInterface) error
-// 	ValidateCommitteeSig(block BlockInterface) error
-// }
-
-// type BlockInterface interface {
-// 	GetHeight() uint64
-// 	Hash() *common.Hash
-// 	AddValidationField(validateData string) error
-// 	GetValidationField() string
-// 	GetRound() int
-// 	GetRoundKey() string
-// }
-
 type ChainInterface interface {
 	GetChainName() string
 	GetConsensusType() string
@@ -138,11 +103,10 @@ type ChainInterface interface {
 	GetCommittee() []string
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
-
+	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
 	CreateNewBlock(round int) common.BlockInterface
 	InsertBlk(common.BlockInterface, bool)
-	ValidateBlock(common.BlockInterface) error
-	ValidateBlockSanity(common.BlockInterface) error
+	ValidateAndInsertBlock(common.BlockInterface) error
 	ValidateBlockWithBlockChain(common.BlockInterface) error
 	GetShardID() int
 }

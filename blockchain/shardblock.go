@@ -99,7 +99,7 @@ func (shardToBeaconBlock *ShardToBeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (shardBlock *ShardBlock) Hash() *common.Hash {
+func (shardBlock ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
 	return &hash
 }
@@ -260,10 +260,6 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	return nil
 }
 
-func (shardBlock *ShardBlock) GetHeight() uint64 {
-	return shardBlock.Header.Height
-}
-
 // func (shardBlock *ShardBlock) GetProducerPubKey() string {
 // 	return string(shardBlock.Header.ProducerAddress.Pk)
 // }
@@ -405,8 +401,13 @@ func (block *ShardBlock) AddValidationField(validateData string) error {
 	block.ValidationData = validateData
 	return nil
 }
-func (block *ShardBlock) GetValidationField() string {
+
+func (block ShardBlock) GetValidationField() string {
 	return block.ValidationData
+}
+
+func (block ShardBlock) GetHeight() uint64 {
+	return block.Header.Height
 }
 
 func (block ShardBlock) GetRound() int {
@@ -417,16 +418,15 @@ func (block ShardBlock) GetRoundKey() string {
 	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
 }
 
-func (block *CrossShardBlock) AddValidationField(validateData string) error {
-	block.ValidationData = validateData
-	return nil
+func (block ShardBlock) GetInstructions() [][]string {
+	return block.Body.Instructions
 }
 
-func (shardBlock *CrossShardBlock) GetHeight() uint64 {
-	return shardBlock.Header.Height
+func (block CrossShardBlock) GetHeight() uint64 {
+	return block.Header.Height
 }
 
-func (block *CrossShardBlock) GetValidationField() string {
+func (block CrossShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
 
@@ -438,10 +438,25 @@ func (block CrossShardBlock) GetRoundKey() string {
 	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
 }
 
-func (block ShardBlock) GetInstructions() [][]string {
-	return block.Body.Instructions
-}
-
 func (block CrossShardBlock) GetInstructions() [][]string {
 	return [][]string{}
+}
+
+func (block ShardToBeaconBlock) GetValidationField() string {
+	return block.ValidationData
+}
+
+func (block ShardToBeaconBlock) GetHeight() uint64 {
+	return block.Header.Height
+}
+
+func (block ShardToBeaconBlock) GetRound() int {
+	return block.Header.Round
+}
+
+func (block ShardToBeaconBlock) GetRoundKey() string {
+	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
+}
+func (block ShardToBeaconBlock) GetInstructions() [][]string {
+	return block.Instructions
 }

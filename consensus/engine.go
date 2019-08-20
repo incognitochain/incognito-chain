@@ -163,10 +163,6 @@ func RegisterConsensus(name string, consensus ConsensusInterface) error {
 	return nil
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error {
-	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(blockHash, committee, validationData)
-}
-
 func (engine *Engine) IsOngoing(chainName string) bool {
 	consensusModule, ok := engine.ChainConsensusList[chainName]
 	if ok {
@@ -198,5 +194,10 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 }
 
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
+
 	return nil
+}
+
+func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []string, consensusType string) error {
+	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(block.Hash(), committee, block.GetValidationField())
 }
