@@ -129,20 +129,17 @@ func (httpServer *HttpServer) handleGetTotalTransaction(params interface{}, clos
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID invalid"))
 	}
 	shardID := byte(shardIdParam)
-	if httpServer.config.BlockChain.BestState.Shard == nil || len(httpServer.config.BlockChain.BestState.Shard) <= 0 {
+	bestStateShard := httpServer.config.BlockChain.BestState.Shard
+	if bestStateShard == nil || len(bestStateShard) <= 0 {
 		Logger.log.Debugf("handleGetTotalTransaction result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard not existed"))
 	}
-	shardBeststate, ok := httpServer.config.BlockChain.BestState.Shard[shardID]
-	if !ok || shardBeststate == nil {
+	shardBestState, ok := bestStateShard[shardID]
+	if !ok || shardBestState == nil {
 		Logger.log.Debugf("handleGetTotalTransaction result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard given by ID not existed"))
 	}
-	result := jsonresult.TotalTransactionInShard{
-		TotalTransactions:                 shardBeststate.TotalTxns,
-		TotalTransactionsExcludeSystemTxs: shardBeststate.TotalTxnsExcludeSalary,
-		SalaryTransaction:                 shardBeststate.TotalTxns - shardBeststate.TotalTxnsExcludeSalary,
-	}
+	result := jsonresult.NewTotalTransactionInShard(shardBestState)
 	Logger.log.Debugf("handleGetTotalTransaction result: %+v", result)
 	return result, nil
 }

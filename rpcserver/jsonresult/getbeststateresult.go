@@ -1,5 +1,7 @@
 package jsonresult
 
+import "github.com/incognitochain/incognito-chain/blockchain"
+
 /*
 	Candidate Result From Best State
 */
@@ -49,4 +51,13 @@ type TotalTransactionInShard struct {
 	TotalTransactions                 uint64 `json:"TotalTransactions"`
 	TotalTransactionsExcludeSystemTxs uint64 `json:"TotalTransactionsExcludeSystemTxs"`
 	SalaryTransaction                 uint64 `json:"SalaryTransaction"`
+}
+
+func NewTotalTransactionInShard(shardBeststate *blockchain.ShardBestState) *TotalTransactionInShard {
+	result := &TotalTransactionInShard{
+		TotalTransactions:                 shardBeststate.TotalTxns,
+		TotalTransactionsExcludeSystemTxs: shardBeststate.TotalTxnsExcludeSalary,
+		SalaryTransaction:                 shardBeststate.TotalTxns - shardBeststate.TotalTxnsExcludeSalary,
+	}
+	return result
 }
