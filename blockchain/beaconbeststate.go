@@ -113,7 +113,6 @@ func (beaconBestState *BeaconBestState) InitRandomClient(randomClient btc.Random
 func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
-
 	type Alias BeaconBestState
 	b, err := json.Marshal(&struct {
 		*Alias

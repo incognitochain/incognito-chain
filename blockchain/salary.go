@@ -175,7 +175,6 @@ func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalRe
 }
 
 func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks []*BeaconBlock, shardID byte) error {
-
 	shardCommittee := make(map[byte][]string)
 	isInit := false
 	epoch := uint64(0)
@@ -306,15 +305,7 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(
 	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
 		return nil, errors.New("Can not understand this request!")
 	}
-	// requestMeta := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
-	// requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
-	// receiverBytes := requestMeta.PaymentAddress.Pk
 	requestDetail := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)
-	// requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, VERSION)
-	// if len(receiverBytes) == 0 {
-	// 	return nil, errors.New("Can not get payment address of request's sender")
-	// }
-	// for _, coinID := range requestDetail.TokenIDs {
 	amount, err := blockchain.config.DataBase.GetCommitteeReward(requestDetail.PaymentAddress.Pk, requestDetail.TokenID)
 	if (amount == 0) || (err != nil) {
 		return nil, errors.New("Not enough reward")
