@@ -337,6 +337,45 @@ func (blockchain *BlockChain) initBeaconState() error {
 	return nil
 }
 
+func (bestState BestState) GetClonedBeaconBestState() (*BeaconBestState, error) {
+	result := NewBeaconBestState()
+	err := result.cloneBeaconBestState(bestState.Beacon)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetReadOnlyShard - return a copy of Shard of BestState
+func (bestState BestState) GetClonedAllShardBestState() map[byte]*ShardBestState {
+	result := make(map[byte]*ShardBestState)
+	for k, v := range bestState.Shard {
+		v.lock.RLock()
+		result[k] = &ShardBestState{}
+		err := result[k].cloneShardBestState(v)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		v.lock.RUnlock()
+	}
+	return result
+}
+
+// GetReadOnlyShard - return a copy of Shard of BestState
+func (bestState *BestState) GetClonedAShardBestState(shardID byte) (*ShardBestState, error) {
+	shardBestState := NewShardBestState()
+	if target, ok := bestState.Shard[shardID]; !ok {
+		return shardBestState, fmt.Errorf("Failed to get Shard BestState of ShardID %+v", shardID)
+	} else {
+		target.lock.RLock()
+		defer target.lock.RUnlock()
+		if err := shardBestState.cloneShardBestState(target); err != nil {
+			return shardBestState, fmt.Errorf("Failed to clone Shard BestState of ShardID %+v", shardID)
+		}
+	}
+	return shardBestState, nil
+}
+
 /*
 Get block index(height) of block
 */
