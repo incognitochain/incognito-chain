@@ -9,6 +9,11 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
 
+type blockValidation interface {
+	common.BlockInterface
+	AddValidationField(validationData string) error
+}
+
 type ValidationData struct {
 	Producer       string
 	ProducerSig    string
