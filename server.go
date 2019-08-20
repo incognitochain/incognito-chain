@@ -350,6 +350,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxTx:         cfg.TxPoolMaxTx,
 		PubSubManager: pubsubManager,
 	})
+	go serverObj.tempMemPool.Start(serverObj.cQuit)
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
@@ -672,6 +673,7 @@ func (serverObj Server) Start() {
 		}
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
+		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
 }
