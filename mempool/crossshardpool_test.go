@@ -98,6 +98,7 @@ var _ = func() (_ struct{}) {
 		pool.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
 		pool.mtx = new(sync.RWMutex)
 		pool.db = dbCrossShard
+		pool.isTest = true
 		crossShardPoolMapTest[shardID] = pool
 	}
 	dbCrossShard, err = database.Open("leveldb", filepath.Join("./", "./testdatabase/crossshard"))
@@ -135,6 +136,7 @@ func ResetCrossShardPoolTest() {
 		pool.pendingPool = make(map[byte][]*blockchain.CrossShardBlock)
 		pool.mtx = new(sync.RWMutex)
 		pool.db = dbCrossShard
+		pool.isTest = true
 		crossShardPoolMapTest[shardID] = pool
 	}
 }

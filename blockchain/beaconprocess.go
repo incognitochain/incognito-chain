@@ -106,6 +106,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	// 		}
 	// 	}
 	// }
+	// snapshot current beacon committee and shard committee
+	snapshotBeaconCommittee, snapshotAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
+	if err != nil {
+		return NewBlockChainError(SnapshotCommitteeError, err)
+	}
 	Logger.log.Infof("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
 
@@ -128,7 +133,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		Logger.log.Infof("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err := blockchain.processStoreBeaconBlock(beaconBlock); err != nil {
+	if err := blockchain.processStoreBeaconBlock(beaconBlock, snapshotBeaconCommittee, snapshotAllShardCommittee); err != nil {
 		return err
 	}
 	go blockchain.removeOldDataAfterProcessingBeaconBlock()
@@ -778,7 +783,7 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 	}
 	return nil, false, []string{}, []string{}
 }
-func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock) error {
+func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock, beaconCommittee []string, allShardCommittee map[byte][]string) error {
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
 	for shardID, shardStates := range beaconBlock.Body.ShardState {
@@ -790,10 +795,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(beaconBlock *BeaconBlock) 
 		}
 	}
 	Logger.log.Infof("BEACON | Store Committee in Beacon Block Height %+v ", beaconBlock.Header.Height)
-	if err := blockchain.config.DataBase.StoreShardCommitteeByHeight(beaconBlock.Header.Height, blockchain.BestState.Beacon.GetShardCommittee()); err != nil {
+	if err := blockchain.config.DataBase.StoreShardCommitteeByHeight(beaconBlock.Header.Height, allShardCommittee); err != nil {
 		return NewBlockChainError(StoreShardCommitteeByHeightError, err)
 	}
-	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(beaconBlock.Header.Height, blockchain.BestState.Beacon.BeaconCommittee); err != nil {
+	if err := blockchain.config.DataBase.StoreBeaconCommitteeByHeight(beaconBlock.Header.Height, beaconCommittee); err != nil {
 		return NewBlockChainError(StoreBeaconCommitteeByHeightError, err)
 	}
 	if err := blockchain.config.DataBase.StoreRewardReceiverByHeight(beaconBlock.Header.Height, blockchain.BestState.Beacon.RewardReceiver); err != nil {
