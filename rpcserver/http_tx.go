@@ -421,7 +421,8 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 		if errM != nil {
 			return nil, NewRPCError(ErrTxNotExistedInMemAndBLock, errors.New("Tx is not existed in block or mempool"))
 		}
-		result, errM := httpServer.revertTxToResponseObject(tx, nil, 0, 0, byte(0))
+		shardIDTemp := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		result, errM := httpServer.revertTxToResponseObject(tx, nil, 0, 0, shardIDTemp)
 		if errM.(*RPCError) != nil {
 			return nil, errM.(*RPCError)
 		}
