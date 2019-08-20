@@ -29,7 +29,7 @@ type TxViewPoint struct {
 	mapOutputCoins map[string][]privacy.OutputCoin
 
 	// data of NORMAL custom token
-	customTokenTxs map[int32]*transaction.TxCustomToken
+	customTokenTxs map[int32]*transaction.TxNormalToken
 
 	// data of PRIVACY custom token
 	privacyCustomTokenViewPoint map[int32]*TxViewPoint // sub tx viewpoint for token
@@ -37,7 +37,7 @@ type TxViewPoint struct {
 	privacyCustomTokenMetadata  *CrossShardTokenPrivacyMetaData
 
 	//cross shard tx token
-	crossTxTokenData map[int32]*transaction.TxTokenData
+	crossTxTokenData map[int32]*transaction.TxNormalTokenData
 
 	// use to fetch tx - pubkey
 	txByPubKey map[string]interface{} // map[base58check.encode{pubkey}+"_"+base58check.encode{txid})
@@ -183,7 +183,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 			}
 		case common.TxCustomTokenType:
 			{
-				tx := tx.(*transaction.TxCustomToken)
+				tx := tx.(*transaction.TxNormalToken)
 				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, prvCoinID)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
@@ -247,8 +247,8 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
-				subView.tokenID = &tx.TxTokenPrivacyData.PropertyID
-				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxTokenPrivacyData.TxNormal.Proof, subView.tokenID)
+				subView.tokenID = &tx.TxPrivacyTokenData.PropertyID
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}
@@ -316,12 +316,12 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		mapCommitments:              make(map[string][][]byte),
 		mapOutputCoins:              make(map[string][]privacy.OutputCoin),
 		mapSnD:                      make(map[string][][]byte),
-		customTokenTxs:              make(map[int32]*transaction.TxCustomToken),
+		customTokenTxs:              make(map[int32]*transaction.TxNormalToken),
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
 		privacyCustomTokenTxs:       make(map[int32]*transaction.TxCustomTokenPrivacy),
 		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
-		crossTxTokenData:            make(map[int32]*transaction.TxTokenData),
+		crossTxTokenData:            make(map[int32]*transaction.TxNormalTokenData),
 
 		txByPubKey: make(map[string]interface{}),
 	}

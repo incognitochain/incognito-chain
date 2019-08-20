@@ -16,17 +16,15 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
-	"github.com/incognitochain/incognito-chain/memcache"
-	"github.com/incognitochain/incognito-chain/pubsub"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/rpccaller"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"github.com/pkg/errors"
@@ -46,8 +44,8 @@ type BlockChain struct {
 	cQuitSync        chan struct{}
 	Synker           synker
 	ConsensusOngoing bool
-	RPCClient        *rpccaller.RPCClient
-	IsTest           bool
+	//RPCClient        *rpccaller.RPCClient
+	IsTest bool
 }
 
 type BestState struct {
@@ -170,7 +168,7 @@ func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Tr
 // -------------- Blockchain retriever's implementation --------------
 // GetCustomTokenTxsHash - return list of tx which relate to custom token
 func (blockchain *BlockChain) GetCustomTokenTxs(tokenID *common.Hash) (map[common.Hash]metadata.Transaction, error) {
-	txHashesInByte, err := blockchain.config.DataBase.CustomTokenTxs(*tokenID)
+	txHashesInByte, err := blockchain.config.DataBase.NormalTokenTxs(*tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -325,6 +323,45 @@ func (blockchain *BlockChain) initBeaconState() error {
 	return nil
 }
 
+func (bestState BestState) GetClonedBeaconBestState() (*BeaconBestState, error) {
+	result := NewBeaconBestState()
+	err := result.cloneBeaconBestState(bestState.Beacon)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetReadOnlyShard - return a copy of Shard of BestState
+func (bestState BestState) GetClonedAllShardBestState() map[byte]*ShardBestState {
+	result := make(map[byte]*ShardBestState)
+	for k, v := range bestState.Shard {
+		v.lock.RLock()
+		result[k] = &ShardBestState{}
+		err := result[k].cloneShardBestState(v)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		v.lock.RUnlock()
+	}
+	return result
+}
+
+// GetReadOnlyShard - return a copy of Shard of BestState
+func (bestState *BestState) GetClonedAShardBestState(shardID byte) (*ShardBestState, error) {
+	shardBestState := NewShardBestState()
+	if target, ok := bestState.Shard[shardID]; !ok {
+		return shardBestState, fmt.Errorf("Failed to get Shard BestState of ShardID %+v", shardID)
+	} else {
+		target.lock.RLock()
+		defer target.lock.RUnlock()
+		if err := shardBestState.cloneShardBestState(target); err != nil {
+			return shardBestState, fmt.Errorf("Failed to clone Shard BestState of ShardID %+v", shardID)
+		}
+	}
+	return shardBestState, nil
+}
+
 /*
 Get block index(height) of block
 */
@@ -346,34 +383,34 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 	if blockchain.IsTest {
 		return &BeaconBlock{}, nil
 	}
-	hashBlock, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
+	beaconBlockHash, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
 	if err != nil {
 		return nil, err
 	}
-	block, _, err := blockchain.GetBeaconBlockByHash(hashBlock)
+	beaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconBlockHash)
 	if err != nil {
 		return nil, err
 	}
-	return block, nil
+	return beaconBlock, nil
 }
 
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetBeaconBlockByHash(hash common.Hash) (*BeaconBlock, uint64, error) {
+func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) (*BeaconBlock, uint64, error) {
 	if blockchain.IsTest {
 		return &BeaconBlock{}, 2, nil
 	}
-	blockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(hash)
+	beaconBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(beaconBlockHash)
 	if err != nil {
 		return nil, 0, err
 	}
-	block := BeaconBlock{}
-	err = json.Unmarshal(blockBytes, &block)
+	beaconBlock := NewBeaconBlock()
+	err = json.Unmarshal(beaconBlockBytes, beaconBlock)
 	if err != nil {
 		return nil, 0, err
 	}
-	return &block, uint64(len(blockBytes)), nil
+	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 
 /*
@@ -636,7 +673,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		case transaction.CustomTokenInit:
 			{
 				Logger.log.Info("Store custom token when it is issued", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
-				err = blockchain.config.DataBase.StoreCustomToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				err = blockchain.config.DataBase.StoreNormalToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
 				if err != nil {
 					return err
 				}
@@ -648,7 +685,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 				//If don't exist then create
 				if !existedToken {
 					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
-					err = blockchain.config.DataBase.StoreCustomToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+					err = blockchain.config.DataBase.StoreNormalToken(customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
 					if err != nil {
 						Logger.log.Error("CreateAndSaveTxViewPointFromBlock", err)
 					}
@@ -658,9 +695,9 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 					panic(err)
 				}
 				//If don't exist then create
-				if _, ok := listCustomToken[customTokenTx.TxTokenData.PropertyID]; !ok {
-					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxTokenData.PropertyID, customTokenTx.TxTokenData.PropertySymbol, customTokenTx.TxTokenData.PropertyName)
-					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxTokenData.PropertyID, customTokenTx.Hash()[:])
+				if _, ok := listCustomToken[customTokenTx.TxNormalTokenData.PropertyID]; !ok {
+					Logger.log.Info("Store Cross Shard Custom if It's not existed in DB", customTokenTx.TxNormalTokenData.PropertyID, customTokenTx.TxNormalTokenData.PropertySymbol, customTokenTx.TxNormalTokenData.PropertyName)
+					err = blockchain.config.DataBase.StoreCustomToken(&customTokenTx.TxNormalTokenData.PropertyID, customTokenTx.Hash()[:])
 				}*/
 			}
 		case transaction.CustomTokenTransfer:
@@ -670,18 +707,14 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		}
 		// save tx which relate to custom token
 		// Reject Double spend UTXO before enter this state
-		//fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxTokenData.Vins, customTokenTx.TxTokenData.Vouts)
+		//fmt.Printf("StoreCustomTokenPaymentAddresstHistory/CustomTokenTx: \n VIN %+v VOUT %+v \n", customTokenTx.TxNormalTokenData.Vins, customTokenTx.TxNormalTokenData.Vouts)
 		Logger.log.Info("Store Custom Token History")
 		err = blockchain.StoreCustomTokenPaymentAddresstHistory(customTokenTx, block.Header.ShardID)
 		if err != nil {
 			// Skip double spend
 			return err
 		}
-		err = blockchain.config.DataBase.StoreCustomTokenTx(customTokenTx.TxTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
-		if err != nil {
-			return err
-		}
-
+		err = blockchain.config.DataBase.StoreNormalTokenTx(customTokenTx.TxTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, customTokenTx.Hash()[:])
 		if err != nil {
 			return err
 		}
@@ -690,11 +723,11 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 	// check privacy custom token
 	for indexTx, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[indexTx]
-		switch privacyCustomTokenTx.TxTokenPrivacyData.Type {
+		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, privacyCustomTokenTx.TxTokenPrivacyData.PropertySymbol, privacyCustomTokenTx.TxTokenPrivacyData.PropertyName)
-				err = blockchain.config.DataBase.StorePrivacyCustomToken(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, privacyCustomTokenTx.Hash()[:])
+				Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol, privacyCustomTokenTx.TxPrivacyTokenData.PropertyName)
+				err = blockchain.config.DataBase.StorePrivacyToken(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.Hash()[:])
 				if err != nil {
 					return err
 				}
@@ -704,7 +737,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 				Logger.log.Info("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = blockchain.config.DataBase.StorePrivacyCustomTokenTx(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, privacyCustomTokenTx.Hash()[:])
+		err = blockchain.config.DataBase.StorePrivacyTokenTx(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, block.Header.ShardID, block.Header.Height, indexTx, privacyCustomTokenTx.Hash()[:])
 		if err != nil {
 			return err
 		}
@@ -776,7 +809,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 				// json.Unmarshal(tokenDataBytes, &crossShardTokenPrivacyMetaData)
 				// fmt.Println("New Token CrossShardTokenPrivacyMetaData", crossShardTokenPrivacyMetaDatla)
 
-				if err := blockchain.config.DataBase.StorePrivacyCustomTokenCrossShard(*tokenID, tokenDataBytes); err != nil {
+				if err := blockchain.config.DataBase.StorePrivacyTokenCrossShard(*tokenID, tokenDataBytes); err != nil {
 					return err
 				}
 			}
@@ -832,7 +865,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 // 	KeyWallet: token-paymentAddress  -[-]-  {tokenId}  -[-]-  {paymentAddress}  -[-]-  {txHash}  -[-]-  {voutIndex}
 //   H: value-spent/unspent
 */
-func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxCustomToken, shardID byte) error {
+func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customTokenTx *transaction.TxNormalToken, shardID byte) error {
 	Splitter := lvdb.Splitter
 	TokenPaymentAddressPrefix := lvdb.TokenPaymentAddressPrefix
 	unspent := lvdb.Unspent
@@ -1023,40 +1056,41 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 
 // GetUnspentTxCustomTokenVout - return all unspent tx custom token out of sender
 func (blockchain *BlockChain) GetUnspentTxCustomTokenVout(receiverKeyset incognitokey.KeySet, tokenID *common.Hash) ([]transaction.TxTokenVout, error) {
-	data, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressUTXO(*tokenID, receiverKeyset.PaymentAddress.Bytes())
-	fmt.Println(data)
+	data, err := blockchain.config.DataBase.GetNormalTokenPaymentAddressUTXO(*tokenID, receiverKeyset.PaymentAddress.Bytes())
 	if err != nil {
 		return nil, err
 	}
-	splitter := []byte("-[-]-")
-	unspent := []byte("unspent")
 	voutList := []transaction.TxTokenVout{}
-	for key, value := range data {
-		keys := strings.Split(key, string(splitter))
-		values := strings.Split(value, string(splitter))
-		// values: [amount-value, spent/unspent]
-		// get unspent transaction output
-		if strings.Compare(values[1], string(unspent)) == 0 {
-			vout := transaction.TxTokenVout{}
-			vout.PaymentAddress = receiverKeyset.PaymentAddress
-			txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
-			if err != nil {
-				return nil, err
+	if len(data) > 0 {
+		splitter := []byte("-[-]-")
+		unspent := []byte("unspent")
+		for key, value := range data {
+			keys := strings.Split(key, string(splitter))
+			values := strings.Split(value, string(splitter))
+			// values: [amount-value, spent/unspent]
+			// get unspent transaction output
+			if strings.Compare(values[1], string(unspent)) == 0 {
+				vout := transaction.TxTokenVout{}
+				vout.PaymentAddress = receiverKeyset.PaymentAddress
+				txHash, err := common.Hash{}.NewHashFromStr(string(keys[3]))
+				if err != nil {
+					return nil, err
+				}
+				vout.SetTxCustomTokenID(*txHash)
+				voutIndexByte := []byte(keys[4])
+				voutIndex, err := common.BytesToInt32(voutIndexByte)
+				if err != nil {
+					return nil, err
+				}
+				vout.SetIndex(int(voutIndex))
+				value, err := strconv.Atoi(values[0])
+				if err != nil {
+					return nil, err
+				}
+				vout.Value = uint64(value)
+				Logger.log.Info("GetCustomTokenPaymentAddressUTXO VOUT", vout)
+				voutList = append(voutList, vout)
 			}
-			vout.SetTxCustomTokenID(*txHash)
-			voutIndexByte := []byte(keys[4])
-			voutIndex, err := common.BytesToInt32(voutIndexByte)
-			if err != nil {
-				return nil, err
-			}
-			vout.SetIndex(int(voutIndex))
-			value, err := strconv.Atoi(values[0])
-			if err != nil {
-				return nil, err
-			}
-			vout.Value = uint64(value)
-			Logger.log.Info("GetCustomTokenPaymentAddressUTXO VOUT", vout)
-			voutList = append(voutList, vout)
 		}
 	}
 	return voutList, nil
@@ -1072,7 +1106,7 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 	}
 	block, _, err1 := blockchain.GetShardBlockByHash(blockHash)
 	if err1 != nil {
-		Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
+		//Logger.log.Errorf("ERROR", err1, "NO Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Body.Transactions[index])
 		return byte(255), common.Hash{}, -1, nil, NewBlockChainError(UnExpectedError, err1)
 	}
 	//Logger.log.Infof("Transaction in block with hash &+v", blockHash, "and index", index, "contains", block.Transactions[index])
@@ -1093,25 +1127,25 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 
 // Check Custom token ID is existed
 func (blockchain *BlockChain) CustomTokenIDExisted(tokenID *common.Hash) bool {
-	return blockchain.config.DataBase.CustomTokenIDExisted(*tokenID)
+	return blockchain.config.DataBase.NormalTokenIDExisted(*tokenID)
 }
 
 // Check Privacy Custom token ID is existed
 func (blockchain *BlockChain) PrivacyCustomTokenIDExisted(tokenID *common.Hash) bool {
-	return blockchain.config.DataBase.PrivacyCustomTokenIDExisted(*tokenID)
+	return blockchain.config.DataBase.PrivacyTokenIDExisted(*tokenID)
 }
 
 func (blockchain *BlockChain) PrivacyCustomTokenIDCrossShardExisted(tokenID *common.Hash) bool {
-	return blockchain.config.DataBase.PrivacyCustomTokenIDCrossShardExisted(*tokenID)
+	return blockchain.config.DataBase.PrivacyTokenIDCrossShardExisted(*tokenID)
 }
 
 // ListCustomToken - return all custom token which existed in network
-func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxCustomToken, error) {
-	data, err := blockchain.config.DataBase.ListCustomToken()
+func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error) {
+	data, err := blockchain.config.DataBase.ListNormalToken()
 	if err != nil {
 		return nil, err
 	}
-	result := make(map[common.Hash]transaction.TxCustomToken)
+	result := make(map[common.Hash]transaction.TxNormalToken)
 	for _, txData := range data {
 		hash := common.Hash{}
 		hash.SetBytes(txData)
@@ -1121,7 +1155,7 @@ func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxC
 		if err != nil {
 			return nil, NewBlockChainError(UnExpectedError, err)
 		}
-		txCustomToken := tx.(*transaction.TxCustomToken)
+		txCustomToken := tx.(*transaction.TxNormalToken)
 		result[txCustomToken.TxTokenData.PropertyID] = *txCustomToken
 	}
 	return result, nil
@@ -1129,11 +1163,11 @@ func (blockchain *BlockChain) ListCustomToken() (map[common.Hash]transaction.TxC
 
 // ListCustomToken - return all custom token which existed in network
 func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]CrossShardTokenPrivacyMetaData, error) {
-	data, err := blockchain.config.DataBase.ListPrivacyCustomToken()
+	data, err := blockchain.config.DataBase.ListPrivacyToken()
 	if err != nil {
 		return nil, nil, err
 	}
-	crossShardData, err := blockchain.config.DataBase.ListPrivacyCustomTokenCrossShard()
+	crossShardData, err := blockchain.config.DataBase.ListPrivacyTokenCrossShard()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1148,7 +1182,7 @@ func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transact
 			return nil, nil, err
 		}
 		txPrivacyCustomToken := tx.(*transaction.TxCustomTokenPrivacy)
-		result[txPrivacyCustomToken.TxTokenPrivacyData.PropertyID] = *txPrivacyCustomToken
+		result[txPrivacyCustomToken.TxPrivacyTokenData.PropertyID] = *txPrivacyCustomToken
 	}
 	resultCrossShard := make(map[common.Hash]CrossShardTokenPrivacyMetaData)
 	for _, tokenData := range crossShardData {
@@ -1164,7 +1198,7 @@ func (blockchain *BlockChain) ListPrivacyCustomToken() (map[common.Hash]transact
 
 // GetCustomTokenTxsHash - return list hash of tx which relate to custom token
 func (blockchain *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
-	txHashesInByte, err := blockchain.config.DataBase.CustomTokenTxs(*tokenID)
+	txHashesInByte, err := blockchain.config.DataBase.NormalTokenTxs(*tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -1177,7 +1211,7 @@ func (blockchain *BlockChain) GetCustomTokenTxsHash(tokenID *common.Hash) ([]com
 
 // GetPrivacyCustomTokenTxsHash - return list hash of tx which relate to custom token
 func (blockchain *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash) ([]common.Hash, error) {
-	txHashesInByte, err := blockchain.config.DataBase.PrivacyCustomTokenTxs(*tokenID)
+	txHashesInByte, err := blockchain.config.DataBase.PrivacyTokenTxs(*tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -1190,15 +1224,15 @@ func (blockchain *BlockChain) GetPrivacyCustomTokenTxsHash(tokenID *common.Hash)
 
 // GetListTokenHolders - return list paymentaddress (in hexstring) of someone who hold custom token in network
 func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[string]uint64, error) {
-	result, err := blockchain.config.DataBase.GetCustomTokenPaymentAddressesBalance(*tokenID)
+	result, err := blockchain.config.DataBase.GetNormalTokenPaymentAddressesBalance(*tokenID)
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (self *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
-	return self.BestState.Beacon.BestBlock.Header.Height
+func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
+	return blockchain.BestState.Beacon.BestBlock.Header.Height
 }
 
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
@@ -1244,6 +1278,7 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 		baseRewards[key] = value / uint64(len(blockchain.BestState.Beacon.BeaconCommittee))
 	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
+		// indicate reward pubkey
 		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)
 		if err != nil {
 			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
@@ -1330,7 +1365,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 	for _, tx := range transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58_Version)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
 			txRequestTable[requester] = tx
 		}
 	}
@@ -1352,7 +1387,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58_Version)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
 			txRequestTable[requester] = tx
 		}
 	}
@@ -1364,7 +1399,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			//fmt.Printf("[ndh] -  %+v\n", tx)
 			//TODO: check why using encode version with block version value
-			requester := base58.Base58Check{}.Encode(requesterRes, common.Base58_Version)
+			requester := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
 			if txRequestTable[requester] == nil {
 				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
 				return errors.New("This response dont match with any request")
@@ -1399,9 +1434,13 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	return nil
 }
 
-func (blockchain *BlockChain) GetRPCClient() *rpccaller.RPCClient {
+/*func (blockchain BlockChain) GetRPCClient() *rpccaller.RPCClient {
 	return blockchain.RPCClient
 }
+
+func (blockchain *BlockChain) SetRPCClientChain(rpcClient *rpccaller.RPCClient) {
+	blockchain.RPCClient = rpcClient
+}*/
 
 func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	payToAddress *privacy.PaymentAddress,
@@ -1791,7 +1830,7 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks [
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(epoch * common.EPOCH)
+						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
 						if err != nil {
 							return err
 						}
@@ -2013,7 +2052,7 @@ func (blockchain *BlockChain) restoreDatabaseFromBeaconInstruction(beaconBlocks 
 					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 						isInit = true
 						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(epoch * common.EPOCH)
+						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
 						if err != nil {
 							return err
 						}
@@ -2065,20 +2104,20 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 		switch customTokenTx.TxTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				err = blockchain.config.DataBase.DeleteCustomToken(customTokenTx.TxTokenData.PropertyID)
+				err = blockchain.config.DataBase.DeleteNormalToken(customTokenTx.TxTokenData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		case transaction.CustomTokenCrossShard:
 			{
-				err = blockchain.config.DataBase.DeleteCustomToken(customTokenTx.TxTokenData.PropertyID)
+				err = blockchain.config.DataBase.DeleteNormalToken(customTokenTx.TxTokenData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		err = blockchain.config.DataBase.DeleteCustomTokenTx(customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
+		err = blockchain.config.DataBase.DeleteNormalTokenTx(customTokenTx.TxTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
 		if err != nil {
 			return err
 		}
@@ -2088,16 +2127,16 @@ func (blockchain *BlockChain) restoreFromTxViewPoint(block *ShardBlock) error {
 	// check privacy custom token
 	for indexTx, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[indexTx]
-		switch privacyCustomTokenTx.TxTokenPrivacyData.Type {
+		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				err = blockchain.config.DataBase.DeletePrivacyCustomToken(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID)
+				err = blockchain.config.DataBase.DeletePrivacyToken(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
 				if err != nil {
 					return err
 				}
 			}
 		}
-		err = blockchain.config.DataBase.DeletePrivacyCustomTokenTx(privacyCustomTokenTx.TxTokenPrivacyData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
+		err = blockchain.config.DataBase.DeletePrivacyTokenTx(privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, indexTx, block.Header.ShardID, block.Header.Height)
 		if err != nil {
 			return err
 		}
@@ -2132,7 +2171,7 @@ func (blockchain *BlockChain) restoreFromCrossTxViewPoint(block *ShardBlock) err
 
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		tokenID := privacyCustomTokenSubView.tokenID
-		if err := blockchain.config.DataBase.DeletePrivacyCustomTokenCrossShard(*tokenID); err != nil {
+		if err := blockchain.config.DataBase.DeletePrivacyTokenCrossShard(*tokenID); err != nil {
 			return err
 		}
 		err = blockchain.restoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
@@ -2373,7 +2412,7 @@ func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error
 				}
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
-			for key, _ := range acceptedBlkRewardInfo.TxsFee {
+			for key := range acceptedBlkRewardInfo.TxsFee {
 				err = blockchain.config.DataBase.BackupShardRewardRequest(block.Header.Epoch, acceptedBlkRewardInfo.ShardID, key)
 				if err != nil {
 					return err

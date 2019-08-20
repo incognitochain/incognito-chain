@@ -39,17 +39,19 @@ type BeaconBestState struct {
 	CandidateBeaconWaitingForCurrentRandom []string             `json:"CandidateBeaconWaitingForCurrentRandom"`
 	CandidateShardWaitingForNextRandom     []string             `json:"CandidateShardWaitingForNextRandom"` // shard candidate list, waiting to be shuffled in next epoch
 	CandidateBeaconWaitingForNextRandom    []string             `json:"CandidateBeaconWaitingForNextRandom"`
-	ShardCommittee                         map[byte][]string    `json:"ShardCommittee"`        // current committee and validator of all shard
-	ShardPendingValidator                  map[byte][]string    `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
-	CurrentRandomNumber                    int64                `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp                 int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber                      bool                 `json:"IsGetRandomNumber"`
-	Params                                 map[string]string    `json:"Params,omitempty"` // TODO: review what does this field do
-	MaxBeaconCommitteeSize                 int                  `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize                 int                  `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize                  int                  `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize                  int                  `json:"MinShardCommitteeSize"`
-	ActiveShards                           int                  `json:"ActiveShards"`
+	// key: public key of committee, value: payment address reward receiver
+	RewardReceiver         map[string]string `json:"RewardReceiver"`        // map candidate/committee -> reward receiver
+	ShardCommittee         map[byte][]string `json:"ShardCommittee"`        // current committee and validator of all shard
+	ShardPendingValidator  map[byte][]string `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
+	CurrentRandomNumber    int64             `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp int64             `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber      bool              `json:"IsGetRandomNumber"`
+	Params                 map[string]string `json:"Params,omitempty"` // TODO: review what does this field do
+	MaxBeaconCommitteeSize int               `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize int               `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize  int               `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize  int               `json:"MinShardCommitteeSize"`
+	ActiveShards           int               `json:"ActiveShards"`
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -79,6 +81,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.CandidateBeaconWaitingForCurrentRandom = []string{}
 	beaconBestState.CandidateShardWaitingForNextRandom = []string{}
 	beaconBestState.CandidateBeaconWaitingForNextRandom = []string{}
+	beaconBestState.RewardReceiver = make(map[string]string)
 	beaconBestState.ShardCommittee = make(map[byte][]string)
 	beaconBestState.ShardPendingValidator = make(map[byte][]string)
 	beaconBestState.Params = make(map[string]string)
@@ -110,7 +113,6 @@ func (beaconBestState *BeaconBestState) InitRandomClient(randomClient btc.Random
 func (beaconBestState *BeaconBestState) MarshalJSON() ([]byte, error) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
-
 	type Alias BeaconBestState
 	b, err := json.Marshal(&struct {
 		*Alias

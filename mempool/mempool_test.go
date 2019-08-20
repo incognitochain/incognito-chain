@@ -159,7 +159,7 @@ func ResetMempoolTest() {
 	tp.poolSerialNumberHash = make(map[common.Hash]common.Hash)
 	tp.poolTokenID = make(map[common.Hash]string)
 	tp.PoolCandidate = make(map[common.Hash]string)
-	tp.DuplicateTxs = make(map[common.Hash]uint64)
+	tp.duplicateTxs = make(map[common.Hash]uint64)
 	tp.RoleInCommittees = -1
 	tp.IsBlockGenStarted = false
 	tp.IsUnlockMempool = false
@@ -369,9 +369,9 @@ func CreateAndSaveTestStakingTransaction(privateKey string, fee int64, isBeacon 
 	paymentAddress, _ := senderKeySet.Serialize(wallet.PaymentAddressType)
 	var stakingMetadata *metadata.StakingMetadata
 	if isBeacon {
-		stakingMetadata, _ = metadata.NewStakingMetadata(64, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard)
+		stakingMetadata, _ = metadata.NewStakingMetadata(64, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, true)
 	} else {
-		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard)
+		stakingMetadata, _ = metadata.NewStakingMetadata(63, base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), tp.config.ChainParams.StakingAmountShard, true)
 	}
 	estimateTxSizeInKb := transaction.EstimateTxSize(transaction.NewEstimateTxSizeParam(candidateOutputCoins, paymentInfos, hasPrivacyCoin, stakingMetadata, nil, nil, 1))
 	realFee := uint64(estimateFeeCoinPerKb) * uint64(estimateTxSizeInKb)
@@ -473,7 +473,7 @@ func CreateAndSaveTestInitCustomTokenTransaction(privateKey string, fee int64, t
 	}
 	// convert to inputcoins
 	inputCoins := transaction.ConvertOutputCoinToInputCoin(candidateOutputCoins)
-	tx := &transaction.TxCustomToken{}
+	tx := &transaction.TxNormalToken{}
 	err1 := tx.Init(
 		transaction.NewTxNormalTokenInitParam(&senderKeySet.KeySet.PrivateKey,
 			nil,
@@ -934,8 +934,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err91 == nil {
 		t.Fatal("Expect replace fail error in mempool error error but no error")
 	} else {
-		if err91.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err91)
+		if err91.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTxError].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTxError], err91)
 		}
 	}
 	// Check Condition 5: replace (custom token privacy tx)
@@ -952,8 +952,8 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	if err93 == nil {
 		t.Fatal("Expect replace fail error in mempool error error but no error")
 	} else {
-		if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTx].Code {
-			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTx], err93)
+		if err93.(*MempoolTxError).Code != ErrCodeMessage[RejectReplacementTxError].Code {
+			t.Fatalf("Expect Error %+v but get %+v", ErrCodeMessage[RejectReplacementTxError], err93)
 		}
 	}
 	// Check Condition 5: Check double spend with mempool
@@ -1136,22 +1136,22 @@ func TestTxPoolmayBeAcceptTransaction(t *testing.T) {
 		t.Fatalf("Expect tx hash %+v in database mempool but counter err", txStakingBeacon.Hash())
 	}
 
-	tx1Data, err := tp.GetTransactionFromDatabaseMempool(tx1.Hash())
+	tx1Data, err := tp.getTransactionFromDatabaseMempool(tx1.Hash())
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx1Data)
 	assert.Equal(t, tx1.Hash(), tx1Data.Desc.Tx.Hash())
 
-	tx1Data, err = tp.GetTransactionFromDatabaseMempool(&common.Hash{})
+	tx1Data, err = tp.getTransactionFromDatabaseMempool(&common.Hash{})
 	assert.NotEqual(t, nil, err)
 
-	err = tp.RemoveTransactionFromDatabaseMP(tx1.Hash())
+	err = tp.removeTransactionFromDatabaseMP(tx1.Hash())
 	assert.Equal(t, nil, err)
 	isOk, err := tp.config.DataBaseMempool.HasTransaction(tx1.Hash())
 	assert.Equal(t, nil, err)
 	assert.Equal(t, false, isOk)
 
 	tp.config.TxLifeTime = 100000000000
-	listTx, err := tp.LoadDatabaseMP()
+	listTx, err := tp.loadDatabaseMP()
 	assert.Equal(t, nil, err)
 	assert.Equal(t, 0, len(listTx))
 
