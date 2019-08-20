@@ -1084,6 +1084,8 @@ func (tp *TxPool) UnlockPool() {
 
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	count := len(tp.pool)
 	return count
 }
