@@ -46,13 +46,12 @@ func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <
 // handleGetBestBlock implements the getbestblock command.
 func (httpServer *HttpServer) handleGetBestBlockHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result := jsonresult.GetBestBlockHashResult{
-		// BestBlockHashes: make(map[byte]string),
 		BestBlockHashes: make(map[int]string),
 	}
-	for shardID, best := range httpServer.config.BlockChain.BestState.Shard {
+	for shardID, best := range httpServer.config.BlockChain.BestState.GetClonedShardBestState() {
 		result.BestBlockHashes[int(shardID)] = best.BestBlockHash.String()
 	}
-	beaconBestState := httpServer.config.BlockChain.BestState.Beacon
+	beaconBestState := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
 	if beaconBestState == nil {
 		return result, nil
 	}
