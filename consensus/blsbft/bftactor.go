@@ -31,12 +31,13 @@ type BLSBFT struct {
 	VoteMessageCh    chan BFTVote
 
 	RoundData struct {
-		Block          common.BlockInterface
-		Votes          map[string]Vote
-		Round          int
-		NextHeight     uint64
-		State          string
-		NotYetSendVote bool
+		Block             common.BlockInterface
+		BlockValidateData ValidationData
+		Votes             map[string]Vote
+		Round             int
+		NextHeight        uint64
+		State             string
+		NotYetSendVote    bool
 	}
 
 	Blocks     map[string]common.BlockInterface
@@ -44,6 +45,7 @@ type BLSBFT struct {
 	isOngoing  bool
 	isStarted  bool
 	StopCh     chan struct{}
+	logger     common.Logger
 }
 
 func (e *BLSBFT) IsOngoing() bool {
@@ -87,15 +89,9 @@ func (e *BLSBFT) Start() {
 			case <-e.StopCh:
 				return
 			case proposeMsg := <-e.ProposeMessageCh:
-				var block common.BlockInterface
-				if e.ChainKey == common.BEACON_CHAINKEY {
-					var beaconBlk blockchain.BeaconBlock
-					json.Unmarshal(proposeMsg.Block, &beaconBlk)
-					block = &beaconBlk
-				} else {
-					var shardBlk blockchain.ShardBlock
-					json.Unmarshal(proposeMsg.Block, &shardBlk)
-					block = &shardBlk
+				block, err := e.Chain.UnmarshalBlock(proposeMsg.Block)
+				if err != nil {
+					continue
 				}
 				round := block.GetRound()
 				if round < e.RoundData.Round {
@@ -143,7 +139,7 @@ func (e *BLSBFT) Start() {
 					}
 					if e.isHasMajorityVote() {
 						//TODO: aggregate sigs
-						e.Chain.InsertBlk(e.RoundData.Block, true)
+						e.Chain.InsertBlk(e.RoundData.Block)
 						e.enterNewRound()
 					}
 				}
@@ -154,13 +150,22 @@ func (e *BLSBFT) Start() {
 }
 
 func (e *BLSBFT) enterProposePhase() {
+	type blockValidation interface {
+		common.BlockInterface
+		AddValidationField(validationData string) error
+	}
 	if !e.isInTimeFrame() || e.RoundData.State == PROPOSE {
 		return
 	}
 	e.setState(PROPOSE)
 
 	block := e.Chain.CreateNewBlock(int(e.RoundData.Round))
+	validationData := e.CreateValidationData(block.Hash())
+	validationDataStr, _ := json.Marshal(validationData)
+	block.(blockValidation).AddValidationField(string(validationDataStr))
+
 	e.RoundData.Block = block
+	e.RoundData.BlockValidateData = validationData
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
 	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
@@ -204,21 +209,22 @@ func (e *BLSBFT) enterNewRound() {
 	e.RoundData.Block = nil
 
 	if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58()) == (e.Chain.GetLastProposerIndex()+1+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
-		fmt.Println("BFT: new round propose")
+		e.logger.Info("BFT: new round propose")
 		e.enterProposePhase()
 	} else {
-		fmt.Println("BFT: new round listen")
+		e.logger.Info("BFT: new round listen")
 		e.enterListenPhase()
 	}
 
 }
 
-func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface) consensus.ConsensusInterface {
+func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey
 	newInstance.Node = node
 	newInstance.UserKeySet = e.UserKeySet
+	newInstance.logger = logger
 	return &newInstance
 }
 

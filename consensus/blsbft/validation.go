@@ -31,31 +31,17 @@ func EncodeValidationData(validationData ValidationData) ([]byte, error) {
 }
 
 func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []string) error {
-	if err := e.ValidateProducerSig(block.Hash(), block.GetValidationField()); err != nil {
+	if err := e.ValidateProducerSig(block); err != nil {
 		return err
 	}
-	// if err := e.ValidateProducerPosition(block); err != nil {
-	// 	return err
-	// }
+	if err := e.ValidateProducerPosition(block); err != nil {
+		return err
+	}
+	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
+		return err
+	}
 	return nil
 }
-
-// func (e *BLSBFT) ValidateBlock(block common.BlockInterface) error {
-
-// 	// 1. Verify producer's sig
-// 	// 2. Verify Committee's sig
-// 	// 3. Verify correct producer for blockHeight, round
-// 	if err := e.ValidateProducerSig(block); err != nil {
-// 		return err
-// 	}
-// 	if err := e.ValidateCommitteeSig(block); err != nil {
-// 		return err
-// 	}
-// 	if err := e.ValidateProducerPosition(block); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
 
 func (e *BLSBFT) ValidateProducerPosition(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
@@ -72,33 +58,37 @@ func (e *BLSBFT) ValidateProducerPosition(block common.BlockInterface) error {
 	return nil
 }
 
-func (e *BLSBFT) ValidateProducerSig(blockHash *common.Hash, validationData string) error {
-	valData, err := DecodeValidationData(validationData)
+func (e *BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
+	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
 	}
-	if err := bls.ValidateSingleSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
+	if err := bls.ValidateSingleSig(block.Hash(), valData.ProducerSig, valData.Producer); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (e *BLSBFT) ValidateCommitteeSig(blockHash *common.Hash, committee []string, validationData string) error {
-	valData, err := DecodeValidationData(validationData)
+func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []string) error {
+	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
 	}
-	if err := bls.ValidateAggSig(blockHash, valData.AggSig, committee); err != nil {
+	if err := bls.ValidateAggSig(block.Hash(), valData.AggSig, committee); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (e *BLSBFT) CreateValidationData(blockHash common.Hash, privateKey string, round int) ValidationData {
+func (e *BLSBFT) CreateValidationData(blockHash *common.Hash) ValidationData {
 	var valData ValidationData
 	return valData
 }
 
 func (e *BLSBFT) FinalizedValidationData(block common.BlockInterface, sigs []string) error {
+	return nil
+}
+
+func (e *BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
 	return nil
 }

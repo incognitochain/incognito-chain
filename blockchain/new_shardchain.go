@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -62,7 +64,27 @@ func (chain *ShardChain) CreateNewBlock(round int) common.BlockInterface {
 }
 
 func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
-	_ = block
+	var shardBestState ShardBestState
+	shardBlock := block.(*ShardBlock)
+	chain.BestState.cloneShardBestState(&shardBestState)
+	producerPublicKey := shardBlock.Header.Producer
+	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+	}
+	chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee)
+	chain.InsertBlk(block)
+	return nil
+}
+
+func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []string) error {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
+		return err
+	}
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, chain.GetConsensusType()); err != nil {
+		return nil
+	}
 	return nil
 }
 
@@ -70,8 +92,8 @@ func (chain *ShardChain) ValidateBlockWithBlockChain(common.BlockInterface) erro
 	return nil
 }
 
-func (chain *ShardChain) InsertBlk(block common.BlockInterface, isValid bool) {
-	chain.Blockchain.InsertShardBlock(block.(*ShardBlock), isValid)
+func (chain *ShardChain) InsertBlk(block common.BlockInterface) {
+	chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {
@@ -91,8 +113,7 @@ func (chain *ShardChain) GetShardID() int {
 }
 
 func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	chain.GetCommittee()
-	return "", 0
+	return chain.BestState.GetPubkeyRole(pubkey, round), chain.BestState.ShardID
 }
 
 func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
@@ -102,4 +123,8 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 		return nil, err
 	}
 	return shardBlk, nil
+}
+
+func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.BestState.ShardID)
 }
