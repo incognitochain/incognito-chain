@@ -521,6 +521,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 	}
 	//Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := connManager.countPeerConnOfShard(shard)
+	fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
 	if countPeerShard >= maxPeers {
 		// close if over max conn
 		if countPeerShard > maxPeers {
@@ -541,12 +542,15 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 			cPbk := connManager.config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
+				fmt.Println("CONN: try to connect ", pbk, peerI.RawAddress)
 				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, nil)
 				countPeerShard++
 			}
 			if countPeerShard >= maxPeers {
 				return countPeerShard
 			}
+		} else {
+			fmt.Println("CONN: cannot find", pbk)
 		}
 	}
 	return countPeerShard
