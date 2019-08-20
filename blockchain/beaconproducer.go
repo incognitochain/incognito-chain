@@ -68,7 +68,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	}
 	beaconBestState.InitRandomClient(blockGenerator.chain.config.RandomClient)
 	//======Build Header Essential Data=======
-	beaconBlock.Header.ProducerAddress = *producerAddress
+	// beaconBlock.Header.ProducerAddress = *producerAddress
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
 	beaconBlock.Header.Height = beaconBestState.BeaconHeight + 1
 	if (beaconBestState.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
@@ -229,7 +229,6 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 		//=======
 		currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 		for index, shardBlock := range shardBlocks {
-			currentCommittee := beaconBestState.GetAShardCommittee(shardID)
 			// hash := shardBlock.Header.Hash()
 			err := blockGenerator.chain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock.Hash(), currentCommittee, shardBlock.ValidationData, beaconBestState.ShardConsensusAlgorithm[shardID])
 			Logger.log.Infof("Beacon Producer/ Validate Agg Signature for shard %+v, block height %+v, err %+v", shardID, shardBlock.Header.Height, err == nil)
