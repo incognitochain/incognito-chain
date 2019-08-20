@@ -33,7 +33,7 @@
                 "112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy"
             ],
             "type": "http",
-            "wait": 30
+            "wait": 40
         },
         "node": "shard0-0",
         "output": {
