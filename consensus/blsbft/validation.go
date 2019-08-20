@@ -11,11 +11,13 @@ import (
 )
 
 type ValidationData struct {
-	Producer       string
-	ProducerSig    string
-	ValidatiorsIdx []int
-	AggSig         string
-	BridgeSig      []string
+	Producer          string
+	ProducerSig       string
+	ProducerBridgeSig []string
+	ValidatiorsIdx    []int
+	AggSig            string
+	BridgeSig         []string
+	AgreeSigs         map[string][]string
 }
 
 func DecodeValidationData(data string) (*ValidationData, error) {
@@ -78,7 +80,7 @@ func (e *BLSBFT) ValidateProducerSig(blockHash *common.Hash, validationData stri
 	if err != nil {
 		return err
 	}
-	if err := bls.ValidateSingleSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
+	if err := e.UserKeySet.validateSingleSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
 		return err
 	}
 	return nil
