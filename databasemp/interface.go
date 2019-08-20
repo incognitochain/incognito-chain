@@ -10,7 +10,7 @@ type DatabaseInterface interface {
 	Delete(key []byte) error
 	HasValue(key []byte) (bool, error)
 
-	AddTransaction(*common.Hash, string, []byte, []byte) error
+	AddTransaction(txHash *common.Hash, txType string, valueTx []byte, valueDesc []byte) error
 	RemoveTransaction(key *common.Hash) error
 	GetTransaction(key *common.Hash) ([]byte, error)
 	HasTransaction(key *common.Hash) (bool, error)

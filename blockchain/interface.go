@@ -51,10 +51,8 @@ type ShardPool interface {
 type BeaconPool interface {
 	RemoveBlock(uint64)
 	AddBeaconBlock(block *BeaconBlock) error
-	GetValidBlockHash() []common.Hash
 	GetValidBlock() []*BeaconBlock
 	GetValidBlockHeight() []uint64
-	GetLatestValidBlockHeight() uint64
 	SetBeaconState(uint64)
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})

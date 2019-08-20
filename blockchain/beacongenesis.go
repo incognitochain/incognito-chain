@@ -18,10 +18,14 @@ func CreateBeaconGenesisBlock(
 	beaconAssingInstruction := []string{StakeAction}
 	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(genesisParams.PreSelectBeaconNodeSerializedPubkey[:], ","))
 	beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
+	beaconAssingInstruction = append(beaconAssingInstruction, []string{""}...)
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(genesisParams.PreSelectBeaconNodeSerializedPaymentAddress[:], ","))
 
 	shardAssingInstruction := []string{StakeAction}
 	shardAssingInstruction = append(shardAssingInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPubkey[:], ","))
 	shardAssingInstruction = append(shardAssingInstruction, "shard")
+	shardAssingInstruction = append(shardAssingInstruction, []string{""}...)
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPaymentAddress[:], ","))
 
 	inst = append(inst, beaconAssingInstruction)
 	inst = append(inst, shardAssingInstruction)
