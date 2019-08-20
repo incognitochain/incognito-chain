@@ -75,3 +75,10 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 		return
 	}
 }
+
+func (e *BLSBFT) sendVote() {
+	sig, _ := e.UserKeySet.SignData(e.RoundData.Block.Hash())
+	MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, sig, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+	// go e.Node.PushMessageToChain(msg)
+	e.RoundData.NotYetSendVote = false
+}

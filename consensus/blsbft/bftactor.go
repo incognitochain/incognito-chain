@@ -15,10 +15,8 @@ const (
 	CONSENSUSNAME = "BLSBFT"
 )
 
-type SigStatus struct {
-	IsOk       bool
-	Verified   bool
-	SigContent string
+type Vote struct {
+	Sig string
 }
 
 type BLSBFT struct {
@@ -34,17 +32,18 @@ type BLSBFT struct {
 
 	RoundData struct {
 		Block          common.BlockInterface
-		Votes          map[string]SigStatus
+		Votes          map[string]Vote
 		Round          int
 		NextHeight     uint64
 		State          string
 		NotYetSendVote bool
 	}
 
-	Blocks    map[string]common.BlockInterface
-	isOngoing bool
-	isStarted bool
-	StopCh    chan struct{}
+	Blocks     map[string]common.BlockInterface
+	EarlyVotes map[string]map[string]Vote
+	isOngoing  bool
+	isStarted  bool
+	StopCh     chan struct{}
 }
 
 func (e *BLSBFT) IsOngoing() bool {
@@ -74,7 +73,7 @@ func (e *BLSBFT) Start() {
 	e.isStarted = true
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
-	e.RoundData.Votes = map[string]SigStatus{}
+	e.EarlyVotes = make(map[string]map[string]Vote)
 	e.Blocks = map[string]common.BlockInterface{}
 
 	e.ProposeMessageCh = make(chan BFTPropose)
@@ -87,14 +86,17 @@ func (e *BLSBFT) Start() {
 			select {
 			case <-e.StopCh:
 				return
-			case b := <-e.ProposeMessageCh:
+			case proposeMsg := <-e.ProposeMessageCh:
 				var block common.BlockInterface
 				if e.ChainKey == common.BEACON_CHAINKEY {
 					var beaconBlk blockchain.BeaconBlock
-					json.Unmarshal(b.Block, &beaconBlk)
+					json.Unmarshal(proposeMsg.Block, &beaconBlk)
 					block = &beaconBlk
+				} else {
+					var shardBlk blockchain.ShardBlock
+					json.Unmarshal(proposeMsg.Block, &shardBlk)
+					block = &shardBlk
 				}
-
 				round := block.GetRound()
 				if round < e.RoundData.Round {
 					continue
@@ -104,26 +106,28 @@ func (e *BLSBFT) Start() {
 						e.Blocks[getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)] = block
 					}
 				}
-			case vote := <-e.VoteMessageCh:
-				_ = vote
-				// if e.PrepareMsgs[sig.RoundKey] == nil {
-				// 	e.PrepareMsgs[sig.RoundKey] = map[string]SigStatus{}
-				// }
-				// e.PrepareMsgs[sig.RoundKey][sig.Pubkey] = SigStatus{sig.IsOk, false, sig.ContentSig}
-
+			case voteMsg := <-e.VoteMessageCh:
+				if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
+					//validate single sig
+					if true {
+						e.RoundData.Votes[voteMsg.Validator] = Vote{voteMsg.Sig}
+					}
+				}
 			case <-ticker:
 				if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58()) == -1 {
+					e.isOngoing = false
 					continue
 				}
 
 				if !e.Chain.IsReady() {
+					e.isOngoing = false
 					continue
 				}
 
 				if !e.isInTimeFrame() || e.RoundData.State == "" {
 					e.enterNewRound()
 				}
-
+				e.isOngoing = true
 				switch e.RoundData.State {
 				case LISTEN:
 					// timeout or vote nil?
@@ -137,17 +141,11 @@ func (e *BLSBFT) Start() {
 					if e.RoundData.NotYetSendVote {
 						e.sendVote()
 					}
-
-					// roundKey := fmt.Sprint(e.NextHeight, "_", e.Round)
-					// if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == 1 {
-					// 	//TODO: aggregate sigs
-					// 	e.Chain.InsertBlk(e.Block, true)
-					// 	e.enterNewRound()
-					// }
-					//if e.Block != nil && e.getMajorityVote(e.PrepareMsgs[roundKey]) == -1 {
-					//	e.Chain.InsertBlk(e.Block, false)
-					//	e.enterNewRound()
-					//}
+					if e.isHasMajorityVote() {
+						//TODO: aggregate sigs
+						e.Chain.InsertBlk(e.RoundData.Block, true)
+						e.enterNewRound()
+					}
 				}
 
 			}
@@ -164,9 +162,9 @@ func (e *BLSBFT) enterProposePhase() {
 	block := e.Chain.CreateNewBlock(int(e.RoundData.Round))
 	e.RoundData.Block = block
 
-	// blockData, _ := json.Marshal(e.RoundData.Block)
-	// msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-	// go e.Chain.PushMessageToValidators(msg)
+	blockData, _ := json.Marshal(e.RoundData.Block)
+	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.enterVotePhase()
 
 }
@@ -200,8 +198,9 @@ func (e *BLSBFT) enterNewRound() {
 	e.setState(NEWROUND)
 	e.waitForNextRound()
 
-	e.RoundData.Round = e.getCurrentRound()
 	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
+	e.RoundData.Round = e.getCurrentRound()
+	e.RoundData.Votes = make(map[string]Vote)
 	e.RoundData.Block = nil
 
 	if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58()) == (e.Chain.GetLastProposerIndex()+1+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
@@ -225,8 +224,4 @@ func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, no
 
 func init() {
 	consensus.RegisterConsensus(common.BLS_CONSENSUS, &BLSBFT{})
-}
-
-func getRoundKey(nextHeight uint64, round int) string {
-	return fmt.Sprint(nextHeight, "_", round)
 }
