@@ -53,6 +53,25 @@ type BestState struct {
 	Shard  map[byte]*ShardBestState
 }
 
+func (bestState BestState) GetClonedBeaconBestState() *BeaconBestState {
+	result := BeaconBestState{}
+	_ = result.cloneBeaconBestState(bestState.Beacon)
+	return &result
+}
+
+// GetReadOnlyShard - return a copy of Shard of BestState
+func (bestState BestState) GetClonedShardBestState() map[byte]*ShardBestState {
+	result := make(map[byte]*ShardBestState)
+	for k, v := range bestState.Shard {
+		result[k] = &ShardBestState{}
+		err := result[k].cloneShardBestState(v)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+	}
+	return result
+}
+
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
 	DataBase          database.DatabaseInterface
