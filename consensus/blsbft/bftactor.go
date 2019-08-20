@@ -47,7 +47,7 @@ type BLSBFT struct {
 	NextHeight uint64
 
 	// UserKeySet        *incognitokey.KeySet
-	UserKeySet      *blsKeySet
+	UserKeySet      *MiningKey
 	State           string
 	NotYetSendAgree bool
 
