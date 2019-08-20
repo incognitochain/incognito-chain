@@ -2,8 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/blockchain"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
@@ -18,9 +16,7 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 		return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
 	}
 
-	result := *httpServer.config.BlockChain.BestState.Beacon
-	result.BestBlock = blockchain.BeaconBlock{}
-
+	result := jsonresult.NewGetBeaconBestState(httpServer.config.BlockChain.BestState.Beacon)
 	Logger.log.Debugf("handleGetBeaconBestState result: %+v", result)
 
 	return result, nil
