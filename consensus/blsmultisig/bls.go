@@ -9,7 +9,8 @@ import (
 )
 
 // Sign return BLS signature
-func Sign(data []byte, sk *big.Int, selfIdx int) ([]byte, error) {
+func Sign(data, skBytes []byte, selfIdx int, listCommittee []byte) ([]byte, error) {
+	sk := B2I(skBytes)
 	if selfIdx >= len(CommonPKs) {
 		return []byte{0}, errors.New(CErr + CErrInps)
 	}
