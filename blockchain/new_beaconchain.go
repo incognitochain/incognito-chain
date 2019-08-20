@@ -63,8 +63,8 @@ func (chain *BeaconChain) CreateNewBlock(round int) common.BlockInterface {
 	return newBlock
 }
 
-func (chain *BeaconChain) InsertBlk(block common.BlockInterface, isValid bool) {
-	chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), isValid)
+func (chain *BeaconChain) InsertBlk(block common.BlockInterface) {
+	chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
@@ -76,7 +76,11 @@ func (chain *BeaconChain) GetChainName() string {
 }
 
 func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return "", 0
+	return chain.BestState.GetPubkeyRole(pubkey, round)
+}
+
+func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
+	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
 }
 
 func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
@@ -89,7 +93,8 @@ func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) er
 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 	}
-
+	chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee)
+	chain.InsertBlk(block)
 	return nil
 }
 
@@ -100,7 +105,6 @@ func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, c
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, chain.GetConsensusType()); err != nil {
 		return nil
 	}
-
 	return nil
 }
 

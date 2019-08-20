@@ -17,7 +17,7 @@ type NodeInterface interface {
 }
 
 type ConsensusInterface interface {
-	NewInstance(chain blockchain.ChainInterface, chainKey string, node NodeInterface) ConsensusInterface
+	NewInstance(chain blockchain.ChainInterface, chainKey string, node NodeInterface, logger common.Logger) ConsensusInterface
 	GetConsensusName() string
 
 	Start()
@@ -29,12 +29,13 @@ type ConsensusInterface interface {
 	// ValidateBlock(block common.BlockInterface) error
 
 	// ValidateProducerPosition(block common.BlockInterface) error
-	ValidateProducerSig(blockHash *common.Hash, validationData string) error
-	ValidateCommitteeSig(blockHash *common.Hash, committee []string, validationData string) error
+	ValidateProducerSig(block common.BlockInterface) error
+	ValidateCommitteeSig(block common.BlockInterface, committee []string) error
 
 	LoadUserKey(string) error
 	GetUserPublicKey() string
 	GetUserPrivateKey() string
+	ValidateData(data []byte, sig string, publicKey string) error
 	// SignData(data []byte) (string, error)
 	// ValidateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error
 	// ValidateSingleSig(dataHash *common.Hash, sig string, pubkey string) error
