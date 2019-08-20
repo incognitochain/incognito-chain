@@ -1084,8 +1084,20 @@ func (tp *TxPool) UnlockPool() {
 
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	count := len(tp.pool)
 	return count
+}
+
+func (tp TxPool) GetClonedPoolCandidate() map[common.Hash]string {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+	result := make(map[common.Hash]string)
+	for k, v := range tp.PoolCandidate {
+		result[k] = v
+	}
+	return result
 }
 
 /*
