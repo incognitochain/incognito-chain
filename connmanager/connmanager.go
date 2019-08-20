@@ -527,6 +527,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 	}
 	//Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := connManager.countPeerConnOfShard(shard)
+	fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
 	if countPeerShard >= maxPeers {
 		// close if over max conn
 		if countPeerShard > maxPeers {
@@ -553,6 +554,8 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 			if countPeerShard >= maxPeers {
 				return countPeerShard
 			}
+		} else {
+			fmt.Println("CONN: cannot find", pbk)
 		}
 	}
 	return countPeerShard

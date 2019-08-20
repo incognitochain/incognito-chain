@@ -227,14 +227,10 @@ func (shardBestState *ShardBestState) MarshalJSON() ([]byte, error) {
 }
 
 func (shardBestState ShardBestState) GetShardHeight() uint64 {
-	shardBestState.lock.Lock()
-	defer shardBestState.lock.Unlock()
 	return shardBestState.ShardHeight
 }
 
 func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
-	shardBestState.lock.Lock()
-	defer shardBestState.lock.Unlock()
 	return shardBestState.BeaconHeight
 }
 

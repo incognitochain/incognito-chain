@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
 
@@ -33,8 +32,8 @@ func EncodeValidationData(validationData ValidationData) ([]byte, error) {
 	return json.Marshal(validationData)
 }
 
-func (e *BLSBFT) validatePreSignBlock(blockHash *common.Hash, committee []string, validationData string) error {
-	if err := e.ValidateProducerSig(blockHash, validationData); err != nil {
+func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []string) error {
+	if err := e.ValidateProducerSig(block.Hash(), block.GetValidationField()); err != nil {
 		return err
 	}
 	// if err := e.ValidateProducerPosition(block); err != nil {
@@ -102,6 +101,6 @@ func (e *BLSBFT) CreateValidationData(blockHash common.Hash, privateKey string, 
 	return valData
 }
 
-func (e *BLSBFT) FinalizedValidationData(block chain.BlockInterface, sigs []string) error {
+func (e *BLSBFT) FinalizedValidationData(block common.BlockInterface, sigs []string) error {
 	return nil
 }
