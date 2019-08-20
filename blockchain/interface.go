@@ -105,9 +105,11 @@ type ChainInterface interface {
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
 	CreateNewBlock(round int) common.BlockInterface
-	InsertBlk(common.BlockInterface, bool)
+	InsertBlk(common.BlockInterface)
 	ValidateAndInsertBlock(common.BlockInterface) error
 	ValidateBlockWithBlockChain(common.BlockInterface) error
+	ValidateBlockSignatures(block common.BlockInterface, committee []string) error
+	ValidatePreSignBlock(block common.BlockInterface) error
 	GetShardID() int
 }
 
