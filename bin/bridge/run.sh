@@ -3,8 +3,6 @@
 run()
 {
   latest_tag=$1
-  # echo "latest tag as param: $latest_tag\n" >> log.txt
-  # echo "private key: $PRIVATEKEY\n" >> log.txt
   privatekey=$PRIVATEKEY
   dataDir="data"
   ethDataDir="eth-kovan-data"
@@ -34,14 +32,10 @@ run()
 current_latest_tag=""
 while [ 1 = 1 ]
 do
-  tags=`wget -q https://registry.hub.docker.com/v1/repositories/incognitochain/incognito/tags? -O -  | sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $3}' | sed -e 's/\n/;/g'`
+  tags=`curl -X GET https://registry.hub.docker.com/v1/repositories/incognitochain/incognito/tags  | sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $3}' | sed -e 's/\n/;/g'`
 
   sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
-  # echo "${sorted_tags[*]}"
   latest_tag=${sorted_tags[0]}
-
-  # echo "latest tag: $latest_tag\n" >> log.txt
-  # echo "current latest tag: $current_latest_tag\n" >> log.txt
 
   if [ "$current_latest_tag" != "$latest_tag" ]
   then
