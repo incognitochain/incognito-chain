@@ -1,9 +1,8 @@
 package blsbft
 
 import (
+	"fmt"
 	"time"
-
-	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
 )
 
 func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
@@ -37,39 +36,14 @@ func (e *BLSBFT) isInTimeFrame() bool {
 	return true
 }
 
-func (e *BLSBFT) getMajorityVote(votes map[string]SigStatus) int {
+func (e *BLSBFT) isHasMajorityVote() bool {
 	size := e.Chain.GetCommitteeSize()
-	approve := 0
-	reject := 0
-	for k, v := range votes {
-		if !v.Verified && bls.ValidateSingleSig(e.RoundData.Block.Hash(), v.SigContent, k) != nil {
-			delete(votes, k)
-			continue
-		}
-		v.Verified = true
-
-		if v.IsOk {
-			approve++
-		} else {
-			reject++
-		}
+	if len(e.RoundData.Votes) >= 2*size/3 {
+		return true
 	}
-	if approve > 2*size/3 {
-		return 1
-	}
-	if reject > 2*size/3 {
-		return -1
-	}
-	return 0
+	return false
 }
 
-func (e *BLSBFT) sendVote() {
-	sig, _ := e.UserKeySet.SignData(e.RoundData.Block.Hash())
-	MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, sig, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-	// go e.Node.PushMessageToChain(msg)
-	e.RoundData.NotYetSendVote = false
+func getRoundKey(nextHeight uint64, round int) string {
+	return fmt.Sprint(nextHeight, "_", round)
 }
-
-// func (e *BLSBFT) getTimeout() time.Duration {
-// 	return
-// }
