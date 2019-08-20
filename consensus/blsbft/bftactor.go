@@ -20,13 +20,12 @@ type Vote struct {
 }
 
 type BLSBFT struct {
-	Chain      blockchain.ChainInterface
-	Node       consensus.NodeInterface
-	ChainKey   string
-	PeerID     string
-	UserKeySet *blsKeySet
+	Chain    blockchain.ChainInterface
+	Node     consensus.NodeInterface
+	ChainKey string
+	PeerID   string
 
-	UserKeySet      *MiningKey
+	UserKeySet       *MiningKey
 	BFTMessageCh     chan wire.MessageBFT
 	ProposeMessageCh chan BFTPropose
 	VoteMessageCh    chan BFTVote
