@@ -36,10 +36,10 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wi
 	return msg, nil
 }
 
-func MakeBFTVoteMsg(userPubKey *blsKeySet, chainKey, sig, roundKey string) (wire.Message, error) {
+func MakeBFTVoteMsg(userKey *MiningKey, chainKey, sig, roundKey string) (wire.Message, error) {
 	var voteCtn BFTVote
 	voteCtn.RoundKey = roundKey
-	voteCtn.Validator = userPubKey.GetPublicKeyBase58()
+	voteCtn.Validator = userKey.GetPublicKeyBase58()
 	voteCtn.Sig = sig
 	voteCtnBytes, err := json.Marshal(voteCtn)
 	if err != nil {

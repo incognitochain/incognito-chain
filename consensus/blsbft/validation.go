@@ -79,9 +79,9 @@ func (e *BLSBFT) ValidateProducerSig(blockHash *common.Hash, validationData stri
 	if err != nil {
 		return err
 	}
-	if err := e.UserKeySet.validateSingleSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
-		return err
-	}
+	// if err := e.UserKeySet.validateSingleBLSSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
