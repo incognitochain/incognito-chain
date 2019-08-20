@@ -342,7 +342,6 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
 		ActiveShards: httpServer.config.ChainParams.ActiveShards,
 	}
-	beaconBestState := httpServer.config.BlockChain.BestState.Beacon
 	for shardID, bestState := range httpServer.config.BlockChain.BestState.Shard {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:           bestState.BestBlock.Header.Height,
@@ -354,6 +353,7 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		}
 	}
 
+	beaconBestState := httpServer.config.BlockChain.BestState.Beacon
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
 		Height:           beaconBestState.BestBlock.Header.Height,
 		Hash:             beaconBestState.BestBlock.Hash().String(),
