@@ -167,8 +167,9 @@ func (tp *TxPool) monitorPool() {
 	if tp.config.TxLifeTime == 0 {
 		return
 	}
-	for {
-		<-time.Tick(tp.ScanTime)
+	ticker := time.NewTicker(tp.ScanTime)
+	defer ticker.Stop()
+	for _ = range ticker.C {
 		tp.mtx.Lock()
 		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
@@ -1083,8 +1084,20 @@ func (tp *TxPool) UnlockPool() {
 
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	count := len(tp.pool)
 	return count
+}
+
+func (tp TxPool) GetClonedPoolCandidate() map[common.Hash]string {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+	result := make(map[common.Hash]string)
+	for k, v := range tp.PoolCandidate {
+		result[k] = v
+	}
+	return result
 }
 
 /*

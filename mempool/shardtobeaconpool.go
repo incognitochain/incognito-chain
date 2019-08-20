@@ -221,7 +221,7 @@ func (self *ShardToBeaconPool) GetValidBlock(limit map[byte]uint64) map[byte][]*
 				break
 			}
 			// ?
-			if i >= 50 {
+			if i >= blockchain.GetValidBlock {
 				break
 			}
 			if limit != nil && limit[shardID] != 0 && limit[shardID] < blks[i].Header.Height {
