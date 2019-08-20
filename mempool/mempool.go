@@ -1090,7 +1090,7 @@ func (tp *TxPool) Count() int {
 	return count
 }
 
-func (tp TxPool) GetPoolCandidate() map[common.Hash]string {
+func (tp TxPool) GetClonedPoolCandidate() map[common.Hash]string {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
 	result := make(map[common.Hash]string)
