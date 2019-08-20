@@ -95,6 +95,7 @@ type Config struct {
 		ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error
 		// GetBlockProducerPubKeyB58(validationData string, consensusType string) string
 		GetCurrentMiningPublicKey() (string, string)
+		CommitteeChange(chainName string)
 	}
 }
 
@@ -336,6 +337,45 @@ func (blockchain *BlockChain) initBeaconState() error {
 	return nil
 }
 
+func (bestState BestState) GetClonedBeaconBestState() (*BeaconBestState, error) {
+	result := NewBeaconBestState()
+	err := result.cloneBeaconBestState(bestState.Beacon)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetReadOnlyShard - return a copy of Shard of BestState
+func (bestState BestState) GetClonedAllShardBestState() map[byte]*ShardBestState {
+	result := make(map[byte]*ShardBestState)
+	for k, v := range bestState.Shard {
+		v.lock.RLock()
+		result[k] = &ShardBestState{}
+		err := result[k].cloneShardBestState(v)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		v.lock.RUnlock()
+	}
+	return result
+}
+
+// GetReadOnlyShard - return a copy of Shard of BestState
+func (bestState *BestState) GetClonedAShardBestState(shardID byte) (*ShardBestState, error) {
+	shardBestState := NewShardBestState()
+	if target, ok := bestState.Shard[shardID]; !ok {
+		return shardBestState, fmt.Errorf("Failed to get Shard BestState of ShardID %+v", shardID)
+	} else {
+		target.lock.RLock()
+		defer target.lock.RUnlock()
+		if err := shardBestState.cloneShardBestState(target); err != nil {
+			return shardBestState, fmt.Errorf("Failed to clone Shard BestState of ShardID %+v", shardID)
+		}
+	}
+	return shardBestState, nil
+}
+
 /*
 Get block index(height) of block
 */
@@ -357,34 +397,34 @@ func (blockchain *BlockChain) GetBeaconBlockByHeight(height uint64) (*BeaconBloc
 	if blockchain.IsTest {
 		return &BeaconBlock{}, nil
 	}
-	hashBlock, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
+	beaconBlockHash, err := blockchain.config.DataBase.GetBeaconBlockHashByIndex(height)
 	if err != nil {
 		return nil, err
 	}
-	block, _, err := blockchain.GetBeaconBlockByHash(hashBlock)
+	beaconBlock, _, err := blockchain.GetBeaconBlockByHash(beaconBlockHash)
 	if err != nil {
 		return nil, err
 	}
-	return block, nil
+	return beaconBlock, nil
 }
 
 /*
 Fetch DatabaseInterface and get block data by block hash
 */
-func (blockchain *BlockChain) GetBeaconBlockByHash(hash common.Hash) (*BeaconBlock, uint64, error) {
+func (blockchain *BlockChain) GetBeaconBlockByHash(beaconBlockHash common.Hash) (*BeaconBlock, uint64, error) {
 	if blockchain.IsTest {
 		return &BeaconBlock{}, 2, nil
 	}
-	blockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(hash)
+	beaconBlockBytes, err := blockchain.config.DataBase.FetchBeaconBlock(beaconBlockHash)
 	if err != nil {
 		return nil, 0, err
 	}
-	block := BeaconBlock{}
-	err = json.Unmarshal(blockBytes, &block)
+	beaconBlock := NewBeaconBlock()
+	err = json.Unmarshal(beaconBlockBytes, beaconBlock)
 	if err != nil {
 		return nil, 0, err
 	}
-	return &block, uint64(len(blockBytes)), nil
+	return beaconBlock, uint64(len(beaconBlockBytes)), nil
 }
 
 /*
@@ -1205,8 +1245,8 @@ func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[str
 	return result, nil
 }
 
-func (self *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
-	return self.BestState.Beacon.BestBlock.Header.Height
+func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
+	return blockchain.BestState.Beacon.BestBlock.Header.Height
 }
 
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {

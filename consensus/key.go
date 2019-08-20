@@ -35,6 +35,6 @@ func (engined *Engine) GetCurrentMiningPublicKey() (publickey string, keyType st
 func (engine *Engine) SignDataWithMiningKey(data []byte) (string, error) {
 	return "", nil
 }
-func (engine *Engine) VerifyValidationData(data []byte, validationData string, consensusType string) error {
+func (engine *Engine) VerifySignature(data []byte, validationData string, consensusType string) error {
 	return nil
 }

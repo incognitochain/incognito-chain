@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -132,8 +133,14 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	// 		}
 	// 	}
 	// }
+	oldCommittee := append([]string{}, blockchain.BestState.Shard[shardID].ShardCommittee...)
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(shardBlock, beaconBlocks); err != nil {
 		return err
+	}
+	newCommittee := append([]string{}, blockchain.BestState.Shard[shardID].ShardCommittee...)
+	isChanged := common.CompareStringArray(oldCommittee, newCommittee)
+	if isChanged {
+		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if !isValidated {
@@ -229,10 +236,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive shardBlock has timestamp must be greater than %+v but get %+v", previousShardBlock.Header.Timestamp, shardBlock.Header.Timestamp))
 	}
 	// Verify transaction root
-	txMerkle := Merkle{}.BuildMerkleTreeStore(shardBlock.Body.Transactions)
+	txMerkleTree := Merkle{}.BuildMerkleTreeStore(shardBlock.Body.Transactions)
 	txRoot := &common.Hash{}
-	if len(txMerkle) > 0 {
-		txRoot = txMerkle[len(txMerkle)-1]
+	if len(txMerkleTree) > 0 {
+		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
 	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
@@ -613,6 +620,7 @@ func (shardBestState *ShardBestState) initShardBestState(genesisShardBlock *Shar
 	if err != nil {
 		return err
 	}
+	shardBestState.ConsensusAlgorithm = common.BLS_CONSENSUS
 	return nil
 }
 func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock) {
@@ -725,17 +733,17 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	10. Check duplicate staker public key in block
 	11. Check duplicate Init Custom Token in block
 */
-func (blockChain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction) error {
 	if len(txs) == 0 {
 		return nil
 	}
-	isEmpty := blockChain.config.TempTxPool.EmptyPool()
+	isEmpty := blockchain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
-	defer blockChain.config.TempTxPool.EmptyPool()
+	defer blockchain.config.TempTxPool.EmptyPool()
 
-	err := blockChain.config.TempTxPool.ValidateTxList(txs)
+	err := blockchain.config.TempTxPool.ValidateTxList(txs)
 	if err != nil {
 		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
 		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
@@ -948,7 +956,10 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
 }
 func (blockchain *BlockChain) verifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
 	txTokenDataListFromTxs := []transaction.TxNormalTokenData{}
-	_, txTokenDataList := blockchain.createCustomTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
+	_, txTokenDataList, err := blockchain.createNormalTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
+	if err != nil {
+		return err
+	}
 	hash, err := calHashFromTxTokenDataList(txTokenDataList)
 	if err != nil {
 		return err
