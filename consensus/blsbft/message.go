@@ -16,7 +16,7 @@ type BFTAgree struct {
 	Sig       string
 }
 
-func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *blsKeySet) (wire.Message, error) {
+func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wire.Message, error) {
 	var proposeCtn BFTPropose
 	proposeCtn.Block = block
 	proposeCtnBytes, err := json.Marshal(proposeCtn)
