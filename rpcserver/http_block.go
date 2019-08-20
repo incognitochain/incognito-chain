@@ -48,14 +48,14 @@ func (httpServer *HttpServer) handleGetBestBlockHash(params interface{}, closeCh
 	result := jsonresult.GetBestBlockHashResult{
 		BestBlockHashes: make(map[int]string),
 	}
-	for shardID, best := range httpServer.config.BlockChain.BestState.GetClonedShardBestState() {
+	for shardID, best := range httpServer.config.BlockChain.BestState.GetClonedAllShardBestState() {
 		result.BestBlockHashes[int(shardID)] = best.BestBlockHash.String()
 	}
-	beaconBestState := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
-	if beaconBestState == nil {
-		return result, nil
+	clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, NewRPCError(GetClonedBeaconBestStateError, err)
 	}
-	result.BestBlockHashes[-1] = beaconBestState.BestBlockHash.String()
+	result.BestBlockHashes[-1] = clonedBeaconBestState.BestBlockHash.String()
 	return result, nil
 }
 
@@ -287,7 +287,12 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 	shardIDParam := int(shardIDParamTemp)
 	if shardIDParam != -1 {
 		result := make([]jsonresult.GetBlockResult, 0)
-		bestBlock := httpServer.config.BlockChain.BestState.GetClonedShardBestState()[byte(shardIDParam)].BestBlock
+		shardID := byte(shardIDParam)
+		clonedShardBestState, err := httpServer.config.BlockChain.BestState.GetClonedAShardBestState(shardID)
+		if err != nil {
+			return nil, NewRPCError(GetClonedShardBestStateError, err)
+		}
+		bestBlock := clonedShardBestState.BestBlock
 		previousHash := bestBlock.Hash()
 		for numBlock > 0 {
 			numBlock--
@@ -309,7 +314,11 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 		return result, nil
 	} else {
 		result := make([]jsonresult.GetBlocksBeaconResult, 0)
-		bestBlock := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState().BestBlock
+		clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+		if err != nil {
+			return nil, NewRPCError(GetClonedBeaconBestStateError, err)
+		}
+		bestBlock := clonedBeaconBestState.BestBlock
 		previousHash := bestBlock.Hash()
 		for numBlock > 0 {
 			numBlock--
@@ -341,7 +350,7 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
 		ActiveShards: httpServer.config.ChainParams.ActiveShards,
 	}
-	shards := httpServer.config.BlockChain.BestState.GetClonedShardBestState()
+	shards := httpServer.config.BlockChain.BestState.GetClonedAllShardBestState()
 	for shardID, bestState := range shards {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:           bestState.BestBlock.Header.Height,
@@ -352,15 +361,17 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 			Time:             bestState.BestBlock.Header.Timestamp,
 		}
 	}
-
-	beaconBestState := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+	clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, NewRPCError(GetClonedBeaconBestStateError, err)
+	}
 	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
-		Height:           beaconBestState.BestBlock.Header.Height,
-		Hash:             beaconBestState.BestBlock.Hash().String(),
-		BlockProducer:    beaconBestState.BestBlock.Header.ProducerAddress.String(),
-		BlockProducerSig: beaconBestState.BestBlock.ProducerSig,
-		Epoch:            beaconBestState.Epoch,
-		Time:             beaconBestState.BestBlock.Header.Timestamp,
+		Height:           clonedBeaconBestState.BestBlock.Header.Height,
+		Hash:             clonedBeaconBestState.BestBlock.Hash().String(),
+		BlockProducer:    clonedBeaconBestState.BestBlock.Header.ProducerAddress.String(),
+		BlockProducerSig: clonedBeaconBestState.BestBlock.ProducerSig,
+		Epoch:            clonedBeaconBestState.Epoch,
+		Time:             clonedBeaconBestState.BestBlock.Header.Timestamp,
 	}
 	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
