@@ -2,7 +2,7 @@
 
 run()
 {
-  private_key="xxx"
+  private_key=xxx
   latest_tag=$1
   data_dir="data"
   eth_data_dir="eth-kovan-data"
