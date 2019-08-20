@@ -3,7 +3,7 @@
 run()
 {
   latest_tag=$1
-  privatekey=$PRIVATEKEY
+  privatekey=xxx
   dataDir="data"
   ethDataDir="eth-kovan-data"
 
