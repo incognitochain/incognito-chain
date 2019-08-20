@@ -1,5 +1,7 @@
 package metadata
 
+import "github.com/incognitochain/incognito-chain/common"
+
 const (
 	InvalidMeta = 1
 
@@ -10,7 +12,6 @@ const (
 	IssuingETHRequestMeta  = 80
 	IssuingETHResponseMeta = 81
 
-	ResponseBaseMeta             = 35
 	ShardBlockReward             = 36
 	AcceptedBlockRewardInfoMeta  = 37
 	ShardBlockSalaryResponseMeta = 38
@@ -45,4 +46,16 @@ var minerCreatedMetaTypes = []int{
 const (
 	AllShards  = -1
 	BeaconOnly = -2
+)
+
+var (
+	// if the blockchain is running in Docker container
+	// then using GETH_NAME env's value (aka geth container name)
+	// otherwise using localhost
+	EthereumLightNodeHost = common.GetENV("GETH_NAME", "127.0.0.1")
+)
+
+const (
+	EthereumLightNodeProtocol = "http"
+	EthereumLightNodePort     = "8545"
 )

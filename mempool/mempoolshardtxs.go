@@ -28,7 +28,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 		for _, tx := range txs {
 			go func(tx metadata.Transaction) {
 				if tx.GetType() == common.TxCustomTokenType {
-					customTokenTx := tx.(*transaction.TxCustomToken)
+					customTokenTx := tx.(*transaction.TxNormalToken)
 					if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
 						errCh <- nil
 						return
@@ -64,7 +64,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 			return err
 		}
 		if tx.GetType() == common.TxCustomTokenType {
-			customTokenTx := tx.(*transaction.TxCustomToken)
+			customTokenTx := tx.(*transaction.TxNormalToken)
 			if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 				tokenID := customTokenTx.TxTokenData.PropertyID.String()
 				tp.tokenIDMtx.Lock()
@@ -119,7 +119,7 @@ func (tp *TxPool) validateTxIndependentProperties(tx metadata.Transaction) error
 		return nil
 	}
 	// check version
-	ok := tx.CheckTxVersion(MaxVersion)
+	ok := tx.CheckTxVersion(maxVersion)
 	if !ok {
 		return NewMempoolTxError(RejectVersion, fmt.Errorf("transaction %+v's version is invalid", txHash.String()))
 	}
