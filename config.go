@@ -41,8 +41,8 @@ const (
 	DefaultDisableRpcTLS          = true
 	DefaultFastStartup            = true
 	DefaultNodeMode               = common.NODEMODE_RELAY
-	DefaultEnableMining           = false
-	DefaultTxPoolTTL              = uint(86400) * 10 // in second
+	DefaultEnableMining           = true
+	DefaultTxPoolTTL              = uint(43200) // 12 hours
 	DefaultTxPoolMaxTx            = uint64(100000)
 	DefaultLimitFee               = uint64(0)
 	DefaultLimitFeeToken          = uint64(0)

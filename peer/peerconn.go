@@ -266,7 +266,7 @@ func (peerConn *PeerConn) processInMessageString(msgStr string) error {
 	}
 
 	// MONITOR INBOUND MESSAGE
-	storeInboundPeerMessage(message, time.Now().Unix(), peerConn.remotePeer.GetPeerID())
+	//storeInboundPeerMessage(message, time.Now().Unix(), peerConn.remotePeer.GetPeerID())
 	return nil
 }
 
@@ -483,10 +483,10 @@ func (peerConn *PeerConn) outMessageHandler(rw *bufio.ReadWriter) {
 					Logger.log.Debugf("Send a messageHex %s to %s", outMsg.message.MessageType(), peerConn.remotePeer.GetPeerID().Pretty())
 					sendString = messageHex
 				}
-				// MONITOR OUTBOUND MESSAGE
-				if outMsg.message != nil {
-					storeOutboundPeerMessage(outMsg.message, time.Now().Unix(), peerConn.remotePeer.GetPeerID())
-				}
+				//// MONITOR OUTBOUND MESSAGE
+				//if outMsg.message != nil {
+				//storeOutboundPeerMessage(outMsg.message, time.Now().Unix(), peerConn.remotePeer.GetPeerID())
+				//}
 
 				_, err := rw.Writer.WriteString(sendString)
 				if err != nil {
