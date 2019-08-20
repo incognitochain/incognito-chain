@@ -71,3 +71,7 @@ func (beaconBlock BeaconBlock) GetRound() int {
 func (beaconBlock BeaconBlock) GetRoundKey() string {
 	return fmt.Sprint(beaconBlock.Header.Height, "_", beaconBlock.Header.Round)
 }
+
+func (beaconBlock BeaconBlock) GetInstructions() [][]string {
+	return beaconBlock.Body.Instructions
+}
