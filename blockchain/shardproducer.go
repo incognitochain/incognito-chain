@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -97,7 +96,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	//======Get Transaction For new Block================
 	// Get Cross output coin from other shard && produce cross shard transaction
 	crossTransactions, crossTxTokenData := blockGenerator.getCrossShardData(shardID, blockGenerator.chain.BestState.Shard[shardID].BeaconHeight, beaconHeight, crossShards)
-	crossTxTokenTransactions, _, err := blockGenerator.chain.createCustomTokenTxForCrossShard(&producerKeySet.PrivateKey, crossTxTokenData, shardID)
+	crossTxTokenTransactions, _, err := blockGenerator.chain.createNormalTokenTxForCrossShard(&tempPrivateKey, crossTxTokenData, shardID)
 	if err != nil {
 		return nil, err
 	}
@@ -452,7 +451,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			if err != nil {
 				break
 			}
-			err = crossShardBlock.VerifyCrossShardBlock(shardCommittee[crossShardBlock.Header.ShardID])
+			err = crossShardBlock.VerifyCrossShardBlock(blockGenerator.chain, shardCommittee[crossShardBlock.Header.ShardID])
 			if err != nil {
 				break
 			}
