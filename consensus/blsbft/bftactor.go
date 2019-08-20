@@ -137,8 +137,10 @@ func (e *BLSBFT) Start() {
 					if e.RoundData.NotYetSendVote {
 						e.sendVote()
 					}
-					if e.isHasMajorityVote() {
+					if e.isHasMajorityVotes() {
 						//TODO: aggregate sigs
+
+						// e.RoundData.Block.(blockValidation).AddValidationField(string(validationDataStr))
 						e.Chain.InsertBlk(e.RoundData.Block)
 						e.enterNewRound()
 					}
@@ -150,10 +152,6 @@ func (e *BLSBFT) Start() {
 }
 
 func (e *BLSBFT) enterProposePhase() {
-	type blockValidation interface {
-		common.BlockInterface
-		AddValidationField(validationData string) error
-	}
 	if !e.isInTimeFrame() || e.RoundData.State == PROPOSE {
 		return
 	}
@@ -171,7 +169,6 @@ func (e *BLSBFT) enterProposePhase() {
 	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.enterVotePhase()
-
 }
 
 func (e *BLSBFT) enterListenPhase() {
