@@ -623,7 +623,7 @@ func (serverObj Server) Start() {
 	}
 
 	Logger.log.Debug("Starting server")
-	if common.CheckForce {
+	if blockchain.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
 	}
 	if cfg.TestNet {
