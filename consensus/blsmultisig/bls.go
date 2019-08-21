@@ -9,14 +9,17 @@ import (
 )
 
 // Sign return BLS signature
-func Sign(data, skBytes []byte, selfIdx int, listCommittee []byte) ([]byte, error) {
+func Sign(data, skBytes []byte, selfIdx int, committee []PublicKey) ([]byte, error) {
 	sk := B2I(skBytes)
-	if selfIdx >= len(CommonPKs) {
+	commonPKs, err := ListPKBytes2ListPKPoints(committee)
+	if err != nil {
+		return nil, err
+	}
+	if selfIdx >= len(commonPKs) {
 		return []byte{0}, errors.New(CErr + CErrInps)
 	}
 	dataPn := B2G1P(data)
-	aiSk := big.NewInt(0)
-	aiSk.Set(CommonAis[selfIdx])
+	aiSk := AiGen(committee, selfIdx)
 	aiSk.Mul(aiSk, sk)
 	aiSk.Mod(aiSk, bn256.Order)
 	sig := dataPn.ScalarMult(dataPn, aiSk)
@@ -24,7 +27,7 @@ func Sign(data, skBytes []byte, selfIdx int, listCommittee []byte) ([]byte, erro
 }
 
 // Verify verify BLS sig on given data and list public key
-func Verify(sig, data []byte, signersIdx []int) (bool, error) {
+func Verify(sig, data []byte, signersIdx []int, committee []PublicKey) (bool, error) {
 	gG2Pn := new(bn256.G2)
 	gG2Pn.ScalarBaseMult(big.NewInt(1))
 	sigPn, err := DecmprG1(sig)
@@ -32,7 +35,8 @@ func Verify(sig, data []byte, signersIdx []int) (bool, error) {
 		return false, err
 	}
 	lPair := bn256.Pair(sigPn, gG2Pn)
-	apk := CalcAPK(signersIdx)
+	// apk := CalcAPK(signersIdx)
+	apk := APKGen(committee, signersIdx)
 	dataPn := B2G1P(data)
 	rPair := bn256.Pair(dataPn, apk)
 	if !reflect.DeepEqual(lPair.Marshal(), rPair.Marshal()) {
