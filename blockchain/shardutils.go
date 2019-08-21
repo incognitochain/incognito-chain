@@ -152,7 +152,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			}
 			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			pkJoin := pkb58 + stakingMetadata.BLSPublicKey
+			pkJoin := pkb58 + stakingMetadata.CommitteePubKey
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, pkJoin)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
@@ -174,7 +174,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			}
 			pk := candidateWallet.KeySet.PaymentAddress.Pk
 			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			pkJoin := pkb58 + stakingMetadata.BLSPublicKey
+			pkJoin := pkb58 + stakingMetadata.CommitteePubKey
 			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, pkJoin)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
