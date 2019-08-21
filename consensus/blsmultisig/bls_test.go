@@ -53,7 +53,7 @@ func sign(data []byte, subset []int) ([][]byte, error) {
 	sigs := make([][]byte, len(subset))
 	var err error
 	for i := 0; i < len(subset); i++ {
-		sigs[i], err = Sign(data, B2I(listSKsBytes[subset[i]]), subset[i])
+		sigs[i], err = Sign(data, listSKsBytes[subset[i]], subset[i], listPKsBytes)
 		if err != nil {
 			return [][]byte{[]byte{0}}, err
 		}
@@ -66,7 +66,7 @@ func combine(sigs [][]byte) ([]byte, error) {
 }
 
 func verify(data, cSig []byte, subset []int) (bool, error) {
-	return Verify(cSig, data, subset)
+	return Verify(cSig, data, subset, listPKsBytes)
 }
 
 // return time sign, combine, verify
@@ -137,28 +137,28 @@ func Test_fullBLSSignFlow(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Test 100 of 100 committee sign",
+			name: "Test 20 of 20 committee sign",
 			args: args{
 				wantErr:       false,
 				rewriteKey:    true,
-				committeeSign: genSubset4Test(100, 100),
+				committeeSign: genSubset4Test(20, 20),
 			},
-			want:    0.2,
+			want:    1.5,
 			want1:   0.01,
-			want2:   0.2,
+			want2:   1.5,
 			want3:   true,
 			wantErr: false,
 		},
 		{
-			name: "Test 50 of 100 committee sign",
+			name: "Test 10 of 20 committee sign",
 			args: args{
 				wantErr:       false,
 				rewriteKey:    true,
-				committeeSign: genSubset4Test(50, 100),
+				committeeSign: genSubset4Test(10, 20),
 			},
-			want:    0.08,
-			want1:   0.005,
-			want2:   0.08,
+			want:    1,
+			want1:   0.01,
+			want2:   1,
 			want3:   true,
 			wantErr: false,
 		},
