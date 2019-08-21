@@ -350,6 +350,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxTx:         cfg.TxPoolMaxTx,
 		PubSubManager: pubsubManager,
 	})
+	go serverObj.tempMemPool.Start(serverObj.cQuit)
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
 
@@ -598,9 +599,8 @@ func (serverObj Server) Start() {
 	if atomic.AddInt32(&serverObj.started, 1) != 1 {
 		return
 	}
-
 	Logger.log.Debug("Starting server")
-	if common.CheckForce {
+	if blockchain.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
 	}
 	if cfg.TestNet {
@@ -648,6 +648,7 @@ func (serverObj Server) Start() {
 		}
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
+		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
 }
