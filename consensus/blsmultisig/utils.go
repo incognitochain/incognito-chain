@@ -43,7 +43,7 @@ func CacheCommonPKs(ListPK []PublicKey) error {
 	}
 
 	for i := 0; i < len(commonPKs); i++ {
-		commonAPs[i], commonAis[i] = AKGen(commonPKs, i)
+		commonAPs[i], commonAis[i] = AKGen(ListPK, i)
 	}
 	CommonPKs = commonPKs
 	CommonAPs = commonAPs

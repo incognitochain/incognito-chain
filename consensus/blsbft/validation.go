@@ -16,10 +16,12 @@ type blockValidation interface {
 
 type ValidationData struct {
 	Producer       string
-	ProducerSig    string
+	ProducerBLSSig string
+	ProducerBriSig string
 	ValidatiorsIdx []int
 	AggSig         string
 	BridgeSig      []string
+	// AgreeSigs         map[string][]string
 }
 
 func DecodeValidationData(data string) (*ValidationData, error) {
