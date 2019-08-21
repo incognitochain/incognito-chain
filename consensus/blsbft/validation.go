@@ -70,7 +70,8 @@ func (e *BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 	if err != nil {
 		return err
 	}
-	if err := validateSingleBLSSig(block.Hash(), valData.ProducerSig, valData.Producer); err != nil {
+
+	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, e.Chain.GetPubKeyCommitteeIndex(block.GetProducer()), e.Chain.GetCommittee()); err != nil {
 		return err
 	}
 	return nil
