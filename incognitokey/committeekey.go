@@ -44,14 +44,6 @@ func (pubKey *CommitteePubKey) CheckSanityData() bool {
 	return true
 }
 
-func (pubKey *CommitteePubKey) FromString(keyString string) error {
-	keyBytes, ver, err := base58.Base58Check{}.Decode(keyString)
-	if (ver != common.ZeroByte) || (err != nil) {
-		return errors.New("Wrong input")
-	}
-	return json.Unmarshal(keyBytes, pubKey)
-}
-
 func NewCommitteeKeyFromSeed(seed, incPubKey []byte) (CommitteePubKey, error) {
 	committeePubKey := new(CommitteePubKey)
 	committeePubKey.IncPubKey = incPubKey
@@ -85,11 +77,12 @@ func (pubKey *CommitteePubKey) GetMiningKey(schemeName string) ([]byte, error) {
 	}
 	return result, nil
 }
+
 func (pubKey *CommitteePubKey) GetMiningKeyBase58(schemeName string) string {
 	return base58.Base58Check{}.Encode(pubKey.MiningPubKey[schemeName], common.Base58Version)
 }
-func (pubKey *CommitteePubKey) GetIncKeyBase58() string {
 
+func (pubKey *CommitteePubKey) GetIncKeyBase58() string {
 	return base58.Base58Check{}.Encode(pubKey.IncPubKey, common.Base58Version)
 }
 
@@ -101,14 +94,10 @@ func (pubKey *CommitteePubKey) ToBase58() (string, error) {
 	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
 }
 
-func (pubKey *CommitteePubKey) FromBase58(keyStr string) error {
-	keyBytes, _, err := base58.Base58Check{}.Decode(keyStr)
-	if err != nil {
-		return err
+func (pubKey *CommitteePubKey) FromBase58(keyString string) error {
+	keyBytes, ver, err := base58.Base58Check{}.Decode(keyString)
+	if (ver != common.ZeroByte) || (err != nil) {
+		return errors.New("Wrong input")
 	}
-	err = json.Unmarshal(keyBytes, pubKey)
-	if err != nil {
-		return err
-	}
-	return nil
+	return json.Unmarshal(keyBytes, pubKey)
 }
