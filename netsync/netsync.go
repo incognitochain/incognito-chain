@@ -156,34 +156,6 @@ out:
 								}
 							}
 						}
-					// case *wire.MessageBFTPropose:
-					// 	{
-					// 		netSync.HandleMessageBFTMsg(msg)
-					// 	}
-					// case *wire.MessageBFTProposeV2:
-					// 	{
-					// 		netSync.HandleMessageBFTMsg(msg)
-					// 	}
-					// case *wire.MessageBFTPrepareV2:
-					// 	{
-					// 		netSync.HandleMessageBFTMsg(msg)
-					// 	}
-					// case *wire.MessageBFTAgree:
-					// 	{
-					// 		netSync.HandleMessageBFTMsg(msg)
-					// 	}
-					// case *wire.MessageBFTCommit:
-					// 	{
-					// 		netSync.HandleMessageBFTMsg(msg)
-					// 	}
-					// case *wire.MessageBFTReady:
-					// 	{
-					// 		netSync.HandleMessageBFTMsg(msg)
-					// 	}
-					// case *wire.MessageBFTReq:
-					// 	{
-					// 		netSync.HandleMessageBFTMsg(msg)
-					// 	}
 					case *wire.MessageBFT:
 						{
 							netSync.handleMessageBFTMsg(msg)
