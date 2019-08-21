@@ -598,7 +598,6 @@ func (serverObj Server) Start() {
 	if atomic.AddInt32(&serverObj.started, 1) != 1 {
 		return
 	}
-
 	Logger.log.Debug("Starting server")
 	if common.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
