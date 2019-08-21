@@ -14,10 +14,10 @@ func KeyGen(seed []byte) (ecdsa.PrivateKey, ecdsa.PublicKey) {
 	return *priKey, priKey.PublicKey
 }
 
-func PriKeyToBytes(priKey *ecdsa.PrivateKey) []byte {
+func SKBytes(priKey *ecdsa.PrivateKey) []byte {
 	return ethcrypto.FromECDSA(priKey)
 }
 
-func PubKeyToBytes(pubKey *ecdsa.PublicKey) []byte {
+func PKBytes(pubKey *ecdsa.PublicKey) []byte {
 	return ethcrypto.CompressPubkey(pubKey)
 }
