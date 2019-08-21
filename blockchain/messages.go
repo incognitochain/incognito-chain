@@ -69,7 +69,11 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	if blockchain.IsTest {
 		return
 	}
-	fmt.Println("Shard block received from shard A", newBlk.Header.ShardID, newBlk.Header.Height)
+	fmt.Println("Shard block received from shard", newBlk.Header.ShardID, newBlk.Header.Height)
+	if  newBlk.Header.Timestamp < GetBestStateShard(newBlk.Header.ShardID).BestBlock.Header.Timestamp { // not receive block older than current latest block
+		return
+	}
+	
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
 		if _, ok := currentInsert.Shards[newBlk.Header.ShardID]; !ok {
 			currentInsert.Shards[newBlk.Header.ShardID] = &sync.Mutex{}
@@ -77,7 +81,6 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 		currentInsert.Shards[newBlk.Header.ShardID].Lock()
 		defer currentInsert.Shards[newBlk.Header.ShardID].Unlock()
-		fmt.Println("Shard block received from shard B", newBlk.Header.ShardID, newBlk.Header.Height)
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			if blockchain.config.UserKeySet != nil {
