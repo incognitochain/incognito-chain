@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	CONSENSUSNAME = "BLSBFT"
+	CONSENSUSNAME = common.BLS_CONSENSUS
 )
 
 type Vote struct {

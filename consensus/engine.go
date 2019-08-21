@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -203,7 +204,7 @@ func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensus
 	return AvailableConsensus[consensusType].ValidateProducerSig(block)
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []string, consensusType string) error {
+func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey, consensusType string) error {
 	if _, ok := AvailableConsensus[consensusType]; !ok {
 		return errors.New("this consensus type isn't available")
 	}

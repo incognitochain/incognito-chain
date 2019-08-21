@@ -76,7 +76,7 @@ func validateSingleBLSSig(
 	dataHash *common.Hash,
 	blsSig string,
 	selfIdx int,
-	committee []string,
+	committee []blsmultisig.PublicKey,
 ) error {
 	sigBytes, ver, err := base58.Base58Check{}.Decode(blsSig)
 	if err != nil {
@@ -85,20 +85,7 @@ func validateSingleBLSSig(
 	if ver != common.ZeroByte {
 		return errors.New("Decode failed")
 	}
-
-	committeeBytes := []blsmultisig.PublicKey{}
-	for _, member := range committee {
-		memberBytes, ver, err := base58.Base58Check{}.Decode(member)
-		if ver != common.ZeroByte {
-			return errors.New("Decode failed")
-		}
-		if err != nil {
-			return err
-		}
-		committeeBytes = append(committeeBytes, memberBytes)
-	}
-
-	result, err := blsmultisig.Verify(sigBytes, dataHash.GetBytes(), []int{selfIdx}, committeeBytes)
+	result, err := blsmultisig.Verify(sigBytes, dataHash.GetBytes(), []int{selfIdx}, committee)
 	if err != nil {
 		return err
 	}

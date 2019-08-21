@@ -11,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -57,8 +58,8 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		totalTxsFee             = make(map[common.Hash]uint64)
 		block                   = NewShardBlock()
 		instructions            = [][]string{}
-		shardPendingValidator   = blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator
-		shardCommittee          = blockGenerator.chain.BestState.Shard[shardID].ShardCommittee
+		shardPendingValidator   = CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator)
+		shardCommittee          = CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee)
 		tempPrivateKey          = blockGenerator.createTempKeyset()
 	)
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
@@ -162,6 +163,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
+
 	committeeRoot, err := generateHashFromStringArray(shardCommittee)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
@@ -317,7 +319,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	- Assign Instruction: get more pending validator from beacon and return new list of pending validator
 */
 func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) []string {
-	shardPendingValidator := blockchain.BestState.Shard[shardID].ShardPendingValidator
+	shardPendingValidator := CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)
 	assignInstructions := GetAssignInstructionFromBeaconBlock(beaconBlocks, shardID)
 	if len(assignInstructions) != 0 {
 		Logger.log.Info("Shard Block Producer Assign Instructions ", assignInstructions)
@@ -446,7 +448,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			if err != nil {
 				break
 			}
-			shardCommittee := make(map[byte][]string)
+			shardCommittee := make(map[byte][]incognitokey.CommitteePubKey)
 			err = json.Unmarshal(temp, &shardCommittee)
 			if err != nil {
 				break

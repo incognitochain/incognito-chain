@@ -3,11 +3,13 @@ package blockchain
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 //===================================Util for Beacon=============================
@@ -34,19 +36,21 @@ func GetStakingCandidate(beaconBlock BeaconBlock) ([]string, []string) {
 // validator and candidate public key encode as base58 string
 // assume that candidates are already been checked
 // Check validation of candidate in transaction
-func AssignValidator(candidates []string, rand int64, activeShards int) (map[byte][]string, error) {
-	pendingValidators := make(map[byte][]string)
+func AssignValidator(candidates []incognitokey.CommitteePubKey, rand int64, activeShards int) (map[byte][]incognitokey.CommitteePubKey, error) {
+	pendingValidators := make(map[byte][]incognitokey.CommitteePubKey)
 	for _, candidate := range candidates {
-		shardID := calculateCandidateShardID(candidate, rand, activeShards)
+		candidateStr, _ := candidate.ToBase58()
+		shardID := calculateCandidateShardID(candidateStr, rand, activeShards)
 		pendingValidators[shardID] = append(pendingValidators[shardID], candidate)
 	}
 	return pendingValidators, nil
 }
 
 // AssignValidatorShard, param for better convenice than AssignValidator
-func AssignValidatorShard(currentCandidates map[byte][]string, shardCandidates []string, rand int64, activeShards int) error {
+func AssignValidatorShard(currentCandidates map[byte][]incognitokey.CommitteePubKey, shardCandidates []incognitokey.CommitteePubKey, rand int64, activeShards int) error {
 	for _, candidate := range shardCandidates {
-		shardID := calculateCandidateShardID(candidate, rand, activeShards)
+		candidateStr, _ := candidate.ToBase58()
+		shardID := calculateCandidateShardID(candidateStr, rand, activeShards)
 		currentCandidates[shardID] = append(currentCandidates[shardID], candidate)
 	}
 	return nil
@@ -157,13 +161,14 @@ func RemoveValidator(validators []string, removedValidators []string) ([]string,
 		Then Hash and Obtain Hash Value
 		Sort Hash Value Then Re-arrange Candidate corresponding to Hash Value
 */
-func ShuffleCandidate(candidates []string, rand int64) ([]string, error) {
+func ShuffleCandidate(candidates []incognitokey.CommitteePubKey, rand int64) ([]incognitokey.CommitteePubKey, error) {
 	fmt.Println("Beacon Process/Shuffle Candidate: Candidate Before Sort ", candidates)
 	hashes := []string{}
-	m := make(map[string]string)
-	sortedCandidate := []string{}
+	m := make(map[string]incognitokey.CommitteePubKey)
+	sortedCandidate := []incognitokey.CommitteePubKey{}
 	for _, candidate := range candidates {
-		seed := candidate + strconv.Itoa(int(rand))
+		candidateStr, _ := candidate.ToBase58()
+		seed := candidateStr + strconv.Itoa(int(rand))
 		hash := common.HashB([]byte(seed))
 		hashes = append(hashes, string(hash[:32]))
 		m[string(hash[:32])] = candidate
@@ -228,25 +233,25 @@ func getStakeValidatorArrayString(v []string) ([]string, []string) {
 	}
 	return beacon, shard
 }
-func snapshotCommittee(beaconCommittee []string, allShardCommittee map[byte][]string) ([]string, map[byte][]string, error) {
-	snapshotBeaconCommittee := []string{}
-	snapshotAllShardCommittee := make(map[byte][]string)
+func snapshotCommittee(beaconCommittee []incognitokey.CommitteePubKey, allShardCommittee map[byte][]incognitokey.CommitteePubKey) ([]incognitokey.CommitteePubKey, map[byte][]incognitokey.CommitteePubKey, error) {
+	snapshotBeaconCommittee := []incognitokey.CommitteePubKey{}
+	snapshotAllShardCommittee := make(map[byte][]incognitokey.CommitteePubKey)
 	for _, committee := range beaconCommittee {
 		snapshotBeaconCommittee = append(snapshotBeaconCommittee, committee)
 	}
 	for shardID, shardCommittee := range allShardCommittee {
-		clonedShardCommittee := []string{}
-		snapshotAllShardCommittee[shardID] = []string{}
+		clonedShardCommittee := []incognitokey.CommitteePubKey{}
+		snapshotAllShardCommittee[shardID] = []incognitokey.CommitteePubKey{}
 		for _, committee := range shardCommittee {
 			clonedShardCommittee = append(clonedShardCommittee, committee)
 		}
 		snapshotAllShardCommittee[shardID] = clonedShardCommittee
 	}
 	if !reflect.DeepEqual(beaconCommittee, snapshotBeaconCommittee) {
-		return []string{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", beaconCommittee, snapshotBeaconCommittee)
+		return []incognitokey.CommitteePubKey{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", beaconCommittee, snapshotBeaconCommittee)
 	}
 	if !reflect.DeepEqual(allShardCommittee, snapshotAllShardCommittee) {
-		return []string{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", allShardCommittee, snapshotAllShardCommittee)
+		return []incognitokey.CommitteePubKey{}, nil, fmt.Errorf("Failed To Clone Beacon Committee, expect %+v but get %+v", allShardCommittee, snapshotAllShardCommittee)
 	}
 	return snapshotBeaconCommittee, snapshotAllShardCommittee, nil
 }
