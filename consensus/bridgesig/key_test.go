@@ -22,8 +22,8 @@ func TestKeyGen(t *testing.T) {
 		// TODO: Add test cases.
 	}
 	x, y := KeyGen([]byte{0, 1, 2, 3, 4})
-	xBytes := PriKeyToBytes(&x)
-	yBytes := PubKeyToBytes(&y)
+	xBytes := SKBytes(&x)
+	yBytes := PKBytes(&y)
 	fmt.Println(hexutil.Encode(xBytes))
 	fmt.Println(hexutil.Encode(yBytes))
 	for _, tt := range tests {
