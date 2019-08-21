@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -100,7 +101,7 @@ type ChainInterface interface {
 	GetPubkeyRole(pubkey string, round int) (string, byte)
 	CurrentHeight() uint64
 	GetCommitteeSize() int
-	GetCommittee() []string
+	GetCommittee() []incognitokey.CommitteePubKey
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
@@ -108,7 +109,7 @@ type ChainInterface interface {
 	InsertBlk(common.BlockInterface)
 	ValidateAndInsertBlock(common.BlockInterface) error
 	ValidateBlockWithBlockChain(common.BlockInterface) error
-	ValidateBlockSignatures(block common.BlockInterface, committee []string) error
+	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error
 	ValidatePreSignBlock(block common.BlockInterface) error
 	GetShardID() int
 }

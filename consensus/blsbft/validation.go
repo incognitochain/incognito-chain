@@ -6,7 +6,8 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
+	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type blockValidation interface {
@@ -37,7 +38,7 @@ func EncodeValidationData(validationData ValidationData) ([]byte, error) {
 	return json.Marshal(validationData)
 }
 
-func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []string) error {
+func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
 	if err := e.ValidateProducerSig(block); err != nil {
 		return err
 	}
@@ -57,7 +58,7 @@ func (e *BLSBFT) ValidateProducerPosition(block common.BlockInterface) error {
 	}
 	committee := e.Chain.GetCommittee()
 	producerPosition := (e.Chain.GetLastProposerIndex() + block.GetRound()) % e.Chain.GetCommitteeSize()
-	tempProducer := committee[producerPosition]
+	tempProducer := committee[producerPosition].GetMiningKeyBase58(CONSENSUSNAME)
 	if strings.Compare(tempProducer, valData.Producer) != 0 {
 		return errors.New("Producer should be should be :" + tempProducer)
 	}
@@ -71,18 +72,27 @@ func (e *BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 		return err
 	}
 
-	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, e.Chain.GetPubKeyCommitteeIndex(block.GetProducer()), e.Chain.GetCommittee()); err != nil {
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range e.Chain.GetCommittee() {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
+	}
+
+	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, e.Chain.GetPubKeyCommitteeIndex(block.GetProducer()), committeeBLSKeys); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []string) error {
+func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
 	}
-	if err := bls.ValidateAggSig(block.Hash(), valData.AggSig, committee); err != nil {
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range committee {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
+	}
+	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
 		return err
 	}
 	return nil

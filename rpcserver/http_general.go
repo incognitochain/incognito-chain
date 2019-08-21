@@ -116,9 +116,11 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 
 	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList := bestState.BeaconCommittee
-	shardCommitteeList := bestState.GetShardCommittee()
-
+	beaconCommitteeList := blockchain.CommitteeKeyListToString(bestState.BeaconCommittee)
+	shardCommitteeList := make(map[byte][]string)
+	for shardID, committee := range bestState.GetShardCommittee() {
+		shardCommitteeList[shardID] = blockchain.CommitteeKeyListToString(committee)
+	}
 	for _, peerConn := range listeningPeer.GetPeerConns() {
 		pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
 		peerItem := map[string]string{

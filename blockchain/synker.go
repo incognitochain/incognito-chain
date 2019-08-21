@@ -522,7 +522,14 @@ func (synker *Synker) UpdateState() {
 	case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
 		userLayer = common.BEACON_ROLE
 	}
-	synker.blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, beaconStateClone.BeaconCommittee, beaconStateClone.GetShardCommittee())
+
+	beaconCommittee, _ := ExtractPublickeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
+	shardCommittee := make(map[byte][]string)
+	for shardID, committee := range beaconStateClone.GetShardCommittee() {
+		shardCommittee[shardID], _ = ExtractPublickeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
+	}
+
+	synker.blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, beaconCommittee, shardCommittee)
 
 	synker.States.PeersState = make(map[libp2p.ID]*peerState)
 	synker.Status.Unlock()

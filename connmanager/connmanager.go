@@ -508,7 +508,7 @@ func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool 
 // checkBeaconOfPbk - check a public key is beacon committee?
 func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
 	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList := bestState.BeaconCommittee
+	beaconCommitteeList := blockchain.CommitteeKeyListToString(bestState.BeaconCommittee)
 	isInBeaconCommittee := common.IndexOfStr(pbk, beaconCommitteeList) != -1
 	return isInBeaconCommittee
 }
@@ -681,7 +681,7 @@ func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
 	bestState := blockchain.GetBeaconBestState()
 	shardCommitteeList := bestState.GetShardCommittee()
 	for shardID, committees := range shardCommitteeList {
-		isInShardCommittee := common.IndexOfStr(publicKey, committees) != -1
+		isInShardCommittee := common.IndexOfStr(publicKey, blockchain.CommitteeKeyListToString(committees)) != -1
 		if isInShardCommittee {
 			return &shardID
 		}
