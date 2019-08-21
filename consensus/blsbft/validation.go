@@ -10,13 +10,13 @@ import (
 )
 
 type ValidationData struct {
-	Producer          string
-	ProducerSig       string
-	ProducerBridgeSig []string
-	ValidatiorsIdx    []int
-	AggSig            string
-	BridgeSig         []string
-	AgreeSigs         map[string][]string
+	Producer       string
+	ProducerBLSSig string
+	ProducerBriSig string
+	ValidatiorsIdx []int
+	AggSig         string
+	BridgeSig      []string
+	// AgreeSigs         map[string][]string
 }
 
 func DecodeValidationData(data string) (*ValidationData, error) {
@@ -75,7 +75,7 @@ func (e *BLSBFT) ValidateProducerPosition(block common.BlockInterface) error {
 }
 
 func (e *BLSBFT) ValidateProducerSig(blockHash *common.Hash, validationData string) error {
-	valData, err := DecodeValidationData(validationData)
+	_, err := DecodeValidationData(validationData)
 	if err != nil {
 		return err
 	}
