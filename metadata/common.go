@@ -1,11 +1,24 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
+	"strconv"
 
+	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
 )
+
+func calculateSize(meta Metadata) uint64 {
+	metaBytes, err := json.Marshal(meta)
+	if err != nil {
+		return 0
+	}
+	return uint64(len(metaBytes))
+}
 
 func ParseMetadata(meta interface{}) (Metadata, error) {
 	if meta == nil {
@@ -23,43 +36,32 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 	var md Metadata
 	switch int(mtTemp["Type"].(float64)) {
-	case ResponseBaseMeta:
-		md = &ResponseBase{}
-
 	case IssuingRequestMeta:
 		md = &IssuingRequest{}
-
 	case IssuingResponseMeta:
 		md = &IssuingResponse{}
-
 	case ContractingRequestMeta:
 		md = &ContractingRequest{}
-
 	case IssuingETHRequestMeta:
 		md = &IssuingETHRequest{}
-
 	case IssuingETHResponseMeta:
 		md = &IssuingETHResponse{}
-
 	case BeaconSalaryResponseMeta:
 		md = &BeaconBlockSalaryRes{}
-
 	case BurningRequestMeta:
 		md = &BurningRequest{}
-
 	case ShardStakingMeta:
 		md = &StakingMetadata{}
 	case BeaconStakingMeta:
 		md = &StakingMetadata{}
 	case ReturnStakingMeta:
 		md = &ReturnStakingMetadata{}
-
 	case WithDrawRewardRequestMeta:
 		md = &WithDrawRewardRequest{}
 	case WithDrawRewardResponseMeta:
 		md = &WithDrawRewardResponse{}
 	default:
-		fmt.Printf("[db] parse meta err: %+v\n", meta)
+		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
 	}
 
@@ -68,4 +70,64 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		return nil, err
 	}
 	return md, nil
+}
+
+func GetETHHeader(
+	ethBlockHash rCommon.Hash,
+) (*types.Header, error) {
+	rpcClient := rpccaller.NewRPCClient()
+	params := []interface{}{ethBlockHash, false}
+	var getBlockByNumberRes GetBlockByNumberRes
+	err := rpcClient.RPCCall(
+		EthereumLightNodeProtocol,
+		EthereumLightNodeHost,
+		EthereumLightNodePort,
+		"eth_getBlockByHash",
+		params,
+		&getBlockByNumberRes,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if getBlockByNumberRes.RPCError != nil {
+		Logger.log.Debugf("WARNING: an error occured during calling eth_getBlockByHash: %s", getBlockByNumberRes.RPCError.Message)
+		return nil, nil
+	}
+	return getBlockByNumberRes.Result, nil
+}
+
+func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt) (map[string]interface{}, error) {
+	logData := []byte{}
+	logLen := len(constructedReceipt.Logs)
+	if logLen == 0 {
+		Logger.log.Debug("WARNING: LOG data is invalid.")
+		return nil, nil
+	}
+	for _, log := range constructedReceipt.Logs {
+		if bytes.Equal(rCommon.HexToAddress(common.EthContractAddressStr).Bytes(), log.Address.Bytes()) {
+			logData = log.Data
+			break
+		}
+	}
+	if len(logData) == 0 {
+		return nil, nil
+	}
+	return ParseETHLogData(logData)
+}
+
+var bridgeMetas = []string{
+	strconv.Itoa(BeaconSwapConfirmMeta),
+	strconv.Itoa(BridgeSwapConfirmMeta),
+	strconv.Itoa(BurningConfirmMeta),
+}
+
+func HasBridgeInstructions(instructions [][]string) bool {
+	for _, inst := range instructions {
+		for _, meta := range bridgeMetas {
+			if len(inst) > 0 && inst[0] == meta {
+				return true
+			}
+		}
+	}
+	return false
 }

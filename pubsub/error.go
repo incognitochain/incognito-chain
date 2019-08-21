@@ -19,7 +19,7 @@ var ErrCodeMessage = map[int]struct {
 	UnexpectedError:        {-1000, "Unexpected Error"},
 	UnmashallJsonError:     {-1001, "Umarshall Json Error"},
 	MashallJsonError:       {-1002, "Marshall Json Error"},
-	UnregisteredTopicError: {-1002, "Subcribed Topic Not Found Error"},
+	UnregisteredTopicError: {-1003, "Subcribed Topic Not Found Error"},
 }
 
 type PubSubError struct {
@@ -41,10 +41,10 @@ func (e *PubSubError) Init(key int, err error) {
 	e.Err = errors.Wrap(err, e.Message)
 }
 
-func NewPubSubError(key int, err error) *PubSubError {
+func NewPubSubError(key int, err error, params ...interface{}) *PubSubError {
 	return &PubSubError{
 		Code:    ErrCodeMessage[key].Code,
-		Message: ErrCodeMessage[key].Message,
+		Message: fmt.Sprintf(ErrCodeMessage[key].Message, params),
 		Err:     errors.Wrap(err, ErrCodeMessage[key].Message),
 	}
 }

@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/incognitochain/incognito-chain/wallet"
+
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -131,8 +133,14 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	// 		}
 	// 	}
 	// }
+	oldCommittee := append([]string{}, blockchain.BestState.Shard[shardID].ShardCommittee...)
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(shardBlock, beaconBlocks); err != nil {
 		return err
+	}
+	newCommittee := append([]string{}, blockchain.BestState.Shard[shardID].ShardCommittee...)
+	isChanged := common.CompareStringArray(oldCommittee, newCommittee)
+	if isChanged {
+		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 	}
 	//========Post verififcation: verify new beaconstate with corresponding block
 	if !isValidated {
@@ -228,10 +236,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive shardBlock has timestamp must be greater than %+v but get %+v", previousShardBlock.Header.Timestamp, shardBlock.Header.Timestamp))
 	}
 	// Verify transaction root
-	txMerkle := Merkle{}.BuildMerkleTreeStore(shardBlock.Body.Transactions)
+	txMerkleTree := Merkle{}.BuildMerkleTreeStore(shardBlock.Body.Transactions)
 	txRoot := &common.Hash{}
-	if len(txMerkle) > 0 {
-		txRoot = txMerkle[len(txMerkle)-1]
+	if len(txMerkleTree) > 0 {
+		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
 	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
@@ -275,7 +283,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		}
 	}
 	tokenIDsfromTxs := make([]common.Hash, 0)
-	for tokenID, _ := range totalTxsFee {
+	for tokenID := range totalTxsFee {
 		tokenIDsfromTxs = append(tokenIDsfromTxs, tokenID)
 	}
 	sort.Slice(tokenIDsfromTxs, func(i int, j int) bool {
@@ -283,7 +291,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		return res == -1
 	})
 	tokenIDsfromBlock := make([]common.Hash, 0)
-	for tokenID, _ := range shardBlock.Header.TotalTxsFee {
+	for tokenID := range shardBlock.Header.TotalTxsFee {
 		tokenIDsfromBlock = append(tokenIDsfromBlock, tokenID)
 	}
 	sort.Slice(tokenIDsfromBlock, func(i int, j int) bool {
@@ -306,7 +314,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	if len(crossShards) != len(shardBlock.Header.CrossShardBitMap) {
 		return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect number of cross shardID is %+v but get %+v", len(shardBlock.Header.CrossShardBitMap), len(crossShards)))
 	}
-	for index, _ := range crossShards {
+	for index := range crossShards {
 		if crossShards[index] != shardBlock.Header.CrossShardBitMap[index] {
 			return NewBlockChainError(CrossShardBitMapError, fmt.Errorf("Expect Cross Shard Bitmap of shardID %+v is %+v but get %+v", index, shardBlock.Header.CrossShardBitMap[index], crossShards[index]))
 		}
@@ -440,7 +448,11 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 						return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
 					}
 					startHeight = nextHeight
-					temp, err := blockchain.config.DataBase.FetchCommitteeByHeight(toShardCrossShardBlock.Header.BeaconHeight)
+					beaconHeight, err := blockchain.FindBeaconHeightForCrossShardBlock(toShardCrossShardBlock.Header.BeaconHeight, toShardCrossShardBlock.Header.ShardID, toShardCrossShardBlock.Header.Height)
+					if err != nil {
+						break
+					}
+					temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
 					if err != nil {
 						return NewBlockChainError(FetchShardCommitteeError, err)
 					}
@@ -608,6 +620,7 @@ func (shardBestState *ShardBestState) initShardBestState(genesisShardBlock *Shar
 	if err != nil {
 		return err
 	}
+	shardBestState.ConsensusAlgorithm = common.BLS_CONSENSUS
 	return nil
 }
 func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock) {
@@ -665,7 +678,6 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 				swapedCommittees = strings.Split(l[2], ",")
 			}
 			newCommittees := strings.Split(l[1], ",")
-
 			for _, v := range swapedCommittees {
 				delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
 			}
@@ -721,17 +733,17 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	10. Check duplicate staker public key in block
 	11. Check duplicate Init Custom Token in block
 */
-func (blockChain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Transaction) error {
 	if len(txs) == 0 {
 		return nil
 	}
-	isEmpty := blockChain.config.TempTxPool.EmptyPool()
+	isEmpty := blockchain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		panic("TempTxPool Is not Empty")
 	}
-	defer blockChain.config.TempTxPool.EmptyPool()
+	defer blockchain.config.TempTxPool.EmptyPool()
 
-	err := blockChain.config.TempTxPool.ValidateTxList(txs)
+	err := blockchain.config.TempTxPool.ValidateTxList(txs)
 	if err != nil {
 		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
 		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
@@ -740,8 +752,8 @@ func (blockChain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 	//for _, tx := range txs {
 	//	if !tx.IsSalaryTx() {
 	//		if tx.GetType() == common.TxCustomTokenType {
-	//			customTokenTx := tx.(*transaction.TxCustomToken)
-	//			if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+	//			customTokenTx := tx.(*transaction.TxNormalToken)
+	//			if customTokenTx.TxNormalTokenData.Type == transaction.CustomTokenCrossShard {
 	//				continue
 	//			}
 	//		}
@@ -889,12 +901,22 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		for _, tx := range shardBlock.Body.Transactions {
 			if tx.GetMetadata() != nil {
 				if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
-					pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
-					candidates = append(candidates, pubkey)
+					stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
+					if !ok {
+						continue
+					}
+					candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+					candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+					if err != nil || candidateWallet == nil {
+						continue
+					}
+					pk := candidateWallet.KeySet.PaymentAddress.Pk
+					pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
+					candidates = append(candidates, pkb58)
 				}
 			}
 			if tx.GetType() == common.TxCustomTokenType {
-				customTokenTx := tx.(*transaction.TxCustomToken)
+				customTokenTx := tx.(*transaction.TxNormalToken)
 				if customTokenTx.TxTokenData.Type == transaction.CustomTokenInit {
 					tokenID := customTokenTx.TxTokenData.PropertyID.String()
 					tokenIDs = append(tokenIDs, tokenID)
@@ -933,15 +955,18 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
 	}()
 }
 func (blockchain *BlockChain) verifyCrossShardCustomToken(CrossTxTokenData map[byte][]CrossTxTokenData, shardID byte, txs []metadata.Transaction) error {
-	txTokenDataListFromTxs := []transaction.TxTokenData{}
-	_, txTokenDataList := blockchain.createCustomTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
+	txTokenDataListFromTxs := []transaction.TxNormalTokenData{}
+	_, txTokenDataList, err := blockchain.createNormalTokenTxForCrossShard(nil, CrossTxTokenData, shardID)
+	if err != nil {
+		return err
+	}
 	hash, err := calHashFromTxTokenDataList(txTokenDataList)
 	if err != nil {
 		return err
 	}
 	for _, tx := range txs {
 		if tx.GetType() == common.TxCustomTokenType {
-			txCustomToken := tx.(*transaction.TxCustomToken)
+			txCustomToken := tx.(*transaction.TxNormalToken)
 			if txCustomToken.TxTokenData.Type == transaction.CustomTokenCrossShard {
 				txTokenDataListFromTxs = append(txTokenDataListFromTxs, txCustomToken.TxTokenData)
 			}
