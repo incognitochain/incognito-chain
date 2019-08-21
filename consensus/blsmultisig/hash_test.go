@@ -2,10 +2,13 @@ package blsmultisig
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
+	"reflect"
 	"testing"
 	"time"
 
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
 )
 
@@ -80,6 +83,28 @@ func Test_testAvgTimeI2G1P(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := testAvgTimeI2G1P(tt.args.loop); got > tt.want {
 				t.Errorf("Execution time of testAvgTimeI2G1P() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHash4Bls(t *testing.T) {
+	type args struct {
+		data []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want []byte
+	}{
+		// TODO: Add test cases.
+	}
+	fmt.Println(Hash4Bls([]byte{1, 2, 3, 4}))
+	fmt.Println(ethcrypto.Keccak256Hash([]byte{1, 2, 3, 4}).Bytes())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Hash4Bls(tt.args.data); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Hash4Bls() = %v, want %v", got, tt.want)
 			}
 		})
 	}

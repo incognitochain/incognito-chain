@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -22,7 +24,7 @@ type BFTVote struct {
 	Sig       string
 }
 
-func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *blsKeySet) (wire.Message, error) {
+func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wire.Message, error) {
 	var proposeCtn BFTPropose
 	proposeCtn.Block = block
 	proposeCtnBytes, err := json.Marshal(proposeCtn)
@@ -36,10 +38,10 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *blsKeySet) (wi
 	return msg, nil
 }
 
-func MakeBFTVoteMsg(userPubKey *blsKeySet, chainKey, sig, roundKey string) (wire.Message, error) {
+func MakeBFTVoteMsg(userKey *MiningKey, chainKey, sig, roundKey string) (wire.Message, error) {
 	var voteCtn BFTVote
 	voteCtn.RoundKey = roundKey
-	voteCtn.Validator = userPubKey.GetPublicKeyBase58()
+	voteCtn.Validator = userKey.GetPublicKeyBase58()
 	voteCtn.Sig = sig
 	voteCtnBytes, err := json.Marshal(voteCtn)
 	if err != nil {
@@ -76,8 +78,16 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	}
 }
 
-func (e *BLSBFT) sendVote() {
-	sig, _ := e.UserKeySet.SignData(e.RoundData.Block.Hash())
+func (e *BLSBFT) sendVote() /*error*/ {
+	//TODO @0xBahamoot
+	selfIdx := 0
+	listCommittee := []blsmultisig.PublicKey{}
+	sig, _ := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, listCommittee)
+	bridgeSig := ""
+	if common.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
+		bridgeSig, _ = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
+	}
+	fmt.Println(bridgeSig)
 	MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, sig, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 	// go e.Node.PushMessageToChain(msg)
 	e.RoundData.NotYetSendVote = false
