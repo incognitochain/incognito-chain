@@ -1,0 +1,102 @@
+[
+    {
+        "input": {
+            "command": "createandsendtxwithissuingethreq",
+            "context": false,
+            "params": [
+                "112t8rtTwTgp4QKJ7rP2p5TyqtFjKYxeFHCUumTwuH4NbCAk7g7H1MvH5eDKyy6N5wvT1FVVLoPrUzrAKKzJeHcCrc2BoSJfTvkDobVSmSZe",
+                null,
+                1,
+                -1,
+                {
+                    "BlockHash": "0xef3d9c90cb576dc58147158a614647732787b715dec5518357c39213bc2e3e61",
+                    "IncTokenID": "1234ac4a9b9e0707957e21725381e39866ae247000000000000000000000000",
+                    "ProofStrs": [
+                        "+FGgGmhQqHYY7hDksF8L397w5hHVpoUpST1Qgtx2gplo5feAgICAgICAoLub7SEm8sGWzTrwqENYtOdQVCPBR/dhTkWiCqvcM4V6gICAgICAgIA=",
+                        "+QLrMLkC5/kC5AGC4VC5AQAAAAAAAAAAAAAAAAAAACAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAEAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAABAAAQAAAAAAAAAABAACAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+QHa+JuUpht2r+M4MOVkvw8HzrTjnVykMoD4Y6Dd8lKtG+LIm2nCsGj8N42qlSun8WPEoRYo9VpN9SOz76AAAAAAAAAAAAAAAADnIti3HcwBUtR9JDhVakXTNX1jH6AAAAAAAAAAAAAAAADpf30/hmy4IAlBCCyIfHrl7qsfWKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAO5rKAPkBOpTpf30/hmy4IAlBCCyIfHrl7qsfWOGgLUtZeTXzzWf7Luvx203ryTTO5ce6pxU/mA/b6y50CE65AQAAAAAAAAAAAAAAAACmG3av4zgw5WS/DwfOtOOdXKQygAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADuaygAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAaTFVdjQ2UHU0cHFCdnhDY1B3N01YaEhmaUFENVJtaTJ4Z0VFN1hCNmVRdXJGQXQ0dlNZdmZ5R24zdU1NQjF4blhEcTluUlRQZWlBWnY1Z1JGQ0JEcm9STnNYSkYxc3hQU2pOUXRpdnVIawAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                    ],
+                    "TxIndex": 0
+                }
+            ]
+        },
+        "node": "shard0-0",
+        "output": {
+            "error": null,
+            "response": {}
+        }
+    },
+    {
+        "input": {
+            "command": "getlistprivacycustomtokenbalance",
+            "context": false,
+            "params": [
+                "112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy"
+            ],
+            "type": "http",
+            "wait": 40
+        },
+        "node": "shard0-0",
+        "output": {
+            "error": null,
+            "response": {
+                "ListCustomTokenBalance": [
+                    {
+                        "Amount": 1000000000,
+                        "IsPrivacy": true,
+                        "Name": "",
+                        "Symbol": "",
+                        "TokenID": "01234ac4a9b9e0707957e21725381e39866ae247000000000000000000000000",
+                        "TokenImage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaQAAAGkAQMAAABEgsN2AAAABlBMVEXw8PDY+5YTGYyjAAAAiklEQVR4nOzMsQ2AIBCGUawcw1FlVMewUpOj0QSJBVi9r+Ly55EkSdIfTWeU41jivVMURVEURVHUKFXGR7k9UBRFURRFUVQfVZrb6kjVKIqiKIqiKIqiKIqiKIqiKIqiKIqiKIr6rirjGsf29h1FURRFURRFDVP3KIqiKIqiKGqYkiRJnbsCAAD//9yO6+M+zfdmAAAAAElFTkSuQmCC"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "input": {
+            "command": "createandsendburningrequest",
+            "context": false,
+            "params": [
+                "112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy",
+                null,
+                0,
+                -1,
+                {
+                    "RemoteAddress": "e722D8b71DCC0152D47D2438556a45D3357d631f",
+                    "TokenAmount": 1000,
+                    "TokenFee": 0,
+                    "TokenID": "01234ac4a9b9e0707957e21725381e39866ae247000000000000000000000000",
+                    "TokenName": "",
+                    "TokenReceivers": {
+                        "1NHp2EKw7ALdXUzBfoRJvKrBBM9nkejyDcHVPvUjDcWRyG22dHHyiBKQGL1c": 1000
+                    },
+                    "TokenSymbol": "",
+                    "TokenTxType": 1
+                },
+                0
+            ]
+        },
+        "node": "shard0-0",
+        "output": {
+            "error": null
+        },
+        "store": {
+            "burnRequestTxID": "TxID"
+        }
+    },
+    {
+        "input": {
+            "command": "getburnproof",
+            "context": true,
+            "params": [
+                "burnRequestTxID"
+            ],
+            "type": "http",
+            "wait": 20
+        },
+        "node": "shard1-0",
+        "output": {
+            "error": null
+        }
+    }
+]
