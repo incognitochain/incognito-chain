@@ -134,7 +134,10 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 		return
 	}
 	if blockchain.Synker.Status.Beacon {
-		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
+		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight, newBlk.Header.Timestamp,)
+		if  newBlk.Header.Timestamp < blockchain.BestState.Beacon.BestBlock.Header.Timestamp { // not receive block older than current latest block
+			return
+		}
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
 			err := incognitokey.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())
