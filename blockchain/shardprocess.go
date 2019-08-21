@@ -941,6 +941,8 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		}
 	}()
 }
+
+//TODO: move this function to beaconprocess.go
 func (blockchain *BlockChain) removeOldDataAfterProcessingBeaconBlock() {
 	blockchain.BestState.Beacon.lock.RLock()
 	defer blockchain.BestState.Beacon.lock.RUnlock()
