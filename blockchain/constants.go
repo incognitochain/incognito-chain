@@ -26,6 +26,7 @@ const (
 	MAX_S2B_BLOCK                = 50
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 50
+	CheckForce                   = true
 )
 
 // CONSTANT for network MAINNET
@@ -71,8 +72,8 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
-	TestnetEpoch       = 10
-	TestnetRandomTime  = 5
+	TestnetEpoch       = 100
+	TestnetRandomTime  = 50
 
 	TestNetShardCommitteeSize     = 16
 	TestNetMinShardCommitteeSize  = 1
