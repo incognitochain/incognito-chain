@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -84,7 +84,7 @@ func (e *BLSBFT) sendVote() /*error*/ {
 	listCommittee := []blsmultisig.PublicKey{}
 	sig, _ := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, listCommittee)
 	bridgeSig := ""
-	if common.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
+	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
 		bridgeSig, _ = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
 	}
 	fmt.Println(bridgeSig)
