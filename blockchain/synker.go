@@ -26,6 +26,7 @@ type peerState struct {
 }
 
 type ChainState struct {
+	Timestamp     int64
 	Height        uint64
 	BlockHash     common.Hash
 	BestStateHash common.Hash
@@ -421,6 +422,7 @@ func (synker *synker) UpdateState() {
 		if userRole != common.SHARD_ROLE && RCS.ClosestBeaconState.Height == beaconStateClone.BeaconHeight {
 			synker.SetChainState(false, 0, true)
 		} else {
+			fmt.Println("beacon not ready", RCS.ClosestBeaconState.Height)
 			synker.SetChainState(false, 0, false)
 		}
 
@@ -706,9 +708,11 @@ func (synker *synker) SetChainState(shard bool, shardID byte, ready bool) {
 		// }
 	} else {
 		synker.Status.IsLatest.Beacon = ready
-		// if ready {
-		// 	fmt.Println("Beacon is ready")
-		// }
+		if ready {
+			fmt.Println("Beacon is ready")
+		} else {
+			fmt.Println("Beacon is not ready")
+		}
 	}
 }
 
