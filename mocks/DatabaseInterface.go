@@ -110,20 +110,20 @@ func (_m *DatabaseInterface) BackupShardRewardRequest(epoch uint64, shardID byte
 	return r0
 }
 
-// CanProcessCIncToken provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) CanProcessCIncToken(_a0 common.Hash) (bool, error) {
-	ret := _m.Called(_a0)
+// CanProcessCIncToken provides a mock function with given fields: incTokenID
+func (_m *DatabaseInterface) CanProcessCIncToken(incTokenID common.Hash) (bool, error) {
+	ret := _m.Called(incTokenID)
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(common.Hash) bool); ok {
-		r0 = rf(_a0)
+		r0 = rf(incTokenID)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(incTokenID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -131,20 +131,20 @@ func (_m *DatabaseInterface) CanProcessCIncToken(_a0 common.Hash) (bool, error) 
 	return r0, r1
 }
 
-// CanProcessTokenPair provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) CanProcessTokenPair(_a0 []byte, _a1 common.Hash) (bool, error) {
-	ret := _m.Called(_a0, _a1)
+// CanProcessTokenPair provides a mock function with given fields: externalTokenID, incTokenID
+func (_m *DatabaseInterface) CanProcessTokenPair(externalTokenID []byte, incTokenID common.Hash) (bool, error) {
+	ret := _m.Called(externalTokenID, incTokenID)
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func([]byte, common.Hash) bool); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(externalTokenID, incTokenID)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func([]byte, common.Hash) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(externalTokenID, incTokenID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -152,13 +152,13 @@ func (_m *DatabaseInterface) CanProcessTokenPair(_a0 []byte, _a1 common.Hash) (b
 	return r0, r1
 }
 
-// CleanBackup provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) CleanBackup(_a0 bool, _a1 byte) error {
-	ret := _m.Called(_a0, _a1)
+// CleanBackup provides a mock function with given fields: isBeacon, shardID
+func (_m *DatabaseInterface) CleanBackup(isBeacon bool, shardID byte) error {
+	ret := _m.Called(isBeacon, shardID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(bool, byte) error); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(isBeacon, shardID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -264,43 +264,6 @@ func (_m *DatabaseInterface) Close() error {
 	return r0
 }
 
-// CustomTokenIDExisted provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) CustomTokenIDExisted(tokenID common.Hash) bool {
-	ret := _m.Called(tokenID)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(common.Hash) bool); ok {
-		r0 = rf(tokenID)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
-}
-
-// CustomTokenTxs provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) CustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
-	ret := _m.Called(tokenID)
-
-	var r0 []common.Hash
-	if rf, ok := ret.Get(0).(func(common.Hash) []common.Hash); ok {
-		r0 = rf(tokenID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]common.Hash)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(tokenID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // Delete provides a mock function with given fields: key
 func (_m *DatabaseInterface) Delete(key []byte) error {
 	ret := _m.Called(key)
@@ -329,13 +292,13 @@ func (_m *DatabaseInterface) DeleteAcceptedShardToBeacon(shardID byte, shardBlkH
 	return r0
 }
 
-// DeleteBeaconBlock provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) DeleteBeaconBlock(_a0 common.Hash, _a1 uint64) error {
-	ret := _m.Called(_a0, _a1)
+// DeleteBeaconBlock provides a mock function with given fields: hash, idx
+func (_m *DatabaseInterface) DeleteBeaconBlock(hash common.Hash, idx uint64) error {
+	ret := _m.Called(hash, idx)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, uint64) error); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(hash, idx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -343,13 +306,13 @@ func (_m *DatabaseInterface) DeleteBeaconBlock(_a0 common.Hash, _a1 uint64) erro
 	return r0
 }
 
-// DeleteBlock provides a mock function with given fields: _a0, _a1, _a2
-func (_m *DatabaseInterface) DeleteBlock(_a0 common.Hash, _a1 uint64, _a2 byte) error {
-	ret := _m.Called(_a0, _a1, _a2)
+// DeleteBlock provides a mock function with given fields: hash, idx, shardID
+func (_m *DatabaseInterface) DeleteBlock(hash common.Hash, idx uint64, shardID byte) error {
+	ret := _m.Called(hash, idx, shardID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, uint64, byte) error); ok {
-		r0 = rf(_a0, _a1, _a2)
+		r0 = rf(hash, idx, shardID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -371,8 +334,22 @@ func (_m *DatabaseInterface) DeleteCommitteeByHeight(_a0 uint64) error {
 	return r0
 }
 
-// DeleteCustomToken provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) DeleteCustomToken(tokenID common.Hash) error {
+// DeleteIncomingCrossShard provides a mock function with given fields: shardID, crossShardID, crossBlkHash
+func (_m *DatabaseInterface) DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error {
+	ret := _m.Called(shardID, crossShardID, crossBlkHash)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(byte, byte, common.Hash) error); ok {
+		r0 = rf(shardID, crossShardID, crossBlkHash)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DeleteNormalToken provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) DeleteNormalToken(tokenID common.Hash) error {
 	ret := _m.Called(tokenID)
 
 	var r0 error
@@ -385,27 +362,13 @@ func (_m *DatabaseInterface) DeleteCustomToken(tokenID common.Hash) error {
 	return r0
 }
 
-// DeleteCustomTokenTx provides a mock function with given fields: tokenID, txIndex, shardID, blockHeight
-func (_m *DatabaseInterface) DeleteCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
+// DeleteNormalTokenTx provides a mock function with given fields: tokenID, txIndex, shardID, blockHeight
+func (_m *DatabaseInterface) DeleteNormalTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
 	ret := _m.Called(tokenID, txIndex, shardID, blockHeight)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, int32, byte, uint64) error); ok {
 		r0 = rf(tokenID, txIndex, shardID, blockHeight)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// DeleteIncomingCrossShard provides a mock function with given fields: shardID, crossShardID, crossBlkHash
-func (_m *DatabaseInterface) DeleteIncomingCrossShard(shardID byte, crossShardID byte, crossBlkHash common.Hash) error {
-	ret := _m.Called(shardID, crossShardID, crossBlkHash)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(byte, byte, common.Hash) error); ok {
-		r0 = rf(shardID, crossShardID, crossBlkHash)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -427,8 +390,8 @@ func (_m *DatabaseInterface) DeleteOutputCoin(tokenID common.Hash, publicKey []b
 	return r0
 }
 
-// DeletePrivacyCustomToken provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) DeletePrivacyCustomToken(tokenID common.Hash) error {
+// DeletePrivacyToken provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) DeletePrivacyToken(tokenID common.Hash) error {
 	ret := _m.Called(tokenID)
 
 	var r0 error
@@ -441,8 +404,8 @@ func (_m *DatabaseInterface) DeletePrivacyCustomToken(tokenID common.Hash) error
 	return r0
 }
 
-// DeletePrivacyCustomTokenCrossShard provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) DeletePrivacyCustomTokenCrossShard(tokenID common.Hash) error {
+// DeletePrivacyTokenCrossShard provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) DeletePrivacyTokenCrossShard(tokenID common.Hash) error {
 	ret := _m.Called(tokenID)
 
 	var r0 error
@@ -455,8 +418,8 @@ func (_m *DatabaseInterface) DeletePrivacyCustomTokenCrossShard(tokenID common.H
 	return r0
 }
 
-// DeletePrivacyCustomTokenTx provides a mock function with given fields: tokenID, txIndex, shardID, blockHeight
-func (_m *DatabaseInterface) DeletePrivacyCustomTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
+// DeletePrivacyTokenTx provides a mock function with given fields: tokenID, txIndex, shardID, blockHeight
+func (_m *DatabaseInterface) DeletePrivacyTokenTx(tokenID common.Hash, txIndex int32, shardID byte, blockHeight uint64) error {
 	ret := _m.Called(tokenID, txIndex, shardID, blockHeight)
 
 	var r0 error
@@ -506,13 +469,13 @@ func (_m *DatabaseInterface) FetchBeaconBestState() ([]byte, error) {
 	return r0, r1
 }
 
-// FetchBeaconBlock provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) FetchBeaconBlock(_a0 common.Hash) ([]byte, error) {
-	ret := _m.Called(_a0)
+// FetchBeaconBlock provides a mock function with given fields: hash
+func (_m *DatabaseInterface) FetchBeaconBlock(hash common.Hash) ([]byte, error) {
+	ret := _m.Called(hash)
 
 	var r0 []byte
 	if rf, ok := ret.Get(0).(func(common.Hash) []byte); ok {
-		r0 = rf(_a0)
+		r0 = rf(hash)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -521,7 +484,7 @@ func (_m *DatabaseInterface) FetchBeaconBlock(_a0 common.Hash) ([]byte, error) {
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -552,13 +515,13 @@ func (_m *DatabaseInterface) FetchBeaconCommitteeByHeight(_a0 uint64) ([]byte, e
 	return r0, r1
 }
 
-// FetchBlock provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) FetchBlock(_a0 common.Hash) ([]byte, error) {
-	ret := _m.Called(_a0)
+// FetchBlock provides a mock function with given fields: hash
+func (_m *DatabaseInterface) FetchBlock(hash common.Hash) ([]byte, error) {
+	ret := _m.Called(hash)
 
 	var r0 []byte
 	if rf, ok := ret.Get(0).(func(common.Hash) []byte); ok {
-		r0 = rf(_a0)
+		r0 = rf(hash)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -567,30 +530,7 @@ func (_m *DatabaseInterface) FetchBlock(_a0 common.Hash) ([]byte, error) {
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(_a0)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// FetchCommitteeByHeight provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) FetchCommitteeByHeight(_a0 uint64) ([]byte, error) {
-	ret := _m.Called(_a0)
-
-	var r0 []byte
-	if rf, ok := ret.Get(0).(func(uint64) []byte); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(uint64) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -621,20 +561,20 @@ func (_m *DatabaseInterface) FetchCommitteeFromShardBestState(shardID byte, shar
 	return r0, r1
 }
 
-// FetchCrossShardNextHeight provides a mock function with given fields: _a0, _a1, _a2
-func (_m *DatabaseInterface) FetchCrossShardNextHeight(_a0 byte, _a1 byte, _a2 uint64) (uint64, error) {
-	ret := _m.Called(_a0, _a1, _a2)
+// FetchCrossShardNextHeight provides a mock function with given fields: fromShard, toShard, curHeight
+func (_m *DatabaseInterface) FetchCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64) (uint64, error) {
+	ret := _m.Called(fromShard, toShard, curHeight)
 
 	var r0 uint64
 	if rf, ok := ret.Get(0).(func(byte, byte, uint64) uint64); ok {
-		r0 = rf(_a0, _a1, _a2)
+		r0 = rf(fromShard, toShard, curHeight)
 	} else {
 		r0 = ret.Get(0).(uint64)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(byte, byte, uint64) error); ok {
-		r1 = rf(_a0, _a1, _a2)
+		r1 = rf(fromShard, toShard, curHeight)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -642,13 +582,13 @@ func (_m *DatabaseInterface) FetchCrossShardNextHeight(_a0 byte, _a1 byte, _a2 u
 	return r0, r1
 }
 
-// FetchPrevBestState provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) FetchPrevBestState(_a0 bool, _a1 byte) ([]byte, error) {
-	ret := _m.Called(_a0, _a1)
+// FetchPrevBestState provides a mock function with given fields: isBeacon, shardID
+func (_m *DatabaseInterface) FetchPrevBestState(isBeacon bool, shardID byte) ([]byte, error) {
+	ret := _m.Called(isBeacon, shardID)
 
 	var r0 []byte
 	if rf, ok := ret.Get(0).(func(bool, byte) []byte); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(isBeacon, shardID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -657,7 +597,7 @@ func (_m *DatabaseInterface) FetchPrevBestState(_a0 bool, _a1 byte) ([]byte, err
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(bool, byte) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(isBeacon, shardID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -665,12 +605,12 @@ func (_m *DatabaseInterface) FetchPrevBestState(_a0 bool, _a1 byte) ([]byte, err
 	return r0, r1
 }
 
-// FetchShardBestState provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) FetchShardBestState(_a0 byte) ([]byte, error) {
+// FetchRewardReceiverByHeight provides a mock function with given fields: _a0
+func (_m *DatabaseInterface) FetchRewardReceiverByHeight(_a0 uint64) ([]byte, error) {
 	ret := _m.Called(_a0)
 
 	var r0 []byte
-	if rf, ok := ret.Get(0).(func(byte) []byte); ok {
+	if rf, ok := ret.Get(0).(func(uint64) []byte); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
@@ -679,7 +619,53 @@ func (_m *DatabaseInterface) FetchShardBestState(_a0 byte) ([]byte, error) {
 	}
 
 	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchShardBestState provides a mock function with given fields: shardID
+func (_m *DatabaseInterface) FetchShardBestState(shardID byte) ([]byte, error) {
+	ret := _m.Called(shardID)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(byte) []byte); ok {
+		r0 = rf(shardID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
 	if rf, ok := ret.Get(1).(func(byte) error); ok {
+		r1 = rf(shardID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// FetchShardCommitteeByHeight provides a mock function with given fields: _a0
+func (_m *DatabaseInterface) FetchShardCommitteeByHeight(_a0 uint64) ([]byte, error) {
+	ret := _m.Called(_a0)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func(uint64) []byte); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64) error); ok {
 		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
@@ -755,13 +741,13 @@ func (_m *DatabaseInterface) GetAllBridgeTokens() ([]byte, error) {
 	return r0, r1
 }
 
-// GetBeaconBlockHashByIndex provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) GetBeaconBlockHashByIndex(_a0 uint64) (common.Hash, error) {
-	ret := _m.Called(_a0)
+// GetBeaconBlockHashByIndex provides a mock function with given fields: idx
+func (_m *DatabaseInterface) GetBeaconBlockHashByIndex(idx uint64) (common.Hash, error) {
+	ret := _m.Called(idx)
 
 	var r0 common.Hash
 	if rf, ok := ret.Get(0).(func(uint64) common.Hash); ok {
-		r0 = rf(_a0)
+		r0 = rf(idx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(common.Hash)
@@ -770,7 +756,7 @@ func (_m *DatabaseInterface) GetBeaconBlockHashByIndex(_a0 uint64) (common.Hash,
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(uint64) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(idx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -778,13 +764,13 @@ func (_m *DatabaseInterface) GetBeaconBlockHashByIndex(_a0 uint64) (common.Hash,
 	return r0, r1
 }
 
-// GetBlockByIndex provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) GetBlockByIndex(_a0 uint64, _a1 byte) (common.Hash, error) {
-	ret := _m.Called(_a0, _a1)
+// GetBlockByIndex provides a mock function with given fields: idx, shardID
+func (_m *DatabaseInterface) GetBlockByIndex(idx uint64, shardID byte) (common.Hash, error) {
+	ret := _m.Called(idx, shardID)
 
 	var r0 common.Hash
 	if rf, ok := ret.Get(0).(func(uint64, byte) common.Hash); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(idx, shardID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(common.Hash)
@@ -793,7 +779,7 @@ func (_m *DatabaseInterface) GetBlockByIndex(_a0 uint64, _a1 byte) (common.Hash,
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(uint64, byte) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(idx, shardID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -823,18 +809,18 @@ func (_m *DatabaseInterface) GetBridgeReqWithStatus(txReqID common.Hash) (byte, 
 }
 
 // GetBurningConfirm provides a mock function with given fields: txID
-func (_m *DatabaseInterface) GetBurningConfirm(txID []byte) (uint64, error) {
+func (_m *DatabaseInterface) GetBurningConfirm(txID common.Hash) (uint64, error) {
 	ret := _m.Called(txID)
 
 	var r0 uint64
-	if rf, ok := ret.Get(0).(func([]byte) uint64); ok {
+	if rf, ok := ret.Get(0).(func(common.Hash) uint64); ok {
 		r0 = rf(txID)
 	} else {
 		r0 = ret.Get(0).(uint64)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func([]byte) error); ok {
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
 		r1 = rf(txID)
 	} else {
 		r1 = ret.Error(1)
@@ -933,59 +919,13 @@ func (_m *DatabaseInterface) GetCommitteeReward(committeeAddress []byte, tokenID
 	return r0, r1
 }
 
-// GetCustomTokenPaymentAddressUTXO provides a mock function with given fields: tokenID, paymentAddress
-func (_m *DatabaseInterface) GetCustomTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) {
-	ret := _m.Called(tokenID, paymentAddress)
-
-	var r0 map[string]string
-	if rf, ok := ret.Get(0).(func(common.Hash, []byte) map[string]string); ok {
-		r0 = rf(tokenID, paymentAddress)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]string)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Hash, []byte) error); ok {
-		r1 = rf(tokenID, paymentAddress)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetCustomTokenPaymentAddressesBalance provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) GetCustomTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error) {
-	ret := _m.Called(tokenID)
-
-	var r0 map[string]uint64
-	if rf, ok := ret.Get(0).(func(common.Hash) map[string]uint64); ok {
-		r0 = rf(tokenID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]uint64)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(tokenID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetFeeEstimator provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) GetFeeEstimator(_a0 byte) ([]byte, error) {
-	ret := _m.Called(_a0)
+// GetFeeEstimator provides a mock function with given fields: shardID
+func (_m *DatabaseInterface) GetFeeEstimator(shardID byte) ([]byte, error) {
+	ret := _m.Called(shardID)
 
 	var r0 []byte
 	if rf, ok := ret.Get(0).(func(byte) []byte); ok {
-		r0 = rf(_a0)
+		r0 = rf(shardID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
@@ -994,7 +934,7 @@ func (_m *DatabaseInterface) GetFeeEstimator(_a0 byte) ([]byte, error) {
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(byte) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(shardID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1023,20 +963,20 @@ func (_m *DatabaseInterface) GetIncomingCrossShard(shardID byte, crossShardID by
 	return r0, r1
 }
 
-// GetIndexOfBeaconBlock provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) GetIndexOfBeaconBlock(_a0 common.Hash) (uint64, error) {
-	ret := _m.Called(_a0)
+// GetIndexOfBeaconBlock provides a mock function with given fields: hash
+func (_m *DatabaseInterface) GetIndexOfBeaconBlock(hash common.Hash) (uint64, error) {
+	ret := _m.Called(hash)
 
 	var r0 uint64
 	if rf, ok := ret.Get(0).(func(common.Hash) uint64); ok {
-		r0 = rf(_a0)
+		r0 = rf(hash)
 	} else {
 		r0 = ret.Get(0).(uint64)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1044,32 +984,78 @@ func (_m *DatabaseInterface) GetIndexOfBeaconBlock(_a0 common.Hash) (uint64, err
 	return r0, r1
 }
 
-// GetIndexOfBlock provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) GetIndexOfBlock(_a0 common.Hash) (uint64, byte, error) {
-	ret := _m.Called(_a0)
+// GetIndexOfBlock provides a mock function with given fields: hash
+func (_m *DatabaseInterface) GetIndexOfBlock(hash common.Hash) (uint64, byte, error) {
+	ret := _m.Called(hash)
 
 	var r0 uint64
 	if rf, ok := ret.Get(0).(func(common.Hash) uint64); ok {
-		r0 = rf(_a0)
+		r0 = rf(hash)
 	} else {
 		r0 = ret.Get(0).(uint64)
 	}
 
 	var r1 byte
 	if rf, ok := ret.Get(1).(func(common.Hash) byte); ok {
-		r1 = rf(_a0)
+		r1 = rf(hash)
 	} else {
 		r1 = ret.Get(1).(byte)
 	}
 
 	var r2 error
 	if rf, ok := ret.Get(2).(func(common.Hash) error); ok {
-		r2 = rf(_a0)
+		r2 = rf(hash)
 	} else {
 		r2 = ret.Error(2)
 	}
 
 	return r0, r1, r2
+}
+
+// GetNormalTokenPaymentAddressUTXO provides a mock function with given fields: tokenID, paymentAddress
+func (_m *DatabaseInterface) GetNormalTokenPaymentAddressUTXO(tokenID common.Hash, paymentAddress []byte) (map[string]string, error) {
+	ret := _m.Called(tokenID, paymentAddress)
+
+	var r0 map[string]string
+	if rf, ok := ret.Get(0).(func(common.Hash, []byte) map[string]string); ok {
+		r0 = rf(tokenID, paymentAddress)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash, []byte) error); ok {
+		r1 = rf(tokenID, paymentAddress)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetNormalTokenPaymentAddressesBalance provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) GetNormalTokenPaymentAddressesBalance(tokenID common.Hash) (map[string]uint64, error) {
+	ret := _m.Called(tokenID)
+
+	var r0 map[string]uint64
+	if rf, ok := ret.Get(0).(func(common.Hash) map[string]uint64); ok {
+		r0 = rf(tokenID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]uint64)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(tokenID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetOutcoinsByPubkey provides a mock function with given fields: tokenID, pubkey, shardID
@@ -1117,7 +1103,7 @@ func (_m *DatabaseInterface) GetRewardOfShardByEpoch(epoch uint64, shardID byte,
 }
 
 // GetTransactionIndexById provides a mock function with given fields: txId
-func (_m *DatabaseInterface) GetTransactionIndexById(txId common.Hash) (common.Hash, int, *database.DatabaseError) {
+func (_m *DatabaseInterface) GetTransactionIndexById(txId common.Hash) (common.Hash, int, error) {
 	ret := _m.Called(txId)
 
 	var r0 common.Hash
@@ -1136,13 +1122,11 @@ func (_m *DatabaseInterface) GetTransactionIndexById(txId common.Hash) (common.H
 		r1 = ret.Get(1).(int)
 	}
 
-	var r2 *database.DatabaseError
-	if rf, ok := ret.Get(2).(func(common.Hash) *database.DatabaseError); ok {
+	var r2 error
+	if rf, ok := ret.Get(2).(func(common.Hash) error); ok {
 		r2 = rf(txId)
 	} else {
-		if ret.Get(2) != nil {
-			r2 = ret.Get(2).(*database.DatabaseError)
-		}
+		r2 = ret.Error(2)
 	}
 
 	return r0, r1, r2
@@ -1185,20 +1169,20 @@ func (_m *DatabaseInterface) HasAcceptedShardToBeacon(shardID byte, shardBlkHash
 	return r0
 }
 
-// HasBeaconBlock provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) HasBeaconBlock(_a0 common.Hash) (bool, error) {
-	ret := _m.Called(_a0)
+// HasBeaconBlock provides a mock function with given fields: hash
+func (_m *DatabaseInterface) HasBeaconBlock(hash common.Hash) (bool, error) {
+	ret := _m.Called(hash)
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(common.Hash) bool); ok {
-		r0 = rf(_a0)
+		r0 = rf(hash)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1206,20 +1190,20 @@ func (_m *DatabaseInterface) HasBeaconBlock(_a0 common.Hash) (bool, error) {
 	return r0, r1
 }
 
-// HasBlock provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) HasBlock(_a0 common.Hash) (bool, error) {
-	ret := _m.Called(_a0)
+// HasBlock provides a mock function with given fields: hash
+func (_m *DatabaseInterface) HasBlock(hash common.Hash) (bool, error) {
+	ret := _m.Called(hash)
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(common.Hash) bool); ok {
-		r0 = rf(_a0)
+		r0 = rf(hash)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(hash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1367,13 +1351,13 @@ func (_m *DatabaseInterface) HasValue(key []byte) (bool, error) {
 	return r0, r1
 }
 
-// InsertETHTxHashIssued provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) InsertETHTxHashIssued(_a0 []byte) error {
-	ret := _m.Called(_a0)
+// InsertETHTxHashIssued provides a mock function with given fields: uniqETHTx
+func (_m *DatabaseInterface) InsertETHTxHashIssued(uniqETHTx []byte) error {
+	ret := _m.Called(uniqETHTx)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func([]byte) error); ok {
-		r0 = rf(_a0)
+		r0 = rf(uniqETHTx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1381,20 +1365,20 @@ func (_m *DatabaseInterface) InsertETHTxHashIssued(_a0 []byte) error {
 	return r0
 }
 
-// IsBridgeTokenExistedByType provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) IsBridgeTokenExistedByType(_a0 common.Hash, _a1 bool) (bool, error) {
-	ret := _m.Called(_a0, _a1)
+// IsBridgeTokenExistedByType provides a mock function with given fields: incTokenID, isCentralized
+func (_m *DatabaseInterface) IsBridgeTokenExistedByType(incTokenID common.Hash, isCentralized bool) (bool, error) {
+	ret := _m.Called(incTokenID, isCentralized)
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(common.Hash, bool) bool); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(incTokenID, isCentralized)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(common.Hash, bool) error); ok {
-		r1 = rf(_a0, _a1)
+		r1 = rf(incTokenID, isCentralized)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1402,20 +1386,20 @@ func (_m *DatabaseInterface) IsBridgeTokenExistedByType(_a0 common.Hash, _a1 boo
 	return r0, r1
 }
 
-// IsETHTxHashIssued provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) IsETHTxHashIssued(_a0 []byte) (bool, error) {
-	ret := _m.Called(_a0)
+// IsETHTxHashIssued provides a mock function with given fields: uniqETHTx
+func (_m *DatabaseInterface) IsETHTxHashIssued(uniqETHTx []byte) (bool, error) {
+	ret := _m.Called(uniqETHTx)
 
 	var r0 bool
 	if rf, ok := ret.Get(0).(func([]byte) bool); ok {
-		r0 = rf(_a0)
+		r0 = rf(uniqETHTx)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func([]byte) error); ok {
-		r1 = rf(_a0)
+		r1 = rf(uniqETHTx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1439,8 +1423,8 @@ func (_m *DatabaseInterface) ListCommitteeReward() map[string]map[common.Hash]ui
 	return r0
 }
 
-// ListCustomToken provides a mock function with given fields:
-func (_m *DatabaseInterface) ListCustomToken() ([][]byte, error) {
+// ListNormalToken provides a mock function with given fields:
+func (_m *DatabaseInterface) ListNormalToken() ([][]byte, error) {
 	ret := _m.Called()
 
 	var r0 [][]byte
@@ -1462,8 +1446,8 @@ func (_m *DatabaseInterface) ListCustomToken() ([][]byte, error) {
 	return r0, r1
 }
 
-// ListPrivacyCustomToken provides a mock function with given fields:
-func (_m *DatabaseInterface) ListPrivacyCustomToken() ([][]byte, error) {
+// ListPrivacyToken provides a mock function with given fields:
+func (_m *DatabaseInterface) ListPrivacyToken() ([][]byte, error) {
 	ret := _m.Called()
 
 	var r0 [][]byte
@@ -1485,8 +1469,8 @@ func (_m *DatabaseInterface) ListPrivacyCustomToken() ([][]byte, error) {
 	return r0, r1
 }
 
-// ListPrivacyCustomTokenCrossShard provides a mock function with given fields:
-func (_m *DatabaseInterface) ListPrivacyCustomTokenCrossShard() ([][]byte, error) {
+// ListPrivacyTokenCrossShard provides a mock function with given fields:
+func (_m *DatabaseInterface) ListPrivacyTokenCrossShard() ([][]byte, error) {
 	ret := _m.Called()
 
 	var r0 [][]byte
@@ -1531,8 +1515,8 @@ func (_m *DatabaseInterface) ListSerialNumber(tokenID common.Hash, shardID byte)
 	return r0, r1
 }
 
-// PrivacyCustomTokenIDCrossShardExisted provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) PrivacyCustomTokenIDCrossShardExisted(tokenID common.Hash) bool {
+// NormalTokenIDExisted provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) NormalTokenIDExisted(tokenID common.Hash) bool {
 	ret := _m.Called(tokenID)
 
 	var r0 bool
@@ -1545,8 +1529,31 @@ func (_m *DatabaseInterface) PrivacyCustomTokenIDCrossShardExisted(tokenID commo
 	return r0
 }
 
-// PrivacyCustomTokenIDExisted provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) PrivacyCustomTokenIDExisted(tokenID common.Hash) bool {
+// NormalTokenTxs provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) NormalTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
+	ret := _m.Called(tokenID)
+
+	var r0 []common.Hash
+	if rf, ok := ret.Get(0).(func(common.Hash) []common.Hash); ok {
+		r0 = rf(tokenID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]common.Hash)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(tokenID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// PrivacyTokenIDCrossShardExisted provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) PrivacyTokenIDCrossShardExisted(tokenID common.Hash) bool {
 	ret := _m.Called(tokenID)
 
 	var r0 bool
@@ -1559,8 +1566,22 @@ func (_m *DatabaseInterface) PrivacyCustomTokenIDExisted(tokenID common.Hash) bo
 	return r0
 }
 
-// PrivacyCustomTokenTxs provides a mock function with given fields: tokenID
-func (_m *DatabaseInterface) PrivacyCustomTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
+// PrivacyTokenIDExisted provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) PrivacyTokenIDExisted(tokenID common.Hash) bool {
+	ret := _m.Called(tokenID)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(common.Hash) bool); ok {
+		r0 = rf(tokenID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// PrivacyTokenTxs provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) PrivacyTokenTxs(tokenID common.Hash) ([]common.Hash, error) {
 	ret := _m.Called(tokenID)
 
 	var r0 []common.Hash
@@ -1666,13 +1687,13 @@ func (_m *DatabaseInterface) RestoreCommitteeReward(committeeAddress []byte, tok
 	return r0
 }
 
-// RestoreCrossShardNextHeights provides a mock function with given fields: _a0, _a1, _a2
-func (_m *DatabaseInterface) RestoreCrossShardNextHeights(_a0 byte, _a1 byte, _a2 uint64) error {
-	ret := _m.Called(_a0, _a1, _a2)
+// RestoreCrossShardNextHeights provides a mock function with given fields: fromShard, toShard, curHeight
+func (_m *DatabaseInterface) RestoreCrossShardNextHeights(fromShard byte, toShard byte, curHeight uint64) error {
+	ret := _m.Called(fromShard, toShard, curHeight)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(byte, byte, uint64) error); ok {
-		r0 = rf(_a0, _a1, _a2)
+		r0 = rf(fromShard, toShard, curHeight)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1722,13 +1743,13 @@ func (_m *DatabaseInterface) StoreAcceptedShardToBeacon(shardID byte, blkHeight 
 	return r0
 }
 
-// StoreBeaconBestState provides a mock function with given fields: _a0
-func (_m *DatabaseInterface) StoreBeaconBestState(_a0 interface{}) error {
-	ret := _m.Called(_a0)
+// StoreBeaconBestState provides a mock function with given fields: v
+func (_m *DatabaseInterface) StoreBeaconBestState(v interface{}) error {
+	ret := _m.Called(v)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(interface{}) error); ok {
-		r0 = rf(_a0)
+		r0 = rf(v)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1736,13 +1757,13 @@ func (_m *DatabaseInterface) StoreBeaconBestState(_a0 interface{}) error {
 	return r0
 }
 
-// StoreBeaconBlock provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) StoreBeaconBlock(_a0 interface{}, _a1 common.Hash) error {
-	ret := _m.Called(_a0, _a1)
+// StoreBeaconBlock provides a mock function with given fields: v, hash
+func (_m *DatabaseInterface) StoreBeaconBlock(v interface{}, hash common.Hash) error {
+	ret := _m.Called(v, hash)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(interface{}, common.Hash) error); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(v, hash)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1750,13 +1771,13 @@ func (_m *DatabaseInterface) StoreBeaconBlock(_a0 interface{}, _a1 common.Hash) 
 	return r0
 }
 
-// StoreBeaconBlockIndex provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) StoreBeaconBlockIndex(_a0 common.Hash, _a1 uint64) error {
-	ret := _m.Called(_a0, _a1)
+// StoreBeaconBlockIndex provides a mock function with given fields: hash, idx
+func (_m *DatabaseInterface) StoreBeaconBlockIndex(hash common.Hash, idx uint64) error {
+	ret := _m.Called(hash, idx)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, uint64) error); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(hash, idx)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1779,11 +1800,11 @@ func (_m *DatabaseInterface) StoreBeaconCommitteeByHeight(_a0 uint64, _a1 interf
 }
 
 // StoreBurningConfirm provides a mock function with given fields: txID, height
-func (_m *DatabaseInterface) StoreBurningConfirm(txID []byte, height uint64) error {
+func (_m *DatabaseInterface) StoreBurningConfirm(txID common.Hash, height uint64) error {
 	ret := _m.Called(txID, height)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func([]byte, uint64) error); ok {
+	if rf, ok := ret.Get(0).(func(common.Hash, uint64) error); ok {
 		r0 = rf(txID, height)
 	} else {
 		r0 = ret.Error(0)
@@ -1820,13 +1841,13 @@ func (_m *DatabaseInterface) StoreCommitteeFromShardBestState(shardID byte, shar
 	return r0
 }
 
-// StoreCrossShardNextHeight provides a mock function with given fields: _a0, _a1, _a2, _a3
-func (_m *DatabaseInterface) StoreCrossShardNextHeight(_a0 byte, _a1 byte, _a2 uint64, _a3 uint64) error {
-	ret := _m.Called(_a0, _a1, _a2, _a3)
+// StoreCrossShardNextHeight provides a mock function with given fields: fromShard, toShard, curHeight, nextHeight
+func (_m *DatabaseInterface) StoreCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64, nextHeight uint64) error {
+	ret := _m.Called(fromShard, toShard, curHeight, nextHeight)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(byte, byte, uint64, uint64) error); ok {
-		r0 = rf(_a0, _a1, _a2, _a3)
+		r0 = rf(fromShard, toShard, curHeight, nextHeight)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1834,41 +1855,13 @@ func (_m *DatabaseInterface) StoreCrossShardNextHeight(_a0 byte, _a1 byte, _a2 u
 	return r0
 }
 
-// StoreCustomToken provides a mock function with given fields: tokenID, data
-func (_m *DatabaseInterface) StoreCustomToken(tokenID common.Hash, data []byte) error {
-	ret := _m.Called(tokenID, data)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, []byte) error); ok {
-		r0 = rf(tokenID, data)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// StoreCustomTokenTx provides a mock function with given fields: tokenID, shardID, blockHeight, txIndex, data
-func (_m *DatabaseInterface) StoreCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error {
-	ret := _m.Called(tokenID, shardID, blockHeight, txIndex, data)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, byte, uint64, int32, []byte) error); ok {
-		r0 = rf(tokenID, shardID, blockHeight, txIndex, data)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// StoreFeeEstimator provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) StoreFeeEstimator(_a0 []byte, _a1 byte) error {
-	ret := _m.Called(_a0, _a1)
+// StoreFeeEstimator provides a mock function with given fields: val, shardID
+func (_m *DatabaseInterface) StoreFeeEstimator(val []byte, shardID byte) error {
+	ret := _m.Called(val, shardID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func([]byte, byte) error); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(val, shardID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1890,6 +1883,34 @@ func (_m *DatabaseInterface) StoreIncomingCrossShard(shardID byte, crossShardID 
 	return r0
 }
 
+// StoreNormalToken provides a mock function with given fields: tokenID, data
+func (_m *DatabaseInterface) StoreNormalToken(tokenID common.Hash, data []byte) error {
+	ret := _m.Called(tokenID, data)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(common.Hash, []byte) error); ok {
+		r0 = rf(tokenID, data)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// StoreNormalTokenTx provides a mock function with given fields: tokenID, shardID, blockHeight, txIndex, data
+func (_m *DatabaseInterface) StoreNormalTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, data []byte) error {
+	ret := _m.Called(tokenID, shardID, blockHeight, txIndex, data)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(common.Hash, byte, uint64, int32, []byte) error); ok {
+		r0 = rf(tokenID, shardID, blockHeight, txIndex, data)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StoreOutputCoins provides a mock function with given fields: tokenID, publicKey, outputCoinArr, shardID
 func (_m *DatabaseInterface) StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error {
 	ret := _m.Called(tokenID, publicKey, outputCoinArr, shardID)
@@ -1904,13 +1925,13 @@ func (_m *DatabaseInterface) StoreOutputCoins(tokenID common.Hash, publicKey []b
 	return r0
 }
 
-// StorePrevBestState provides a mock function with given fields: _a0, _a1, _a2
-func (_m *DatabaseInterface) StorePrevBestState(_a0 []byte, _a1 bool, _a2 byte) error {
-	ret := _m.Called(_a0, _a1, _a2)
+// StorePrevBestState provides a mock function with given fields: val, isBeacon, shardID
+func (_m *DatabaseInterface) StorePrevBestState(val []byte, isBeacon bool, shardID byte) error {
+	ret := _m.Called(val, isBeacon, shardID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func([]byte, bool, byte) error); ok {
-		r0 = rf(_a0, _a1, _a2)
+		r0 = rf(val, isBeacon, shardID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1918,8 +1939,8 @@ func (_m *DatabaseInterface) StorePrevBestState(_a0 []byte, _a1 bool, _a2 byte) 
 	return r0
 }
 
-// StorePrivacyCustomToken provides a mock function with given fields: tokenID, data
-func (_m *DatabaseInterface) StorePrivacyCustomToken(tokenID common.Hash, data []byte) error {
+// StorePrivacyToken provides a mock function with given fields: tokenID, data
+func (_m *DatabaseInterface) StorePrivacyToken(tokenID common.Hash, data []byte) error {
 	ret := _m.Called(tokenID, data)
 
 	var r0 error
@@ -1932,8 +1953,8 @@ func (_m *DatabaseInterface) StorePrivacyCustomToken(tokenID common.Hash, data [
 	return r0
 }
 
-// StorePrivacyCustomTokenCrossShard provides a mock function with given fields: tokenID, tokenValue
-func (_m *DatabaseInterface) StorePrivacyCustomTokenCrossShard(tokenID common.Hash, tokenValue []byte) error {
+// StorePrivacyTokenCrossShard provides a mock function with given fields: tokenID, tokenValue
+func (_m *DatabaseInterface) StorePrivacyTokenCrossShard(tokenID common.Hash, tokenValue []byte) error {
 	ret := _m.Called(tokenID, tokenValue)
 
 	var r0 error
@@ -1946,13 +1967,27 @@ func (_m *DatabaseInterface) StorePrivacyCustomTokenCrossShard(tokenID common.Ha
 	return r0
 }
 
-// StorePrivacyCustomTokenTx provides a mock function with given fields: tokenID, shardID, blockHeight, txIndex, txHash
-func (_m *DatabaseInterface) StorePrivacyCustomTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
+// StorePrivacyTokenTx provides a mock function with given fields: tokenID, shardID, blockHeight, txIndex, txHash
+func (_m *DatabaseInterface) StorePrivacyTokenTx(tokenID common.Hash, shardID byte, blockHeight uint64, txIndex int32, txHash []byte) error {
 	ret := _m.Called(tokenID, shardID, blockHeight, txIndex, txHash)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, byte, uint64, int32, []byte) error); ok {
 		r0 = rf(tokenID, shardID, blockHeight, txIndex, txHash)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// StoreRewardReceiverByHeight provides a mock function with given fields: _a0, _a1
+func (_m *DatabaseInterface) StoreRewardReceiverByHeight(_a0 uint64, _a1 interface{}) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64, interface{}) error); ok {
+		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1988,13 +2023,13 @@ func (_m *DatabaseInterface) StoreSerialNumbers(tokenID common.Hash, serialNumbe
 	return r0
 }
 
-// StoreShardBestState provides a mock function with given fields: _a0, _a1
-func (_m *DatabaseInterface) StoreShardBestState(_a0 interface{}, _a1 byte) error {
-	ret := _m.Called(_a0, _a1)
+// StoreShardBestState provides a mock function with given fields: v, shardID
+func (_m *DatabaseInterface) StoreShardBestState(v interface{}, shardID byte) error {
+	ret := _m.Called(v, shardID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(interface{}, byte) error); ok {
-		r0 = rf(_a0, _a1)
+		r0 = rf(v, shardID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -2002,13 +2037,13 @@ func (_m *DatabaseInterface) StoreShardBestState(_a0 interface{}, _a1 byte) erro
 	return r0
 }
 
-// StoreShardBlock provides a mock function with given fields: _a0, _a1, _a2
-func (_m *DatabaseInterface) StoreShardBlock(_a0 interface{}, _a1 common.Hash, _a2 byte) error {
-	ret := _m.Called(_a0, _a1, _a2)
+// StoreShardBlock provides a mock function with given fields: v, hash, shardID
+func (_m *DatabaseInterface) StoreShardBlock(v interface{}, hash common.Hash, shardID byte) error {
+	ret := _m.Called(v, hash, shardID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(interface{}, common.Hash, byte) error); ok {
-		r0 = rf(_a0, _a1, _a2)
+		r0 = rf(v, hash, shardID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -2016,13 +2051,13 @@ func (_m *DatabaseInterface) StoreShardBlock(_a0 interface{}, _a1 common.Hash, _
 	return r0
 }
 
-// StoreShardBlockIndex provides a mock function with given fields: _a0, _a1, _a2
-func (_m *DatabaseInterface) StoreShardBlockIndex(_a0 common.Hash, _a1 uint64, _a2 byte) error {
-	ret := _m.Called(_a0, _a1, _a2)
+// StoreShardBlockIndex provides a mock function with given fields: hash, idx, shardID
+func (_m *DatabaseInterface) StoreShardBlockIndex(hash common.Hash, idx uint64, shardID byte) error {
+	ret := _m.Called(hash, idx, shardID)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, uint64, byte) error); ok {
-		r0 = rf(_a0, _a1, _a2)
+		r0 = rf(hash, idx, shardID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -2086,13 +2121,13 @@ func (_m *DatabaseInterface) TrackBridgeReqWithStatus(txReqID common.Hash, statu
 	return r0
 }
 
-// UpdateBridgeTokenInfo provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
-func (_m *DatabaseInterface) UpdateBridgeTokenInfo(_a0 common.Hash, _a1 []byte, _a2 bool, _a3 uint64, _a4 string) error {
-	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
+// UpdateBridgeTokenInfo provides a mock function with given fields: incTokenID, externalTokenID, isCentralized, updatingAmt, updateType
+func (_m *DatabaseInterface) UpdateBridgeTokenInfo(incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmt uint64, updateType string) error {
+	ret := _m.Called(incTokenID, externalTokenID, isCentralized, updatingAmt, updateType)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, []byte, bool, uint64, string) error); ok {
-		r0 = rf(_a0, _a1, _a2, _a3, _a4)
+		r0 = rf(incTokenID, externalTokenID, isCentralized, updatingAmt, updateType)
 	} else {
 		r0 = ret.Error(0)
 	}
