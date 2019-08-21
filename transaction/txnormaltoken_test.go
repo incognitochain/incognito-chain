@@ -25,7 +25,7 @@ func TestTxCustomToken(t *testing.T) {
 	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.GetOutputCoins())
 	in1[0].CoinDetails.SetSerialNumber(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex].Derive(new(big.Int).SetBytes(key.KeySet.PrivateKey),
 		in1[0].CoinDetails.GetSNDerivator()))
-	tx := TxCustomToken{}
+	tx := TxNormalToken{}
 	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},
 		in1,
@@ -44,7 +44,7 @@ func TestTxCustomToken(t *testing.T) {
 		t.Error(err)
 	}
 
-	db.StoreCustomToken(common.PRVCoinID, tx.Hash()[:])
+	db.StoreNormalToken(common.PRVCoinID, tx.Hash()[:])
 
 	err = tx.Init(NewTxNormalTokenInitParam(&key.KeySet.PrivateKey,
 		[]*privacy.PaymentInfo{{Amount: 10, PaymentAddress: paymentAddress}},

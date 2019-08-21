@@ -174,7 +174,7 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	return &tx, nil
 }
 
-func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxCustomToken, *RPCError) {
+func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet) (*transaction.CustomTokenParamTx, map[common.Hash]transaction.TxNormalToken, *RPCError) {
 	tokenParams := &transaction.CustomTokenParamTx{
 		PropertyID:     tokenParamsRaw["TokenID"].(string),
 		PropertyName:   tokenParamsRaw["TokenName"].(string),
@@ -249,7 +249,7 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 	params interface{},
 	metaData metadata.Metadata,
-) (*transaction.TxCustomToken, *RPCError) {
+) (*transaction.TxNormalToken, *RPCError) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 
@@ -305,7 +305,7 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 	}
 	/******* END GET output coins native coins(PRV), which is used to create tx *****/
 
-	tx := &transaction.TxCustomToken{}
+	tx := &transaction.TxNormalToken{}
 	err = tx.Init(
 		transaction.NewTxNormalTokenInitParam(&senderKeySet.PrivateKey,
 			nil,

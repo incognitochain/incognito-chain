@@ -1,8 +1,8 @@
 package rpcserver
 
 import (
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
@@ -268,8 +268,8 @@ func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, close
 func (httpServer *HttpServer) handleGetETHHeaderByHash(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	ethBlockHash := arrayParams[0].(string)
-	bc := httpServer.config.BlockChain
-	ethHeader, err := metadata.GetETHHeader(bc, rCommon.HexToHash(ethBlockHash))
+	//bc := httpServer.config.BlockChain
+	ethHeader, err := metadata.GetETHHeader(rCommon.HexToHash(ethBlockHash))
 	if err != nil {
 		return false, NewRPCError(ErrUnexpected, err)
 	}

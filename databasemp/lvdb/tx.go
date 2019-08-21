@@ -10,7 +10,7 @@ import (
 // Key: tx-{txHash}
 // Value: {type}-transaction(byte value)-Splitter-otherDescValue(byte Value)
 func (db *db) AddTransaction(txHash *common.Hash, txType string, valueTx []byte, valueDesc []byte) error {
-	key := db.GetKey(txHash)
+	key := getKey(txHash)
 	value := append([]byte(txType), Splitter...)
 	value = append(value, valueTx...)
 	value = append(value, Splitter...)
@@ -21,7 +21,7 @@ func (db *db) AddTransaction(txHash *common.Hash, txType string, valueTx []byte,
 	return nil
 }
 func (db *db) RemoveTransaction(txHash *common.Hash) error {
-	key := db.GetKey(txHash)
+	key := getKey(txHash)
 	if err := db.Delete(key); err != nil {
 		return databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "db.lvdb.Delete"))
 	}
@@ -29,7 +29,7 @@ func (db *db) RemoveTransaction(txHash *common.Hash) error {
 }
 
 func (db *db) GetTransaction(txHash *common.Hash) ([]byte, error) {
-	key := db.GetKey(txHash)
+	key := getKey(txHash)
 	value, err := db.Get(key)
 	if err != nil {
 		return []byte{}, databasemp.NewDatabaseMempoolError(databasemp.UnexpectedError, errors.Wrap(err, "db.lvdb.Get"))
@@ -38,7 +38,7 @@ func (db *db) GetTransaction(txHash *common.Hash) ([]byte, error) {
 }
 
 func (db *db) HasTransaction(txHash *common.Hash) (bool, error) {
-	key := db.GetKey(txHash)
+	key := getKey(txHash)
 	ret, err := db.HasValue(key)
 	if err != nil {
 		return false, databasemp.NewDatabaseMempoolError(databasemp.NotExistValue, err)

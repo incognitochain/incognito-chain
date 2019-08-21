@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -14,24 +15,22 @@ var AvailableConsensus map[string]ConsensusInterface
 
 type Engine struct {
 	sync.Mutex
-	cQuit              chan struct{}
-	started            bool
-	Node               nodeInterface
-	ChainConsensusList map[string]ConsensusInterface
-	Chains             map[string]ChainInterface
-	CurrentMiningChain string
-	Blockchain         *blockchain.BlockChain
-	BlockGen           *blockchain.BlockGenerator
-	// userMiningPublicKeys map[string]string
+	cQuit                chan struct{}
+	started              bool
+	Node                 NodeInterface
+	ChainConsensusList   map[string]ConsensusInterface
+	CurrentMiningChain   string
+	Blockchain           *blockchain.BlockChain
+	userMiningPublicKeys map[string]string
+	chainCommitteeChange chan string
 	// MiningKeys         map[string]string
 
 }
 
-func New(node nodeInterface, blockchain *blockchain.BlockChain, blockgen *blockchain.BlockGenerator) *Engine {
+func New(node NodeInterface, blockchain *blockchain.BlockChain, blockgen *blockchain.BlockGenerator) *Engine {
 	engine := Engine{
 		Node:       node,
 		Blockchain: blockchain,
-		BlockGen:   blockgen,
 	}
 	err := engine.LoadMiningKeys(node.GetMiningKeys())
 	if err != nil {
@@ -40,9 +39,50 @@ func New(node nodeInterface, blockchain *blockchain.BlockChain, blockgen *blockc
 	return &engine
 }
 
-//watchConsensusState will watch MiningKey Role as well as chain consensus type
-func (engine *Engine) watchConsensusState() {
+func (engine *Engine) CommitteeChange(chainName string) {
+	engine.chainCommitteeChange <- chainName
+}
 
+//watchConsensusState will watch MiningKey Role as well as chain consensus type
+func (engine *Engine) watchConsensusCommittee() {
+	Logger.log.Info("start watching consensus committee...")
+	engine.chainCommitteeChange = make(chan string)
+	allcommittee := engine.Blockchain.Chains[common.BEACON_CHAINKEY].(BeaconInterface).GetAllCommittees()
+	for consensusType, publickey := range engine.userMiningPublicKeys {
+		if engine.CurrentMiningChain != "" {
+			break
+		}
+		if committees, ok := allcommittee[consensusType]; ok {
+			for chainName, committee := range committees {
+				if common.IndexOfStr(publickey, committee) != -1 {
+					engine.CurrentMiningChain = chainName
+				}
+			}
+		}
+	}
+	engine.ChainConsensusList = make(map[string]ConsensusInterface)
+	for chainName, chain := range engine.Blockchain.Chains {
+		if _, ok := AvailableConsensus[chain.GetConsensusType()]; ok {
+			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetConsensusType()].NewInstance(chain, chainName, engine.Node)
+		}
+	}
+
+	for {
+		select {
+		case <-engine.cQuit:
+		case chainName := <-engine.chainCommitteeChange:
+			consensusType := engine.Blockchain.Chains[chainName].GetConsensusType()
+			userPublicKey, ok := engine.userMiningPublicKeys[consensusType]
+			if !ok {
+				continue
+			}
+			if engine.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey) > 0 {
+				if engine.CurrentMiningChain != chainName {
+					engine.CurrentMiningChain = chainName
+				}
+			}
+		}
+	}
 }
 
 func (engine *Engine) Start() error {
@@ -55,61 +95,21 @@ func (engine *Engine) Start() error {
 
 	engine.cQuit = make(chan struct{})
 	go func() {
+		go engine.watchConsensusCommittee()
 		for {
 			select {
 			case <-engine.cQuit:
 				return
 			default:
-				time.Sleep(time.Millisecond * 100)
-				// fmt.Println(engine)
-				// if !engine.config.BlockChain.Synker.IsLatest(false, 0) {
-				// 	userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, 0)
-				// 	if userRole == common.SHARD_ROLE {
-				// 		go engine.NotifyShardRole(int(shardID))
-				// 		go engine.NotifyBeaconRole(false)
-				// 	} else {
-				// 		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-				// 			go engine.NotifyBeaconRole(true)
-				// 			go engine.NotifyShardRole(-1)
-				// 		}
-				// 	}
-				// } else {
-				// 	if !engine.config.Server.IsEnableMining() {
-				// 		time.Sleep(time.Second * 1)
-				// 		continue
-				// 	}
-				// 	userRole, shardID := engine.config.BlockChain.BestState.Beacon.GetPubkeyRole(engine.userPk, engine.currentBFTRound)
-				// 	if engine.config.NodeMode == common.NODEMODE_BEACON && userRole == common.SHARD_ROLE {
-				// 		userRole = common.EmptyString
-				// 	}
-				// 	if engine.config.NodeMode == common.NODEMODE_SHARD && userRole != common.SHARD_ROLE {
-				// 		userRole = common.EmptyString
-				// 	}
-				// 	engine.userLayer = userRole
-				// 	switch userRole {
-				// 	case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
-				// 		engine.userLayer = common.BEACON_ROLE
-				// 	}
-				// 	engine.config.Server.UpdateConsensusState(engine.userLayer, engine.userPk, nil, engine.config.BlockChain.BestState.Beacon.BeaconCommittee, engine.config.BlockChain.BestState.Beacon.GetShardCommittee())
-				// 	switch engine.userLayer {
-				// 	case common.BEACON_ROLE:
-				// 		if engine.config.NodeMode == common.NODEMODE_BEACON || engine.config.NodeMode == common.NODEMODE_AUTO {
-				// 			engine.config.BlockChain.ConsensusOngoing = true
-				// 			engine.execBeaconRole()
-				// 			engine.config.BlockChain.ConsensusOngoing = false
-				// 		}
-				// 	case common.SHARD_ROLE:
-				// 		if engine.config.NodeMode == common.NODEMODE_SHARD || engine.config.NodeMode == common.NODEMODE_AUTO {
-				// 			if engine.config.BlockChain.Synker.IsLatest(true, shardID) {
-				// 				engine.config.BlockChain.ConsensusOngoing = true
-				// 				engine.execShardRole(shardID)
-				// 				engine.config.BlockChain.ConsensusOngoing = false
-				// 			}
-				// 		}
-				// 	case common.EmptyString:
-				// 		time.Sleep(time.Second * 1)
-				// 	}
-				// }
+				time.Sleep(time.Millisecond * 1000)
+				fmt.Println("current mining chain", engine.CurrentMiningChain)
+				for chainName, consensus := range engine.ChainConsensusList {
+					if chainName == engine.CurrentMiningChain {
+						consensus.Start()
+					} else {
+						consensus.Stop()
+					}
+				}
 			}
 		}
 	}()
@@ -131,7 +131,7 @@ func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
 	if engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName() != engine.Blockchain.BestState.Beacon.ConsensusAlgorithm {
 		consensus, ok := AvailableConsensus[engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName()]
 		if ok {
-			engine.ChainConsensusList[common.BEACON_CHAINKEY] = consensus.NewInstance()
+			engine.ChainConsensusList[common.BEACON_CHAINKEY] = consensus.NewInstance(engine.Blockchain.Chains[common.BEACON_CHAINKEY], chainkey, engine.Node)
 		} else {
 			panic("Update code please")
 		}
@@ -143,7 +143,7 @@ func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
 			if shard.ConsensusAlgorithm != engine.ChainConsensusList[chainKey].GetConsensusName() {
 				consensus, ok := AvailableConsensus[engine.ChainConsensusList[chainKey].GetConsensusName()]
 				if ok {
-					engine.ChainConsensusList[chainKey] = consensus.NewInstance()
+					engine.ChainConsensusList[chainKey] = consensus.NewInstance(engine.Blockchain.Chains[chainKey], chainkey, engine.Node)
 				} else {
 					panic("Update code please")
 				}
@@ -163,16 +163,8 @@ func RegisterConsensus(name string, consensus ConsensusInterface) error {
 	return nil
 }
 
-func (engine *Engine) ValidateBlockWithConsensus(block common.BlockInterface, chainName string, consensusType string) error {
-	consensusModule, ok := engine.ChainConsensusList[chainName]
-	if ok && !consensusModule.IsOngoing() {
-		consensusModule.ValidateBlock(block)
-	}
-	return nil
-}
-
 func (engine *Engine) ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error {
-	return engine.ChainConsensusList[consensusType].ValidateAggregatedSig(blockHash, validationData, committee)
+	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(blockHash, committee, validationData)
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {
@@ -192,11 +184,11 @@ func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
 func (engine *Engine) GetUserRole() (string, int) {
 	if engine.CurrentMiningChain != "" {
 		publicKey, _ := engine.GetCurrentMiningPublicKey()
-		userRole, _ := engine.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
+		userRole, _ := engine.Blockchain.Chains[engine.CurrentMiningChain].GetPubkeyRole(publicKey, 0)
 		if engine.CurrentMiningChain == common.BEACON_CHAINKEY {
 			return userRole, -1
 		}
-		return userRole, int(engine.Chains[engine.CurrentMiningChain].GetShardID())
+		return userRole, engine.Blockchain.Chains[engine.CurrentMiningChain].GetShardID()
 	}
 	return "", 0
 }
@@ -205,49 +197,6 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 	return nil
 }
 
-// func convertProposeMsg(msg *wire.MessageBFTProposeV2) bft.ProposeMsg {
-// 	proposeMsg := bft.ProposeMsg{
-// 		ChainKey:   msg.ChainKey,
-// 		ContentSig: msg.ContentSig,
-// 		Pubkey:     msg.Pubkey,
-// 		Timestamp:  msg.Timestamp,
-// 		RoundKey:   msg.RoundKey,
-// 	}
-// 	if strings.Index(msg.ChainKey, BEACON_CHAINKEY) > -1 { //beacon
-// 		blk := &blockchain.BeaconBlock{}
-// 		err := json.Unmarshal([]byte(msg.Block), &blk)
-// 		if err != nil {
-// 			fmt.Println("BFT: unmarshal beacon propose msg fail", err)
-// 		}
-// 		proposeMsg.Block = blk
-// 	} else { //shard
-// 		blk := &blockchain.ShardBlock{}
-// 		err := json.Unmarshal([]byte(msg.Block), &blk)
-// 		if err != nil {
-// 			fmt.Println("BFT: unmarshal shard propose msg fail", err)
-// 		}
-// 		proposeMsg.Block = blk
-// 	}
-// 	return proposeMsg
-// }
-
-// func convertPrepareMsg(msg *wire.MessageBFTPrepareV2) bft.PrepareMsg {
-// 	prepareMsg := bft.PrepareMsg{
-// 		ChainKey:   msg.ChainKey,
-// 		ContentSig: msg.ContentSig,
-// 		Pubkey:     msg.Pubkey,
-// 		Timestamp:  msg.Timestamp,
-// 		RoundKey:   msg.RoundKey,
-// 		IsOk:       msg.IsOk,
-// 		BlkHash:    msg.BlkHash,
-// 	}
-// 	return prepareMsg
-// }
-
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
 	return nil
 }
-
-// func (engine *Engine) GetUserMiningKey() string {
-// 	return ""
-// }

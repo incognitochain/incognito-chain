@@ -31,6 +31,8 @@ const (
 	ErrSubcribe
 	ErrNetwork
 	ErrTokenIsInvalid
+	GetClonedBeaconBestStateError
+	GetClonedShardBestStateError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -62,6 +64,8 @@ var ErrCodeMessage = map[int]struct {
 	ErrRejectInvalidFee:              {-1016, "Reject invalid fee"},
 	ErrTxNotExistedInMemAndBLock:     {-1017, "Tx is not existed in mem and block"},
 	ErrTokenIsInvalid:                {-1018, "Token is invalid"},
+	GetClonedBeaconBestStateError:    {-1019, "Get Cloned Beacon Best State Error"},
+	GetClonedShardBestStateError:     {-1020, "Get Cloned Shard Best State Error"},
 
 	// processing -2xxx
 	ErrCreateTxData: {-2001, "Can not create tx"},
