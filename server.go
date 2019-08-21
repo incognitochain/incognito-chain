@@ -32,7 +32,6 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
-	"github.com/incognitochain/incognito-chain/rpccaller"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -230,11 +229,20 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		}
 		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
 	}
+	// Init block template generator
+	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
+	if err != nil {
+		return err
+	}
+	// Init consensus engine
+	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
+
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,
 		DataBase:    serverObj.dataBase,
 		MemCache:    serverObj.memCache,
 		//MemCache:          nil,
+		BlockGen:          serverObj.blockgen,
 		Interrupt:         interrupt,
 		RelayShards:       relayShards,
 		BeaconPool:        serverObj.beaconPool,
@@ -347,15 +355,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
 
-	// Init block template generator
-	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.shardToBeaconPool, serverObj.crossShardPool, cPendingTxs, cRemovedTxs)
-	if err != nil {
-		return err
-	}
-
-	// Init consensus engine
-	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
-
 	// Init Net Sync manager to process messages
 	serverObj.netSync = &netsync.NetSync{}
 	serverObj.netSync.Init(&netsync.NetSyncConfig{
@@ -460,7 +459,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 		// init rpc client instance and stick to Blockchain object
 		// in order to communicate to external services (ex. eth light node)
-		serverObj.blockgen.SetRPCClientChain(rpccaller.NewRPCClient())
+		//serverObj.blockChain.SetRPCClientChain(rpccaller.NewRPCClient())
 
 		// Signal process shutdown when the RPC server requests it.
 		go func() {
@@ -693,7 +692,7 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 					if err != nil {
 						continue
 					}
-					customTokenTx := tx.(*transaction.TxCustomToken)
+					customTokenTx := tx.(*transaction.TxNormalToken)
 					txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
 					err = serverObj.PushMessageToAll(txMsg)
 					if err == nil {
@@ -1734,4 +1733,14 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 
 func (serverObj *Server) GetMiningKeys() string {
 	return cfg.MiningKeys
+}
+
+func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
+	chainID := chain.GetShardID()
+	if chainID == -1 {
+		serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{})
+	} else {
+		serverObj.PushMessageToShard(msg, byte(chainID), map[libp2p.ID]bool{})
+	}
+	return nil
 }

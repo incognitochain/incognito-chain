@@ -39,7 +39,7 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBeaconSwapProofOnBridge(bridgeBlock, bc, db)
+	bridgeInstProof, err := getBeaconSwapProofOnBridge(bridgeBlock, db)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -66,7 +66,7 @@ func getShardAndBeaconBlocks(
 	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
 ) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
-	bridgeID := byte(common.BRIDGE_SHARD_ID)
+	bridgeID := byte(common.BridgeShardID)
 	bridgeBlock, err := bc.GetShardBlockByHeight(height, bridgeID)
 	if err != nil {
 		return nil, nil, err
@@ -81,7 +81,7 @@ func getShardAndBeaconBlocks(
 	if err != nil {
 		return nil, nil, err
 	}
-	bridgeInsts, err := extractInstsFromShardBlock(bridgeBlock, beaconBlocks, bc)
+	bridgeInsts, err := extractInstsFromShardBlock(bridgeBlock, bc)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -92,7 +92,6 @@ func getShardAndBeaconBlocks(
 // getBeaconSwapProofOnBridge finds a beacon committee swap instruction in a given bridge block and returns its proof
 func getBeaconSwapProofOnBridge(
 	bridgeBlock *blockchain.ShardBlock,
-	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
@@ -195,17 +194,17 @@ func getIncludedBeaconBlocks(
 // extractInstsFromShardBlock returns all instructions in a shard block as a slice of []string
 func extractInstsFromShardBlock(
 	shardBlock *blockchain.ShardBlock,
-	beaconBlocks []*blockchain.BeaconBlock,
+	//beaconBlocks []*blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
 ) ([][]string, error) {
 	instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(
 		shardBlock.Body.Transactions,
 		bc,
 		shardBlock.Header.ShardID,
-	//	&shardBlock.Header.ProducerAddress,
-	//	shardBlock.Header.Height,
-	//	beaconBlocks,
-	//	shardBlock.Header.BeaconHeight,
+		//	&shardBlock.Header.ProducerAddress,
+		//	shardBlock.Header.Height,
+		//	beaconBlocks,
+		//	shardBlock.Header.BeaconHeight,
 	)
 	if err != nil {
 		return nil, err
@@ -321,7 +320,7 @@ func (sb *shardBlock) ValidatorsIdx() []int {
 }
 
 // buildSignersProof builds the merkle proofs for some elements in a list of pubkeys
-func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
+/*func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
 	merkles := blockchain.BuildKeccak256MerkleTree(pubkeys)
 	BLogger.log.Debugf("pubkeys: %x", pubkeys)
 	BLogger.log.Debugf("merkles: %x", merkles)
@@ -330,7 +329,7 @@ func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
 		proofs[i] = buildProofFromTree(merkles, pid)
 	}
 	return proofs
-}
+}*/
 
 // findBeaconBlockWithInst finds a beacon block with a specific instruction and the instruction's index; nil if not found
 func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) (*blockchain.BeaconBlock, int) {

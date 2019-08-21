@@ -5,13 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/pkg/errors"
 )
 
 // whoever can send this type of tx
@@ -46,7 +46,7 @@ func NewBurningRequest(
 	return burningReq, nil
 }
 
-func (bReq *BurningRequest) ValidateTxWithBlockChain(
+func (bReq BurningRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	bcr BlockchainRetriever,
 	shardID byte,
@@ -62,8 +62,7 @@ func (bReq *BurningRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (bReq *BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
-
+func (bReq BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
@@ -81,10 +80,6 @@ func (bReq *BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if len(bReq.TokenID) != common.HashSize {
-		return false, false, errors.New("Wrong request info's token id")
-	}
-
 	if !txr.IsCoinsBurning() {
 		return false, false, errors.New("Must send coin to burning address")
 	}
@@ -97,11 +92,11 @@ func (bReq *BurningRequest) ValidateSanityData(bcr BlockchainRetriever, txr Tran
 	return true, true, nil
 }
 
-func (bReq *BurningRequest) ValidateMetadataByItself() bool {
+func (bReq BurningRequest) ValidateMetadataByItself() bool {
 	return bReq.Type == BurningRequestMeta
 }
 
-func (bReq *BurningRequest) Hash() *common.Hash {
+func (bReq BurningRequest) Hash() *common.Hash {
 	record := bReq.MetadataBase.Hash().String()
 	record += bReq.BurnerAddress.String()
 	record += bReq.TokenID.String()

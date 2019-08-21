@@ -24,7 +24,7 @@ func TestTxTokenPrivacyData(t *testing.T) {
 		CoinDetails: coin2,
 	}})
 	txNormal := Tx{Proof: proof}
-	data := TxTokenPrivacyData{
+	data := TxPrivacyTokenData{
 		TxNormal: txNormal,
 	}
 	hash, _ := data.Hash()

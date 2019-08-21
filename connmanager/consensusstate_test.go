@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetCommitteeByShard(t *testing.T) {
@@ -22,6 +24,8 @@ func TestGetCommitteeByShard(t *testing.T) {
 	if len(commitee) == 0 {
 		t.Error("Can not getCommitteeByShard")
 	}
+	assert.Equal(t, "c", commitee[0])
+	assert.Equal(t, "d", commitee[1])
 	commitee = consensusState.getCommitteeByShard(1)
 	if len(commitee) > 0 {
 		t.Error("Can not getCommitteeByShard")
