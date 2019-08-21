@@ -16,7 +16,7 @@ import (
 )
 
 // build instructions at beacon chain before syncing to shards
-func (blockChain *BlockChain) buildBridgeInstructions(
+func (blockchain *BlockChain) buildBridgeInstructions(
 	shardID byte,
 	shardBlockInstructions [][]string,
 	beaconHeight uint64,
@@ -44,13 +44,13 @@ func (blockChain *BlockChain) buildBridgeInstructions(
 		newInst := [][]string{}
 		switch metaType {
 		case metadata.ContractingRequestMeta:
-			newInst, err = blockChain.buildInstructionsForContractingReq(contentStr, shardID, metaType)
+			newInst, err = blockchain.buildInstructionsForContractingReq(contentStr, shardID, metaType)
 
 		case metadata.IssuingRequestMeta:
-			newInst, err = blockChain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
+			newInst, err = blockchain.buildInstructionsForIssuingReq(contentStr, shardID, metaType, accumulatedValues)
 
 		case metadata.IssuingETHRequestMeta:
-			newInst, err = blockChain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
+			newInst, err = blockchain.buildInstructionsForIssuingETHReq(contentStr, shardID, metaType, accumulatedValues)
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
@@ -83,7 +83,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 	}
 	md := burningReqAction.Meta
 	txID := burningReqAction.RequestedTxID // to prevent double-release token
-	shardID := byte(common.BRIDGE_SHARD_ID)
+	shardID := byte(common.BridgeShardID)
 
 	// Convert to external tokenID
 	tokenID, err := findExternalTokenID(&md.TokenID, db)
@@ -93,7 +93,7 @@ func buildBurningConfirmInst(inst []string, height uint64, db database.DatabaseI
 
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)
-	if bytes.Equal(tokenID, rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes()) {
+	if bytes.Equal(tokenID, rCommon.HexToAddress(common.EthAddrStr).Bytes()) {
 		// Convert Gwei to Wei for Ether
 		amount = amount.Mul(amount, big.NewInt(1000000000))
 	}

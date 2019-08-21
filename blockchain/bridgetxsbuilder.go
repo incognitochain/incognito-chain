@@ -32,7 +32,7 @@ func buildInstruction(
 	}
 }
 
-func (chain *BlockChain) buildInstructionsForContractingReq(
+func (blockchain *BlockChain) buildInstructionsForContractingReq(
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -41,7 +41,7 @@ func (chain *BlockChain) buildInstructionsForContractingReq(
 	return [][]string{inst}, nil
 }
 
-func (chain *BlockChain) buildInstructionsForIssuingReq(
+func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -49,7 +49,7 @@ func (chain *BlockChain) buildInstructionsForIssuingReq(
 ) ([][]string, error) {
 	fmt.Println("[Centralized bridge token issuance] Starting...")
 	instructions := [][]string{}
-	db := chain.GetDatabase()
+	db := blockchain.GetDatabase()
 	issuingReqAction, err := metadata.ParseIssuingInstContent(contentStr)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while parsing issuing action content: ", err)
@@ -95,7 +95,7 @@ func (chain *BlockChain) buildInstructionsForIssuingReq(
 	return append(instructions, returnedInst), nil
 }
 
-func (chain *BlockChain) buildInstructionsForIssuingETHReq(
+func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -103,7 +103,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 ) ([][]string, error) {
 	fmt.Println("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
-	db := chain.GetDatabase()
+	db := blockchain.GetDatabase()
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
 		fmt.Println("WARNING: an issue occured while parsing issuing action content: ", err)
@@ -136,7 +136,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	logMap, err := metadata.PickNParseLogMapFromReceipt(ethReceipt)
+	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt)
 	if err != nil {
 		fmt.Println("WARNING: an error occured while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil
@@ -187,7 +187,7 @@ func (chain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 	amount := uint64(0)
-	if bytes.Equal(rCommon.HexToAddress(common.ETH_ADDR_STR).Bytes(), ethereumToken) {
+	if bytes.Equal(rCommon.HexToAddress(common.EthAddrStr).Bytes(), ethereumToken) {
 		// convert amt from wei (10^18) to nano eth (10^9)
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else { // ERC20

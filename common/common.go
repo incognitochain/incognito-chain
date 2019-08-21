@@ -3,7 +3,6 @@ package common
 import (
 	"crypto/rand"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"log"
 	"math/big"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/pkg/errors"
 )
 
 // appDataDir returns an operating system specific directory to be used for
@@ -424,9 +425,9 @@ func (s *ErrorSaver) Save(errs ...error) error {
 	if s.err != nil {
 		return s.err
 	}
-	for _, err := range errs {
+	for i, err := range errs {
 		if err != nil {
-			s.err = err
+			s.err = errors.WithMessagef(err, "errSaver #%d", i)
 			return s.err
 		}
 	}
@@ -453,6 +454,23 @@ func GetENV(key, fallback string) string {
 	return value
 }
 
+func GetValidStaker(committees []string, stakers []string) []string {
+	validStaker := []string{}
+	for _, staker := range stakers {
+		flag := false
+		for _, committee := range committees {
+			if strings.Compare(staker, committee) == 0 {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			validStaker = append(validStaker, staker)
+		}
+	}
+	return validStaker
+}
+
 func GetShardChainKey(shardID byte) string {
-	return SHARD_CHAINKEY + "-" + string(shardID)
+	return SHARD_CHAINKEY + "-" + strconv.Itoa(int(shardID))
 }

@@ -7,11 +7,12 @@ import (
 )
 
 type BeaconChain struct {
-	BestState       *BeaconBestState
-	BlockGen        *BlockGenerator
-	Blockchain      *BlockChain
-	ChainConsensus  ConsensusInterface
-	ConsensusEngine ConsensusEngineInterface
+	BestState  *BeaconBestState
+	BlockGen   *BlockGenerator
+	Blockchain *BlockChain
+	ChainName  string
+	// ChainConsensus  ConsensusInterface
+	// ConsensusEngine ConsensusEngineInterface
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
@@ -19,11 +20,11 @@ func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
-func (chain *BeaconChain) GetBlkInterval() time.Duration {
+func (chain *BeaconChain) GetMinBlkInterval() time.Duration {
 	return chain.BestState.BlockInterval
 }
 
-func (chain *BeaconChain) GetBlkMaxCreateTime() time.Duration {
+func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
 	return chain.BestState.BlockMaxCreateTime
 }
 
@@ -33,6 +34,10 @@ func (chain *BeaconChain) IsReady() bool {
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
 	return chain.BestState.BestBlock.Header.Height
+}
+
+func (chain *BeaconChain) GetCommittee() []string {
+	return chain.BestState.GetBeaconCommittee()
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
@@ -47,7 +52,7 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.BestState.BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(round int) BlockInterface {
+func (chain *BeaconChain) CreateNewBlock(round int) common.BlockInterface {
 	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil
@@ -55,20 +60,54 @@ func (chain *BeaconChain) CreateNewBlock(round int) BlockInterface {
 	return newBlock
 }
 
-func (chain *BeaconChain) ValidateBlock(block BeaconBlock) error {
+func (chain *BeaconChain) InsertBlk(block common.BlockInterface, isValid bool) {
+	chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), isValid)
+}
+
+func (chain *BeaconChain) GetActiveShardNumber() int {
+	return chain.BestState.ActiveShards
+}
+
+func (chain *BeaconChain) GetChainName() string {
+	return chain.ChainName
+}
+
+func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	return "", 0
+}
+
+func (chain *BeaconChain) ValidateBlock(block common.BlockInterface) error {
 	_ = block
 	return nil
 }
 
-// func (s *BeaconChain) ValidatePreSignBlock(block interface{}) error {
-// 	_ = block.(*blockchain.BeaconBlock)
-// 	return nil
-// }
-
-func (chain *BeaconChain) InsertBlk(block *BeaconBlock, isValid bool) {
-	chain.Blockchain.InsertBeaconBlock(block, isValid)
+func (chain *BeaconChain) ValidateBlockSanity(common.BlockInterface) error {
+	return nil
 }
 
-// func (chain *BeaconChain) GetActiveShardNumber() int {
-// 	return chain.Blockchain.GetActiveShardNumber()
-// }
+func (chain *BeaconChain) ValidateBlockWithBlockChain(common.BlockInterface) error {
+	return nil
+}
+
+func (chain *BeaconChain) GetConsensusType() string {
+	return chain.BestState.ConsensusAlgorithm
+}
+
+func (chain *BeaconChain) GetShardID() int {
+	return -1
+}
+
+func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]string {
+	var result map[string]map[string][]string
+	result = make(map[string]map[string][]string)
+
+	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]string)
+	result[chain.BestState.ConsensusAlgorithm][common.BEACON_CHAINKEY] = append([]string{}, chain.BestState.BeaconCommittee...)
+	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
+		if _, ok := result[consensusType]; !ok {
+			result[consensusType] = make(map[string][]string)
+		}
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]string{}, chain.BestState.ShardCommittee[shardID]...)
+	}
+	return result
+}
