@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type ShardChain struct {
@@ -39,7 +40,7 @@ func (chain *ShardChain) CurrentHeight() uint64 {
 	return chain.BestState.BestBlock.Header.Height
 }
 
-func (chain *ShardChain) GetCommittee() []string {
+func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePubKey {
 	return chain.BestState.ShardCommittee
 }
 
@@ -48,7 +49,12 @@ func (chain *ShardChain) GetCommitteeSize() int {
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	return common.IndexOfStr(pubkey, chain.BestState.ShardCommittee)
+	for index, key := range chain.BestState.ShardCommittee {
+		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
+			return index
+		}
+	}
+	return -1
 }
 
 func (chain *ShardChain) GetLastProposerIndex() int {
@@ -69,7 +75,7 @@ func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) err
 	chain.BestState.cloneShardBestState(&shardBestState)
 	producerPublicKey := shardBlock.Header.Producer
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
-	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 	}
@@ -78,7 +84,7 @@ func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) err
 	return nil
 }
 
-func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []string) error {
+func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
