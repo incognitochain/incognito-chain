@@ -135,19 +135,22 @@ func validateBLSSig(
 // 	return nil
 // }
 
-func (e *BLSBFT) LoadUserKey(privateKeyStr string) error {
+func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	var miningKey MiningKey
-	privateKeyBytes, _, err := base58.Base58Check{}.Decode(privateKeyStr)
+	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
 	if err != nil {
 		return err
 	}
-	privateKey := blsmultisig.B2I(privateKeyBytes)
-	publicKeyBytes := blsmultisig.PKBytes(blsmultisig.PKGen(privateKey))
+
+	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
+
+	// privateKey := blsmultisig.B2I(privateKeyBytes)
+	// publicKeyBytes := blsmultisig.PKBytes(blsmultisig.PKGen(privateKey))
 	miningKey.PriKey = map[string][]byte{}
 	miningKey.PubKey = map[string][]byte{}
-	miningKey.PriKey[BLS] = privateKeyBytes
-	miningKey.PubKey[BLS] = publicKeyBytes
-	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateKeyBytes)
+	miningKey.PriKey[BLS] = blsmultisig.SKBytes(blsPriKey)
+	miningKey.PubKey[BLS] = blsmultisig.PKBytes(blsPubKey)
+	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
 	miningKey.PriKey[BRI] = bridgesig.SKBytes(&bridgePriKey)
 	miningKey.PubKey[BRI] = bridgesig.PKBytes(&bridgePubKey)
 	e.UserKeySet = &miningKey
