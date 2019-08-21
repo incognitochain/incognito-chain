@@ -72,7 +72,7 @@ func (miningKey *MiningKey) BriSignData(
 	return sig, nil
 }
 
-func (miningKey *MiningKey) validateSingleBLSSig(
+func validateSingleBLSSig(
 	dataHash *common.Hash,
 	blsSig string,
 	selfIdx int,
@@ -95,7 +95,7 @@ func (miningKey *MiningKey) validateSingleBLSSig(
 	return nil
 }
 
-func (miningKey *MiningKey) validateSingleBriSig(
+func validateSingleBriSig(
 	dataHash *common.Hash,
 	blsSig string,
 ) error {
@@ -103,7 +103,7 @@ func (miningKey *MiningKey) validateSingleBriSig(
 	return nil
 }
 
-func (miningKey *MiningKey) validateBLSSig(
+func validateBLSSig(
 	dataHash *common.Hash,
 	aggSig string,
 	validatorIdx []int,
