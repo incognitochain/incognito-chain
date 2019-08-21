@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -61,9 +60,7 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction,
 	if err != nil || candidateWallet == nil {
 		return false, errors.New("Can create wallet key from payment address")
 	}
-	pk := candidateWallet.KeySet.PaymentAddress.Pk
-	pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-	tempStaker := []string{pkb58}
+	tempStaker := []string{stakingMetadata.CommitteePubKey}
 	for _, committees := range SC {
 		tempStaker = common.GetValidStaker(committees, tempStaker)
 	}
