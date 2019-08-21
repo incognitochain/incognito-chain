@@ -75,3 +75,7 @@ func (beaconBlock BeaconBlock) GetRoundKey() string {
 func (beaconBlock BeaconBlock) GetInstructions() [][]string {
 	return beaconBlock.Body.Instructions
 }
+
+func (beaconBlock BeaconBlock) GetProducer() string {
+	return beaconBlock.Header.Producer
+}

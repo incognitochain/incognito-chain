@@ -402,6 +402,10 @@ func (block *ShardBlock) AddValidationField(validateData string) error {
 	return nil
 }
 
+func (block ShardBlock) GetProducer() string {
+	return block.Header.Producer
+}
+
 func (block ShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
@@ -420,6 +424,10 @@ func (block ShardBlock) GetRoundKey() string {
 
 func (block ShardBlock) GetInstructions() [][]string {
 	return block.Body.Instructions
+}
+
+func (block CrossShardBlock) GetProducer() string {
+	return block.Header.Producer
 }
 
 func (block CrossShardBlock) GetHeight() uint64 {
@@ -459,4 +467,8 @@ func (block ShardToBeaconBlock) GetRoundKey() string {
 }
 func (block ShardToBeaconBlock) GetInstructions() [][]string {
 	return block.Instructions
+}
+
+func (block ShardToBeaconBlock) GetProducer() string {
+	return block.Header.Producer
 }
