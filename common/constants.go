@@ -21,11 +21,13 @@ const (
 // size data for incognito key and signature
 const (
 	// for key size
-	PrivateKeySize      = 32 // bytes
-	PublicKeySize       = 33 // bytes
-	TransmissionKeySize = 33 //bytes
-	ReceivingKeySize    = 32 // bytes
-	PaymentAddressSize  = 66 // bytes
+	PrivateKeySize      = 32  // bytes
+	PublicKeySize       = 33  // bytes
+	BLSPublicKeySize    = 128 // bytes
+	BriPublicKeySize    = 33  // bytes
+	TransmissionKeySize = 33  //bytes
+	ReceivingKeySize    = 32  // bytes
+	PaymentAddressSize  = 66  // bytes
 	// for signature size
 	// it is used for both privacy and no privacy
 	SigPubKeySize    = 33
@@ -98,6 +100,7 @@ const (
 	MAX_SHARD_NUMBER = 8
 
 	BLS_CONSENSUS = "bls"
+	BRI_CONSENSUS = "dsa"
 )
 
 // Ethereum Decentralized bridge
