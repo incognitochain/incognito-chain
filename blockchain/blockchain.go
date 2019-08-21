@@ -90,7 +90,7 @@ type Config struct {
 
 	ConsensusEngine interface {
 		ValidateProducerSig(block common.BlockInterface, consensusType string) error
-		ValidateBlockCommitteSig(block common.BlockInterface, committee []string, consensusType string) error
+		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey, consensusType string) error
 		GetCurrentMiningPublicKey() (string, string)
 		CommitteeChange(chainName string)
 	}
@@ -111,8 +111,8 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 		bc.BestState.Shard[shardID] = &ShardBestState{}
 	}
 	bc.BestState.Beacon.Params = make(map[string]string)
-	bc.BestState.Beacon.ShardCommittee = make(map[byte][]string)
-	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]string)
+	bc.BestState.Beacon.ShardCommittee = make(map[byte][]incognitokey.CommitteePubKey)
+	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePubKey)
 	bc.Synker = Synker{
 		blockchain: bc,
 		cQuit:      bc.cQuitSync,
@@ -287,8 +287,17 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	initBlock.Header.ShardID = shardID
 
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
+	newShardCandidateStructs := []incognitokey.CommitteePubKey{}
+	for _, candidate := range newShardCandidate {
+		key := incognitokey.CommitteePubKey{}
+		err := key.FromBase58(candidate)
+		if err != nil {
+			return err
+		}
+		newShardCandidateStructs = append(newShardCandidateStructs, key)
+	}
 
-	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
+	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidateStructs[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
 
 	genesisBeaconBlock, err := blockchain.GetBeaconBlockByHeight(1)
 	if err != nil {
@@ -1290,7 +1299,7 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
 		// indicate reward pubkey
-		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)
+		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr.GetIncKeyBase58())
 		if err != nil {
 			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
 			return nil, err
@@ -1660,6 +1669,37 @@ func DecodeCommitteeKey(committeeKey string) ([]byte, []byte, error) {
 		return []byte{0}, []byte{0}, errors.New("Base58CheckDecode BLSKey error")
 	}
 	return iPKBytes, bPKBytes, nil
+}
+
+func ExtractPublickeyList(keyList []incognitokey.CommitteePubKey, keyType string) ([]string, error) {
+	result := make([]string, len(keyList))
+	for _, keySet := range keyList {
+		key, err := keySet.GetMiningKey(keyType)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, string(key))
+	}
+	return result, nil
+}
+
+func CommitteeKeyListToString(keyList []incognitokey.CommitteePubKey) []string {
+	result := make([]string, len(keyList))
+	for _, key := range keyList {
+		keyStr, _ := key.ToBase58()
+		result = append(result, keyStr)
+	}
+	return result
+}
+
+func CommitteeBase58KeyListToStruct(strKeyList []string) []incognitokey.CommitteePubKey {
+	result := make([]incognitokey.CommitteePubKey, len(strKeyList))
+	for _, key := range strKeyList {
+		var keyStruct incognitokey.CommitteePubKey
+		keyStruct.FromBase58(key)
+		result = append(result, keyStruct)
+	}
+	return result
 }
 
 // func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock, beaconblks []*BeaconBlock) error {

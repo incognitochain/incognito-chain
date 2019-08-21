@@ -3,6 +3,7 @@ package consensus
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -30,7 +31,7 @@ type ConsensusInterface interface {
 
 	// ValidateProducerPosition(block common.BlockInterface) error
 	ValidateProducerSig(block common.BlockInterface) error
-	ValidateCommitteeSig(block common.BlockInterface, committee []string) error
+	ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error
 
 	LoadUserKey(string) error
 	GetUserPublicKey() string

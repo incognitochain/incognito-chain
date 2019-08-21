@@ -86,13 +86,19 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]st
 			panic("Fail to unmarshal Beacon BestState")
 		}
 	}
-	SC := beaconBestState.GetShardCommittee()
-	SPV := beaconBestState.GetShardPendingValidator()
-	BC := beaconBestState.BeaconCommittee
-	BPV := beaconBestState.BeaconPendingValidator
-	CBWFCR := beaconBestState.CandidateBeaconWaitingForCurrentRandom
-	CBWFNR := beaconBestState.CandidateBeaconWaitingForNextRandom
-	CSWFCR := beaconBestState.CandidateShardWaitingForCurrentRandom
-	CSWFNR := beaconBestState.CandidateShardWaitingForNextRandom
+	SC := make(map[byte][]string)
+	SPV := make(map[byte][]string)
+	for shardID, committee := range beaconBestState.GetShardCommittee() {
+		SC[shardID] = CommitteeKeyListToString(committee)
+	}
+	for shardID, committee := range beaconBestState.GetShardPendingValidator() {
+		SPV[shardID] = CommitteeKeyListToString(committee)
+	}
+	BC := CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+	BPV := CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+	CBWFCR := CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
+	CBWFNR := CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
+	CSWFCR := CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
+	CSWFNR := CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
 	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR
 }
