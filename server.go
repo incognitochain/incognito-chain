@@ -1619,12 +1619,14 @@ func (serverObj *Server) BoardcastNodeState() error {
 		return err
 	}
 	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
+		serverObj.blockChain.BestState.Beacon.BestBlock.Header.Timestamp,
 		serverObj.blockChain.BestState.Beacon.BeaconHeight,
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
 	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp,
 			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
 			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
 			serverObj.blockChain.BestState.Shard[shardID].Hash(),
