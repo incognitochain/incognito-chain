@@ -35,15 +35,37 @@ func PKGen(sk *big.Int) *bn256.G2 {
 }
 
 // AKGen take a seed and return BLS secret key
-func AKGen(listPKPn []*bn256.G2, id int) (*bn256.G2, *big.Int) {
-	akByte := CmprG2(listPKPn[id])
-	for i := 0; i < len(listPKPn); i++ {
-		akByte = Hash4Bls(append(akByte, CmprG2(listPKPn[i])...))
+func AKGen(listPKBytes []PublicKey, id int) (*bn256.G2, *big.Int) {
+	akByte := listPKBytes[id][:]
+	for i := 0; i < len(listPKBytes); i++ {
+		akByte = Hash4Bls(append(akByte, listPKBytes[i]...))
 	}
 	akBInt := B2I(akByte)
 	res := new(bn256.G2)
-	res = res.ScalarMult(listPKPn[id], akBInt)
+	PKPn, _ := DecmprG2(listPKBytes[id])
+	res = res.ScalarMult(PKPn, akBInt)
 	return res, akBInt
+}
+
+// ListAKGen take a seed and return BLS secret key
+func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
+	// apk := new(bn256.G2)
+	apk, _ := AKGen(committee, idx[0])
+	// apk.ScalarMult(CommonAPs[signerIdx[0]], big.NewInt(1))
+	for i := 1; i < len(idx); i++ {
+		apkTmp, _ := AKGen(committee, idx[i])
+		apk.Add(apk, apkTmp)
+	}
+	return apk
+}
+
+func AiGen(listPKBytes []PublicKey, id int) *big.Int {
+	akByte := listPKBytes[id]
+	for i := 0; i < len(listPKBytes); i++ {
+		akByte = Hash4Bls(append(akByte, listPKBytes[i]...))
+	}
+	akBInt := B2I(akByte)
+	return akBInt
 }
 
 // SKBytes take input secretkey integer and return secretkey bytes
@@ -81,6 +103,7 @@ func ListPKBytes2ListPKPoints(listPKBytes []PublicKey) ([]*bn256.G2, error) {
 	listPKs := make([]*bn256.G2, len(listPKBytes))
 	var err error
 	for i, pk := range listPKBytes {
+		// fmt.Println(pk, len(pk))
 		listPKs[i], err = DecmprG2(pk)
 		if err != nil {
 			return nil, err
