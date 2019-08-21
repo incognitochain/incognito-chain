@@ -6,8 +6,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	bls "github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -17,11 +17,12 @@ type StakingMetadata struct {
 	CandidatePaymentAddress string
 	StakingAmountShard      uint64
 	IsRewardFunder          bool
-	// BLSPublicKey PublicKey of BLS scheme on consensus, base58CheckEncode
-	BLSPublicKey string
+	// CommitteePubKey PublicKeys of a candidate who join consensus, base58CheckEncode
+	// CommitteePubKey string <= encode byte <= mashal struct
+	CommitteePubKey string
 }
 
-func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, blsPublicKey string, isRewardFunder bool) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, committeePubKey string, isRewardFunder bool) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
@@ -32,14 +33,22 @@ func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidateP
 		CandidatePaymentAddress: candidatePaymentAddress,
 		StakingAmountShard:      stakingAmountShard,
 		IsRewardFunder:          isRewardFunder,
-		BLSPublicKey:            blsPublicKey,
+		CommitteePubKey:         committeePubKey,
 	}, nil
 }
 
 /*
  */
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
-	if !bls.ChkPKSt(sm.BLSPublicKey) {
+	candidatePaymentAddress := sm.CandidatePaymentAddress
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return false
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+	committeePubKey := new(incognitokey.CommitteePubKey)
+	committeePubKey.FromString(sm.CommitteePubKey)
+	if (!committeePubKey.CheckSanityData()) || (!bytes.Equal(committeePubKey.IncPubKey, pk)) {
 		return false
 	}
 	return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
@@ -91,9 +100,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetrieve
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
-	if !bls.ChkPKSt(stakingMetadata.BLSPublicKey) {
-		return false, false, errors.New("invalid BLS PublicKey")
-	}
+
 	if stakingMetadata.Type == ShardStakingMeta && amount != bcr.GetStakingAmountShard() {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
@@ -108,6 +115,11 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetrieve
 	pk := candidateWallet.KeySet.PaymentAddress.Pk
 	if len(pk) != 33 {
 		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
+	}
+	committeePubKey := new(incognitokey.CommitteePubKey)
+	committeePubKey.FromString(stakingMetadata.CommitteePubKey)
+	if (!committeePubKey.CheckSanityData()) || (!bytes.Equal(committeePubKey.IncPubKey, pubkey)) {
+		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
 	}
 	return true, true, nil
 }
