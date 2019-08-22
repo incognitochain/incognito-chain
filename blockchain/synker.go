@@ -233,10 +233,11 @@ func (synker *Synker) stopSyncUnnecessaryShard() {
 
 func (synker *Synker) stopSyncShard(shardID byte) error {
 	if synker.blockchain.config.NodeMode == common.NODEMODE_AUTO || synker.blockchain.config.NodeMode == common.NODEMODE_SHARD {
-		// userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(synker.blockchain.config.ConsensusEngine.GetUserMiningKey(), synker.blockchain.BestState.Beacon.BestBlock.Header.Round)
-		// if userRole == common.SHARD_ROLE && shardID == userShardID {
-		// 	return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
-		// }
+		userMiningKey, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+		userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(userMiningKey, 0)
+		if userRole == common.SHARD_ROLE && shardID == userShardID {
+			return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
+		}
 	}
 	if _, ok := synker.Status.Shards[shardID]; ok {
 		if common.IndexOfByte(shardID, synker.blockchain.config.RelayShards) < 0 {
@@ -300,7 +301,6 @@ func (synker *Synker) UpdateState() {
 			Height: bestShardsHeight[shardID],
 		}
 	}
-
 	for shardID := range synker.Status.Shards {
 		cloneState := ShardBestState{}
 		shardStateCloneBytes, err := synker.blockchain.BestState.Shard[shardID].MarshalJSON()
@@ -316,7 +316,6 @@ func (synker *Synker) UpdateState() {
 			Height: shardsStateClone[shardID].ShardHeight,
 		}
 	}
-
 	for peerID, peerState := range synker.States.PeersState {
 		for shardID := range synker.Status.Shards {
 			if shardState, ok := peerState.Shard[shardID]; ok {
