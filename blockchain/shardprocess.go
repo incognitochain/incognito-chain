@@ -17,7 +17,6 @@ import (
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -915,14 +914,7 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 					if !ok {
 						continue
 					}
-					candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-					candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-					if err != nil || candidateWallet == nil {
-						continue
-					}
-					pk := candidateWallet.KeySet.PaymentAddress.Pk
-					pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-					candidates = append(candidates, pkb58)
+					candidates = append(candidates, stakingMetadata.CommitteePubKey)
 				}
 			}
 			if tx.GetType() == common.TxCustomTokenType {
