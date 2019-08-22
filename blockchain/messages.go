@@ -22,6 +22,11 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	if blockchain.config.UserKeySet != nil {
 		userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), blockchain.BestState.Beacon.BestBlock.Header.Round)
 	}
+
+	if beacon.Timestamp < GetBeaconBestState().BestBlock.Header.Timestamp && beacon.Height > GetBeaconBestState().BestBlock.Header.Height {
+		return
+	}
+
 	pState := &peerState{
 		Shard:  make(map[byte]*ChainState),
 		Beacon: beacon,
@@ -53,7 +58,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	blockchain.Synker.Status.Lock()
 	for shardID := range blockchain.Synker.Status.Shards {
 		if shardState, ok := (*shard)[shardID]; ok {
-			if shardState.Height > blockchain.BestState.Shard[shardID].ShardHeight {
+			if shardState.Height > GetBestStateShard(shardID).ShardHeight && (*shard)[shardID].Timestamp > GetBestStateShard(shardID).BestBlock.Header.Timestamp {
 				pState.Shard[shardID] = &shardState
 			}
 		}
@@ -69,7 +74,11 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 	if blockchain.IsTest {
 		return
 	}
-	fmt.Println("Shard block received from shard A", newBlk.Header.ShardID, newBlk.Header.Height)
+	fmt.Println("Shard block received from shard", newBlk.Header.ShardID, newBlk.Header.Height)
+	if newBlk.Header.Timestamp < GetBestStateShard(newBlk.Header.ShardID).BestBlock.Header.Timestamp { // not receive block older than current latest block
+		return
+	}
+
 	if _, ok := blockchain.Synker.Status.Shards[newBlk.Header.ShardID]; ok {
 		if _, ok := currentInsert.Shards[newBlk.Header.ShardID]; !ok {
 			currentInsert.Shards[newBlk.Header.ShardID] = &sync.Mutex{}
@@ -77,7 +86,6 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 		currentInsert.Shards[newBlk.Header.ShardID].Lock()
 		defer currentInsert.Shards[newBlk.Header.ShardID].Unlock()
-		fmt.Println("Shard block received from shard B", newBlk.Header.ShardID, newBlk.Header.Height)
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			if blockchain.config.UserKeySet != nil {
@@ -134,7 +142,10 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 		return
 	}
 	if blockchain.Synker.Status.Beacon {
-		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight)
+		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestState.Beacon.BeaconHeight, newBlk.Header.Timestamp)
+		if newBlk.Header.Timestamp < blockchain.BestState.Beacon.BestBlock.Header.Timestamp { // not receive block older than current latest block
+			return
+		}
 		if blockchain.BestState.Beacon.BeaconHeight <= newBlk.Header.Height {
 			blkHash := newBlk.Header.Hash()
 			err := incognitokey.ValidateDataB58(base58.Base58Check{}.Encode(newBlk.Header.ProducerAddress.Pk, common.ZeroByte), newBlk.ProducerSig, blkHash.GetBytes())

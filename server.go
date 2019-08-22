@@ -350,6 +350,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxTx:         cfg.TxPoolMaxTx,
 		PubSubManager: pubsubManager,
 	})
+	go serverObj.tempMemPool.Start(serverObj.cQuit)
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
@@ -623,7 +624,7 @@ func (serverObj Server) Start() {
 	}
 
 	Logger.log.Debug("Starting server")
-	if common.CheckForce {
+	if blockchain.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
 	}
 	if cfg.TestNet {
@@ -672,6 +673,7 @@ func (serverObj Server) Start() {
 		}
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
+		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
 }
@@ -1617,12 +1619,14 @@ func (serverObj *Server) BoardcastNodeState() error {
 		return err
 	}
 	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
+		serverObj.blockChain.BestState.Beacon.BestBlock.Header.Timestamp,
 		serverObj.blockChain.BestState.Beacon.BeaconHeight,
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
 	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp,
 			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
 			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
 			serverObj.blockChain.BestState.Shard[shardID].Hash(),
