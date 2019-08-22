@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
@@ -182,8 +183,13 @@ func pickBridgeSwapConfirmInst(
 func parseAndConcatPubkeys(vals []string) []byte {
 	pks := []byte{}
 	for _, val := range vals {
-		pk, _, _ := base58.Base58Check{}.Decode(val)
-		pks = append(pks, pk...)
+		pk := &incognitokey.CommitteePublicKey{}
+		// TODO(@0xbunyip): handle err
+		err := pk.FromBase58(val)
+		_ = err
+		miningPubkey := pk.MiningPubKey[common.BRI_CONSENSUS]
+
+		pks = append(pks, miningPubkey...)
 	}
 	return pks
 }
