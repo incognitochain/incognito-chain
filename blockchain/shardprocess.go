@@ -902,7 +902,7 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 					if !ok {
 						continue
 					}
-					candidates = append(candidates, stakingMetadata.CommitteePubKey)
+					candidates = append(candidates, stakingMetadata.CommitteePublicKey)
 				}
 			}
 			if tx.GetType() == common.TxCustomTokenType {
