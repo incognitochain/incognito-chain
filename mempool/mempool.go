@@ -648,7 +648,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 				return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
 			}
 			tp.candidateMtx.RLock()
-			foundPubkey = common.IndexOfStrInHashMap(stakingMetadata.CommitteePubKey, tp.PoolCandidate)
+			foundPubkey = common.IndexOfStrInHashMap(stakingMetadata.CommitteePublicKey, tp.PoolCandidate)
 			tp.candidateMtx.RUnlock()
 		}
 	}
@@ -800,7 +800,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 				if err != nil || candidateWallet == nil {
 					return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
 				}
-				tp.addCandidateToList(*txHash, stakingMetadata.CommitteePubKey)
+				tp.addCandidateToList(*txHash, stakingMetadata.CommitteePublicKey)
 			}
 		default:
 			{
