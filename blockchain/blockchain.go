@@ -89,11 +89,8 @@ type Config struct {
 	// UserKeySet *incognitokey.KeySet
 
 	ConsensusEngine interface {
-		// VerifyValidationData(data common.Hash, validationData string, consensusType string) error
-		// ValidateBlockWithConsensus(block common.BlockInterface, chainName string, consensusType string) (byte, error)
 		ValidateProducerSig(block common.BlockInterface, consensusType string) error
-		ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error
-		// GetBlockProducerPubKeyB58(validationData string, consensusType string) string
+		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey, consensusType string) error
 		GetCurrentMiningPublicKey() (string, string)
 		CommitteeChange(chainName string)
 	}
@@ -114,8 +111,8 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 		bc.BestState.Shard[shardID] = &ShardBestState{}
 	}
 	bc.BestState.Beacon.Params = make(map[string]string)
-	bc.BestState.Beacon.ShardCommittee = make(map[byte][]string)
-	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]string)
+	bc.BestState.Beacon.ShardCommittee = make(map[byte][]incognitokey.CommitteePubKey)
+	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePubKey)
 	bc.Synker = Synker{
 		blockchain: bc,
 		cQuit:      bc.cQuitSync,
@@ -290,8 +287,17 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	initBlock.Header.ShardID = shardID
 
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
+	newShardCandidateStructs := []incognitokey.CommitteePubKey{}
+	for _, candidate := range newShardCandidate {
+		key := incognitokey.CommitteePubKey{}
+		err := key.FromBase58(candidate)
+		if err != nil {
+			return err
+		}
+		newShardCandidateStructs = append(newShardCandidateStructs, key)
+	}
 
-	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidate[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
+	blockchain.BestState.Shard[shardID].ShardCommittee = append(blockchain.BestState.Shard[shardID].ShardCommittee, newShardCandidateStructs[int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize:(int(shardID)*blockchain.config.ChainParams.MinShardCommitteeSize)+blockchain.config.ChainParams.MinShardCommitteeSize]...)
 
 	genesisBeaconBlock, err := blockchain.GetBeaconBlockByHeight(1)
 	if err != nil {
@@ -1293,7 +1299,7 @@ func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalRewar
 	}
 	for _, publickeyStr := range blockchain.BestState.Beacon.BeaconCommittee {
 		// indicate reward pubkey
-		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr)
+		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, publickeyStr.GetIncKeyBase58())
 		if err != nil {
 			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
 			return nil, err
@@ -1379,7 +1385,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(transa
 	for _, tx := range transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58_Version)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
 			txRequestTable[requester] = tx
 		}
 	}
@@ -1401,7 +1407,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 	for _, tx := range blkBody.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58_Version)
+			requester := base58.Base58Check{}.Encode(requestMeta.PaymentAddress.Pk, common.Base58Version)
 			txRequestTable[requester] = tx
 		}
 	}
@@ -1413,7 +1419,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			//fmt.Printf("[ndh] -  %+v\n", tx)
 			//TODO: check why using encode version with block version value
-			requester := base58.Base58Check{}.Encode(requesterRes, common.Base58_Version)
+			requester := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
 			if txRequestTable[requester] == nil {
 				//fmt.Printf("[ndh] - - [error] This response dont match with any request %+v \n", requester)
 				return errors.New("This response dont match with any request")

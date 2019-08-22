@@ -141,7 +141,6 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 // loop forever in mempool
 // receive data from other package
 func (tp *TxPool) Start(cQuit chan struct{}) {
-	go tp.monitorPool()
 	for {
 		select {
 		case <-cQuit:
@@ -162,7 +161,7 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 	}
 }
 
-func (tp *TxPool) monitorPool() {
+func (tp *TxPool) MonitorPool() {
 	if tp.config.TxLifeTime == 0 {
 		return
 	}

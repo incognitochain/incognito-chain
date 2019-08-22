@@ -74,7 +74,7 @@ func executeTest(filename string) (interface{}, error) {
 						return rpcResult, ResponseNotFoundError
 					} else {
 						if !reflect.DeepEqual(expectedResponse, returnedResponse) {
-							return rpcResult, fmt.Errorf("%+v, get %+v", WrongExpectedResponseError, returnedResponse)
+							return rpcResult, fmt.Errorf("%+v, expected %+v, get %+v", WrongExpectedResponseError, expectedResponse, returnedResponse)
 						}
 					}
 				}
