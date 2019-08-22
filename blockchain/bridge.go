@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -49,23 +50,38 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 
 // decodeSwapConfirmInst flattens all parts of a swap confirm instruction, decodes and concats it
 func decodeSwapConfirmInst(inst []string) []byte {
+	// TODO(@0xbunyip): handle error
 	metaType := []byte(inst[0])
 	shardID := []byte(inst[1])
 	height, _, _ := base58.Base58Check{}.Decode(inst[2])
 	numVals, _, _ := base58.Base58Check{}.Decode(inst[3])
 	// Special case: instruction storing beacon/bridge's committee => decode and sign on that instead
 	// We need to decode and then submit the pubkeys to Ethereum because we can't decode it on smart contract
-	pks := []byte(inst[4])
-	if d, _, err := (base58.Base58Check{}).Decode(inst[4]); err == nil {
-		pks = d
-	}
+	addrs, _ := parseAndPadAddress(inst[4])
 	flatten := []byte{}
 	flatten = append(flatten, metaType...)
 	flatten = append(flatten, shardID...)
 	flatten = append(flatten, toBytes32BigEndian(height)...)
 	flatten = append(flatten, toBytes32BigEndian(numVals)...)
-	flatten = append(flatten, pks...)
+	flatten = append(flatten, addrs...)
 	return flatten
+}
+
+// parseAndPadAddress decodes a list of address of a committee, pads each of them
+// to 32 bytes and concat them together
+func parseAndPadAddress(instContent string) ([]byte, error) {
+	addrPacked, _, err := (base58.Base58Check{}).Decode(instContent)
+	if err != nil {
+		return nil, errors.Wrapf(err, "instContent: %v", instContent)
+	}
+	if len(addrPacked)%20 != 0 {
+		return nil, errors.Errorf("invalid packed eth addresses length: %x", addrPacked)
+	}
+	addrs := []byte{}
+	for i := 0; i*20 < len(addrPacked); i++ {
+		addrs = append(addrs, toBytes32BigEndian(addrPacked[i*20:(i+1)*20]))
+	}
+	return addrs, nil
 }
 
 // decodeBurningConfirmInst decodes and flattens a BurningConfirm instruction
@@ -183,13 +199,14 @@ func pickBridgeSwapConfirmInst(
 func parseAndConcatPubkeys(vals []string) []byte {
 	pks := []byte{}
 	for _, val := range vals {
-		pk := &incognitokey.CommitteePublicKey{}
+		cKey := &incognitokey.CommitteePublicKey{}
 		// TODO(@0xbunyip): handle err
-		err := pk.FromBase58(val)
-		_ = err
-		miningPubkey := pk.MiningPubKey[common.BRI_CONSENSUS]
+		_ := cKey.FromBase58(val)
+		miningKey := cKey.MiningPubKey[common.BRI_CONSENSUS]
+		pk, _ := crypto.DecompressPubkey(miningKey)
+		address := crypto.PubkeyToAddress(pk)
 
-		pks = append(pks, miningPubkey...)
+		pks = append(pks, address[:]...)
 	}
 	return pks
 }
