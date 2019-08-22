@@ -18,7 +18,7 @@ type StakingMetadata struct {
 	IsRewardFunder          bool
 	// CommitteePubKey PublicKeys of a candidate who join consensus, base58CheckEncode
 	// CommitteePubKey string <= encode byte <= mashal struct
-	CommitteePubKey string
+	CommitteePublicKey string
 }
 
 func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, committeePubKey string, isRewardFunder bool) (*StakingMetadata, error) {
@@ -32,7 +32,7 @@ func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidateP
 		CandidatePaymentAddress: candidatePaymentAddress,
 		StakingAmountShard:      stakingAmountShard,
 		IsRewardFunder:          isRewardFunder,
-		CommitteePubKey:         committeePubKey,
+		CommitteePublicKey:      committeePubKey,
 	}, nil
 }
 
@@ -46,7 +46,7 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	}
 	pk := candidateWallet.KeySet.PaymentAddress.Pk
 	committeePubKey := new(incognitokey.CommitteePubKey)
-	committeePubKey.FromBase58(sm.CommitteePubKey)
+	committeePubKey.FromString(sm.CommitteePublicKey)
 	if (!committeePubKey.CheckSanityData()) || (!bytes.Equal(committeePubKey.IncPubKey, pk)) {
 		return false
 	}
@@ -55,12 +55,7 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 
 func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
-	candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	if err != nil || candidateWallet == nil {
-		return false, errors.New("Can create wallet key from payment address")
-	}
-	tempStaker := []string{stakingMetadata.CommitteePubKey}
+	tempStaker := []string{stakingMetadata.CommitteePublicKey}
 	for _, committees := range SC {
 		tempStaker = common.GetValidStaker(committees, tempStaker)
 	}
@@ -114,7 +109,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetrieve
 		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
 	}
 	committeePubKey := new(incognitokey.CommitteePubKey)
-	committeePubKey.FromBase58(stakingMetadata.CommitteePubKey)
+	committeePubKey.FromString(stakingMetadata.CommitteePublicKey)
 	if (!committeePubKey.CheckSanityData()) || (!bytes.Equal(committeePubKey.IncPubKey, pubkey)) {
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
 	}
