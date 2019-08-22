@@ -204,6 +204,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
 	serverObj.blockChain = &blockchain.BlockChain{}
 	serverObj.isEnableMining = cfg.EnableMining
+	// create mempool tx
+	serverObj.memPool = &mempool.TxPool{}
 
 	relayShards := []byte{}
 	if cfg.RelayShards == "all" {
@@ -325,8 +327,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		serverObj.blockChain.SetFeeEstimator(feeEstimator, shardID)
 	}
 
-	// create mempool tx
-	serverObj.memPool = &mempool.TxPool{}
 	serverObj.memPool.Init(&mempool.Config{
 		BlockChain:        serverObj.blockChain,
 		DataBase:          serverObj.dataBase,

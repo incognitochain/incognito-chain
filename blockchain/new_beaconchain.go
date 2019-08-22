@@ -15,12 +15,9 @@ type BeaconChain struct {
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
-	// ChainConsensus  ConsensusInterface
-	// ConsensusEngine ConsensusEngineInterface
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
-	// return uint64(s.Blockchain.BestState.Beacon.BestBlock.Header.Timestamp)
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
