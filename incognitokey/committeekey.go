@@ -3,6 +3,7 @@ package incognitokey
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
