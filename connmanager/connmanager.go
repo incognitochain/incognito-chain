@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/bootnode/server"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/wire"
 	libpeer "github.com/libp2p/go-libp2p-peer"
@@ -508,7 +509,7 @@ func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool 
 // checkBeaconOfPbk - check a public key is beacon committee?
 func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
 	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList := bestState.BeaconCommittee
+	beaconCommitteeList := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 	isInBeaconCommittee := common.IndexOfStr(pbk, beaconCommitteeList) != -1
 	return isInBeaconCommittee
 }
@@ -681,7 +682,7 @@ func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
 	bestState := blockchain.GetBeaconBestState()
 	shardCommitteeList := bestState.GetShardCommittee()
 	for shardID, committees := range shardCommitteeList {
-		isInShardCommittee := common.IndexOfStr(publicKey, committees) != -1
+		isInShardCommittee := common.IndexOfStr(publicKey, incognitokey.CommitteeKeyListToString(committees)) != -1
 		if isInShardCommittee {
 			return &shardID
 		}
