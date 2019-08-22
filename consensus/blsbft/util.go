@@ -36,7 +36,7 @@ func (e *BLSBFT) isInTimeFrame() bool {
 	return true
 }
 
-func (e *BLSBFT) isHasMajorityVote() bool {
+func (e *BLSBFT) isHasMajorityVotes() bool {
 	size := e.Chain.GetCommitteeSize()
 	if len(e.RoundData.Votes) >= 2*size/3 {
 		return true
