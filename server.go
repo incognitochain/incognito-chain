@@ -1003,6 +1003,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 		err := serverObj.consensusEngine.VerifyData([]byte(peerConn.GetListenerPeer().GetPeerID().Pretty()), msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
 		if err == nil {
 			pbk = msg.PublicKey
+			pbkType = msg.PublicKeyType
 		} else {
 			peerConn.ForceClose()
 			return
