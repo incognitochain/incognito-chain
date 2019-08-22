@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -135,12 +134,12 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	// 	}
 	// }
 
-	oldCommittee := CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
+	oldCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 
 	if err := blockchain.BestState.Shard[shardID].updateShardBestState(shardBlock, beaconBlocks); err != nil {
 		return err
 	}
-	newCommittee := CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
+	newCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 	isChanged := common.CompareStringArray(oldCommittee, newCommittee)
 	if isChanged {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
@@ -403,7 +402,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	}
 	// Verify Instruction
 	instructions := [][]string{}
-	shardCommittee := CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
+	shardCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 	shardPendingValidator := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
 	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
 	if err != nil {
@@ -654,7 +653,7 @@ func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock
 			if l[0] == "assign" && l[2] == "shard" {
 				if l[3] == strconv.Itoa(int(shardBlock.Header.ShardID)) {
 					Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", shardBlock.Header.ShardID, shardBestState.ShardPendingValidator)
-					shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, CommitteeBase58KeyListToStruct(strings.Split(l[1], ","))...)
+					shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, incognitokey.CommitteeBase58KeyListToStruct(strings.Split(l[1], ","))...)
 					Logger.log.Infof("SHARD %+v | New ShardPendingValidatorList %+v", shardBlock.Header.ShardID, shardBestState.ShardPendingValidator)
 				}
 			}
@@ -663,8 +662,8 @@ func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock
 }
 func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *ShardBlock) error {
 	var err error
-	shardPendingValidator := CommitteeKeyListToString(shardBestState.ShardPendingValidator)
-	shardCommittee := CommitteeKeyListToString(shardBestState.ShardCommittee)
+	shardPendingValidator := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
+	shardCommittee := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
 	shardSwappedCommittees := []string{}
 	shardNewCommittees := []string{}
 	if len(shardBlock.Body.Instructions) != 0 {
@@ -697,8 +696,8 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", shardBlock.Header.ShardID, shardNewCommittees)
 		}
 	}
-	shardBestState.ShardPendingValidator = CommitteeBase58KeyListToStruct(shardPendingValidator)
-	shardBestState.ShardPendingValidator = CommitteeBase58KeyListToStruct(shardCommittee)
+	shardBestState.ShardPendingValidator = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
+	shardBestState.ShardPendingValidator = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
 
 	return nil
 }
@@ -713,11 +712,11 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 		isOk bool
 	)
 	Logger.log.Debugf("SHARD %+v | Begin VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
-	isOk = verifyHashFromStringArray(CommitteeKeyListToString(shardBestState.ShardCommittee), shardBlock.Header.CommitteeRoot)
+	isOk = verifyHashFromStringArray(incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee), shardBlock.Header.CommitteeRoot)
 	if !isOk {
 		return NewBlockChainError(ShardCommitteeRootHashError, fmt.Errorf("Expect shard committee root hash to be %+v", shardBlock.Header.CommitteeRoot))
 	}
-	isOk = verifyHashFromStringArray(CommitteeKeyListToString(shardBestState.ShardPendingValidator), shardBlock.Header.PendingValidatorRoot)
+	isOk = verifyHashFromStringArray(incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator), shardBlock.Header.PendingValidatorRoot)
 	if !isOk {
 		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v", shardBlock.Header.PendingValidatorRoot))
 	}

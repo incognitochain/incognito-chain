@@ -8,16 +8,13 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
 const (
 	CONSENSUSNAME = common.BLS_CONSENSUS
 )
-
-type Vote struct {
-	Sig []byte
-}
 
 type BLSBFT struct {
 	Chain    blockchain.ChainInterface
@@ -33,7 +30,7 @@ type BLSBFT struct {
 	RoundData struct {
 		Block             common.BlockInterface
 		BlockValidateData ValidationData
-		Votes             map[string]Vote
+		Votes             map[string]vote
 		Round             int
 		NextHeight        uint64
 		State             string
@@ -41,7 +38,7 @@ type BLSBFT struct {
 	}
 
 	Blocks     map[string]common.BlockInterface
-	EarlyVotes map[string]map[string]Vote
+	EarlyVotes map[string]map[string]vote
 	isOngoing  bool
 	isStarted  bool
 	StopCh     chan struct{}
@@ -75,7 +72,7 @@ func (e *BLSBFT) Start() {
 	e.isStarted = true
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
-	e.EarlyVotes = make(map[string]map[string]Vote)
+	e.EarlyVotes = make(map[string]map[string]vote)
 	e.Blocks = map[string]common.BlockInterface{}
 
 	e.ProposeMessageCh = make(chan BFTPropose)
@@ -106,7 +103,7 @@ func (e *BLSBFT) Start() {
 				if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 					//validate single sig
 					if true {
-						e.RoundData.Votes[voteMsg.Validator] = Vote{voteMsg.Sig}
+						e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
 					}
 				}
 			case <-ticker:
@@ -135,12 +132,28 @@ func (e *BLSBFT) Start() {
 				case VOTE:
 
 					if e.RoundData.NotYetSendVote {
-						e.sendVote()
+						err := e.sendVote()
+						if err != nil {
+							e.logger.Error(err)
+							continue
+						}
 					}
 					if e.isHasMajorityVotes() {
-						//TODO: aggregate sigs
 
-						// e.RoundData.Block.(blockValidation).AddValidationField(string(validationDataStr))
+						keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.Chain.GetCommittee(), CONSENSUSNAME)
+						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, keyList)
+						if err != nil {
+							e.logger.Error(err)
+							continue
+						}
+
+						e.RoundData.BlockValidateData.AggSig = aggSig
+						e.RoundData.BlockValidateData.BridgeSig = brigSigs
+						e.RoundData.BlockValidateData.ValidatiorsIdx = validatorIdx
+
+						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
+						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
+
 						e.Chain.InsertBlk(e.RoundData.Block)
 						e.enterNewRound()
 					}
@@ -159,8 +172,8 @@ func (e *BLSBFT) enterProposePhase() {
 
 	block := e.Chain.CreateNewBlock(int(e.RoundData.Round))
 	validationData := e.CreateValidationData(block.Hash())
-	validationDataStr, _ := json.Marshal(validationData)
-	block.(blockValidation).AddValidationField(string(validationDataStr))
+	validationDataString, _ := EncodeValidationData(validationData)
+	block.(blockValidation).AddValidationField(validationDataString)
 
 	e.RoundData.Block = block
 	e.RoundData.BlockValidateData = validationData
@@ -202,7 +215,7 @@ func (e *BLSBFT) enterNewRound() {
 
 	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
 	e.RoundData.Round = e.getCurrentRound()
-	e.RoundData.Votes = make(map[string]Vote)
+	e.RoundData.Votes = make(map[string]vote)
 	e.RoundData.Block = nil
 
 	if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58()) == (e.Chain.GetLastProposerIndex()+1+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
