@@ -8,6 +8,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -21,10 +22,8 @@ type Engine struct {
 	ChainConsensusList   map[string]ConsensusInterface
 	CurrentMiningChain   string
 	Blockchain           *blockchain.BlockChain
-	userMiningPublicKeys map[string]string
+	userMiningPublicKeys map[string]incognitokey.CommitteePubKey
 	chainCommitteeChange chan string
-	// MiningKeys         map[string]string
-
 }
 
 func New(node NodeInterface, blockchain *blockchain.BlockChain, blockgen *blockchain.BlockGenerator) *Engine {
@@ -48,13 +47,15 @@ func (engine *Engine) watchConsensusCommittee() {
 	Logger.log.Info("start watching consensus committee...")
 	engine.chainCommitteeChange = make(chan string)
 	allcommittee := engine.Blockchain.Chains[common.BEACON_CHAINKEY].(BeaconInterface).GetAllCommittees()
+
 	for consensusType, publickey := range engine.userMiningPublicKeys {
 		if engine.CurrentMiningChain != "" {
 			break
 		}
 		if committees, ok := allcommittee[consensusType]; ok {
 			for chainName, committee := range committees {
-				if common.IndexOfStr(publickey, committee) != -1 {
+				keys, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, consensusType)
+				if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), keys) != -1 {
 					engine.CurrentMiningChain = chainName
 				}
 			}
@@ -63,7 +64,7 @@ func (engine *Engine) watchConsensusCommittee() {
 	engine.ChainConsensusList = make(map[string]ConsensusInterface)
 	for chainName, chain := range engine.Blockchain.Chains {
 		if _, ok := AvailableConsensus[chain.GetConsensusType()]; ok {
-			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetConsensusType()].NewInstance(chain, chainName, engine.Node)
+			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetConsensusType()].NewInstance(chain, chainName, engine.Node, Logger.log)
 		}
 	}
 
@@ -76,7 +77,7 @@ func (engine *Engine) watchConsensusCommittee() {
 			if !ok {
 				continue
 			}
-			if engine.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey) > 0 {
+			if engine.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) > 0 {
 				if engine.CurrentMiningChain != chainName {
 					engine.CurrentMiningChain = chainName
 				}
@@ -131,7 +132,7 @@ func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
 	if engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName() != engine.Blockchain.BestState.Beacon.ConsensusAlgorithm {
 		consensus, ok := AvailableConsensus[engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName()]
 		if ok {
-			engine.ChainConsensusList[common.BEACON_CHAINKEY] = consensus.NewInstance(engine.Blockchain.Chains[common.BEACON_CHAINKEY], chainkey, engine.Node)
+			engine.ChainConsensusList[common.BEACON_CHAINKEY] = consensus.NewInstance(engine.Blockchain.Chains[common.BEACON_CHAINKEY], chainkey, engine.Node, Logger.log)
 		} else {
 			panic("Update code please")
 		}
@@ -143,7 +144,7 @@ func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
 			if shard.ConsensusAlgorithm != engine.ChainConsensusList[chainKey].GetConsensusName() {
 				consensus, ok := AvailableConsensus[engine.ChainConsensusList[chainKey].GetConsensusName()]
 				if ok {
-					engine.ChainConsensusList[chainKey] = consensus.NewInstance(engine.Blockchain.Chains[chainKey], chainkey, engine.Node)
+					engine.ChainConsensusList[chainKey] = consensus.NewInstance(engine.Blockchain.Chains[chainKey], chainkey, engine.Node, Logger.log)
 				} else {
 					panic("Update code please")
 				}
@@ -161,10 +162,6 @@ func RegisterConsensus(name string, consensus ConsensusInterface) error {
 	}
 	AvailableConsensus[name] = consensus
 	return nil
-}
-
-func (engine *Engine) ValidateBlockCommitteSig(blockHash *common.Hash, committee []string, validationData string, consensusType string) error {
-	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(blockHash, committee, validationData)
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {
@@ -194,9 +191,22 @@ func (engine *Engine) GetUserRole() (string, int) {
 }
 
 func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, consensusType string) error {
-	return nil
+	if _, ok := AvailableConsensus[consensusType]; !ok {
+		return errors.New("this consensus type isn't available")
+	}
+	return AvailableConsensus[consensusType].ValidateData(data, sig, publicKey)
 }
 
 func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
-	return nil
+	if _, ok := AvailableConsensus[consensusType]; !ok {
+		return errors.New("this consensus type isn't available")
+	}
+	return AvailableConsensus[consensusType].ValidateProducerSig(block)
+}
+
+func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey, consensusType string) error {
+	if _, ok := AvailableConsensus[consensusType]; !ok {
+		return errors.New("this consensus type isn't available")
+	}
+	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(block, committee)
 }
