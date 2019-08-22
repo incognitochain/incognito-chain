@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -523,10 +524,10 @@ func (synker *Synker) UpdateState() {
 		userLayer = common.BEACON_ROLE
 	}
 
-	beaconCommittee, _ := ExtractPublickeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
+	beaconCommittee, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
 	shardCommittee := make(map[byte][]string)
 	for shardID, committee := range beaconStateClone.GetShardCommittee() {
-		shardCommittee[shardID], _ = ExtractPublickeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
+		shardCommittee[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
 	}
 
 	synker.blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, beaconCommittee, shardCommittee)

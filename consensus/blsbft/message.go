@@ -21,7 +21,7 @@ type BFTPropose struct {
 type BFTVote struct {
 	RoundKey  string
 	Validator string
-	Sig       []byte
+	Vote      vote
 }
 
 func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wire.Message, error) {
@@ -38,11 +38,11 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wi
 	return msg, nil
 }
 
-func MakeBFTVoteMsg(userKey *MiningKey, chainKey, roundKey string, sig []byte) (wire.Message, error) {
+func MakeBFTVoteMsg(userKey *MiningKey, chainKey, roundKey string, vote vote) (wire.Message, error) {
 	var voteCtn BFTVote
 	voteCtn.RoundKey = roundKey
 	voteCtn.Validator = userKey.GetPublicKeyBase58()
-	voteCtn.Sig = sig
+	voteCtn.Vote = vote
 	voteCtnBytes, err := json.Marshal(voteCtn)
 	if err != nil {
 		return nil, err
@@ -78,20 +78,30 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	}
 }
 
-func (e *BLSBFT) sendVote() /*error*/ {
-	//TODO @0xBahamoot
-	selfIdx := 0
+func (e *BLSBFT) sendVote() error {
+	var Vote vote
+	selfIdx := e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58())
 	listCommittee := []blsmultisig.PublicKey{}
-	sig, _ := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, listCommittee)
-	bridgeSig := ""
-	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
-		bridgeSig, _ = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
-	}
-	fmt.Println(bridgeSig)
-	msg, err := MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), sig)
+	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, listCommittee)
 	if err != nil {
-		return
+		return err
+	}
+	bridgeSig := []byte{}
+	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
+		bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
+		if err != nil {
+			return err
+		}
+	}
+
+	Vote.BLS = blsSig
+	Vote.BRI = bridgeSig
+
+	msg, err := MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
+	if err != nil {
+		return err
 	}
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.RoundData.NotYetSendVote = false
+	return nil
 }

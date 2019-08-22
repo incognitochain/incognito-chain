@@ -119,31 +119,31 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	// calculate hash
 	// BeaconValidator root: beacon committee + beacon pending committee
 	validatorArr := append(beaconBestState.BeaconCommittee, beaconBestState.BeaconPendingValidator...)
-	tempBeaconCommitteeAndValidatorRoot, err := generateHashFromStringArray(CommitteeKeyListToString(validatorArr))
+	tempBeaconCommitteeAndValidatorRoot, err := generateHashFromStringArray(incognitokey.CommitteeKeyListToString(validatorArr))
 	if err != nil {
 		return nil, NewBlockChainError(GenerateBeaconCommitteeAndValidatorRootError, err)
 	}
 	// BeaconCandidate root: beacon current candidate + beacon next candidate
 	beaconCandidateArr := append(beaconBestState.CandidateBeaconWaitingForCurrentRandom, beaconBestState.CandidateBeaconWaitingForNextRandom...)
-	tempBeaconCandidateRoot, err := generateHashFromStringArray(CommitteeKeyListToString(beaconCandidateArr))
+	tempBeaconCandidateRoot, err := generateHashFromStringArray(incognitokey.CommitteeKeyListToString(beaconCandidateArr))
 	if err != nil {
 		return nil, NewBlockChainError(GenerateBeaconCandidateRootError, err)
 	}
 	// Shard candidate root: shard current candidate + shard next candidate
 	shardCandidateArr := append(beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CandidateShardWaitingForNextRandom...)
-	tempShardCandidateRoot, err := generateHashFromStringArray(CommitteeKeyListToString(shardCandidateArr))
+	tempShardCandidateRoot, err := generateHashFromStringArray(incognitokey.CommitteeKeyListToString(shardCandidateArr))
 	if err != nil {
 		return nil, NewBlockChainError(GenerateShardCandidateRootError, err)
 	}
 	// Shard Validator root
 	shardPendingValidator := make(map[byte][]string)
 	for shardID, keys := range beaconBestState.ShardPendingValidator {
-		shardPendingValidator[shardID] = CommitteeKeyListToString(keys)
+		shardPendingValidator[shardID] = incognitokey.CommitteeKeyListToString(keys)
 	}
 
 	shardCommittee := make(map[byte][]string)
 	for shardID, keys := range beaconBestState.ShardCommittee {
-		shardCommittee[shardID] = CommitteeKeyListToString(keys)
+		shardCommittee[shardID] = incognitokey.CommitteeKeyListToString(keys)
 	}
 
 	tempShardCommitteeAndValidatorRoot, err := generateHashFromMapByteString(shardPendingValidator, shardCommittee)
@@ -302,7 +302,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 
 	if newBeaconHeight%uint64(chainParamEpoch) == 0 {
 		swapBeaconInstructions := []string{}
-		_, currentValidators, swappedValidator, beaconNextCommittee, _ := SwapValidator(CommitteeKeyListToString(beaconBestState.BeaconPendingValidator), CommitteeKeyListToString(beaconBestState.BeaconCommittee), beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
+		_, currentValidators, swappedValidator, beaconNextCommittee, _ := SwapValidator(incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator), incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee), beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
@@ -337,7 +337,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 				assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
 			}
 			for shardId, candidates := range assignedCandidates {
-				candidatesStr := CommitteeKeyListToString(candidates)
+				candidatesStr := incognitokey.CommitteeKeyListToString(candidates)
 				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardId, candidatesStr)
 				shardAssingInstruction := []string{"assign"}
 				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidatesStr, ","))
@@ -352,18 +352,18 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 
 func (beaconBestState *BeaconBestState) GetValidStakers(tempStaker []string) []string {
 	for _, committees := range beaconBestState.GetShardCommittee() {
-		tempStaker = common.GetValidStaker(CommitteeKeyListToString(committees), tempStaker)
+		tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(committees), tempStaker)
 	}
 	for _, validators := range beaconBestState.GetShardPendingValidator() {
-		tempStaker = common.GetValidStaker(CommitteeKeyListToString(validators), tempStaker)
+		tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(validators), tempStaker)
 	}
-	tempStaker = common.GetValidStaker(CommitteeKeyListToString(beaconBestState.BeaconCommittee), tempStaker)
-	tempStaker = common.GetValidStaker(CommitteeKeyListToString(beaconBestState.BeaconPendingValidator), tempStaker)
-	tempStaker = common.GetValidStaker(CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom), tempStaker)
-	tempStaker = common.GetValidStaker(CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom), tempStaker)
-	tempStaker = common.GetValidStaker(CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom), tempStaker)
-	tempStaker = common.GetValidStaker(CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom), tempStaker)
-	tempStaker = common.GetValidStaker(CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom), tempStaker)
+	tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee), tempStaker)
+	tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator), tempStaker)
+	tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom), tempStaker)
+	tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom), tempStaker)
+	tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom), tempStaker)
+	tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom), tempStaker)
+	tempStaker = common.GetValidStaker(incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom), tempStaker)
 	return tempStaker
 }
 

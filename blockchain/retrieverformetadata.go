@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -89,16 +90,16 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]st
 	SC := make(map[byte][]string)
 	SPV := make(map[byte][]string)
 	for shardID, committee := range beaconBestState.GetShardCommittee() {
-		SC[shardID] = CommitteeKeyListToString(committee)
+		SC[shardID] = incognitokey.CommitteeKeyListToString(committee)
 	}
 	for shardID, committee := range beaconBestState.GetShardPendingValidator() {
-		SPV[shardID] = CommitteeKeyListToString(committee)
+		SPV[shardID] = incognitokey.CommitteeKeyListToString(committee)
 	}
-	BC := CommitteeKeyListToString(beaconBestState.BeaconCommittee)
-	BPV := CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
-	CBWFCR := CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
-	CBWFNR := CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
-	CSWFCR := CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
-	CSWFNR := CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
+	BC := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)
+	BPV := incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)
+	CBWFCR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)
+	CBWFNR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
+	CSWFCR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
+	CSWFNR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
 	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR
 }

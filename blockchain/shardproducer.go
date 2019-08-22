@@ -58,8 +58,8 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		totalTxsFee             = make(map[common.Hash]uint64)
 		block                   = NewShardBlock()
 		instructions            = [][]string{}
-		shardPendingValidator   = CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator)
-		shardCommittee          = CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee)
+		shardPendingValidator   = incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator)
+		shardCommittee          = incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee)
 		tempPrivateKey          = blockGenerator.createTempKeyset()
 	)
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
@@ -319,7 +319,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	- Assign Instruction: get more pending validator from beacon and return new list of pending validator
 */
 func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) []string {
-	shardPendingValidator := CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)
+	shardPendingValidator := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)
 	assignInstructions := GetAssignInstructionFromBeaconBlock(beaconBlocks, shardID)
 	if len(assignInstructions) != 0 {
 		Logger.log.Info("Shard Block Producer Assign Instructions ", assignInstructions)
