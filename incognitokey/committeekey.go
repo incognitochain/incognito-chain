@@ -3,6 +3,7 @@ package incognitokey
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -49,6 +50,7 @@ func (pubKey *CommitteePubKey) FromString(keyString string) error {
 	if (ver != common.ZeroByte) || (err != nil) {
 		return errors.New("Wrong input")
 	}
+	fmt.Println(keyBytes)
 	return json.Unmarshal(keyBytes, pubKey)
 }
 
