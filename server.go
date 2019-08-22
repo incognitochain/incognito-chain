@@ -257,6 +257,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		RandomClient:    randomClient,
 		ConsensusEngine: serverObj.consensusEngine,
 	})
+	if err != nil {
+		return err
+	}
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
 		return err
@@ -320,6 +323,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	for shardID, feeEstimator := range serverObj.feeEstimator {
 		serverObj.blockChain.SetFeeEstimator(feeEstimator, shardID)
 	}
+
 	// create mempool tx
 	serverObj.memPool = &mempool.TxPool{}
 	serverObj.memPool.Init(&mempool.Config{

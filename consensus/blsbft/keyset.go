@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/bridgesig"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 // type blsKeySet struct {
@@ -20,8 +21,17 @@ type MiningKey struct {
 	PubKey map[string][]byte
 }
 
+func (miningKey *MiningKey) GetPublicKey() incognitokey.CommitteePubKey {
+	key := incognitokey.CommitteePubKey{}
+	key.MiningPubKey = make(map[string][]byte)
+	key.MiningPubKey[common.BLS_CONSENSUS] = miningKey.PubKey[BLS]
+	key.MiningPubKey[common.BRI_CONSENSUS] = miningKey.PubKey[BRI]
+	return key
+}
+
 func (miningKey *MiningKey) GetPublicKeyBase58() string {
-	keyBytes, err := json.Marshal(miningKey.PubKey)
+	key := miningKey.GetPublicKey()
+	keyBytes, err := json.Marshal(key)
 	if err != nil {
 		return ""
 	}
@@ -48,15 +58,14 @@ func (miningKey *MiningKey) BLSSignData(
 	selfIdx int,
 	committee []blsmultisig.PublicKey,
 ) (
-	string,
+	[]byte,
 	error,
 ) {
 	sigBytes, err := blsmultisig.Sign(data, miningKey.PriKey[BLS], selfIdx, committee)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	sig := base58.Base58Check{}.Encode(sigBytes, common.ZeroByte)
-	return sig, nil
+	return sigBytes, nil
 }
 
 func (miningKey *MiningKey) BriSignData(
@@ -156,15 +165,21 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	e.UserKeySet = &miningKey
 	return nil
 }
-func (e BLSBFT) GetUserPublicKey() string {
+func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePubKey {
 	if e.UserKeySet != nil {
-		return e.UserKeySet.GetPublicKeyBase58()
+		key := e.UserKeySet.GetPublicKey()
+		return &key
 	}
-	return ""
+	return nil
 }
+
 func (e BLSBFT) GetUserPrivateKey() string {
 	if e.UserKeySet != nil {
 		return e.UserKeySet.GetPrivateKeyBase58()
 	}
 	return ""
+}
+
+func combineSigs(sigs [][]byte) ([]byte, error) {
+	return blsmultisig.Combine(sigs)
 }

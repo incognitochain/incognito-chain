@@ -3,10 +3,12 @@ package consensus
 import (
 	"errors"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
-	engine.userMiningPublicKeys = make(map[string]string)
+	engine.userMiningPublicKeys = make(map[string]incognitokey.CommitteePubKey)
 	keys := strings.Split(keysString, "|")
 	for _, key := range keys {
 		keyParts := strings.Split(key, ":")
@@ -16,7 +18,7 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 				if err != nil {
 					panic(err)
 				}
-				engine.userMiningPublicKeys[keyParts[0]] = AvailableConsensus[keyParts[0]].GetUserPublicKey()
+				engine.userMiningPublicKeys[keyParts[0]] = *AvailableConsensus[keyParts[0]].GetUserPublicKey()
 			} else {
 				return errors.New("Consensus type for this key isn't exist " + keyParts[0])
 			}
@@ -24,10 +26,12 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 	}
 	return nil
 }
-func (engined *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
-	if engined != nil && engined.CurrentMiningChain != "" {
-		if _, ok := engined.ChainConsensusList[engined.CurrentMiningChain]; ok {
-			return engined.ChainConsensusList[engined.CurrentMiningChain].GetUserPublicKey(), engined.ChainConsensusList[engined.CurrentMiningChain].GetConsensusName()
+func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
+	if engine != nil && engine.CurrentMiningChain != "" {
+		if _, ok := engine.ChainConsensusList[engine.CurrentMiningChain]; ok {
+			keytype := engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
+			pubkey := engine.userMiningPublicKeys[keytype]
+			return pubkey.GetMiningKeyBase58(keytype), keytype
 		}
 	}
 	return "", ""

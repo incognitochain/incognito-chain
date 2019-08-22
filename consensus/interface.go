@@ -34,8 +34,8 @@ type ConsensusInterface interface {
 	ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error
 
 	LoadUserKey(string) error
-	GetUserPublicKey() string
-	GetUserPrivateKey() string
+	GetUserPublicKey() *incognitokey.CommitteePubKey
+	// GetUserPrivateKey() string
 	ValidateData(data []byte, sig string, publicKey string) error
 	// SignData(data []byte) (string, error)
 	// ValidateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error
@@ -69,7 +69,7 @@ type ConsensusInterface interface {
 
 type BeaconInterface interface {
 	blockchain.ChainInterface
-	GetAllCommittees() map[string]map[string][]string
+	GetAllCommittees() map[string]map[string][]incognitokey.CommitteePubKey
 }
 
 // type MultisigSchemeInterface interface {

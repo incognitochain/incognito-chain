@@ -21,7 +21,7 @@ type BFTPropose struct {
 type BFTVote struct {
 	RoundKey  string
 	Validator string
-	Sig       string
+	Sig       []byte
 }
 
 func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wire.Message, error) {
@@ -38,7 +38,7 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wi
 	return msg, nil
 }
 
-func MakeBFTVoteMsg(userKey *MiningKey, chainKey, sig, roundKey string) (wire.Message, error) {
+func MakeBFTVoteMsg(userKey *MiningKey, chainKey, roundKey string, sig []byte) (wire.Message, error) {
 	var voteCtn BFTVote
 	voteCtn.RoundKey = roundKey
 	voteCtn.Validator = userKey.GetPublicKeyBase58()
@@ -88,7 +88,10 @@ func (e *BLSBFT) sendVote() /*error*/ {
 		bridgeSig, _ = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
 	}
 	fmt.Println(bridgeSig)
-	MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, sig, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-	// go e.Node.PushMessageToChain(msg)
+	msg, err := MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), sig)
+	if err != nil {
+		return
+	}
+	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.RoundData.NotYetSendVote = false
 }
