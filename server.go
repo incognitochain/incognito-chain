@@ -16,6 +16,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -1137,14 +1138,14 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	if isRelayNodeForConsensus {
 		senderPublicKey, _ := p.GetRemotePeer().GetPublicKey()
 		bestState := blockchain.GetBeaconBestState()
-		beaconCommitteeList := blockchain.CommitteeKeyListToString(bestState.BeaconCommittee)
+		beaconCommitteeList := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{p.GetRemotePeerID(): true})
 		}
 		shardCommitteeList := make(map[byte][]string)
 		for shardID, committee := range bestState.GetShardCommittee() {
-			shardCommitteeList[shardID] = blockchain.CommitteeKeyListToString(committee)
+			shardCommitteeList[shardID] = incognitokey.CommitteeKeyListToString(committee)
 		}
 		for shardID, committees := range shardCommitteeList {
 			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1

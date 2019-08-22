@@ -456,7 +456,7 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
-		keyList, _ := ExtractPublickeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
+		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
 		found := common.IndexOfStr(pubkey, keyList)
 		if found > -1 {
 			return common.SHARD_ROLE, shardID
@@ -464,14 +464,14 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 	}
 
 	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
-		keyList, _ := ExtractPublickeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
+		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, beaconBestState.ShardConsensusAlgorithm[shardID])
 		found := common.IndexOfStr(pubkey, keyList)
 		if found > -1 {
 			return common.SHARD_ROLE, shardID
 		}
 	}
 
-	keyList, _ := ExtractPublickeyList(beaconBestState.BeaconCommittee, beaconBestState.ConsensusAlgorithm)
+	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconCommittee, beaconBestState.ConsensusAlgorithm)
 	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
 		tmpID := (beaconBestState.BeaconProposerIndex + round) % len(beaconBestState.BeaconCommittee)
@@ -481,7 +481,7 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 		return common.VALIDATOR_ROLE, 0
 	}
 
-	keyList, _ = ExtractPublickeyList(beaconBestState.BeaconPendingValidator, beaconBestState.ConsensusAlgorithm)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconPendingValidator, beaconBestState.ConsensusAlgorithm)
 	found = common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
 		return common.PENDING_ROLE, 0

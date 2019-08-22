@@ -205,7 +205,7 @@ func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommittee
 }
 
 func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) string {
-	keyList, _ := ExtractPublickeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
+	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
 	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
 		tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)
@@ -216,7 +216,7 @@ func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) st
 		}
 	}
 
-	keyList, _ = ExtractPublickeyList(shardBestState.ShardPendingValidator, shardBestState.ConsensusAlgorithm)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardPendingValidator, shardBestState.ConsensusAlgorithm)
 	found = common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
 		return common.PENDING_ROLE

@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -116,10 +117,10 @@ func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, clo
 	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
 
 	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList := blockchain.CommitteeKeyListToString(bestState.BeaconCommittee)
+	beaconCommitteeList := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 	shardCommitteeList := make(map[byte][]string)
 	for shardID, committee := range bestState.GetShardCommittee() {
-		shardCommitteeList[shardID] = blockchain.CommitteeKeyListToString(committee)
+		shardCommitteeList[shardID] = incognitokey.CommitteeKeyListToString(committee)
 	}
 	for _, peerConn := range listeningPeer.GetPeerConns() {
 		pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
