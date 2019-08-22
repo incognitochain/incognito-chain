@@ -40,7 +40,7 @@ func (chain *ShardChain) CurrentHeight() uint64 {
 	return chain.BestState.BestBlock.Header.Height
 }
 
-func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePubKey {
+func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return chain.BestState.ShardCommittee
 }
 
@@ -79,12 +79,13 @@ func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) err
 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 	}
-	chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee)
-	chain.InsertBlk(block)
-	return nil
+	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
+		return err
+	}
+	return chain.InsertBlk(block)
 }
 
-func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
+func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
@@ -98,8 +99,8 @@ func (chain *ShardChain) ValidateBlockWithBlockChain(common.BlockInterface) erro
 	return nil
 }
 
-func (chain *ShardChain) InsertBlk(block common.BlockInterface) {
-	chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
+	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {
@@ -128,7 +129,7 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 	if err != nil {
 		return nil, err
 	}
-	return shardBlk, nil
+	return &shardBlk, nil
 }
 
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {

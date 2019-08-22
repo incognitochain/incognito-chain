@@ -9,7 +9,7 @@ import (
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
-	engine.userMiningPublicKeys = make(map[string]incognitokey.CommitteePubKey)
+	engine.userMiningPublicKeys = make(map[string]incognitokey.CommitteePublicKey)
 	keys := strings.Split(keysString, "|")
 	for _, key := range keys {
 		keyParts := strings.Split(key, ":")
@@ -62,7 +62,7 @@ func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensus
 	return AvailableConsensus[consensusType].ValidateProducerSig(block)
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey, consensusType string) error {
+func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error {
 	if _, ok := AvailableConsensus[consensusType]; !ok {
 		return errors.New("this consensus type isn't available")
 	}

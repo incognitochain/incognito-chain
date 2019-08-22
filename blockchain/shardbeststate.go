@@ -34,8 +34,8 @@ type ShardBestState struct {
 	MaxShardCommitteeSize  int                            `json:"MaxShardCommitteeSize"`
 	MinShardCommitteeSize  int                            `json:"MinShardCommitteeSize"`
 	ShardProposerIdx       int                            `json:"ShardProposerIdx"`
-	ShardCommittee         []incognitokey.CommitteePubKey `json:"ShardCommittee"`
-	ShardPendingValidator  []incognitokey.CommitteePubKey `json:"ShardPendingValidator"`
+	ShardCommittee         []incognitokey.CommitteePublicKey `json:"ShardCommittee"`
+	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
 	BestCrossShard         map[byte]uint64                `json:"BestCrossShard"` // Best cross shard block by heigh
 	StakingTx              map[string]string              `json:"StakingTx"`
 	NumTxns                uint64                         `json:"NumTxns"`                // The number of txns in the block.
@@ -70,10 +70,10 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 		panic(err)
 	}
 	bestStateShard.BestBlock = nil
-	bestStateShard.ShardCommittee = []incognitokey.CommitteePubKey{}
+	bestStateShard.ShardCommittee = []incognitokey.CommitteePublicKey{}
 	bestStateShard.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
 	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	bestStateShard.ShardPendingValidator = []incognitokey.CommitteePubKey{}
+	bestStateShard.ShardPendingValidator = []incognitokey.CommitteePublicKey{}
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 	bestStateShard.StakingTx = make(map[string]string)

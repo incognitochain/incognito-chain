@@ -101,7 +101,7 @@ func (crossTransaction CrossTransaction) Hash() common.Hash {
 	- Agg Signature
 	- MerklePath
 */
-func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockChain, committees []incognitokey.CommitteePubKey) error {
+func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockChain, committees []incognitokey.CommitteePublicKey) error {
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committees, crossShardBlock.Header.ConsensusType); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}

@@ -15,6 +15,9 @@ func (e *BLSBFT) waitForNextRound() {
 		return
 	}
 	//TODO: chunk time sleep into small time chunk -> if change view during sleep => break it
+
+	fmt.Println("dfsdfsdf")
+
 	time.Sleep(e.Chain.GetMinBlkInterval() - timeSinceLastBlk)
 }
 

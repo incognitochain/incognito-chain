@@ -20,8 +20,8 @@ type MiningKey struct {
 	PubKey map[string][]byte
 }
 
-func (miningKey *MiningKey) GetPublicKey() incognitokey.CommitteePubKey {
-	key := incognitokey.CommitteePubKey{}
+func (miningKey *MiningKey) GetPublicKey() incognitokey.CommitteePublicKey {
+	key := incognitokey.CommitteePublicKey{}
 	key.MiningPubKey = make(map[string][]byte)
 	key.MiningPubKey[common.BLS_CONSENSUS] = miningKey.PubKey[BLS]
 	key.MiningPubKey[common.BRI_CONSENSUS] = miningKey.PubKey[BRI]
@@ -104,7 +104,7 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	e.UserKeySet = &miningKey
 	return nil
 }
-func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePubKey {
+func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	if e.UserKeySet != nil {
 		key := e.UserKeySet.GetPublicKey()
 		return &key
