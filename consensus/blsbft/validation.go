@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
@@ -156,5 +157,17 @@ func (e *BLSBFT) CreateValidationData(blockHash *common.Hash) ValidationData {
 }
 
 func (e *BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
-	return nil
+	sigByte, _, err := base58.Base58Check{}.Decode(sig)
+	if err != nil {
+		return err
+	}
+	publicKeyByte, _, err := base58.Base58Check{}.Decode(publicKey)
+	if err != nil {
+		return err
+	}
+	valid, err := blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
+	if valid {
+		return nil
+	}
+	return err
 }
