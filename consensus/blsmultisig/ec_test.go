@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
+	"fmt"
 )
 
 func cmptPnG1(oddPoint byte, loop int) (*bn256.G1, error) {
@@ -141,3 +142,12 @@ func Test_cmptPnG1(t *testing.T) {
 // 		})
 // 	}
 // }
+
+
+func TestBn256G2(t *testing.T){
+	sk, pk, _ := bn256.RandomG2(rand.Reader)
+
+	pkCompressed := CmprG2(pk)
+	fmt.Printf("sk: %v\n", sk)
+	fmt.Printf("pkCompressed: %v\n", pkCompressed)
+}
