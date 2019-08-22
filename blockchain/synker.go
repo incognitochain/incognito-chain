@@ -26,6 +26,7 @@ type peerState struct {
 }
 
 type ChainState struct {
+	Timestamp     int64
 	Height        uint64
 	BlockHash     common.Hash
 	BestStateHash common.Hash
@@ -421,6 +422,7 @@ func (synker *synker) UpdateState() {
 		if userRole != common.SHARD_ROLE && RCS.ClosestBeaconState.Height == beaconStateClone.BeaconHeight {
 			synker.SetChainState(false, 0, true)
 		} else {
+			fmt.Println("beacon not ready", RCS.ClosestBeaconState.Height)
 			synker.SetChainState(false, 0, false)
 		}
 
@@ -482,7 +484,7 @@ func (synker *synker) UpdateState() {
 	for peerID := range synker.States.PeersState {
 		if currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCS.ClosestBeaconState.Height {
 			//fmt.Println("SyncBlk1:", currentBcnReqHeight, RCS.ClosestBeaconState.Height)
-			synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCS.ClosestBeaconState.Height, peerID)
+			synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCS.ClosestBeaconState.Height+1, peerID)
 			break
 		} else {
 			//fmt.Println("SyncBlk2:", currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1)
@@ -506,7 +508,7 @@ func (synker *synker) UpdateState() {
 				if shardState.Height >= currentShardReqHeight {
 					if currentShardReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
 						fmt.Println("SyncShard 1234 ", currentShardReqHeight, RCS.ClosestShardsState[shardID].Height)
-						synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+						synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height+1, peerID)
 						break
 					} else {
 						fmt.Println("SyncShard 12345")
@@ -706,9 +708,11 @@ func (synker *synker) SetChainState(shard bool, shardID byte, ready bool) {
 		// }
 	} else {
 		synker.Status.IsLatest.Beacon = ready
-		// if ready {
-		// 	fmt.Println("Beacon is ready")
-		// }
+		if ready {
+			fmt.Println("Beacon is ready")
+		} else {
+			fmt.Println("Beacon is not ready")
+		}
 	}
 }
 
