@@ -189,24 +189,3 @@ func (engine *Engine) GetUserRole() (string, int) {
 	}
 	return "", 0
 }
-
-func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, consensusType string) error {
-	if _, ok := AvailableConsensus[consensusType]; !ok {
-		return errors.New("this consensus type isn't available")
-	}
-	return AvailableConsensus[consensusType].ValidateData(data, sig, publicKey)
-}
-
-func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
-	if _, ok := AvailableConsensus[consensusType]; !ok {
-		return errors.New("this consensus type isn't available")
-	}
-	return AvailableConsensus[consensusType].ValidateProducerSig(block)
-}
-
-func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey, consensusType string) error {
-	if _, ok := AvailableConsensus[consensusType]; !ok {
-		return errors.New("this consensus type isn't available")
-	}
-	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(block, committee)
-}

@@ -37,7 +37,7 @@ type ConsensusInterface interface {
 	GetUserPublicKey() *incognitokey.CommitteePubKey
 	// GetUserPrivateKey() string
 	ValidateData(data []byte, sig string, publicKey string) error
-	// SignData(data []byte) (string, error)
+	SignData(data []byte) (string, error)
 	// ValidateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error
 	// ValidateSingleSig(dataHash *common.Hash, sig string, pubkey string) error
 }

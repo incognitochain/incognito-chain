@@ -68,10 +68,9 @@ type Config struct {
 	MaxInPeers      int
 	MaxPeers        int
 	ConsensusEngine interface {
-		GetMiningPublicKey() (publickey string, keyType string)
-		SignMessageWithMiningKey(msg *wire.Message) (string, error)
-		SignDataWithMiningKey(data []byte) (string, error)
-		VerifyMessageWithMiningKey(msg *wire.Message) error
+		GetCurrentMiningPublicKey() (publickey string, keyType string)
+		VerifyData(data []byte, sig string, publicKey string, consensusType string) error
+		SignDataWithCurrentMiningKey(data []byte) (string, error)
 	}
 }
 
