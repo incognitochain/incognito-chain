@@ -75,9 +75,9 @@ const (
 	TestnetEpoch       = 100
 	TestnetRandomTime  = 50
 
-	TestNetShardCommitteeSize     = 16
-	TestNetMinShardCommitteeSize  = 3
-	TestNetBeaconCommitteeSize    = 4
+	TestNetShardCommitteeSize     = 1
+	TestNetMinShardCommitteeSize  = 1
+	TestNetBeaconCommitteeSize    = 1
 	TestNetMinBeaconCommitteeSize = 1
 	TestNetActiveShards           = 1
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
