@@ -79,7 +79,7 @@ func (e *BLSBFT) Start() {
 	e.VoteMessageCh = make(chan BFTVote)
 
 	ticker := time.Tick(100 * time.Millisecond)
-	e.logger.Info("start bls-bft consensus")
+	e.logger.Info("start bls-bft consensus for chain", e.ChainKey)
 	go func() {
 		for { //actor loop
 			select {

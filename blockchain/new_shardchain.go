@@ -62,7 +62,8 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 }
 
 func (chain *ShardChain) CreateNewBlock(round int) common.BlockInterface {
-	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
+	start := time.Now()
+	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), chain.Blockchain.GetBeaconHeight(), start)
 	if err != nil {
 		return nil
 	}
