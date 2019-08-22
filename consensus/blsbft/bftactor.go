@@ -237,6 +237,7 @@ func (e *BLSBFT) enterVotePhase() {
 func (e *BLSBFT) enterNewRound() {
 	//if chain is not ready,  return
 	if !e.Chain.IsReady() {
+		fmt.Println("BLSBFT", "not ready", e.ChainKey)
 		e.RoundData.State = ""
 		return
 	}
@@ -252,6 +253,7 @@ func (e *BLSBFT) enterNewRound() {
 	e.RoundData.Round = e.getCurrentRound()
 	e.RoundData.Votes = make(map[string]vote)
 	e.RoundData.Block = nil
+	e.RoundData.NotYetSendVote = true
 	e.logger.Info("BFT: new round")
 	pubKey := e.UserKeySet.GetPublicKey()
 	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
