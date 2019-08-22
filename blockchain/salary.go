@@ -178,7 +178,7 @@ func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalRe
 }
 
 func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks []*BeaconBlock, shardID byte) error {
-	shardCommittee := make(map[byte][]string)
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	isInit := false
 	epoch := uint64(0)
 	db := blockchain.config.DataBase

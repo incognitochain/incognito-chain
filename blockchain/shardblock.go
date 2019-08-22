@@ -397,8 +397,8 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 // 	return inst, err
 // }
 
-func (block *ShardBlock) AddValidationField(validateData string) error {
-	block.ValidationData = validateData
+func (block *ShardBlock) AddValidationField(validationData string) error {
+	block.ValidationData = validationData
 	return nil
 }
 

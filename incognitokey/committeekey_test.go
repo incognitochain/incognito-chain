@@ -16,7 +16,7 @@ func TestNewCommitteeKeyFromSeed(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    CommitteePubKey
+		want    CommitteePublicKey
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -26,7 +26,7 @@ func TestNewCommitteeKeyFromSeed(t *testing.T) {
 		x, _ := NewCommitteeKeyFromSeed([]byte{1, 2, 3}, []byte{1, 2, 3})
 		// fmt.Println(x.By tes())
 		xBytes, _ := x.Bytes()
-		xNew := new(CommitteePubKey)
+		xNew := new(CommitteePublicKey)
 		xNew.FromBytes(xBytes)
 		// fmt.Println(xNew.Bytes())
 		xNewBytes, _ := xNew.Bytes()
@@ -51,7 +51,7 @@ func TestNewCommitteeKeyFromSeed(t *testing.T) {
 	}
 }
 
-func TestCommitteePubKey_FromString(t *testing.T) {
+func TestCommitteePublicKey_FromString(t *testing.T) {
 	type fields struct {
 		IncPubKey    []byte
 		MiningPubKey map[string][]byte
@@ -79,9 +79,9 @@ func TestCommitteePubKey_FromString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pubKey := new(CommitteePubKey)
+			pubKey := new(CommitteePublicKey)
 			if err := pubKey.FromString(tt.args.keyString); (err != nil) != tt.wantErr {
-				t.Errorf("CommitteePubKey.FromString() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("CommitteePublicKey.FromString() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				fmt.Println(pubKey.GetNormalKey())
 				fmt.Println(pubKey.GetMiningKey(common.BLS_CONSENSUS))
