@@ -66,7 +66,7 @@ func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, comm
 	if _, ok := AvailableConsensus[consensusType]; !ok {
 		return errors.New("this consensus type isn't available")
 	}
-	return engine.ChainConsensusList[consensusType].ValidateCommitteeSig(block, committee)
+	return AvailableConsensus[consensusType].ValidateCommitteeSig(block, committee)
 }
 
 // func (engine *Engine) VerifySignature(data []byte, validationData string, consensusType string) error {
