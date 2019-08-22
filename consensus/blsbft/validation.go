@@ -6,17 +6,26 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/multisigschemes/bls"
+	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
+type vote struct {
+	BLS []byte
+	BRI []byte
+}
+
+type blockValidation interface {
+	common.BlockInterface
+	AddValidationField(validationData string) error
+}
+
 type ValidationData struct {
-	Producer       string
-	ProducerBLSSig string
-	ProducerBriSig string
+	ProducerBLSSig []byte
+	ProducerBriSig []byte
 	ValidatiorsIdx []int
-	AggSig         string
-	BridgeSig      []string
-	// AgreeSigs         map[string][]string
+	AggSig         []byte
+	BridgeSig      [][]byte
 }
 
 func DecodeValidationData(data string) (*ValidationData, error) {
@@ -28,79 +37,124 @@ func DecodeValidationData(data string) (*ValidationData, error) {
 	return &valData, nil
 }
 
-func EncodeValidationData(validationData ValidationData) ([]byte, error) {
-	return json.Marshal(validationData)
+func EncodeValidationData(validationData ValidationData) (string, error) {
+	result, err := json.Marshal(validationData)
+	if err != nil {
+		return "", err
+	}
+	return string(result), nil
 }
 
-func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []string) error {
-	if err := e.ValidateProducerSig(block.Hash(), block.GetValidationField()); err != nil {
+func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
+	if err := e.ValidateProducerSig(block); err != nil {
 		return err
 	}
-	// if err := e.ValidateProducerPosition(block); err != nil {
-	// 	return err
-	// }
+	if err := e.ValidateProducerPosition(block); err != nil {
+		return err
+	}
+	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
+		return err
+	}
 	return nil
 }
 
-// func (e *BLSBFT) ValidateBlock(block common.BlockInterface) error {
-
-// 	// 1. Verify producer's sig
-// 	// 2. Verify Committee's sig
-// 	// 3. Verify correct producer for blockHeight, round
-// 	if err := e.ValidateProducerSig(block); err != nil {
-// 		return err
-// 	}
-// 	if err := e.ValidateCommitteeSig(block); err != nil {
-// 		return err
-// 	}
-// 	if err := e.ValidateProducerPosition(block); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
-func (e *BLSBFT) ValidateProducerPosition(block common.BlockInterface) error {
-	valData, err := DecodeValidationData(block.GetValidationField())
+func validateSingleBLSSig(
+	dataHash *common.Hash,
+	blsSig []byte,
+	selfIdx int,
+	committee []blsmultisig.PublicKey,
+) error {
+	result, err := blsmultisig.Verify(blsSig, dataHash.GetBytes(), []int{selfIdx}, committee)
 	if err != nil {
 		return err
 	}
+	if !result {
+		return errors.New("invalid Signature")
+	}
+	return nil
+}
+
+func validateSingleBriSig(
+	dataHash *common.Hash,
+	aggSig []byte,
+) error {
+	return nil
+}
+
+func validateBLSSig(
+	dataHash *common.Hash,
+	aggSig []byte,
+	validatorIdx []int,
+	committee []blsmultisig.PublicKey,
+) error {
+	result, err := blsmultisig.Verify(aggSig, dataHash.GetBytes(), validatorIdx, committee)
+	if err != nil {
+		return err
+	}
+	if !result {
+		return errors.New("Invalid Signature!")
+	}
+	return nil
+}
+
+func (e *BLSBFT) ValidateProducerPosition(block common.BlockInterface) error {
 	committee := e.Chain.GetCommittee()
 	producerPosition := (e.Chain.GetLastProposerIndex() + block.GetRound()) % e.Chain.GetCommitteeSize()
-	tempProducer := committee[producerPosition]
-	if strings.Compare(tempProducer, valData.Producer) != 0 {
+	tempProducer := committee[producerPosition].GetMiningKeyBase58(CONSENSUSNAME)
+	if strings.Compare(tempProducer, block.GetProducer()) != 0 {
 		return errors.New("Producer should be should be :" + tempProducer)
 	}
 
 	return nil
 }
 
-func (e *BLSBFT) ValidateProducerSig(blockHash *common.Hash, validationData string) error {
-	_, err := DecodeValidationData(validationData)
+func (e *BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
+	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
 	}
-	// if err := e.UserKeySet.validateSingleBLSSig(blockHash, valData.ProducerSig, valData.Producer); err != nil {
-	// 	return err
-	// }
-	return nil
-}
 
-func (e *BLSBFT) ValidateCommitteeSig(blockHash *common.Hash, committee []string, validationData string) error {
-	valData, err := DecodeValidationData(validationData)
-	if err != nil {
-		return err
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range e.Chain.GetCommittee() {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
 	}
-	if err := bls.ValidateAggSig(blockHash, valData.AggSig, committee); err != nil {
+
+	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, e.Chain.GetPubKeyCommitteeIndex(block.GetProducer()), committeeBLSKeys); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (e *BLSBFT) CreateValidationData(blockHash common.Hash, privateKey string, round int) ValidationData {
+func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return err
+	}
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range committee {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
+	}
+	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e *BLSBFT) CreateValidationData(blockHash *common.Hash) ValidationData {
 	var valData ValidationData
+	selfPublicKey := e.UserKeySet.GetPublicKey()
+	selfIdx := e.Chain.GetPubKeyCommitteeIndex(selfPublicKey.GetMiningKeyBase58(CONSENSUSNAME))
+	committeeKeys := []blsmultisig.PublicKey{}
+	for _, key := range e.Chain.GetCommittee() {
+		keyByte, _ := key.GetMiningKey(CONSENSUSNAME)
+		committeeKeys = append(committeeKeys, keyByte)
+	}
+
+	e.UserKeySet.BLSSignData(blockHash.GetBytes(), selfIdx, committeeKeys)
+
 	return valData
 }
 
-func (e *BLSBFT) FinalizedValidationData(block common.BlockInterface, sigs []string) error {
+func (e *BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
 	return nil
 }
