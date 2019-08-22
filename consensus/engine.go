@@ -54,7 +54,7 @@ func (engine *Engine) watchConsensusCommittee() {
 		}
 		if committees, ok := allcommittee[consensusType]; ok {
 			for chainName, committee := range committees {
-				keys, _ := blockchain.ExtractPublickeyList(committee, consensusType)
+				keys, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, consensusType)
 				if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), keys) != -1 {
 					engine.CurrentMiningChain = chainName
 				}

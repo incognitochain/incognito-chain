@@ -2,7 +2,6 @@ package blsbft
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -46,13 +45,6 @@ func (miningKey *MiningKey) GetPrivateKeyBase58() string {
 	return base58.Base58Check{}.Encode(keyBytes, common.ZeroByte)
 }
 
-// func (keyset *blsKeySet) GetPublicKeyBase58() string {
-// 	return base58.Base58Check{}.Encode(keyset.Publickey, common.ZeroByte)
-// }
-// func (keyset *blsKeySet) GetPrivateKeyBase58() string {
-// 	return base58.Base58Check{}.Encode(keyset.PrivateKey, common.ZeroByte)
-// }
-
 func (miningKey *MiningKey) BLSSignData(
 	data []byte,
 	selfIdx int,
@@ -71,67 +63,14 @@ func (miningKey *MiningKey) BLSSignData(
 func (miningKey *MiningKey) BriSignData(
 	data []byte,
 ) (
-	string,
+	[]byte,
 	error,
 ) {
 	sig, err := bridgesig.Sign(data, miningKey.PriKey[BRI])
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return sig, nil
-}
-
-func validateSingleBLSSig(
-	dataHash *common.Hash,
-	blsSig string,
-	selfIdx int,
-	committee []blsmultisig.PublicKey,
-) error {
-	sigBytes, ver, err := base58.Base58Check{}.Decode(blsSig)
-	if err != nil {
-		return err
-	}
-	if ver != common.ZeroByte {
-		return errors.New("Decode failed")
-	}
-	result, err := blsmultisig.Verify(sigBytes, dataHash.GetBytes(), []int{selfIdx}, committee)
-	if err != nil {
-		return err
-	}
-	if !result {
-		return errors.New("Invalid Signature!")
-	}
-	return nil
-}
-
-func validateSingleBriSig(
-	dataHash *common.Hash,
-	blsSig string,
-) error {
-	return nil
-}
-
-func validateBLSSig(
-	dataHash *common.Hash,
-	aggSig string,
-	validatorIdx []int,
-	committee []blsmultisig.PublicKey,
-) error {
-	sigBytes, ver, err := base58.Base58Check{}.Decode(aggSig)
-	if err != nil {
-		return err
-	}
-	if ver != common.ZeroByte {
-		return errors.New("Decode failed")
-	}
-	result, err := blsmultisig.Verify(sigBytes, dataHash.GetBytes(), validatorIdx, committee)
-	if err != nil {
-		return err
-	}
-	if !result {
-		return errors.New("Invalid Signature!")
-	}
-	return nil
 }
 
 // func (keyset *blsKeySet) SignData(data []byte) (string, error) {
@@ -180,6 +119,16 @@ func (e BLSBFT) GetUserPrivateKey() string {
 	return ""
 }
 
-func combineSigs(sigs [][]byte) ([]byte, error) {
-	return blsmultisig.Combine(sigs)
+func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
+	var blsSigList [][]byte
+	for validator, vote := range votes {
+		blsSigList = append(blsSigList, vote.BLS)
+		brigSigs = append(brigSigs, vote.BRI)
+		validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
+	}
+	aggSig, err = blsmultisig.Combine(blsSigList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return
 }
