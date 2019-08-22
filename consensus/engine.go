@@ -22,10 +22,8 @@ type Engine struct {
 	ChainConsensusList   map[string]ConsensusInterface
 	CurrentMiningChain   string
 	Blockchain           *blockchain.BlockChain
-	userMiningPublicKeys map[string]string
+	userMiningPublicKeys map[string]incognitokey.CommitteePubKey
 	chainCommitteeChange chan string
-	// MiningKeys         map[string]string
-
 }
 
 func New(node NodeInterface, blockchain *blockchain.BlockChain, blockgen *blockchain.BlockGenerator) *Engine {
@@ -49,13 +47,15 @@ func (engine *Engine) watchConsensusCommittee() {
 	Logger.log.Info("start watching consensus committee...")
 	engine.chainCommitteeChange = make(chan string)
 	allcommittee := engine.Blockchain.Chains[common.BEACON_CHAINKEY].(BeaconInterface).GetAllCommittees()
+
 	for consensusType, publickey := range engine.userMiningPublicKeys {
 		if engine.CurrentMiningChain != "" {
 			break
 		}
 		if committees, ok := allcommittee[consensusType]; ok {
 			for chainName, committee := range committees {
-				if common.IndexOfStr(publickey, committee) != -1 {
+				keys, _ := blockchain.ExtractPublickeyList(committee, consensusType)
+				if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), keys) != -1 {
 					engine.CurrentMiningChain = chainName
 				}
 			}
@@ -77,7 +77,7 @@ func (engine *Engine) watchConsensusCommittee() {
 			if !ok {
 				continue
 			}
-			if engine.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey) > 0 {
+			if engine.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) > 0 {
 				if engine.CurrentMiningChain != chainName {
 					engine.CurrentMiningChain = chainName
 				}

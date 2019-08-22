@@ -1672,19 +1672,18 @@ func DecodeCommitteeKey(committeeKey string) ([]byte, []byte, error) {
 }
 
 func ExtractPublickeyList(keyList []incognitokey.CommitteePubKey, keyType string) ([]string, error) {
-	result := make([]string, len(keyList))
+	result := []string{}
 	for _, keySet := range keyList {
-		key, err := keySet.GetMiningKey(keyType)
-		if err != nil {
-			return nil, err
+		key := keySet.GetMiningKeyBase58(keyType)
+		if key != "" {
+			result = append(result, key)
 		}
-		result = append(result, string(key))
 	}
 	return result, nil
 }
 
 func CommitteeKeyListToString(keyList []incognitokey.CommitteePubKey) []string {
-	result := make([]string, len(keyList))
+	result := []string{}
 	for _, key := range keyList {
 		keyStr, _ := key.ToBase58()
 		result = append(result, keyStr)
@@ -1693,7 +1692,7 @@ func CommitteeKeyListToString(keyList []incognitokey.CommitteePubKey) []string {
 }
 
 func CommitteeBase58KeyListToStruct(strKeyList []string) []incognitokey.CommitteePubKey {
-	result := make([]incognitokey.CommitteePubKey, len(strKeyList))
+	result := []incognitokey.CommitteePubKey{}
 	for _, key := range strKeyList {
 		var keyStruct incognitokey.CommitteePubKey
 		keyStruct.FromBase58(key)

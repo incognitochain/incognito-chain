@@ -16,7 +16,7 @@ const (
 )
 
 type Vote struct {
-	Sig string
+	Sig []byte
 }
 
 type BLSBFT struct {
