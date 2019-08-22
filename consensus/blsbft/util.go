@@ -49,7 +49,7 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 		delete(e.EarlyVotes, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 	}
 	size := e.Chain.GetCommitteeSize()
-	if len(e.RoundData.Votes) >= 2*size/3 {
+	if len(e.RoundData.Votes) > 2*size/3 {
 		return true
 	}
 	return false

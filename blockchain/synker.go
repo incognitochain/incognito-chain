@@ -286,7 +286,6 @@ func (synker *Synker) UpdateState() {
 	}
 	synker.States.ClosestState.ShardToBeaconPool = synker.blockchain.config.ShardToBeaconPool.GetLatestValidPendingBlockHeight()
 	synker.States.ClosestState.CrossShardPool = synker.blockchain.config.CrossShardPool[userShardID].GetLatestValidBlockHeight()
-
 	RCS := reportedChainState{
 		ClosestBeaconState: ChainState{
 			Height: beaconStateClone.BeaconHeight,
@@ -853,10 +852,11 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 }
 
 func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
+	// fmt.Println("\n\n\n\n", "InsertShardBlockFromPool", "\n\n\n\n")
 	currentInsert.Shards[shardID].Lock()
 	blks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
 	for _, newBlk := range blks {
-		err := synker.blockchain.InsertShardBlock(newBlk, false)
+		err := synker.blockchain.InsertShardBlock(newBlk, true)
 		if err != nil {
 			//@Notice: remove or keep invalid block
 			Logger.log.Error(err)
