@@ -132,3 +132,12 @@ func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, bri
 	}
 	return
 }
+
+func (e BLSBFT) SignData(data []byte) (string, error) {
+	result, err := e.UserKeySet.BLSSignData(data, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[BLS]})
+	if err != nil {
+		return "", err
+	}
+
+	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
+}
