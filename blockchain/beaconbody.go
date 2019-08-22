@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type BeaconBody struct {
@@ -38,6 +39,6 @@ func (beaconBlock *BeaconBody) toString() string {
 	return res
 }
 
-func (beaconBody *BeaconBody) Hash() common.Hash {
+func (beaconBody BeaconBody) Hash() common.Hash {
 	return common.HashH([]byte(beaconBody.toString()))
 }

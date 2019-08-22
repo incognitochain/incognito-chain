@@ -1,3 +1,10 @@
 #!/usr/bin/env bash
-
-go run *.go --miningkeys "bls:112t8rtxdpGEx5H7MHi5EXGKZhKAxgbEkRv1d8TH1cbqKzc5j4mXEKC2NUCeCSQRA3zDeUQxKUW54sAGzpqFi86JQGaPAh4Ao4Gqo7q51yGw" --nodemode "auto" --datadir "data/shard0-2" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9336"
+if [ "$1" == "1" ]; then
+go run *.go --miningkeys "bls:14DrMrsYZ58EqrjbuyBuTy3NBmcXB" --nodemode "auto" --datadir "data/1" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9335"
+fi
+if [ "$1" == "2" ]; then
+go run *.go --miningkeys "bls:1eDXPfd9jXhMVbhLAALewJymUPob" --nodemode "auto" --datadir "data/2" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9336"
+fi
+if [ "$1" == "3" ]; then
+go run *.go --miningkeys "bls:12v9jokoYDWFQ7731mR6QjjkvUG1Q" --nodemode "auto" --datadir "data/3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337"
+fi

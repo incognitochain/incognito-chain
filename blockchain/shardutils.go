@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -150,10 +149,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			if err != nil || candidateWallet == nil {
 				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
 			}
-			pk := candidateWallet.KeySet.PaymentAddress.Pk
-			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			pkJoin := pkb58 + stakingMetadata.BLSPublicKey
-			stakeShardRewardReceiver = append(stakeShardRewardReceiver, pkJoin)
+			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
 		case metadata.BeaconStakingMeta:
@@ -172,10 +168,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			if err != nil || candidateWallet == nil {
 				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
 			}
-			pk := candidateWallet.KeySet.PaymentAddress.Pk
-			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-			pkJoin := pkb58 + stakingMetadata.BLSPublicKey
-			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, pkJoin)
+			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
 		}
