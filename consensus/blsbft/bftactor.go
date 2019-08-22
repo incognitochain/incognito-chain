@@ -137,6 +137,12 @@ func (e *BLSBFT) Start() {
 						}
 						if e.RoundData.Block == nil {
 							e.RoundData.Block = e.Blocks[roundKey]
+							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
+							if err != nil {
+								e.logger.Error(err)
+								continue
+							}
+							e.RoundData.BlockValidateData = *valData
 							e.enterVotePhase()
 						}
 					}
