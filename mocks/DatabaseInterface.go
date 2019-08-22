@@ -538,29 +538,6 @@ func (_m *DatabaseInterface) FetchBlock(hash common.Hash) ([]byte, error) {
 	return r0, r1
 }
 
-// FetchCommitteeFromShardBestState provides a mock function with given fields: shardID, shardHeight
-func (_m *DatabaseInterface) FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64) ([]byte, error) {
-	ret := _m.Called(shardID, shardHeight)
-
-	var r0 []byte
-	if rf, ok := ret.Get(0).(func(byte, uint64) []byte); ok {
-		r0 = rf(shardID, shardHeight)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(byte, uint64) error); ok {
-		r1 = rf(shardID, shardHeight)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // FetchCrossShardNextHeight provides a mock function with given fields: fromShard, toShard, curHeight
 func (_m *DatabaseInterface) FetchCrossShardNextHeight(fromShard byte, toShard byte, curHeight uint64) (uint64, error) {
 	ret := _m.Called(fromShard, toShard, curHeight)
@@ -1820,20 +1797,6 @@ func (_m *DatabaseInterface) StoreCommitments(tokenID common.Hash, pubkey []byte
 	var r0 error
 	if rf, ok := ret.Get(0).(func(common.Hash, []byte, [][]byte, byte) error); ok {
 		r0 = rf(tokenID, pubkey, commitment, shardID)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// StoreCommitteeFromShardBestState provides a mock function with given fields: shardID, shardHeight, v
-func (_m *DatabaseInterface) StoreCommitteeFromShardBestState(shardID byte, shardHeight uint64, v interface{}) error {
-	ret := _m.Called(shardID, shardHeight, v)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(byte, uint64, interface{}) error); ok {
-		r0 = rf(shardID, shardHeight, v)
 	} else {
 		r0 = ret.Error(0)
 	}
