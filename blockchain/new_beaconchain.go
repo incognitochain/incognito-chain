@@ -22,7 +22,8 @@ func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
 }
 
 func (chain *BeaconChain) GetMinBlkInterval() time.Duration {
-	return chain.BestState.BlockInterval
+	// return chain.BestState.BlockInterval
+	return common.MinBeaconBlkInterval
 }
 
 func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {

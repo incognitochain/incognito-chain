@@ -109,6 +109,8 @@ func (e *BLSBFT) sendVote() error {
 	if err != nil {
 		return err
 	}
+	e.RoundData.Votes[pubKey.GetMiningKeyBase58(CONSENSUSNAME)] = Vote
+	e.logger.Info("sending vote...")
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.RoundData.NotYetSendVote = false
 	return nil
