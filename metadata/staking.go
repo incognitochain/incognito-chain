@@ -46,7 +46,7 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 	}
 	pk := candidateWallet.KeySet.PaymentAddress.Pk
 	committeePubKey := new(incognitokey.CommitteePubKey)
-	committeePubKey.FromString(sm.CommitteePublicKey)
+	committeePubKey.FromBase58(sm.CommitteePublicKey)
 	if (!committeePubKey.CheckSanityData()) || (!bytes.Equal(committeePubKey.IncPubKey, pk)) {
 		return false
 	}
@@ -109,7 +109,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetrieve
 		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
 	}
 	committeePubKey := new(incognitokey.CommitteePubKey)
-	committeePubKey.FromString(stakingMetadata.CommitteePublicKey)
+	committeePubKey.FromBase58(stakingMetadata.CommitteePublicKey)
 	if (!committeePubKey.CheckSanityData()) || (!bytes.Equal(committeePubKey.IncPubKey, pubkey)) {
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
 	}
