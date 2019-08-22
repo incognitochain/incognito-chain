@@ -149,7 +149,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			if err != nil || candidateWallet == nil {
 				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
 			}
-			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePubKey)
+			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
 		case metadata.BeaconStakingMeta:
@@ -168,7 +168,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			if err != nil || candidateWallet == nil {
 				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
 			}
-			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePubKey)
+			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
 		}
