@@ -870,9 +870,10 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
 		},
-		MaxInPeers:  cfg.MaxInPeers,
-		MaxPeers:    cfg.MaxPeers,
-		MaxOutPeers: cfg.MaxOutPeers,
+		MaxInPeers:      cfg.MaxInPeers,
+		MaxPeers:        cfg.MaxPeers,
+		MaxOutPeers:     cfg.MaxOutPeers,
+		ConsensusEngine: serverObj.consensusEngine,
 	}
 	// if KeySetUser != nil && len(KeySetUser.PrivateKey) != 0 {
 	// 	config.UserKeySet = KeySetUser
@@ -1400,14 +1401,14 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
 
 	// ValidateTransaction Public Key from ProducerPrvKey
-	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetMiningPublicKey()
+	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
 	signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
 		msg.(*wire.MessageVersion).PublicKeyType = publicKeyType
 		Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 		// sign data
-		signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
+		signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
 		if err == nil {
 			msg.(*wire.MessageVersion).SignDataB58 = signDataInBase58CheckEncode
 		}

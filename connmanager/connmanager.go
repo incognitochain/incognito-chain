@@ -416,11 +416,11 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// publicKeyInBase58CheckEncode := common.EmptyString
 
 		signDataInBase58CheckEncode := common.EmptyString
-		publicKeyInBase58CheckEncode, _ := listener.GetConfig().ConsensusEngine.GetMiningPublicKey()
+		publicKeyInBase58CheckEncode, keyType := listener.GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
 		if publicKeyInBase58CheckEncode != "" {
 			Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 			// sign data
-			signDataInBase58CheckEncode, err = listener.GetConfig().ConsensusEngine.SignDataWithMiningKey([]byte(rawAddress))
+			signDataInBase58CheckEncode, err = listener.GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(rawAddress))
 			if err != nil {
 				Logger.log.Error(err)
 			}
@@ -428,7 +428,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 
 		// packing in a object PingArgs
 		args := &server.PingArgs{}
-		args.Init(rawAddress, publicKeyInBase58CheckEncode, signDataInBase58CheckEncode)
+		args.Init(rawAddress, keyType, publicKeyInBase58CheckEncode, signDataInBase58CheckEncode)
 		Logger.log.Debugf("[Exchange Peers] Ping %+v", args)
 
 		err := client.Call("Handler.Ping", args, &response)
