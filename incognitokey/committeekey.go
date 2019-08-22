@@ -3,6 +3,7 @@ package incognitokey
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -10,12 +11,12 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus/bridgesig"
 )
 
-type CommitteePubKey struct {
+type CommitteePublicKey struct {
 	IncPubKey    []byte
 	MiningPubKey map[string][]byte
 }
 
-func (pubKey *CommitteePubKey) CheckSanityData() bool {
+func (pubKey *CommitteePublicKey) CheckSanityData() bool {
 	if (len(pubKey.IncPubKey) != common.PublicKeySize) ||
 		(len(pubKey.MiningPubKey[common.BLS_CONSENSUS]) != common.BLSPublicKeySize) ||
 		(len(pubKey.MiningPubKey[common.BRI_CONSENSUS]) != common.BriPublicKeySize) {
@@ -24,8 +25,17 @@ func (pubKey *CommitteePubKey) CheckSanityData() bool {
 	return true
 }
 
-func NewCommitteeKeyFromSeed(seed, incPubKey []byte) (CommitteePubKey, error) {
-	committeePubKey := new(CommitteePubKey)
+func (pubKey *CommitteePublicKey) FromString(keyString string) error {
+	keyBytes, ver, err := base58.Base58Check{}.Decode(keyString)
+	if (ver != common.ZeroByte) || (err != nil) {
+		return errors.New("Wrong input")
+	}
+	fmt.Println(keyBytes)
+	return json.Unmarshal(keyBytes, pubKey)
+}
+
+func NewCommitteeKeyFromSeed(seed, incPubKey []byte) (CommitteePublicKey, error) {
+	committeePubKey := new(CommitteePublicKey)
 	committeePubKey.IncPubKey = incPubKey
 	committeePubKey.MiningPubKey = map[string][]byte{}
 	_, blsPubKey := blsmultisig.KeyGen(seed)
@@ -37,20 +47,20 @@ func NewCommitteeKeyFromSeed(seed, incPubKey []byte) (CommitteePubKey, error) {
 	return *committeePubKey, nil
 }
 
-func (pubKey *CommitteePubKey) FromBytes(keyBytes []byte) error {
+func (pubKey *CommitteePublicKey) FromBytes(keyBytes []byte) error {
 	return json.Unmarshal(keyBytes, pubKey)
 }
 
-func (pubKey *CommitteePubKey) Bytes() ([]byte, error) {
+func (pubKey *CommitteePublicKey) Bytes() ([]byte, error) {
 
 	return json.Marshal(pubKey)
 }
 
-func (pubKey *CommitteePubKey) GetNormalKey() []byte {
+func (pubKey *CommitteePublicKey) GetNormalKey() []byte {
 	return pubKey.IncPubKey
 }
 
-func (pubKey *CommitteePubKey) GetMiningKey(schemeName string) ([]byte, error) {
+func (pubKey *CommitteePublicKey) GetMiningKey(schemeName string) ([]byte, error) {
 	result, ok := pubKey.MiningPubKey[schemeName]
 	if !ok {
 		return nil, errors.New("this schemeName doesn't exist")
@@ -58,7 +68,7 @@ func (pubKey *CommitteePubKey) GetMiningKey(schemeName string) ([]byte, error) {
 	return result, nil
 }
 
-func (pubKey *CommitteePubKey) GetMiningKeyBase58(schemeName string) string {
+func (pubKey *CommitteePublicKey) GetMiningKeyBase58(schemeName string) string {
 	keyBytes, ok := pubKey.MiningPubKey[schemeName]
 	if !ok {
 		return ""
@@ -66,11 +76,11 @@ func (pubKey *CommitteePubKey) GetMiningKeyBase58(schemeName string) string {
 	return base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
 }
 
-func (pubKey *CommitteePubKey) GetIncKeyBase58() string {
+func (pubKey *CommitteePublicKey) GetIncKeyBase58() string {
 	return base58.Base58Check{}.Encode(pubKey.IncPubKey, common.Base58Version)
 }
 
-func (pubKey *CommitteePubKey) ToBase58() (string, error) {
+func (pubKey *CommitteePublicKey) ToBase58() (string, error) {
 	result, err := json.Marshal(pubKey)
 	if err != nil {
 		return "", err
@@ -78,7 +88,7 @@ func (pubKey *CommitteePubKey) ToBase58() (string, error) {
 	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
 }
 
-func (pubKey *CommitteePubKey) FromBase58(keyString string) error {
+func (pubKey *CommitteePublicKey) FromBase58(keyString string) error {
 	keyBytes, ver, err := base58.Base58Check{}.Decode(keyString)
 	if (ver != common.ZeroByte) || (err != nil) {
 		return errors.New("Wrong input")
