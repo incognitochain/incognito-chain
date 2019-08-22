@@ -78,7 +78,7 @@ const (
 	TestNetShardCommitteeSize     = 16
 	TestNetMinShardCommitteeSize  = 1
 	TestNetBeaconCommitteeSize    = 4
-	TestNetMinBeaconCommitteeSize = 1
+	TestNetMinBeaconCommitteeSize = 3
 	TestNetActiveShards           = 1
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
@@ -107,8 +107,8 @@ func init() {
 	type AccountKey struct {
 		PrivateKey string
 		PaymentAdd string
-		PubKey     string
-		PubKeyBLS  string
+		// PubKey     string
+		CommitteePubKey string
 	}
 
 	type KeyList struct {
@@ -122,15 +122,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
 	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
-		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKeyBLS)
+		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePubKey)
 		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAdd)
 	}
 
 	for i := 0; i < TestNetActiveShards; i++ {
 		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
-			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKeyBLS)
+			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePubKey)
 			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAdd)
 		}
 	}

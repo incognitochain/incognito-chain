@@ -15,26 +15,6 @@ type CommitteePubKey struct {
 	MiningPubKey map[string][]byte
 }
 
-// // func (priKey *CommitteePriKey) LoadKey(consensusPriKey map[string]string) error {
-// // 	priKey.PriKey = map[string][]byte{}
-// // 	for key, value := range consensusPriKey {
-// // 		keyBytes, ver, err := base58.Base58Check{}.Decode(value)
-// // 		if (ver != common.ZeroByte) || (err != nil) {
-// // 			return err
-// // 		}
-// // 		priKey.PriKey[key] = keyBytes
-// // 	}
-// // 	return nil
-// // }
-
-// // func (pubKey *CommitteePubKey) LoadKey(consensusPubKey map[string]string) error {
-
-// // }
-
-// func (keyset *MiningKey) GetPublicKeyBase58() string {
-// 	return base58.Base58Check{}.Encode(keyset.Publickey, common.ZeroByte)
-// }
-
 func (pubKey *CommitteePubKey) CheckSanityData() bool {
 	if (len(pubKey.IncPubKey) != common.PublicKeySize) ||
 		(len(pubKey.MiningPubKey[common.BLS_CONSENSUS]) != common.BLSPublicKeySize) ||
@@ -79,7 +59,11 @@ func (pubKey *CommitteePubKey) GetMiningKey(schemeName string) ([]byte, error) {
 }
 
 func (pubKey *CommitteePubKey) GetMiningKeyBase58(schemeName string) string {
-	return base58.Base58Check{}.Encode(pubKey.MiningPubKey[schemeName], common.Base58Version)
+	keyBytes, ok := pubKey.MiningPubKey[schemeName]
+	if !ok {
+		return ""
+	}
+	return base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
 }
 
 func (pubKey *CommitteePubKey) GetIncKeyBase58() string {

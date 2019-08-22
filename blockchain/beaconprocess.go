@@ -775,12 +775,13 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 		beaconCandidates := strings.Split(instruction[1], ",")
 		beaconCandidatesStructs := CommitteeBase58KeyListToStruct(beaconCandidates)
 		beaconRewardReceivers := strings.Split(instruction[4], ",")
-		if len(beaconCandidates) != len(beaconRewardReceivers) {
+		if len(beaconCandidatesStructs) != len(beaconRewardReceivers) {
 			return NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect Beacon Candidate (lenght %+v) and Beacon Reward Receiver (lenght %+v) have equal lenght", beaconCandidates, beaconRewardReceivers)), false, []incognitokey.CommitteePubKey{}, []incognitokey.CommitteePubKey{}
 		}
 		for index, candidate := range beaconCandidatesStructs {
 			beaconBestState.RewardReceiver[candidate.GetIncKeyBase58()] = beaconRewardReceivers[index]
 		}
+
 		newBeaconCandidate = append(newBeaconCandidate, beaconCandidatesStructs...)
 		return nil, false, newBeaconCandidate, newShardCandidate
 	}
