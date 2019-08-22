@@ -60,6 +60,38 @@ func (pubKey *CommitteePublicKey) GetNormalKey() []byte {
 	return pubKey.IncPubKey
 }
 
-func (pubKey *CommitteePublicKey) GetMiningKey(schemeName string) []byte {
-	return pubKey.MiningPubKey[schemeName]
+func (pubKey *CommitteePublicKey) GetMiningKey(schemeName string) ([]byte, error) {
+	result, ok := pubKey.MiningPubKey[schemeName]
+	if !ok {
+		return nil, errors.New("this schemeName doesn't exist")
+	}
+	return result, nil
+}
+
+func (pubKey *CommitteePublicKey) GetMiningKeyBase58(schemeName string) string {
+	keyBytes, ok := pubKey.MiningPubKey[schemeName]
+	if !ok {
+		return ""
+	}
+	return base58.Base58Check{}.Encode(keyBytes, common.Base58Version)
+}
+
+func (pubKey *CommitteePublicKey) GetIncKeyBase58() string {
+	return base58.Base58Check{}.Encode(pubKey.IncPubKey, common.Base58Version)
+}
+
+func (pubKey *CommitteePublicKey) ToBase58() (string, error) {
+	result, err := json.Marshal(pubKey)
+	if err != nil {
+		return "", err
+	}
+	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
+}
+
+func (pubKey *CommitteePublicKey) FromBase58(keyString string) error {
+	keyBytes, ver, err := base58.Base58Check{}.Decode(keyString)
+	if (ver != common.ZeroByte) || (err != nil) {
+		return errors.New("Wrong input")
+	}
+	return json.Unmarshal(keyBytes, pubKey)
 }

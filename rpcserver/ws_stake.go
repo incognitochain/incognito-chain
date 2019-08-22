@@ -2,11 +2,13 @@ package rpcserver
 
 import (
 	"errors"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"reflect"
 )
 
 func (wsServer *WsServer) handleSubcribeShardCandidateByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -23,9 +25,9 @@ func (wsServer *WsServer) handleSubcribeShardCandidateByPublickey(params interfa
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get candidate from beacon beststate
-	candidates:= wsServer.config.BlockChain.BestState.Beacon.GetShardCandidate()
+	candidates := incognitokey.CommitteeKeyListToString(wsServer.config.BlockChain.BestState.Beacon.GetShardCandidate())
 	if common.IndexOfStr(candidate, candidates) > -1 {
-		cResult <- RpcSubResult{Result:true, Error: nil}
+		cResult <- RpcSubResult{Result: true, Error: nil}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
@@ -49,9 +51,9 @@ func (wsServer *WsServer) handleSubcribeShardCandidateByPublickey(params interfa
 					continue
 				}
 				// try to get candidate from beacon beststate
-				candidates:= wsServer.config.BlockChain.BestState.Beacon.GetShardCandidate()
+				candidates := incognitokey.CommitteeKeyListToString(wsServer.config.BlockChain.BestState.Beacon.GetShardCandidate())
 				if common.IndexOfStr(candidate, candidates) > -1 {
-					cResult <- RpcSubResult{Result:true, Error: nil}
+					cResult <- RpcSubResult{Result: true, Error: nil}
 					return
 				} else {
 					continue
@@ -80,7 +82,10 @@ func (wsServer *WsServer) handleSubcribeShardPendingValidatorByPublickey(params 
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get validator from beacon beststate
-	allValidators:= wsServer.config.BlockChain.BestState.Beacon.GetShardPendingValidator()
+	allValidators := make(map[byte][]string)
+	for shardID, committee := range wsServer.config.BlockChain.BestState.Beacon.GetShardPendingValidator() {
+		allValidators[shardID] = incognitokey.CommitteeKeyListToString(committee)
+	}
 	for _, shardValidators := range allValidators {
 		if common.IndexOfStr(validator, shardValidators) > -1 {
 			cResult <- RpcSubResult{Result: true, Error: nil}
@@ -108,7 +113,10 @@ func (wsServer *WsServer) handleSubcribeShardPendingValidatorByPublickey(params 
 					continue
 				}
 				// try to get validator from beacon beststate
-				allValidators:= wsServer.config.BlockChain.BestState.Beacon.GetShardPendingValidator()
+				allValidators := make(map[byte][]string)
+				for shardID, committee := range wsServer.config.BlockChain.BestState.Beacon.GetShardPendingValidator() {
+					allValidators[shardID] = incognitokey.CommitteeKeyListToString(committee)
+				}
 				for _, shardValidators := range allValidators {
 					if common.IndexOfStr(validator, shardValidators) > -1 {
 						cResult <- RpcSubResult{Result: true, Error: nil}
@@ -139,7 +147,10 @@ func (wsServer *WsServer) handleSubcribeShardCommitteeByPublickey(params interfa
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get committee from beacon beststate
-	allCommittees:= wsServer.config.BlockChain.BestState.Beacon.GetShardCommittee()
+	allCommittees := make(map[byte][]string)
+	for shardID, committee := range wsServer.config.BlockChain.BestState.Beacon.GetShardCommittee() {
+		allCommittees[shardID] = incognitokey.CommitteeKeyListToString(committee)
+	}
 	for _, shardCommittees := range allCommittees {
 		if common.IndexOfStr(committee, shardCommittees) > -1 {
 			cResult <- RpcSubResult{Result: true, Error: nil}
@@ -167,7 +178,10 @@ func (wsServer *WsServer) handleSubcribeShardCommitteeByPublickey(params interfa
 					continue
 				}
 				// try to get committee from beacon beststate
-				allCommittees:= wsServer.config.BlockChain.BestState.Beacon.GetShardCommittee()
+				allCommittees := make(map[byte][]string)
+				for shardID, committee := range wsServer.config.BlockChain.BestState.Beacon.GetShardCommittee() {
+					allCommittees[shardID] = incognitokey.CommitteeKeyListToString(committee)
+				}
 				for _, shardCommittees := range allCommittees {
 					if common.IndexOfStr(committee, shardCommittees) > -1 {
 						cResult <- RpcSubResult{Result: true, Error: nil}
@@ -198,9 +212,9 @@ func (wsServer *WsServer) handleSubcribeBeaconCandidateByPublickey(params interf
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get candidate from beacon beststate
-	candidates:= wsServer.config.BlockChain.BestState.Beacon.GetBeaconCandidate()
+	candidates := incognitokey.CommitteeKeyListToString(wsServer.config.BlockChain.BestState.Beacon.GetBeaconCandidate())
 	if common.IndexOfStr(candidate, candidates) > -1 {
-		cResult <- RpcSubResult{Result:true, Error: nil}
+		cResult <- RpcSubResult{Result: true, Error: nil}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
@@ -224,9 +238,9 @@ func (wsServer *WsServer) handleSubcribeBeaconCandidateByPublickey(params interf
 					continue
 				}
 				// try to get candidate from beacon beststate
-				candidates:= wsServer.config.BlockChain.BestState.Beacon.GetBeaconCandidate()
+				candidates := incognitokey.CommitteeKeyListToString(wsServer.config.BlockChain.BestState.Beacon.GetBeaconCandidate())
 				if common.IndexOfStr(candidate, candidates) > -1 {
-					cResult <- RpcSubResult{Result:true, Error: nil}
+					cResult <- RpcSubResult{Result: true, Error: nil}
 					return
 				}
 			}
@@ -253,9 +267,9 @@ func (wsServer *WsServer) handleSubcribeBeaconPendingValidatorByPublickey(params
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get validator from beacon beststate
-	validators:= wsServer.config.BlockChain.BestState.Beacon.GetBeaconPendingValidator()
+	validators := incognitokey.CommitteeKeyListToString(wsServer.config.BlockChain.BestState.Beacon.GetBeaconPendingValidator())
 	if common.IndexOfStr(validator, validators) > -1 {
-		cResult <- RpcSubResult{Result:true, Error: nil}
+		cResult <- RpcSubResult{Result: true, Error: nil}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
@@ -279,9 +293,9 @@ func (wsServer *WsServer) handleSubcribeBeaconPendingValidatorByPublickey(params
 					continue
 				}
 				// try to get validator from beacon beststate
-				validators:= wsServer.config.BlockChain.BestState.Beacon.GetBeaconPendingValidator()
+				validators := incognitokey.CommitteeKeyListToString(wsServer.config.BlockChain.BestState.Beacon.GetBeaconPendingValidator())
 				if common.IndexOfStr(validator, validators) > -1 {
-					cResult <- RpcSubResult{Result:true, Error: nil}
+					cResult <- RpcSubResult{Result: true, Error: nil}
 					return
 				}
 			}
@@ -293,7 +307,6 @@ func (wsServer *WsServer) handleSubcribeBeaconPendingValidatorByPublickey(params
 		}
 	}
 }
-
 
 func (wsServer *WsServer) handleSubcribeBeaconCommitteeByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
 	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
@@ -309,9 +322,9 @@ func (wsServer *WsServer) handleSubcribeBeaconCommitteeByPublickey(params interf
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get candidate from beacon beststate
-	committees:= wsServer.config.BlockChain.BestState.Beacon.GetBeaconCommittee()
+	committees := incognitokey.CommitteeKeyListToString(wsServer.config.BlockChain.BestState.Beacon.GetBeaconCommittee())
 	if common.IndexOfStr(committee, committees) > -1 {
-		cResult <- RpcSubResult{Result:true, Error: nil}
+		cResult <- RpcSubResult{Result: true, Error: nil}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
@@ -335,9 +348,9 @@ func (wsServer *WsServer) handleSubcribeBeaconCommitteeByPublickey(params interf
 					continue
 				}
 				// try to get committee from beacon beststate
-				committees:= wsServer.config.BlockChain.BestState.Beacon.GetBeaconCommittee()
+				committees := incognitokey.CommitteeKeyListToString(wsServer.config.BlockChain.BestState.Beacon.GetBeaconCommittee())
 				if common.IndexOfStr(committee, committees) > -1 {
-					cResult <- RpcSubResult{Result:true, Error: nil}
+					cResult <- RpcSubResult{Result: true, Error: nil}
 					return
 				}
 			}
