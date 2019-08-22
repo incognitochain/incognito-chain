@@ -3,7 +3,6 @@ package blsbft
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -126,7 +125,6 @@ func (e *BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(block.GetHeight(), block.Hash(), producerBase58, valData)
 	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, 0, []blsmultisig.PublicKey{producerBytes}); err != nil {
 		return err
 	}

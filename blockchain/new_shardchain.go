@@ -25,7 +25,8 @@ func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 }
 
 func (chain *ShardChain) GetMinBlkInterval() time.Duration {
-	return chain.BestState.BlockInterval
+	// return chain.BestState.BlockInterval
+	return common.MinShardBlkInterval
 }
 
 func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
@@ -33,7 +34,7 @@ func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
 }
 
 func (chain *ShardChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(false, 0)
+	return chain.Blockchain.Synker.IsLatest(true, chain.BestState.ShardID)
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
@@ -65,12 +66,14 @@ func (chain *ShardChain) CreateNewBlock(round int) common.BlockInterface {
 	start := time.Now()
 	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), chain.Blockchain.GetBeaconHeight(), start)
 	if err != nil {
+		Logger.log.Info(err)
 		return nil
 	}
 	return newBlock
 }
 
 func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
+	//@Bahamoot review later
 	var shardBestState ShardBestState
 	shardBlock := block.(*ShardBlock)
 	chain.BestState.cloneShardBestState(&shardBestState)

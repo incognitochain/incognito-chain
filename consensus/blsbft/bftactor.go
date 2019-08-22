@@ -95,6 +95,7 @@ func (e *BLSBFT) Start() {
 
 				if block.GetHeight() >= e.RoundData.NextHeight {
 					if e.RoundData.NextHeight == block.GetHeight() && e.RoundData.Round > block.GetRound() {
+						e.logger.Error("wrong round")
 						continue
 					}
 					if e.RoundData.Round == block.GetRound() && e.RoundData.Block != nil {
@@ -104,11 +105,20 @@ func (e *BLSBFT) Start() {
 					e.Blocks[blockRoundKey] = block
 				}
 			case voteMsg := <-e.VoteMessageCh:
+				e.logger.Error("vote received...")
 				if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 					//validate single sig
 					if true && e.RoundData.Block != nil {
 						e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
+						e.logger.Error("vote added...")
+					} else {
+						if _, ok := e.EarlyVotes[voteMsg.RoundKey]; !ok {
+							e.EarlyVotes[voteMsg.RoundKey] = make(map[string]vote)
+						}
+						e.EarlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
 					}
+				} else {
+					e.logger.Error("wrong roundkey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), voteMsg.RoundKey)
 				}
 			case <-ticker:
 				pubKey := e.UserKeySet.GetPublicKey()
@@ -119,6 +129,7 @@ func (e *BLSBFT) Start() {
 
 				if !e.Chain.IsReady() {
 					e.isOngoing = false
+					// e.logger.Info("chain is not ready")
 					continue
 				}
 
@@ -129,7 +140,7 @@ func (e *BLSBFT) Start() {
 				switch e.RoundData.State {
 				case LISTEN:
 					// timeout or vote nil?
-					roundKey := fmt.Sprint(e.RoundData.NextHeight, "_", e.RoundData.Round)
+					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
 						if err := e.validatePreSignBlock(e.Blocks[roundKey], e.Chain.GetCommittee()); err != nil {
 							e.logger.Error(err)
@@ -156,7 +167,6 @@ func (e *BLSBFT) Start() {
 						}
 					}
 					if e.RoundData.Block != nil && e.isHasMajorityVotes() {
-
 						keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.Chain.GetCommittee(), CONSENSUSNAME)
 						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, keyList)
 						if err != nil {

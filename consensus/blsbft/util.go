@@ -15,9 +15,6 @@ func (e *BLSBFT) waitForNextRound() {
 		return
 	}
 	//TODO: chunk time sleep into small time chunk -> if change view during sleep => break it
-
-	fmt.Println("dfsdfsdf")
-
 	time.Sleep(e.Chain.GetMinBlkInterval() - timeSinceLastBlk)
 }
 
@@ -26,7 +23,11 @@ func (e *BLSBFT) setState(state string) {
 }
 
 func (e *BLSBFT) getCurrentRound() int {
-	return int(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
+	round := int(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
+	if round == 0 {
+		return 1
+	}
+	return round
 }
 
 func (e *BLSBFT) isInTimeFrame() bool {
@@ -40,6 +41,13 @@ func (e *BLSBFT) isInTimeFrame() bool {
 }
 
 func (e *BLSBFT) isHasMajorityVotes() bool {
+	earlyVote, ok := e.EarlyVotes[getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)]
+	if ok {
+		for validator, vote := range earlyVote {
+			e.RoundData.Votes[validator] = vote
+		}
+		delete(e.EarlyVotes, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+	}
 	size := e.Chain.GetCommitteeSize()
 	if len(e.RoundData.Votes) >= 2*size/3 {
 		return true
