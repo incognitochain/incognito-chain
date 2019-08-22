@@ -13,7 +13,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	bls "github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -1336,7 +1335,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	//var err error
-	if len(paramsArray) != 7 {
+	if len(paramsArray) != 8 {
 		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
 	}
 	stakingType, ok := paramsArray[4].(float64)
@@ -1363,11 +1362,31 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
 	}
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
-	blsPKBytes := bls.IncSK2BLSPKBytes(senderKey.KeySet.PrivateKey)
+
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return nil, nil
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+	privateSeed := paramsArray[7].(string)
+	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
+	if (err != nil) || (ver != common.ZeroByte) {
+		return nil, NewRPCError(ErrUnexpected, errors.New("Decode privateseed failed!"))
+	}
+
+	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, err)
+	}
+
+	committeePKBytes, err := committeePK.Bytes()
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, err)
+	}
 
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), candidatePaymentAddress, httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(blsPKBytes, common.ZeroByte), isRewardFunder)
+	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), candidatePaymentAddress, httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), isRewardFunder)
 	// metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(blsPKBytes, common.ZeroByte))
 
 	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
