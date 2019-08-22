@@ -459,7 +459,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 					if err != nil {
 						return NewBlockChainError(FetchShardCommitteeError, err)
 					}
-					shardCommittee := make(map[byte][]incognitokey.CommitteePubKey)
+					shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 					err = json.Unmarshal(temp, &shardCommittee)
 					if err != nil {
 						return NewBlockChainError(UnmashallJsonShardCommitteesError, err)

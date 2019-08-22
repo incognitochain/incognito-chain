@@ -448,7 +448,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			if err != nil {
 				break
 			}
-			shardCommittee := make(map[byte][]incognitokey.CommitteePubKey)
+			shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 			err = json.Unmarshal(temp, &shardCommittee)
 			if err != nil {
 				break
