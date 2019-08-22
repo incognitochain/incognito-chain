@@ -2,7 +2,7 @@
 
 run()
 {
-  private_key=112t8rqJHgJp2TPpNpLNx34aWHB5VH5Pys3hVjjhhf9tctVeCNmX2zQLBqzHau6LpUbSV52kXtG2hRZsuYWkXWF5kw2v24RJq791fWmQxVqy
+  private_key=xxx
   latest_tag=$1
   current_tag=$2
   data_dir="data"
