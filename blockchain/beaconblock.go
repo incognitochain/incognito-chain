@@ -23,12 +23,12 @@ func NewBeaconBlock() *BeaconBlock {
 	return &BeaconBlock{}
 }
 
-func (beaconBlock *BeaconBlock) Hash() *common.Hash {
+func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	hash := beaconBlock.Header.Hash()
 	return &hash
 }
 
-func (beaconBlock *BeaconBlock) GetHeight() uint64 {
+func (beaconBlock BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
 
@@ -61,7 +61,7 @@ func (beaconBlock *BeaconBlock) AddValidationField(validateData string) error {
 	beaconBlock.ValidationData = validateData
 	return nil
 }
-func (beaconBlock *BeaconBlock) GetValidationField() string {
+func (beaconBlock BeaconBlock) GetValidationField() string {
 	return beaconBlock.ValidationData
 }
 
@@ -74,4 +74,8 @@ func (beaconBlock BeaconBlock) GetRoundKey() string {
 
 func (beaconBlock BeaconBlock) GetInstructions() [][]string {
 	return beaconBlock.Body.Instructions
+}
+
+func (beaconBlock BeaconBlock) GetProducer() string {
+	return beaconBlock.Header.Producer
 }

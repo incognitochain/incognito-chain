@@ -34,7 +34,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 	// block.GetValidationField()
 	producerPk := block.Header.Producer
 	producerPosition := (shardBestState.ShardProposerIdx + block.Header.Round) % len(shardBestState.ShardCommittee)
-	tempProducer := shardBestState.ShardCommittee[producerPosition]
+	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
@@ -646,7 +646,7 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	// }
 	//verify producer
 	producerPosition := (beaconBestState.BeaconProposerIndex + block.Header.Round) % len(beaconBestState.BeaconCommittee)
-	tempProducer := beaconBestState.BeaconCommittee[producerPosition]
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
