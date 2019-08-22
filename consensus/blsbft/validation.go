@@ -46,16 +46,21 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 	return string(result), nil
 }
 
-func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
+func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	e.logger.Info("verifying block...")
 	if err := e.ValidateProducerSig(block); err != nil {
+		panic(err)
 		return err
 	}
+	e.logger.Info("ValidateProducerSig...")
 	if err := e.ValidateProducerPosition(block); err != nil {
 		return err
 	}
+	e.logger.Info("ValidateProducerPosition...")
 	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
 		return err
 	}
+	e.logger.Info("done verify block...")
 	return nil
 }
 
@@ -115,18 +120,19 @@ func (e *BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 		return err
 	}
 
-	committeeBLSKeys := []blsmultisig.PublicKey{}
-	for _, member := range e.Chain.GetCommittee() {
-		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
+	producerBase58 := block.GetProducer()
+	producerBytes, _, err := base58.Base58Check{}.Decode(producerBase58)
+	if err != nil {
+		return err
 	}
 
-	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, e.Chain.GetPubKeyCommitteeIndex(block.GetProducer()), committeeBLSKeys); err != nil {
+	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, 0, []blsmultisig.PublicKey{producerBytes}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
+func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
@@ -141,18 +147,17 @@ func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []i
 	return nil
 }
 
-func (e *BLSBFT) CreateValidationData(blockHash *common.Hash) ValidationData {
+func (e *BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData {
 	var valData ValidationData
 	selfPublicKey := e.UserKeySet.GetPublicKey()
-	selfIdx := e.Chain.GetPubKeyCommitteeIndex(selfPublicKey.GetMiningKeyBase58(CONSENSUSNAME))
-	committeeKeys := []blsmultisig.PublicKey{}
-	for _, key := range e.Chain.GetCommittee() {
-		keyByte, _ := key.GetMiningKey(CONSENSUSNAME)
-		committeeKeys = append(committeeKeys, keyByte)
-	}
-
-	e.UserKeySet.BLSSignData(blockHash.GetBytes(), selfIdx, committeeKeys)
-
+	// selfIdx := e.Chain.GetPubKeyCommitteeIndex(selfPublicKey.GetMiningKeyBase58(CONSENSUSNAME))
+	// committeeKeys := []blsmultisig.PublicKey{}
+	// for _, key := range e.Chain.GetCommittee() {
+	// 	keyByte, _ := key.GetMiningKey(CONSENSUSNAME)
+	// 	committeeKeys = append(committeeKeys, keyByte)
+	// }
+	keyByte, _ := selfPublicKey.GetMiningKey(CONSENSUSNAME)
+	valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
 	return valData
 }
 

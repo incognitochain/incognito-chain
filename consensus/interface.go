@@ -13,6 +13,7 @@ type NodeInterface interface {
 	PushMessageToShard(wire.Message, byte, map[libp2p.ID]bool) error
 	PushMessageToBeacon(wire.Message, map[libp2p.ID]bool) error
 	PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error
+	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	IsEnableMining() bool
 	GetMiningKeys() string
 }
@@ -31,10 +32,10 @@ type ConsensusInterface interface {
 
 	// ValidateProducerPosition(block common.BlockInterface) error
 	ValidateProducerSig(block common.BlockInterface) error
-	ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error
+	ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 
 	LoadUserKey(string) error
-	GetUserPublicKey() *incognitokey.CommitteePubKey
+	GetUserPublicKey() *incognitokey.CommitteePublicKey
 	// GetUserPrivateKey() string
 	ValidateData(data []byte, sig string, publicKey string) error
 	SignData(data []byte) (string, error)
@@ -69,7 +70,7 @@ type ConsensusInterface interface {
 
 type BeaconInterface interface {
 	blockchain.ChainInterface
-	GetAllCommittees() map[string]map[string][]incognitokey.CommitteePubKey
+	GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey
 }
 
 // type MultisigSchemeInterface interface {
