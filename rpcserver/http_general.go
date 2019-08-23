@@ -3,8 +3,6 @@ package rpcserver
 import (
 	"fmt"
 	"log"
-	"net"
-	"os"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -166,53 +164,10 @@ func (httpServer *HttpServer) handleGetNodeRole(params interface{}, closeChan <-
 }
 
 func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	result := jsonresult.GetNetworkInfoResult{}
-
-	result.Commit = os.Getenv("commit")
-	result.Version = RpcServerVersion
-	result.SubVersion = ""
-	result.ProtocolVersion = httpServer.config.ProtocolVersion
-	result.NetworkActive = httpServer.config.ConnMgr.GetListeningPeer() != nil
-	result.LocalAddresses = []string{}
-	listener := httpServer.config.ConnMgr.GetListeningPeer()
-	result.Connections = len(listener.GetPeerConns())
-	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
-
-	ifaces, err := net.Interfaces()
+	result, err := jsonresult.NewGetNetworkInfoResult(httpServer.config)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
-	networks := []map[string]interface{}{}
-	for _, i := range ifaces {
-		addrs, err := i.Addrs()
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-		for _, addr := range addrs {
-			network := map[string]interface{}{}
-
-			network["name"] = "ipv4"
-			network["limited"] = false
-			network["reachable"] = true
-			network["proxy"] = ""
-			network["proxy_randomize_credentials"] = false
-
-			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-				if ipnet.IP.To16() != nil {
-					network["name"] = "ipv6"
-				}
-			}
-
-			networks = append(networks, network)
-		}
-	}
-	result.Networks = networks
-	if httpServer.config.Wallet != nil && httpServer.config.Wallet.GetConfig() != nil {
-		result.IncrementalFee = httpServer.config.Wallet.GetConfig().IncrementalFee
-	}
-	result.Warnings = ""
-
 	return result, nil
 }
 
