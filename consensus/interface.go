@@ -74,12 +74,3 @@ type BeaconInterface interface {
 	blockchain.ChainInterface
 	GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey
 }
-
-// type MultisigSchemeInterface interface {
-// 	LoadUserKey(string) error
-// 	GetUserPublicKey() string
-// 	GetUserPrivateKey() string
-// 	SignData(data []byte) (string, error)
-// 	ValidateAggSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error
-// 	ValidateSingleSig(dataHash *common.Hash, sig string, pubkey string) error
-// }
