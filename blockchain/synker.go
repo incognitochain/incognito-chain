@@ -286,6 +286,7 @@ func (synker *Synker) UpdateState() {
 	}
 	synker.States.ClosestState.ShardToBeaconPool = synker.blockchain.config.ShardToBeaconPool.GetLatestValidPendingBlockHeight()
 	synker.States.ClosestState.CrossShardPool = synker.blockchain.config.CrossShardPool[userShardID].GetLatestValidBlockHeight()
+
 	RCS := reportedChainState{
 		ClosestBeaconState: ChainState{
 			Height: beaconStateClone.BeaconHeight,
@@ -535,6 +536,25 @@ func (synker *Synker) UpdateState() {
 
 	synker.blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, beaconCommittee, shardCommittee)
 
+	if userLayer == common.SHARD_ROLE {
+		for shardID, shard := range synker.blockchain.BestState.Beacon.LastCrossShardState {
+			height, ok := shard[userShardID]
+			if !ok {
+				continue
+			}
+			if height > synker.blockchain.BestState.Shard[userShardID].BestCrossShard[shardID] {
+				for peerID := range synker.States.PeersState {
+					if shardState, ok := synker.States.PeersState[peerID].Shard[shardID]; ok {
+						if shardState.Height >= height {
+							synker.SyncBlkCrossShard(false, false, nil, []uint64{height}, shardID, userShardID, peerID)
+							break
+						}
+					}
+				}
+			}
+		}
+
+	}
 	synker.States.PeersState = make(map[libp2p.ID]*peerState)
 	synker.Status.Unlock()
 	synker.States.Unlock()
