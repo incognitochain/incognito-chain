@@ -1,8 +1,9 @@
 package jsonresult
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/mempool"
 )
 
 type GetMiningInfoResult struct {
@@ -17,19 +18,19 @@ type GetMiningInfoResult struct {
 	IsEnableMining      bool   `json:"IsEnableMining"`
 }
 
-func NewGetMiningInfoResult(config rpcserver.RpcServerConfig) *GetMiningInfoResult {
+func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, miningPubKeyB58 string, param blockchain.Params) *GetMiningInfoResult {
 	result := &GetMiningInfoResult{}
 	result.IsCommittee = true
-	result.PoolSize = config.TxMemPool.Count()
-	result.Chain = config.ChainParams.Name
-	result.IsEnableMining = config.Server.IsEnableMining()
-	result.BeaconHeight = config.BlockChain.BestState.Beacon.BeaconHeight
+	result.PoolSize = txMemPool.Count()
+	result.Chain = param.Name
+	//result.IsEnableMining = config.Server.IsEnableMining()
+	result.BeaconHeight = blChain.BestState.Beacon.BeaconHeight
 
-	role, shardID := config.BlockChain.BestState.Beacon.GetPubkeyRole(config.MiningPubKeyB58, 0)
+	role, shardID := blChain.BestState.Beacon.GetPubkeyRole(miningPubKeyB58, 0)
 	result.Role = role
 	if role == common.SHARD_ROLE {
-		result.ShardHeight = config.BlockChain.BestState.Shard[shardID].ShardHeight
-		result.CurrentShardBlockTx = len(config.BlockChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
+		result.ShardHeight = blChain.BestState.Shard[shardID].ShardHeight
+		result.CurrentShardBlockTx = len(blChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
 		result.ShardID = int(shardID)
 	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
 		result.ShardID = -1

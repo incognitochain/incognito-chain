@@ -12,7 +12,7 @@ import (
 /*
 handleGetShardToBeaconPoolState - RPC get shard to beacon pool state
 */
-func (httpServer *HttpServer) handleGetShardToBeaconPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+/*func (httpServer *HttpServer) handleGetShardToBeaconPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetShardToBeaconPoolState params: %+v", params)
 	shardToBeaconPool := mempool.GetShardToBeaconPool()
 	if shardToBeaconPool == nil {
@@ -22,12 +22,12 @@ func (httpServer *HttpServer) handleGetShardToBeaconPoolState(params interface{}
 	result := shardToBeaconPool.GetAllBlockHeight()
 	Logger.log.Debugf("handleGetShardToBeaconPoolState result: %+v", result)
 	return result, nil
-}
+}*/
 
 /*
 handleGetCrossShardPoolState - RPC get cross shard pool state
 */
-func (httpServer *HttpServer) handleGetCrossShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+/*func (httpServer *HttpServer) handleGetCrossShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetCrossShardPoolState params: %+v", params)
 	// get component
 	paramsArray := common.InterfaceSlice(params)
@@ -45,7 +45,7 @@ func (httpServer *HttpServer) handleGetCrossShardPoolState(params interface{}, c
 	result := mempool.GetCrossShardPool(shardID).GetAllBlockHeight()
 	Logger.log.Debugf("handleGetCrossShardPoolState result: %+v", result)
 	return result, nil
-}
+}*/
 
 func (httpServer *HttpServer) handleGetNextCrossShard(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetNextCrossShard params: %+v", params)

@@ -48,7 +48,7 @@ handleGetAllConnectedPeers - return all connnected peers which this node connect
 */
 func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetAllConnectedPeers params: %+v", params)
-	result := jsonresult.NewGetAllConnectedPeersResult(httpServer.config)
+	result := jsonresult.NewGetAllConnectedPeersResult(*httpServer.config.ConnMgr)
 	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
@@ -58,7 +58,7 @@ handleGetAllPeers - return all peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetAllPeers params: %+v", params)
-	result := jsonresult.NewGetAllPeersResult(httpServer.config)
+	result := jsonresult.NewGetAllPeersResult(*httpServer.config.AddrMgr)
 	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
@@ -68,7 +68,7 @@ func (httpServer *HttpServer) handleGetNodeRole(params interface{}, closeChan <-
 }
 
 func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	result, err := jsonresult.NewGetNetworkInfoResult(httpServer.config)
+	result, err := jsonresult.NewGetNetworkInfoResult(httpServer.config.ProtocolVersion, *httpServer.config.ConnMgr, httpServer.config.Wallet)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -240,7 +240,7 @@ Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
-	result := jsonresult.NewGetRawMempoolResult(httpServer.config)
+	result := jsonresult.NewGetRawMempoolResult(*httpServer.config.TxMemPool)
 	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
 	return result, nil
 }
@@ -267,7 +267,7 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	result, err := jsonresult.NewGetMempoolEntryResult(httpServer.config, txID)
+	result, err := jsonresult.NewGetMempoolEntryResult(*httpServer.config.TxMemPool, txID)
 	if err != nil {
 		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
