@@ -2,6 +2,8 @@ package jsonresult
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/connmanager"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"net"
 	"os"
 
@@ -21,16 +23,16 @@ type GetNetworkInfoResult struct {
 	Warnings        string                   `json:"Warnings"`
 }
 
-func NewGetNetworkInfoResult(config rpcserver.RpcServerConfig) (*GetNetworkInfoResult, error) {
+func NewGetNetworkInfoResult(protocolVerion string, connMgr connmanager.ConnManager, wallet *wallet.Wallet) (*GetNetworkInfoResult, error) {
 	result := &GetNetworkInfoResult{
 		Commit:          os.Getenv("commit"),
-		ProtocolVersion: config.ProtocolVersion,
+		ProtocolVersion: protocolVerion,
 		Version:         rpcserver.RpcServerVersion,
 		SubVersion:      common.EmptyString,
-		NetworkActive:   config.ConnMgr.GetListeningPeer() != nil,
+		NetworkActive:   connMgr.GetListeningPeer() != nil,
 		LocalAddresses:  []string{},
 	}
-	listener := config.ConnMgr.GetListeningPeer()
+	listener := connMgr.GetListeningPeer()
 	result.Connections = len(listener.GetPeerConns())
 	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
 	ifaces, err := net.Interfaces()
@@ -60,8 +62,8 @@ func NewGetNetworkInfoResult(config rpcserver.RpcServerConfig) (*GetNetworkInfoR
 		}
 	}
 	result.Networks = networks
-	if config.Wallet != nil && config.Wallet.GetConfig() != nil {
-		result.IncrementalFee = config.Wallet.GetConfig().IncrementalFee
+	if wallet != nil && wallet.GetConfig() != nil {
+		result.IncrementalFee = wallet.GetConfig().IncrementalFee
 	}
 	result.Warnings = common.EmptyString
 	return result, nil

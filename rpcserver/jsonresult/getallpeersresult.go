@@ -2,19 +2,20 @@ package jsonresult
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/connmanager"
 )
 
 type GetAllPeersResult struct {
 	Peers []string `json:"Peers"`
 }
 
-func NewGetAllPeersResult(config rpcserver.RpcServerConfig) *GetAllPeersResult {
+func NewGetAllPeersResult(addrMgr addrmanager.AddrManager) *GetAllPeersResult {
 	result := &GetAllPeersResult{}
 	peersMap := []string{}
-	peers := config.AddrMgr.AddressCache()
+	peers := addrMgr.AddressCache()
 	for _, peer := range peers {
 		for _, peerConn := range peer.GetPeerConns() {
 			peersMap = append(peersMap, peerConn.GetRemoteRawAddress())
@@ -28,10 +29,10 @@ type GetAllConnectedPeersResult struct {
 	Peers []map[string]string `json:"Peers"`
 }
 
-func NewGetAllConnectedPeersResult(config rpcserver.RpcServerConfig) *GetAllConnectedPeersResult {
+func NewGetAllConnectedPeersResult(connMgr connmanager.ConnManager) *GetAllConnectedPeersResult {
 	result := &GetAllConnectedPeersResult{}
 	peersMap := []map[string]string{}
-	listeningPeer := config.ConnMgr.GetListeningPeer()
+	listeningPeer := connMgr.GetListeningPeer()
 	bestState := blockchain.GetBeaconBestState()
 	beaconCommitteeList := bestState.BeaconCommittee
 	shardCommitteeList := bestState.GetShardCommittee()
