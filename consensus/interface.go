@@ -16,6 +16,7 @@ type NodeInterface interface {
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	IsEnableMining() bool
 	GetMiningKeys() string
+	GetPrivateKey() string
 }
 
 type ConsensusInterface interface {
@@ -35,6 +36,7 @@ type ConsensusInterface interface {
 	ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 
 	LoadUserKey(string) error
+	LoadUserKeyFromIncPrivateKey(privateKey string) (string, error)
 	GetUserPublicKey() *incognitokey.CommitteePublicKey
 	// GetUserPrivateKey() string
 	ValidateData(data []byte, sig string, publicKey string) error
