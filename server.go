@@ -241,7 +241,12 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	// Init consensus engine
-	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
+	serverObj.consensusEngine = consensus.New(&consensus.EngineConfig{
+		Blockchain:    serverObj.blockChain,
+		Node:          serverObj,
+		BlockGen:      serverObj.blockgen,
+		PubSubManager: serverObj.pusubManager,
+	})
 
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,

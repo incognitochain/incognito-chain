@@ -68,7 +68,7 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
-	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
+	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), false)
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
