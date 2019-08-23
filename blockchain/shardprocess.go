@@ -650,7 +650,7 @@ func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock
 					}
 				}
 			}
-			if l[0] == "assign" && l[2] == "shard" {
+			if l[0] == AssignAction && l[2] == "shard" {
 				if l[3] == strconv.Itoa(int(shardBlock.Header.ShardID)) {
 					Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", shardBlock.Header.ShardID, shardBestState.ShardPendingValidator)
 					shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, incognitokey.CommitteeBase58KeyListToStruct(strings.Split(l[1], ","))...)
@@ -671,7 +671,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 	}
 	// Swap committee
 	for _, l := range shardBlock.Body.Instructions {
-		if l[0] == "swap" {
+		if l[0] == SwapAction {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, common.OFFSET)
 			if err != nil {
