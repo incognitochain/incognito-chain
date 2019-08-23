@@ -717,11 +717,11 @@ func (synker *Synker) SetChainState(shard bool, shardID byte, ready bool) {
 		// }
 	} else {
 		synker.Status.IsLatest.Beacon = ready
-		if ready {
-			fmt.Println("Beacon is ready")
-		} else {
-			fmt.Println("Beacon is not ready")
-		}
+		// if ready {
+		// 	fmt.Println("Beacon is ready")
+		// } else {
+		// 	fmt.Println("Beacon is not ready")
+		// }
 	}
 }
 

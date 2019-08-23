@@ -68,3 +68,21 @@ func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, comm
 	}
 	return AvailableConsensus[consensusType].ValidateCommitteeSig(block, committee)
 }
+
+func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, error) {
+	var keyList string
+	for consensusType, consensus := range AvailableConsensus {
+		var key string
+		key = consensusType
+		consensusKey, err := consensus.LoadUserKeyFromIncPrivateKey(privateKey)
+		if err != nil {
+			return "", err
+		}
+		key += ":" + consensusKey
+		if len(keyList) > 0 {
+			key += "|"
+		}
+		keyList += key
+	}
+	return keyList, nil
+}
