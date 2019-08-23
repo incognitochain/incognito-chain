@@ -75,7 +75,7 @@ func (wsServer *WsServer) handleSubscribeBeaconPoolBestState(params interface{},
 			}
 		default:
 			{
-				result := Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
+				result := jsonresult.Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
 				cResult <- RpcSubResult{Result: result, Error: nil}
 				<-time.Tick(1 * time.Second)
 			}
@@ -111,7 +111,7 @@ func (wsServer *WsServer) handleSubscribeShardPoolBeststate(params interface{}, 
 			}
 		default:
 			{
-				result := Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
+				result := jsonresult.Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
 				cResult <- RpcSubResult{Result: result, Error: nil}
 				<-time.Tick(1 * time.Second)
 			}
