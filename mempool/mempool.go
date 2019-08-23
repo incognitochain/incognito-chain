@@ -794,11 +794,6 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 				if !ok {
 					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 				}
-				candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-				candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-				if err != nil || candidateWallet == nil {
-					return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
-				}
 				tp.addCandidateToList(*txHash, stakingMetadata.CommitteePublicKey)
 			}
 		default:
