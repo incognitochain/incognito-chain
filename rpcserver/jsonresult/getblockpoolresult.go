@@ -1,5 +1,18 @@
 package jsonresult
 
+import "github.com/incognitochain/incognito-chain/mempool"
+
+type Blocks struct {
+	Pending []uint64 `json:"Pending"`
+	Valid   []uint64 `json:"Valid"`
+	Latest  uint64   `json:"Latest"`
+}
+
+func NewBlocks(shardPool mempool.ShardPool) *Blocks {
+	temp := &Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
+	return temp
+}
+
 type BlockHeights struct {
 	ShardID         byte     `json:"ShardID"`
 	BlockHeightList []uint64 `json:"BlockHeightList"`
