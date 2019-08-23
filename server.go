@@ -1668,16 +1668,16 @@ func (serverObj *Server) BoardcastNodeState() error {
 			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 		}
 	}
-
-	// if serverObj.userKeySet != nil {
-	// 	userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyInBase58CheckEncode(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
-	// 	if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && userRole == common.NODEMODE_SHARD {
-	// 		userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyInBase58CheckEncode(), serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
-	// 		if userRole == "shard-proposer" || userRole == "shard-validator" {
-	// 			msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
-	// 		}
-	// 	}
-	// }
+	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+	if userKey != "" {
+		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
+		if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && userRole == common.NODEMODE_SHARD {
+			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
+			if userRole == "shard-proposer" || userRole == "shard-validator" {
+				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
+			}
+		}
+	}
 	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Boardcast peerstate from %s", listener.GetRawAddress())
 	serverObj.PushMessageToAll(msg)
@@ -1768,4 +1768,14 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.C
 		serverObj.PushMessageToShard(msg, byte(chainID), map[libp2p.ID]bool{})
 	}
 	return nil
+}
+
+func MakeMsgCrossShardBlock(block *blockchain.CrossShardBlock) (wire.Message, error) {
+	msg, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
+	if err != nil {
+		Logger.log.Error(err)
+		return msg, err
+	}
+	msg.(*wire.MessageCrossShard).Block = block
+	return msg, nil
 }
