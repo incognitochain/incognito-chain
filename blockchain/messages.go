@@ -54,10 +54,10 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		}
 	}
 	blockchain.Synker.Status.Lock()
-	for shardID := range blockchain.Synker.Status.Shards {
-		if shardState, ok := (*shard)[shardID]; ok {
-			if shardState.Height > GetBestStateShard(shardID).ShardHeight && (*shard)[shardID].Timestamp > GetBestStateShard(shardID).BestBlock.Header.Timestamp {
-				pState.Shard[shardID] = &shardState
+	for shardID := 0; shardID < blockchain.BestState.Beacon.ActiveShards; shardID++ {
+		if shardState, ok := (*shard)[byte(shardID)]; ok {
+			if shardState.Height > GetBestStateShard(byte(shardID)).ShardHeight && (*shard)[byte(shardID)].Timestamp > GetBestStateShard(byte(shardID)).BestBlock.Header.Timestamp {
+				pState.Shard[byte(shardID)] = &shardState
 			}
 		}
 	}
@@ -245,10 +245,10 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 }
 
 func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) {
+	Logger.log.Info("Received CrossShardBlock", block.Header.Height, block.Header.ShardID)
 	if blockchain.IsTest {
 		return
 	}
-	Logger.log.Info("Received CrossShardBlock", block.Header.Height, block.Header.ShardID)
 	if blockchain.config.NodeMode == common.NODEMODE_SHARD || blockchain.config.NodeMode == common.NODEMODE_AUTO {
 		publickey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 		shardRole := blockchain.BestState.Shard[block.ToShardID].GetPubkeyRole(publickey, 0)
@@ -258,18 +258,15 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 	} else {
 		return
 	}
-
-	if blockchain.Synker.IsLatest(true, block.ToShardID) {
-		expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
-		for fromShardID, height := range expectedHeight {
-			// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
-			blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, toShardID, "")
-		}
-		if err != nil {
-			if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
-				Logger.log.Error(err)
-				return
-			}
+	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
+	for fromShardID, height := range expectedHeight {
+		// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
+		blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, toShardID, "")
+	}
+	if err != nil {
+		if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {
+			Logger.log.Error(err)
+			return
 		}
 	}
 
