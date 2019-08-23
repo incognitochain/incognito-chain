@@ -1,11 +1,9 @@
 package rpcserver
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -106,37 +104,7 @@ handleGetAllConnectedPeers - return all connnected peers which this node connect
 */
 func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Infof("handleGetAllConnectedPeers params: %+v", params)
-	// result := jsonresult.GetAllPeersResult{}
-	var result struct {
-		Peers []map[string]string `json:"Peers"`
-	}
-	peersMap := []map[string]string{}
-	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
-
-	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList := bestState.BeaconCommittee
-	shardCommitteeList := bestState.GetShardCommittee()
-
-	for _, peerConn := range listeningPeer.GetPeerConns() {
-		peerItem := map[string]string{
-			"RawAddress": peerConn.GetRemoteRawAddress(),
-			"PublicKey":  peerConn.GetRemotePeer().GetPublicKey(),
-			"NodeType":   "",
-		}
-		isInBeaconCommittee := common.IndexOfStr(peerConn.GetRemotePeer().GetPublicKey(), beaconCommitteeList) != -1
-		if isInBeaconCommittee {
-			peerItem["NodeType"] = "Beacon"
-		}
-		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(peerConn.GetRemotePeer().GetPublicKey(), committees) != -1
-			if isInShardCommitee {
-				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
-				break
-			}
-		}
-		peersMap = append(peersMap, peerItem)
-	}
-	result.Peers = peersMap
+	result := jsonresult.NewGetAllConnectedPeersResult(httpServer.config)
 	Logger.log.Infof("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
@@ -146,15 +114,7 @@ handleGetAllPeers - return all peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetAllPeers params: %+v", params)
-	result := jsonresult.GetAllPeersResult{}
-	peersMap := []string{}
-	peers := httpServer.config.AddrMgr.AddressCache()
-	for _, peer := range peers {
-		for _, peerConn := range peer.GetPeerConns() {
-			peersMap = append(peersMap, peerConn.GetRemoteRawAddress())
-		}
-	}
-	result.Peers = peersMap
+	result := jsonresult.NewGetAllPeersResult(httpServer.config)
 	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
