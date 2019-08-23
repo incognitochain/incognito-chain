@@ -92,6 +92,7 @@ type Config struct {
 		ValidateProducerSig(block common.BlockInterface, consensusType string) error
 		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error
 		GetCurrentMiningPublicKey() (string, string)
+		IsOngoing(chainName string) bool
 		CommitteeChange(chainName string)
 	}
 }
