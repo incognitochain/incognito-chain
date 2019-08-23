@@ -419,9 +419,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	}
 	estimateFeeCoinPerKb := httpServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
 
-	result := jsonresult.EstimateFeeResult{
-		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
-	}
+	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0)
 	Logger.log.Debugf("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
 }
