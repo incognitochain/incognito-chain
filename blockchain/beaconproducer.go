@@ -305,6 +305,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	if newBeaconHeight%uint64(chainParamEpoch) == 0 {
 		swapBeaconInstructions := []string{}
 		_, currentValidators, swappedValidator, beaconNextCommittee, err := SwapValidator(incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator), incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee), beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
+		//TODO: handle error later
 		if err != nil {
 			panic("Swap beacon validator error " + err.Error())
 		}
