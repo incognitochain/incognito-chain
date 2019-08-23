@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -51,7 +52,7 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 	Logger.log.Info("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress, committeeShardID)
 	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 	if paymentShardID != committeeShardID {
-		return nil, NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", committeeShardID))
+		return nil, NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", paymentShardID, committeeShardID))
 	}
 	returnStakingMeta := metadata.NewReturnStaking(
 		tx,
@@ -148,25 +149,25 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalReward map[common.Hash]uint64, listCommitee []string) error {
+func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalReward map[common.Hash]uint64, listCommitee []incognitokey.CommitteePublicKey) error {
 	reward := map[common.Hash]uint64{}
 	for key, value := range totalReward {
 		reward[key] = value / uint64(len(listCommitee))
 	}
 	for key := range totalReward {
 		for i, committee := range listCommitee {
-			committeeBytes, _, err := DecodeCommitteeKey(committee)
+			committeeBytes := committee.GetNormalKey()
+			// if err != nil {
+			// 	for j := i - 1; j >= 0; j-- {
+			// 		committeeBytes, _, _ := DecodeCommitteeKey(listCommitee[j])
+			// 		_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward[key], key)
+			// 	}
+			// 	return err
+			// }
+			err := blockchain.config.DataBase.AddCommitteeReward(committeeBytes, reward[key], key)
 			if err != nil {
 				for j := i - 1; j >= 0; j-- {
-					committeeBytes, _, _ := DecodeCommitteeKey(listCommitee[j])
-					_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward[key], key)
-				}
-				return err
-			}
-			err = blockchain.config.DataBase.AddCommitteeReward(committeeBytes, reward[key], key)
-			if err != nil {
-				for j := i - 1; j >= 0; j-- {
-					committeeBytes, _, _ := DecodeCommitteeKey(listCommitee[j])
+					committeeBytes := listCommitee[j].GetNormalKey()
 					_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward[key], key)
 				}
 				return err
@@ -177,7 +178,7 @@ func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalRe
 }
 
 func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks []*BeaconBlock, shardID byte) error {
-	shardCommittee := make(map[byte][]string)
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	isInit := false
 	epoch := uint64(0)
 	db := blockchain.config.DataBase

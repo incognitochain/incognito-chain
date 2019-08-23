@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -482,7 +483,7 @@ func (synker *Synker) UpdateState() {
 	for peerID := range synker.States.PeersState {
 		if currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCS.ClosestBeaconState.Height {
 			//fmt.Println("SyncBlk1:", currentBcnReqHeight, RCS.ClosestBeaconState.Height)
-			synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCS.ClosestBeaconState.Height, peerID)
+			synker.SyncBlkBeacon(false, false, false, nil, nil, currentBcnReqHeight, RCS.ClosestBeaconState.Height+1, peerID)
 			break
 		} else {
 			//fmt.Println("SyncBlk2:", currentBcnReqHeight, currentBcnReqHeight+DefaultMaxBlkReqPerPeer-1)
@@ -506,7 +507,7 @@ func (synker *Synker) UpdateState() {
 				if shardState.Height >= currentShardReqHeight {
 					if currentShardReqHeight+DefaultMaxBlkReqPerPeer-1 >= RCS.ClosestShardsState[shardID].Height {
 						fmt.Println("SyncShard 1234 ", currentShardReqHeight, RCS.ClosestShardsState[shardID].Height)
-						synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height, peerID)
+						synker.SyncBlkShard(shardID, false, false, false, nil, nil, currentShardReqHeight, RCS.ClosestShardsState[shardID].Height+1, peerID)
 						break
 					} else {
 						fmt.Println("SyncShard 12345")
@@ -522,7 +523,14 @@ func (synker *Synker) UpdateState() {
 	case common.VALIDATOR_ROLE, common.PROPOSER_ROLE:
 		userLayer = common.BEACON_ROLE
 	}
-	synker.blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, beaconStateClone.BeaconCommittee, beaconStateClone.GetShardCommittee())
+
+	beaconCommittee, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconStateClone.BeaconCommittee, beaconStateClone.ConsensusAlgorithm)
+	shardCommittee := make(map[byte][]string)
+	for shardID, committee := range beaconStateClone.GetShardCommittee() {
+		shardCommittee[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
+	}
+
+	synker.blockchain.config.Server.UpdateConsensusState(userLayer, userPK, nil, beaconCommittee, shardCommittee)
 
 	synker.States.PeersState = make(map[libp2p.ID]*peerState)
 	synker.Status.Unlock()

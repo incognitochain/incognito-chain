@@ -21,7 +21,7 @@ type BFTPropose struct {
 type BFTVote struct {
 	RoundKey  string
 	Validator string
-	Sig       string
+	Vote      vote
 }
 
 func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wire.Message, error) {
@@ -38,11 +38,12 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wi
 	return msg, nil
 }
 
-func MakeBFTVoteMsg(userKey *MiningKey, chainKey, sig, roundKey string) (wire.Message, error) {
+func MakeBFTVoteMsg(userKey *MiningKey, chainKey, roundKey string, vote vote) (wire.Message, error) {
 	var voteCtn BFTVote
 	voteCtn.RoundKey = roundKey
-	voteCtn.Validator = userKey.GetPublicKeyBase58()
-	voteCtn.Sig = sig
+	key := userKey.GetPublicKey()
+	voteCtn.Validator = key.GetMiningKeyBase58(CONSENSUSNAME)
+	voteCtn.Vote = vote
 	voteCtnBytes, err := json.Marshal(voteCtn)
 	if err != nil {
 		return nil, err
@@ -78,17 +79,37 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	}
 }
 
-func (e *BLSBFT) sendVote() /*error*/ {
-	//TODO @0xBahamoot
-	selfIdx := 0
-	listCommittee := []blsmultisig.PublicKey{}
-	sig, _ := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, listCommittee)
-	bridgeSig := ""
-	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
-		bridgeSig, _ = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
+func (e *BLSBFT) sendVote() error {
+	var Vote vote
+
+	pubKey := e.UserKeySet.GetPublicKey()
+	selfIdx := e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME))
+
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range e.Chain.GetCommittee() {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
 	}
-	fmt.Println(bridgeSig)
-	MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, sig, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-	// go e.Node.PushMessageToChain(msg)
+
+	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, committeeBLSKeys)
+	if err != nil {
+		return err
+	}
+	bridgeSig := []byte{}
+	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
+		bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
+		if err != nil {
+			return err
+		}
+	}
+
+	Vote.BLS = blsSig
+	Vote.BRI = bridgeSig
+
+	msg, err := MakeBFTVoteMsg(e.UserKeySet, e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
+	if err != nil {
+		return err
+	}
+	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.RoundData.NotYetSendVote = false
+	return nil
 }
