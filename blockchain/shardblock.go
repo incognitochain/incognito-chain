@@ -99,7 +99,7 @@ func (shardToBeaconBlock *ShardToBeaconBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (shardBlock *ShardBlock) Hash() *common.Hash {
+func (shardBlock ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
 	return &hash
 }
@@ -242,6 +242,9 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
 	}
 	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
+
+		panic(string(data))
+
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.Body = blkBody
@@ -258,10 +261,6 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 	}
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, tx)
 	return nil
-}
-
-func (shardBlock *ShardBlock) GetHeight() uint64 {
-	return shardBlock.Header.Height
 }
 
 // func (shardBlock *ShardBlock) GetProducerPubKey() string {
@@ -401,12 +400,21 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 // 	return inst, err
 // }
 
-func (block *ShardBlock) AddValidationField(validateData string) error {
-	block.ValidationData = validateData
+func (block *ShardBlock) AddValidationField(validationData string) error {
+	block.ValidationData = validationData
 	return nil
 }
-func (block *ShardBlock) GetValidationField() string {
+
+func (block ShardBlock) GetProducer() string {
+	return block.Header.Producer
+}
+
+func (block ShardBlock) GetValidationField() string {
 	return block.ValidationData
+}
+
+func (block ShardBlock) GetHeight() uint64 {
+	return block.Header.Height
 }
 
 func (block ShardBlock) GetRound() int {
@@ -417,16 +425,19 @@ func (block ShardBlock) GetRoundKey() string {
 	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
 }
 
-func (block *CrossShardBlock) AddValidationField(validateData string) error {
-	block.ValidationData = validateData
-	return nil
+func (block ShardBlock) GetInstructions() [][]string {
+	return block.Body.Instructions
 }
 
-func (shardBlock *CrossShardBlock) GetHeight() uint64 {
-	return shardBlock.Header.Height
+func (block CrossShardBlock) GetProducer() string {
+	return block.Header.Producer
 }
 
-func (block *CrossShardBlock) GetValidationField() string {
+func (block CrossShardBlock) GetHeight() uint64 {
+	return block.Header.Height
+}
+
+func (block CrossShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
 
@@ -436,4 +447,31 @@ func (block CrossShardBlock) GetRound() int {
 
 func (block CrossShardBlock) GetRoundKey() string {
 	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
+}
+
+func (block CrossShardBlock) GetInstructions() [][]string {
+	return [][]string{}
+}
+
+func (block ShardToBeaconBlock) GetValidationField() string {
+	return block.ValidationData
+}
+
+func (block ShardToBeaconBlock) GetHeight() uint64 {
+	return block.Header.Height
+}
+
+func (block ShardToBeaconBlock) GetRound() int {
+	return block.Header.Round
+}
+
+func (block ShardToBeaconBlock) GetRoundKey() string {
+	return fmt.Sprint(block.Header.Height, "_", block.Header.Round)
+}
+func (block ShardToBeaconBlock) GetInstructions() [][]string {
+	return block.Instructions
+}
+
+func (block ShardToBeaconBlock) GetProducer() string {
+	return block.Header.Producer
 }
