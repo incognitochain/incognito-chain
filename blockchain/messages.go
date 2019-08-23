@@ -64,7 +64,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	blockchain.Synker.Status.Unlock()
 
 	blockchain.Synker.States.Lock()
-	blockchain.Synker.States.PeersState[pState.Peer] = pState
+	if blockchain.Synker.States.PeersState != nil {
+		blockchain.Synker.States.PeersState[pState.Peer] = pState
+	}
 	blockchain.Synker.States.Unlock()
 }
 
