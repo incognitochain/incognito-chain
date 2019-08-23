@@ -27,14 +27,14 @@ import (
 // shared by all callers.
 
 type BeaconBestState struct {
-	BestBlockHash                          common.Hash                             `json:"BestBlockHash"`         // The hash of the block.
-	PreviousBestBlockHash                  common.Hash                             `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock                              BeaconBlock                             `json:"BestBlock"`             // The block.
-	BestShardHash                          map[byte]common.Hash                    `json:"BestShardHash"`
-	BestShardHeight                        map[byte]uint64                         `json:"BestShardHeight"`
-	Epoch                                  uint64                                  `json:"Epoch"`
-	BeaconHeight                           uint64                                  `json:"BeaconHeight"`
-	BeaconProposerIndex                    int                                     `json:"BeaconProposerIndex"`
+	BestBlockHash                          common.Hash                                `json:"BestBlockHash"`         // The hash of the block.
+	PreviousBestBlockHash                  common.Hash                                `json:"PreviousBestBlockHash"` // The hash of the block.
+	BestBlock                              BeaconBlock                                `json:"BestBlock"`             // The block.
+	BestShardHash                          map[byte]common.Hash                       `json:"BestShardHash"`
+	BestShardHeight                        map[byte]uint64                            `json:"BestShardHeight"`
+	Epoch                                  uint64                                     `json:"Epoch"`
+	BeaconHeight                           uint64                                     `json:"BeaconHeight"`
+	BeaconProposerIndex                    int                                        `json:"BeaconProposerIndex"`
 	BeaconCommittee                        []incognitokey.CommitteePublicKey          `json:"BeaconCommittee"`
 	BeaconPendingValidator                 []incognitokey.CommitteePublicKey          `json:"BeaconPendingValidator"`
 	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch
@@ -43,17 +43,17 @@ type BeaconBestState struct {
 	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForNextRandom"`
 	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"ShardCommittee"`        // current committee and validator of all shard
 	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
-	CurrentRandomNumber                    int64                                   `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp                 int64                                   `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber                      bool                                    `json:"IsGetRandomNumber"`
-	Params                                 map[string]string                       `json:"Params,omitempty"` // TODO: review what does this field do
-	MaxBeaconCommitteeSize                 int                                     `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize                 int                                     `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize                  int                                     `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize                  int                                     `json:"MinShardCommitteeSize"`
-	ActiveShards                           int                                     `json:"ActiveShards"`
-	ConsensusAlgorithm                     string                                  `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm                map[byte]string                         `json:"ShardConsensusAlgorithm"`
+	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp                 int64                                      `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber                      bool                                       `json:"IsGetRandomNumber"`
+	Params                                 map[string]string                          `json:"Params,omitempty"` // TODO: review what does this field do
+	MaxBeaconCommitteeSize                 int                                        `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize                 int                                        `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize                  int                                        `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize                  int                                        `json:"MinShardCommitteeSize"`
+	ActiveShards                           int                                        `json:"ActiveShards"`
+	ConsensusAlgorithm                     string                                     `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm                map[byte]string                            `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
 	RewardReceiver map[string]string `json:"RewardReceiver"` // map candidate/committee -> reward receiver
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
@@ -63,9 +63,8 @@ type BeaconBestState struct {
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
 	lock                sync.RWMutex
 	randomClient        btc.RandomClient
-
-	BlockInterval      time.Duration
-	BlockMaxCreateTime time.Duration
+	BlockInterval       time.Duration
+	BlockMaxCreateTime  time.Duration
 }
 
 var beaconBestState *BeaconBestState
