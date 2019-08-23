@@ -1769,13 +1769,3 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.C
 	}
 	return nil
 }
-
-func MakeMsgCrossShardBlock(block *blockchain.CrossShardBlock) (wire.Message, error) {
-	msg, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
-	if err != nil {
-		Logger.log.Error(err)
-		return msg, err
-	}
-	msg.(*wire.MessageCrossShard).Block = block
-	return msg, nil
-}
