@@ -22,19 +22,21 @@ var HttpHandler = map[string]httpHandler{
 	estimateFeeWithEstimator: (*HttpServer).handleEstimateFeeWithEstimator,
 	getActiveShards:          (*HttpServer).handleGetActiveShards,
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
-	//pool
-	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
-	getRawMempool:               (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool:     (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:             (*HttpServer).handleMempoolEntry,
+	//tx pool
+	getMiningInfo:           (*HttpServer).handleGetMiningInfo,
+	getRawMempool:           (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
+	// block pool ver.2
 	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
 	getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
 	getShardPoolStateV2:         (*HttpServer).handleGetShardPoolStateV2,
 	getBeaconPoolStateV2:        (*HttpServer).handleGetBeaconPoolStateV2,
-	getShardToBeaconPoolState:   (*HttpServer).handleGetShardToBeaconPoolState,
-	getCrossShardPoolState:      (*HttpServer).handleGetCrossShardPoolState,
-	getNextCrossShard:           (*HttpServer).handleGetNextCrossShard,
-	getFeeEstimator:             (*HttpServer).handleGetFeeEstimator,
+	// ver.1
+	getShardToBeaconPoolState: (*HttpServer).handleGetShardToBeaconPoolState,
+	getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
+	getNextCrossShard:         (*HttpServer).handleGetNextCrossShard,
+	getFeeEstimator:           (*HttpServer).handleGetFeeEstimator,
 	// block
 	getBestBlock:        (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:    (*HttpServer).handleGetBestBlockHash,
