@@ -105,10 +105,12 @@ func generateKeydotJson(numberOfShard, numberOfCandidate int) {
 	_ = ioutil.WriteFile("beaconseed.json", beaconJson, 0644)
 	shardJson, _ := json.Marshal(beacon)
 	_ = ioutil.WriteFile("shardseed.json", shardJson, 0644)
+	// inc private key
 	beaconPriJson, _ := json.Marshal(beaconPri)
 	_ = ioutil.WriteFile("beaconprivate.json", beaconPriJson, 0644)
 	shardPriJson, _ := json.Marshal(shardPri)
 	_ = ioutil.WriteFile("shardprivate.json", shardPriJson, 0644)
+	// bls mining keys
 	beaconPriSeedJson, _ := json.Marshal(beaconPriSeed)
 	_ = ioutil.WriteFile("beaconprivateseed.json", beaconPriSeedJson, 0644)
 	shardPriSeedJson, _ := json.Marshal(shardPriSeed)
