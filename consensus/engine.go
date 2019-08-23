@@ -2,6 +2,7 @@ package consensus
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -104,8 +105,10 @@ func (engine *Engine) Start() error {
 				return
 			default:
 				time.Sleep(time.Millisecond * 1000)
+
 				for chainName, consensus := range engine.ChainConsensusList {
 					if chainName == engine.CurrentMiningChain {
+						fmt.Println("mining chain...", chainName)
 						consensus.Start()
 					} else {
 						consensus.Stop()

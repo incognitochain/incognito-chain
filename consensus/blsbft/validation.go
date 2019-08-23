@@ -3,6 +3,7 @@ package blsbft
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -141,6 +142,7 @@ func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []i
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
 	}
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		fmt.Println(block.Hash(), block.GetValidationField())
 		return err
 	}
 	return nil
