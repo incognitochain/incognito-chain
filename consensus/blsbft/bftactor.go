@@ -7,6 +7,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus"
 	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -189,17 +190,17 @@ func (e *BLSBFT) Start() {
 						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
-						// err = e.ValidateCommitteeSig(e.RoundData.Block, e.Chain.GetCommittee())
-						// if err != nil {
-						// 	fmt.Println(e.RoundData.Block.GetValidationField())
-						// 	fmt.Print("\n")
-						// 	fmt.Println(keyList)
-						// 	fmt.Print("\n")
-						// 	for _, member := range e.Chain.GetCommittee() {
-						// 		fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
-						// 	}
-						// 	panic(err)
-						// }
+						err = e.ValidateCommitteeSig(e.RoundData.Block, e.Chain.GetCommittee())
+						if err != nil {
+							fmt.Println(e.RoundData.Block.GetValidationField())
+							fmt.Print("\n")
+							fmt.Println(keyList)
+							fmt.Print("\n")
+							for _, member := range e.Chain.GetCommittee() {
+								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
+							}
+							panic(err)
+						}
 
 						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
 							e.logger.Error(err)
@@ -220,7 +221,11 @@ func (e *BLSBFT) enterProposePhase() {
 	}
 	e.setState(PROPOSE)
 
-	block := e.Chain.CreateNewBlock(int(e.RoundData.Round))
+	block, err := e.Chain.CreateNewBlock(int(e.RoundData.Round))
+	if err != nil {
+		e.logger.Error("can't create block", err)
+		return
+	}
 	validationData := e.CreateValidationData(block)
 	validationDataString, _ := EncodeValidationData(validationData)
 	block.(blockValidation).AddValidationField(validationDataString)
