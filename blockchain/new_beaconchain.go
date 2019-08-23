@@ -59,12 +59,12 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.BestState.BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(round int) common.BlockInterface {
+func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return newBlock
+	return newBlock, nil
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
