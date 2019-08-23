@@ -11,9 +11,9 @@ type GetInOutMessageResult struct {
 	OutboundMessages map[string]interface{} `json:"Outbounds"`
 }
 
-func NewGetInOutMessageResult(paramsArray []interface{},
-	inboundMessages map[string][]peer.PeerMessageInOut,
-	outboundMessages map[string][]peer.PeerMessageInOut) (*GetInOutMessageResult, error) {
+func NewGetInOutMessageResult(paramsArray []interface{}) (*GetInOutMessageResult, error) {
+	inboundMessages := peer.GetInboundPeerMessages()
+	outboundMessages := peer.GetOutboundPeerMessages()
 	result := &GetInOutMessageResult{
 		InboundMessages:  map[string]interface{}{},
 		OutboundMessages: map[string]interface{}{},
@@ -52,5 +52,30 @@ func NewGetInOutMessageResult(paramsArray []interface{},
 		}
 		result.OutboundMessages[messageType] = messages
 	}
+	return result, nil
+}
+
+type GetInOutMessageCountResult struct {
+	InboundMessages  interface{} `json:"Inbounds"`
+	OutboundMessages interface{} `json:"Outbounds"`
+}
+
+func NewGetInOutMessageCountResult(paramsArray []interface{}) (*GetInOutMessageCountResult, error) {
+	result := &GetInOutMessageCountResult{}
+	inboundMessageByPeers := peer.GetInboundMessagesByPeer()
+	outboundMessageByPeers := peer.GetOutboundMessagesByPeer()
+
+	if len(paramsArray) == 0 {
+		result.InboundMessages = inboundMessageByPeers
+		result.OutboundMessages = outboundMessageByPeers
+		return result, nil
+	}
+
+	peerID, ok := paramsArray[0].(string)
+	if !ok {
+		peerID = ""
+	}
+	result.InboundMessages = inboundMessageByPeers[peerID]
+	result.OutboundMessages = outboundMessageByPeers[peerID]
 	return result, nil
 }
