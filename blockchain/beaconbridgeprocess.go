@@ -30,7 +30,7 @@ type BurningReqAction struct {
 	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
-func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
+func (blockchain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
@@ -39,16 +39,16 @@ func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.IssuingETHRequestMeta):
-			updatingInfoByTokenID, err = chain.processIssuingETHReq(inst, updatingInfoByTokenID)
+			updatingInfoByTokenID, err = blockchain.processIssuingETHReq(inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.IssuingRequestMeta):
-			updatingInfoByTokenID, err = chain.processIssuingReq(inst, updatingInfoByTokenID)
+			updatingInfoByTokenID, err = blockchain.processIssuingReq(inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.ContractingRequestMeta):
-			updatingInfoByTokenID, err = chain.processContractingReq(inst, updatingInfoByTokenID)
+			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.BurningConfirmMeta):
-			updatingInfoByTokenID, err = chain.processBurningReq(inst, updatingInfoByTokenID)
+			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 
 		}
 		if err != nil {
@@ -66,7 +66,7 @@ func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
 			updatingType = "-"
 		}
-		err := chain.GetDatabase().UpdateBridgeTokenInfo(
+		err := blockchain.GetDatabase().UpdateBridgeTokenInfo(
 			updatingInfo.tokenID,
 			updatingInfo.externalTokenID,
 			updatingInfo.isCentralized,
@@ -80,18 +80,14 @@ func (chain *BlockChain) processBridgeInstructions(block *BeaconBlock) error {
 	return nil
 }
 
-func (chain *BlockChain) processContractingReq(
-	inst []string,
-	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
-) (map[common.Hash]UpdatingInfo, error) {
-	if len(inst) != 4 {
+func (blockchain *BlockChain) processContractingReq(instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
+	if len(instruction) != 4 {
 		return nil, nil // skip the instruction
 	}
-	if inst[2] == "rejected" {
+	if instruction[2] == "rejected" {
 		return nil, nil // skip the instruction
 	}
-
-	contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
 		fmt.Println("WARNING: an error occured while decoding content string of accepted contracting instruction: ", err)
 		return nil, nil
@@ -102,7 +98,6 @@ func (chain *BlockChain) processContractingReq(
 		fmt.Println("WARNING: an error occured while unmarshaling accepted contracting instruction: ", err)
 		return nil, nil
 	}
-
 	md := contractingReqAction.Meta
 	updatingInfo, found := updatingInfoByTokenID[md.TokenID]
 	if found {
@@ -119,17 +114,14 @@ func (chain *BlockChain) processContractingReq(
 	return updatingInfoByTokenID, nil
 }
 
-func (chain *BlockChain) processBurningReq(
-	inst []string,
-	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
-) (map[common.Hash]UpdatingInfo, error) {
-	if len(inst) < 8 {
+func (blockchain *BlockChain) processBurningReq(instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
+	if len(instruction) < 8 {
 		return nil, nil // skip the instruction
 	}
 
-	externalTokenID, _, errExtToken := base58.Base58Check{}.Decode(inst[2])
-	incTokenIDBytes, _, errIncToken := base58.Base58Check{}.Decode(inst[6])
-	amountBytes, _, errAmount := base58.Base58Check{}.Decode(inst[4])
+	externalTokenID, _, errExtToken := base58.Base58Check{}.Decode(instruction[2])
+	incTokenIDBytes, _, errIncToken := base58.Base58Check{}.Decode(instruction[6])
+	amountBytes, _, errAmount := base58.Base58Check{}.Decode(instruction[4])
 	if err := common.CheckError(errExtToken, errIncToken, errAmount); err != nil {
 		BLogger.log.Error(errors.WithStack(err))
 		return nil, nil
@@ -160,29 +152,26 @@ func (chain *BlockChain) processBurningReq(
 	return updatingInfoByTokenID, nil
 }
 
-func (chain *BlockChain) processIssuingETHReq(
-	inst []string,
-	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
-) (map[common.Hash]UpdatingInfo, error) {
-	if len(inst) != 4 {
+func (blockchain *BlockChain) processIssuingETHReq(instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
+	if len(instruction) != 4 {
 		return nil, nil // skip the instruction
 	}
 
-	if inst[2] == "rejected" {
-		txReqID, err := common.Hash{}.NewHashFromStr(inst[3])
+	if instruction[2] == "rejected" {
+		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
 		if err != nil {
 			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
 			return nil, nil
 		}
-		err = chain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus)
+		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus)
 		if err != nil {
 			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
 		}
 		return nil, nil
 	}
 
-	db := chain.GetDatabase()
-	contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
+	db := blockchain.GetDatabase()
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
 		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
 		return nil, nil
@@ -215,28 +204,25 @@ func (chain *BlockChain) processIssuingETHReq(
 	return updatingInfoByTokenID, nil
 }
 
-func (chain *BlockChain) processIssuingReq(
-	inst []string,
-	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
-) (map[common.Hash]UpdatingInfo, error) {
-	if len(inst) != 4 {
+func (blockchain *BlockChain) processIssuingReq(instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
+	if len(instruction) != 4 {
 		return nil, nil // skip the instruction
 	}
 
-	if inst[2] == "rejected" {
-		txReqID, err := common.Hash{}.NewHashFromStr(inst[3])
+	if instruction[2] == "rejected" {
+		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
 		if err != nil {
 			fmt.Println("WARNING: an error occured while building tx request id in bytes from string: ", err)
 			return nil, nil
 		}
-		err = chain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus)
+		err = blockchain.GetDatabase().TrackBridgeReqWithStatus(*txReqID, common.BridgeRequestRejectedStatus)
 		if err != nil {
 			fmt.Println("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
 		}
 		return nil, nil
 	}
 
-	contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
 		fmt.Println("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
 		return nil, nil
@@ -271,7 +257,7 @@ func decodeContent(content string, action interface{}) error {
 	return json.Unmarshal(contentBytes, &action)
 }
 
-func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
+func (blockchain *BlockChain) storeBurningConfirm(block *ShardBlock) error {
 	for _, inst := range block.Body.Instructions {
 		if inst[0] != strconv.Itoa(metadata.BurningConfirmMeta) {
 			continue
@@ -282,15 +268,15 @@ func (bc *BlockChain) storeBurningConfirm(block *ShardBlock) error {
 		if err != nil {
 			return errors.Wrap(err, "txid invalid")
 		}
-		if err := bc.config.DataBase.StoreBurningConfirm(*txID, block.Header.Height); err != nil {
+		if err := blockchain.config.DataBase.StoreBurningConfirm(*txID, block.Header.Height); err != nil {
 			return errors.Wrapf(err, "store failed, txID: %x", txID)
 		}
 	}
 	return nil
 }
 
-func (bc *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock) error {
-	db := bc.config.DataBase
+func (blockchain *BlockChain) updateBridgeIssuanceStatus(block *ShardBlock) error {
+	db := blockchain.config.DataBase
 	for _, tx := range block.Body.Transactions {
 		metaType := tx.GetMetadataType()
 		var reqTxID common.Hash

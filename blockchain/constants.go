@@ -25,6 +25,8 @@ const (
 	WorkerNumber                 = 5
 	MAX_S2B_BLOCK                = 50
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
+	GetValidBlock                = 50
+	CheckForce                   = true
 )
 
 // CONSTANT for network MAINNET
@@ -70,13 +72,13 @@ const (
 	Testnet            = 0x16
 	TestnetName        = "testnet"
 	TestnetDefaultPort = "9444"
-	TestnetEpoch       = 10
-	TestnetRandomTime  = 5
+	TestnetEpoch       = 100
+	TestnetRandomTime  = 50
 
 	TestNetShardCommitteeSize     = 16
-	TestNetMinShardCommitteeSize  = 1
+	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
-	TestNetMinBeaconCommitteeSize = 1
+	TestNetMinBeaconCommitteeSize = 4
 	TestNetActiveShards           = 1
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
@@ -105,8 +107,8 @@ func init() {
 	type AccountKey struct {
 		PrivateKey string
 		PaymentAdd string
-		PubKey     string
-		PubKeyBLS  string
+		// PubKey     string
+		CommitteePublicKey string
 	}
 
 	type KeyList struct {
@@ -120,15 +122,14 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
 	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
-		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].PubKeyBLS)
+		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
 		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAdd)
 	}
 
 	for i := 0; i < TestNetActiveShards; i++ {
 		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
-			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].PubKeyBLS)
+			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
 			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAdd)
 		}
 	}
