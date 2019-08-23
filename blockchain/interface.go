@@ -97,7 +97,6 @@ type ChainInterface interface {
 	GetMaxBlkCreateTime() time.Duration
 	IsReady() bool
 	GetActiveShardNumber() int
-
 	GetPubkeyRole(pubkey string, round int) (string, byte)
 	CurrentHeight() uint64
 	GetCommitteeSize() int
