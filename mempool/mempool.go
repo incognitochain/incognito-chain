@@ -15,7 +15,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -142,7 +141,6 @@ func (tp *TxPool) LoadOrResetDatabaseMempool() error {
 // loop forever in mempool
 // receive data from other package
 func (tp *TxPool) Start(cQuit chan struct{}) {
-	go tp.monitorPool()
 	for {
 		select {
 		case <-cQuit:
@@ -163,12 +161,13 @@ func (tp *TxPool) Start(cQuit chan struct{}) {
 	}
 }
 
-func (tp *TxPool) monitorPool() {
+func (tp *TxPool) MonitorPool() {
 	if tp.config.TxLifeTime == 0 {
 		return
 	}
-	for {
-		<-time.Tick(tp.ScanTime)
+	ticker := time.NewTicker(tp.ScanTime)
+	defer ticker.Stop()
+	for _ = range ticker.C {
 		tp.mtx.Lock()
 		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
@@ -647,10 +646,8 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			if err != nil || candidateWallet == nil {
 				return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
 			}
-			pk := candidateWallet.KeySet.PaymentAddress.Pk
-			pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
 			tp.candidateMtx.RLock()
-			foundPubkey = common.IndexOfStrInHashMap(pkb58, tp.PoolCandidate)
+			foundPubkey = common.IndexOfStrInHashMap(stakingMetadata.CommitteePublicKey, tp.PoolCandidate)
 			tp.candidateMtx.RUnlock()
 		}
 	}
@@ -802,9 +799,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 				if err != nil || candidateWallet == nil {
 					return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
 				}
-				pk := candidateWallet.KeySet.PaymentAddress.Pk
-				pkb58 := base58.Base58Check{}.Encode(pk, common.ZeroByte)
-				tp.addCandidateToList(*txHash, pkb58)
+				tp.addCandidateToList(*txHash, stakingMetadata.CommitteePublicKey)
 			}
 		default:
 			{
@@ -1083,8 +1078,20 @@ func (tp *TxPool) UnlockPool() {
 
 // Count return len of transaction pool
 func (tp *TxPool) Count() int {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
 	count := len(tp.pool)
 	return count
+}
+
+func (tp TxPool) GetClonedPoolCandidate() map[common.Hash]string {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+	result := make(map[common.Hash]string)
+	for k, v := range tp.PoolCandidate {
+		result[k] = v
+	}
+	return result
 }
 
 /*

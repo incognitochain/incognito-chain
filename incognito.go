@@ -17,6 +17,8 @@ import (
 	_ "github.com/incognitochain/incognito-chain/databasemp/lvdb"
 	"github.com/incognitochain/incognito-chain/limits"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"net/http"
+	_ "net/http/pprof"
 
 	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 )
@@ -145,6 +147,10 @@ func main() {
 	// bursts.  This value was arrived at with the help of profiling live
 	// usage.
 	debug.SetGCPercent(30)
+	if os.Getenv("Profiling") != "" {
+		go http.ListenAndServe(":"+os.Getenv("Profiling"), nil)
+	}
+
 	// Up some limits.
 	if err := limits.SetLimits(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to set limits: %+v\n", err)

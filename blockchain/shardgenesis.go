@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -12,8 +13,14 @@ func CreateShardGenesisBlock(
 	icoParams GenesisParams,
 ) *ShardBlock {
 	body := ShardBody{}
+	layout := "2006-01-02T15:04:05.000Z"
+	str := "2018-08-01T00:00:00.000Z"
+	genesisTime, err := time.Parse(layout, str)
+	if err != nil {
+		fmt.Println(err)
+	}
 	header := ShardHeader{
-		Timestamp:         time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
+		Timestamp:         genesisTime.Unix(),
 		Height:            1,
 		Version:           version,
 		PreviousBlockHash: common.Hash{},

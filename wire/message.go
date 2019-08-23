@@ -2,9 +2,10 @@ package wire
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -31,14 +32,8 @@ const (
 	CmdPing               = "ping"
 
 	// POS Cmd
-	CmdBFTPropose = "bftpropose"
-	CmdBFTPrepare = "bftprepare"
-	CmdBFTAgree   = "bftagree"
-	CmdBFTCommit  = "bftcommit"
-	CmdBFTReady   = "bftready"
-	CmdBFTReq     = "bftreq"
-	CmdBFT        = "bft"
-	CmdPeerState  = "peerstate"
+	CmdBFT       = "bft"
+	CmdPeerState = "peerstate"
 
 	// heavy message check cmd
 	CmdMsgCheck     = "msgcheck"
@@ -111,36 +106,36 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	case CmdBFTReq:
-		msg = &MessageBFTReq{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTReady:
-		msg = &MessageBFTReady{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTPropose:
-		msg = &MessageBFTProposeV2{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTPrepare:
-		msg = &MessageBFTPrepareV2{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTAgree:
-		msg = &MessageBFTAgree{
-			Timestamp: time.Now().Unix(),
-		}
-		break
-	case CmdBFTCommit:
-		msg = &MessageBFTCommit{
-			Timestamp: time.Now().Unix(),
-		}
-		break
+	// case CmdBFTReq:
+	// 	msg = &MessageBFTReq{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTReady:
+	// 	msg = &MessageBFTReady{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTPropose:
+	// 	msg = &MessageBFTProposeV2{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTPrepare:
+	// 	msg = &MessageBFTPrepareV2{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTAgree:
+	// 	msg = &MessageBFTAgree{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
+	// case CmdBFTCommit:
+	// 	msg = &MessageBFTCommit{
+	// 		Timestamp: time.Now().Unix(),
+	// 	}
+	// 	break
 	case CmdPeerState:
 		msg = &MessagePeerState{
 			Timestamp:         time.Now().Unix(),
@@ -216,20 +211,20 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdAddr, nil
 	case reflect.TypeOf(&MessagePing{}):
 		return CmdPing, nil
-	case reflect.TypeOf(&MessageBFTPropose{}):
-		return CmdBFTPropose, nil
-	case reflect.TypeOf(&MessageBFTProposeV2{}):
-		return CmdBFTPropose, nil
-	case reflect.TypeOf(&MessageBFTPrepareV2{}):
-		return CmdBFTPrepare, nil
-	case reflect.TypeOf(&MessageBFTAgree{}):
-		return CmdBFTAgree, nil
-	case reflect.TypeOf(&MessageBFTCommit{}):
-		return CmdBFTCommit, nil
-	case reflect.TypeOf(&MessageBFTReady{}):
-		return CmdBFTReady, nil
-	case reflect.TypeOf(&MessageBFTReq{}):
-		return CmdBFTReq, nil
+	// case reflect.TypeOf(&MessageBFTPropose{}):
+	// 	return CmdBFTPropose, nil
+	// case reflect.TypeOf(&MessageBFTProposeV2{}):
+	// 	return CmdBFTPropose, nil
+	// case reflect.TypeOf(&MessageBFTPrepareV2{}):
+	// 	return CmdBFTPrepare, nil
+	// case reflect.TypeOf(&MessageBFTAgree{}):
+	// 	return CmdBFTAgree, nil
+	// case reflect.TypeOf(&MessageBFTCommit{}):
+	// 	return CmdBFTCommit, nil
+	// case reflect.TypeOf(&MessageBFTReady{}):
+	// 	return CmdBFTReady, nil
+	// case reflect.TypeOf(&MessageBFTReq{}):
+	// 	return CmdBFTReq, nil
 	case reflect.TypeOf(&MessagePeerState{}):
 		return CmdPeerState, nil
 	case reflect.TypeOf(&MessageMsgCheck{}):

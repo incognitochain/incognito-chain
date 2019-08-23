@@ -1,56 +1,148 @@
 package blsbft
 
 import (
+	"encoding/json"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus/bridgesig"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-type blsKeySet struct {
-	Publickey  []byte
-	PrivateKey []byte
+// type blsKeySet struct {
+// 	Publickey  []byte
+// 	PrivateKey []byte
+// }
+
+type MiningKey struct {
+	PriKey map[string][]byte
+	PubKey map[string][]byte
 }
 
-func (keyset *blsKeySet) GetPublicKeyBase58() string {
-	return base58.Base58Check{}.Encode(keyset.Publickey, common.ZeroByte)
-}
-func (keyset *blsKeySet) GetPrivateKeyBase58() string {
-	return base58.Base58Check{}.Encode(keyset.PrivateKey, common.ZeroByte)
-}
-
-func (keyset *blsKeySet) SignData(data []byte) (string, error) {
-	return "", nil
-}
-func (keyset *blsKeySet) validateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error {
-	return nil
-}
-func (keyset *blsKeySet) validateSingleSig(dataHash *common.Hash, sig string, pubkey string) error {
-	return nil
+func (miningKey *MiningKey) GetPublicKey() incognitokey.CommitteePublicKey {
+	key := incognitokey.CommitteePublicKey{}
+	key.MiningPubKey = make(map[string][]byte)
+	key.MiningPubKey[common.BLS_CONSENSUS] = miningKey.PubKey[BLS]
+	key.MiningPubKey[common.BRI_CONSENSUS] = miningKey.PubKey[BRI]
+	return key
 }
 
-func (e *BLSBFT) LoadUserKey(privateKeyStr string) error {
-	privateKeyBytes, _, err := base58.Base58Check{}.Decode(privateKeyStr)
+func (miningKey *MiningKey) GetPublicKeyBase58() string {
+	key := miningKey.GetPublicKey()
+	keyBytes, err := json.Marshal(key)
+	if err != nil {
+		return ""
+	}
+	return base58.Base58Check{}.Encode(keyBytes, common.ZeroByte)
+}
+
+func (miningKey *MiningKey) GetPrivateKeyBase58() string {
+	keyBytes, err := json.Marshal(miningKey.PriKey)
+	if err != nil {
+		return ""
+	}
+	return base58.Base58Check{}.Encode(keyBytes, common.ZeroByte)
+}
+
+func (miningKey *MiningKey) BLSSignData(
+	data []byte,
+	selfIdx int,
+	committee []blsmultisig.PublicKey,
+) (
+	[]byte,
+	error,
+) {
+	sigBytes, err := blsmultisig.Sign(data, miningKey.PriKey[BLS], selfIdx, committee)
+	if err != nil {
+		return nil, err
+	}
+	return sigBytes, nil
+}
+
+func (miningKey *MiningKey) BriSignData(
+	data []byte,
+) (
+	[]byte,
+	error,
+) {
+	sig, err := bridgesig.Sign(data, miningKey.PriKey[BRI])
+	if err != nil {
+		return nil, err
+	}
+	return sig, nil
+}
+
+// func (keyset *blsKeySet) SignData(data []byte) (string, error) {
+// 	return "", nil
+// }
+// func (keyset *blsKeySet) validateAggregatedSig(dataHash *common.Hash, aggSig string, validatorPubkeyList []string) error {
+// 	return nil
+// }
+// func (keyset *blsKeySet) validateSingleSig(dataHash *common.Hash, sig string, pubkey string) error {
+// 	return nil
+// }
+
+func (e *BLSBFT) LoadUserKey(privateSeed string) error {
+	var miningKey MiningKey
+	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
 	if err != nil {
 		return err
 	}
-	privateKey := blsmultisig.B2I(privateKeyBytes)
-	publicKeyBytes := blsmultisig.PKBytes(blsmultisig.PKGen(privateKey))
-	var keyset blsKeySet
-	keyset.Publickey = publicKeyBytes
-	keyset.PrivateKey = privateKeyBytes
 
-	e.UserKeySet = &keyset
+	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
+
+	// privateKey := blsmultisig.B2I(privateKeyBytes)
+	// publicKeyBytes := blsmultisig.PKBytes(blsmultisig.PKGen(privateKey))
+	miningKey.PriKey = map[string][]byte{}
+	miningKey.PubKey = map[string][]byte{}
+	miningKey.PriKey[BLS] = blsmultisig.SKBytes(blsPriKey)
+	miningKey.PubKey[BLS] = blsmultisig.PKBytes(blsPubKey)
+	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
+	miningKey.PriKey[BRI] = bridgesig.SKBytes(&bridgePriKey)
+	miningKey.PubKey[BRI] = bridgesig.PKBytes(&bridgePubKey)
+	e.UserKeySet = &miningKey
 	return nil
 }
-func (e BLSBFT) GetUserPublicKey() string {
+func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	if e.UserKeySet != nil {
-		return e.UserKeySet.GetPublicKeyBase58()
+		key := e.UserKeySet.GetPublicKey()
+		return &key
 	}
-	return ""
+	return nil
 }
+
 func (e BLSBFT) GetUserPrivateKey() string {
 	if e.UserKeySet != nil {
 		return e.UserKeySet.GetPrivateKeyBase58()
 	}
 	return ""
+}
+
+func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
+	var blsSigList [][]byte
+	for validator, _ := range votes {
+		validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
+	}
+	sort.Ints(validatorIdx)
+	for _, idx := range validatorIdx {
+		blsSigList = append(blsSigList, votes[committee[idx]].BLS)
+		brigSigs = append(brigSigs, votes[committee[idx]].BRI)
+	}
+
+	aggSig, err = blsmultisig.Combine(blsSigList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return
+}
+
+func (e BLSBFT) SignData(data []byte) (string, error) {
+	result, err := e.UserKeySet.BLSSignData(data, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[BLS]})
+	if err != nil {
+		return "", err
+	}
+
+	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
 }

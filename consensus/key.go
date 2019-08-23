@@ -3,10 +3,13 @@ package consensus
 import (
 	"errors"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 func (engine *Engine) LoadMiningKeys(keysString string) error {
-	engine.userMiningPublicKeys = make(map[string]string)
+	engine.userMiningPublicKeys = make(map[string]incognitokey.CommitteePublicKey)
 	keys := strings.Split(keysString, "|")
 	for _, key := range keys {
 		keyParts := strings.Split(key, ":")
@@ -16,7 +19,7 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 				if err != nil {
 					panic(err)
 				}
-				engine.userMiningPublicKeys[keyParts[0]] = AvailableConsensus[keyParts[0]].GetUserPublicKey()
+				engine.userMiningPublicKeys[keyParts[0]] = *AvailableConsensus[keyParts[0]].GetUserPublicKey()
 			} else {
 				return errors.New("Consensus type for this key isn't exist " + keyParts[0])
 			}
@@ -24,17 +27,44 @@ func (engine *Engine) LoadMiningKeys(keysString string) error {
 	}
 	return nil
 }
-func (engined *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
-	if engined != nil && engined.CurrentMiningChain != "" {
-		if _, ok := engined.ChainConsensusList[engined.CurrentMiningChain]; ok {
-			return engined.ChainConsensusList[engined.CurrentMiningChain].GetUserPublicKey(), engined.ChainConsensusList[engined.CurrentMiningChain].GetConsensusName()
+func (engine *Engine) GetCurrentMiningPublicKey() (publickey string, keyType string) {
+	if engine != nil && engine.CurrentMiningChain != "" {
+		if _, ok := engine.ChainConsensusList[engine.CurrentMiningChain]; ok {
+			keytype := engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
+			pubkey := engine.userMiningPublicKeys[keytype]
+			return pubkey.GetMiningKeyBase58(keytype), keytype
 		}
 	}
 	return "", ""
 }
-func (engine *Engine) SignDataWithMiningKey(data []byte) (string, error) {
-	return "", nil
+
+func (engine *Engine) SignDataWithCurrentMiningKey(data []byte) (string, error) {
+	if engine != nil && engine.CurrentMiningChain != "" {
+		if _, ok := engine.ChainConsensusList[engine.CurrentMiningChain]; ok {
+			keytype := engine.ChainConsensusList[engine.CurrentMiningChain].GetConsensusName()
+			return AvailableConsensus[keytype].SignData(data)
+		}
+	}
+	return "", errors.New("oops")
 }
-func (engine *Engine) VerifyValidationData(data []byte, validationData string, consensusType string) error {
-	return nil
+
+func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, consensusType string) error {
+	if _, ok := AvailableConsensus[consensusType]; !ok {
+		return errors.New("this consensus type isn't available")
+	}
+	return AvailableConsensus[consensusType].ValidateData(data, sig, publicKey)
+}
+
+func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
+	if _, ok := AvailableConsensus[consensusType]; !ok {
+		return errors.New("this consensus type isn't available")
+	}
+	return AvailableConsensus[consensusType].ValidateProducerSig(block)
+}
+
+func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error {
+	if _, ok := AvailableConsensus[consensusType]; !ok {
+		return errors.New("this consensus type isn't available")
+	}
+	return AvailableConsensus[consensusType].ValidateCommitteeSig(block, committee)
 }

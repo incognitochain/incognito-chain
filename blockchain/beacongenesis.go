@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -33,9 +34,16 @@ func CreateBeaconGenesisBlock(
 	// init network param
 	inst = append(inst, []string{SetAction, "randomnumber", strconv.Itoa(int(0))})
 
+	layout := "2006-01-02T15:04:05.000Z"
+	str := "2018-08-01T00:00:00.000Z"
+	genesisTime, err := time.Parse(layout, str)
+
+	if err != nil {
+		fmt.Println(err)
+	}
 	body := BeaconBody{ShardState: nil, Instructions: inst}
 	header := BeaconHeader{
-		Timestamp:                       time.Date(2018, 8, 1, 0, 0, 0, 0, time.UTC).Unix(),
+		Timestamp:                       genesisTime.Unix(),
 		Height:                          1,
 		Version:                         1,
 		Round:                           1,
