@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/wallet"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -144,11 +142,6 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			} else {
 				rewardReceiverPaymentAddress = stakingMetadata.CandidatePaymentAddress
 			}
-			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-			if err != nil || candidateWallet == nil {
-				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
-			}
 			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
@@ -163,11 +156,6 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			} else {
 				rewardReceiverPaymentAddress = stakingMetadata.CandidatePaymentAddress
 			}
-			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-			if err != nil || candidateWallet == nil {
-				return nil, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidatePaymentAddress)
-			}
 			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
@@ -177,6 +165,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 		if len(stakeShardPublicKey) != len(stakeShardTxID) && len(stakeShardTxID) != len(stakeShardRewardReceiver) {
 			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver)))
 		}
+		// format ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
 		instruction := []string{StakeAction, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ",")}
 		instructions = append(instructions, instruction)
 	}
@@ -184,6 +173,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) {
 			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver)))
 		}
+		// format ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
 		instruction := []string{StakeAction, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ",")}
 		instructions = append(instructions, instruction)
 	}
