@@ -62,6 +62,7 @@ type Server struct {
 	addrManager       *addrmanager.AddrManager
 	// userKeySet        *incognitokey.KeySet
 	miningKeys      string
+	privateKey      string
 	wallet          *wallet.Wallet
 	consensusEngine *consensus.Engine
 	blockgen        *blockchain.BlockGenerator
@@ -191,8 +192,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	var err error
 	// init an pubsub manager
 	var pubsubManager = pubsub.NewPubSubManager()
+
 	serverObj.miningKeys = cfg.MiningKeys
-	if serverObj.miningKeys == "" {
+	serverObj.privateKey = cfg.PrivateKey
+	if serverObj.miningKeys == "" && serverObj.privateKey == "" {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
 			panic("miningkeys can't be empty in this node mode")
 		}
@@ -1193,7 +1196,7 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 }
 
 func (serverObj *Server) GetNodeRole() string {
-	if serverObj.miningKeys == "" {
+	if serverObj.miningKeys == "" && serverObj.privateKey == "" {
 		return ""
 	}
 	if cfg.NodeMode == "relay" {
@@ -1696,7 +1699,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	if chain >= common.MAX_SHARD_NUMBER || chain < -1 {
 		return notmining
 	}
-	if cfg.MiningKeys != "" {
+	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		//Beacon: chain = -1
 		role, shardID := serverObj.consensusEngine.GetUserRole()
 		if chain == -1 && shardID == -1 {
@@ -1745,7 +1748,11 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 }
 
 func (serverObj *Server) GetMiningKeys() string {
-	return cfg.MiningKeys
+	return serverObj.miningKeys
+}
+
+func (serverObj *Server) GetPrivateKey() string {
+	return serverObj.privateKey
 }
 
 func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
