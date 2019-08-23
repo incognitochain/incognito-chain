@@ -91,12 +91,6 @@ func (httpServer *HttpServer) handleGetBeaconPoolState(params interface{}, close
 	return result, nil
 }
 
-type Blocks struct {
-	Pending []uint64
-	Valid   []uint64
-	Latest  uint64
-}
-
 func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetShardPoolState params: %+v", params)
 	// get params
@@ -120,7 +114,7 @@ func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeC
 	sort.Slice(result, func(i, j int) bool {
 		return result[i] < result[j]
 	})
-	temp := Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
+	temp := jsonresult.NewBlocks(*shardPool)
 	Logger.log.Debugf("handleGetShardPoolState result: %+v", temp)
 	return temp, nil
 }
