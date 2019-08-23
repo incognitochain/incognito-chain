@@ -64,7 +64,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	blockchain.Synker.Status.Unlock()
 
 	blockchain.Synker.States.Lock()
-	blockchain.Synker.States.PeersState[pState.Peer] = pState
+	if blockchain.Synker.States.PeersState != nil {
+		blockchain.Synker.States.PeersState[pState.Peer] = pState
+	}
 	blockchain.Synker.States.Unlock()
 }
 
@@ -107,16 +109,17 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 				fmt.Println("Shard block received 1", userRole)
 
 				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+					isConsensusOngoing := blockchain.config.ConsensusEngine.IsOngoing(common.GetShardChainKey(newBlk.Header.ShardID))
 					fmt.Println("Shard block received 2", currentShardBestState.ShardHeight, newBlk.Header.Height)
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
-						fmt.Println("Shard block received 3", blockchain.ConsensusOngoing, blockchain.Synker.IsLatest(true, newBlk.Header.ShardID))
+						fmt.Println("Shard block received 3", isConsensusOngoing, blockchain.Synker.IsLatest(true, newBlk.Header.ShardID))
 						if blockchain.Synker.IsLatest(true, newBlk.Header.ShardID) == false {
 							Logger.log.Info("Insert New Shard Block to pool", newBlk.Header.Height)
 							err := blockchain.config.ShardPool[newBlk.Header.ShardID].AddShardBlock(newBlk)
 							if err != nil {
 								Logger.log.Errorf("Add block %+v from shard %+v error %+v: \n", newBlk.Header.Height, newBlk.Header.ShardID, err)
 							}
-						} else if !blockchain.ConsensusOngoing {
+						} else if !isConsensusOngoing {
 							Logger.log.Infof("Insert New Shard Block %+v, ShardID %+v \n", newBlk.Header.Height, newBlk.Header.ShardID)
 							err := blockchain.InsertShardBlock(newBlk, true)
 							if err != nil {
@@ -172,7 +175,7 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
 					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
 						if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
-							if !blockchain.ConsensusOngoing {
+							if !blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
 								fmt.Println("Beacon block insert", newBlk.Header.Height)
 								err = blockchain.InsertBeaconBlock(newBlk, false)
 								if err != nil {
