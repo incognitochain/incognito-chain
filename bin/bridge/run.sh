@@ -4,6 +4,7 @@ run()
 {
   private_key=xxx
   latest_tag=$1
+  current_tag=$2
   data_dir="data"
   eth_data_dir="eth-kovan-data"
 
@@ -20,10 +21,15 @@ run()
 
   docker rm -f inc_miner
   docker rm -f inc_kovan
+  if [ "$current_tag" != "" ]
+  then
+    docker image rm -f incognitochain/incognito:${current_tag}
+  fi
+
   docker pull incognitochain/incognito:${latest_tag}
   docker network create --driver bridge inc_net || true
 
-  docker run -ti --net inc_net -d -p 8545:8545  -p 30303:30303 -p 30303:30303/udp -v $PWD/${eth_data_dir}:/home/parity/.local/share/io.parity.ethereum/ --name inc_kovan  parity/parity:stable --light  --chain kovan  --jsonrpc-interface all --jsonrpc-hosts all  --jsonrpc-apis all --mode last  --base-path=/home/parity/.local/share/io.parity.ethereum/ --reserved-peers=/home/parity/.local/share/io.parity.ethereum/nodes.txt
+  docker run -ti --restart=always --net inc_net -d -p 8545:8545  -p 30303:30303 -p 30303:30303/udp -v $PWD/${eth_data_dir}:/home/parity/.local/share/io.parity.ethereum/ --name inc_kovan  parity/parity:stable --light  --chain kovan  --jsonrpc-interface all --jsonrpc-hosts all  --jsonrpc-apis all --mode last  --base-path=/home/parity/.local/share/io.parity.ethereum/ --reserved-peers=/home/parity/.local/share/io.parity.ethereum/nodes.txt
 
   docker run --restart=always --net inc_net -p 9334:9334 -p 9433:9433 -e GETH_NAME=inc_kovan -e PRIVATEKEY=${private_key} -v $PWD/${data_dir}:/data -d --name inc_miner incognitochain/incognito:${latest_tag}
 }
@@ -39,8 +45,8 @@ do
 
   if [ "$current_latest_tag" != "$latest_tag" ]
   then
+    run $latest_tag $current_latest_tag
     current_latest_tag=$latest_tag
-    run $latest_tag
   fi
 
   sleep 3600s
