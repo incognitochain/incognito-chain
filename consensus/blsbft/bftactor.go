@@ -8,16 +8,13 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
 const (
-	CONSENSUSNAME = "BLSBFT"
+	CONSENSUSNAME = common.BLS_CONSENSUS
 )
-
-type Vote struct {
-	Sig string
-}
 
 type BLSBFT struct {
 	Chain    blockchain.ChainInterface
@@ -31,19 +28,21 @@ type BLSBFT struct {
 	VoteMessageCh    chan BFTVote
 
 	RoundData struct {
-		Block          common.BlockInterface
-		Votes          map[string]Vote
-		Round          int
-		NextHeight     uint64
-		State          string
-		NotYetSendVote bool
+		Block             common.BlockInterface
+		BlockValidateData ValidationData
+		Votes             map[string]vote
+		Round             int
+		NextHeight        uint64
+		State             string
+		NotYetSendVote    bool
 	}
 
 	Blocks     map[string]common.BlockInterface
-	EarlyVotes map[string]map[string]Vote
+	EarlyVotes map[string]map[string]vote
 	isOngoing  bool
 	isStarted  bool
 	StopCh     chan struct{}
+	logger     common.Logger
 }
 
 func (e *BLSBFT) IsOngoing() bool {
@@ -73,48 +72,47 @@ func (e *BLSBFT) Start() {
 	e.isStarted = true
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
-	e.EarlyVotes = make(map[string]map[string]Vote)
+	e.EarlyVotes = make(map[string]map[string]vote)
 	e.Blocks = map[string]common.BlockInterface{}
 
 	e.ProposeMessageCh = make(chan BFTPropose)
 	e.VoteMessageCh = make(chan BFTVote)
 
 	ticker := time.Tick(100 * time.Millisecond)
-
+	e.logger.Info("start bls-bft consensus")
 	go func() {
 		for { //actor loop
 			select {
 			case <-e.StopCh:
 				return
 			case proposeMsg := <-e.ProposeMessageCh:
-				var block common.BlockInterface
-				if e.ChainKey == common.BEACON_CHAINKEY {
-					var beaconBlk blockchain.BeaconBlock
-					json.Unmarshal(proposeMsg.Block, &beaconBlk)
-					block = &beaconBlk
-				} else {
-					var shardBlk blockchain.ShardBlock
-					json.Unmarshal(proposeMsg.Block, &shardBlk)
-					block = &shardBlk
-				}
-				round := block.GetRound()
-				if round < e.RoundData.Round {
+				block, err := e.Chain.UnmarshalBlock(proposeMsg.Block)
+				if err != nil {
+					e.logger.Info(err)
 					continue
 				}
-				if e.RoundData.Block != nil {
-					if e.RoundData.Block.GetHeight() == block.GetHeight() && e.RoundData.Round == round {
-						e.Blocks[getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)] = block
+				blockRoundKey := getRoundKey(block.GetHeight(), block.GetRound())
+
+				if block.GetHeight() >= e.RoundData.NextHeight {
+					if e.RoundData.NextHeight == block.GetHeight() && e.RoundData.Round > block.GetRound() {
+						continue
 					}
+					if e.RoundData.Round == block.GetRound() && e.RoundData.Block != nil {
+						e.Blocks[blockRoundKey] = block
+						continue
+					}
+					e.Blocks[blockRoundKey] = block
 				}
 			case voteMsg := <-e.VoteMessageCh:
 				if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 					//validate single sig
-					if true {
-						e.RoundData.Votes[voteMsg.Validator] = Vote{voteMsg.Sig}
+					if true && e.RoundData.Block != nil {
+						e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
 					}
 				}
 			case <-ticker:
-				if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58()) == -1 {
+				pubKey := e.UserKeySet.GetPublicKey()
+				if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == -1 {
 					e.isOngoing = false
 					continue
 				}
@@ -132,22 +130,55 @@ func (e *BLSBFT) Start() {
 				case LISTEN:
 					// timeout or vote nil?
 					roundKey := fmt.Sprint(e.RoundData.NextHeight, "_", e.RoundData.Round)
-					if e.Blocks[roundKey] != nil && e.validatePreSignBlock(e.Blocks[roundKey], e.Chain.GetCommittee()) != nil {
-						e.RoundData.Block = e.Blocks[roundKey]
-						e.enterVotePhase()
+					if e.Blocks[roundKey] != nil {
+						if err := e.validatePreSignBlock(e.Blocks[roundKey], e.Chain.GetCommittee()); err != nil {
+							e.logger.Error(err)
+							continue
+						}
+						if e.RoundData.Block == nil {
+							e.RoundData.Block = e.Blocks[roundKey]
+							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
+							if err != nil {
+								e.logger.Error(err)
+								continue
+							}
+							e.RoundData.BlockValidateData = *valData
+							e.enterVotePhase()
+						}
 					}
 				case VOTE:
 
 					if e.RoundData.NotYetSendVote {
-						e.sendVote()
+						err := e.sendVote()
+						if err != nil {
+							e.logger.Error(err)
+							continue
+						}
 					}
-					if e.isHasMajorityVote() {
-						//TODO: aggregate sigs
-						e.Chain.InsertBlk(e.RoundData.Block, true)
+					if e.RoundData.Block != nil && e.isHasMajorityVotes() {
+
+						keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.Chain.GetCommittee(), CONSENSUSNAME)
+						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, keyList)
+						if err != nil {
+							e.logger.Error(err)
+							continue
+						}
+
+						e.RoundData.BlockValidateData.AggSig = aggSig
+						e.RoundData.BlockValidateData.BridgeSig = brigSigs
+						e.RoundData.BlockValidateData.ValidatiorsIdx = validatorIdx
+
+						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
+						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
+
+						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
+							e.logger.Error(err)
+							panic("oops")
+						}
+						fmt.Println("\n\n\n\n\nYAYAYAYAYAY\n\n\n\n\n")
 						e.enterNewRound()
 					}
 				}
-
 			}
 		}
 	}()
@@ -160,13 +191,18 @@ func (e *BLSBFT) enterProposePhase() {
 	e.setState(PROPOSE)
 
 	block := e.Chain.CreateNewBlock(int(e.RoundData.Round))
+	validationData := e.CreateValidationData(block)
+	validationDataString, _ := EncodeValidationData(validationData)
+	block.(blockValidation).AddValidationField(validationDataString)
+
 	e.RoundData.Block = block
+	e.RoundData.BlockValidateData = validationData
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
 	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+	e.logger.Info("propose block", string(blockData))
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.enterVotePhase()
-
 }
 
 func (e *BLSBFT) enterListenPhase() {
@@ -177,11 +213,15 @@ func (e *BLSBFT) enterListenPhase() {
 }
 
 func (e *BLSBFT) enterVotePhase() {
+	e.logger.Info("enter voting phase")
 	if !e.isInTimeFrame() || e.RoundData.State == VOTE {
 		return
 	}
 	e.setState(VOTE)
-	e.sendVote()
+	err := e.sendVote()
+	if err != nil {
+		e.logger.Error(err)
+	}
 }
 
 func (e *BLSBFT) enterNewRound() {
@@ -200,25 +240,27 @@ func (e *BLSBFT) enterNewRound() {
 
 	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
 	e.RoundData.Round = e.getCurrentRound()
-	e.RoundData.Votes = make(map[string]Vote)
+	e.RoundData.Votes = make(map[string]vote)
 	e.RoundData.Block = nil
-
-	if e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58()) == (e.Chain.GetLastProposerIndex()+1+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
-		fmt.Println("BFT: new round propose")
+	e.logger.Info("BFT: new round")
+	pubKey := e.UserKeySet.GetPublicKey()
+	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
+		e.logger.Info("BFT: new round propose")
 		e.enterProposePhase()
 	} else {
-		fmt.Println("BFT: new round listen")
+		e.logger.Info("BFT: new round listen")
 		e.enterListenPhase()
 	}
 
 }
 
-func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface) consensus.ConsensusInterface {
+func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey
 	newInstance.Node = node
 	newInstance.UserKeySet = e.UserKeySet
+	newInstance.logger = logger
 	return &newInstance
 }
 
