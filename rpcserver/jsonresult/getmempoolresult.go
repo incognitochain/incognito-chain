@@ -2,8 +2,8 @@ package jsonresult
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/rpcserver"
 )
 
 type GetMempoolInfo struct {
@@ -25,9 +25,9 @@ type GetRawMempoolResult struct {
 	TxHashes []string
 }
 
-func NewGetRawMempoolResult(config rpcserver.RpcServerConfig) *GetRawMempoolResult {
+func NewGetRawMempoolResult(txMemPool mempool.TxPool) *GetRawMempoolResult {
 	result := &GetRawMempoolResult{
-		TxHashes: config.TxMemPool.ListTxs(),
+		TxHashes: txMemPool.ListTxs(),
 	}
 	return result
 }
@@ -36,10 +36,10 @@ type GetMempoolEntryResult struct {
 	Tx metadata.Transaction
 }
 
-func NewGetMempoolEntryResult(config rpcserver.RpcServerConfig, txID *common.Hash) (*GetMempoolEntryResult, error) {
+func NewGetMempoolEntryResult(txMemPool mempool.TxPool, txID *common.Hash) (*GetMempoolEntryResult, error) {
 	result := &GetMempoolEntryResult{}
 	var err error
-	result.Tx, err = config.TxMemPool.GetTx(txID)
+	result.Tx, err = txMemPool.GetTx(txID)
 	if err != nil {
 		return nil, err
 	}
