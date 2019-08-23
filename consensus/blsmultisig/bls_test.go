@@ -1,6 +1,7 @@
 package blsmultisig
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -94,6 +95,10 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 	// fmt.Println("Sigs: ", sigs)
 	start = time.Now()
 	cSig, err := combine(sigs)
+	fmt.Println(sigs)
+	cSig2, err := combine(sigs)
+	fmt.Println(sigs)
+	fmt.Println(cSig, cSig2)
 	t2 := time.Now().Sub(start)
 	if err != nil {
 		return 0, 0, 0, true, err
@@ -101,6 +106,8 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 	// fmt.Println("Combine sigs", cSig)
 	start = time.Now()
 	result, err := verify(data, cSig, committeeSign)
+	result2, err := verify(data, cSig2, committeeSign)
+	fmt.Println(result, result2)
 	t3 := time.Now().Sub(start)
 	if err != nil {
 		return 0, 0, 0, true, err
@@ -143,9 +150,9 @@ func Test_fullBLSSignFlow(t *testing.T) {
 				rewriteKey:    true,
 				committeeSign: genSubset4Test(20, 20),
 			},
-			want:    1.5,
+			want:    2,
 			want1:   0.01,
-			want2:   1.5,
+			want2:   2,
 			want3:   true,
 			wantErr: false,
 		},
