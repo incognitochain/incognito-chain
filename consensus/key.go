@@ -68,7 +68,3 @@ func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, comm
 	}
 	return AvailableConsensus[consensusType].ValidateCommitteeSig(block, committee)
 }
-
-// func (engine *Engine) VerifySignature(data []byte, validationData string, consensusType string) error {
-// 	return nil
-// }
