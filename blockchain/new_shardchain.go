@@ -107,7 +107,7 @@ func (chain *ShardChain) ValidateBlockWithBlockChain(common.BlockInterface) erro
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {
