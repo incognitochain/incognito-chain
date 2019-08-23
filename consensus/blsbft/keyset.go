@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // type blsKeySet struct {
@@ -105,6 +106,33 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	e.UserKeySet = &miningKey
 	return nil
 }
+
+func (e *BLSBFT) LoadUserKeyFromIncPrivateKey(privateKey string) error {
+	wl, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return err
+	}
+	var miningKey MiningKey
+	privateSeedBytes := common.HashB(wl.KeySet.PrivateKey)
+	if err != nil {
+		return err
+	}
+
+	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
+
+	// privateKey := blsmultisig.B2I(privateKeyBytes)
+	// publicKeyBytes := blsmultisig.PKBytes(blsmultisig.PKGen(privateKey))
+	miningKey.PriKey = map[string][]byte{}
+	miningKey.PubKey = map[string][]byte{}
+	miningKey.PriKey[BLS] = blsmultisig.SKBytes(blsPriKey)
+	miningKey.PubKey[BLS] = blsmultisig.PKBytes(blsPubKey)
+	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
+	miningKey.PriKey[BRI] = bridgesig.SKBytes(&bridgePriKey)
+	miningKey.PubKey[BRI] = bridgesig.PKBytes(&bridgePubKey)
+	e.UserKeySet = &miningKey
+	return nil
+}
+
 func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 	if e.UserKeySet != nil {
 		key := e.UserKeySet.GetPublicKey()
