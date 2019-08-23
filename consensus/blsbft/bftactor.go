@@ -204,7 +204,6 @@ func (e *BLSBFT) Start() {
 
 						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
 							e.logger.Error(err)
-							panic("oops")
 						}
 						fmt.Println("\n\n\n\n\nYAYAYAYAYAY\n\n\n\n\n")
 						e.enterNewRound()
