@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -105,20 +106,28 @@ func (e *BLSBFT) Start() {
 					e.Blocks[blockRoundKey] = block
 				}
 			case voteMsg := <-e.VoteMessageCh:
-				e.logger.Error("vote received...")
 				if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 					//validate single sig
-					if true && e.RoundData.Block != nil {
+					e.logger.Warn("vote received...")
+
+					if e.RoundData.Block != nil {
+						validatorIdx := e.Chain.GetPubKeyCommitteeIndex(voteMsg.Validator)
+						committeeBLSKeys := []blsmultisig.PublicKey{}
+						for _, member := range e.Chain.GetCommittee() {
+							committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
+						}
+						if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, committeeBLSKeys); err != nil {
+							e.logger.Error(err)
+							continue
+						}
 						e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
-						e.logger.Error("vote added...")
+						e.logger.Warn("vote added...")
 					} else {
 						if _, ok := e.EarlyVotes[voteMsg.RoundKey]; !ok {
 							e.EarlyVotes[voteMsg.RoundKey] = make(map[string]vote)
 						}
 						e.EarlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
 					}
-				} else {
-					e.logger.Error("wrong roundkey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), voteMsg.RoundKey)
 				}
 			case <-ticker:
 				pubKey := e.UserKeySet.GetPublicKey()
@@ -129,7 +138,6 @@ func (e *BLSBFT) Start() {
 
 				if !e.Chain.IsReady() {
 					e.isOngoing = false
-					// e.logger.Info("chain is not ready")
 					continue
 				}
 
@@ -180,6 +188,18 @@ func (e *BLSBFT) Start() {
 
 						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
+
+						// err = e.ValidateCommitteeSig(e.RoundData.Block, e.Chain.GetCommittee())
+						// if err != nil {
+						// 	fmt.Println(e.RoundData.Block.GetValidationField())
+						// 	fmt.Print("\n")
+						// 	fmt.Println(keyList)
+						// 	fmt.Print("\n")
+						// 	for _, member := range e.Chain.GetCommittee() {
+						// 		fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
+						// 	}
+						// 	panic(err)
+						// }
 
 						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
 							e.logger.Error(err)
