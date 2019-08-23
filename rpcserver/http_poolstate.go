@@ -114,7 +114,7 @@ func (httpServer *HttpServer) handleGetShardPoolState(params interface{}, closeC
 	sort.Slice(result, func(i, j int) bool {
 		return result[i] < result[j]
 	})
-	temp := jsonresult.NewBlocks(*shardPool)
+	temp := jsonresult.NewBlocksFromShardPool(*shardPool)
 	Logger.log.Debugf("handleGetShardPoolState result: %+v", temp)
 	return temp, nil
 }
@@ -220,7 +220,7 @@ func (httpServer *HttpServer) handleGetShardPoolStateV2(params interface{}, clos
 	sort.Slice(result, func(i, j int) bool {
 		return result[i] < result[j]
 	})
-	temp := Blocks{Valid: shardPool.GetValidBlockHeight(), Pending: shardPool.GetPendingBlockHeight(), Latest: shardPool.GetShardState()}
+	temp := jsonresult.NewBlocksFromShardPool(*shardPool)
 	Logger.log.Debugf("handleGetShardPoolStateV2 result: %+v", temp)
 	return temp, nil
 }
@@ -232,7 +232,7 @@ func (httpServer *HttpServer) handleGetBeaconPoolStateV2(params interface{}, clo
 		Logger.log.Debugf("handleGetBeaconPoolStateV2 result: %+v", nil)
 		return nil, NewRPCError(ErrUnexpected, errors.New("Beacon Pool not init"))
 	}
-	result := Blocks{Valid: beaconPool.GetValidBlockHeight(), Pending: beaconPool.GetPendingBlockHeight(), Latest: beaconPool.GetBeaconState()}
+	result := jsonresult.NewBlocksFromBeaconPool(*beaconPool)
 	Logger.log.Debugf("handleGetBeaconPoolStateV2 result: %+v", result)
 	return result, nil
 }
