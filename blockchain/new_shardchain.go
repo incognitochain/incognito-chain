@@ -1,9 +1,13 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type ShardChain struct {
@@ -21,7 +25,8 @@ func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 }
 
 func (chain *ShardChain) GetMinBlkInterval() time.Duration {
-	return chain.BestState.BlockInterval
+	// return chain.BestState.BlockInterval
+	return common.MinShardBlkInterval
 }
 
 func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
@@ -29,14 +34,14 @@ func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
 }
 
 func (chain *ShardChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(false, 0)
+	return chain.Blockchain.Synker.IsLatest(true, chain.BestState.ShardID)
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
 	return chain.BestState.BestBlock.Header.Height
 }
 
-func (chain *ShardChain) GetCommittee() []string {
+func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return chain.BestState.ShardCommittee
 }
 
@@ -45,7 +50,12 @@ func (chain *ShardChain) GetCommitteeSize() int {
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	return common.IndexOfStr(pubkey, chain.BestState.ShardCommittee)
+	for index, key := range chain.BestState.ShardCommittee {
+		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
+			return index
+		}
+	}
+	return -1
 }
 
 func (chain *ShardChain) GetLastProposerIndex() int {
@@ -53,20 +63,39 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 }
 
 func (chain *ShardChain) CreateNewBlock(round int) common.BlockInterface {
-	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
+	start := time.Now()
+	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), chain.Blockchain.GetBeaconHeight(), start)
 	if err != nil {
+		Logger.log.Info(err)
 		return nil
 	}
 	return newBlock
 }
 
-func (chain *ShardChain) ValidateBlock(block common.BlockInterface) error {
-	_ = block
-	return nil
+func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
+	//@Bahamoot review later
+	var shardBestState ShardBestState
+	shardBlock := block.(*ShardBlock)
+	chain.BestState.cloneShardBestState(&shardBestState)
+	producerPublicKey := shardBlock.Header.Producer
+	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
+	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+	}
+	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
+		return err
+	}
+	return chain.InsertBlk(block)
 }
 
-func (chain *ShardChain) ValidateBlockSanity(block common.BlockInterface) error {
-	_ = block
+func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
+		return err
+	}
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, chain.GetConsensusType()); err != nil {
+		return nil
+	}
 	return nil
 }
 
@@ -74,8 +103,8 @@ func (chain *ShardChain) ValidateBlockWithBlockChain(common.BlockInterface) erro
 	return nil
 }
 
-func (chain *ShardChain) InsertBlk(block common.BlockInterface, isValid bool) {
-	chain.Blockchain.InsertShardBlock(block.(*ShardBlock), isValid)
+func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
+	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {
@@ -95,5 +124,18 @@ func (chain *ShardChain) GetShardID() int {
 }
 
 func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return "", 0
+	return chain.BestState.GetPubkeyRole(pubkey, round), chain.BestState.ShardID
+}
+
+func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
+	var shardBlk ShardBlock
+	err := json.Unmarshal(blockString, &shardBlk)
+	if err != nil {
+		return nil, err
+	}
+	return &shardBlk, nil
+}
+
+func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.BestState.ShardID)
 }

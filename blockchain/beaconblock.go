@@ -23,12 +23,12 @@ func NewBeaconBlock() *BeaconBlock {
 	return &BeaconBlock{}
 }
 
-func (beaconBlock *BeaconBlock) Hash() *common.Hash {
+func (beaconBlock BeaconBlock) Hash() *common.Hash {
 	hash := beaconBlock.Header.Hash()
 	return &hash
 }
 
-func (beaconBlock *BeaconBlock) GetHeight() uint64 {
+func (beaconBlock BeaconBlock) GetHeight() uint64 {
 	return beaconBlock.Header.Height
 }
 
@@ -57,11 +57,11 @@ func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (beaconBlock *BeaconBlock) AddValidationField(validateData string) error {
-	beaconBlock.ValidationData = validateData
+func (beaconBlock *BeaconBlock) AddValidationField(validationData string) error {
+	beaconBlock.ValidationData = validationData
 	return nil
 }
-func (beaconBlock *BeaconBlock) GetValidationField() string {
+func (beaconBlock BeaconBlock) GetValidationField() string {
 	return beaconBlock.ValidationData
 }
 
@@ -70,4 +70,12 @@ func (beaconBlock BeaconBlock) GetRound() int {
 }
 func (beaconBlock BeaconBlock) GetRoundKey() string {
 	return fmt.Sprint(beaconBlock.Header.Height, "_", beaconBlock.Header.Round)
+}
+
+func (beaconBlock BeaconBlock) GetInstructions() [][]string {
+	return beaconBlock.Body.Instructions
+}
+
+func (beaconBlock BeaconBlock) GetProducer() string {
+	return beaconBlock.Header.Producer
 }

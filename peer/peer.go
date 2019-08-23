@@ -68,10 +68,9 @@ type Config struct {
 	MaxInPeers      int
 	MaxPeers        int
 	ConsensusEngine interface {
-		GetMiningPublicKey() (publickey string, keyType string)
-		SignMessageWithMiningKey(msg *wire.Message) (string, error)
-		SignDataWithMiningKey(data []byte) (string, error)
-		VerifyMessageWithMiningKey(msg *wire.Message) error
+		GetCurrentMiningPublicKey() (publickey string, keyType string)
+		VerifyData(data []byte, sig string, publicKey string, consensusType string) error
+		SignDataWithCurrentMiningKey(data []byte) (string, error)
 	}
 }
 
@@ -479,8 +478,9 @@ func (peerObj *Peer) handleNewConnectionOut(otherPeer *Peer, cConn chan *PeerCon
 
 	otherPeerID := otherPeer.peerID
 	peerIDStr := otherPeerID.Pretty()
-
+	peerObj.peerConnsMtx.Lock()
 	_, ok := peerObj.peerConns[peerIDStr]
+	peerObj.peerConnsMtx.Unlock()
 	if ok {
 		Logger.log.Debugf("Checked Existed PEER Id - %s", otherPeer.rawAddress)
 
@@ -601,7 +601,9 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 
 	remotePeerID := stream.Conn().RemotePeer()
 	Logger.log.Debugf("PEER %s Received a new stream from OTHER PEER with Id %s", peerObj.host.ID().String(), remotePeerID.Pretty())
+	peerObj.peerConnsMtx.Lock()
 	_, ok := peerObj.peerConns[remotePeerID.Pretty()]
+	peerObj.peerConnsMtx.Unlock()
 	if ok {
 		Logger.log.Debugf("Received a new stream existed PEER Id - %s", remotePeerID.Pretty())
 
@@ -680,6 +682,8 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 //
 // This function is safe for concurrent access.
 func (peerObj *Peer) QueueMessageWithEncoding(msg wire.Message, doneChan chan<- struct{}, msgType byte, msgShard *byte) {
+	peerObj.peerConnsMtx.Lock()
+	defer peerObj.peerConnsMtx.Unlock()
 	for _, peerConnection := range peerObj.peerConns {
 		go peerConnection.QueueMessageWithEncoding(msg, doneChan, msgType, msgShard)
 	}
