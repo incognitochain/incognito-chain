@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
 )
 
@@ -20,7 +19,7 @@ import (
 handleGetInOutPeerMessageCount - return all inbound/outbound message count by peer which this node connected
 */
 func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetInOutMessageCount by Peer params: %+v", params)
+	Logger.log.Debugf("handleGetInOutMessageCount by Peer params: %+v", params)
 	result := struct {
 		InboundMessages  interface{} `json:"Inbounds"`
 		OutboundMessages interface{} `json:"Outbounds"`
@@ -41,7 +40,7 @@ func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, clo
 	result.InboundMessages = inboundMessageByPeers[peerID]
 	result.OutboundMessages = outboundMessageByPeers[peerID]
 
-	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
+	// Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
 }
 
@@ -49,53 +48,16 @@ func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, clo
 handleGetInOutPeerMessages - return all inbound/outbound messages peer which this node connected
 */
 func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetInOutPeerMessagess params: %+v", params)
-	paramsArray := common.InterfaceSlice(params)
+	Logger.log.Debugf("handleGetInOutPeerMessagess params: %+v", params)
 
+	paramsArray := common.InterfaceSlice(params)
 	inboundMessages := peer.GetInboundPeerMessages()
 	outboundMessages := peer.GetOutboundPeerMessages()
-	result := struct {
-		InboundMessages  map[string]interface{} `json:"Inbounds"`
-		OutboundMessages map[string]interface{} `json:"Outbounds"`
-	}{
-		map[string]interface{}{},
-		map[string]interface{}{},
+	result, err := jsonresult.NewGetInOutMessageResult(paramsArray, inboundMessages, outboundMessages)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	if len(paramsArray) == 0 {
-		for messageType, messagePeers := range inboundMessages {
-			result.InboundMessages[messageType] = len(messagePeers)
-		}
-		for messageType, messagePeers := range outboundMessages {
-			result.OutboundMessages[messageType] = len(messagePeers)
-		}
-		return result, nil
-	}
-	peerID, ok := paramsArray[0].(string)
-	if !ok {
-		peerID = ""
-	}
-
-	for messageType, messagePeers := range inboundMessages {
-		messages := []wire.Message{}
-		for _, m := range messagePeers {
-			if m.PeerID.Pretty() != peerID {
-				continue
-			}
-			messages = append(messages, m.Message)
-		}
-		result.InboundMessages[messageType] = messages
-	}
-	for messageType, messagePeers := range outboundMessages {
-		messages := []wire.Message{}
-		for _, m := range messagePeers {
-			if m.PeerID.Pretty() != peerID {
-				continue
-			}
-			messages = append(messages, m.Message)
-		}
-		result.OutboundMessages[messageType] = messages
-	}
-	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
+	//Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
 }
 
@@ -103,9 +65,9 @@ func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeCh
 handleGetAllConnectedPeers - return all connnected peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetAllConnectedPeers params: %+v", params)
+	Logger.log.Debugf("handleGetAllConnectedPeers params: %+v", params)
 	result := jsonresult.NewGetAllConnectedPeersResult(httpServer.config)
-	Logger.log.Infof("handleGetAllPeers result: %+v", result)
+	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
 
