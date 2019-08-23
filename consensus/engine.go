@@ -32,9 +32,20 @@ func New(node NodeInterface, blockchain *blockchain.BlockChain, blockgen *blockc
 		Node:       node,
 		Blockchain: blockchain,
 	}
-	err := engine.LoadMiningKeys(node.GetMiningKeys())
-	if err != nil {
-		panic(err)
+	if node.GetPrivateKey() != "" {
+		keyList, err := engine.GenMiningKeyFromPrivateKey(node.GetPrivateKey())
+		if err != nil {
+			panic(err)
+		}
+		err = engine.LoadMiningKeys(keyList)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		err := engine.LoadMiningKeys(node.GetMiningKeys())
+		if err != nil {
+			panic(err)
+		}
 	}
 	return &engine
 }
