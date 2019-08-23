@@ -15,6 +15,9 @@ func (e *BLSBFT) waitForNextRound() {
 		return
 	}
 	//TODO: chunk time sleep into small time chunk -> if change view during sleep => break it
+
+	fmt.Println("dfsdfsdf")
+
 	time.Sleep(e.Chain.GetMinBlkInterval() - timeSinceLastBlk)
 }
 
@@ -36,7 +39,7 @@ func (e *BLSBFT) isInTimeFrame() bool {
 	return true
 }
 
-func (e *BLSBFT) isHasMajorityVote() bool {
+func (e *BLSBFT) isHasMajorityVotes() bool {
 	size := e.Chain.GetCommitteeSize()
 	if len(e.RoundData.Votes) >= 2*size/3 {
 		return true

@@ -1,42 +1,45 @@
 package jsonresult
 
-import "github.com/incognitochain/incognito-chain/blockchain"
+import (
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+)
 
 /*
 	Candidate Result From Best State
 */
 type CandidateListsResult struct {
-	Epoch                                  uint64   `json:"Epoch"`
-	CandidateShardWaitingForCurrentRandom  []string `json:"CandidateShardWaitingForCurrentRandom"`
-	CandidateBeaconWaitingForCurrentRandom []string `json:"CandidateBeaconWaitingForCurrentRandom"`
-	CandidateShardWaitingForNextRandom     []string `json:"CandidateShardWaitingForNextRandom"`
-	CandidateBeaconWaitingForNextRandom    []string `json:"CandidateBeaconWaitingForNextRandom"`
+	Epoch                                  uint64                         `json:"Epoch"`
+	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey `json:"CandidateShardWaitingForCurrentRandom"`
+	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey `json:"CandidateBeaconWaitingForCurrentRandom"`
+	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePublicKey `json:"CandidateShardWaitingForNextRandom"`
+	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey `json:"CandidateBeaconWaitingForNextRandom"`
 }
 
 type CommitteeListsResult struct {
-	Epoch                  uint64            `json:"Epoch"`
-	ShardCommittee         map[byte][]string `json:"ShardCommittee"`
-	ShardPendingValidator  map[byte][]string `json:"ShardPendingValidator"`
-	BeaconCommittee        []string          `json:"BeaconCommittee"`
-	BeaconPendingValidator []string          `json:"BeaconPendingValidator"`
+	Epoch                  uint64                                  `json:"Epoch"`
+	ShardCommittee         map[byte][]incognitokey.CommitteePublicKey `json:"ShardCommittee"`
+	ShardPendingValidator  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
+	BeaconCommittee        []incognitokey.CommitteePublicKey          `json:"BeaconCommittee"`
+	BeaconPendingValidator []incognitokey.CommitteePublicKey          `json:"BeaconPendingValidator"`
 }
 
-func NewCommitteeListsResult(epoch uint64, shardComm map[byte][]string, shardPendingValidator map[byte][]string, beaconCommittee []string, beaconPendingValidator []string) *CommitteeListsResult {
+func NewCommitteeListsResult(epoch uint64, shardComm map[byte][]incognitokey.CommitteePublicKey, shardPendingValidator map[byte][]incognitokey.CommitteePublicKey, beaconCommittee []incognitokey.CommitteePublicKey, beaconPendingValidator []incognitokey.CommitteePublicKey) *CommitteeListsResult {
 	result := &CommitteeListsResult{
 		Epoch: epoch,
 	}
-	result.BeaconPendingValidator = make([]string, len(beaconPendingValidator))
+	result.BeaconPendingValidator = make([]incognitokey.CommitteePublicKey, len(beaconPendingValidator))
 	copy(result.BeaconPendingValidator, beaconPendingValidator)
-	result.BeaconCommittee = make([]string, len(beaconCommittee))
+	result.BeaconCommittee = make([]incognitokey.CommitteePublicKey, len(beaconCommittee))
 	copy(result.BeaconCommittee, beaconCommittee)
-	result.ShardCommittee = make(map[byte][]string)
+	result.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range shardComm {
-		result.ShardCommittee[k] = make([]string, len(v))
+		result.ShardCommittee[k] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(result.ShardCommittee[k], v)
 	}
-	result.ShardPendingValidator = make(map[byte][]string)
+	result.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range shardPendingValidator {
-		result.ShardPendingValidator[k] = make([]string, len(v))
+		result.ShardPendingValidator[k] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(result.ShardPendingValidator[k], v)
 	}
 	return result

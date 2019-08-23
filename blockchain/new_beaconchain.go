@@ -1,9 +1,13 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type BeaconChain struct {
@@ -36,7 +40,7 @@ func (chain *BeaconChain) CurrentHeight() uint64 {
 	return chain.BestState.BestBlock.Header.Height
 }
 
-func (chain *BeaconChain) GetCommittee() []string {
+func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return chain.BestState.GetBeaconCommittee()
 }
 
@@ -45,7 +49,12 @@ func (chain *BeaconChain) GetCommitteeSize() int {
 }
 
 func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	return common.IndexOfStr(pubkey, chain.BestState.GetBeaconCommittee())
+	for index, key := range chain.BestState.GetBeaconCommittee() {
+		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
+			return index
+		}
+	}
+	return -1
 }
 
 func (chain *BeaconChain) GetLastProposerIndex() int {
@@ -60,8 +69,8 @@ func (chain *BeaconChain) CreateNewBlock(round int) common.BlockInterface {
 	return newBlock
 }
 
-func (chain *BeaconChain) InsertBlk(block common.BlockInterface, isValid bool) {
-	chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), isValid)
+func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
+	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
@@ -73,15 +82,35 @@ func (chain *BeaconChain) GetChainName() string {
 }
 
 func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return "", 0
+	return chain.BestState.GetPubkeyRole(pubkey, round)
 }
 
-func (chain *BeaconChain) ValidateBlock(block common.BlockInterface) error {
-	_ = block
+func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
+	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
+}
+
+func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
+	var beaconBestState BeaconBestState
+	beaconBlock := block.(*BeaconBlock)
+	chain.BestState.cloneBeaconBestState(&beaconBestState)
+	producerPublicKey := beaconBlock.Header.Producer
+	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
+	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
+	if strings.Compare(tempProducer, producerPublicKey) != 0 {
+		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
+	}
+	chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee)
+	chain.InsertBlk(block)
 	return nil
 }
 
-func (chain *BeaconChain) ValidateBlockSanity(common.BlockInterface) error {
+func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
+		return err
+	}
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, chain.GetConsensusType()); err != nil {
+		return nil
+	}
 	return nil
 }
 
@@ -97,17 +126,27 @@ func (chain *BeaconChain) GetShardID() int {
 	return -1
 }
 
-func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]string {
-	var result map[string]map[string][]string
-	result = make(map[string]map[string][]string)
+func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
 
-	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]string)
-	result[chain.BestState.ConsensusAlgorithm][common.BEACON_CHAINKEY] = append([]string{}, chain.BestState.BeaconCommittee...)
+	var result map[string]map[string][]incognitokey.CommitteePublicKey
+	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
+
+	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
+	result[chain.BestState.ConsensusAlgorithm][common.BEACON_CHAINKEY] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.BeaconCommittee...)
 	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
 		if _, ok := result[consensusType]; !ok {
-			result[consensusType] = make(map[string][]string)
+			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]string{}, chain.BestState.ShardCommittee[shardID]...)
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardCommittee[shardID]...)
 	}
 	return result
+}
+
+func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
+	var beaconBlk BeaconBlock
+	err := json.Unmarshal(blockString, &beaconBlk)
+	if err != nil {
+		return nil, err
+	}
+	return &beaconBlk, nil
 }
