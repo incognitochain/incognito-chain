@@ -374,10 +374,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		// check real fee(nano PRV) per tx
 		_, estimateFeeCoinPerKb, estimateTxSizeInKb = httpServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
 	}
-	result := jsonresult.EstimateFeeResult{
-		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
-		EstimateTxSizeInKb:   estimateTxSizeInKb,
-	}
+	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb)
 	Logger.log.Debugf("handleEstimateFee result: %+v", result)
 	return result, nil
 }
