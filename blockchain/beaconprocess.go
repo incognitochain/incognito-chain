@@ -380,21 +380,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(beaconBlo
 	if strings.Compare(string(tempProducer), producerPublicKey) != 0 {
 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 	}
-	// err := incognitokey.ValidateDataB58(producerPublicKey, beaconBlock.ProducerSig, hash.GetBytes())
-	// if err != nil {
-	// 	return NewBlockChainError(BeaconBlockSignatureError, fmt.Errorf("Producer Public Key %+v, Producer Signature %+v, Hash %+v", producerPublicKey, beaconBlock.ProducerSig, hash))
-	// }
-	//=============Verify aggegrate signature
-	// if isVerifySig {
-	// 	// ValidatorIdx must > Number of Beacon Committee / 2 AND Number of Beacon Committee > 3
-	// 	if len(beaconBestState.BeaconCommittee) > 3 && len(beaconBlock.ValidatorsIndex[1]) < (len(beaconBestState.BeaconCommittee)>>1) {
-	// 		return NewBlockChainError(BeaconCommitteeLengthAndCommitteeIndexError, fmt.Errorf("Expect Number of Committee Size greater than 3 but get %+v", len(beaconBestState.BeaconCommittee)))
-	// 	}
-	// 	err := ValidateAggSignature(beaconBlock.ValidatorsIndex, beaconBestState.BeaconCommittee, beaconBlock.AggregatedSig, beaconBlock.R, beaconBlock.Hash())
-	// 	if err != nil {
-	// 		return NewBlockChainError(BeaconBlockSignatureError, err)
-	// 	}
-	// }
+
 	//=============End Verify Aggegrate signature
 	if !beaconBestState.BestBlockHash.IsEqual(&beaconBlock.Header.PreviousBlockHash) {
 		return NewBlockChainError(BeaconBestStateBestBlockNotCompatibleError, errors.New("previous us block should be :"+beaconBestState.BestBlockHash.String()))

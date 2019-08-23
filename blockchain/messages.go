@@ -211,24 +211,22 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 	}
 
 	if blockchain.Synker.IsLatest(false, 0) {
-
-		// blkHash := block.Header.Hash()
-
-		// err := incognitokey.ValidateDataB58(base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte), block.ProducerSig, blkHash.GetBytes())
-
-		// if err != nil {
-		// 	Logger.log.Debugf("Invalid Producer Signature of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
-		// 	return
-		// }
 		if block.Header.Version != SHARD_BLOCK_VERSION {
 			Logger.log.Debugf("Invalid Verion of block height %+v in Shard %+v", block.Header.Height, block.Header.ShardID)
 			return
 		}
+		committee := blockchain.BestState.Beacon.GetAShardCommittee(block.Header.ShardID)
 
-		// if err = ValidateAggSignature(block.ValidatorsIdx, blockchain.BestState.Beacon.GetAShardCommittee(block.Header.ShardID), block.AggregatedSig, block.R, block.Hash()); err != nil {
-		// 	Logger.log.Error(err)
-		// 	return
-		// }
+		err := blockchain.config.ConsensusEngine.ValidateProducerSig(block, block.Header.ConsensusType)
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		}
+		err = blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, block.Header.ConsensusType)
+		if err != nil {
+			Logger.log.Error(err)
+			return
+		}
 
 		from, to, err := blockchain.config.ShardToBeaconPool.AddShardToBeaconBlock(block)
 		if err != nil {
