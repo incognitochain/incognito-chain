@@ -104,7 +104,7 @@ type ChainInterface interface {
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(round int) common.BlockInterface
+	CreateNewBlock(round int) (common.BlockInterface, error)
 	InsertBlk(common.BlockInterface) error
 	ValidateAndInsertBlock(common.BlockInterface) error
 	ValidateBlockWithBlockChain(common.BlockInterface) error
