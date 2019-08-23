@@ -16,6 +16,7 @@ type NodeInterface interface {
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	IsEnableMining() bool
 	GetMiningKeys() string
+	GetPrivateKey() string
 }
 
 type ConsensusInterface interface {

@@ -191,6 +191,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	var err error
 	// init an pubsub manager
 	var pubsubManager = pubsub.NewPubSubManager()
+	if cfg.PrivateKey != "" {
+		// cfg.MiningKeys =
+	}
+
 	serverObj.miningKeys = cfg.MiningKeys
 	if serverObj.miningKeys == "" {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
@@ -1696,7 +1700,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	if chain >= common.MAX_SHARD_NUMBER || chain < -1 {
 		return notmining
 	}
-	if cfg.MiningKeys != "" {
+	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		//Beacon: chain = -1
 		role, shardID := serverObj.consensusEngine.GetUserRole()
 		if chain == -1 && shardID == -1 {
@@ -1746,6 +1750,10 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 
 func (serverObj *Server) GetMiningKeys() string {
 	return cfg.MiningKeys
+}
+
+func (serverObj *Server) GetPrivateKey() string {
+	return cfg.PrivateKey
 }
 
 func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
