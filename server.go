@@ -16,6 +16,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -257,6 +258,9 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		RandomClient:    randomClient,
 		ConsensusEngine: serverObj.consensusEngine,
 	})
+	if err != nil {
+		return err
+	}
 	serverObj.blockChain.InitChannelBlockchain(cRemovedTxs)
 	if err != nil {
 		return err
@@ -320,6 +324,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	for shardID, feeEstimator := range serverObj.feeEstimator {
 		serverObj.blockChain.SetFeeEstimator(feeEstimator, shardID)
 	}
+
 	// create mempool tx
 	serverObj.memPool = &mempool.TxPool{}
 	serverObj.memPool.Init(&mempool.Config{
@@ -350,6 +355,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		MaxTx:         cfg.TxPoolMaxTx,
 		PubSubManager: pubsubManager,
 	})
+	go serverObj.tempMemPool.Start(serverObj.cQuit)
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
 
@@ -598,9 +604,8 @@ func (serverObj Server) Start() {
 	if atomic.AddInt32(&serverObj.started, 1) != 1 {
 		return
 	}
-
 	Logger.log.Debug("Starting server")
-	if common.CheckForce {
+	if blockchain.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
 	}
 	if cfg.TestNet {
@@ -648,6 +653,7 @@ func (serverObj Server) Start() {
 		}
 		go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
+		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
 }
@@ -864,9 +870,10 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
 		},
-		MaxInPeers:  cfg.MaxInPeers,
-		MaxPeers:    cfg.MaxPeers,
-		MaxOutPeers: cfg.MaxOutPeers,
+		MaxInPeers:      cfg.MaxInPeers,
+		MaxPeers:        cfg.MaxPeers,
+		MaxOutPeers:     cfg.MaxOutPeers,
+		ConsensusEngine: serverObj.consensusEngine,
 	}
 	// if KeySetUser != nil && len(KeySetUser.PrivateKey) != 0 {
 	// 	config.UserKeySet = KeySetUser
@@ -1132,12 +1139,15 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	if isRelayNodeForConsensus {
 		senderPublicKey, _ := p.GetRemotePeer().GetPublicKey()
 		bestState := blockchain.GetBeaconBestState()
-		beaconCommitteeList := bestState.BeaconCommittee
+		beaconCommitteeList := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{p.GetRemotePeerID(): true})
 		}
-		shardCommitteeList := bestState.GetShardCommittee()
+		shardCommitteeList := make(map[byte][]string)
+		for shardID, committee := range bestState.GetShardCommittee() {
+			shardCommitteeList[shardID] = incognitokey.CommitteeKeyListToString(committee)
+		}
 		for shardID, committees := range shardCommitteeList {
 			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1
 			if isInShardCommitee {
@@ -1391,14 +1401,14 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
 
 	// ValidateTransaction Public Key from ProducerPrvKey
-	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetMiningPublicKey()
+	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
 	signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
 		msg.(*wire.MessageVersion).PublicKeyType = publicKeyType
 		Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 		// sign data
-		signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
+		signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
 		if err == nil {
 			msg.(*wire.MessageVersion).SignDataB58 = signDataInBase58CheckEncode
 		}
