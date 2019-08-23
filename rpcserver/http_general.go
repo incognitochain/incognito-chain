@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -20,26 +19,11 @@ handleGetInOutPeerMessageCount - return all inbound/outbound message count by pe
 */
 func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetInOutMessageCount by Peer params: %+v", params)
-	result := struct {
-		InboundMessages  interface{} `json:"Inbounds"`
-		OutboundMessages interface{} `json:"Outbounds"`
-	}{}
-	inboundMessageByPeers := peer.GetInboundMessagesByPeer()
-	outboundMessageByPeers := peer.GetOutboundMessagesByPeer()
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) == 0 {
-		result.InboundMessages = inboundMessageByPeers
-		result.OutboundMessages = outboundMessageByPeers
-		return result, nil
+	result, err := jsonresult.NewGetInOutMessageCountResult(paramsArray)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
-	peerID, ok := paramsArray[0].(string)
-	if !ok {
-		peerID = ""
-	}
-	result.InboundMessages = inboundMessageByPeers[peerID]
-	result.OutboundMessages = outboundMessageByPeers[peerID]
-
 	// Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
 }
@@ -51,9 +35,7 @@ func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeCh
 	Logger.log.Debugf("handleGetInOutPeerMessagess params: %+v", params)
 
 	paramsArray := common.InterfaceSlice(params)
-	inboundMessages := peer.GetInboundPeerMessages()
-	outboundMessages := peer.GetOutboundPeerMessages()
-	result, err := jsonresult.NewGetInOutMessageResult(paramsArray, inboundMessages, outboundMessages)
+	result, err := jsonresult.NewGetInOutMessageResult(paramsArray)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
