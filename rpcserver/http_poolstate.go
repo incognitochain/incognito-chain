@@ -168,22 +168,8 @@ func (httpServer *HttpServer) handleGetShardToBeaconPoolStateV2(params interface
 	}
 	allBlockHeight := shardToBeaconPool.GetAllBlockHeight()
 	allLatestBlockHeight := shardToBeaconPool.GetLatestValidPendingBlockHeight()
-	shardToBeaconPoolResult := jsonresult.ShardToBeaconPoolResult{}
-	shardToBeaconPoolResult.ValidBlockHeight = make([]jsonresult.BlockHeights, len(allBlockHeight))
-	shardToBeaconPoolResult.PendingBlockHeight = make([]jsonresult.BlockHeights, len(allBlockHeight))
-	index := 0
-	for shardID, blockHeights := range allBlockHeight {
-		latestBlockHeight := allLatestBlockHeight[shardID]
-		shardToBeaconPoolResult.PendingBlockHeight[index].ShardID = shardID
-		for _, blockHeight := range blockHeights {
-			if blockHeight <= latestBlockHeight {
-				shardToBeaconPoolResult.ValidBlockHeight[index].BlockHeightList = append(shardToBeaconPoolResult.ValidBlockHeight[index].BlockHeightList, blockHeight)
-			} else {
-				shardToBeaconPoolResult.PendingBlockHeight[index].BlockHeightList = append(shardToBeaconPoolResult.PendingBlockHeight[index].BlockHeightList, blockHeight)
-			}
-		}
-		index++
-	}
+	shardToBeaconPoolResult := jsonresult.NewShardToBeaconPoolResult(allBlockHeight, allLatestBlockHeight)
+
 	Logger.log.Debugf("handleGetShardToBeaconPoolStateV2 result: %+v", shardToBeaconPoolResult)
 	return shardToBeaconPoolResult, nil
 }
@@ -193,7 +179,7 @@ handleGetCrossShardPoolState - RPC get cross shard pool state
 */
 func (httpServer *HttpServer) handleGetCrossShardPoolStateV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetCrossShardPoolStateV2 params: %+v", params)
-	var index = 0
+
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) != 1 {
 		Logger.log.Debugf("handleGetCrossShardPoolStateV2 result: %+v", nil)
@@ -208,20 +194,8 @@ func (httpServer *HttpServer) handleGetCrossShardPoolStateV2(params interface{},
 	}
 	allValidBlockHeight := crossShardPool.GetValidBlockHeight()
 	allPendingBlockHeight := crossShardPool.GetPendingBlockHeight()
+	crossShardPoolResult := jsonresult.NewCrossShardPoolResult(allValidBlockHeight, allPendingBlockHeight)
 
-	crossShardPoolResult := jsonresult.CrossShardPoolResult{}
-	crossShardPoolResult.ValidBlockHeight = make([]jsonresult.BlockHeights, len(allValidBlockHeight))
-	crossShardPoolResult.PendingBlockHeight = make([]jsonresult.BlockHeights, len(allPendingBlockHeight))
-	index = 0
-	for shardID, blockHeights := range allValidBlockHeight {
-		crossShardPoolResult.ValidBlockHeight[index].ShardID = shardID
-		crossShardPoolResult.ValidBlockHeight[index].BlockHeightList = blockHeights
-	}
-	index = 0
-	for shardID, blockHeights := range allPendingBlockHeight {
-		crossShardPoolResult.PendingBlockHeight[index].ShardID = shardID
-		crossShardPoolResult.PendingBlockHeight[index].BlockHeightList = blockHeights
-	}
 	Logger.log.Debugf("handleGetCrossShardPoolStateV2 result: %+v", crossShardPoolResult)
 	return crossShardPoolResult, nil
 }
