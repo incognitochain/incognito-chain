@@ -240,9 +240,7 @@ Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
-	result := jsonresult.GetRawMempoolResult{
-		TxHashes: httpServer.config.TxMemPool.ListTxs(),
-	}
+	result := jsonresult.NewGetRawMempoolResult(httpServer.config)
 	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
 	return result, nil
 }
@@ -269,12 +267,12 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	result := jsonresult.GetMempoolEntryResult{}
-	result.Tx, err = httpServer.config.TxMemPool.GetTx(txID)
+	result, err := jsonresult.NewGetMempoolEntryResult(httpServer.config, txID)
 	if err != nil {
 		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+
 	Logger.log.Debugf("handleMempoolEntry result: %+v", result)
 	return result, nil
 }
