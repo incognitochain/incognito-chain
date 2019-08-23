@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"encoding/json"
+	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -121,11 +122,15 @@ func (e BLSBFT) GetUserPrivateKey() string {
 
 func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
 	var blsSigList [][]byte
-	for validator, vote := range votes {
-		blsSigList = append(blsSigList, vote.BLS)
-		brigSigs = append(brigSigs, vote.BRI)
+	for validator, _ := range votes {
 		validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
 	}
+	sort.Ints(validatorIdx)
+	for _, idx := range validatorIdx {
+		blsSigList = append(blsSigList, votes[committee[idx]].BLS)
+		brigSigs = append(brigSigs, votes[committee[idx]].BRI)
+	}
+
 	aggSig, err = blsmultisig.Combine(blsSigList)
 	if err != nil {
 		return nil, nil, nil, err
