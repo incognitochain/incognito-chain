@@ -107,30 +107,17 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	return nil
 }
 
-func (e *BLSBFT) LoadUserKeyFromIncPrivateKey(privateKey string) error {
+func (e *BLSBFT) LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
 	wl, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		return err
+		return "", err
 	}
-	var miningKey MiningKey
 	privateSeedBytes := common.HashB(wl.KeySet.PrivateKey)
 	if err != nil {
-		return err
+		return "", err
 	}
-
-	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
-
-	// privateKey := blsmultisig.B2I(privateKeyBytes)
-	// publicKeyBytes := blsmultisig.PKBytes(blsmultisig.PKGen(privateKey))
-	miningKey.PriKey = map[string][]byte{}
-	miningKey.PubKey = map[string][]byte{}
-	miningKey.PriKey[BLS] = blsmultisig.SKBytes(blsPriKey)
-	miningKey.PubKey[BLS] = blsmultisig.PKBytes(blsPubKey)
-	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
-	miningKey.PriKey[BRI] = bridgesig.SKBytes(&bridgePriKey)
-	miningKey.PubKey[BRI] = bridgesig.PKBytes(&bridgePubKey)
-	e.UserKeySet = &miningKey
-	return nil
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	return privateSeed, nil
 }
 
 func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
