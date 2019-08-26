@@ -603,6 +603,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) CalculateTxValue() uint64 {
 		return txValue
 	}
 
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy() {
+		return 0
+	}
+
 	senderPKBytes := proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 	txValue := uint64(0)
 	for _, outCoin := range proof.GetOutputCoins() {
