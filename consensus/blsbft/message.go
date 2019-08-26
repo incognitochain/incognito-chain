@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -41,7 +41,8 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wi
 func MakeBFTVoteMsg(userKey *MiningKey, chainKey, roundKey string, vote vote) (wire.Message, error) {
 	var voteCtn BFTVote
 	voteCtn.RoundKey = roundKey
-	voteCtn.Validator = userKey.GetPublicKeyBase58()
+	key := userKey.GetPublicKey()
+	voteCtn.Validator = key.GetMiningKeyBase58(CONSENSUSNAME)
 	voteCtn.Vote = vote
 	voteCtnBytes, err := json.Marshal(voteCtn)
 	if err != nil {
@@ -80,9 +81,16 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 
 func (e *BLSBFT) sendVote() error {
 	var Vote vote
-	selfIdx := e.Chain.GetPubKeyCommitteeIndex(e.UserKeySet.GetPublicKeyBase58())
-	listCommittee := []blsmultisig.PublicKey{}
-	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, listCommittee)
+
+	pubKey := e.UserKeySet.GetPublicKey()
+	selfIdx := e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME))
+
+	committeeBLSKeys := []blsmultisig.PublicKey{}
+	for _, member := range e.Chain.GetCommittee() {
+		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
+	}
+
+	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, committeeBLSKeys)
 	if err != nil {
 		return err
 	}
@@ -101,6 +109,8 @@ func (e *BLSBFT) sendVote() error {
 	if err != nil {
 		return err
 	}
+	e.RoundData.Votes[pubKey.GetMiningKeyBase58(CONSENSUSNAME)] = Vote
+	e.logger.Info("sending vote...")
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.RoundData.NotYetSendVote = false
 	return nil

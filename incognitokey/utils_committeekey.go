@@ -1,6 +1,6 @@
 package incognitokey
 
-func ExtractPublickeysFromCommitteeKeyList(keyList []CommitteePubKey, keyType string) ([]string, error) {
+func ExtractPublickeysFromCommitteeKeyList(keyList []CommitteePublicKey, keyType string) ([]string, error) {
 	result := []string{}
 	for _, keySet := range keyList {
 		key := keySet.GetMiningKeyBase58(keyType)
@@ -11,7 +11,7 @@ func ExtractPublickeysFromCommitteeKeyList(keyList []CommitteePubKey, keyType st
 	return result, nil
 }
 
-func CommitteeKeyListToString(keyList []CommitteePubKey) []string {
+func CommitteeKeyListToString(keyList []CommitteePublicKey) []string {
 	result := []string{}
 	for _, key := range keyList {
 		keyStr, _ := key.ToBase58()
@@ -20,10 +20,10 @@ func CommitteeKeyListToString(keyList []CommitteePubKey) []string {
 	return result
 }
 
-func CommitteeBase58KeyListToStruct(strKeyList []string) []CommitteePubKey {
-	result := []CommitteePubKey{}
+func CommitteeBase58KeyListToStruct(strKeyList []string) []CommitteePublicKey {
+	result := []CommitteePublicKey{}
 	for _, key := range strKeyList {
-		var keyStruct CommitteePubKey
+		var keyStruct CommitteePublicKey
 		keyStruct.FromBase58(key)
 		result = append(result, keyStruct)
 	}

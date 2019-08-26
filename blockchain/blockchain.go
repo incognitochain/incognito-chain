@@ -90,8 +90,9 @@ type Config struct {
 
 	ConsensusEngine interface {
 		ValidateProducerSig(block common.BlockInterface, consensusType string) error
-		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey, consensusType string) error
+		ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey, consensusType string) error
 		GetCurrentMiningPublicKey() (string, string)
+		IsOngoing(chainName string) bool
 		CommitteeChange(chainName string)
 	}
 }
@@ -111,8 +112,8 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 		bc.BestState.Shard[shardID] = &ShardBestState{}
 	}
 	bc.BestState.Beacon.Params = make(map[string]string)
-	bc.BestState.Beacon.ShardCommittee = make(map[byte][]incognitokey.CommitteePubKey)
-	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePubKey)
+	bc.BestState.Beacon.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
+	bc.BestState.Beacon.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	bc.Synker = Synker{
 		blockchain: bc,
 		cQuit:      bc.cQuitSync,
@@ -287,9 +288,9 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	initBlock.Header.ShardID = shardID
 
 	_, newShardCandidate := GetStakingCandidate(*blockchain.config.ChainParams.GenesisBeaconBlock)
-	newShardCandidateStructs := []incognitokey.CommitteePubKey{}
+	newShardCandidateStructs := []incognitokey.CommitteePublicKey{}
 	for _, candidate := range newShardCandidate {
-		key := incognitokey.CommitteePubKey{}
+		key := incognitokey.CommitteePublicKey{}
 		err := key.FromBase58(candidate)
 		if err != nil {
 			return err

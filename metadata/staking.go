@@ -21,7 +21,7 @@ type StakingMetadata struct {
 	CommitteePublicKey string
 }
 
-func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, committeePubKey string, isRewardFunder bool) (*StakingMetadata, error) {
+func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, CommitteePublicKey string, isRewardFunder bool) (*StakingMetadata, error) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
@@ -32,7 +32,7 @@ func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidateP
 		CandidatePaymentAddress: candidatePaymentAddress,
 		StakingAmountShard:      stakingAmountShard,
 		IsRewardFunder:          isRewardFunder,
-		CommitteePublicKey:      committeePubKey,
+		CommitteePublicKey:      CommitteePublicKey,
 	}, nil
 }
 
@@ -45,9 +45,9 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 		return false
 	}
 	pk := candidateWallet.KeySet.PaymentAddress.Pk
-	committeePubKey := new(incognitokey.CommitteePublicKey)
-	committeePubKey.FromString(sm.CommitteePublicKey)
-	if (!committeePubKey.CheckSanityData()) || (!bytes.Equal(committeePubKey.IncPubKey, pk)) {
+	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
+	CommitteePublicKey.FromString(sm.CommitteePublicKey)
+	if (!CommitteePublicKey.CheckSanityData()) || (!bytes.Equal(CommitteePublicKey.IncPubKey, pk)) {
 		return false
 	}
 	return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
@@ -108,9 +108,9 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetrieve
 	if len(pk) != 33 {
 		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
 	}
-	committeePubKey := new(incognitokey.CommitteePublicKey)
-	committeePubKey.FromString(stakingMetadata.CommitteePublicKey)
-	if (!committeePubKey.CheckSanityData()) || (!bytes.Equal(committeePubKey.IncPubKey, pubkey)) {
+	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
+	CommitteePublicKey.FromString(stakingMetadata.CommitteePublicKey)
+	if (!CommitteePublicKey.CheckSanityData()) || (!bytes.Equal(CommitteePublicKey.IncPubKey, pubkey)) {
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
 	}
 	return true, true, nil

@@ -7,8 +7,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus/bridgesig"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 )
 
 type CommitteePublicKey struct {
@@ -35,16 +35,16 @@ func (pubKey *CommitteePublicKey) FromString(keyString string) error {
 }
 
 func NewCommitteeKeyFromSeed(seed, incPubKey []byte) (CommitteePublicKey, error) {
-	committeePubKey := new(CommitteePublicKey)
-	committeePubKey.IncPubKey = incPubKey
-	committeePubKey.MiningPubKey = map[string][]byte{}
+	CommitteePublicKey := new(CommitteePublicKey)
+	CommitteePublicKey.IncPubKey = incPubKey
+	CommitteePublicKey.MiningPubKey = map[string][]byte{}
 	_, blsPubKey := blsmultisig.KeyGen(seed)
 	blsPubKeyBytes := blsmultisig.PKBytes(blsPubKey)
-	committeePubKey.MiningPubKey[common.BLS_CONSENSUS] = blsPubKeyBytes
+	CommitteePublicKey.MiningPubKey[common.BLS_CONSENSUS] = blsPubKeyBytes
 	_, briPubKey := bridgesig.KeyGen(seed)
 	briPubKeyBytes := bridgesig.PKBytes(&briPubKey)
-	committeePubKey.MiningPubKey[common.BRI_CONSENSUS] = briPubKeyBytes
-	return *committeePubKey, nil
+	CommitteePublicKey.MiningPubKey[common.BRI_CONSENSUS] = briPubKeyBytes
+	return *CommitteePublicKey, nil
 }
 
 func (pubKey *CommitteePublicKey) FromBytes(keyBytes []byte) error {

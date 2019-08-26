@@ -1,11 +1,14 @@
 package blsmultisig
 
 import (
+	"encoding/base64"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
 var listPKsBytes []PublicKey
@@ -94,6 +97,10 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 	// fmt.Println("Sigs: ", sigs)
 	start = time.Now()
 	cSig, err := combine(sigs)
+	// fmt.Println("sigs:", sigs)
+	cSig2, err := combine(sigs)
+	// fmt.Println("sigs:", sigs)
+	// fmt.Println("CSig:", cSig, cSig2)
 	t2 := time.Now().Sub(start)
 	if err != nil {
 		return 0, 0, 0, true, err
@@ -101,6 +108,8 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 	// fmt.Println("Combine sigs", cSig)
 	start = time.Now()
 	result, err := verify(data, cSig, committeeSign)
+	result2, err := verify(data, cSig2, committeeSign)
+	fmt.Println(result, result2)
 	t3 := time.Now().Sub(start)
 	if err != nil {
 		return 0, 0, 0, true, err
@@ -130,38 +139,38 @@ func Test_fullBLSSignFlow(t *testing.T) {
 				rewriteKey:    true,
 				committeeSign: []int{0},
 			},
-			want:    0.05,
+			want:    0.15,
 			want1:   0.005,
-			want2:   0.05,
+			want2:   0.15,
 			want3:   true,
 			wantErr: false,
 		},
-		{
-			name: "Test 20 of 20 committee sign",
-			args: args{
-				wantErr:       false,
-				rewriteKey:    true,
-				committeeSign: genSubset4Test(20, 20),
-			},
-			want:    1.5,
-			want1:   0.01,
-			want2:   1.5,
-			want3:   true,
-			wantErr: false,
-		},
-		{
-			name: "Test 10 of 20 committee sign",
-			args: args{
-				wantErr:       false,
-				rewriteKey:    true,
-				committeeSign: genSubset4Test(10, 20),
-			},
-			want:    1,
-			want1:   0.01,
-			want2:   1,
-			want3:   true,
-			wantErr: false,
-		},
+		// {
+		// 	name: "Test 20 of 20 committee sign",
+		// 	args: args{
+		// 		wantErr:       false,
+		// 		rewriteKey:    true,
+		// 		committeeSign: genSubset4Test(20, 20),
+		// 	},
+		// 	want:    2,
+		// 	want1:   0.01,
+		// 	want2:   2,
+		// 	want3:   true,
+		// 	wantErr: false,
+		// },
+		// {
+		// 	name: "Test 10 of 20 committee sign",
+		// 	args: args{
+		// 		wantErr:       false,
+		// 		rewriteKey:    true,
+		// 		committeeSign: genSubset4Test(10, 20),
+		// 	},
+		// 	want:    1,
+		// 	want1:   0.01,
+		// 	want2:   1,
+		// 	want3:   true,
+		// 	wantErr: false,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -210,4 +219,39 @@ func Test_genSubset4Test(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_SpecialCase(t *testing.T) {
+	blkHash := []byte{204, 125, 67, 95, 25, 125, 133, 245, 212, 245, 165, 122, 161, 228, 187, 184, 187, 103, 135, 146, 135, 123, 246, 6, 86, 184, 41, 191, 177, 27, 182, 227}
+	committee := make([]PublicKey, 4)
+	var err error
+
+	committee[0], _, err = base58.Base58Check{}.Decode("1XUv5rv257yzEzw4BMxevk7ZAhuvDe521CgkjDNPLCMC37VL2517oLCK6mUww9rxhrAWkRU5Dhe65w3tefZNw36W5AvMGd96vXF2UnadAjoHcUSMy1xvq77K9PouS9K8ivwmatgKVqnEtug346WvpnqzbWkZKESBA4zvE2aKP3kLh8KbpMpfQ")
+	if err != nil {
+		fmt.Println("err 0", err)
+	}
+	committee[1], _, err = base58.Base58Check{}.Decode("18q2uA89SE41hGr3L5rAwbcWWh6PDxpxKd4K32BSND1wEY2Rh1rLockytT76xdroWRHR7HYF7mcwaTtjNQthLZyXk8CvR18c6VtmzRfELUvHyC4ihWxMgHMB68fcCiD7Xpxnys8vD5SPywLpMmNKuqkXGJzagnVwB2nWfzyJs3D6Fnjjto7Nw")
+	if err != nil {
+		fmt.Println("err 1", err)
+	}
+	committee[2], _, err = base58.Base58Check{}.Decode("1JGNfsVB79nY7sjTLqucx2kgfySMYUccgGxnLRFzo3FRqeXYMr5VhH5MhfZNikHyQgGs7FX7wfzAzjY7G8Fz9EvubY7YgDestWvuNRekCZHwnYJg62SZQboNEpf5i3LQV5ML1utgVGDLSZiFQSN7RvubDa9KCyHeY6cYDVn7Wd72FTvBcPTuc")
+	if err != nil {
+		fmt.Println("err 2", err)
+	}
+	committee[3], _, err = base58.Base58Check{}.Decode("1TjN1wbra9eG4cAmjB6xNcvimPF6T3ikjimnTzy5FyJP9chDsW6YMCcbKFQ1aTz2T4kRuLVCbmMXzwduDPYRjKNuddocfUKCY2QjW25kbaS1FaNgvCPxhq5q91DnkVi5L9mKuye9FAhZymwM1cpknsv9xosVa46EyXrEMfsBaC7TYmiWQUdAE")
+	if err != nil {
+		fmt.Println("err 3", err)
+	}
+	sig, err := base64.StdEncoding.DecodeString("p25ufUnlEnXaBWaXdVr32zvbRoSrQk2PmUSHaoND+HA=")
+	fmt.Println(len(sig))
+
+	ssig, err := base64.StdEncoding.DecodeString("Afo8olSvgRxoIIlg4V/MT+DoyDLuKViCff4XqHu2kVM=")
+	fmt.Println(len(ssig))
+	for i := 0; i < 3; i++ {
+		fmt.Println(Verify(sig, blkHash, []int{0}, []PublicKey{committee[i]}))
+	}
+	// if err != nil {
+	// 	fmt.Println("err 4", err)
+	// }
+	fmt.Println(Verify(sig, blkHash, []int{1, 2, 3}, committee))
 }
