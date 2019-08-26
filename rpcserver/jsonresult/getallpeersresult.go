@@ -2,10 +2,12 @@ package jsonresult
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type GetAllPeersResult struct {
@@ -34,21 +36,26 @@ func NewGetAllConnectedPeersResult(connMgr connmanager.ConnManager) *GetAllConne
 	peersMap := []map[string]string{}
 	listeningPeer := connMgr.GetListeningPeer()
 	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList := bestState.BeaconCommittee
-	shardCommitteeList := bestState.GetShardCommittee()
+	beaconCommitteeList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(bestState.BeaconCommittee, bestState.ConsensusAlgorithm)
+	shardCommitteeList := make(map[byte][]string)
+	for shardID, committee := range bestState.GetShardCommittee() {
+		shardCommitteeList[shardID] = incognitokey.CommitteeKeyListToString(committee)
+	}
 
 	for _, peerConn := range listeningPeer.GetPeerConns() {
+		pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
 		peerItem := map[string]string{
-			"RawAddress": peerConn.GetRemoteRawAddress(),
-			"PublicKey":  peerConn.GetRemotePeer().GetPublicKey(),
-			"NodeType":   "",
+			"RawAddress":    peerConn.GetRemoteRawAddress(),
+			"PublicKey":     pk,
+			"PublicKeyType": pkT,
+			"NodeType":      "",
 		}
-		isInBeaconCommittee := common.IndexOfStr(peerConn.GetRemotePeer().GetPublicKey(), beaconCommitteeList) != -1
+		isInBeaconCommittee := common.IndexOfStr(pk, beaconCommitteeList) != -1
 		if isInBeaconCommittee {
 			peerItem["NodeType"] = "Beacon"
 		}
 		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(peerConn.GetRemotePeer().GetPublicKey(), committees) != -1
+			isInShardCommitee := common.IndexOfStr(pk, committees) != -1
 			if isInShardCommitee {
 				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
 				break

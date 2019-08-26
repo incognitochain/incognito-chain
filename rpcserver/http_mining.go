@@ -16,8 +16,7 @@ func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan 
 			IsCommittee: false,
 		}, nil
 	}
-
-	result := jsonresult.NewGetMiningInfoResult(*httpServer.config.TxMemPool, *httpServer.config.BlockChain, httpServer.config.MiningPubKeyB58, *httpServer.config.ChainParams)
+	result := jsonresult.NewGetMiningInfoResult(*httpServer.config.TxMemPool, *httpServer.config.BlockChain, httpServer.config.ConsensusEngine, *httpServer.config.ChainParams, httpServer.config.Server.IsEnableMining())
 	Logger.log.Debugf("handleGetMiningInfo result: %+v", result)
 	return result, nil
 }
