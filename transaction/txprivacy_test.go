@@ -221,3 +221,24 @@ func TestInitTx(t *testing.T) {
 	isValidTx, err := tx2.ValidateTransaction(true, db, shardID, &common.PRVCoinID)
 	assert.Equal(t, true, isValidTx)
 }
+
+
+func TestInitSalaryTx(t *testing.T){
+	salary := uint64(1000)
+
+	senderKey, _ := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
+	senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	senderPaymentAddress := senderKey.KeySet.PaymentAddress
+	receiverAddr := senderPaymentAddress
+
+	tx := new (Tx)
+	err := tx.InitTxSalary(salary, &receiverAddr, &senderKey.KeySet.PrivateKey, db, nil)
+	assert.Equal(t, nil, err)
+
+	isValid, err := tx.ValidateTxSalary(db)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, true, isValid)
+
+	isSalaryTx := tx.IsSalaryTx()
+	assert.Equal(t, true, isSalaryTx)
+}
