@@ -74,6 +74,7 @@ func GetCrossShardPool(shardID byte) *CrossShardPool {
 }
 
 // Validate pending pool again, to move pending block to valid block
+
 // When receive new cross shard block or new beacon state arrive
 func (crossShardPool *CrossShardPool) UpdatePool() map[byte]uint64 {
 	crossShardPool.mtx.Lock()
