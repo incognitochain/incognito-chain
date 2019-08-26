@@ -27,7 +27,7 @@ func NewCreateTransactionResult(txID *common.Hash, txIDString string, byteArrays
 	return result
 }
 
-type CreateTransactionCustomTokenResult struct {
+type CreateTransactionTokenResult struct {
 	Base58CheckData string
 	ShardID         byte   `json:"ShardID"`
 	TxID            string `json:"TxID"`
@@ -35,3 +35,9 @@ type CreateTransactionCustomTokenResult struct {
 	TokenName       string `json:"TokenName"`
 	TokenAmount     uint64 `json:"TokenAmount"`
 }
+
+/*func NewCreateTransactionCustomTokenResult() *CreateTransactionCustomTokenResult {
+	result := &CreateTransactionCustomTokenResult{
+
+	}
+}*/
