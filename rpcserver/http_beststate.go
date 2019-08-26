@@ -54,11 +54,15 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 // handleGetCandidateList - return list candidate of committee
 func (httpServer *HttpServer) handleGetCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetCandidateList params: %+v", params)
-	CSWFCR := httpServer.config.BlockChain.BestState.Beacon.CandidateShardWaitingForCurrentRandom
-	CSWFNR := httpServer.config.BlockChain.BestState.Beacon.CandidateShardWaitingForNextRandom
-	CBWFCR := httpServer.config.BlockChain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom
-	CBWFNR := httpServer.config.BlockChain.BestState.Beacon.CandidateBeaconWaitingForNextRandom
-	epoch := httpServer.config.BlockChain.BestState.Beacon.Epoch
+	beacon, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	CSWFCR := beacon.CandidateShardWaitingForCurrentRandom
+	CSWFNR := beacon.CandidateShardWaitingForNextRandom
+	CBWFCR := beacon.CandidateBeaconWaitingForCurrentRandom
+	CBWFNR := beacon.CandidateBeaconWaitingForNextRandom
+	epoch := beacon.Epoch
 	result := jsonresult.CandidateListsResult{
 		Epoch:                                  epoch,
 		CandidateShardWaitingForCurrentRandom:  CSWFCR,
@@ -108,17 +112,17 @@ func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan
 	}
 	temp := clonedBeaconBestState.GetValidStakers([]string{publicKey})
 	if len(temp) == 0 {
-		result := jsonresult.StakeResult{PublicKey: publicKey, CanStake: false}
+		result := jsonresult.NewStakeResult(publicKey, false)
 		Logger.log.Debugf("handleCanPubkeyStake result: %+v", result)
 		return result, nil
 	}
 	poolCandidate := httpServer.config.TxMemPool.GetClonedPoolCandidate()
 	if common.IndexOfStrInHashMap(publicKey, poolCandidate) > 0 {
-		result := jsonresult.StakeResult{PublicKey: publicKey, CanStake: false}
+		result := jsonresult.NewStakeResult(publicKey, false)
 		Logger.log.Debugf("handleCanPubkeyStake result: %+v", result)
 		return result, nil
 	}
-	result := jsonresult.StakeResult{PublicKey: publicKey, CanStake: true}
+	result := jsonresult.NewStakeResult(publicKey, true)
 	Logger.log.Debugf("handleCanPubkeyStake result: %+v", result)
 	return result, nil
 }

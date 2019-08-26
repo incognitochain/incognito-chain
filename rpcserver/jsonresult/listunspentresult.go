@@ -3,6 +3,11 @@ package jsonresult
 import (
 	"encoding/json"
 	"log"
+	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type ListOutputCoins struct {
@@ -10,26 +15,38 @@ type ListOutputCoins struct {
 }
 
 type OutCoin struct {
-	PublicKey      string
-	CoinCommitment string
-	SNDerivator    string
-	SerialNumber   string
-	Randomness     string
-	Value          string
-	Info           string
+	PublicKey      string `json:"PublicKey"`
+	CoinCommitment string `json:"CoinCommitment"`
+	SNDerivator    string `json:"SNDerivator"`
+	SerialNumber   string `json:"SerialNumber"`
+	Randomness     string `json:"Randomness"`
+	Value          string `json:"Value"`
+	Info           string `json:"Info"`
 }
 
-func (outcoin *OutCoin) Init(data interface{}) error {
+func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
+	outcoin := OutCoin{}
 	temp, err := json.Marshal(data)
 	if err != nil {
 		log.Print(err)
-		return err
+		return nil, err
 	}
 
 	err = json.Unmarshal(temp, &outcoin)
 	if err != nil {
 		log.Print(err)
-		return err
+		return nil, err
 	}
-	return nil
+	return &outcoin, nil
+}
+
+func NewOutCoin(outCoin *privacy.OutputCoin) OutCoin {
+	result := OutCoin{
+		PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
+		Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
+		Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
+		CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
+		Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
+		SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte)}
+	return result
 }
