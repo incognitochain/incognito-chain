@@ -61,7 +61,6 @@ const (
 	getCommitteeList                           = "getcommitteelist"
 	canPubkeyStake                             = "canpubkeystake"
 	getTotalTransaction                        = "gettotaltransaction"
-	getBlockProducerList                       = "getblockproducer"
 	listUnspentCustomToken                     = "listunspentcustomtoken"
 	getBalanceCustomToken                      = "getbalancecustomtoken"
 	getTransactionByHash                       = "gettransactionbyhash"
