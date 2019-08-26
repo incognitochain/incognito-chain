@@ -23,14 +23,18 @@ func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <
 	result := jsonresult.GetBestBlockResult{
 		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
 	}
-	for shardID, best := range httpServer.config.BlockChain.BestState.Shard {
+	shards := httpServer.config.BlockChain.BestState.GetClonedAllShardBestState()
+	for shardID, best := range shards {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:   best.BestBlock.Header.Height,
 			Hash:     best.BestBlockHash.String(),
 			TotalTxs: best.TotalTxns,
 		}
 	}
-	beaconBestState := httpServer.config.BlockChain.BestState.Beacon
+	beaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	if beaconBestState == nil {
 		Logger.log.Debugf("handleGetBestBlock result: %+v", result)
 		return result, nil
@@ -48,7 +52,8 @@ func (httpServer *HttpServer) handleGetBestBlockHash(params interface{}, closeCh
 	result := jsonresult.GetBestBlockHashResult{
 		BestBlockHashes: make(map[int]string),
 	}
-	for shardID, best := range httpServer.config.BlockChain.BestState.GetClonedAllShardBestState() {
+	shards := httpServer.config.BlockChain.BestState.GetClonedAllShardBestState()
+	for shardID, best := range shards {
 		result.BestBlockHashes[int(shardID)] = best.BestBlockHash.String()
 	}
 	clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
@@ -327,9 +332,8 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 			if errD != nil {
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
-			blockResult := jsonresult.GetBlocksBeaconResult{}
-			blockResult.Init(block, size)
-			result = append(result, blockResult)
+			blockResult := jsonresult.NewGetBlocksBeaconResult(block, size)
+			result = append(result, *blockResult)
 			previousHash = &block.Header.PreviousBlockHash
 			if previousHash.String() == (common.Hash{}).String() {
 				break
