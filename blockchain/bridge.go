@@ -79,7 +79,8 @@ func parseAndPadAddress(instContent string) ([]byte, error) {
 	}
 	addrs := []byte{}
 	for i := 0; i*20 < len(addrPacked); i++ {
-		addrs = append(addrs, toBytes32BigEndian(addrPacked[i*20:(i+1)*20]))
+		addr := toBytes32BigEndian(addrPacked[i*20 : (i+1)*20])
+		addrs = append(addrs, addr...)
 	}
 	return addrs, nil
 }
@@ -201,10 +202,10 @@ func parseAndConcatPubkeys(vals []string) []byte {
 	for _, val := range vals {
 		cKey := &incognitokey.CommitteePublicKey{}
 		// TODO(@0xbunyip): handle err
-		_ := cKey.FromBase58(val)
+		cKey.FromBase58(val)
 		miningKey := cKey.MiningPubKey[common.BRI_CONSENSUS]
 		pk, _ := crypto.DecompressPubkey(miningKey)
-		address := crypto.PubkeyToAddress(pk)
+		address := crypto.PubkeyToAddress(*pk)
 
 		pks = append(pks, address[:]...)
 	}
