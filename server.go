@@ -184,6 +184,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
+	serverObj.consensusEngine = consensus.New()
 
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
@@ -241,12 +242,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	// Init consensus engine
-	serverObj.consensusEngine = consensus.New(&consensus.EngineConfig{
+	err = serverObj.consensusEngine.Init(&consensus.EngineConfig{
 		Blockchain:    serverObj.blockChain,
 		Node:          serverObj,
 		BlockGen:      serverObj.blockgen,
 		PubSubManager: serverObj.pusubManager,
 	})
+	if err != nil {
+		return err
+	}
 
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,
