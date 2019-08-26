@@ -130,11 +130,7 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
 	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-		ShardID:         txShardID,
-	}
+	result := jsonresult.NewCreateTransactionResult(tx.Hash(), common.EmptyString, byteArrays, txShardID)
 	Logger.log.Debugf("handleCreateRawTransaction result: %+v", result)
 	return result, nil
 }
@@ -191,11 +187,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
 
-	txID := tx.Hash().String()
-	result := jsonresult.CreateTransactionResult{
-		TxID:    txID,
-		ShardID: common.GetShardIDFromLastByte(tx.PubKeyLastByteSender),
-	}
+	result := jsonresult.NewCreateTransactionResult(tx.Hash(), common.EmptyString, nil, common.GetShardIDFromLastByte(tx.PubKeyLastByteSender))
 	Logger.log.Debugf("\n\n\n\n\n\nhandleSendRawTransaction result: %+v\n\n\n\n\n", result)
 	return result, nil
 }
@@ -220,10 +212,7 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 		Logger.log.Debugf("handleCreateAndSendTx result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
-		ShardID: tx.ShardID,
-	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
 	Logger.log.Debugf("handleCreateAndSendTx result: %+v", result)
 	return result, nil
 }
@@ -233,21 +222,7 @@ handleGetMempoolInfo - RPC returns information about the node's current txs memo
 */
 func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetMempoolInfo params: %+v", params)
-	result := jsonresult.GetMempoolInfo{}
-	result.Size = httpServer.config.TxMemPool.Count()
-	result.Bytes = httpServer.config.TxMemPool.Size()
-	result.MempoolMaxFee = httpServer.config.TxMemPool.MaxFee()
-	listTxsDetail := httpServer.config.TxMemPool.ListTxsDetail()
-	if len(listTxsDetail) > 0 {
-		result.ListTxs = make([]jsonresult.GetMempoolInfoTx, 0)
-		for _, tx := range listTxsDetail {
-			item := jsonresult.GetMempoolInfoTx{
-				LockTime: tx.GetLockTime(),
-				TxID:     tx.Hash().String(),
-			}
-			result.ListTxs = append(result.ListTxs, item)
-		}
-	}
+	result := jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool)
 	Logger.log.Debugf("handleGetMempoolInfo result: %+v", result)
 	return result, nil
 }
@@ -750,7 +725,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	totalValue := uint64(0)
-	for tempTokenID, _ := range temps {
+	for tempTokenID := range temps {
 		if tokenID == tempTokenID.String() {
 			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -764,7 +739,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 			}
 		}
 	}
-	for tempTokenID, _ := range listCustomTokenCrossShard {
+	for tempTokenID := range listCustomTokenCrossShard {
 		if tokenID == tempTokenID.String() {
 			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
