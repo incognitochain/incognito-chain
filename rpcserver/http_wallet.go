@@ -34,7 +34,10 @@ func (httpServer *HttpServer) handleListAccounts(params interface{}, closeChan <
 		lastByte := account.Key.KeySet.PaymentAddress.Pk[len(account.Key.KeySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		prvCoinID := &common.Hash{}
-		prvCoinID.SetBytes(common.PRVCoinID[:])
+		err := prvCoinID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return nil, NewRPCError(ErrTokenIsInvalid, err)
+		}
 		outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
@@ -218,7 +221,10 @@ func (httpServer *HttpServer) handleGetBalanceByPrivatekey(params interface{}, c
 	lastByte := senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err = prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
 	outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&senderKey.KeySet, shardIDSender, prvCoinID)
 	log.Println(err)
 	if err != nil {
@@ -484,8 +490,7 @@ func (httpServer *HttpServer) handleGetPublicKeyFromPaymentAddress(params interf
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	result := jsonresult.GetPublicKeyFromPaymentAddress{}
-	result.Init(key.KeySet.PaymentAddress.Pk[:])
+	result := jsonresult.NewGetPublicKeyFromPaymentAddressResult(key.KeySet.PaymentAddress.Pk[:])
 
 	return result, nil
 }
