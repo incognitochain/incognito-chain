@@ -3,10 +3,12 @@ package blsbft
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -45,16 +47,21 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 	return string(result), nil
 }
 
-func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
+func (e *BLSBFT) validatePreSignBlock(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	e.logger.Info("verifying block...")
 	if err := e.ValidateProducerSig(block); err != nil {
+		panic(err)
 		return err
 	}
+	e.logger.Info("ValidateProducerSig...")
 	if err := e.ValidateProducerPosition(block); err != nil {
 		return err
 	}
+	e.logger.Info("ValidateProducerPosition...")
 	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
 		return err
 	}
+	e.logger.Info("done verify block...")
 	return nil
 }
 
@@ -114,18 +121,18 @@ func (e *BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 		return err
 	}
 
-	committeeBLSKeys := []blsmultisig.PublicKey{}
-	for _, member := range e.Chain.GetCommittee() {
-		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
+	producerBase58 := block.GetProducer()
+	producerBytes, _, err := base58.Base58Check{}.Decode(producerBase58)
+	if err != nil {
+		return err
 	}
-
-	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, e.Chain.GetPubKeyCommitteeIndex(block.GetProducer()), committeeBLSKeys); err != nil {
+	if err := validateSingleBLSSig(block.Hash(), valData.ProducerBLSSig, 0, []blsmultisig.PublicKey{producerBytes}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
+func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return err
@@ -135,26 +142,38 @@ func (e *BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []i
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
 	}
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
+		fmt.Println(block.Hash(), block.GetValidationField())
 		return err
 	}
 	return nil
 }
 
-func (e *BLSBFT) CreateValidationData(blockHash *common.Hash) ValidationData {
+func (e *BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData {
 	var valData ValidationData
 	selfPublicKey := e.UserKeySet.GetPublicKey()
-	selfIdx := e.Chain.GetPubKeyCommitteeIndex(selfPublicKey.GetMiningKeyBase58(CONSENSUSNAME))
-	committeeKeys := []blsmultisig.PublicKey{}
-	for _, key := range e.Chain.GetCommittee() {
-		keyByte, _ := key.GetMiningKey(CONSENSUSNAME)
-		committeeKeys = append(committeeKeys, keyByte)
-	}
-
-	e.UserKeySet.BLSSignData(blockHash.GetBytes(), selfIdx, committeeKeys)
-
+	// selfIdx := e.Chain.GetPubKeyCommitteeIndex(selfPublicKey.GetMiningKeyBase58(CONSENSUSNAME))
+	// committeeKeys := []blsmultisig.PublicKey{}
+	// for _, key := range e.Chain.GetCommittee() {
+	// 	keyByte, _ := key.GetMiningKey(CONSENSUSNAME)
+	// 	committeeKeys = append(committeeKeys, keyByte)
+	// }
+	keyByte, _ := selfPublicKey.GetMiningKey(CONSENSUSNAME)
+	valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
 	return valData
 }
 
 func (e *BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
-	return nil
+	sigByte, _, err := base58.Base58Check{}.Decode(sig)
+	if err != nil {
+		return err
+	}
+	publicKeyByte, _, err := base58.Base58Check{}.Decode(publicKey)
+	if err != nil {
+		return err
+	}
+	valid, err := blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
+	if valid {
+		return nil
+	}
+	return err
 }

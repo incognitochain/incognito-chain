@@ -36,7 +36,8 @@ func PKGen(sk *big.Int) *bn256.G2 {
 
 // AKGen take a seed and return BLS secret key
 func AKGen(listPKBytes []PublicKey, id int) (*bn256.G2, *big.Int) {
-	akByte := listPKBytes[id][:]
+	akByte := []byte{}
+	akByte = append(akByte, listPKBytes[id]...)
 	for i := 0; i < len(listPKBytes); i++ {
 		akByte = Hash4Bls(append(akByte, listPKBytes[i]...))
 	}
@@ -60,7 +61,8 @@ func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
 }
 
 func AiGen(listPKBytes []PublicKey, id int) *big.Int {
-	akByte := listPKBytes[id]
+	akByte := []byte{}
+	akByte = append(akByte, listPKBytes[id]...)
 	for i := 0; i < len(listPKBytes); i++ {
 		akByte = Hash4Bls(append(akByte, listPKBytes[i]...))
 	}

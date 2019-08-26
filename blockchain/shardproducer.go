@@ -59,7 +59,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		block                   = NewShardBlock()
 		instructions            = [][]string{}
 		shardPendingValidator   = incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator)
-		shardCommittee          = incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee)
+		currentCommitteePubKeys = incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee)
 		tempPrivateKey          = blockGenerator.createTempKeyset()
 	)
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
@@ -118,7 +118,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	// process instruction from beacon
 	shardPendingValidator = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID)
 	// Create Instruction
-	instructions, shardPendingValidator, shardCommittee, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
+	instructions, shardPendingValidator, shardCommitteePubKeys, err := blockGenerator.chain.generateInstruction(shardID, beaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -164,7 +164,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
 
-	committeeRoot, err := generateHashFromStringArray(shardCommittee)
+	committeeRoot, err := generateHashFromStringArray(shardCommitteePubKeys)
 	if err != nil {
 		return nil, NewBlockChainError(HashError, err)
 	}
@@ -184,8 +184,14 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
 	instMerkleRoot := GetKeccak256MerkleRoot(insts)
 	_, shardTxMerkleData := CreateShardTxRoot2(block.Body.Transactions)
+
+	producerPosition := (blockGenerator.chain.BestState.Shard[shardID].ShardProposerIdx + round) % len(currentCommitteePubKeys)
+
+	committeeMiningKeys, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee, blockGenerator.chain.BestState.Shard[shardID].ConsensusAlgorithm)
+
 	block.Header = ShardHeader{
-		// ProducerAddress:      producerKeySet.PaymentAddress,
+		Producer:             committeeMiningKeys[producerPosition],
+		ConsensusType:        blockGenerator.chain.BestState.Shard[shardID].ConsensusAlgorithm,
 		ShardID:              shardID,
 		Version:              SHARD_BLOCK_VERSION,
 		PreviousBlockHash:    *previousBlockHash,
@@ -202,6 +208,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		TotalTxsFee:          totalTxsFee,
 		Epoch:                epoch,
 		Round:                round,
+		Timestamp:            time.Now().Unix(),
 	}
 	copy(block.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	return block, nil
@@ -448,7 +455,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			if err != nil {
 				break
 			}
-			shardCommittee := make(map[byte][]incognitokey.CommitteePubKey)
+			shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 			err = json.Unmarshal(temp, &shardCommittee)
 			if err != nil {
 				break

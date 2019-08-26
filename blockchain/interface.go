@@ -34,23 +34,23 @@ type CrossShardPool interface {
 }
 
 type ShardPool interface {
-	RemoveBlock(uint64)
+	RemoveBlock(height uint64)
 	AddShardBlock(block *ShardBlock) error
 	GetValidBlockHash() []common.Hash
 	GetValidBlock() []*ShardBlock
 	GetValidBlockHeight() []uint64
 	GetLatestValidBlockHeight() uint64
-	SetShardState(uint64)
+	SetShardState(height uint64)
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
 }
 
 type BeaconPool interface {
-	RemoveBlock(uint64)
+	RemoveBlock(height uint64)
 	AddBeaconBlock(block *BeaconBlock) error
 	GetValidBlock() []*BeaconBlock
 	GetValidBlockHeight() []uint64
-	SetBeaconState(uint64)
+	SetBeaconState(height uint64)
 	GetAllBlockHeight() []uint64
 	Start(chan struct{})
 }
@@ -97,19 +97,18 @@ type ChainInterface interface {
 	GetMaxBlkCreateTime() time.Duration
 	IsReady() bool
 	GetActiveShardNumber() int
-
 	GetPubkeyRole(pubkey string, round int) (string, byte)
 	CurrentHeight() uint64
 	GetCommitteeSize() int
-	GetCommittee() []incognitokey.CommitteePubKey
+	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(round int) common.BlockInterface
-	InsertBlk(common.BlockInterface)
-	ValidateAndInsertBlock(common.BlockInterface) error
-	ValidateBlockWithBlockChain(common.BlockInterface) error
-	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error
+	CreateNewBlock(round int) (common.BlockInterface, error)
+	InsertBlk(block common.BlockInterface) error
+	ValidateAndInsertBlock(block common.BlockInterface) error
+	ValidateBlockWithBlockChain(block common.BlockInterface) error
+	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block common.BlockInterface) error
 	GetShardID() int
 }

@@ -12,10 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/bootnode/server"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/wire"
 	libpeer "github.com/libp2p/go-libp2p-peer"
@@ -416,11 +414,11 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// publicKeyInBase58CheckEncode := common.EmptyString
 
 		signDataInBase58CheckEncode := common.EmptyString
-		publicKeyInBase58CheckEncode, _ := listener.GetConfig().ConsensusEngine.GetMiningPublicKey()
+		publicKeyInBase58CheckEncode, keyType := listener.GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
 		if publicKeyInBase58CheckEncode != "" {
 			Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 			// sign data
-			signDataInBase58CheckEncode, err = listener.GetConfig().ConsensusEngine.SignDataWithMiningKey([]byte(rawAddress))
+			signDataInBase58CheckEncode, err = listener.GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(rawAddress))
 			if err != nil {
 				Logger.log.Error(err)
 			}
@@ -428,10 +426,11 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 
 		// packing in a object PingArgs
 		args := &server.PingArgs{}
-		args.Init(rawAddress, publicKeyInBase58CheckEncode, signDataInBase58CheckEncode)
+		args.Init(rawAddress, keyType, publicKeyInBase58CheckEncode, signDataInBase58CheckEncode)
 		Logger.log.Debugf("[Exchange Peers] Ping %+v", args)
 
 		err := client.Call("Handler.Ping", args, &response)
+
 		if err != nil {
 			// can not call method PING to rpc server of boot node
 			Logger.log.Error("[Exchange Peers] Ping:")
@@ -508,9 +507,8 @@ func (connManager *ConnManager) checkPeerConnOfPublicKey(publicKey string) bool 
 
 // checkBeaconOfPbk - check a public key is beacon committee?
 func (connManager *ConnManager) checkBeaconOfPbk(pbk string) bool {
-	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
-	isInBeaconCommittee := common.IndexOfStr(pbk, beaconCommitteeList) != -1
+	committee := connManager.config.ConsensusState.getBeaconCommittee()
+	isInBeaconCommittee := common.IndexOfStr(pbk, committee) != -1
 	return isInBeaconCommittee
 }
 
@@ -528,7 +526,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 	}
 	//Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := connManager.countPeerConnOfShard(shard)
-	fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
+	// fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
 	if countPeerShard >= maxPeers {
 		// close if over max conn
 		if countPeerShard > maxPeers {
@@ -556,7 +554,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 				return countPeerShard
 			}
 		} else {
-			fmt.Println("CONN: cannot find", pbk)
+			// fmt.Println("CONN: cannot find", pbk)
 		}
 	}
 	return countPeerShard
@@ -679,15 +677,12 @@ func (connManager *ConnManager) CheckForAcceptConn(peerConn *peer.PeerConn) (boo
 
 //getShardOfPublicKey - return shardID of public key of peer connection
 func (connManager *ConnManager) getShardOfPublicKey(publicKey string) *byte {
-	bestState := blockchain.GetBeaconBestState()
-	shardCommitteeList := bestState.GetShardCommittee()
-	for shardID, committees := range shardCommitteeList {
-		isInShardCommittee := common.IndexOfStr(publicKey, incognitokey.CommitteeKeyListToString(committees)) != -1
-		if isInShardCommittee {
-			return &shardID
-		}
+	committee := connManager.config.ConsensusState.getShardByCommittee()
+	shardID, ok := committee[publicKey]
+	if !ok {
+		return nil
 	}
-	return nil
+	return &shardID
 }
 
 // GetCurrentRoleShard - return current role in shard of connected peer
