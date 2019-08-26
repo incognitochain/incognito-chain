@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/mempool"
@@ -106,15 +105,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 			if outCoin.CoinDetails.GetValue() == 0 {
 				continue
 			}
-			item = append(item, jsonresult.OutCoin{
-				//SerialNumber:   base58.Base58Check{}.Encode(outCoin.CoinDetails.SerialNumber.Compress(), common.ZeroByte),
-				PublicKey:      base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPublicKey().Compress(), common.ZeroByte),
-				Value:          strconv.FormatUint(outCoin.CoinDetails.GetValue(), 10),
-				Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
-				CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().Compress(), common.ZeroByte),
-				Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().Bytes(), common.ZeroByte),
-				SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().Bytes(), common.ZeroByte),
-			})
+			item = append(item, jsonresult.NewOutCoin(outCoin))
 		}
 		result.Outputs[readonlyKeyStr] = item
 	}
@@ -1005,8 +996,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	}
 	usableOutputCoins := []*privacy.OutputCoin{}
 	for _, item := range outputs {
-		out := jsonresult.OutCoin{}
-		err1 := out.Init(item)
+		out, err1 := jsonresult.NewOutcoinFromInterface(item)
 		if err1 != nil {
 			return nil, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprint("outputs is invalid", out)))
 		}
