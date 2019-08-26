@@ -199,11 +199,13 @@ func (e *BLSBFT) Start() {
 							for _, member := range e.Chain.GetCommittee() {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
 							}
-							panic(err)
+							e.logger.Critical(err)
+							return
 						}
 
 						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
 							e.logger.Error(err)
+							return
 						}
 						fmt.Println("\n\n\n\n\nYAYAYAYAYAY\n\n\n\n\n")
 						e.enterNewRound()

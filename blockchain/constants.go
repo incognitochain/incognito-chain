@@ -25,7 +25,7 @@ const (
 	WorkerNumber                 = 5
 	MAX_S2B_BLOCK                = 50
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
-	GetValidBlock                = 50
+	GetValidBlock                = 10
 	CheckForce                   = true
 )
 
@@ -79,7 +79,7 @@ const (
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 2
+	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	//board and proposal parameters
