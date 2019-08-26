@@ -475,3 +475,15 @@ func (block ShardToBeaconBlock) GetInstructions() [][]string {
 func (block ShardToBeaconBlock) GetProducer() string {
 	return block.Header.Producer
 }
+
+func (block ShardBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
+}
+
+func (block CrossShardBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
+}
+
+func (block ShardToBeaconBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
+}
