@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus"
-	"github.com/incognitochain/incognito-chain/consensus/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
