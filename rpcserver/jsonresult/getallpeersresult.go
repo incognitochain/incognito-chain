@@ -39,9 +39,8 @@ func NewGetAllConnectedPeersResult(connMgr connmanager.ConnManager) *GetAllConne
 	beaconCommitteeList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(bestState.BeaconCommittee, bestState.ConsensusAlgorithm)
 	shardCommitteeList := make(map[byte][]string)
 	for shardID, committee := range bestState.GetShardCommittee() {
-		shardCommitteeList[shardID] = incognitokey.CommitteeKeyListToString(committee)
+		shardCommitteeList[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, bestState.ShardConsensusAlgorithm[shardID])
 	}
-
 	for _, peerConn := range listeningPeer.GetPeerConns() {
 		pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
 		peerItem := map[string]string{
