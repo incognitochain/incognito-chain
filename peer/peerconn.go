@@ -335,33 +335,9 @@ func (peerConn *PeerConn) processMessageForEachType(messageType reflect.Type, me
 		if peerConn.config.MessageListeners.OnGetAddr != nil {
 			peerConn.config.MessageListeners.OnAddr(peerConn, message.(*wire.MessageAddr))
 		}
-	case reflect.TypeOf(&wire.MessageBFTPropose{}):
+	case reflect.TypeOf(&wire.MessageBFT{}):
 		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPropose))
-		}
-	case reflect.TypeOf(&wire.MessageBFTProposeV2{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTProposeV2))
-		}
-	case reflect.TypeOf(&wire.MessageBFTPrepareV2{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTPrepareV2))
-		}
-	case reflect.TypeOf(&wire.MessageBFTAgree{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTAgree))
-		}
-	case reflect.TypeOf(&wire.MessageBFTCommit{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTCommit))
-		}
-	case reflect.TypeOf(&wire.MessageBFTReady{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReady))
-		}
-	case reflect.TypeOf(&wire.MessageBFTReq{}):
-		if peerConn.config.MessageListeners.OnBFTMsg != nil {
-			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFTReq))
+			peerConn.config.MessageListeners.OnBFTMsg(peerConn, message.(*wire.MessageBFT))
 		}
 	case reflect.TypeOf(&wire.MessagePeerState{}):
 		if peerConn.config.MessageListeners.OnPeerState != nil {

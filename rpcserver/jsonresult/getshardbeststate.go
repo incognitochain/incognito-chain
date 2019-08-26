@@ -16,8 +16,8 @@ type GetShardBestState struct {
 	MaxShardCommitteeSize  int                            `json:"MaxShardCommitteeSize"`
 	MinShardCommitteeSize  int                            `json:"MinShardCommitteeSize"`
 	ShardProposerIdx       int                            `json:"ShardProposerIdx"`
-	ShardCommittee         []incognitokey.CommitteePubKey `json:"ShardCommittee"`
-	ShardPendingValidator  []incognitokey.CommitteePubKey `json:"ShardPendingValidator"`
+	ShardCommittee         []incognitokey.CommitteePublicKey `json:"ShardCommittee"`
+	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
 	BestCrossShard         map[byte]uint64                `json:"BestCrossShard"` // Best cross shard block by heigh
 	StakingTx              map[string]string              `json:"StakingTx"`
 	NumTxns                uint64                         `json:"NumTxns"`                // The number of txns in the block.
@@ -50,9 +50,9 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 		//ShardCommittee:         data.ShardCommittee,
 	}
 
-	result.ShardCommittee = make([]incognitokey.CommitteePubKey, len(data.ShardCommittee))
+	result.ShardCommittee = make([]incognitokey.CommitteePublicKey, len(data.ShardCommittee))
 	copy(result.ShardCommittee, data.ShardCommittee)
-	result.ShardPendingValidator = make([]incognitokey.CommitteePubKey, len(data.ShardPendingValidator))
+	result.ShardPendingValidator = make([]incognitokey.CommitteePublicKey, len(data.ShardPendingValidator))
 	copy(result.ShardPendingValidator, data.ShardPendingValidator)
 
 	result.BestCrossShard = make(map[byte]uint64)

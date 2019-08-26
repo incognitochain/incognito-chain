@@ -15,17 +15,15 @@ type BeaconChain struct {
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
-	// ChainConsensus  ConsensusInterface
-	// ConsensusEngine ConsensusEngineInterface
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
-	// return uint64(s.Blockchain.BestState.Beacon.BestBlock.Header.Timestamp)
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
 func (chain *BeaconChain) GetMinBlkInterval() time.Duration {
-	return chain.BestState.BlockInterval
+	// return chain.BestState.BlockInterval
+	return common.MinBeaconBlkInterval
 }
 
 func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
@@ -40,7 +38,7 @@ func (chain *BeaconChain) CurrentHeight() uint64 {
 	return chain.BestState.BestBlock.Header.Height
 }
 
-func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePubKey {
+func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return chain.BestState.GetBeaconCommittee()
 }
 
@@ -61,16 +59,16 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.BestState.BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(round int) common.BlockInterface {
+func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return newBlock
+	return newBlock, nil
 }
 
-func (chain *BeaconChain) InsertBlk(block common.BlockInterface) {
-	chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
+func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
+	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), false)
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
@@ -104,7 +102,7 @@ func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) er
 	return nil
 }
 
-func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePubKey) error {
+func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
@@ -126,18 +124,18 @@ func (chain *BeaconChain) GetShardID() int {
 	return -1
 }
 
-func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePubKey {
+func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
 
-	var result map[string]map[string][]incognitokey.CommitteePubKey
-	result = make(map[string]map[string][]incognitokey.CommitteePubKey)
+	var result map[string]map[string][]incognitokey.CommitteePublicKey
+	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
 
-	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePubKey)
-	result[chain.BestState.ConsensusAlgorithm][common.BEACON_CHAINKEY] = append([]incognitokey.CommitteePubKey{}, chain.BestState.BeaconCommittee...)
+	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
+	result[chain.BestState.ConsensusAlgorithm][common.BEACON_CHAINKEY] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.BeaconCommittee...)
 	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {
 		if _, ok := result[consensusType]; !ok {
-			result[consensusType] = make(map[string][]incognitokey.CommitteePubKey)
+			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
 		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePubKey{}, chain.BestState.ShardCommittee[shardID]...)
+		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.ShardCommittee[shardID]...)
 	}
 	return result
 }
@@ -148,5 +146,5 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterf
 	if err != nil {
 		return nil, err
 	}
-	return beaconBlk, nil
+	return &beaconBlk, nil
 }

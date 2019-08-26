@@ -117,7 +117,6 @@ type config struct {
 	// Net config
 	TestNet bool `long:"testnet" description:"Use the test network"`
 
-	// PrivateKey  string `long:"privatekey" description:"User spending key used for operation in consensus"`
 	NodeMode    string `long:"nodemode" description:"Role of this node (beacon/shard/wallet/relay | default role is 'relay' (relayshards must be set to run), 'auto' mode will switch between 'beacon' and 'shard')"`
 	RelayShards string `long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
@@ -144,8 +143,8 @@ type config struct {
 	BtcClientPassword string `long:"btcclientpassword" description:"Bitcoin Client Password for RPC"`
 	EnableMining      bool   `long:"mining" description:"enable mining"`
 	MiningKeys        string `long:"miningkeys" description:"keys used for different consensus algorigthm"`
-
-	Accelerator bool `long:"accelerator" description:"Relay Node Configuration For Consensus"`
+	PrivateKey        string `long:"privatekey" description:"your wallet privatekey"`
+	Accelerator       bool   `long:"accelerator" description:"Relay Node Configuration For Consensus"`
 }
 
 // serviceOptions defines the configuration options for the daemon as a service on
@@ -318,6 +317,7 @@ func loadConfig() (*config, []string, error) {
 		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
 		NodeMode:             DefaultNodeMode,
 		MiningKeys:           common.EmptyString,
+		PrivateKey:           common.EmptyString,
 		FastStartup:          DefaultFastStartup,
 		TxPoolTTL:            DefaultTxPoolTTL,
 		TxPoolMaxTx:          DefaultTxPoolMaxTx,
@@ -626,7 +626,7 @@ func loadConfig() (*config, []string, error) {
 		}
 	}
 
-	if cfg.MiningKeys == "" && cfg.NodeMode != common.NODEMODE_RELAY {
+	if cfg.MiningKeys == "" && cfg.PrivateKey == "" && cfg.NodeMode != common.NODEMODE_RELAY {
 		return nil, nil, errors.New("MiningKeys can't be empty if nodemode isn't relay")
 	}
 

@@ -27,33 +27,33 @@ import (
 // shared by all callers.
 
 type BeaconBestState struct {
-	BestBlockHash                          common.Hash                             `json:"BestBlockHash"`         // The hash of the block.
-	PreviousBestBlockHash                  common.Hash                             `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock                              BeaconBlock                             `json:"BestBlock"`             // The block.
-	BestShardHash                          map[byte]common.Hash                    `json:"BestShardHash"`
-	BestShardHeight                        map[byte]uint64                         `json:"BestShardHeight"`
-	Epoch                                  uint64                                  `json:"Epoch"`
-	BeaconHeight                           uint64                                  `json:"BeaconHeight"`
-	BeaconProposerIndex                    int                                     `json:"BeaconProposerIndex"`
-	BeaconCommittee                        []incognitokey.CommitteePubKey          `json:"BeaconCommittee"`
-	BeaconPendingValidator                 []incognitokey.CommitteePubKey          `json:"BeaconPendingValidator"`
-	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePubKey          `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch
-	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePubKey          `json:"CandidateBeaconWaitingForCurrentRandom"`
-	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePubKey          `json:"CandidateShardWaitingForNextRandom"` // shard candidate list, waiting to be shuffled in next epoch
-	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePubKey          `json:"CandidateBeaconWaitingForNextRandom"`
-	ShardCommittee                         map[byte][]incognitokey.CommitteePubKey `json:"ShardCommittee"`        // current committee and validator of all shard
-	ShardPendingValidator                  map[byte][]incognitokey.CommitteePubKey `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
-	CurrentRandomNumber                    int64                                   `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp                 int64                                   `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber                      bool                                    `json:"IsGetRandomNumber"`
-	Params                                 map[string]string                       `json:"Params,omitempty"` // TODO: review what does this field do
-	MaxBeaconCommitteeSize                 int                                     `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize                 int                                     `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize                  int                                     `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize                  int                                     `json:"MinShardCommitteeSize"`
-	ActiveShards                           int                                     `json:"ActiveShards"`
-	ConsensusAlgorithm                     string                                  `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm                map[byte]string                         `json:"ShardConsensusAlgorithm"`
+	BestBlockHash                          common.Hash                                `json:"BestBlockHash"`         // The hash of the block.
+	PreviousBestBlockHash                  common.Hash                                `json:"PreviousBestBlockHash"` // The hash of the block.
+	BestBlock                              BeaconBlock                                `json:"BestBlock"`             // The block.
+	BestShardHash                          map[byte]common.Hash                       `json:"BestShardHash"`
+	BestShardHeight                        map[byte]uint64                            `json:"BestShardHeight"`
+	Epoch                                  uint64                                     `json:"Epoch"`
+	BeaconHeight                           uint64                                     `json:"BeaconHeight"`
+	BeaconProposerIndex                    int                                        `json:"BeaconProposerIndex"`
+	BeaconCommittee                        []incognitokey.CommitteePublicKey          `json:"BeaconCommittee"`
+	BeaconPendingValidator                 []incognitokey.CommitteePublicKey          `json:"BeaconPendingValidator"`
+	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch
+	CandidateBeaconWaitingForCurrentRandom []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForCurrentRandom"`
+	CandidateShardWaitingForNextRandom     []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForNextRandom"` // shard candidate list, waiting to be shuffled in next epoch
+	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForNextRandom"`
+	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"ShardCommittee"`        // current committee and validator of all shard
+	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
+	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp                 int64                                      `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber                      bool                                       `json:"IsGetRandomNumber"`
+	Params                                 map[string]string                          `json:"Params,omitempty"` // TODO: review what does this field do
+	MaxBeaconCommitteeSize                 int                                        `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize                 int                                        `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize                  int                                        `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize                  int                                        `json:"MinShardCommitteeSize"`
+	ActiveShards                           int                                        `json:"ActiveShards"`
+	ConsensusAlgorithm                     string                                     `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm                map[byte]string                            `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
 	RewardReceiver map[string]string `json:"RewardReceiver"` // map candidate/committee -> reward receiver
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
@@ -63,9 +63,8 @@ type BeaconBestState struct {
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
 	lock                sync.RWMutex
 	randomClient        btc.RandomClient
-
-	BlockInterval      time.Duration
-	BlockMaxCreateTime time.Duration
+	BlockInterval       time.Duration
+	BlockMaxCreateTime  time.Duration
 }
 
 var beaconBestState *BeaconBestState
@@ -82,15 +81,15 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
 	beaconBestState.BeaconHeight = 0
-	beaconBestState.BeaconCommittee = []incognitokey.CommitteePubKey{}
-	beaconBestState.BeaconPendingValidator = []incognitokey.CommitteePubKey{}
-	beaconBestState.CandidateShardWaitingForCurrentRandom = []incognitokey.CommitteePubKey{}
-	beaconBestState.CandidateBeaconWaitingForCurrentRandom = []incognitokey.CommitteePubKey{}
-	beaconBestState.CandidateShardWaitingForNextRandom = []incognitokey.CommitteePubKey{}
-	beaconBestState.CandidateBeaconWaitingForNextRandom = []incognitokey.CommitteePubKey{}
+	beaconBestState.BeaconCommittee = []incognitokey.CommitteePublicKey{}
+	beaconBestState.BeaconPendingValidator = []incognitokey.CommitteePublicKey{}
+	beaconBestState.CandidateShardWaitingForCurrentRandom = []incognitokey.CommitteePublicKey{}
+	beaconBestState.CandidateBeaconWaitingForCurrentRandom = []incognitokey.CommitteePublicKey{}
+	beaconBestState.CandidateShardWaitingForNextRandom = []incognitokey.CommitteePublicKey{}
+	beaconBestState.CandidateBeaconWaitingForNextRandom = []incognitokey.CommitteePublicKey{}
 	beaconBestState.RewardReceiver = make(map[string]string)
-	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePubKey)
-	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePubKey)
+	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
+	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	beaconBestState.Params = make(map[string]string)
 	beaconBestState.CurrentRandomNumber = -1
 	beaconBestState.MaxBeaconCommitteeSize = netparam.MaxBeaconCommitteeSize
@@ -155,33 +154,33 @@ func (beaconBestState *BeaconBestState) GetBestHeightOfShard(shardID byte) uint6
 }
 
 // GetAShardCommittee TODO
-func (beaconBestState *BeaconBestState) GetAShardCommittee(shardID byte) []incognitokey.CommitteePubKey {
+func (beaconBestState *BeaconBestState) GetAShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	return beaconBestState.ShardCommittee[shardID]
 }
 
 // GetShardCommittee TODO
-func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]incognitokey.CommitteePubKey) {
+func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]incognitokey.CommitteePublicKey) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
-	res = make(map[byte][]incognitokey.CommitteePubKey)
+	res = make(map[byte][]incognitokey.CommitteePublicKey)
 	for index, element := range beaconBestState.ShardCommittee {
 		res[index] = element
 	}
 	return res
 }
 
-func (beaconBestState *BeaconBestState) GetAShardPendingValidator(shardID byte) []incognitokey.CommitteePubKey {
+func (beaconBestState *BeaconBestState) GetAShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	return beaconBestState.ShardPendingValidator[shardID]
 }
 
-func (beaconBestState *BeaconBestState) GetShardPendingValidator() (res map[byte][]incognitokey.CommitteePubKey) {
+func (beaconBestState *BeaconBestState) GetShardPendingValidator() (res map[byte][]incognitokey.CommitteePublicKey) {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
-	res = make(map[byte][]incognitokey.CommitteePubKey)
+	res = make(map[byte][]incognitokey.CommitteePublicKey)
 	for index, element := range beaconBestState.ShardPendingValidator {
 		res[index] = element
 	}
@@ -490,22 +489,22 @@ func (beaconBestState *BeaconBestState) GetPubkeyRole(pubkey string, round int) 
 	return common.EmptyString, 0
 }
 
-func (beaconBestState *BeaconBestState) GetShardCandidate() []incognitokey.CommitteePubKey {
+func (beaconBestState *BeaconBestState) GetShardCandidate() []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	return append(beaconBestState.CandidateShardWaitingForCurrentRandom, beaconBestState.CandidateShardWaitingForNextRandom...)
 }
-func (beaconBestState *BeaconBestState) GetBeaconCandidate() []incognitokey.CommitteePubKey {
+func (beaconBestState *BeaconBestState) GetBeaconCandidate() []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	return append(beaconBestState.CandidateBeaconWaitingForCurrentRandom, beaconBestState.CandidateBeaconWaitingForNextRandom...)
 }
-func (beaconBestState *BeaconBestState) GetBeaconCommittee() []incognitokey.CommitteePubKey {
+func (beaconBestState *BeaconBestState) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	return beaconBestState.BeaconCommittee
 }
-func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitokey.CommitteePubKey {
+func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
 	return beaconBestState.BeaconPendingValidator
