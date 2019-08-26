@@ -423,8 +423,8 @@ func (httpServer *HttpServer) handleCreateRawCustomTokenTransaction(params inter
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	result := jsonresult.CreateTransactionCustomTokenResult{
-		ShardID:         tx.Tx.PubKeyLastByteSender,
+	result := jsonresult.CreateTransactionTokenResult{
+		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
 		TxID:            tx.Hash().String(),
 		TokenID:         tx.TxTokenData.PropertyID.String(),
 		TokenName:       tx.TxTokenData.PropertyName,
@@ -479,7 +479,7 @@ func (httpServer *HttpServer) handleSendRawCustomTokenTransaction(params interfa
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	result := jsonresult.CreateTransactionCustomTokenResult{
+	result := jsonresult.CreateTransactionTokenResult{
 		TxID:        tx.Hash().String(),
 		TokenID:     tx.TxTokenData.PropertyID.String(),
 		TokenName:   tx.TxTokenData.PropertyName,
@@ -498,7 +498,7 @@ func (httpServer *HttpServer) handleCreateAndSendCustomTokenTransaction(params i
 		Logger.log.Debugf("handleCreateAndSendCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, err
 	}
-	tx := data.(jsonresult.CreateTransactionCustomTokenResult)
+	tx := data.(jsonresult.CreateTransactionTokenResult)
 	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		Logger.log.Debugf("handleCreateAndSendCustomTokenTransaction result: %+v, err: %+v", nil, err)
@@ -1182,8 +1182,8 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 		Logger.log.Error(err)
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
-	result := jsonresult.CreateTransactionCustomTokenResult{
-		ShardID:         tx.Tx.PubKeyLastByteSender,
+	result := jsonresult.CreateTransactionTokenResult{
+		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
 		TxID:            tx.Hash().String(),
 		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
 		TokenName:       tx.TxPrivacyTokenData.PropertyName,
@@ -1241,7 +1241,7 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
 	}
-	result := jsonresult.CreateTransactionCustomTokenResult{
+	result := jsonresult.CreateTransactionTokenResult{
 		TxID:        tx.Hash().String(),
 		TokenID:     tx.TxPrivacyTokenData.PropertyID.String(),
 		TokenName:   tx.TxPrivacyTokenData.PropertyName,
@@ -1259,7 +1259,7 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 	if err != nil {
 		return nil, err
 	}
-	tx := data.(jsonresult.CreateTransactionCustomTokenResult)
+	tx := data.(jsonresult.CreateTransactionTokenResult)
 	base58CheckData := tx.Base58CheckData
 	if err != nil {
 		Logger.log.Debugf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
