@@ -57,7 +57,8 @@ type GetBlockTxResult struct {
 	HexData  string `json:"HexData"`
 }
 
-func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock, size uint64) {
+func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64) *GetBlocksBeaconResult {
+	getBlockResult := &GetBlocksBeaconResult{}
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.Height = block.Header.Height
@@ -71,6 +72,7 @@ func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock,
 	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Instructions = block.Body.Instructions
 	getBlockResult.Size = size
+	return getBlockResult
 }
 
 func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size uint64) {
