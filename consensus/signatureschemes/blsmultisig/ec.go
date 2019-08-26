@@ -32,16 +32,17 @@ func CmprG2(pn *bn256.G2) []byte {
 
 // DecmprG1 is
 func DecmprG1(bytes []byte) (*bn256.G1, error) {
-	if len(bytes) != CCmprPnSz {
+	bytesTemp := []byte{}
+	bytesTemp = append(bytesTemp, bytes...)
+	if len(bytesTemp) != CCmprPnSz {
 		return nil, errors.New(CErr + CErrInps)
 	}
-
-	oddPoint := ((bytes[0] & CMaskByte) != 0x00)
+	oddPoint := ((bytesTemp[0] & CMaskByte) != 0x00)
 	if oddPoint {
-		bytes[0] &= CNotMaskB
+		bytesTemp[0] &= CNotMaskB
 	}
 	xCoor := big.NewInt(1)
-	xCoor.SetBytes(bytes)
+	xCoor.SetBytes(bytesTemp)
 	pn, err := xCoor2G1P(xCoor, oddPoint)
 	if err != nil {
 		return nil, errors.New(CErr + CErrCmpr + err.Error())

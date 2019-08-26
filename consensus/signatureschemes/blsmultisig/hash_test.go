@@ -46,11 +46,11 @@ func Test_testAvgTimeG1P2I(t *testing.T) {
 		want int64
 	}{
 		{
-			name: "Test 10000 loop and UpperBound for function execution time is 0.0001s",
+			name: "Test 1000 loop and UpperBound for function execution time is 0.0001s",
 			args: args{
-				loop: 10000,
+				loop: 1000,
 			},
-			want: 100000,
+			want: 1000,
 		},
 	}
 	for _, tt := range tests {
@@ -74,7 +74,7 @@ func Test_testAvgTimeI2G1P(t *testing.T) {
 		{
 			name: "Test 10000 loop and UpperBound for function execution time is 0.0005s",
 			args: args{
-				loop: 10000,
+				loop: 1000,
 			},
 			want: 500000,
 		},

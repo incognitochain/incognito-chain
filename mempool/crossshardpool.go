@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/database"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -168,7 +169,7 @@ func (crossShardPool *CrossShardPool) validateCrossShardBlockSignature(crossShar
 	if err != nil {
 		return NewBlockPoolError(DatabaseError, fmt.Errorf("No Committee For Cross Shard Block %+v from ShardID %+v", crossShardBlock.Header.Height, crossShardBlock.Header.ShardID))
 	}
-	shardCommittee := make(map[byte][]string)
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	if err := json.Unmarshal(shardCommitteeByte, &shardCommittee); err != nil {
 		return NewBlockPoolError(UnmarshalShardCommitteeError, errors.New("Fail to unmarshal shard committee"))
 	}
@@ -351,6 +352,11 @@ func (crossShardPool *CrossShardPool) GetLatestValidBlockHeight() map[byte]uint6
 	crossShardPool.mtx.RLock()
 	defer crossShardPool.mtx.RUnlock()
 	finalBlockHeight := make(map[byte]uint64)
+	if len(crossShardPool.pendingPool[0]) > 0 {
+		expectedHeight := crossShardPool.updatePool()
+		fmt.Println(expectedHeight)
+		panic("65tyujt")
+	}
 	for shardID, blkItems := range crossShardPool.validPool {
 		if len(blkItems) > 0 {
 			finalBlockHeight[shardID] = blkItems[len(blkItems)-1].Header.Height

@@ -242,6 +242,9 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
 	}
 	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
+
+		panic(string(data))
+
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.Body = blkBody
@@ -397,8 +400,8 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 // 	return inst, err
 // }
 
-func (block *ShardBlock) AddValidationField(validateData string) error {
-	block.ValidationData = validateData
+func (block *ShardBlock) AddValidationField(validationData string) error {
+	block.ValidationData = validationData
 	return nil
 }
 
@@ -471,4 +474,16 @@ func (block ShardToBeaconBlock) GetInstructions() [][]string {
 
 func (block ShardToBeaconBlock) GetProducer() string {
 	return block.Header.Producer
+}
+
+func (block ShardBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
+}
+
+func (block CrossShardBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
+}
+
+func (block ShardToBeaconBlock) GetConsensusType() string {
+	return block.Header.ConsensusType
 }

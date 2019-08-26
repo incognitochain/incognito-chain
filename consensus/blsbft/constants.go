@@ -7,8 +7,8 @@ const (
 	LISTEN   = "LISTEN"
 	VOTE     = "VOTE"
 	NEWROUND = "NEWROUND"
-	BLS      = "BLS"
-	BRI      = "DSA"
+	BLS      = "bls"
+	BRI      = "dsa"
 )
 
 //

@@ -62,6 +62,7 @@ type Server struct {
 	addrManager       *addrmanager.AddrManager
 	// userKeySet        *incognitokey.KeySet
 	miningKeys      string
+	privateKey      string
 	wallet          *wallet.Wallet
 	consensusEngine *consensus.Engine
 	blockgen        *blockchain.BlockGenerator
@@ -183,6 +184,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
 	serverObj.memCache = memcache.New()
+	serverObj.consensusEngine = consensus.New()
 
 	//Init channel
 	cPendingTxs := make(chan metadata.Transaction, 500)
@@ -191,8 +193,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	var err error
 	// init an pubsub manager
 	var pubsubManager = pubsub.NewPubSubManager()
+
 	serverObj.miningKeys = cfg.MiningKeys
-	if serverObj.miningKeys == "" {
+	serverObj.privateKey = cfg.PrivateKey
+	if serverObj.miningKeys == "" && serverObj.privateKey == "" {
 		if cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_BEACON || cfg.NodeMode == common.NODEMODE_SHARD {
 			panic("miningkeys can't be empty in this node mode")
 		}
@@ -204,6 +208,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	serverObj.shardPool = make(map[byte]blockchain.ShardPool)
 	serverObj.blockChain = &blockchain.BlockChain{}
 	serverObj.isEnableMining = cfg.EnableMining
+	// create mempool tx
+	serverObj.memPool = &mempool.TxPool{}
 
 	relayShards := []byte{}
 	if cfg.RelayShards == "all" {
@@ -236,7 +242,15 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		return err
 	}
 	// Init consensus engine
-	serverObj.consensusEngine = consensus.New(serverObj, serverObj.blockChain, serverObj.blockgen)
+	err = serverObj.consensusEngine.Init(&consensus.EngineConfig{
+		Blockchain:    serverObj.blockChain,
+		Node:          serverObj,
+		BlockGen:      serverObj.blockgen,
+		PubSubManager: serverObj.pusubManager,
+	})
+	if err != nil {
+		return err
+	}
 
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		ChainParams: serverObj.chainParams,
@@ -325,8 +339,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 		serverObj.blockChain.SetFeeEstimator(feeEstimator, shardID)
 	}
 
-	// create mempool tx
-	serverObj.memPool = &mempool.TxPool{}
 	serverObj.memPool.Init(&mempool.Config{
 		BlockChain:        serverObj.blockChain,
 		DataBase:          serverObj.dataBase,
@@ -870,9 +882,10 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
 		},
-		MaxInPeers:  cfg.MaxInPeers,
-		MaxPeers:    cfg.MaxPeers,
-		MaxOutPeers: cfg.MaxOutPeers,
+		MaxInPeers:      cfg.MaxInPeers,
+		MaxPeers:        cfg.MaxPeers,
+		MaxOutPeers:     cfg.MaxOutPeers,
+		ConsensusEngine: serverObj.consensusEngine,
 	}
 	// if KeySetUser != nil && len(KeySetUser.PrivateKey) != 0 {
 	// 	config.UserKeySet = KeySetUser
@@ -1002,6 +1015,7 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 		err := serverObj.consensusEngine.VerifyData([]byte(peerConn.GetListenerPeer().GetPeerID().Pretty()), msg.SignDataB58, msg.PublicKey, msg.PublicKeyType)
 		if err == nil {
 			pbk = msg.PublicKey
+			pbkType = msg.PublicKeyType
 		} else {
 			peerConn.ForceClose()
 			return
@@ -1191,7 +1205,7 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 }
 
 func (serverObj *Server) GetNodeRole() string {
-	if serverObj.miningKeys == "" {
+	if serverObj.miningKeys == "" && serverObj.privateKey == "" {
 		return ""
 	}
 	if cfg.NodeMode == "relay" {
@@ -1400,14 +1414,14 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 	msg.(*wire.MessageVersion).ProtocolVersion = serverObj.protocolVersion
 
 	// ValidateTransaction Public Key from ProducerPrvKey
-	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetMiningPublicKey()
+	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
 	signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
 		msg.(*wire.MessageVersion).PublicKeyType = publicKeyType
 		Logger.log.Info("Start Process Discover Peers", publicKeyInBase58CheckEncode)
 		// sign data
-		signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
+		signDataInBase58CheckEncode, err = peerConn.GetListenerPeer().GetConfig().ConsensusEngine.SignDataWithCurrentMiningKey([]byte(peerConn.GetRemotePeer().GetPeerID().Pretty()))
 		if err == nil {
 			msg.(*wire.MessageVersion).SignDataB58 = signDataInBase58CheckEncode
 		}
@@ -1635,12 +1649,14 @@ func (serverObj *Server) BoardcastNodeState() error {
 		return err
 	}
 	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
+		serverObj.blockChain.BestState.Beacon.BestBlock.Header.Timestamp,
 		serverObj.blockChain.BestState.Beacon.BeaconHeight,
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
 	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
+			serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp,
 			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
 			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
 			serverObj.blockChain.BestState.Shard[shardID].Hash(),
@@ -1656,16 +1672,16 @@ func (serverObj *Server) BoardcastNodeState() error {
 			msg.(*wire.MessagePeerState).CrossShardPool[byte(shardID)] = serverObj.crossShardPool[byte(shardID)].GetValidBlockHeight()
 		}
 	}
-
-	// if serverObj.userKeySet != nil {
-	// 	userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(serverObj.userKeySet.GetPublicKeyInBase58CheckEncode(), serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
-	// 	if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && userRole == common.NODEMODE_SHARD {
-	// 		userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(serverObj.userKeySet.GetPublicKeyInBase58CheckEncode(), serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
-	// 		if userRole == "shard-proposer" || userRole == "shard-validator" {
-	// 			msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
-	// 		}
-	// 	}
-	// }
+	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+	if userKey != "" {
+		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
+		if (cfg.NodeMode == common.NODEMODE_AUTO || cfg.NodeMode == common.NODEMODE_SHARD) && userRole == common.NODEMODE_SHARD {
+			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
+			if userRole == "shard-proposer" || userRole == "shard-validator" {
+				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
+			}
+		}
+	}
 	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Boardcast peerstate from %s", listener.GetRawAddress())
 	serverObj.PushMessageToAll(msg)
@@ -1692,7 +1708,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	if chain >= common.MAX_SHARD_NUMBER || chain < -1 {
 		return notmining
 	}
-	if cfg.MiningKeys != "" {
+	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		//Beacon: chain = -1
 		role, shardID := serverObj.consensusEngine.GetUserRole()
 		if chain == -1 && shardID == -1 {
@@ -1741,7 +1757,11 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 }
 
 func (serverObj *Server) GetMiningKeys() string {
-	return cfg.MiningKeys
+	return serverObj.miningKeys
+}
+
+func (serverObj *Server) GetPrivateKey() string {
+	return serverObj.privateKey
 }
 
 func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {

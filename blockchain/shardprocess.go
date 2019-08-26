@@ -453,7 +453,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 					if err != nil {
 						return NewBlockChainError(FetchShardCommitteeError, err)
 					}
-					shardCommittee := make(map[byte][]incognitokey.CommitteePubKey)
+					shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 					err = json.Unmarshal(temp, &shardCommittee)
 					if err != nil {
 						return NewBlockChainError(UnmashallJsonShardCommitteesError, err)
@@ -522,16 +522,16 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	}
 	//=============End Verify producer signature
 	//=============Verify aggegrate signature
-	if isVerifySig {
-		// TODO: validator index condition
-		// if len(shardBestState.ShardCommittee) > 3 && len(shardBlock.ValidatorsIdx[1]) < (len(shardBestState.ShardCommittee)>>1) {
-		// 	return NewBlockChainError(ShardCommitteeLengthAndCommitteeIndexError, fmt.Errorf("Expect Number of Committee Size greater than 3 but get %+v", len(shardBestState.ShardCommittee)))
-		// }
-		// err := ValidateAggSignature(shardBlock.ValidatorsIdx, shardBestState.ShardCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Hash())
-		// if err != nil {
-		// 	return err
-		// }
-	}
+	// if isVerifySig {
+	// TODO: validator index condition
+	// if len(shardBestState.ShardCommittee) > 3 && len(shardBlock.ValidatorsIdx[1]) < (len(shardBestState.ShardCommittee)>>1) {
+	// 	return NewBlockChainError(ShardCommitteeLengthAndCommitteeIndexError, fmt.Errorf("Expect Number of Committee Size greater than 3 but get %+v", len(shardBestState.ShardCommittee)))
+	// }
+	// err := ValidateAggSignature(shardBlock.ValidatorsIdx, shardBestState.ShardCommittee, shardBlock.AggregatedSig, shardBlock.R, shardBlock.Hash())
+	// if err != nil {
+	// 	return err
+	// }
+	// }
 	//=============End Verify Aggegrate signature
 	// check with current final best state
 	// shardBlock can only be insert if it match the current best state
@@ -644,7 +644,7 @@ func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock
 					}
 				}
 			}
-			if l[0] == "assign" && l[2] == "shard" {
+			if l[0] == AssignAction && l[2] == "shard" {
 				if l[3] == strconv.Itoa(int(shardBlock.Header.ShardID)) {
 					Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", shardBlock.Header.ShardID, shardBestState.ShardPendingValidator)
 					shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, incognitokey.CommitteeBase58KeyListToStruct(strings.Split(l[1], ","))...)
@@ -665,7 +665,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 	}
 	// Swap committee
 	for _, l := range shardBlock.Body.Instructions {
-		if l[0] == "swap" {
+		if l[0] == SwapAction {
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
 			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardBestState.MaxShardCommitteeSize, common.OFFSET)
 			if err != nil {
@@ -745,26 +745,26 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
 
-	err := blockchain.config.TempTxPool.ValidateTxList(txs)
-	if err != nil {
-		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
-		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
-	}
-	// TODO: uncomment to synchronize validate method with shard process and mempool
-	//for _, tx := range txs {
-	//	if !tx.IsSalaryTx() {
-	//		if tx.GetType() == common.TxCustomTokenType {
-	//			customTokenTx := tx.(*transaction.TxNormalToken)
-	//			if customTokenTx.TxNormalTokenData.Type == transaction.CustomTokenCrossShard {
-	//				continue
-	//			}
-	//		}
-	//		_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
+	//err := blockchain.config.TempTxPool.ValidateTxList(txs)
+	//if err != nil {
+	//	Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
+	//	return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
 	//}
+	// TODO: uncomment to synchronize validate method with shard process and mempool
+	for index, tx := range txs {
+		if !tx.IsSalaryTx() {
+			if tx.GetType() == common.TxCustomTokenType {
+				customTokenTx := tx.(*transaction.TxNormalToken)
+				if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+					continue
+				}
+			}
+			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+			if err != nil {
+				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))
+			}
+		}
+	}
 	return nil
 }
 
@@ -839,7 +839,7 @@ func (blockchain *BlockChain) processStoreShardBlockAndUpdateDatabase(shardBlock
 	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
 		err := feeEstimator.RegisterBlock(shardBlock)
 		if err != nil {
-			return NewBlockChainError(RegisterEstimatorFeeError, err)
+			Logger.log.Error(NewBlockChainError(RegisterEstimatorFeeError, err))
 		}
 	}
 	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height)

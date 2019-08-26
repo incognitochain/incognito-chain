@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -179,6 +180,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	beaconBlock.Header.ShardStateHash = tempShardStateHash
 	beaconBlock.Header.InstructionHash = tempInstructionHash
 	copy(beaconBlock.Header.InstructionMerkleRoot[:], GetKeccak256MerkleRoot(flattenInsts))
+	beaconBlock.Header.Timestamp = time.Now().Unix()
 	//============END Build Header Hash=========
 	return beaconBlock, nil
 }
@@ -279,7 +281,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	newBeaconHeight uint64,
 	stakers [][]string,
 	swap map[byte][][]string,
-	shardCandidates []incognitokey.CommitteePubKey,
+	shardCandidates []incognitokey.CommitteePublicKey,
 	bridgeInstructions [][]string,
 	acceptedRewardInstructions [][]string,
 	chainParamEpoch uint64,
@@ -326,7 +328,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		// UNCOMMENT FOR TESTING
 		chainTimeStamp := beaconBestState.CurrentRandomTimeStamp + 1
 		//==================================
-		assignedCandidates := make(map[byte][]incognitokey.CommitteePubKey)
+		assignedCandidates := make(map[byte][]incognitokey.CommitteePublicKey)
 		if chainTimeStamp > beaconBestState.CurrentRandomTimeStamp {
 			randomInstruction, rand := beaconBestState.generateRandomInstruction(beaconBestState.CurrentRandomTimeStamp)
 			instructions = append(instructions, randomInstruction)
