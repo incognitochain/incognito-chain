@@ -79,3 +79,7 @@ func (beaconBlock BeaconBlock) GetInstructions() [][]string {
 func (beaconBlock BeaconBlock) GetProducer() string {
 	return beaconBlock.Header.Producer
 }
+
+func (beaconBlock BeaconBlock) GetConsensusType() string {
+	return beaconBlock.Header.ConsensusType
+}

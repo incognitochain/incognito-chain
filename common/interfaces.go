@@ -9,4 +9,5 @@ type BlockInterface interface {
 	GetRound() int
 	GetRoundKey() string
 	GetInstructions() [][]string
+	GetConsensusType() string
 }
