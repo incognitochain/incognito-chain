@@ -149,6 +149,7 @@ func (e *BLSBFT) Start() {
 					if e.Blocks[roundKey] != nil {
 						if err := e.validatePreSignBlock(e.Blocks[roundKey], e.Chain.GetCommittee()); err != nil {
 							e.logger.Error(err)
+							time.Sleep(1 * time.Second)
 							continue
 						}
 						if e.RoundData.Block == nil {
@@ -156,6 +157,7 @@ func (e *BLSBFT) Start() {
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
 								e.logger.Error(err)
+								time.Sleep(1 * time.Second)
 								continue
 							}
 							e.RoundData.BlockValidateData = *valData
@@ -163,7 +165,6 @@ func (e *BLSBFT) Start() {
 						}
 					}
 				case VOTE:
-
 					if e.RoundData.NotYetSendVote {
 						err := e.sendVote()
 						if err != nil {
@@ -175,6 +176,7 @@ func (e *BLSBFT) Start() {
 						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.Committee)
 						if err != nil {
 							e.logger.Error(err)
+							time.Sleep(1 * time.Second)
 							continue
 						}
 
@@ -195,12 +197,14 @@ func (e *BLSBFT) Start() {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
 							}
 							e.logger.Critical(err)
+							time.Sleep(1 * time.Second)
 							return
 						}
 
 						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
 							e.logger.Error(err)
-							return
+							time.Sleep(1 * time.Second)
+							continue
 						}
 						fmt.Println("\n\n\n\n\nYAYAYAYAYAY\n\n\n\n\n")
 						e.enterNewRound()
