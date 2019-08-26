@@ -440,7 +440,7 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(
 ) (bool, error) {
 	// no need to check for tx init token
 	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-		return true, nil
+		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, db, shardID, nil)
 	}
 	// check for proof, signature ...
 	if ok, err := txCustomTokenPrivacy.ValidateTransaction(hasPrivacyCoin, db, shardID, nil); !ok {
@@ -466,7 +466,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(false, db, shardID, &tokenID)
+			return true, nil
 		} else {
 			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), db, shardID, &tokenID)
 		}
