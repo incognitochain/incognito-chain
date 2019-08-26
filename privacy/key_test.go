@@ -63,5 +63,4 @@ func TestKey(t *testing.T) {
 	// convert payment address to hex encode string
 	paymentAddrStr := paymentAddress2.String()
 	assert.Equal(t, hex.EncodedLen(common.PaymentAddressSize), len(paymentAddrStr))
-
 }
