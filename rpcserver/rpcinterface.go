@@ -104,6 +104,7 @@ var HttpHandler = map[string]httpHandler{
 	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
 	getBalancePrivacyCustomToken:               (*HttpServer).handleGetBalancePrivacyCustomToken,
+
 	// Bridge
 	createIssuingRequest:            (*HttpServer).handleCreateIssuingRequest,
 	sendIssuingRequest:              (*HttpServer).handleSendIssuingRequest,

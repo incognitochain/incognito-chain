@@ -52,6 +52,7 @@ func NewStakeResult(publicKey string, canStake bool) *StakeResult {
 		PublicKey: publicKey,
 		CanStake:  canStake,
 	}
+	return result
 }
 
 type TotalTransactionInShard struct {
