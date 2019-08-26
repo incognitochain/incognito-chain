@@ -16,9 +16,34 @@ type GetMempoolInfo struct {
 	ListTxs       []GetMempoolInfoTx `json:"ListTxs"`
 }
 
+func NewGetMempoolInfo(txMempool *mempool.TxPool) *GetMempoolInfo {
+	result := &GetMempoolInfo{
+		Size:          txMempool.Count(),
+		Bytes:         txMempool.Size(),
+		MempoolMaxFee: txMempool.MaxFee(),
+	}
+	listTxsDetail := txMempool.ListTxsDetail()
+	if len(listTxsDetail) > 0 {
+		result.ListTxs = make([]GetMempoolInfoTx, 0)
+		for _, tx := range listTxsDetail {
+			item := NewGetMempoolInfoTx(tx)
+			result.ListTxs = append(result.ListTxs, *item)
+		}
+	}
+	return result
+}
+
 type GetMempoolInfoTx struct {
 	TxID     string `json:"TxID"`
 	LockTime int64  `json:"LockTime"`
+}
+
+func NewGetMempoolInfoTx(tx metadata.Transaction) *GetMempoolInfoTx {
+	result := &GetMempoolInfoTx{
+		LockTime: tx.GetLockTime(),
+		TxID:     tx.Hash().String(),
+	}
+	return result
 }
 
 type GetRawMempoolResult struct {
