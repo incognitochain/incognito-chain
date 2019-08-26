@@ -81,7 +81,6 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, errH)
 			return nil, NewRPCError(ErrUnexpected, errH)
 		}
-		// block, errD := httpServer.config.BlockChain.GetBlockByHash(hash)
 		block, _, errD := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
 		if errD != nil {
 			Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, errD)
@@ -250,22 +249,11 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 			}
 			nextHashString = nextHash.Hash().String()
 		}
-
-		result := jsonresult.GetBlocksBeaconResult{
-			Hash:              block.Hash().String(),
-			Height:            block.Header.Height,
-			Instructions:      block.Body.Instructions,
-			Time:              block.Header.Timestamp,
-			Round:             block.Header.Round,
-			Epoch:             block.Header.Epoch,
-			Version:           block.Header.Version,
-			BlockProducerSign: block.ProducerSig,
-			BlockProducer:     block.Header.ProducerAddress.String(),
-			AggregatedSig:     block.AggregatedSig,
-			R:                 block.R,
-			PreviousBlockHash: block.Header.PreviousBlockHash.String(),
-			NextBlockHash:     nextHashString,
+		blockBytes, errS := json.Marshal(block)
+		if errS != nil {
+			return nil, NewRPCError(ErrUnexpected, errS)
 		}
+		result := jsonresult.NewGetBlocksBeaconResult(block, uint64(len(blockBytes)), nextHashString)
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, errD)
 		return result, nil
 	}
@@ -307,9 +295,8 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 				Logger.log.Debugf("handleGetBlocks result: %+v, err: %+v", nil, errD)
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
-			blockResult := jsonresult.GetBlockResult{}
-			blockResult.Init(block, size)
-			result = append(result, blockResult)
+			blockResult := jsonresult.NewGetBlockResult(block, size, common.EmptyString)
+			result = append(result, *blockResult)
 			previousHash = &block.Header.PreviousBlockHash
 			if previousHash.String() == (common.Hash{}).String() {
 				break
@@ -332,7 +319,7 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 			if errD != nil {
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
-			blockResult := jsonresult.NewGetBlocksBeaconResult(block, size)
+			blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, common.EmptyString)
 			result = append(result, *blockResult)
 			previousHash = &block.Header.PreviousBlockHash
 			if previousHash.String() == (common.Hash{}).String() {
