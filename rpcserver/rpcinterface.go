@@ -77,7 +77,6 @@ var HttpHandler = map[string]httpHandler{
 	// Beststate
 	getCandidateList:              (*HttpServer).handleGetCandidateList,
 	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
-	getBlockProducerList:          (*HttpServer).handleGetBlockProducerList,
 	getShardBestState:             (*HttpServer).handleGetShardBestState,
 	getBeaconBestState:            (*HttpServer).handleGetBeaconBestState,
 	getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
@@ -85,6 +84,7 @@ var HttpHandler = map[string]httpHandler{
 	getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
 	canPubkeyStake:                (*HttpServer).handleCanPubkeyStake,
 	getTotalTransaction:           (*HttpServer).handleGetTotalTransaction,
+
 	// custom token
 	createRawCustomTokenTransaction:     (*HttpServer).handleCreateRawCustomTokenTransaction,
 	sendRawCustomTokenTransaction:       (*HttpServer).handleSendRawCustomTokenTransaction,
@@ -95,6 +95,7 @@ var HttpHandler = map[string]httpHandler{
 	customTokenTxs:                      (*HttpServer).handleCustomTokenDetail,
 	listCustomTokenHolders:              (*HttpServer).handleGetListCustomTokenHolders,
 	getListCustomTokenBalance:           (*HttpServer).handleGetListCustomTokenBalance,
+
 	// custom token which support privacy
 	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
