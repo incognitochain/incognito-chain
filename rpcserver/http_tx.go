@@ -1021,14 +1021,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		}
 	}
 	commitmentIndexs, myCommitmentIndexs, commitments := httpServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, tokenID)
-	result := make(map[string]interface{})
-	result["CommitmentIndices"] = commitmentIndexs
-	result["MyCommitmentIndexs"] = myCommitmentIndexs
-	temp := []string{}
-	for _, commitment := range commitments {
-		temp = append(temp, base58.Base58Check{}.Encode(commitment, common.ZeroByte))
-	}
-	result["Commitments"] = temp
+	result := jsonresult.NewRandomCommitmentResult(commitmentIndexs, myCommitmentIndexs, commitments)
 	Logger.log.Debugf("handleRandomCommitments result: %+v", result)
 	return result, nil
 }
@@ -1038,7 +1031,10 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 	arrayParams := common.InterfaceSlice(params)
 	var err error
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
@@ -1372,10 +1368,7 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 		Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(ErrSendTxData, err)
 	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
-		ShardID: tx.ShardID,
-	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
 	Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v", result)
 	return result, nil
 }
