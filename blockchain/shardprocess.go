@@ -734,26 +734,27 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
 
-	err := blockchain.config.TempTxPool.ValidateTxList(txs)
+	// TODO:
+	/*err := blockchain.config.TempTxPool.ValidateTxList(txs)
 	if err != nil {
 		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
 		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
-	}
+	}*/
 	// TODO: uncomment to synchronize validate method with shard process and mempool
-	//for _, tx := range txs {
-	//	if !tx.IsSalaryTx() {
-	//		if tx.GetType() == common.TxCustomTokenType {
-	//			customTokenTx := tx.(*transaction.TxNormalToken)
-	//			if customTokenTx.TxNormalTokenData.Type == transaction.CustomTokenCrossShard {
-	//				continue
-	//			}
-	//		}
-	//		_, err := blockChain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//}
+	for _, tx := range txs {
+		if !tx.IsSalaryTx() {
+			if tx.GetType() == common.TxCustomTokenType {
+				customTokenTx := tx.(*transaction.TxNormalToken)
+				if customTokenTx.TxTokenData.Type == transaction.CustomTokenCrossShard {
+					continue
+				}
+			}
+			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
