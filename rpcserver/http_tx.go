@@ -408,18 +408,6 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 	return result, nil
 }
 
-func (self HttpServer) handleGetBlockProducerList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	result := make(map[string]string)
-	// for shardID, bestState := range self.config.BlockChain.BestState {
-	// 	if bestState.BestBlock.BlockProducer != "" {
-	// 		result[strconv.Itoa(shardID)] = bestState.BestBlock.BlockProducer
-	// 	} else {
-	// 		result[strconv.Itoa(shardID)] = self.config.ChainParams.GenesisBlock.Header.Committee[shardID]
-	// 	}
-	// }
-	return result, nil
-}
-
 // handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
 func (httpServer *HttpServer) handleCreateRawCustomTokenTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleCreateRawCustomTokenTransaction params: %+v", params)
