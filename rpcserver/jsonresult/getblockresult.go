@@ -84,8 +84,9 @@ func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBl
 
 func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash string) *GetBlockResult {
 	getBlockResult := &GetBlockResult{}
-	getBlockResult.BlockProducerSign = block.ProducerSig
-	getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
+	// getBlockResult.BlockProducerSign = block.ProducerSig
+	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
+	getBlockResult.ValidationData = block.ValidationData
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Version = block.Header.Version
