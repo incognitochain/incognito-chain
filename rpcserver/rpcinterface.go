@@ -7,9 +7,11 @@ type wsHandler func(*WsServer, interface{}, string, chan RpcSubResult, <-chan st
 var HttpHandler = map[string]httpHandler{
 	//Test Rpc Server
 	testHttpServer: (*HttpServer).handleTestHttpServer,
+
 	//profiling
 	startProfiling: (*HttpServer).handleStartProfiling,
 	stopProfiling:  (*HttpServer).handleStopProfiling,
+
 	// node
 	getNodeRole:              (*HttpServer).handleGetNodeRole,
 	getNetworkInfo:           (*HttpServer).handleGetNetWorkInfo,
@@ -22,11 +24,13 @@ var HttpHandler = map[string]httpHandler{
 	estimateFeeWithEstimator: (*HttpServer).handleEstimateFeeWithEstimator,
 	getActiveShards:          (*HttpServer).handleGetActiveShards,
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
+
 	//tx pool
 	getMiningInfo:           (*HttpServer).handleGetMiningInfo,
 	getRawMempool:           (*HttpServer).handleGetRawMempool,
 	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
 	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
+
 	// block pool ver.2
 	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
 	getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -35,9 +39,8 @@ var HttpHandler = map[string]httpHandler{
 	// ver.1
 	//getShardToBeaconPoolState: (*HttpServer).handleGetShardToBeaconPoolState,
 	//getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
-
 	getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
-	//getFeeEstimator:   (*HttpServer).handleGetFeeEstimator,
+
 	// block
 	getBestBlock:        (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:    (*HttpServer).handleGetBestBlockHash,
@@ -50,6 +53,7 @@ var HttpHandler = map[string]httpHandler{
 	checkHashValue:      (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
 	getBlockHeader:      (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 	getCrossShardBlock:  (*HttpServer).handleGetCrossShardBlock,
+
 	// transaction
 	listOutputCoins:                 (*HttpServer).handleListOutputCoins,
 	createRawTransaction:            (*HttpServer).handleCreateRawTransaction,
@@ -63,11 +67,13 @@ var HttpHandler = map[string]httpHandler{
 	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
 	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
 	listSerialNumbers:               (*HttpServer).handleListSerialNumbers,
+
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
 	//=================================
+
 	// Beststate
 	getCandidateList:              (*HttpServer).handleGetCandidateList,
 	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
