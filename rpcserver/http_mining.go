@@ -17,25 +17,7 @@ func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan 
 		}, nil
 	}
 
-	result := jsonresult.GetMiningInfoResult{}
-	result.IsCommittee = true
-	result.PoolSize = httpServer.config.TxMemPool.Count()
-	result.Chain = httpServer.config.ChainParams.Name
-	result.IsEnableMining = httpServer.config.Server.IsEnableMining()
-	result.BeaconHeight = httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
-
-	role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
-	result.Role = role
-	if role == common.SHARD_ROLE {
-		result.ShardHeight = httpServer.config.BlockChain.BestState.Shard[shardID].ShardHeight
-		result.CurrentShardBlockTx = len(httpServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Body.Transactions)
-		result.ShardID = int(shardID)
-	} else if role == common.VALIDATOR_ROLE || role == common.PROPOSER_ROLE || role == common.PENDING_ROLE {
-		result.ShardID = -1
-	}
-	if role == common.EmptyString {
-		result.IsCommittee = false
-	}
+	result := jsonresult.NewGetMiningInfoResult(*httpServer.config.TxMemPool, *httpServer.config.BlockChain, httpServer.config.MiningPubKeyB58, *httpServer.config.ChainParams)
 	Logger.log.Debugf("handleGetMiningInfo result: %+v", result)
 	return result, nil
 }
