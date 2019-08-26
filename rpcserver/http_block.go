@@ -387,15 +387,23 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 	shardID := byte(paramNumber)
 	isGetBeacon := paramNumber == -1
 	if isGetBeacon {
-		if httpServer.config.BlockChain.BestState != nil && httpServer.config.BlockChain.BestState.Beacon != nil {
-			result := httpServer.config.BlockChain.BestState.Beacon.BestBlock.Header.Height
+		beacon, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		if httpServer.config.BlockChain.BestState != nil && beacon != nil {
+			result := beacon.BestBlock.Header.Height
 			Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 			return result, nil
 		}
 	}
-
-	if httpServer.config.BlockChain.BestState != nil && httpServer.config.BlockChain.BestState.Shard[shardID] != nil && httpServer.config.BlockChain.BestState.Shard[shardID].BestBlock != nil {
-		result := httpServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height + 1
+	shardById, err := httpServer.config.BlockChain.BestState.GetClonedAShardBestState(shardID)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	if httpServer.config.BlockChain.BestState != nil && shardById != nil &&
+		shardById.BestBlock != nil {
+		result := shardById.BestBlock.Header.Height + 1
 		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 		return result, nil
 	}
@@ -497,7 +505,6 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 			return nil, NewRPCError(ErrUnexpected, errors.New("block not exist"))
 		}
 		result.Header = block.Header
-		// result.BlockNum = int(block.Header.GetHeight()) + 1
 		result.BlockNum = int(block.Header.Height) + 1
 		result.ShardID = uint8(shardID)
 		result.BlockHash = hash.String()
@@ -508,7 +515,6 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 			return nil, NewRPCError(ErrUnexpected, errors.New("invalid blocknum format"))
 		}
 		fmt.Println(shardID)
-		// if uint64(bnum-1) > httpServer.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.GetHeight() || bnum <= 0 {
 		if uint64(bnum-1) > httpServer.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.Height || bnum <= 0 {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
 			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
