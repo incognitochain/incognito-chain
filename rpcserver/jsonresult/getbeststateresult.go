@@ -47,6 +47,14 @@ type StakeResult struct {
 	CanStake  bool   `json:"CanStake"`
 }
 
+func NewStakeResult(publicKey string, canStake bool) *StakeResult {
+	result := &StakeResult{
+		PublicKey: publicKey,
+		CanStake:  canStake,
+	}
+	return result
+}
+
 type TotalTransactionInShard struct {
 	TotalTransactions                 uint64 `json:"TotalTransactions"`
 	TotalTransactionsExcludeSystemTxs uint64 `json:"TotalTransactionsExcludeSystemTxs"`
