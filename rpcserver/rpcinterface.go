@@ -7,9 +7,11 @@ type wsHandler func(*WsServer, interface{}, string, chan RpcSubResult, <-chan st
 var HttpHandler = map[string]httpHandler{
 	//Test Rpc Server
 	testHttpServer: (*HttpServer).handleTestHttpServer,
+
 	//profiling
 	startProfiling: (*HttpServer).handleStartProfiling,
 	stopProfiling:  (*HttpServer).handleStopProfiling,
+
 	// node
 	getNodeRole:              (*HttpServer).handleGetNodeRole,
 	getNetworkInfo:           (*HttpServer).handleGetNetWorkInfo,
@@ -22,19 +24,23 @@ var HttpHandler = map[string]httpHandler{
 	estimateFeeWithEstimator: (*HttpServer).handleEstimateFeeWithEstimator,
 	getActiveShards:          (*HttpServer).handleGetActiveShards,
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
-	//pool
-	getMiningInfo:               (*HttpServer).handleGetMiningInfo,
-	getRawMempool:               (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool:     (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:             (*HttpServer).handleMempoolEntry,
+
+	//tx pool
+	getMiningInfo:           (*HttpServer).handleGetMiningInfo,
+	getRawMempool:           (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
+
+	// block pool ver.2
 	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
 	getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
 	getShardPoolStateV2:         (*HttpServer).handleGetShardPoolStateV2,
 	getBeaconPoolStateV2:        (*HttpServer).handleGetBeaconPoolStateV2,
-	getShardToBeaconPoolState:   (*HttpServer).handleGetShardToBeaconPoolState,
-	getCrossShardPoolState:      (*HttpServer).handleGetCrossShardPoolState,
-	getNextCrossShard:           (*HttpServer).handleGetNextCrossShard,
-	getFeeEstimator:             (*HttpServer).handleGetFeeEstimator,
+	// ver.1
+	//getShardToBeaconPoolState: (*HttpServer).handleGetShardToBeaconPoolState,
+	//getCrossShardPoolState:    (*HttpServer).handleGetCrossShardPoolState,
+	getNextCrossShard: (*HttpServer).handleGetNextCrossShard,
+
 	// block
 	getBestBlock:        (*HttpServer).handleGetBestBlock,
 	getBestBlockHash:    (*HttpServer).handleGetBestBlockHash,
@@ -47,6 +53,7 @@ var HttpHandler = map[string]httpHandler{
 	checkHashValue:      (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
 	getBlockHeader:      (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 	getCrossShardBlock:  (*HttpServer).handleGetCrossShardBlock,
+
 	// transaction
 	listOutputCoins:                 (*HttpServer).handleListOutputCoins,
 	createRawTransaction:            (*HttpServer).handleCreateRawTransaction,
@@ -60,15 +67,16 @@ var HttpHandler = map[string]httpHandler{
 	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
 	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
 	listSerialNumbers:               (*HttpServer).handleListSerialNumbers,
+
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
 	//=================================
+
 	// Beststate
 	getCandidateList:              (*HttpServer).handleGetCandidateList,
 	getCommitteeList:              (*HttpServer).handleGetCommitteeList,
-	getBlockProducerList:          (*HttpServer).handleGetBlockProducerList,
 	getShardBestState:             (*HttpServer).handleGetShardBestState,
 	getBeaconBestState:            (*HttpServer).handleGetBeaconBestState,
 	getBeaconPoolState:            (*HttpServer).handleGetBeaconPoolState,
@@ -76,6 +84,7 @@ var HttpHandler = map[string]httpHandler{
 	getShardPoolLatestValidHeight: (*HttpServer).handleGetShardPoolLatestValidHeight,
 	canPubkeyStake:                (*HttpServer).handleCanPubkeyStake,
 	getTotalTransaction:           (*HttpServer).handleGetTotalTransaction,
+
 	// custom token
 	createRawCustomTokenTransaction:     (*HttpServer).handleCreateRawCustomTokenTransaction,
 	sendRawCustomTokenTransaction:       (*HttpServer).handleSendRawCustomTokenTransaction,
@@ -86,6 +95,7 @@ var HttpHandler = map[string]httpHandler{
 	customTokenTxs:                      (*HttpServer).handleCustomTokenDetail,
 	listCustomTokenHolders:              (*HttpServer).handleGetListCustomTokenHolders,
 	getListCustomTokenBalance:           (*HttpServer).handleGetListCustomTokenBalance,
+
 	// custom token which support privacy
 	createRawPrivacyCustomTokenTransaction:     (*HttpServer).handleCreateRawPrivacyCustomTokenTransaction,
 	sendRawPrivacyCustomTokenTransaction:       (*HttpServer).handleSendRawPrivacyCustomTokenTransaction,
@@ -94,6 +104,7 @@ var HttpHandler = map[string]httpHandler{
 	privacyCustomTokenTxs:                      (*HttpServer).handlePrivacyCustomTokenDetail,
 	getListPrivacyCustomTokenBalance:           (*HttpServer).handleGetListPrivacyCustomTokenBalance,
 	getBalancePrivacyCustomToken:               (*HttpServer).handleGetBalancePrivacyCustomToken,
+
 	// Bridge
 	createIssuingRequest:            (*HttpServer).handleCreateIssuingRequest,
 	sendIssuingRequest:              (*HttpServer).handleSendIssuingRequest,
@@ -103,6 +114,7 @@ var HttpHandler = map[string]httpHandler{
 	getAllBridgeTokens:              (*HttpServer).handleGetAllBridgeTokens,
 	getETHHeaderByHash:              (*HttpServer).handleGetETHHeaderByHash,
 	getBridgeReqWithStatus:          (*HttpServer).handleGetBridgeReqWithStatus,
+
 	// wallet
 	getPublicKeyFromPaymentAddress:   (*HttpServer).handleGetPublicKeyFromPaymentAddress,
 	defragmentAccount:                (*HttpServer).handleDefragmentAccount,
@@ -120,6 +132,7 @@ var HttpHandler = map[string]httpHandler{
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
 	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
 	listRewardAmount:             (*HttpServer).handleListRewardAmount,
+
 	//revert
 	revertbeaconchain: (*HttpServer).handleRevertBeacon,
 	revertshardchain:  (*HttpServer).handleRevertShard,
