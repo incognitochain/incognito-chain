@@ -2,11 +2,12 @@ package jsonresult
 
 import (
 	"encoding/json"
+	"log"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"log"
-	"strconv"
 )
 
 type ListOutputCoins struct {
