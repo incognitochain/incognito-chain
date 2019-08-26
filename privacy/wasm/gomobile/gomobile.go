@@ -131,14 +131,14 @@ func OneOutOfManyProve(args string) (string, error) {
 	println("Wit: ", wit)
 
 	// proving
-	start := time.Now()
+	//start := time.Now()
 	proof, err := wit.Prove()
 	//fmt.Printf("Proof go: %v\n", proof)
 	if err != nil {
 		println("Err: %v\n", err)
 	}
-	end := time.Since(start)
-	fmt.Printf("One out of many proving time: %v\n", end)
+	//end := time.Since(start)
+	//fmt.Printf("One out of many proving time: %v\n", end)
 
 	// convert proof to bytes array
 	proofBytes := proof.Bytes()
