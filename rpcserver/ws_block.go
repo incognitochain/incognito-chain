@@ -42,13 +42,12 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 				if shardBlock.Header.ShardID != shardID {
 					continue
 				}
-				blockResult := jsonresult.GetBlockResult{}
 				blockBytes, err := json.Marshal(shardBlock)
 				if err != nil {
 					cResult <- RpcSubResult{Error: NewRPCError(ErrUnexpected, err)}
 					return
 				}
-				blockResult.Init(shardBlock, uint64(len(blockBytes)))
+				blockResult := jsonresult.NewGetBlockResult(shardBlock, uint64(len(blockBytes)), common.EmptyString)
 				cResult <- RpcSubResult{Result: blockResult, Error: nil}
 			}
 		case <-closeChan:
@@ -93,7 +92,7 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 					cResult <- RpcSubResult{Error: NewRPCError(ErrUnexpected, err)}
 					return
 				}
-				blockBeaconResult := jsonresult.NewGetBlocksBeaconResult(beaconBlock, uint64(len(blockBytes)))
+				blockBeaconResult := jsonresult.NewGetBlocksBeaconResult(beaconBlock, uint64(len(blockBytes)), common.EmptyString)
 				cResult <- RpcSubResult{Result: blockBeaconResult, Error: nil}
 			}
 		case <-closeChan:
