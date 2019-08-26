@@ -88,13 +88,12 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBlock, have %+v", reflect.TypeOf(msg.Value))
 					continue
 				}
-				blockBeaconResult := jsonresult.GetBlocksBeaconResult{}
 				blockBytes, err := json.Marshal(beaconBlock)
 				if err != nil {
 					cResult <- RpcSubResult{Error: NewRPCError(ErrUnexpected, err)}
 					return
 				}
-				blockBeaconResult.Init(beaconBlock, uint64(len(blockBytes)))
+				blockBeaconResult := jsonresult.NewGetBlocksBeaconResult(beaconBlock, uint64(len(blockBytes)))
 				cResult <- RpcSubResult{Result: blockBeaconResult, Error: nil}
 			}
 		case <-closeChan:
