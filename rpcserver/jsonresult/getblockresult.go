@@ -61,7 +61,8 @@ type GetBlockTxResult struct {
 	HexData  string `json:"HexData"`
 }
 
-func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock, size uint64) {
+func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBlockHash string) *GetBlocksBeaconResult {
+	getBlockResult := &GetBlocksBeaconResult{}
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.Height = block.Header.Height
@@ -77,13 +78,15 @@ func (getBlockResult *GetBlocksBeaconResult) Init(block *blockchain.BeaconBlock,
 	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Instructions = block.Body.Instructions
 	getBlockResult.Size = size
+	getBlockResult.NextBlockHash = nextBlockHash
+	return getBlockResult
 }
 
-func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size uint64) {
+func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash string) *GetBlockResult {
+	getBlockResult := &GetBlockResult{}
 	// getBlockResult.BlockProducerSign = block.ProducerSig
 	// getBlockResult.BlockProducer = block.Header.ProducerAddress.String()
 	getBlockResult.ValidationData = block.ValidationData
-	getBlockResult.ConsensusType = block.Header.ConsensusType
 	getBlockResult.Hash = block.Hash().String()
 	getBlockResult.PreviousBlockHash = block.Header.PreviousBlockHash.String()
 	getBlockResult.Version = block.Header.Version
@@ -119,4 +122,6 @@ func (getBlockResult *GetBlockResult) Init(block *blockchain.ShardBlock, size ui
 			}
 		}
 	}
+	getBlockResult.NextBlockHash = nextBlockHash
+	return getBlockResult
 }
