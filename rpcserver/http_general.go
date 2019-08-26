@@ -1,23 +1,17 @@
 package rpcserver
 
 import (
-	"fmt"
 	"log"
-	"net"
-	"os"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
 )
 
@@ -25,28 +19,13 @@ import (
 handleGetInOutPeerMessageCount - return all inbound/outbound message count by peer which this node connected
 */
 func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetInOutMessageCount by Peer params: %+v", params)
-	result := struct {
-		InboundMessages  interface{} `json:"Inbounds"`
-		OutboundMessages interface{} `json:"Outbounds"`
-	}{}
-	inboundMessageByPeers := peer.GetInboundMessagesByPeer()
-	outboundMessageByPeers := peer.GetOutboundMessagesByPeer()
+	Logger.log.Debugf("handleGetInOutMessageCount by Peer params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
-	if len(paramsArray) == 0 {
-		result.InboundMessages = inboundMessageByPeers
-		result.OutboundMessages = outboundMessageByPeers
-		return result, nil
+	result, err := jsonresult.NewGetInOutMessageCountResult(paramsArray)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
-	peerID, ok := paramsArray[0].(string)
-	if !ok {
-		peerID = ""
-	}
-	result.InboundMessages = inboundMessageByPeers[peerID]
-	result.OutboundMessages = outboundMessageByPeers[peerID]
-
-	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
+	// Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
 }
 
@@ -54,53 +33,14 @@ func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, clo
 handleGetInOutPeerMessages - return all inbound/outbound messages peer which this node connected
 */
 func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetInOutPeerMessagess params: %+v", params)
+	Logger.log.Debugf("handleGetInOutPeerMessagess params: %+v", params)
+
 	paramsArray := common.InterfaceSlice(params)
-
-	inboundMessages := peer.GetInboundPeerMessages()
-	outboundMessages := peer.GetOutboundPeerMessages()
-	result := struct {
-		InboundMessages  map[string]interface{} `json:"Inbounds"`
-		OutboundMessages map[string]interface{} `json:"Outbounds"`
-	}{
-		map[string]interface{}{},
-		map[string]interface{}{},
+	result, err := jsonresult.NewGetInOutMessageResult(paramsArray)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	if len(paramsArray) == 0 {
-		for messageType, messagePeers := range inboundMessages {
-			result.InboundMessages[messageType] = len(messagePeers)
-		}
-		for messageType, messagePeers := range outboundMessages {
-			result.OutboundMessages[messageType] = len(messagePeers)
-		}
-		return result, nil
-	}
-	peerID, ok := paramsArray[0].(string)
-	if !ok {
-		peerID = ""
-	}
-
-	for messageType, messagePeers := range inboundMessages {
-		messages := []wire.Message{}
-		for _, m := range messagePeers {
-			if m.PeerID.Pretty() != peerID {
-				continue
-			}
-			messages = append(messages, m.Message)
-		}
-		result.InboundMessages[messageType] = messages
-	}
-	for messageType, messagePeers := range outboundMessages {
-		messages := []wire.Message{}
-		for _, m := range messagePeers {
-			if m.PeerID.Pretty() != peerID {
-				continue
-			}
-			messages = append(messages, m.Message)
-		}
-		result.OutboundMessages[messageType] = messages
-	}
-	// Logger.log.Infof("handleGetInOutPeerMessages result: %+v", result)
+	//Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
 }
 
@@ -108,43 +48,9 @@ func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeCh
 handleGetAllConnectedPeers - return all connnected peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllConnectedPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Infof("handleGetAllConnectedPeers params: %+v", params)
-	// result := jsonresult.GetAllPeersResult{}
-	var result struct {
-		Peers []map[string]string `json:"Peers"`
-	}
-	peersMap := []map[string]string{}
-	listeningPeer := httpServer.config.ConnMgr.GetListeningPeer()
-
-	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
-	shardCommitteeList := make(map[byte][]string)
-	for shardID, committee := range bestState.GetShardCommittee() {
-		shardCommitteeList[shardID] = incognitokey.CommitteeKeyListToString(committee)
-	}
-	for _, peerConn := range listeningPeer.GetPeerConns() {
-		pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
-		peerItem := map[string]string{
-			"RawAddress":    peerConn.GetRemoteRawAddress(),
-			"PublicKey":     pk,
-			"PublicKeyType": pkT,
-			"NodeType":      "",
-		}
-		isInBeaconCommittee := common.IndexOfStr(pk, beaconCommitteeList) != -1
-		if isInBeaconCommittee {
-			peerItem["NodeType"] = "Beacon"
-		}
-		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(pk, committees) != -1
-			if isInShardCommitee {
-				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
-				break
-			}
-		}
-		peersMap = append(peersMap, peerItem)
-	}
-	result.Peers = peersMap
-	Logger.log.Infof("handleGetAllPeers result: %+v", result)
+	Logger.log.Debugf("handleGetAllConnectedPeers params: %+v", params)
+	result := jsonresult.NewGetAllConnectedPeersResult(*httpServer.config.ConnMgr)
+	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
 
@@ -153,16 +59,7 @@ handleGetAllPeers - return all peers which this node connected
 */
 func (httpServer *HttpServer) handleGetAllPeers(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetAllPeers params: %+v", params)
-	result := jsonresult.GetAllPeersResult{}
-	peersMap := []string{}
-
-	peers := httpServer.config.AddrMgr.AddressCache()
-	for _, peer := range peers {
-		for _, peerConn := range peer.GetPeerConns() {
-			peersMap = append(peersMap, peerConn.GetRemoteRawAddress())
-		}
-	}
-	result.Peers = peersMap
+	result := jsonresult.NewGetAllPeersResult(*httpServer.config.AddrMgr)
 	Logger.log.Debugf("handleGetAllPeers result: %+v", result)
 	return result, nil
 }
@@ -172,53 +69,10 @@ func (httpServer *HttpServer) handleGetNodeRole(params interface{}, closeChan <-
 }
 
 func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	result := jsonresult.GetNetworkInfoResult{}
-
-	result.Commit = os.Getenv("commit")
-	result.Version = RpcServerVersion
-	result.SubVersion = ""
-	result.ProtocolVersion = httpServer.config.ProtocolVersion
-	result.NetworkActive = httpServer.config.ConnMgr.GetListeningPeer() != nil
-	result.LocalAddresses = []string{}
-	listener := httpServer.config.ConnMgr.GetListeningPeer()
-	result.Connections = len(listener.GetPeerConns())
-	result.LocalAddresses = append(result.LocalAddresses, listener.GetRawAddress())
-
-	ifaces, err := net.Interfaces()
+	result, err := jsonresult.NewGetNetworkInfoResult(httpServer.config.ProtocolVersion, *httpServer.config.ConnMgr, httpServer.config.Wallet)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
-	networks := []map[string]interface{}{}
-	for _, i := range ifaces {
-		addrs, err := i.Addrs()
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
-		for _, addr := range addrs {
-			network := map[string]interface{}{}
-
-			network["name"] = "ipv4"
-			network["limited"] = false
-			network["reachable"] = true
-			network["proxy"] = ""
-			network["proxy_randomize_credentials"] = false
-
-			if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-				if ipnet.IP.To16() != nil {
-					network["name"] = "ipv6"
-				}
-			}
-
-			networks = append(networks, network)
-		}
-	}
-	result.Networks = networks
-	if httpServer.config.Wallet != nil && httpServer.config.Wallet.GetConfig() != nil {
-		result.IncrementalFee = httpServer.config.Wallet.GetConfig().IncrementalFee
-	}
-	result.Warnings = ""
-
 	return result, nil
 }
 
@@ -387,9 +241,7 @@ Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
-	result := jsonresult.GetRawMempoolResult{
-		TxHashes: httpServer.config.TxMemPool.ListTxs(),
-	}
+	result := jsonresult.NewGetRawMempoolResult(*httpServer.config.TxMemPool)
 	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
 	return result, nil
 }
@@ -416,12 +268,12 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	result := jsonresult.GetMempoolEntryResult{}
-	result.Tx, err = httpServer.config.TxMemPool.GetTx(txID)
+	result, err := jsonresult.NewGetMempoolEntryResult(*httpServer.config.TxMemPool, txID)
 	if err != nil {
 		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
+
 	Logger.log.Debugf("handleMempoolEntry result: %+v", result)
 	return result, nil
 }
@@ -521,10 +373,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		// check real fee(nano PRV) per tx
 		_, estimateFeeCoinPerKb, estimateTxSizeInKb = httpServer.estimateFee(defaultFeeCoinPerKb, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy, nil, customTokenParams, customPrivacyTokenParam)
 	}
-	result := jsonresult.EstimateFeeResult{
-		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
-		EstimateTxSizeInKb:   estimateTxSizeInKb,
-	}
+	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, estimateTxSizeInKb)
 	Logger.log.Debugf("handleEstimateFee result: %+v", result)
 	return result, nil
 }
@@ -569,16 +418,14 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	}
 	estimateFeeCoinPerKb := httpServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
 
-	result := jsonresult.EstimateFeeResult{
-		EstimateFeeCoinPerKb: estimateFeeCoinPerKb,
-	}
+	result := jsonresult.NewEstimateFeeResult(estimateFeeCoinPerKb, 0)
 	Logger.log.Debugf("handleEstimateFeeWithEstimator result: %+v", result)
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetFeeEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+/*func (httpServer *HttpServer) handleGetFeeEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	return httpServer.config.FeeEstimator, nil
-}
+}*/
 
 // handleGetActiveShards - return active shard num
 func (httpServer *HttpServer) handleGetActiveShards(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
