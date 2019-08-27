@@ -17,7 +17,7 @@ type GetMiningInfoResult struct {
 	IsEnableMining      bool   `json:"IsEnableMining"`
 }
 
-func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, consensus interface{ GetUserRole() (string, int) }, param blockchain.Params, isMining bool) *GetMiningInfoResult {
+func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, consensus interface{ GetUserRole() (string, int) }, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
 	result := &GetMiningInfoResult{}
 	result.IsCommittee = true
 	result.PoolSize = txMemPool.Count()
