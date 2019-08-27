@@ -18,12 +18,12 @@ type GetMiningInfoResult struct {
 	IsEnableMining      bool   `json:"IsEnableMining"`
 }
 
-func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, miningPubKeyB58 string, param blockchain.Params) *GetMiningInfoResult {
+func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, miningPubKeyB58 string, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
 	result := &GetMiningInfoResult{}
 	result.IsCommittee = true
 	result.PoolSize = txMemPool.Count()
 	result.Chain = param.Name
-	//result.IsEnableMining = config.Server.IsEnableMining()
+	result.IsEnableMining = isEnableMining
 	result.BeaconHeight = blChain.BestState.Beacon.BeaconHeight
 
 	role, shardID := blChain.BestState.Beacon.GetPubkeyRole(miningPubKeyB58, 0)
