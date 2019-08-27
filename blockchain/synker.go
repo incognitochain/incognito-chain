@@ -120,6 +120,7 @@ func (synker *Synker) Start() {
 		updateStatesTicker.Stop()
 	}()
 	go func() {
+		time.Sleep(2 * time.Second)
 		for {
 			select {
 			case <-synker.cQuit:
@@ -131,6 +132,7 @@ func (synker *Synker) Start() {
 	}()
 
 	go func() {
+		time.Sleep(5 * time.Second)
 		for {
 			select {
 			case <-synker.cQuit:

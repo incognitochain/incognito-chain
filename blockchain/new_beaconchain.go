@@ -88,7 +88,7 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 	chain.lock.Lock()
 	defer chain.lock.Unlock()
-	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), false)
+	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
@@ -126,7 +126,7 @@ func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) er
 	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
 		return err
 	}
-	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
+	return chain.Blockchain.InsertBeaconBlock(beaconBlock, true)
 }
 
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
