@@ -815,6 +815,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 	err := view.fetchCrossTransactionViewPointFromBlock(blockchain.config.DataBase, block)
 	if err != nil {
 		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock", err)
+		return err
 	}
 	for _, privacyCustomTokenSubView := range view.privacyCustomTokenViewPoint {
 		// 0xsirrush updated: check existed tokenID
@@ -964,7 +965,7 @@ func (blockchain *BlockChain) StoreCustomTokenPaymentAddresstHistory(customToken
 		if err := blockchain.config.DataBase.Put(paymentAddressKey, []byte(paymentAddressValue)); err != nil {
 			return err
 		}
-		fmt.Printf("STORE UTXO FOR CUSTOM TOKEN: tokenID %+v \n paymentAddress %+v \n txHash %+v, voutIndex %+v, value %+v \n", (customTokenTx.TxTokenData.PropertyID).String(), vout.PaymentAddress, customTokenTx.Hash(), voutIndex, value)
+		Logger.log.Infof("STORE UTXO FOR CUSTOM TOKEN: tokenID %+v \n paymentAddress %+v \n txHash %+v, voutIndex %+v, value %+v \n", (customTokenTx.TxTokenData.PropertyID).String(), vout.PaymentAddress, customTokenTx.Hash(), voutIndex, value)
 	}
 	return nil
 }
