@@ -19,13 +19,13 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	db := *httpServer.config.Database
 
 	// Get proof of instruction on beacon
-	beaconInstProof, beaconBlock, err := getBridgeSwapProofOnBeacon(height, db)
+	beaconInstProof, beaconBlock, err := getBridgeSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, bc, db)
+	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, bc, db, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -45,6 +45,7 @@ func getBridgeSwapProofOnBridge(
 	beaconBlock *blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
 	db database.DatabaseInterface,
+	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get bridge block and check if it contains bridge swap instruction
 	b, instID, err := findBridgeBlockWithInst(beaconBlock, bc, db)
@@ -53,13 +54,14 @@ func getBridgeSwapProofOnBridge(
 	}
 	insts := b.Body.Instructions
 	block := &shardBlock{ShardBlock: b}
-	return buildProofForBlock(block, insts, instID, db)
+	return buildProofForBlock(block, insts, instID, db, ce)
 }
 
 // getBridgeSwapProofOnBeacon finds in a given beacon block a bridge committee swap instruction and returns its proof
 func getBridgeSwapProofOnBeacon(
 	height uint64,
 	db database.DatabaseInterface,
+	ce ConsensusEngine,
 ) (*swapProof, *blockchain.BeaconBlock, error) {
 	// Get beacon block
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(db, height, height)
@@ -75,7 +77,7 @@ func getBridgeSwapProofOnBeacon(
 		return nil, nil, fmt.Errorf("cannot find bridge swap instruction in beacon block")
 	}
 	block := &beaconBlock{BeaconBlock: b}
-	proof, err := buildProofForBlock(block, insts, instID, db)
+	proof, err := buildProofForBlock(block, insts, instID, db, ce)
 	if err != nil {
 		return nil, nil, err
 	}

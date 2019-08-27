@@ -7,10 +7,10 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/pkg/errors"
 )
 
 type swapProof struct {
@@ -22,6 +22,10 @@ type swapProof struct {
 	blkData        string
 	signerSigs     []string
 	sigIdxs        []int
+}
+
+type ConsensusEngine interface {
+	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 }
 
 // handleGetBeaconSwapProof returns a proof of a new beacon committee (for a given bridge block height)
@@ -39,13 +43,13 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 
 	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBeaconSwapProofOnBridge(bridgeBlock, db)
+	bridgeInstProof, err := getBeaconSwapProofOnBridge(bridgeBlock, db, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
 	// Get proof of instruction on beacon
-	beaconInstProof, err := getBeaconSwapProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db)
+	beaconInstProof, err := getBeaconSwapProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
@@ -93,6 +97,7 @@ func getShardAndBeaconBlocks(
 func getBeaconSwapProofOnBridge(
 	bridgeBlock *blockchain.ShardBlock,
 	db database.DatabaseInterface,
+	ce ConsensusEngine,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
 	_, instID := findCommSwapInst(insts, metadata.BeaconSwapConfirmMeta)
@@ -101,15 +106,15 @@ func getBeaconSwapProofOnBridge(
 	}
 
 	block := &shardBlock{ShardBlock: bridgeBlock}
-	return buildProofForBlock(block, insts, instID, db)
+	return buildProofForBlock(block, insts, instID, db, ce)
 }
 
 type block interface {
+	common.BlockInterface // to be able to get ValidationData from ConsensusEngine
+
 	InstructionMerkleRoot() []byte
 	MetaHash() []byte
-	Hash() []byte
-	Sig() []string
-	ValidatorsIdx() []int
+	Sig(ce ConsensusEngine) ([][]byte, []int, error)
 }
 
 // buildProofForBlock builds a swapProof for an instruction in a block (beacon or shard)
@@ -118,6 +123,7 @@ func buildProofForBlock(
 	insts [][]string,
 	id int,
 	db database.DatabaseInterface,
+	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Build merkle proof for instruction in bridge block
 	instProof := buildInstProof(insts, id)
@@ -127,18 +133,15 @@ func buildProofForBlock(
 	metaHash := blk.MetaHash()
 
 	// Get sig data
-	bSigs := blk.Sig()
+	bSigs, sigIdxs, err := blk.Sig(ce)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	fmt.Printf("DeBridge log: sig: %d %x\n", len(bSigs[0]), bSigs[0])
 	sigs := []string{}
 	for _, s := range bSigs {
-		sig, _, err := base58.Base58Check{}.Decode(s)
-		if err != nil {
-			return nil, err
-		}
-		sigs = append(sigs, hex.EncodeToString(sig))
+		sigs = append(sigs, hex.EncodeToString(s))
 	}
-
-	// Get index of signers
-	signerIdxs := blk.ValidatorsIdx()
 
 	return &swapProof{
 		inst:           insts[id],
@@ -147,7 +150,7 @@ func buildProofForBlock(
 		instRoot:       instRoot,
 		blkData:        hex.EncodeToString(metaHash[:]),
 		signerSigs:     sigs,
-		sigIdxs:        signerIdxs,
+		sigIdxs:        sigIdxs,
 	}, nil
 }
 
@@ -156,6 +159,7 @@ func getBeaconSwapProofOnBeacon(
 	inst []string,
 	beaconBlocks []*blockchain.BeaconBlock,
 	db database.DatabaseInterface,
+	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction
 	b, instID := findBeaconBlockWithInst(beaconBlocks, inst)
@@ -165,7 +169,7 @@ func getBeaconSwapProofOnBeacon(
 
 	insts := b.Body.Instructions
 	block := &beaconBlock{BeaconBlock: b}
-	return buildProofForBlock(block, insts, instID, db)
+	return buildProofForBlock(block, insts, instID, db, ce)
 }
 
 // getIncludedBeaconBlocks retrieves all beacon blocks included in a shard block
@@ -276,19 +280,8 @@ func (bb *beaconBlock) MetaHash() []byte {
 	return h[:]
 }
 
-func (bb *beaconBlock) Hash() []byte {
-	h := bb.Header.Hash()
-	return h[:]
-}
-
-func (bb *beaconBlock) Sig() []string {
-	// return bb.BeaconBlock.AggregatedSig
-	return []string{}
-}
-
-func (bb *beaconBlock) ValidatorsIdx() []int {
-	// return bb.BeaconBlock.ValidatorsIdx[idx]
-	return []int{}
+func (bb *beaconBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
+	return ce.ExtractBridgeValidationData(bb)
 }
 
 type shardBlock struct {
@@ -304,19 +297,8 @@ func (sb *shardBlock) MetaHash() []byte {
 	return h[:]
 }
 
-func (sb *shardBlock) Hash() []byte {
-	h := sb.Header.Hash()
-	return h[:]
-}
-
-func (sb *shardBlock) Sig() []string {
-	// return sb.ShardBlock.AggregatedSig
-	return []string{}
-}
-
-func (sb *shardBlock) ValidatorsIdx() []int {
-	// return sb.ShardBlock.ValidatorsIdx[idx]
-	return []int{}
+func (sb *shardBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
+	return ce.ExtractBridgeValidationData(sb)
 }
 
 // buildSignersProof builds the merkle proofs for some elements in a list of pubkeys
