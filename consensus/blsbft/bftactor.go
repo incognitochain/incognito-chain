@@ -105,8 +105,7 @@ func (e *BLSBFT) Start() {
 			case voteMsg := <-e.VoteMessageCh:
 				if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 					//validate single sig
-					e.logger.Warn("vote received...")
-
+					e.logger.Warn("vote received in timeframe...")
 					if e.RoundData.Block != nil {
 						validatorIdx := e.Chain.GetPubKeyCommitteeIndex(voteMsg.Validator)
 						committeeBLSKeys := []blsmultisig.PublicKey{}
@@ -119,13 +118,14 @@ func (e *BLSBFT) Start() {
 						}
 						e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
 						e.logger.Warn("vote added...")
-					} else {
-						if _, ok := e.EarlyVotes[voteMsg.RoundKey]; !ok {
-							e.EarlyVotes[voteMsg.RoundKey] = make(map[string]vote)
-						}
-						e.EarlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
+						continue
 					}
 				}
+				if _, ok := e.EarlyVotes[voteMsg.RoundKey]; !ok {
+					e.EarlyVotes[voteMsg.RoundKey] = make(map[string]vote)
+				}
+				e.EarlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
+				
 			case <-ticker:
 				pubKey := e.UserKeySet.GetPublicKey()
 				if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == -1 {
