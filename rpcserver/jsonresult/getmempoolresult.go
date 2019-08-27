@@ -1,6 +1,10 @@
 package jsonresult
 
-import "github.com/incognitochain/incognito-chain/metadata"
+import (
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/mempool"
+	"github.com/incognitochain/incognito-chain/metadata"
+)
 
 type GetMempoolInfo struct {
 	Size          int                `json:"Size"`
@@ -12,15 +16,57 @@ type GetMempoolInfo struct {
 	ListTxs       []GetMempoolInfoTx `json:"ListTxs"`
 }
 
+func NewGetMempoolInfo(txMempool *mempool.TxPool) *GetMempoolInfo {
+	result := &GetMempoolInfo{
+		Size:          txMempool.Count(),
+		Bytes:         txMempool.Size(),
+		MempoolMaxFee: txMempool.MaxFee(),
+	}
+	listTxsDetail := txMempool.ListTxsDetail()
+	if len(listTxsDetail) > 0 {
+		result.ListTxs = make([]GetMempoolInfoTx, 0)
+		for _, tx := range listTxsDetail {
+			item := NewGetMempoolInfoTx(tx)
+			result.ListTxs = append(result.ListTxs, *item)
+		}
+	}
+	return result
+}
+
 type GetMempoolInfoTx struct {
 	TxID     string `json:"TxID"`
 	LockTime int64  `json:"LockTime"`
+}
+
+func NewGetMempoolInfoTx(tx metadata.Transaction) *GetMempoolInfoTx {
+	result := &GetMempoolInfoTx{
+		LockTime: tx.GetLockTime(),
+		TxID:     tx.Hash().String(),
+	}
+	return result
 }
 
 type GetRawMempoolResult struct {
 	TxHashes []string
 }
 
+func NewGetRawMempoolResult(txMemPool mempool.TxPool) *GetRawMempoolResult {
+	result := &GetRawMempoolResult{
+		TxHashes: txMemPool.ListTxs(),
+	}
+	return result
+}
+
 type GetMempoolEntryResult struct {
 	Tx metadata.Transaction
+}
+
+func NewGetMempoolEntryResult(txMemPool mempool.TxPool, txID *common.Hash) (*GetMempoolEntryResult, error) {
+	result := &GetMempoolEntryResult{}
+	var err error
+	result.Tx, err = txMemPool.GetTx(txID)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

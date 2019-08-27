@@ -1,18 +1,23 @@
 package blsbft
 
-import "time"
+import (
+	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+)
 
 const (
-	PROPOSE  = "PROPOSE"
-	LISTEN   = "LISTEN"
-	VOTE     = "VOTE"
-	NEWROUND = "NEWROUND"
-	BLS      = "bls"
-	BRI      = "dsa"
+	PROPOSE       = "PROPOSE"
+	LISTEN        = "LISTEN"
+	VOTE          = "VOTE"
+	NEWROUND      = "NEWROUND"
+	BLS           = "bls"
+	BRI           = "dsa"
+	CONSENSUSNAME = common.BLS_CONSENSUS
 )
 
 //
 const (
-	TIMEOUT             = 5 * time.Second
+	TIMEOUT             = 20 * time.Second // must be at least twice the time of block creation
 	MaxNetworkDelayTime = 150 * time.Millisecond // in ms
 )
