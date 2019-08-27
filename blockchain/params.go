@@ -1,6 +1,10 @@
 package blockchain
 
-import "github.com/incognitochain/incognito-chain/common"
+import (
+	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+)
 
 /*
 Params defines a network by its component. These component may be used by Applications
@@ -15,6 +19,10 @@ type Params struct {
 	MinShardCommitteeSize  int
 	MaxBeaconCommitteeSize int
 	MinBeaconCommitteeSize int
+	MinShardBlockInterval  time.Duration
+	MaxShardBlockCreation  time.Duration
+	MinBeaconBlockInterval time.Duration
+	MaxBeaconBlockCreation time.Duration
 	StakingAmountShard     uint64
 	ActiveShards           int
 	GenesisBeaconBlock     *BeaconBlock // GenesisBlock defines the first block of the chain.
@@ -67,12 +75,16 @@ func init() {
 		StakingAmountShard:     TestNetStakingAmountShard,
 		ActiveShards:           TestNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
-		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsTestnetNew),
-		BasicReward:        TestnetBasicReward,
-		RewardHalflife:     TestnetRewardHalflife,
-		Epoch:              TestnetEpoch,
-		RandomTime:         TestnetRandomTime,
+		GenesisBeaconBlock:     CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
+		GenesisShardBlock:      CreateShardGenesisBlock(1, genesisParamsTestnetNew),
+		MinShardBlockInterval:  TestNetMinShardBlkInterval,
+		MaxShardBlockCreation:  TestNetMaxShardBlkCreation,
+		MinBeaconBlockInterval: TestNetMinBeaconBlkInterval,
+		MaxBeaconBlockCreation: TestNetMaxBeaconBlkCreation,
+		BasicReward:            TestnetBasicReward,
+		RewardHalflife:         TestnetRewardHalflife,
+		Epoch:                  TestnetEpoch,
+		RandomTime:             TestnetRandomTime,
 	}
 	// END TESTNET
 	// FOR MAINNET
@@ -81,9 +93,8 @@ func init() {
 		RandomNumber:                        0,
 		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
 		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
-
-		InitialIncognito:   MainnetInitPRV,
-		ConsensusAlgorithm: common.BLS_CONSENSUS,
+		InitialIncognito:                    MainnetInitPRV,
+		ConsensusAlgorithm:                  common.BLS_CONSENSUS,
 	}
 	ChainMainParam = Params{
 		Name:                   MainetName,
@@ -94,11 +105,15 @@ func init() {
 		StakingAmountShard:     MainNetStakingAmountShard,
 		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock: CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
-		GenesisShardBlock:  CreateShardGenesisBlock(1, genesisParamsMainnetNew),
-		BasicReward:        MainnetBasicReward,
-		RewardHalflife:     MainnetRewardHalflife,
-		Epoch:              MainnetEpoch,
-		RandomTime:         MainnetRandomTime,
+		GenesisBeaconBlock:     CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
+		GenesisShardBlock:      CreateShardGenesisBlock(1, genesisParamsMainnetNew),
+		MinShardBlockInterval:  TestNetMinShardBlkInterval,
+		MaxShardBlockCreation:  TestNetMaxShardBlkCreation,
+		MinBeaconBlockInterval: TestNetMinBeaconBlkInterval,
+		MaxBeaconBlockCreation: TestNetMaxBeaconBlkCreation,
+		BasicReward:            MainnetBasicReward,
+		RewardHalflife:         MainnetRewardHalflife,
+		Epoch:                  MainnetEpoch,
+		RandomTime:             MainnetRandomTime,
 	}
 }
