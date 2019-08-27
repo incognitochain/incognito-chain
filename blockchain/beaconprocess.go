@@ -662,8 +662,8 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
         + Update shard/beacon pending validator and shard/beacon committee in beststate
 	- Stake Instruction
 		+ format
-			["stake" "pubkey1,pubkey2,..." "beacon"]
-			["stake" "pubkey1,pubkey2,..." "shard"]
+			["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
+			["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
 		+ Get Stake public key and for later storage
 	Return param
 	#1 error
