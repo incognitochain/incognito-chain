@@ -746,11 +746,12 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
 
-	//err := blockchain.config.TempTxPool.ValidateTxList(txs)
-	//if err != nil {
-	//	Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
-	//	return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
-	//}
+	// TODO:
+	/*err := blockchain.config.TempTxPool.ValidateTxList(txs)
+	if err != nil {
+		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
+		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
+	}*/
 	// TODO: uncomment to synchronize validate method with shard process and mempool
 	for index, tx := range txs {
 		if !tx.IsSalaryTx() {
