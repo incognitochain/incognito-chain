@@ -268,14 +268,15 @@ func (blockGenerator *BlockGenerator) GetShardState(beaconBestState *BeaconBestS
 }
 
 /*
-	- set instruction
-	- del instruction
 	- swap instruction
-	+ format
+	format
 	+ ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "shard" "shardID"]
 	+ ["swap" "inPubkey1,inPubkey2,..." "outPupkey1, outPubkey2,..." "beacon"]
 	- random instruction
 	- stake instruction
+	+ ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
+	- assign instruction
+	+ ["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]
 */
 func (beaconBestState *BeaconBestState) GenerateInstruction(
 	newBeaconHeight uint64,
@@ -308,8 +309,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
-			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(
-				swappedValidator, ","))
+			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(swappedValidator, ","))
 			swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 			instructions = append(instructions, swapBeaconInstructions)
 			// Generate instruction storing validators pubkey and send to bridge
@@ -317,8 +317,8 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			instructions = append(instructions, beaconRootInst)
 		}
 	}
-	//=======Stake
-	// ["stake", "pubkey.....", "shard" or "beacon"]
+	// Stake
+
 	instructions = append(instructions, stakers...)
 	if newBeaconHeight%uint64(chainParamEpoch) > randomTime && !beaconBestState.IsGetRandomNumber {
 		//=================================
@@ -341,7 +341,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			for shardId, candidates := range assignedCandidates {
 				candidatesStr := incognitokey.CommitteeKeyListToString(candidates)
 				Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardId, candidatesStr)
-				shardAssingInstruction := []string{"assign"}
+				shardAssingInstruction := []string{AssignAction}
 				shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidatesStr, ","))
 				shardAssingInstruction = append(shardAssingInstruction, "shard")
 				shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardId))
@@ -435,6 +435,8 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	}
 	// Process Stake Instruction form Shard Block
 	// Validate stake instruction => extract only valid stake instruction
+	// - ["stake" "pubkey1,pubkey2,..." "shard" "txStakeHash1, txStakeHash2,..." "txStakeRewardReceiver1, txStakeRewardReceiver2,..."]
+	// - ["stake" "pubkey1,pubkey2,..." "beacon" "txStakeHash1, txStakeHash2,..." "txStakeRewardReceiver1, txStakeRewardReceiver2,..."]
 	for _, stakeInstruction := range stakeInstructionFromShardBlock {
 		var tempStakePublicKey []string
 		newBeaconCandidate, newShardCandidate := getStakeValidatorArrayString(stakeInstruction)
@@ -447,6 +449,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 			tempStakePublicKey = make([]string, len(newShardCandidate))
 			copy(tempStakePublicKey, newShardCandidate[:])
 		}
+		// list of stake public keys and stake transaction and reward receiver must have equal length
 		if len(tempStakePublicKey) != len(strings.Split(stakeInstruction[3], ",")) && len(strings.Split(stakeInstruction[3], ",")) != len(strings.Split(stakeInstruction[4], ",")) {
 			continue
 		}
