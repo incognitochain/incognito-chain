@@ -1284,7 +1284,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	//var err error
-	if len(paramsArray) != 8 {
+	if len(paramsArray) != 9 {
 		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
 	}
 	//Get sender keyset
