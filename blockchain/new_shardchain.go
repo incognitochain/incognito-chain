@@ -99,7 +99,7 @@ func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) err
 	defer chain.lock.Unlock()
 	var shardBestState ShardBestState
 	shardBlock := block.(*ShardBlock)
-	chain.BestState.cloneShardBestState(&shardBestState)
+	shardBestState.cloneShardBestStateFrom(chain.BestState)
 	producerPublicKey := shardBlock.Header.Producer
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)

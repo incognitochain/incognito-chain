@@ -43,7 +43,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	// Get Beststate of previous shardBlock == previous best state
 	// Clone best state value into new variable
 	shardBestState := NewShardBestState()
-	if err := shardBestState.cloneShardBestState(blockchain.BestState.Shard[shardID]); err != nil {
+	if err := shardBestState.cloneShardBestStateFrom(blockchain.BestState.Shard[shardID]); err != nil {
 		return err
 	}
 	// Verify shardBlock with previous best state
