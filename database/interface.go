@@ -105,6 +105,7 @@ type DatabaseInterface interface {
 	StoreOutputCoins(tokenID common.Hash, publicKey []byte, outputCoinArr [][]byte, shardID byte) error
 	HasCommitment(tokenID common.Hash, commitment []byte, shardID byte) (bool, error)
 	ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint64, error)
+	ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error)
 	HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error)
 	GetCommitmentByIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) ([]byte, error)
 	GetCommitmentIndex(tokenID common.Hash, commitment []byte, shardID byte) (*big.Int, error)

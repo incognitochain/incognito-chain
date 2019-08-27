@@ -239,6 +239,34 @@ func (db *db) ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint
 	return result, nil
 }
 
+// ListCommitmentIndices -  return all commitment index and its value
+func (db *db) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
+	result := make(map[uint64]string)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
+	key = append(key, shardID)
+
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iterator.Next() {
+		key1 := make([]byte, len(iterator.Key()))
+		copy(key1, iterator.Key())
+		if string(key1[len(key1)-3:]) == "len" {
+			continue
+		}
+
+		commitmentInByte := make([]byte, len(iterator.Value()))
+		copy(commitmentInByte, iterator.Value())
+		if len(commitmentInByte) != 33 {
+			continue
+		}
+		indexInByte := key1[45:]
+		index := big.Int{}
+		index.SetBytes(indexInByte)
+		commitment := base58.Base58Check{}.Encode(commitmentInByte, 0x0)
+		result[index.Uint64()] = commitment
+	}
+	return result, nil
+}
+
 func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
 	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)

@@ -557,13 +557,17 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		for j := 0; j < privacy.CommitmentRingSize; j++ {
 			index := proof.commitmentIndices[i*privacy.CommitmentRingSize+j]
 			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, index, shardID)
-
 			privacy.Logger.Log.Infof("[TEST] commitment at index %v: %v\n", index, commitmentBytes)
-
 			if err != nil {
-				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database", index, err)
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 1: Error when get commitment by index from database", index, err)
 				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 			}
+			recheckIndex, err := db.GetCommitmentIndex(*tokenID, commitmentBytes, shardID)
+			if err != nil || recheckIndex.Uint64() != index {
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when get commitment by index from database", index, err)
+				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+			}
+
 			commitments[j] = new(privacy.EllipticPoint)
 			err = commitments[j].Decompress(commitmentBytes)
 			if err != nil {
