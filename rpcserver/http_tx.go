@@ -1049,7 +1049,7 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 	return result, nil
 }
 
-// handleListSerialNumbers - return list all serialnumber in shard for token ID
+// handleListCommitments - return list all commitments in shard for token ID
 func (httpServer *HttpServer) handleListCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	var err error
@@ -1078,6 +1078,41 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 	}
 	db := *(httpServer.config.Database)
 	result, err := db.ListCommitment(*tokenID, byte(shardID))
+	if err != nil {
+		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+	}
+	return result, nil
+}
+
+// handleListCommitmentIndices - return list all commitment indices in shard for token ID
+func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	var err error
+	tokenID := &common.Hash{}
+	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
+	if len(arrayParams) > 0 {
+		tokenIDTemp, ok := arrayParams[0].(string)
+		if !ok {
+			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+		}
+		if len(tokenIDTemp) > 0 {
+			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
+			if err != nil {
+				Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
+				return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+			}
+		}
+	}
+	shardID := 0
+	if len(arrayParams) > 1 {
+		shardID = int(arrayParams[1].(float64))
+	}
+	db := *(httpServer.config.Database)
+	result, err := db.ListCommitmentIndices(*tokenID, byte(shardID))
 	if err != nil {
 		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
 	}
