@@ -137,11 +137,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
-			if stakingMetadata.IsRewardFunder {
-				rewardReceiverPaymentAddress = stakingMetadata.FunderPaymentAddress
-			} else {
-				rewardReceiverPaymentAddress = stakingMetadata.CandidatePaymentAddress
-			}
+			rewardReceiverPaymentAddress = stakingMetadata.RewardReceiverPaymentAddress
 			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
 			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
@@ -151,11 +147,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
-			if stakingMetadata.IsRewardFunder {
-				rewardReceiverPaymentAddress = stakingMetadata.FunderPaymentAddress
-			} else {
-				rewardReceiverPaymentAddress = stakingMetadata.CandidatePaymentAddress
-			}
+			rewardReceiverPaymentAddress = stakingMetadata.RewardReceiverPaymentAddress
 			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
 			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)

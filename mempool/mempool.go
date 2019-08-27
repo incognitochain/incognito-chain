@@ -11,7 +11,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -641,11 +640,11 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 			if !ok {
 				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 			}
-			candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-			candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-			if err != nil || candidateWallet == nil {
-				return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
-			}
+			// candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+			// candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+			// if err != nil || candidateWallet == nil {
+			// 	return NewMempoolTxError(WalletKeySerializedError, fmt.Errorf("Expect producer wallet of payment address %+v to be not nil", candidateWallet))
+			// }
 			tp.candidateMtx.RLock()
 			foundPubkey = common.IndexOfStrInHashMap(stakingMetadata.CommitteePublicKey, tp.PoolCandidate)
 			tp.candidateMtx.RUnlock()
