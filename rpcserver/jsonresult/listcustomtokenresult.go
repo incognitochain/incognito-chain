@@ -16,21 +16,25 @@ type CustomToken struct {
 	ListTxs   []string `json:"ListTxs"`
 }
 
-func (customToken *CustomToken) Init(obj transaction.TxNormalToken) {
+func NewNormalToken(obj transaction.TxNormalToken) *CustomToken {
+	customToken := &CustomToken{}
 	customToken.ID = obj.TxTokenData.PropertyID.String()
 	customToken.Symbol = obj.TxTokenData.PropertySymbol
 	customToken.Name = obj.TxTokenData.PropertyName
 	customToken.Amount = obj.TxTokenData.Amount
 	customToken.Image = common.Render(obj.TxTokenData.PropertyID[:])
+	return customToken
 }
 
-func (customToken *CustomToken) InitPrivacy(obj transaction.TxCustomTokenPrivacy) {
+func NewPrivacyToken(obj transaction.TxCustomTokenPrivacy) *CustomToken {
+	customToken := &CustomToken{}
 	customToken.ID = obj.TxPrivacyTokenData.PropertyID.String()
 	customToken.Symbol = obj.TxPrivacyTokenData.PropertySymbol
 	customToken.Name = obj.TxPrivacyTokenData.PropertyName
 	customToken.Amount = obj.TxPrivacyTokenData.Amount
 	customToken.Image = common.Render(obj.TxPrivacyTokenData.PropertyID[:])
 	customToken.IsPrivacy = true
+	return customToken
 }
 
 func (customToken *CustomToken) InitPrivacyForCrossShard(obj blockchain.CrossShardTokenPrivacyMetaData) {
