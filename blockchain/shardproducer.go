@@ -196,18 +196,12 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
-	tempShardCommitteePubKeys, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
-	if err != nil {
-		return nil, NewBlockChainError(ExtractPublicKeyFromCommitteeKeyListError, fmt.Errorf("Failed to extract key of shard committee in shard block %+v, shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
-	}
+	tempShardCommitteePubKeys := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
 	committeeRoot, err := generateHashFromStringArray(tempShardCommitteePubKeys)
 	if err != nil {
 		return nil, NewBlockChainError(CommitteeRootError, err)
 	}
-	tempShardPendintValidator, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardPendingValidator, shardBestState.ConsensusAlgorithm)
-	if err != nil {
-		return nil, NewBlockChainError(ExtractPublicKeyFromCommitteeKeyListError, fmt.Errorf("Failed to extract key of shard pending validator in shard block %+v, shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
-	}
+	tempShardPendintValidator := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
 	pendingValidatorRoot, err := generateHashFromStringArray(tempShardPendintValidator)
 	if err != nil {
 		return nil, NewBlockChainError(PendingValidatorRootError, err)
@@ -230,16 +224,14 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	// shard tx root
 	_, shardTxMerkleData := CreateShardTxRoot2(newShardBlock.Body.Transactions)
 	// Add Root Hash To Header
-	newShardBlock.Header = ShardHeader{
-		TxRoot:               *merkleRoot,
-		ShardTxRoot:          shardTxMerkleData[len(shardTxMerkleData)-1],
-		CrossTransactionRoot: *crossTransactionRoot,
-		InstructionsRoot:     instructionsHash,
-		CommitteeRoot:        committeeRoot,
-		PendingValidatorRoot: pendingValidatorRoot,
-		StakingTxRoot:        stakingTxRoot,
-		Timestamp:            time.Now().Unix(),
-	}
+	newShardBlock.Header.TxRoot = *merkleRoot
+	newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
+	newShardBlock.Header.CrossTransactionRoot = *crossTransactionRoot
+	newShardBlock.Header.InstructionsRoot = instructionsHash
+	newShardBlock.Header.CommitteeRoot = committeeRoot
+	newShardBlock.Header.PendingValidatorRoot = pendingValidatorRoot
+	newShardBlock.Header.StakingTxRoot = stakingTxRoot
+	newShardBlock.Header.Timestamp = time.Now().Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	return newShardBlock, nil
 }
