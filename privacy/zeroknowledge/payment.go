@@ -543,6 +543,8 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	// verify for input coins
 	cmInputSum := make([]*privacy.EllipticPoint, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
+		privacy.Logger.Log.Infof("[TEST] input coins %v\n ShardID %v fee %v", i, shardID, fee)
+		privacy.Logger.Log.Infof("[TEST] commitments indices %v\n", proof.commitmentIndices[i*privacy.CommitmentRingSize:i*privacy.CommitmentRingSize+8])
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
 		// Calculate cm input sum
 		cmInputSum[i] = new(privacy.EllipticPoint)
@@ -555,11 +557,17 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		for j := 0; j < privacy.CommitmentRingSize; j++ {
 			index := proof.commitmentIndices[i*privacy.CommitmentRingSize+j]
 			commitmentBytes, err := db.GetCommitmentByIndex(*tokenID, index, shardID)
-
+			privacy.Logger.Log.Infof("[TEST] commitment at index %v: %v\n", index, commitmentBytes)
 			if err != nil {
-				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Error when get commitment by index from database", index, err)
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 1: Error when get commitment by index from database", index, err)
 				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 			}
+			recheckIndex, err := db.GetCommitmentIndex(*tokenID, commitmentBytes, shardID)
+			if err != nil || recheckIndex.Uint64() != index {
+				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF 2: Error when get commitment by index from database", index, err)
+				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+			}
+
 			commitments[j] = new(privacy.EllipticPoint)
 			err = commitments[j].Decompress(commitmentBytes)
 			if err != nil {

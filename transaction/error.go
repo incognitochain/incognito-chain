@@ -38,7 +38,7 @@ const (
 	VerifyTxSigFailError
 	DuplicatedOutputSndError
 	SndExistedError
-	OutputCommitmentExistError
+	InputCommitmentIsNotExistedError
 	TxProofVerifyFailError
 	VerifyMinerCreatedTxBeforeGettingInBlockError
 	CommitOutputCoinError
@@ -82,7 +82,7 @@ var ErrCodeMessage = map[int]struct {
 	VerifyTxSigFailError:                          {-1021, "Verify signature of tx is fail"},
 	DuplicatedOutputSndError:                      {-1022, "Duplicate output"},
 	SndExistedError:                               {-1023, "Snd existed: %s"},
-	OutputCommitmentExistError:                    {-1024, "Output's commitment existed"},
+	InputCommitmentIsNotExistedError:              {-1024, "Input's commitment is not existed"},
 	TxProofVerifyFailError:                        {-1025, "Can not verify proof of tx"},
 	VerifyMinerCreatedTxBeforeGettingInBlockError: {-1026, "Verify Miner Created Tx Before Getting In Block error"},
 	CommitOutputCoinError:                         {-1027, "Commit all output error"},
