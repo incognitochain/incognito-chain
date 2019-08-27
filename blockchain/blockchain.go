@@ -304,7 +304,7 @@ func (blockchain *BlockChain) initShardState(shardID byte) error {
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
 	}
-	err = blockchain.BestState.Shard[shardID].initShardBestState(&initBlock, genesisBeaconBlock)
+	err = blockchain.BestState.Shard[shardID].initShardBestState(blockchain, &initBlock, genesisBeaconBlock)
 	if err != nil {
 		return err
 	}
