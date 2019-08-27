@@ -698,7 +698,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 		}
 	}
 	shardBestState.ShardPendingValidator = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	shardBestState.ShardPendingValidator = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
+	shardBestState.ShardCommittee = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
 
 	return nil
 }
