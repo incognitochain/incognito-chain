@@ -207,22 +207,22 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 }
 
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
-	tempBlk := &struct {
+	tempShardBlock := &struct {
 		ValidationData string `json:"ValidationData"`
 		Header         ShardHeader
 		Body           *json.RawMessage
 	}{}
-	err := json.Unmarshal(data, &tempBlk)
+	err := json.Unmarshal(data, &tempShardBlock)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	shardBlock.ValidationData = tempBlk.ValidationData
+	shardBlock.ValidationData = tempShardBlock.ValidationData
 	blkBody := ShardBody{}
-	err = blkBody.UnmarshalJSON(*tempBlk.Body)
+	err = blkBody.UnmarshalJSON(*tempShardBlock.Body)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	shardBlock.Header = tempBlk.Header
+	shardBlock.Header = tempShardBlock.Header
 	if shardBlock.Body.Transactions == nil {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
