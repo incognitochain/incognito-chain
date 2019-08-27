@@ -81,6 +81,7 @@ const (
 	hasSnDerivators                            = "hassnderivators"
 	listSerialNumbers                          = "listserialnumbers"
 	listCommitments                            = "listcommitments"
+	listCommitmentIndices                      = "listcommitmentindices"
 
 	createAndSendStakingTransaction = "createandsendstakingtransaction"
 
