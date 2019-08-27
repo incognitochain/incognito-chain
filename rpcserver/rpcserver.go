@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -78,6 +79,7 @@ type RpcServerConfig struct {
 	}
 	ConsensusEngine interface {
 		GetUserRole() (string, int)
+		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, error)
 	}
 	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool *mempool.ShardToBeaconPool

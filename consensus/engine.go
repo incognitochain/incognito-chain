@@ -239,6 +239,13 @@ func (engine *Engine) Init(config *EngineConfig) error {
 	return nil
 }
 
+func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
+	if _, ok := AvailableConsensus[block.GetConsensusType()]; ok {
+		return AvailableConsensus[block.GetConsensusType()].ExtractBridgeValidationData(block)
+	}
+	return nil, nil, NewConsensusError(ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
+}
+
 // func (engine *Engine) SwitchConsensus(chainkey string, consensus string) error {
 // 	if engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName() != engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm {
 // 		consensus, ok := AvailableConsensus[engine.ChainConsensusList[common.BEACON_CHAINKEY].GetConsensusName()]
