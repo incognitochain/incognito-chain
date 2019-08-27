@@ -543,8 +543,8 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	// verify for input coins
 	cmInputSum := make([]*privacy.EllipticPoint, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
-		privacy.Logger.Log.Infof("[TEST] input coins %v\n", i)
-		privacy.Logger.Log.Infof("[TEST] commitments indices %v\n", proof.commitmentIndices[i*privacy.CommitmentRingSize: i*privacy.CommitmentRingSize + 8])
+		privacy.Logger.Log.Infof("[TEST] input coins %v\n ShardID %v fee %v", i, shardID, fee)
+		privacy.Logger.Log.Infof("[TEST] commitments indices %v\n", proof.commitmentIndices[i*privacy.CommitmentRingSize:i*privacy.CommitmentRingSize+8])
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
 		// Calculate cm input sum
 		cmInputSum[i] = new(privacy.EllipticPoint)
