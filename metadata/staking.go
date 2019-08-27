@@ -12,48 +12,73 @@ import (
 
 type StakingMetadata struct {
 	MetadataBase
-	FunderPaymentAddress    string
-	CandidatePaymentAddress string
-	StakingAmountShard      uint64
-	IsRewardFunder          bool
+	RewardReceiverPaymentAddress string
+	// CandidatePaymentAddress      string
+	StakingAmountShard uint64
+	AutoReStaking      bool
+	CommitteePublicKey string
 	// CommitteePublicKey PublicKeys of a candidate who join consensus, base58CheckEncode
 	// CommitteePublicKey string <= encode byte <= mashal struct
-	CommitteePublicKey string
 }
 
-func NewStakingMetadata(stakingType int, funderPaymentAddress string, candidatePaymentAddress string, stakingAmountShard uint64, CommitteePublicKey string, isRewardFunder bool) (*StakingMetadata, error) {
+func NewStakingMetadata(
+	stakingType int,
+	rewardReceiverPaymentAddress string,
+	// candidatePaymentAddress string,
+	stakingAmountShard uint64,
+	committeePublicKey string,
+	autoReStaking bool,
+) (
+	*StakingMetadata,
+	error,
+) {
 	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
 	metadataBase := NewMetadataBase(stakingType)
 	return &StakingMetadata{
-		MetadataBase:            *metadataBase,
-		FunderPaymentAddress:    funderPaymentAddress,
-		CandidatePaymentAddress: candidatePaymentAddress,
-		StakingAmountShard:      stakingAmountShard,
-		IsRewardFunder:          isRewardFunder,
-		CommitteePublicKey:      CommitteePublicKey,
+		MetadataBase:                 *metadataBase,
+		RewardReceiverPaymentAddress: rewardReceiverPaymentAddress,
+		// CandidatePaymentAddress:      candidatePaymentAddress,
+		StakingAmountShard: stakingAmountShard,
+		CommitteePublicKey: committeePublicKey,
+		AutoReStaking:      autoReStaking,
 	}, nil
 }
 
 /*
  */
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
-	candidatePaymentAddress := sm.CandidatePaymentAddress
-	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	if err != nil || candidateWallet == nil {
+	// candidatePaymentAddress := sm.CandidatePaymentAddress
+	// candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	// if err != nil || candidateWallet == nil {
+	// 	return false
+	// }
+
+	rewardReceiverPaymentAddress := sm.RewardReceiverPaymentAddress
+	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
+	if err != nil || rewardReceiverWallet == nil {
 		return false
 	}
-	pk := candidateWallet.KeySet.PaymentAddress.Pk
+
+	// pk := candidateWallet.KeySet.PaymentAddress.Pk
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
 	CommitteePublicKey.FromString(sm.CommitteePublicKey)
-	if (!CommitteePublicKey.CheckSanityData()) || (!bytes.Equal(CommitteePublicKey.IncPubKey, pk)) {
+	if !CommitteePublicKey.CheckSanityData() { //|| (!bytes.Equal(CommitteePublicKey.IncPubKey, pk)) {
 		return false
 	}
 	return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
 }
 
-func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, b byte, db database.DatabaseInterface) (bool, error) {
+func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
+	txr Transaction,
+	bcr BlockchainRetriever,
+	b byte,
+	db database.DatabaseInterface,
+) (
+	bool,
+	error,
+) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
 	tempStaker := []string{stakingMetadata.CommitteePublicKey}
 	for _, committees := range SC {
@@ -80,7 +105,14 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(txr Transaction,
 	// Receiver Is Burning Address
 	//
 */
-func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (stakingMetadata StakingMetadata) ValidateSanityData(
+	bcr BlockchainRetriever,
+	txr Transaction,
+) (
+	bool,
+	bool,
+	error,
+) {
 	if txr.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
@@ -99,15 +131,25 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(bcr BlockchainRetrieve
 	if stakingMetadata.Type == BeaconStakingMeta && amount != bcr.GetStakingAmountShard()*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
-	candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	if err != nil || candidateWallet == nil {
+	// candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
+	// candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	// if err != nil || candidateWallet == nil {
+	// 	return false, false, errors.New("Invalid Candidate Payment Address, Failed to Deserialized Into Key Wallet")
+	// }
+	// pk := candidateWallet.KeySet.PaymentAddress.Pk
+	// if len(pk) != 33 {
+	// 	return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
+	// }
+
+	rewardReceiverPaymentAddress := stakingMetadata.RewardReceiverPaymentAddress
+	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
+	if err != nil || rewardReceiverWallet == nil {
 		return false, false, errors.New("Invalid Candidate Payment Address, Failed to Deserialized Into Key Wallet")
 	}
-	pk := candidateWallet.KeySet.PaymentAddress.Pk
-	if len(pk) != 33 {
+	if len(rewardReceiverWallet.KeySet.PaymentAddress.Pk) != 33 {
 		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
 	}
+
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
 	CommitteePublicKey.FromString(stakingMetadata.CommitteePublicKey)
 	if (!CommitteePublicKey.CheckSanityData()) || (!bytes.Equal(CommitteePublicKey.IncPubKey, pubkey)) {

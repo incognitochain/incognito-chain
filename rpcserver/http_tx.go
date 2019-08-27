@@ -1338,18 +1338,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	if len(paramsArray) != 8 {
 		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
 	}
-	stakingType, ok := paramsArray[4].(float64)
-	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
-	}
-	candidatePaymentAddress, ok := paramsArray[5].(string)
-	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
-	}
-	isRewardFunder, ok := paramsArray[6].(bool)
-	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
-	}
+	//Get sender keyset
 	senderKeyParam := paramsArray[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
@@ -1361,18 +1350,45 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	if err != nil {
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
 	}
+
+	//Get staking type
+	stakingType, ok := paramsArray[4].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
+	}
+
+	//Get Candidate Payment Address
+	candidatePaymentAddress, ok := paramsArray[5].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+	}
+
+	//Get RewardReceiver Payment Address
+	rewardReceiverPaymentAddress, ok := paramsArray[6].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid RewardReceiver Payment Address for Staking Transaction %+v", paramsArray[6]))
+	}
+
+	//Get auto staking flag
+	autoReStaking, ok := paramsArray[7].(bool)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid auto restaking flag %+v", paramsArray[7]))
+	}
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 
-	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	if err != nil || candidateWallet == nil {
-		return nil, nil
-	}
-	pk := candidateWallet.KeySet.PaymentAddress.Pk
-	privateSeed := paramsArray[7].(string)
+	// Get private seed, a.k.a mining key
+	privateSeed := paramsArray[8].(string)
 	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
 	if (err != nil) || (ver != common.ZeroByte) {
 		return nil, NewRPCError(ErrUnexpected, errors.New("Decode privateseed failed!"))
 	}
+
+	// Get candidate publickey
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Base58CheckDeserialize candidate Payment Address failed"))
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
 
 	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
 	if err != nil {
@@ -1386,7 +1402,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), candidatePaymentAddress, httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), isRewardFunder)
+	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), rewardReceiverPaymentAddress, httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	// metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(blsPKBytes, common.ZeroByte))
 
 	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
