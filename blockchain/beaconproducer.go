@@ -64,7 +64,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	beaconBestState := NewBeaconBestState()
 	rewardByEpochInstruction := [][]string{}
 	// produce new block with current beststate
-	err = beaconBestState.cloneBeaconBestState(blockGenerator.chain.BestState.Beacon)
+	err = beaconBestState.cloneBeaconBestStateFrom(blockGenerator.chain.BestState.Beacon)
 	if err != nil {
 		return nil, err
 	}

@@ -509,7 +509,7 @@ func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitok
 	defer beaconBestState.lock.RUnlock()
 	return beaconBestState.BeaconPendingValidator
 }
-func (beaconBestState *BeaconBestState) cloneBeaconBestState(target *BeaconBestState) error {
+func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconBestState) error {
 	tempMarshal, err := target.MarshalJSON()
 	if err != nil {
 		return NewBlockChainError(MashallJsonBeaconBestStateError, fmt.Errorf("Shard Best State %+v get %+v", beaconBestState.BeaconHeight, err))

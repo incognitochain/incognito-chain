@@ -20,8 +20,8 @@ const (
 
 // Shard to beacon pool
 const (
-	maxValidShardToBeaconBlockInPool   = 1000
-	maxInvalidShardToBeaconBlockInPool = 2000
+	maxValidShardToBeaconBlockInPool   = 10000
+	maxInvalidShardToBeaconBlockInPool = 20000
 )
 
 // Shard pool
