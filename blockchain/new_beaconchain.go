@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,18 +16,25 @@ type BeaconChain struct {
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
+	lock       sync.RWMutex
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
 func (chain *BeaconChain) GetMinBlkInterval() time.Duration {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	// return chain.BestState.BlockInterval
 	return common.MinBeaconBlkInterval
 }
 
 func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BlockMaxCreateTime
 }
 
@@ -35,14 +43,20 @@ func (chain *BeaconChain) IsReady() bool {
 }
 
 func (chain *BeaconChain) CurrentHeight() uint64 {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BestBlock.Header.Height
 }
 
 func (chain *BeaconChain) GetCommittee() []incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.GetBeaconCommittee()
 }
 
 func (chain *BeaconChain) GetCommitteeSize() int {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return len(chain.BestState.GetBeaconCommittee())
 }
 
@@ -56,10 +70,14 @@ func (chain *BeaconChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *BeaconChain) GetLastProposerIndex() int {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BeaconProposerIndex
 }
 
 func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
 	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil, err
@@ -68,10 +86,14 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 }
 
 func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
 	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), false)
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ActiveShards
 }
 
@@ -80,6 +102,8 @@ func (chain *BeaconChain) GetChainName() string {
 }
 
 func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.GetPubkeyRole(pubkey, round)
 }
 
@@ -88,6 +112,8 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 }
 
 func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
 	var beaconBestState BeaconBestState
 	beaconBlock := block.(*BeaconBlock)
 	chain.BestState.cloneBeaconBestState(&beaconBestState)
@@ -97,9 +123,10 @@ func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) er
 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 	}
-	chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee)
-	chain.InsertBlk(block)
-	return nil
+	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
+		return err
+	}
+	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
 }
 
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
@@ -117,6 +144,8 @@ func (chain *BeaconChain) ValidateBlockWithBlockChain(common.BlockInterface) err
 }
 
 func (chain *BeaconChain) GetConsensusType() string {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ConsensusAlgorithm
 }
 
@@ -125,10 +154,10 @@ func (chain *BeaconChain) GetShardID() int {
 }
 
 func (chain *BeaconChain) GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey {
-
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	var result map[string]map[string][]incognitokey.CommitteePublicKey
 	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
-
 	result[chain.BestState.ConsensusAlgorithm] = make(map[string][]incognitokey.CommitteePublicKey)
 	result[chain.BestState.ConsensusAlgorithm][common.BEACON_CHAINKEY] = append([]incognitokey.CommitteePublicKey{}, chain.BestState.BeaconCommittee...)
 	for shardID, consensusType := range chain.BestState.ShardConsensusAlgorithm {

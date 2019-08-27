@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,19 +16,26 @@ type ShardChain struct {
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
+	lock       sync.RWMutex
 }
 
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	// return uint64(s.Blockchain.BestState.Beacon.BestBlock.Header.Timestamp)
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
 func (chain *ShardChain) GetMinBlkInterval() time.Duration {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	// return chain.BestState.BlockInterval
 	return common.MinShardBlkInterval
 }
 
 func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BlockMaxCreateTime
 }
 
@@ -36,18 +44,26 @@ func (chain *ShardChain) IsReady() bool {
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.BestBlock.Header.Height
 }
 
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ShardCommittee
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return len(chain.BestState.ShardCommittee)
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	for index, key := range chain.BestState.ShardCommittee {
 		if key.GetMiningKeyBase58(chain.BestState.ConsensusAlgorithm) == pubkey {
 			return index
@@ -57,10 +73,14 @@ func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *ShardChain) GetLastProposerIndex() int {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ShardProposerIdx
 }
 
 func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
 	start := time.Now()
 	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
 	if chain.Blockchain.BestState.Beacon.BeaconHeight < beaconHeight {
@@ -75,6 +95,8 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 
 func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
 	//@Bahamoot review later
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
 	var shardBestState ShardBestState
 	shardBlock := block.(*ShardBlock)
 	chain.BestState.cloneShardBestState(&shardBestState)
@@ -87,7 +109,7 @@ func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) err
 	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
 		return err
 	}
-	return chain.InsertBlk(block)
+	return chain.Blockchain.InsertShardBlock(shardBlock, true)
 }
 
 func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
@@ -105,7 +127,9 @@ func (chain *ShardChain) ValidateBlockWithBlockChain(common.BlockInterface) erro
 }
 
 func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
-	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), false)
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {
@@ -117,14 +141,20 @@ func (chain *ShardChain) GetChainName() string {
 }
 
 func (chain *ShardChain) GetConsensusType() string {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.ConsensusAlgorithm
 }
 
 func (chain *ShardChain) GetShardID() int {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return int(chain.BestState.ShardID)
 }
 
 func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	chain.BestState.lock.RLock()
+	defer chain.BestState.lock.RUnlock()
 	return chain.BestState.GetPubkeyRole(pubkey, round), chain.BestState.ShardID
 }
 
