@@ -38,6 +38,7 @@ type ShardBestState struct {
 	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
 	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
 	StakingTx              map[string]string                 `json:"StakingTx"`
+	StopStakingRequest     []incognitokey.CommitteePublicKey `json:"StopStakingRequest"`
 	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
 	TotalTxns              uint64                            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
@@ -79,6 +80,8 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.StakingTx = make(map[string]string)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
+	bestStateShard.BlockInterval = netparam.MinBeaconBlockInterval
+	bestStateShard.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
 	return bestStateShard
 }
 

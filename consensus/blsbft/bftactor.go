@@ -97,7 +97,9 @@ func (e *BLSBFT) Start() {
 						continue
 					}
 					if e.RoundData.Round == block.GetRound() && e.RoundData.Block != nil {
+
 						e.Blocks[blockRoundKey] = block
+
 						continue
 					}
 					e.Blocks[blockRoundKey] = block
@@ -125,7 +127,7 @@ func (e *BLSBFT) Start() {
 					e.EarlyVotes[voteMsg.RoundKey] = make(map[string]vote)
 				}
 				e.EarlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
-				
+
 			case <-ticker:
 				pubKey := e.UserKeySet.GetPublicKey()
 				if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == -1 {
