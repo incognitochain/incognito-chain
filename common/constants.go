@@ -1,7 +1,5 @@
 package common
 
-import "time"
-
 // for common
 const (
 	EmptyString       = ""
@@ -56,13 +54,6 @@ const (
 var (
 	MaxTxSize    = uint64(100)  // unit KB = 100KB
 	MaxBlockSize = uint64(2000) //unit kilobytes = 2 Megabyte
-)
-
-// for mining consensus
-const (
-	MinBeaconBlkInterval = 10 * time.Second //second
-	MinShardBlkInterval  = 10 * time.Second //second => process block in
-	MinShardBlkCreation  = 4 * time.Second  //second => process block in
 )
 
 // special token ids (aka. PropertyID in custom token)
