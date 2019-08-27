@@ -163,7 +163,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		tx.PubKeyLastByteSender = pkLastByteSender
 		err := tx.signTx()
 		if err != nil {
-			Logger.log.Error(errors.New(fmt.Sprintf("cannot sign tx", err)))
+			Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
 			return NewTransactionErr(SignTxError, err)
 		}
 		return nil
@@ -504,7 +504,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 					if err != nil {
 						Logger.log.Error(err)
 					}
-					return false, NewTransactionErr(OutputCommitmentExistError, err)
+					return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
 				}
 			}
 		}
