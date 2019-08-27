@@ -1,5 +1,5 @@
 {
-  "Version": "0.8.1-beta",
-  "Note": "New code is needed to be update with increasing shard committee size from 4 to 8",
+  "Version": "0.9.1-beta",
+  "Note": "Fix some bug about cross shard tx",
   "RemoveData": true
 }
