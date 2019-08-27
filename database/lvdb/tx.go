@@ -68,12 +68,12 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 
 	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	for iterator.Next() {
-		key := make([]byte, len(iterator.Key()))
-		copy(key, iterator.Key())
-		if string(key[len(key)-3:]) == "len" {
+		key1 := make([]byte, len(iterator.Key()))
+		copy(key1, iterator.Key())
+		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		serialNumberInByte := key[len(key)-33:]
+		serialNumberInByte := key1[len(key1)-33:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
@@ -220,12 +220,15 @@ func (db *db) ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint
 
 	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	for iterator.Next() {
-		key := make([]byte, len(iterator.Key()))
-		copy(key, iterator.Key())
-		if string(key[len(key)-3:]) == "len" {
+		key1 := make([]byte, len(iterator.Key()))
+		copy(key1, iterator.Key())
+		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		commitmentInByte := key[len(key)-33:]
+		if len(key1) < len(key)+33 {
+			continue
+		}
+		commitmentInByte := key1[len(key1)-33:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
