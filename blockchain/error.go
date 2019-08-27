@@ -144,6 +144,10 @@ const (
 	StoreRewardReceiverByHeightError
 	CreateNormalTokenTxForCrossShardError
 	SnapshotCommitteeError
+	ExtractPublicKeyFromCommitteeKeyListError
+	PendingValidatorRootError
+	CommitteeRootError
+	StakingTxRootError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -272,6 +276,10 @@ var ErrCodeMessage = map[int]struct {
 	StoreRewardReceiverByHeightError:                  {-1119, "Store Reward Receiver By Height Error"},
 	CreateNormalTokenTxForCrossShardError:             {-1120, "Create Normal Token Tx For Cross Shard Error"},
 	SnapshotCommitteeError:                            {-1121, "Snapshot Committee Error"},
+	ExtractPublicKeyFromCommitteeKeyListError:         {-1122, "Extract Public Key From Committee Key List"},
+	PendingValidatorRootError:                         {-1123, "Pending Validator Root Error"},
+	CommitteeRootError:                                {-1124, "Committee Root Error"},
+	StakingTxRootError:                                {-1124, "Staking Tx Root Error"},
 }
 
 type BlockChainError struct {

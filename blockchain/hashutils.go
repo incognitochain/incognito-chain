@@ -75,6 +75,19 @@ func generateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]str
 	return generateHashFromStringArray(append(shardPendingValidator, shardValidator...))
 }
 
+func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, error) {
+	var keys []string
+	var res []string
+	for k := range maps1 {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		res = append(res, key)
+		res = append(res, maps1[key])
+	}
+	return generateHashFromStringArray(res)
+}
 func generateHashFromShardState(allShardState map[byte][]ShardState) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
@@ -169,5 +182,12 @@ func calHashFromTxTokenDataList(txTokenDataList []transaction.TxNormalTokenData)
 }
 func verifyLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint64, targetHash common.Hash) (common.Hash, bool) {
 	hash := generateLastCrossShardStateHash(lastCrossShardState)
+	return hash, hash.IsEqual(&targetHash)
+}
+func verifyHashFromMapStringString(maps1 map[string]string, targetHash common.Hash) (common.Hash, bool) {
+	hash, err := generateHashFromMapStringString(maps1)
+	if err != nil {
+		return hash, false
+	}
 	return hash, hash.IsEqual(&targetHash)
 }
