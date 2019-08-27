@@ -15,8 +15,6 @@ type ShardChain struct {
 	BlockGen   *BlockGenerator
 	Blockchain *BlockChain
 	ChainName  string
-	// ChainConsensus  ConsensusInterface
-	// ConsensusEngine ConsensusEngineInterface
 }
 
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {

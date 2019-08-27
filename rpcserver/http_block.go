@@ -23,14 +23,18 @@ func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <
 	result := jsonresult.GetBestBlockResult{
 		BestBlocks: make(map[int]jsonresult.GetBestBlockItem),
 	}
-	for shardID, best := range httpServer.config.BlockChain.BestState.Shard {
+	shards := httpServer.config.BlockChain.BestState.GetClonedAllShardBestState()
+	for shardID, best := range shards {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
 			Height:   best.BestBlock.Header.Height,
 			Hash:     best.BestBlockHash.String(),
 			TotalTxs: best.TotalTxns,
 		}
 	}
-	beaconBestState := httpServer.config.BlockChain.BestState.Beacon
+	beaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
 	if beaconBestState == nil {
 		Logger.log.Debugf("handleGetBestBlock result: %+v", result)
 		return result, nil
@@ -48,7 +52,8 @@ func (httpServer *HttpServer) handleGetBestBlockHash(params interface{}, closeCh
 	result := jsonresult.GetBestBlockHashResult{
 		BestBlockHashes: make(map[int]string),
 	}
-	for shardID, best := range httpServer.config.BlockChain.BestState.GetClonedAllShardBestState() {
+	shards := httpServer.config.BlockChain.BestState.GetClonedAllShardBestState()
+	for shardID, best := range shards {
 		result.BestBlockHashes[int(shardID)] = best.BestBlockHash.String()
 	}
 	clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
@@ -76,7 +81,6 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, errH)
 			return nil, NewRPCError(ErrUnexpected, errH)
 		}
-		// block, errD := httpServer.config.BlockChain.GetBlockByHash(hash)
 		block, _, errD := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
 		if errD != nil {
 			Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, errD)
@@ -247,24 +251,11 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 			}
 			nextHashString = nextHash.Hash().String()
 		}
-
-		result := jsonresult.GetBlocksBeaconResult{
-			Hash:           block.Hash().String(),
-			Height:         block.Header.Height,
-			Instructions:   block.Body.Instructions,
-			Time:           block.Header.Timestamp,
-			Round:          block.Header.Round,
-			Epoch:          block.Header.Epoch,
-			Version:        block.Header.Version,
-			ValidationData: block.ValidationData,
-			ConsensusType:  block.Header.ConsensusType,
-			// BlockProducerSign: block.ProducerSig,
-			// BlockProducer:     block.Header.ProducerAddress.String(),
-			// AggregatedSig:     block.AggregatedSig,
-			// R:                 block.R,
-			PreviousBlockHash: block.Header.PreviousBlockHash.String(),
-			NextBlockHash:     nextHashString,
+		blockBytes, errS := json.Marshal(block)
+		if errS != nil {
+			return nil, NewRPCError(ErrUnexpected, errS)
 		}
+		result := jsonresult.NewGetBlocksBeaconResult(block, uint64(len(blockBytes)), nextHashString)
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, errD)
 		return result, nil
 	}
@@ -306,9 +297,8 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 				Logger.log.Debugf("handleGetBlocks result: %+v, err: %+v", nil, errD)
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
-			blockResult := jsonresult.GetBlockResult{}
-			blockResult.Init(block, size)
-			result = append(result, blockResult)
+			blockResult := jsonresult.NewGetBlockResult(block, size, common.EmptyString)
+			result = append(result, *blockResult)
 			previousHash = &block.Header.PreviousBlockHash
 			if previousHash.String() == (common.Hash{}).String() {
 				break
@@ -331,9 +321,8 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 			if errD != nil {
 				return nil, NewRPCError(ErrUnexpected, errD)
 			}
-			blockResult := jsonresult.GetBlocksBeaconResult{}
-			blockResult.Init(block, size)
-			result = append(result, blockResult)
+			blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, common.EmptyString)
+			result = append(result, *blockResult)
 			previousHash = &block.Header.PreviousBlockHash
 			if previousHash.String() == (common.Hash{}).String() {
 				break
@@ -400,15 +389,23 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 	shardID := byte(paramNumber)
 	isGetBeacon := paramNumber == -1
 	if isGetBeacon {
-		if httpServer.config.BlockChain.BestState != nil && httpServer.config.BlockChain.BestState.Beacon != nil {
-			result := httpServer.config.BlockChain.BestState.Beacon.BestBlock.Header.Height
+		beacon, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+		if err != nil {
+			return nil, NewRPCError(ErrUnexpected, err)
+		}
+		if httpServer.config.BlockChain.BestState != nil && beacon != nil {
+			result := beacon.BestBlock.Header.Height
 			Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 			return result, nil
 		}
 	}
-
-	if httpServer.config.BlockChain.BestState != nil && httpServer.config.BlockChain.BestState.Shard[shardID] != nil && httpServer.config.BlockChain.BestState.Shard[shardID].BestBlock != nil {
-		result := httpServer.config.BlockChain.BestState.Shard[shardID].BestBlock.Header.Height + 1
+	shardById, err := httpServer.config.BlockChain.BestState.GetClonedAShardBestState(shardID)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
+	}
+	if httpServer.config.BlockChain.BestState != nil && shardById != nil &&
+		shardById.BestBlock != nil {
+		result := shardById.BestBlock.Header.Height + 1
 		Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 		return result, nil
 	}
@@ -510,7 +507,6 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 			return nil, NewRPCError(ErrUnexpected, errors.New("block not exist"))
 		}
 		result.Header = block.Header
-		// result.BlockNum = int(block.Header.GetHeight()) + 1
 		result.BlockNum = int(block.Header.Height) + 1
 		result.ShardID = uint8(shardID)
 		result.BlockHash = hash.String()
@@ -521,7 +517,6 @@ func (httpServer *HttpServer) handleGetBlockHeader(params interface{}, closeChan
 			return nil, NewRPCError(ErrUnexpected, errors.New("invalid blocknum format"))
 		}
 		fmt.Println(shardID)
-		// if uint64(bnum-1) > httpServer.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.GetHeight() || bnum <= 0 {
 		if uint64(bnum-1) > httpServer.config.BlockChain.BestState.Shard[uint8(shardID)].BestBlock.Header.Height || bnum <= 0 {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
 			return nil, NewRPCError(ErrUnexpected, errors.New("Block not exist"))
