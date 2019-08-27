@@ -29,8 +29,7 @@ func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 func (chain *ShardChain) GetMinBlkInterval() time.Duration {
 	chain.BestState.lock.RLock()
 	defer chain.BestState.lock.RUnlock()
-	// return chain.BestState.BlockInterval
-	return common.MinShardBlkInterval
+	return chain.BestState.BlockInterval
 }
 
 func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
