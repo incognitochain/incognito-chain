@@ -43,6 +43,11 @@ const (
 	MainNetActiveShards        = 2
 	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
+	MainNetMinBeaconBlkInterval = 10 * time.Second //second
+	MainNetMaxBeaconBlkCreation = 8 * time.Second  //second
+	MainNetMinShardBlkInterval  = 10 * time.Second //second
+	MainNetMaxShardBlkCreation  = 4 * time.Second  //second
+
 	//board and proposal parameters
 	MainnetBasicReward                = 400000000 //40 mili PRV
 	MainnetRewardHalflife             = 3155760   //1 year, reduce 12.5% per year
@@ -81,6 +86,11 @@ const (
 	TestNetMinBeaconCommitteeSize = 4
 	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+
+	TestNetMinBeaconBlkInterval = 10 * time.Second //second
+	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
+	TestNetMinShardBlkInterval  = 10 * time.Second //second
+	TestNetMaxShardBlkCreation  = 4 * time.Second  //second
 
 	//board and proposal parameters
 	TestnetBasicReward                = 400000000 //40 mili PRV
