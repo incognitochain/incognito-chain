@@ -79,7 +79,7 @@ type RpcServerConfig struct {
 	}
 	ConsensusEngine interface {
 		GetUserRole() (string, int)
-		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, error)
+		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 	}
 	TxMemPool         *mempool.TxPool
 	ShardToBeaconPool *mempool.ShardToBeaconPool
