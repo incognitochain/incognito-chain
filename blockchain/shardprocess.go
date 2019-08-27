@@ -52,7 +52,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
-	if err := shardBestState.updateShardBestState(shardBlock, beaconBlocks); err != nil {
+	if err := shardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
 		return err
 	}
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
@@ -137,7 +137,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 
 	oldCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 
-	if err := blockchain.BestState.Shard[shardID].updateShardBestState(shardBlock, beaconBlocks); err != nil {
+	if err := blockchain.BestState.Shard[shardID].updateShardBestState(blockchain, shardBlock, beaconBlocks); err != nil {
 		return err
 	}
 	newCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
@@ -404,7 +404,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 	// Verify Instruction
 	instructions := [][]string{}
 	shardCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
-	shardPendingValidator := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
+	shardPendingValidator, _ := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
 	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionError, err)
@@ -568,7 +568,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(shardBlock *
 	- Execute assign instruction, add new pending validator (if exist)
 	- Execute swap instruction, swap pending validator and committee (if exist)
 */
-func (shardBestState *ShardBestState) updateShardBestState(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock) error {
+func (shardBestState *ShardBestState) updateShardBestState(blockchain *BlockChain, shardBlock *ShardBlock, beaconBlocks []*BeaconBlock) error {
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	var (
 		err error
@@ -587,7 +587,12 @@ func (shardBestState *ShardBestState) updateShardBestState(shardBlock *ShardBloc
 	} else {
 		shardBestState.ShardProposerIdx += shardBlock.Header.Round
 	}
-	shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
+	//shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
+	shardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(beaconBlocks, shardBlock.Header.ShardID)
+	shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)...)
+	for stakePublicKey, txHash := range stakingTx {
+		shardBestState.StakingTx[stakePublicKey] = txHash
+	}
 	err = shardBestState.processShardBlockInstruction(shardBlock)
 	if err != nil {
 		return err
@@ -609,7 +614,7 @@ func (shardBestState *ShardBestState) updateShardBestState(shardBlock *ShardBloc
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	return nil
 }
-func (shardBestState *ShardBestState) initShardBestState(genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {
+func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain, genesisShardBlock *ShardBlock, genesisBeaconBlock *BeaconBlock) error {
 	shardBestState.BestBeaconHash = *ChainTestParam.GenesisBeaconBlock.Hash()
 	shardBestState.BestBlock = genesisShardBlock
 	shardBestState.BestBlockHash = *genesisShardBlock.Hash()
@@ -619,7 +624,12 @@ func (shardBestState *ShardBestState) initShardBestState(genesisShardBlock *Shar
 	shardBestState.TotalTxns += uint64(len(genesisShardBlock.Body.Transactions))
 	shardBestState.NumTxns = uint64(len(genesisShardBlock.Body.Transactions))
 	shardBestState.ShardProposerIdx = 0
-	shardBestState.processBeaconBlocks(genesisShardBlock, []*BeaconBlock{genesisBeaconBlock})
+	//shardBestState.processBeaconBlocks(genesisShardBlock, []*BeaconBlock{genesisBeaconBlock})
+	shardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon([]*BeaconBlock{genesisBeaconBlock}, genesisShardBlock.Header.ShardID)
+	shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)...)
+	for stakePublicKey, txHash := range stakingTx {
+		shardBestState.StakingTx[stakePublicKey] = txHash
+	}
 	err := shardBestState.processShardBlockInstruction(genesisShardBlock)
 	if err != nil {
 		return err
@@ -698,7 +708,7 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 		}
 	}
 	shardBestState.ShardPendingValidator = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	shardBestState.ShardPendingValidator = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
+	shardBestState.ShardCommittee = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
 
 	return nil
 }
@@ -720,6 +730,10 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 	isOk = verifyHashFromStringArray(incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator), shardBlock.Header.PendingValidatorRoot)
 	if !isOk {
 		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v", shardBlock.Header.PendingValidatorRoot))
+	}
+	tempHash, isOk := verifyHashFromMapStringString(shardBestState.StakingTx, shardBlock.Header.StakingTxRoot)
+	if !isOk {
+		return NewBlockChainError(ShardPendingValidatorRootHashError, fmt.Errorf("Expect shard pending validator root hash to be %+v but get %+v", shardBlock.Header.PendingValidatorRoot, tempHash))
 	}
 	Logger.log.Debugf("SHARD %+v | Finish VerifyPostProcessing Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	return nil
