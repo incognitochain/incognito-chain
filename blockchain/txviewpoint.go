@@ -399,13 +399,13 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 
 	// sort by shard ID
 	shardIDs := []int{}
-	for k, _ := range allShardCrossTransactions {
+	for k := range allShardCrossTransactions {
 		shardIDs = append(shardIDs, int(k))
 	}
 	sort.Ints(shardIDs)
 
-	for _, i := range shardIDs {
-		crossTransactions := allShardCrossTransactions[byte(i)]
+	for _, shardID := range shardIDs {
+		crossTransactions := allShardCrossTransactions[byte(shardID)]
 		for _, crossTransaction := range crossTransactions {
 			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, prvCoinID)
 			if err != nil {
