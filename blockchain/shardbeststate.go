@@ -79,6 +79,8 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.StakingTx = make(map[string]string)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
+	bestStateShard.BlockInterval = netparam.MinBeaconBlockInterval
+	bestStateShard.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
 	return bestStateShard
 }
 

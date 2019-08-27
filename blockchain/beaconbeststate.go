@@ -98,6 +98,8 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.MinShardCommitteeSize = netparam.MinShardCommitteeSize
 	beaconBestState.ActiveShards = netparam.ActiveShards
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
+	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
+	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
 	return beaconBestState
 }
 func SetBeaconBestState(beacon *BeaconBestState) {
