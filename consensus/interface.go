@@ -37,6 +37,7 @@ type ConsensusInterface interface {
 	GetUserPublicKey() *incognitokey.CommitteePublicKey
 	ValidateData(data []byte, sig string, publicKey string) error
 	SignData(data []byte) (string, error)
+	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 }
 
 type BeaconInterface interface {

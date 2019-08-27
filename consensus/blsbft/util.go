@@ -3,6 +3,8 @@ package blsbft
 import (
 	"fmt"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
@@ -59,4 +61,12 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 
 func getRoundKey(nextHeight uint64, round int) string {
 	return fmt.Sprint(nextHeight, "_", round)
+}
+
+func (e *BLSBFT) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return nil, nil, err
+	}
+	return valData.BridgeSig, valData.ValidatiorsIdx, nil
 }
