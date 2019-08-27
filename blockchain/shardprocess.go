@@ -759,7 +759,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
 	}*/
 	// TODO: uncomment to synchronize validate method with shard process and mempool
-	for _, tx := range txs {
+	for index, tx := range txs {
 		if !tx.IsSalaryTx() {
 			if tx.GetType() == common.TxCustomTokenType {
 				customTokenTx := tx.(*transaction.TxNormalToken)
