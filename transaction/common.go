@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/database"
@@ -76,7 +75,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
-	fmt.Printf("cpRandNum: %d\n", cpRandNum)
+	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
 	lenCommitment, err1 := param.db.GetCommitmentLength(*param.tokenID, param.shardID)
 	if err1 != nil {
 		Logger.log.Error(err1)
