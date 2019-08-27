@@ -12,6 +12,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
+// TODO - change json to CamelCase
 type BridgeTokenInfo struct {
 	TokenID         *common.Hash `json:"tokenId"`
 	Amount          uint64       `json:"amount"`
