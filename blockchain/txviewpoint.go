@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 
 	"math/big"
@@ -241,9 +242,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					snDs[pubkey] = append(snDs[pubkey], data...)
 				}
 				// acceptedSnD = append(acceptedSnD, snDs...)
-				if err != nil {
+				/*if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
-				}
+				}*/
 
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
@@ -276,9 +277,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					}
 				}
 				// subView.listSnD = append(subView.listSnD, snDsP...)
-				if err != nil {
+				/*if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
-				}
+				}*/
 
 				view.privacyCustomTokenViewPoint[int32(indexTx)] = subView
 				view.privacyCustomTokenTxs[int32(indexTx)] = tx
@@ -395,7 +396,16 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	//@NOTICE: this function just work for Normal Transaction
-	for _, crossTransactions := range allShardCrossTransactions {
+
+	// sort by shard ID
+	shardIDs := make([]int, 0, len(allShardCrossTransactions))
+	for k := range allShardCrossTransactions {
+		shardIDs = append(shardIDs, int(k))
+	}
+	sort.Ints(shardIDs)
+
+	for i := range shardIDs {
+		crossTransactions := allShardCrossTransactions[byte(i)]
 		for _, crossTransaction := range crossTransactions {
 			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, prvCoinID)
 			if err != nil {

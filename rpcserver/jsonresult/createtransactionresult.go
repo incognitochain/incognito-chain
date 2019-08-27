@@ -11,8 +11,8 @@ type CreateTransactionResult struct {
 	ShardID         byte
 }
 
-func NewCreateTransactionResult(txID *common.Hash, txIDString string, byteArrays []byte, txShardID byte) *CreateTransactionResult {
-	result := &CreateTransactionResult{
+func NewCreateTransactionResult(txID *common.Hash, txIDString string, byteArrays []byte, txShardID byte) CreateTransactionResult {
+	result := CreateTransactionResult{
 		ShardID: txShardID,
 	}
 	if txID != nil {
