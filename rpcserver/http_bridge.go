@@ -230,7 +230,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(*jsonresult.CreateTransactionResult).TxID, nil, sendResult.(*jsonresult.CreateTransactionResult).ShardID)
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
 }
 
