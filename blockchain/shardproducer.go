@@ -70,7 +70,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	//========Verify newShardBlock with previous best state
 	// Get Beststate of previous newShardBlock == previous best state
 	// Clone best state value into new variable
-	if err := shardBestState.cloneShardBestState(blockGenerator.chain.BestState.Shard[shardID]); err != nil {
+	if err := shardBestState.cloneShardBestStateFrom(blockGenerator.chain.BestState.Shard[shardID]); err != nil {
 		return nil, err
 	}
 	//==========Fetch Beacon Blocks============
