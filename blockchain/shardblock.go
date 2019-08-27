@@ -163,6 +163,9 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if len(shardBlock.Header.PendingValidatorRoot[:]) != common.HashSize {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Committee Root in the right format"))
 	}
+	if len(shardBlock.Header.StakingTxRoot[:]) != common.HashSize {
+		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Staking Tx Root in the right format"))
+	}
 	if len(shardBlock.Header.CrossShardBitMap) > 254 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Shard Length Less Than 255"))
 	}
@@ -204,31 +207,22 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 }
 
 func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
-	tempBlk := &struct {
-		// AggregatedSig  string  `json:"AggregatedSig"`
-		// R              string  `json:"R"`
-		// ValidatorsIdx  [][]int `json:"ValidatorsIdx"`
-		// ProducerSig    string  `json:"ProducerSig"`
+	tempShardBlock := &struct {
 		ValidationData string `json:"ValidationData"`
 		Header         ShardHeader
 		Body           *json.RawMessage
 	}{}
-	err := json.Unmarshal(data, &tempBlk)
+	err := json.Unmarshal(data, &tempShardBlock)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	// shardBlock.AggregatedSig = tempBlk.AggregatedSig
-	// shardBlock.R = tempBlk.R
-	// shardBlock.ValidatorsIdx = tempBlk.ValidatorsIdx
-	// shardBlock.ProducerSig = tempBlk.ProducerSig
-	shardBlock.ValidationData = tempBlk.ValidationData
+	shardBlock.ValidationData = tempShardBlock.ValidationData
 	blkBody := ShardBody{}
-	err = blkBody.UnmarshalJSON(*tempBlk.Body)
+	err = blkBody.UnmarshalJSON(*tempShardBlock.Body)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
-	shardBlock.Header = tempBlk.Header
-	// Init shard block data if get nil value
+	shardBlock.Header = tempShardBlock.Header
 	if shardBlock.Body.Transactions == nil {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
@@ -242,9 +236,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Header.TotalTxsFee = make(map[common.Hash]uint64)
 	}
 	if ok, err := shardBlock.validateSanityData(); !ok || err != nil {
-
-		panic(string(data))
-
+		panic(string(data) + err.Error())
 		return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	}
 	shardBlock.Body = blkBody
