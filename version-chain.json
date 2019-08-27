@@ -1,5 +1,5 @@
 {
-  "Version": "0.9.1-beta",
-  "Note": "Fix some bug about cross shard tx",
+  "Version": "0.10.1-beta",
+  "Note": "Max shard committee 32",
   "RemoveData": true
 }
