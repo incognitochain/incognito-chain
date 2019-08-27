@@ -43,7 +43,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	// Get Beststate of previous shardBlock == previous best state
 	// Clone best state value into new variable
 	shardBestState := NewShardBestState()
-	if err := shardBestState.cloneShardBestState(blockchain.BestState.Shard[shardID]); err != nil {
+	if err := shardBestState.cloneShardBestStateFrom(blockchain.BestState.Shard[shardID]); err != nil {
 		return err
 	}
 	// Verify shardBlock with previous best state
@@ -766,11 +766,12 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(txs []metadata.Trans
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
 
-	//err := blockchain.config.TempTxPool.ValidateTxList(txs)
-	//if err != nil {
-	//	Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
-	//	return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
-	//}
+	// TODO:
+	/*err := blockchain.config.TempTxPool.ValidateTxList(txs)
+	if err != nil {
+		Logger.log.Errorf("Error validating transaction in block creation: %+v \n", err)
+		return NewBlockChainError(TransactionFromNewBlockError, errors.New("Some Transactions in New Block IS invalid"))
+	}*/
 	// TODO: uncomment to synchronize validate method with shard process and mempool
 	for index, tx := range txs {
 		if !tx.IsSalaryTx() {

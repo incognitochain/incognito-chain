@@ -116,7 +116,9 @@ func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) er
 	defer chain.lock.Unlock()
 	var beaconBestState BeaconBestState
 	beaconBlock := block.(*BeaconBlock)
-	chain.BestState.cloneBeaconBestState(&beaconBestState)
+	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
+
+	fmt.Println(chain.BestState)
 	producerPublicKey := beaconBlock.Header.Producer
 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)

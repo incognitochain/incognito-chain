@@ -248,7 +248,7 @@ func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
 	return shardBestState.BeaconHeight
 }
 
-func (shardBestState *ShardBestState) cloneShardBestState(target *ShardBestState) error {
+func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestState) error {
 	tempMarshal, err := json.Marshal(target)
 	if err != nil {
 		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.ShardHeight, err))
