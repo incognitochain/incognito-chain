@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -44,12 +43,12 @@ func (blockGenerator *BlockGenerator) buildReturnStakingAmountTx(
 		return nil, NewBlockChainError(FetchShardBlockError, err)
 	}
 	txData := shardBlock.Body.Transactions[index]
-	keyWallet, err := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress)
+	keyWallet, err := wallet.Base58CheckDeserialize(txData.GetMetadata().(*metadata.StakingMetadata).RewardReceiverPaymentAddress)
 	if err != nil {
 		Logger.log.Error("SA: cannot get payment address", txData.GetMetadata().(*metadata.StakingMetadata), committeeShardID)
 		return nil, NewBlockChainError(WalletKeySerializedError, err)
 	}
-	Logger.log.Info("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).FunderPaymentAddress, committeeShardID)
+	Logger.log.Info("SA: build salary tx", txData.GetMetadata().(*metadata.StakingMetadata).RewardReceiverPaymentAddress, committeeShardID)
 	paymentShardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
 	if paymentShardID != committeeShardID {
 		return nil, NewBlockChainError(WrongShardIDError, fmt.Errorf("Staking Payment Address ShardID %+v, Not From Current Shard %+v", paymentShardID, committeeShardID))
@@ -149,6 +148,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 	return resInst, nil
 }
 
+// [committeeString][key][value]
 func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalReward map[common.Hash]uint64, listCommitee []incognitokey.CommitteePublicKey) error {
 	reward := map[common.Hash]uint64{}
 	for key, value := range totalReward {
@@ -178,9 +178,9 @@ func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalRe
 }
 
 func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks []*BeaconBlock, shardID byte) error {
-	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-	isInit := false
-	epoch := uint64(0)
+	// shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	// isInit := false
+	// epoch := uint64(0)
 	db := blockchain.config.DataBase
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -194,11 +194,11 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 			if err != nil {
 				continue
 			}
+			metaType, err := strconv.Atoi(l[0])
+			if err != nil {
+				return err
+			}
 			if shardToProcess == int(shardID) {
-				metaType, err := strconv.Atoi(l[0])
-				if err != nil {
-					return err
-				}
 				switch metaType {
 				case metadata.BeaconRewardRequestMeta:
 					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
@@ -233,27 +233,30 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 						}
 					}
 					continue
-				case metadata.ShardBlockRewardRequestMeta:
-					shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
-					if err != nil {
-						return err
-					}
-					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
-						isInit = true
-						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
-						if err != nil {
-							return err
-						}
-						json.Unmarshal(temp, &shardCommittee)
-					}
-					err = blockchain.shareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
-					if err != nil {
-						return err
-					}
-					continue
 				}
 			}
+			// switch metaType {
+			// case metadata.ShardBlockRewardRequestMeta:
+			// 	shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// 	if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+			// 		isInit = true
+			// 		epoch = shardRewardInfo.Epoch
+			// 		temp, err := blockchain.config.DataBase.FetchRewardReceiverByHeight(epoch * blockchain.config.ChainParams.Epoch)
+			// 		if err != nil {
+			// 			return err
+			// 		}
+			// 		json.Unmarshal(temp, &shardCommittee)
+			// 	}
+			// 	err = blockchain.shareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// 	continue
+			// }
+
 		}
 	}
 	return nil
@@ -380,3 +383,16 @@ func splitReward(
 		return &rewardForBeacon, nil, nil
 	}
 }
+
+// func getRewardAmountForUserOfShard()
+
+// func getRewardAmountOfShardCandidate(
+// 	shardReward uint64,
+// 	numberOfCandidates int,
+// ) (
+// 	reward uint64,
+// 	err error,
+// ) {
+// 	reward :=
+// 	return
+// }

@@ -44,7 +44,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 	// Get Beststate of previous block == previous best state
 	// Clone best state value into new variable
 	beaconBestState := NewBeaconBestState()
-	if err := beaconBestState.cloneBeaconBestState(blockchain.BestState.Beacon); err != nil {
+	if err := beaconBestState.cloneBeaconBestStateFrom(blockchain.BestState.Beacon); err != nil {
 		return err
 	}
 	// Verify block with previous best state
@@ -94,19 +94,20 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		Logger.log.Infof("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 	// Backup beststate
-	// if blockchain.config.UserKeySet != nil {
-	// 	userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
-	// 	if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-	// 		err := blockchain.config.DataBase.CleanBackup(false, 0)
-	// 		if err != nil {
-	// 			return NewBlockChainError(CleanBackUpError, err)
-	// 		}
-	// 		err = blockchain.BackupCurrentBeaconState(beaconBlock)
-	// 		if err != nil {
-	// 			return NewBlockChainError(BackUpBestStateError, err)
-	// 		}
-	// 	}
-	// }
+	userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	if userPubKey != "" {
+		userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(userPubKey, 0)
+		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			err := blockchain.config.DataBase.CleanBackup(false, 0)
+			if err != nil {
+				return NewBlockChainError(CleanBackUpError, err)
+			}
+			err = blockchain.BackupCurrentBeaconState(beaconBlock)
+			if err != nil {
+				return NewBlockChainError(BackUpBestStateError, err)
+			}
+		}
+	}
 	// snapshot current beacon committee and shard committee
 	snapshotBeaconCommittee, snapshotAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
 	if err != nil {
