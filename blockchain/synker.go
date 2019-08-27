@@ -112,7 +112,7 @@ func (synker *Synker) Start() {
 	synker.Status.Unlock()
 
 	broadcastTicker := time.NewTicker(DefaultBroadcastStateTime)
-	insertPoolTicker := time.NewTicker(time.Millisecond * 100)
+	insertPoolTicker := time.NewTicker(time.Millisecond * 500)
 	updateStatesTicker := time.NewTicker(DefaultStateUpdateTime)
 	defer func() {
 		broadcastTicker.Stop()
@@ -869,7 +869,7 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	defer currentInsert.Beacon.Unlock()
 	blks := synker.blockchain.config.BeaconPool.GetValidBlock()
 	for _, newBlk := range blks {
-		err := synker.blockchain.InsertBeaconBlock(newBlk, false)
+		err := synker.blockchain.Chains[common.BEACON_CHAINKEY].ValidateAndInsertBlock(newBlk)
 		if err != nil {
 			Logger.log.Error(err)
 			break
@@ -882,7 +882,7 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	currentInsert.Shards[shardID].Lock()
 	blks := synker.blockchain.config.ShardPool[shardID].GetValidBlock()
 	for _, newBlk := range blks {
-		err := synker.blockchain.InsertShardBlock(newBlk, true)
+		err := synker.blockchain.Chains[common.GetShardChainKey(shardID)].ValidateAndInsertBlock(newBlk)
 		if err != nil {
 			//@Notice: remove or keep invalid block
 			Logger.log.Error(err)
