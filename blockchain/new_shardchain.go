@@ -99,14 +99,14 @@ func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) err
 	defer chain.lock.Unlock()
 	var shardBestState ShardBestState
 	shardBlock := block.(*ShardBlock)
-	chain.BestState.cloneShardBestState(&shardBestState)
+	shardBestState.cloneShardBestStateFrom(chain.BestState)
 	producerPublicKey := shardBlock.Header.Producer
 	producerPosition := (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
-	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
+	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
 	}
-	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
+	if err := chain.ValidateBlockSignatures(block, shardBestState.ShardCommittee); err != nil {
 		return err
 	}
 	return chain.Blockchain.InsertShardBlock(shardBlock, true)
