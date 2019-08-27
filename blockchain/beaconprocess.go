@@ -44,7 +44,7 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *BeaconBlock,
 	// Get Beststate of previous block == previous best state
 	// Clone best state value into new variable
 	beaconBestState := NewBeaconBestState()
-	if err := beaconBestState.cloneBeaconBestState(blockchain.BestState.Beacon); err != nil {
+	if err := beaconBestState.cloneBeaconBestStateFrom(blockchain.BestState.Beacon); err != nil {
 		return err
 	}
 	// Verify block with previous best state
