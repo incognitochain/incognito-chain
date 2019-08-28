@@ -150,6 +150,7 @@ const (
 	StakingTxHashError
 	StopAutoStakingRequestHashError
 	StopAutoStakingMetadataError
+	AutoStakingRootHashError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -284,6 +285,7 @@ var ErrCodeMessage = map[int]struct {
 	StakingTxHashError:                                {-1124, "Staking Tx Root Hash Error"},
 	StopAutoStakingRequestHashError:                   {-1125, "Stop Auto Staking Request Root Hash Error"},
 	StopAutoStakingMetadataError:                      {-1126, "StopAutoStaking Metadata Error"},
+	AutoStakingRootHashError:                          {-1127, "Auto Re Staking Root Hash Error"},
 }
 
 type BlockChainError struct {

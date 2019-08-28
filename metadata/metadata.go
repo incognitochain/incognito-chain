@@ -58,6 +58,7 @@ type BlockchainRetriever interface {
 	GetAllCommitteeValidatorCandidateFlattenList() ([]string, error)
 	GetStakingTx(byte) map[string]string
 	GetStopAutoStakingRequest(byte) map[string]string
+	GetAutoStakingList() map[string]bool
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
