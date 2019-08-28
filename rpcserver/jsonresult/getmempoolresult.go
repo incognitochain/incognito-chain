@@ -3,7 +3,6 @@ package jsonresult
 import (
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -64,18 +63,4 @@ func NewGetRawMempoolResult(txMemPool mempool.TxPool) *GetRawMempoolResult {
 		TxHashes: txMemPool.ListTxs(),
 	}
 	return result
-}
-
-type GetMempoolEntryResult struct {
-	Tx metadata.Transaction
-}
-
-func NewGetMempoolEntryResult(txMemPool mempool.TxPool, txID *common.Hash) (*GetMempoolEntryResult, error) {
-	result := &GetMempoolEntryResult{}
-	var err error
-	result.Tx, err = txMemPool.GetTx(txID)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }
