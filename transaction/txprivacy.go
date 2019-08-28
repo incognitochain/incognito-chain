@@ -661,6 +661,12 @@ func (tx Tx) GetSender() []byte {
 	if tx.Proof == nil || len(tx.Proof.GetInputCoins()) == 0 {
 		return nil
 	}
+	if tx.IsPrivacy() {
+		return nil
+	}
+	if len(tx.Proof.GetInputCoins()) == 0 || tx.Proof.GetInputCoins()[0].CoinDetails == nil {
+		return nil
+	}
 	return tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
 }
 
