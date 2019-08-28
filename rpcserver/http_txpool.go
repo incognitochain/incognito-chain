@@ -7,6 +7,16 @@ import (
 )
 
 /*
+handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
+*/
+func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Debugf("handleGetMempoolInfo params: %+v", params)
+	result := jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool)
+	Logger.log.Debugf("handleGetMempoolInfo result: %+v", result)
+	return result, nil
+}
+
+/*
 handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
