@@ -267,7 +267,6 @@ func (e *BLSBFT) enterVotePhase() {
 func (e *BLSBFT) enterNewRound() {
 	//if chain is not ready,  return
 	if !e.Chain.IsReady() {
-		fmt.Println("BLSBFT", "not ready", e.ChainKey)
 		e.RoundData.State = ""
 		return
 	}
