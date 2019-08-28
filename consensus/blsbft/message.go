@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -83,14 +83,9 @@ func (e *BLSBFT) sendVote() error {
 	var Vote vote
 
 	pubKey := e.UserKeySet.GetPublicKey()
-	selfIdx := e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME))
+	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(CONSENSUSNAME), e.RoundData.CommitteeBLS.StringList)
 
-	committeeBLSKeys := []blsmultisig.PublicKey{}
-	for _, member := range e.Chain.GetCommittee() {
-		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
-	}
-
-	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, committeeBLSKeys)
+	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
 	if err != nil {
 		return err
 	}
