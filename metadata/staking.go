@@ -143,7 +143,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	if err != nil {
 		return false, false, err
 	}
-	if (!CommitteePublicKey.CheckSanityData()) || (!bytes.Equal(CommitteePublicKey.IncPubKey, pubkey)) {
+	if !CommitteePublicKey.CheckSanityData() {
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
 	}
 	return true, true, nil
