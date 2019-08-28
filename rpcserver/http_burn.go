@@ -17,7 +17,7 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	listParams := params.([]interface{})
 	txID, err := common.Hash{}.NewHashFromStr(listParams[0].(string))
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	bc := httpServer.config.BlockChain
