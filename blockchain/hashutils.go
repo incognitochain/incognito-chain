@@ -88,6 +88,23 @@ func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, erro
 	}
 	return generateHashFromStringArray(res)
 }
+func generateHashFromMapStringBool(maps1 map[string]bool) (common.Hash, error) {
+	var keys []string
+	var res []string
+	for k := range maps1 {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		res = append(res, key)
+		if maps1[key] {
+			res = append(res, "true")
+		} else {
+			res = append(res, "false")
+		}
+	}
+	return generateHashFromStringArray(res)
+}
 func generateHashFromShardState(allShardState map[byte][]ShardState) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
@@ -186,6 +203,13 @@ func verifyLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint64,
 }
 func verifyHashFromMapStringString(maps1 map[string]string, targetHash common.Hash) (common.Hash, bool) {
 	hash, err := generateHashFromMapStringString(maps1)
+	if err != nil {
+		return hash, false
+	}
+	return hash, hash.IsEqual(&targetHash)
+}
+func verifyHashFromMapStringBool(maps1 map[string]bool, targetHash common.Hash) (common.Hash, bool) {
+	hash, err := generateHashFromMapStringBool(maps1)
 	if err != nil {
 		return hash, false
 	}

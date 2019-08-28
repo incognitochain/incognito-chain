@@ -22,6 +22,7 @@ type BeaconHeader struct {
 	BeaconCandidateRoot             common.Hash `json:"BeaconCandidateRoot"`             // CandidateBeaconWaitingForCurrentRandom + CandidateBeaconWaitingForNextRandom
 	ShardCandidateRoot              common.Hash `json:"ShardCandidateRoot"`              // CandidateShardWaitingForCurrentRandom + CandidateShardWaitingForNextRandom
 	ShardCommitteeAndValidatorRoot  common.Hash `json:"ShardCommitteeAndValidatorRoot"`
+	AutoStakingRoot                 common.Hash `json:"AutoStakingRoot"`
 	ConsensusType                   string      `json:"ConsensusType"`
 	Producer                        string      `json:"Producer"`
 }
@@ -39,6 +40,7 @@ func (beaconHeader *BeaconHeader) toString() string {
 	res += beaconHeader.BeaconCandidateRoot.String()
 	res += beaconHeader.ShardCandidateRoot.String()
 	res += beaconHeader.ShardCommitteeAndValidatorRoot.String()
+	res += beaconHeader.AutoStakingRoot.String()
 	res += beaconHeader.ShardStateHash.String()
 	res += beaconHeader.InstructionHash.String()
 	return res
