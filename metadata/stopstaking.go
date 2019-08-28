@@ -30,15 +30,15 @@ func NewStopStakingMetadata(stopStakingType int, committeePublicKey string) (*St
 
 /*
  */
-func (sm *StopAutoStakingMetadata) ValidateMetadataByItself() bool {
+func (stopAutoStakingMetadata *StopAutoStakingMetadata) ValidateMetadataByItself() bool {
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
-	if err := CommitteePublicKey.FromString(sm.CommitteePublicKey); err != nil {
+	if err := CommitteePublicKey.FromString(stopAutoStakingMetadata.CommitteePublicKey); err != nil {
 		return false
 	}
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	return (sm.Type == StopAutoStakingMeta)
+	return (stopAutoStakingMetadata.Type == StopAutoStakingMeta)
 }
 
 /*
@@ -48,7 +48,7 @@ func (sm *StopAutoStakingMetadata) ValidateMetadataByItself() bool {
 	- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
 	- Not yet requested to stop auto-restaking
 */
-func (stakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	stopStakingMetadata, ok := txr.GetMetadata().(*StopAutoStakingMetadata)
 	if !ok {
 		return false, NewMetadataTxError(StopAutoStakingTypeAssertionError, fmt.Errorf("Expect *StopAutoStakingMetadata type but get %+v", reflect.TypeOf(txr.GetMetadata())))
@@ -91,7 +91,7 @@ func (stakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(txr Tran
 	// Receiver Is Burning Address
 	//
 */
-func (stakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if txr.IsPrivacy() {
 		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
 	}
@@ -107,7 +107,7 @@ func (stakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr Blockchain
 		return false, false, errors.New("receiver amount should be zero")
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
-	err := CommitteePublicKey.FromString(stakingMetadata.CommitteePublicKey)
+	err := CommitteePublicKey.FromString(stopAutoStakingMetadata.CommitteePublicKey)
 	if err != nil {
 		return false, false, err
 	}
@@ -116,10 +116,10 @@ func (stakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr Blockchain
 	}
 	return true, true, nil
 }
-func (stakingMetadata StopAutoStakingMetadata) GetType() int {
-	return stakingMetadata.Type
+func (stopAutoStakingMetadata StopAutoStakingMetadata) GetType() int {
+	return stopAutoStakingMetadata.Type
 }
 
-func (stakingMetadata *StopAutoStakingMetadata) CalculateSize() uint64 {
-	return calculateSize(stakingMetadata)
+func (stopAutoStakingMetadata *StopAutoStakingMetadata) CalculateSize() uint64 {
+	return calculateSize(stopAutoStakingMetadata)
 }
