@@ -217,16 +217,6 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	return result, nil
 }
 
-/*
-handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
-*/
-func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleGetMempoolInfo params: %+v", params)
-	result := jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool)
-	Logger.log.Debugf("handleGetMempoolInfo result: %+v", result)
-	return result, nil
-}
-
 func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, blockHash *common.Hash, blockHeight uint64, index int, shardID byte) (*jsonresult.TransactionDetail, *RPCError) {
 	var result *jsonresult.TransactionDetail
 	blockHashStr := ""

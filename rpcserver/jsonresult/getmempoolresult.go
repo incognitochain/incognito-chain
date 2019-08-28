@@ -1,6 +1,8 @@
 package jsonresult
 
 import (
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -22,6 +24,7 @@ func NewGetMempoolInfo(txMempool *mempool.TxPool) *GetMempoolInfo {
 		Bytes:         txMempool.Size(),
 		MempoolMaxFee: txMempool.MaxFee(),
 	}
+	// get list data from mempool
 	listTxsDetail := txMempool.ListTxsDetail()
 	if len(listTxsDetail) > 0 {
 		result.ListTxs = make([]GetMempoolInfoTx, 0)
@@ -29,6 +32,12 @@ func NewGetMempoolInfo(txMempool *mempool.TxPool) *GetMempoolInfo {
 			item := NewGetMempoolInfoTx(tx)
 			result.ListTxs = append(result.ListTxs, *item)
 		}
+	}
+	// sort for time
+	if len(result.ListTxs) > 0 {
+		sort.Slice(result.ListTxs, func(i, j int) bool {
+			return result.ListTxs[i].LockTime >= result.ListTxs[j].LockTime
+		})
 	}
 	return result
 }
