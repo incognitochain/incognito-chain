@@ -938,6 +938,41 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 	return result, nil
 }
 
+// handleListSerialNumbers - return list all serialnumber in shard for token ID
+func (httpServer *HttpServer) handleListSNDerivator(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	var err error
+	tokenID := &common.Hash{}
+	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
+	if len(arrayParams) > 0 {
+		tokenIDTemp, ok := arrayParams[0].(string)
+		if !ok {
+			Logger.log.Debugf("handleListSNDerivator result: %+v", nil)
+			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+		}
+		if len(tokenIDTemp) > 0 {
+			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
+			if err != nil {
+				Logger.log.Debugf("handleListSNDerivator result: %+v, err: %+v", err)
+				return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+			}
+		}
+	}
+	db := *(httpServer.config.Database)
+	resultInBytes, err := db.ListSNDerivator(*tokenID)
+	result := []big.Int{}
+	for _, v := range resultInBytes {
+		result = append(result, *(new(big.Int).SetBytes(v)))
+	}
+	if err != nil {
+		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+	}
+	return result, nil
+}
+
 // handleListCommitments - return list all commitments in shard for token ID
 func (httpServer *HttpServer) handleListCommitments(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
@@ -1085,6 +1120,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
+	_ = shardIDSender
 	//#2: list serialnumbers in base58check encode string
 	snDerivatorStr, ok := arrayParams[1].([]interface{})
 	if !ok {
@@ -1114,7 +1150,7 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	for _, item := range snDerivatorStr {
 		snderivator, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(httpServer.config.Database)
-		ok, err := db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize), shardIDSender)
+		ok, err := db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(new(big.Int).SetBytes(snderivator), common.BigIntSize))
 		if ok && err == nil {
 			// SnD in db
 			result = append(result, true)

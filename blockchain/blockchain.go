@@ -525,7 +525,7 @@ func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint
 Uses an existing database to update the set of used tx by saving list SNDerivator of privacy,
 this is a list tx-out which are used by a new tx
 */
-func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint, shardID byte) error {
+func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
 	// commitment
 	keys := make([]string, 0, len(view.mapCommitments))
 	for k := range view.mapCommitments {
@@ -545,7 +545,7 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 		// if pubkeyShardID == shardID {
 		snDsArray := view.mapSnD[k]
 		//for _, snd := range snDsArray {
-		err := blockchain.config.DataBase.StoreSNDerivators(*view.tokenID, snDsArray, view.shardID)
+		err := blockchain.config.DataBase.StoreSNDerivators(*view.tokenID, snDsArray)
 		if err != nil {
 			return err
 		}
@@ -752,7 +752,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			return err
 		}
 
-		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
+		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView)
 		if err != nil {
 			return err
 		}
@@ -771,7 +771,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		return err
 	}
 
-	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view)
 	if err != nil {
 		return err
 	}
@@ -839,7 +839,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 			return err
 		}
 		// store snd
-		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
+		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView)
 		if err != nil {
 			return err
 		}
@@ -853,7 +853,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 		return err
 	}
 
-	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view)
 	if err != nil {
 		return err
 	}
