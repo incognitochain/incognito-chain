@@ -3,7 +3,6 @@ package blsbft
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -78,13 +77,14 @@ func (e *BLSBFT) Start() {
 	e.StopCh = make(chan struct{})
 	e.EarlyVotes = make(map[string]map[string]vote)
 	e.Blocks = map[string]common.BlockInterface{}
-
 	e.ProposeMessageCh = make(chan BFTPropose)
 	e.VoteMessageCh = make(chan BFTVote)
+	e.InitRoundData()
 
-	ticker := time.Tick(200 * time.Millisecond)
+	ticker := time.Tick(500 * time.Millisecond)
 	e.logger.Info("start bls-bft consensus for chain", e.ChainKey)
 	go func() {
+		fmt.Println("action")
 		for { //actor loop
 			select {
 			case <-e.StopCh:
@@ -103,9 +103,7 @@ func (e *BLSBFT) Start() {
 						continue
 					}
 					if e.RoundData.Round == block.GetRound() && e.RoundData.Block != nil {
-
 						e.Blocks[blockRoundKey] = block
-
 						continue
 					}
 					e.Blocks[blockRoundKey] = block
@@ -145,6 +143,7 @@ func (e *BLSBFT) Start() {
 				if !e.isInTimeFrame() || e.RoundData.State == "" {
 					e.enterNewRound()
 				}
+
 				e.isOngoing = true
 				switch e.RoundData.State {
 				case LISTEN:
@@ -211,7 +210,6 @@ func (e *BLSBFT) Start() {
 							continue
 						}
 						e.logger.Warn("Commit block! Wait for next round")
-
 						e.enterNewRound()
 					}
 				}
@@ -280,26 +278,7 @@ func (e *BLSBFT) enterNewRound() {
 	}
 	e.setState(NEWROUND)
 	e.waitForNextRound()
-
-	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
-	e.RoundData.Round = e.getCurrentRound()
-	e.RoundData.Votes = make(map[string]vote)
-	e.RoundData.Block = nil
-	e.RoundData.NotYetSendVote = true
-	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
-	committee := e.Chain.GetCommittee()
-	if !reflect.DeepEqual(e.RoundData.Committee, committee) {
-		e.RoundData.Committee = committee
-		for _, member := range e.RoundData.Committee {
-			e.RoundData.CommitteeBLS.ByteList = append(e.RoundData.CommitteeBLS.ByteList, member.MiningPubKey[CONSENSUSNAME])
-		}
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.RoundData.Committee, CONSENSUSNAME)
-		if err != nil {
-			e.logger.Error(err)
-			return
-		}
-		e.RoundData.CommitteeBLS.StringList = committeeBLSString
-	}
+	e.InitRoundData()
 
 	e.logger.Info("")
 	e.logger.Info("============================================")
