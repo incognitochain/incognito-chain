@@ -37,20 +37,20 @@ func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Payme
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	outCoins, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(keyset, shardIDSender, prvCoinID)
 	if err != nil {
-		return nil, 0, NewRPCError(ErrGetOutputCoin, err)
+		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
 	// remove out coin in mem pool
 	outCoins, err = rpcServer.filterMemPoolOutCoinsToSpent(outCoins)
 	if err != nil {
-		return nil, 0, NewRPCError(ErrGetOutputCoin, err)
+		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
 	if len(outCoins) == 0 && totalAmmount > 0 {
-		return nil, 0, NewRPCError(ErrGetOutputCoin, errors.New("not enough output coin"))
+		return nil, 0, NewRPCError(GetOutputCoinError, errors.New("not enough output coin"))
 	}
 	// Use Knapsack to get candiate output coin
 	candidateOutputCoins, outCoins, candidateOutputCoinAmount, err := rpcServer.chooseBestOutCoinsToSpent(outCoins, totalAmmount)
 	if err != nil {
-		return nil, 0, NewRPCError(ErrGetOutputCoin, err)
+		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
 	// refund out put for sender
 	overBalanceAmount := candidateOutputCoinAmount - totalAmmount
@@ -77,7 +77,7 @@ func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Payme
 					return nil, realFee, nil
 				}
 			}
-			return nil, realFee, NewRPCError(ErrRejectInvalidFee, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
+			return nil, realFee, NewRPCError(RejectInvalidFeeError, errors.New(fmt.Sprintf("totalAmmount: %+v, realFee: %+v", totalAmmount, realFee)))
 		}
 		if privacyCustomTokenParams != nil {
 			// for privacy token
@@ -91,7 +91,7 @@ func (rpcServer HttpServer) chooseOutsCoinByKeyset(paymentInfos []*privacy.Payme
 		if len(outCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err1 := rpcServer.chooseBestOutCoinsToSpent(outCoins, uint64(needToPayFee))
 			if err != nil {
-				return nil, 0, NewRPCError(ErrGetOutputCoin, err1)
+				return nil, 0, NewRPCError(GetOutputCoinError, err1)
 			}
 			candidateOutputCoins = append(candidateOutputCoins, candidateOutputCoinsForFee...)
 		}
@@ -112,7 +112,7 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
-		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+		return nil, NewRPCError(InvalidSenderPrivateKeyError, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -127,7 +127,7 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
+			return nil, NewRPCError(InvalidReceiverPaymentAddressError, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
@@ -168,7 +168,7 @@ func (rpcServer HttpServer) buildRawTransaction(params interface{}, meta metadat
 	// END create tx
 
 	if err != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 
 	return &tx, nil
@@ -189,7 +189,7 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 		{
 			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if err != nil {
-				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.Wrap(err, "Token ID is invalid"))
+				return nil, nil, NewRPCError(RPCInvalidParamsError, errors.Wrap(err, "Token ID is invalid"))
 			}
 
 			//if _, ok := listCustomTokens[*tokenID]; !ok {
@@ -198,16 +198,16 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 
 			existed := rpcServer.config.BlockChain.CustomTokenIDExisted(tokenID)
 			if !existed {
-				return nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
+				return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 			}
 
 			unspentTxTokenOuts, err := rpcServer.config.BlockChain.GetUnspentTxCustomTokenVout(*senderKeySet, tokenID)
 			Logger.log.Info("buildRawCustomTokenTransaction ", unspentTxTokenOuts)
 			if err != nil {
-				return nil, nil, NewRPCError(ErrGetOutputCoin, errors.New("Token out invalid"))
+				return nil, nil, NewRPCError(GetOutputCoinError, errors.New("Token out invalid"))
 			}
 			if len(unspentTxTokenOuts) == 0 {
-				return nil, nil, NewRPCError(ErrGetOutputCoin, errors.New("Token out invalid"))
+				return nil, nil, NewRPCError(GetOutputCoinError, errors.New("Token out invalid"))
 			}
 			txTokenIns := []transaction.TxTokenVin{}
 			txTokenInsAmount := uint64(0)
@@ -220,7 +220,7 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 				// create signature by keyset -> base58check.encode of txtokenout double hash
 				signature, err := senderKeySet.Sign(out.Hash()[:])
 				if err != nil {
-					return nil, nil, NewRPCError(ErrCanNotSign, err)
+					return nil, nil, NewRPCError(CanNotSignError, err)
 				}
 				// add signature to TxTokenVin to use token utxo
 				item.Signature = base58.Base58Check{}.Encode(signature, 0)
@@ -237,7 +237,7 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 	case transaction.CustomTokenInit:
 		{
 			if tokenParams.Receiver[0].Value != tokenParams.Amount { // Init with wrong max amount of custom token
-				return nil, nil, NewRPCError(ErrUnexpected, errors.New("Init with wrong max amount of property"))
+				return nil, nil, NewRPCError(UnexpectedError, errors.New("Init with wrong max amount of property"))
 			}
 		}
 	}
@@ -271,7 +271,7 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 	for paymentAddressStr, amount := range receiversPaymentAddressParam {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
+			return nil, NewRPCError(InvalidReceiverPaymentAddressError, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
@@ -318,7 +318,7 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 			hasPrivacyCoin,
 			shardIDSender))
 	if err != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 
 	return tx, nil
@@ -343,20 +343,20 @@ func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[stri
 		{
 			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
 			if err != nil {
-				return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, err)
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, err)
 			}
 			existed := rpcServer.config.BlockChain.PrivacyCustomTokenIDExisted(tokenID)
 			existedCrossShard := rpcServer.config.BlockChain.PrivacyCustomTokenIDCrossShardExisted(tokenID)
 			if !existed && !existedCrossShard {
-				return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Invalid Token ID"))
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 			}
 			outputTokens, err := rpcServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
 			if err != nil {
-				return nil, nil, nil, NewRPCError(ErrGetOutputCoin, err)
+				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
 			}
 			candidateOutputTokens, _, _, err := rpcServer.chooseBestOutCoinsToSpent(outputTokens, uint64(voutsAmount))
 			if err != nil {
-				return nil, nil, nil, NewRPCError(ErrGetOutputCoin, err)
+				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
 			}
 			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
 			tokenParams.TokenInput = intputToken
@@ -364,7 +364,7 @@ func (rpcServer HttpServer) buildPrivacyCustomTokenParam(tokenParamsRaw map[stri
 	case transaction.CustomTokenInit:
 		{
 			if tokenParams.Receiver[0].Amount != tokenParams.Amount { // Init with wrong max amount of custom token
-				return nil, nil, nil, NewRPCError(ErrRPCInvalidParams, errors.New("Init with wrong max amount of property"))
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong max amount of property"))
 			}
 		}
 	}
@@ -384,7 +384,7 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 	senderKeyParam := arrayParams[0]
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
 	if err != nil {
-		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+		return nil, NewRPCError(InvalidSenderPrivateKeyError, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -398,7 +398,7 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 	for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
 		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 		if err != nil {
-			return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
+			return nil, NewRPCError(InvalidReceiverPaymentAddressError, err)
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
@@ -460,7 +460,7 @@ func (rpcServer HttpServer) buildRawPrivacyCustomTokenTransaction(
 			shardIDSender))
 
 	if err != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 
 	return tx, nil

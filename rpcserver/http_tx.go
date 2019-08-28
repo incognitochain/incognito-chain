@@ -36,18 +36,18 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 	paramsArray := common.InterfaceSlice(params)
 	if len(paramsArray) < 1 {
 		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid list Key component"))
 	}
 	minTemp, ok := paramsArray[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid list Key component"))
 	}
 	min := int(minTemp)
 	maxTemp, ok := paramsArray[1].(float64)
 	if !ok {
 		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("invalid list Key component"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid list Key component"))
 	}
 	max := int(maxTemp)
 	_ = min
@@ -59,14 +59,14 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 	tokenID := &common.Hash{}
 	err := tokenID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
-		return nil, NewRPCError(ErrTokenIsInvalid, err)
+		return nil, NewRPCError(TokenIsInvalidError, err)
 	}
 	if len(paramsArray) > 3 {
 		var err1 error
 		tokenID, err1 = common.Hash{}.NewHashFromStr(paramsArray[3].(string))
 		if err1 != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err1)
-			return nil, NewRPCError(ErrListCustomTokenNotFound, err1)
+			return nil, NewRPCError(ListCustomTokenNotFoundError, err1)
 		}
 	}
 	for _, keyParam := range listKeyParams {
@@ -77,7 +77,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 
 		// get keyset only contain pub-key by deserializing
@@ -85,7 +85,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 
 		// create a key set
@@ -98,7 +98,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 		outputCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&keySet, shardIDSender, tokenID)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		item := make([]jsonresult.OutCoin, 0)
 
@@ -123,12 +123,12 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 	tx, err := httpServer.buildRawTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	result := jsonresult.NewCreateTransactionResult(tx.Hash(), common.EmptyString, byteArrays, txShardID)
@@ -149,13 +149,13 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
 		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 	var tx transaction.Tx
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
@@ -165,11 +165,11 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 		if ok {
 			if mempoolErr.Code == mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code {
 				Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-				return nil, NewRPCError(ErrRejectInvalidFee, mempoolErr)
+				return nil, NewRPCError(RejectInvalidFeeError, mempoolErr)
 			}
 		}
 		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	Logger.log.Debugf("New transaction hash: %+v \n", *hash)
@@ -178,7 +178,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
 		Logger.log.Errorf("handleSendRawTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
@@ -202,7 +202,7 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	data, err := httpServer.handleCreateRawTransaction(params, closeChan)
 	if err.(*RPCError) != nil {
 		Logger.log.Debugf("handleCreateAndSendTx result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
@@ -211,7 +211,7 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*RPCError) != nil {
 		Logger.log.Debugf("handleCreateAndSendTx result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
 	Logger.log.Debugf("handleCreateAndSendTx result: %+v", result)
@@ -221,7 +221,7 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("key component invalid"))
 	}
 	paymentAddress := arrayParams[0]
 
@@ -230,18 +230,18 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interfac
 	if paymentAddress != "" {
 		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress.(string))
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, errors.New("key component invalid"))
+			return nil, NewRPCError(UnexpectedError, errors.New("key component invalid"))
 		}
 
 		keySet = &senderKey.KeySet
 	} else {
-		return nil, NewRPCError(ErrUnexpected, errors.New("key component invalid"))
+		return nil, NewRPCError(UnexpectedError, errors.New("key component invalid"))
 	}
 
 	result, err := httpServer.config.BlockChain.GetTransactionHashByReceiver(keySet)
 
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	return result, nil
@@ -253,12 +253,12 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 	arrayParams := common.InterfaceSlice(params)
 	// param #1: transaction Hash
 	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is empty"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Tx hash is empty"))
 	}
 	Logger.log.Debugf("Get TransactionByHash input Param %+v", arrayParams[0].(string))
 	txHashTemp, ok := arrayParams[0].(string)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Tx hash is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Tx hash is invalid"))
 	}
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
 	Logger.log.Infof("Get Transaction By Hash %+v", *txHash)
@@ -268,12 +268,12 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 		// maybe tx is still in tx mempool -> check mempool
 		tx, errM := httpServer.config.TxMemPool.GetTx(txHash)
 		if errM != nil {
-			return nil, NewRPCError(ErrTxNotExistedInMemAndBLock, errors.New("Tx is not existed in block or mempool"))
+			return nil, NewRPCError(TxNotExistedInMemAndBLockError, errors.New("Tx is not existed in block or mempool"))
 		}
 		shardIDTemp := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		result, errM := jsonresult.NewTransactionDetail(tx, nil, 0, 0, shardIDTemp)
 		if errM != nil {
-			return nil, NewRPCError(ErrUnexpected, errM)
+			return nil, NewRPCError(UnexpectedError, errM)
 		}
 		result.IsInMempool = true
 		return result, nil
@@ -281,11 +281,11 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 
 	blockHeight, _, err := db.GetIndexOfBlock(blockHash)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	result, err := jsonresult.NewTransactionDetail(tx, &blockHash, blockHeight, index, shardID)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	result.IsInBlock = true
 	Logger.log.Debugf("handleGetTransactionByHash result: %+v", result)
@@ -299,13 +299,13 @@ func (httpServer *HttpServer) handleCreateRawCustomTokenTransaction(params inter
 	tx, err := httpServer.buildRawCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	result := jsonresult.CreateTransactionTokenResult{
 		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
@@ -326,26 +326,26 @@ func (httpServer *HttpServer) handleSendRawCustomTokenTransaction(params interfa
 	base58CheckData, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("param is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("param is invalid"))
 	}
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	tx := transaction.TxNormalToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	Logger.log.Debugf("New Custom Token Transaction: %s\n", hash.String())
@@ -354,7 +354,7 @@ func (httpServer *HttpServer) handleSendRawCustomTokenTransaction(params interfa
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
@@ -399,18 +399,18 @@ func (httpServer *HttpServer) handleCreateAndSendCustomTokenTransaction(params i
 func (httpServer *HttpServer) handleGetListCustomTokenHolders(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("TokenID is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("TokenID is invalid"))
 	}
 	tokenIDStr := arrayParams[0].(string)
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
 		if len(arrayParams) < 1 {
-			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("TokenID is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("TokenID is invalid"))
 		}
 	}
 	result, err := httpServer.config.BlockChain.GetListTokenHolders(tokenID)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	return result, nil
 }
@@ -423,7 +423,7 @@ func (httpServer *HttpServer) handleGetListCustomTokenBalance(params interface{}
 	accountParam, ok := arrayParams[0].(string)
 	if len(accountParam) == 0 || !ok {
 		Logger.log.Debugf("handleGetListCustomTokenBalance result: %+v", nil)
-		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
+		return result, NewRPCError(RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 	account, err := wallet.Base58CheckDeserialize(accountParam)
 	if err != nil {
@@ -435,7 +435,7 @@ func (httpServer *HttpServer) handleGetListCustomTokenBalance(params interface{}
 	temps, err := httpServer.config.BlockChain.ListCustomToken()
 	if err != nil {
 		Logger.log.Debugf("handleGetListCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	for _, tx := range temps {
 		item := jsonresult.CustomTokenBalance{}
@@ -446,7 +446,7 @@ func (httpServer *HttpServer) handleGetListCustomTokenBalance(params interface{}
 		tokenID := tx.TxTokenData.PropertyID
 		res, err := httpServer.config.BlockChain.GetListTokenHolders(&tokenID)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		paymentAddressInStr := base58.Base58Check{}.Encode(accountPaymentAddress.Bytes(), 0x00)
 		item.Amount = res[paymentAddressInStr]
@@ -468,24 +468,24 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 	privateKey, ok := arrayParams[0].(string)
 	if len(privateKey) == 0 || !ok {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v", nil)
-		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Param is invalid"))
+		return result, NewRPCError(RPCInvalidParamsError, errors.New("Param is invalid"))
 	}
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	err = account.KeySet.InitFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	temps, listCustomTokenCrossShard, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	tokenIDs := make(map[common.Hash]interface{})
 	for tokenID, tx := range temps {
@@ -504,12 +504,12 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		prvCoinID := &common.Hash{}
 		err := prvCoinID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return nil, NewRPCError(ErrTokenIsInvalid, err)
+			return nil, NewRPCError(TokenIsInvalidError, err)
 		}
 		outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
 			Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		for _, out := range outcoints {
 			balance += out.CoinDetails.GetValue()
@@ -541,11 +541,11 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		prvCoinID := &common.Hash{}
 		err := prvCoinID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
-			return nil, NewRPCError(ErrTokenIsInvalid, err)
+			return nil, NewRPCError(TokenIsInvalidError, err)
 		}
 		outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		for _, out := range outcoints {
 			balance += out.CoinDetails.GetValue()
@@ -574,29 +574,29 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 	privateKey, ok := arrayParams[0].(string)
 	if len(privateKey) == 0 || !ok {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", nil)
-		return result, NewRPCError(ErrRPCInvalidParams, errors.New("Private key is invalid"))
+		return result, NewRPCError(RPCInvalidParamsError, errors.New("Private key is invalid"))
 	}
 	tokenID, ok := arrayParams[1].(string)
 	if len(tokenID) == 0 || !ok {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v", nil)
-		return result, NewRPCError(ErrRPCInvalidParams, errors.New("TokenID is invalid"))
+		return result, NewRPCError(RPCInvalidParamsError, errors.New("TokenID is invalid"))
 	}
 	account, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	err = account.KeySet.InitFromPrivateKey(&account.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	result.PaymentAddress = account.Base58CheckSerialize(wallet.PaymentAddressType)
 	temps, listCustomTokenCrossShard, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
 	if err != nil {
 		Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	totalValue := uint64(0)
 	for tempTokenID := range temps {
@@ -606,7 +606,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 			outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
 			if err != nil {
 				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
-				return nil, NewRPCError(ErrUnexpected, err)
+				return nil, NewRPCError(UnexpectedError, err)
 			}
 			for _, out := range outcoints {
 				totalValue += out.CoinDetails.GetValue()
@@ -620,7 +620,7 @@ func (httpServer *HttpServer) handleGetBalancePrivacyCustomToken(params interfac
 			outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tempTokenID)
 			if err != nil {
 				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
-				return nil, NewRPCError(ErrUnexpected, err)
+				return nil, NewRPCError(UnexpectedError, err)
 			}
 			for _, out := range outcoints {
 				totalValue += out.CoinDetails.GetValue()
@@ -637,17 +637,17 @@ func (httpServer *HttpServer) handleCustomTokenDetail(params interface{}, closeC
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
 		Logger.log.Debugf("handleCustomTokenDetail result: %+v", nil)
-		return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+		return nil, NewRPCError(UnexpectedError, errors.New("tokenID is invalid"))
 	}
 	tokenIDTemp, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleCustomTokenDetail result: %+v", nil)
-		return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+		return nil, NewRPCError(UnexpectedError, errors.New("tokenID is invalid"))
 	}
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDTemp)
 	if err != nil {
 		Logger.log.Debugf("handleCustomTokenDetail result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	txs, _ := httpServer.config.BlockChain.GetCustomTokenTxsHash(tokenID)
 	result := jsonresult.CustomToken{
@@ -666,17 +666,17 @@ func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{},
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v", nil)
-		return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+		return nil, NewRPCError(UnexpectedError, errors.New("tokenID is invalid"))
 	}
 	tokenIDTemp, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v", nil)
-		return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+		return nil, NewRPCError(UnexpectedError, errors.New("tokenID is invalid"))
 	}
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDTemp)
 	if err != nil {
 		Logger.log.Debugf("handlePrivacyCustomTokenDetail result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	txs, _ := httpServer.config.BlockChain.GetPrivacyCustomTokenTxsHash(tokenID)
 	result := jsonresult.CustomToken{
@@ -695,18 +695,18 @@ func (httpServer *HttpServer) handleListUnspentCustomToken(params interface{}, c
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 2 {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Not enough params"))
 	}
 	// param #1: paymentaddress of sender
 	senderKeyParam, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKey is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("senderKey is invalid"))
 	}
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
 	if err != nil {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	senderKeyset := senderKey.KeySet
 
@@ -714,14 +714,14 @@ func (httpServer *HttpServer) handleListUnspentCustomToken(params interface{}, c
 	tokenIDParam, ok := arrayParams[1].(string)
 	if !ok {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("tokenID is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("tokenID is invalid"))
 	}
 	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDParam)
 	unspentTxTokenOuts, err := httpServer.config.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
 
 	if err != nil {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	result := []jsonresult.UnspentCustomToken{}
 	for _, temp := range unspentTxTokenOuts {
@@ -744,18 +744,18 @@ func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, cl
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 2 {
 		Logger.log.Debugf("handleListUnspentCustomToken result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Not enough params"))
 	}
 	// param #1: paymentaddress of sender
 	senderKeyParam, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("senderKey is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("senderKey is invalid"))
 	}
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam)
 	if err != nil {
 		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	senderKeyset := senderKey.KeySet
 
@@ -763,14 +763,14 @@ func (httpServer *HttpServer) handleGetBalanceCustomToken(params interface{}, cl
 	tokenIDParam, ok := arrayParams[1].(string)
 	if !ok {
 		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("tokenID is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("tokenID is invalid"))
 	}
 	tokenID, _ := common.Hash{}.NewHashFromStr(tokenIDParam)
 	unspentTxTokenOuts, err := httpServer.config.BlockChain.GetUnspentTxCustomTokenVout(senderKeyset, tokenID)
 
 	if err != nil {
 		Logger.log.Debugf("handleGetBalanceCustomToken result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	totalValue := uint64(0)
 	for _, temp := range unspentTxTokenOuts {
@@ -789,29 +789,29 @@ func (httpServer *HttpServer) handleCreateSignatureOnCustomTokenTx(params interf
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 
 	if err != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	tx := transaction.TxNormalToken{}
 	// Logger.log.Info(string(rawTxBytes))
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	senderKeyParam := arrayParams[1]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
 		Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 
 	jsSignByteArray, err := tx.GetTxCustomTokenSignature(senderKey.KeySet)
 	if err != nil {
 		Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrCreateTxData, errors.New("failed to sign the custom token"))
+		return nil, NewRPCError(CreateTxDataError, errors.New("failed to sign the custom token"))
 	}
 	result := hex.EncodeToString(jsSignByteArray)
 	Logger.log.Debugf("handleCreateSignatureOnCustomTokenTx result: %+v", result)
@@ -827,12 +827,12 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	paymentAddressStr, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("PaymentAddress is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
 	}
 	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 	if err != nil {
 		Logger.log.Debugf("handleRandomCommitments result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -841,13 +841,13 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	outputs, ok := arrayParams[1].([]interface{})
 	if !ok {
 		Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("outputs is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("outputs is invalid"))
 	}
 	usableOutputCoins := []*privacy.OutputCoin{}
 	for _, item := range outputs {
 		out, err1 := jsonresult.NewOutcoinFromInterface(item)
 		if err1 != nil {
-			return nil, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprint("outputs is invalid", out)))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("outputs is invalid", out)))
 		}
 		temp := big.Int{}
 		temp.SetString(out.Value, 10)
@@ -883,18 +883,18 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
-		return nil, NewRPCError(ErrTokenIsInvalid, err)
+		return nil, NewRPCError(TokenIsInvalidError, err)
 	}
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[2].(string)
 		if !ok {
 			Logger.log.Debugf("handleRandomCommitments result: %+v", nil)
-			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("tokenID is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("tokenID is invalid"))
 		}
 		tokenID, err = common.Hash{}.NewHashFromStr(tokenIDTemp)
 		if err != nil {
 			Logger.log.Debugf("handleRandomCommitments result: %+v, err: %+v", nil, err)
-			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+			return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 		}
 	}
 	commitmentIndexs, myCommitmentIndexs, commitments := httpServer.config.BlockChain.RandomCommitmentsProcess(usableInputCoins, 0, shardIDSender, tokenID)
@@ -910,19 +910,19 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if err != nil {
-		return nil, NewRPCError(ErrTokenIsInvalid, err)
+		return nil, NewRPCError(TokenIsInvalidError, err)
 	}
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
 			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
-			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
 				Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
-				return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+				return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 			}
 		}
 	}
@@ -933,7 +933,7 @@ func (httpServer *HttpServer) handleListSerialNumbers(params interface{}, closeC
 	db := *(httpServer.config.Database)
 	result, err := db.ListSerialNumber(*tokenID, byte(shardID))
 	if err != nil {
-		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 	}
 	return result, nil
 }
@@ -945,19 +945,19 @@ func (httpServer *HttpServer) handleListSNDerivator(params interface{}, closeCha
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if err != nil {
-		return nil, NewRPCError(ErrTokenIsInvalid, err)
+		return nil, NewRPCError(TokenIsInvalidError, err)
 	}
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
 			Logger.log.Debugf("handleListSNDerivator result: %+v", nil)
-			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
 				Logger.log.Debugf("handleListSNDerivator result: %+v, err: %+v", err)
-				return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+				return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 			}
 		}
 	}
@@ -968,7 +968,7 @@ func (httpServer *HttpServer) handleListSNDerivator(params interface{}, closeCha
 		result = append(result, *(new(big.Int).SetBytes(v)))
 	}
 	if err != nil {
-		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 	}
 	return result, nil
 }
@@ -980,19 +980,19 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if err != nil {
-		return nil, NewRPCError(ErrTokenIsInvalid, err)
+		return nil, NewRPCError(TokenIsInvalidError, err)
 	}
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
 			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
-			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
 				Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
-				return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+				return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 			}
 		}
 	}
@@ -1003,7 +1003,7 @@ func (httpServer *HttpServer) handleListCommitments(params interface{}, closeCha
 	db := *(httpServer.config.Database)
 	result, err := db.ListCommitment(*tokenID, byte(shardID))
 	if err != nil {
-		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 	}
 	return result, nil
 }
@@ -1015,19 +1015,19 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if err != nil {
-		return nil, NewRPCError(ErrTokenIsInvalid, err)
+		return nil, NewRPCError(TokenIsInvalidError, err)
 	}
 	if len(arrayParams) > 0 {
 		tokenIDTemp, ok := arrayParams[0].(string)
 		if !ok {
 			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
-			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		if len(tokenIDTemp) > 0 {
 			tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 			if err != nil {
 				Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
-				return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+				return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 			}
 		}
 	}
@@ -1038,7 +1038,7 @@ func (httpServer *HttpServer) handleListCommitmentIndices(params interface{}, cl
 	db := *(httpServer.config.Database)
 	result, err := db.ListCommitmentIndices(*tokenID, byte(shardID))
 	if err != nil {
-		return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+		return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 	}
 	return result, nil
 }
@@ -1052,11 +1052,11 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 	paymentAddressStr, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("PaymentAddress is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
 	}
 	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -1064,25 +1064,25 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 	serialNumbersStr, ok := arrayParams[1].([]interface{})
 	if !ok {
 		Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 	}
 
 	// #3: optional - token ID - default is prv coin
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if err != nil {
-		return nil, NewRPCError(ErrTokenIsInvalid, err)
+		return nil, NewRPCError(TokenIsInvalidError, err)
 	}
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[2].(string)
 		if !ok {
 			Logger.log.Debugf("handleHasSerialNumbers result: %+v", nil)
-			return nil, NewRPCError(ErrRPCInvalidParams, errors.New("serialNumbers is invalid"))
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("serialNumbers is invalid"))
 		}
 		tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 		if err != nil {
 			Logger.log.Debugf("handleHasSerialNumbers result: %+v, err: %+v", err)
-			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+			return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 		}
 	}
 	result := make([]bool, 0)
@@ -1111,12 +1111,12 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	paymentAddressStr, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleHasSnDerivators result: %+v", nil)
-		return nil, NewRPCError(ErrUnexpected, errors.New("paymentAddress is invalid"))
+		return nil, NewRPCError(UnexpectedError, errors.New("paymentAddress is invalid"))
 	}
 	key, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 	if err != nil {
 		Logger.log.Debugf("handleHasSnDerivators result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -1125,25 +1125,25 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	snDerivatorStr, ok := arrayParams[1].([]interface{})
 	if !ok {
 		Logger.log.Debugf("handleHasSnDerivators result: %+v", nil)
-		return nil, NewRPCError(ErrUnexpected, errors.New("snDerivatorStr is invalid"))
+		return nil, NewRPCError(UnexpectedError, errors.New("snDerivatorStr is invalid"))
 	}
 
 	// #3: optional - token ID - default is prv coin
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
 	if err != nil {
-		return nil, NewRPCError(ErrTokenIsInvalid, err)
+		return nil, NewRPCError(TokenIsInvalidError, err)
 	}
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[1].(string)
 		if !ok {
 			Logger.log.Debugf("handleHasSnDerivators result: %+v", nil)
-			return nil, NewRPCError(ErrUnexpected, errors.New("tokenID is invalid"))
+			return nil, NewRPCError(UnexpectedError, errors.New("tokenID is invalid"))
 		}
 		tokenID, err = (common.Hash{}).NewHashFromStr(tokenIDTemp)
 		if err != nil {
 			Logger.log.Debugf("handleHasSnDerivators result: %+v, err: %+v", nil, err)
-			return nil, NewRPCError(ErrListCustomTokenNotFound, err)
+			return nil, NewRPCError(ListCustomTokenNotFoundError, err)
 		}
 	}
 	result := make([]bool, 0)
@@ -1170,13 +1170,13 @@ func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransaction(param
 	tx, err := httpServer.buildRawPrivacyCustomTokenTransaction(params, nil)
 	if err.(*RPCError) != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	result := jsonresult.CreateTransactionTokenResult{
 		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
@@ -1196,31 +1196,31 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", nil)
-		return nil, NewRPCError(ErrSendTxData, errors.New("Param is invalid"))
+		return nil, NewRPCError(SendTxDataError, errors.New("Param is invalid"))
 	}
 	base58CheckData, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v", nil)
-		return nil, NewRPCError(ErrSendTxData, errors.New("Param is invalid"))
+		return nil, NewRPCError(SendTxDataError, errors.New("Param is invalid"))
 	}
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckData)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	tx := transaction.TxCustomTokenPrivacy{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	//httpServer.config.NetSync.HandleCacheTxHash(*tx.Hash())
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
@@ -1228,7 +1228,7 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 	if err != nil {
 		Logger.log.Debugf("handleSendRawPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 
 	txMsg.(*wire.MessageTxPrivacyToken).Transaction = &tx
@@ -1277,30 +1277,30 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	paramsArray := common.InterfaceSlice(params)
 	//var err error
 	if len(paramsArray) != 7 {
-		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
 	}
 	stakingType, ok := paramsArray[4].(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
 	}
 	candidatePaymentAddress, ok := paramsArray[5].(string)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
 	}
 	isRewardFunder, ok := paramsArray[6].(bool)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
 	}
 	senderKeyParam := paramsArray[0]
 	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
 	if err != nil {
 		Logger.log.Critical(err)
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Cannot get payment address"))
 	}
 	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Cannot import key set"))
 	}
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
@@ -1310,13 +1310,13 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	if err.(*RPCError) != nil {
 		Logger.log.Critical(err)
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	byteArrays, err := json.Marshal(tx)
 	if err != nil {
 		// return hex for a new tx
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	result := jsonresult.CreateTransactionResult{
@@ -1336,7 +1336,7 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	var err error
 	data, err := httpServer.handleCreateRawStakingTransaction(params, closeChan)
 	if err.(*RPCError) != nil {
-		return nil, NewRPCError(ErrCreateTxData, err)
+		return nil, NewRPCError(CreateTxDataError, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
@@ -1346,7 +1346,7 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*RPCError) != nil {
 		Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrSendTxData, err)
+		return nil, NewRPCError(SendTxDataError, err)
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
 	Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v", result)
