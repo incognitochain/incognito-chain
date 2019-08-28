@@ -12,17 +12,17 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type StopStakingMetadata struct {
+type StopAutoStakingMetadata struct {
 	MetadataBase
 	CommitteePublicKey string
 }
 
-func NewStopStakingMetadata(stopStakingType int, committeePublicKey string) (*StopStakingMetadata, error) {
-	if stopStakingType != StopStakingMeta {
+func NewStopStakingMetadata(stopStakingType int, committeePublicKey string) (*StopAutoStakingMetadata, error) {
+	if stopStakingType != StopAutoStakingMeta {
 		return nil, errors.New("invalid stop staking type")
 	}
 	metadataBase := NewMetadataBase(stopStakingType)
-	return &StopStakingMetadata{
+	return &StopAutoStakingMetadata{
 		MetadataBase:       *metadataBase,
 		CommitteePublicKey: committeePublicKey,
 	}, nil
@@ -30,7 +30,7 @@ func NewStopStakingMetadata(stopStakingType int, committeePublicKey string) (*St
 
 /*
  */
-func (sm *StopStakingMetadata) ValidateMetadataByItself() bool {
+func (sm *StopAutoStakingMetadata) ValidateMetadataByItself() bool {
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
 	if err := CommitteePublicKey.FromString(sm.CommitteePublicKey); err != nil {
 		return false
@@ -38,7 +38,7 @@ func (sm *StopStakingMetadata) ValidateMetadataByItself() bool {
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	return (sm.Type == StopStakingMeta)
+	return (sm.Type == StopAutoStakingMeta)
 }
 
 /*
@@ -48,10 +48,10 @@ func (sm *StopStakingMetadata) ValidateMetadataByItself() bool {
 	- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
 	- Not yet requested to stop auto-restaking
 */
-func (stakingMetadata StopStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
-	stopStakingMetadata, ok := txr.GetMetadata().(*StopStakingMetadata)
+func (stakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
+	stopStakingMetadata, ok := txr.GetMetadata().(*StopAutoStakingMetadata)
 	if !ok {
-		return false, NewMetadataTxError(StopAutoStakingTypeAssertionError, fmt.Errorf("Expect *StopStakingMetadata type but get %+v", reflect.TypeOf(txr.GetMetadata())))
+		return false, NewMetadataTxError(StopAutoStakingTypeAssertionError, fmt.Errorf("Expect *StopAutoStakingMetadata type but get %+v", reflect.TypeOf(txr.GetMetadata())))
 	}
 	requestedPublicKey := stopStakingMetadata.CommitteePublicKey
 	committees, err := bcr.GetAllCommitteeValidatorCandidateFlattenList()
@@ -80,7 +80,7 @@ func (stakingMetadata StopStakingMetadata) ValidateTxWithBlockChain(txr Transact
 	}
 	stopStakingRequest := bcr.GetStopAutoStakingRequest(shardID)
 	if _, ok := stopStakingRequest[stopStakingMetadata.CommitteePublicKey]; ok {
-		return false, fmt.Errorf("Committe Publickey %+v already request stop auto re-staking", stopStakingMetadata.CommitteePublicKey)
+		return false, NewMetadataTxError(StopAutoStakingRequestExistError, fmt.Errorf("Committe Publickey %+v already request stop auto re-staking", stopStakingMetadata.CommitteePublicKey))
 	}
 	return true, nil
 }
@@ -91,7 +91,7 @@ func (stakingMetadata StopStakingMetadata) ValidateTxWithBlockChain(txr Transact
 	// Receiver Is Burning Address
 	//
 */
-func (stakingMetadata StopStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
+func (stakingMetadata StopAutoStakingMetadata) ValidateSanityData(bcr BlockchainRetriever, txr Transaction) (bool, bool, error) {
 	if txr.IsPrivacy() {
 		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
 	}
@@ -116,10 +116,10 @@ func (stakingMetadata StopStakingMetadata) ValidateSanityData(bcr BlockchainRetr
 	}
 	return true, true, nil
 }
-func (stakingMetadata StopStakingMetadata) GetType() int {
+func (stakingMetadata StopAutoStakingMetadata) GetType() int {
 	return stakingMetadata.Type
 }
 
-func (stakingMetadata *StopStakingMetadata) CalculateSize() uint64 {
+func (stakingMetadata *StopAutoStakingMetadata) CalculateSize() uint64 {
 	return calculateSize(stakingMetadata)
 }
