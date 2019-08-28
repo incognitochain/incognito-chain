@@ -49,14 +49,20 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
 
-	result, err := jsonresult.NewGetMempoolEntryResult(*httpServer.config.TxMemPool, txID)
+	txInPool, err := httpServer.config.TxMemPool.GetTx(txID)
 	if err != nil {
-		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
+		Logger.log.Error(err)
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-
-	Logger.log.Debugf("handleMempoolEntry result: %+v", result)
-	return result, nil
+	shardIDTemp := common.GetShardIDFromLastByte(txInPool.GetSenderAddrLastByte())
+	tx, errM := jsonresult.NewTransactionDetail(txInPool, nil, 0, 0, shardIDTemp)
+	if errM != nil {
+		Logger.log.Error(errM)
+		return nil, NewRPCError(ErrUnexpected, errM)
+	}
+	tx.IsInMempool = true
+	Logger.log.Debugf("handleMempoolEntry result: %+v", tx)
+	return tx, nil
 }
 
 // handleRemoveTxInMempool - try to remove tx from tx mempool

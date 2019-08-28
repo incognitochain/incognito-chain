@@ -1,16 +1,22 @@
 package jsonresult
 
 import (
+	"encoding/json"
+	"errors"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"math/big"
+	"time"
 )
 
 type TransactionDetail struct {
 	BlockHash   string `json:"BlockHash"`
 	BlockHeight uint64 `json:"BlockHeight"`
-	Index       uint64 `json:"index"`
-	ShardID     byte   `json:"shardID"`
+	Index       uint64 `json:"Index"`
+	ShardID     byte   `json:"ShardID"`
 	Hash        string `json:"Hash"`
 	Version     int8   `json:"Version"`
 	Type        string `json:"Type"` // Transaction type
@@ -33,6 +39,113 @@ type TransactionDetail struct {
 	IsInBlock   bool `json:"IsInBlock"`
 
 	Info string `json:"Info"`
+}
+
+func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, blockHeight uint64, index int, shardID byte) (*TransactionDetail, error) {
+	var result *TransactionDetail
+	blockHashStr := ""
+	if blockHash != nil {
+		blockHashStr = blockHash.String()
+	}
+	switch tx.GetType() {
+	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+		{
+			tempTx := tx.(*transaction.Tx)
+			result = &TransactionDetail{
+				BlockHash:   blockHashStr,
+				BlockHeight: blockHeight,
+				Index:       uint64(index),
+				ShardID:     shardID,
+				Hash:        tx.Hash().String(),
+				Version:     tempTx.Version,
+				Type:        tempTx.Type,
+				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:         tempTx.Fee,
+				IsPrivacy:   tempTx.IsPrivacy(),
+				Proof:       tempTx.Proof,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
+			}
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
+			}
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
+			if result.Proof != nil {
+				result.ProofDetail.ConvertFromProof(result.Proof)
+			}
+		}
+	case common.TxCustomTokenType:
+		{
+			tempTx := tx.(*transaction.TxNormalToken)
+			result = &TransactionDetail{
+				BlockHash:   blockHashStr,
+				BlockHeight: blockHeight,
+				Index:       uint64(index),
+				ShardID:     shardID,
+				Hash:        tx.Hash().String(),
+				Version:     tempTx.Version,
+				Type:        tempTx.Type,
+				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:         tempTx.Fee,
+				Proof:       tempTx.Proof,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
+			}
+			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
+			result.CustomTokenData = string(txCustomData)
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
+			}
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
+			if result.Proof != nil {
+				result.ProofDetail.ConvertFromProof(result.Proof)
+			}
+		}
+	case common.TxCustomTokenPrivacyType:
+		{
+			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
+			result = &TransactionDetail{
+				BlockHash:   blockHashStr,
+				BlockHeight: blockHeight,
+				Index:       uint64(index),
+				ShardID:     shardID,
+				Hash:        tx.Hash().String(),
+				Version:     tempTx.Version,
+				Type:        tempTx.Type,
+				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
+				Fee:         tempTx.Fee,
+				Proof:       tempTx.Proof,
+				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
+				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
+				Info:        string(tempTx.Info),
+			}
+			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
+				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
+			}
+			tokenData, _ := json.MarshalIndent(tempTx.TxPrivacyTokenData, "", "\t")
+			result.PrivacyCustomTokenData = string(tokenData)
+			if tempTx.Metadata != nil {
+				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
+				result.Metadata = string(metaData)
+			}
+			if result.Proof != nil {
+				result.ProofDetail.ConvertFromProof(result.Proof)
+			}
+		}
+	default:
+		{
+			return nil, errors.New("Tx type is invalid")
+		}
+	}
+	return result, nil
 }
 
 type ProofDetail struct {
