@@ -71,24 +71,22 @@ func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) []
 	return pubKeys
 }
 
-func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string) {
+func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string, error) {
+	SC := make(map[byte][]string)
+	SPV := make(map[byte][]string)
 	if blockchain.IsTest {
-		SC := make(map[byte][]string)
-		SPV := make(map[byte][]string)
-		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, nil
 	}
 	beaconBestState := BeaconBestState{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err != nil {
-		panic("Can't Fetch Beacon BestState")
+		return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
 	} else {
 		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
 			Logger.log.Error(err)
-			panic("Fail to unmarshal Beacon BestState")
+			return SC, SPV, []string{}, []string{}, []string{}, []string{}, []string{}, []string{}, err
 		}
 	}
-	SC := make(map[byte][]string)
-	SPV := make(map[byte][]string)
 	for shardID, committee := range beaconBestState.GetShardCommittee() {
 		SC[shardID] = incognitokey.CommitteeKeyListToString(committee)
 	}
@@ -101,5 +99,38 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]st
 	CBWFNR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)
 	CSWFCR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)
 	CSWFNR := incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)
-	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR
+	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, nil
+}
+
+func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenList() ([]string, error) {
+	beaconBestState := BeaconBestState{}
+	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
+	if err != nil {
+		return nil, err
+	} else {
+		if err := json.Unmarshal(temp, &beaconBestState); err != nil {
+			return nil, err
+		}
+	}
+	res := []string{}
+	for _, committee := range beaconBestState.GetShardCommittee() {
+		res = append(res, incognitokey.CommitteeKeyListToString(committee)...)
+	}
+	for _, pendingValidator := range beaconBestState.GetShardPendingValidator() {
+		res = append(res, incognitokey.CommitteeKeyListToString(pendingValidator)...)
+	}
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)...)
+	return res, nil
+}
+
+func (blockchain *BlockChain) GetStakingTx(shardID byte) map[string]string {
+	return blockchain.BestState.Shard[shardID].GetStakingTx()
+}
+func (blockchain *BlockChain) GetStopAutoStakingRequest(shardID byte) map[string]string {
+	return blockchain.BestState.Shard[shardID].StopAutoStakingRequest
 }

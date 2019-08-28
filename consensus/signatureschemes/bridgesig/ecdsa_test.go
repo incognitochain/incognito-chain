@@ -1,6 +1,7 @@
 package bridgesig
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -19,36 +20,24 @@ func genKey(seed []byte, size int) error {
 		listPKsBytes[i] = PKBytes(&pk)
 		internalseed = common.HashB(append(seed, append(listSKsBytes[i], listPKsBytes[i]...)...))
 	}
+
 	return nil
 }
 
-func flowECDSASignVerify() {
-
-}
-
-func TestSign(t *testing.T) {
-	type args struct {
-		keyBytes []byte
-		data     []byte
+func Test_flowECDSASignVerify(t *testing.T) {
+	size := 10
+	err := genKey([]byte{0, 1, 2, 3, 4}, size)
+	if err != nil {
+		return
 	}
-	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr bool
-	}{
-		// TODO: Add test cases.
+	// return
+	data := []byte{1, 2, 3, 4}
+	sigs := make([][]byte, size)
+	for i := 0; i < size; i++ {
+		sigs[i], err = Sign(listSKsBytes[i], data)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := Sign(tt.args.keyBytes, tt.args.data)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Sign() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("Sign() = %v, want %v", got, tt.want)
-			}
-		})
+	for i := 0; i < size; i++ {
+		res, err := Verify(listPKsBytes[i], data, sigs[i])
+		fmt.Println(res, err)
 	}
 }
