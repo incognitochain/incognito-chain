@@ -166,6 +166,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		TotalTxsFee:       totalTxsFee,
 		ConsensusType:     blockGenerator.chain.BestState.Shard[shardID].ConsensusAlgorithm,
 	}
+	//============Update Shard BestState=============
 	if err := shardBestState.updateShardBestState(blockGenerator.chain, newShardBlock, beaconBlocks); err != nil {
 		return nil, err
 	}
@@ -198,7 +199,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	tempShardCommitteePubKeys := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
 	committeeRoot, err := generateHashFromStringArray(tempShardCommitteePubKeys)
 	if err != nil {
-		return nil, NewBlockChainError(CommitteeRootError, err)
+		return nil, NewBlockChainError(CommitteeHashError, err)
 	}
 	tempShardPendintValidator := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
 	pendingValidatorRoot, err := generateHashFromStringArray(tempShardPendintValidator)
@@ -207,7 +208,11 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	stakingTxRoot, err := generateHashFromMapStringString(shardBestState.StakingTx)
 	if err != nil {
-		return nil, NewBlockChainError(StakingTxRootError, err)
+		return nil, NewBlockChainError(StakingTxHashError, err)
+	}
+	stopAutoStakingRequestRoot, err := generateHashFromMapStringString(shardBestState.StopAutoStakingRequest)
+	if err != nil {
+		return nil, NewBlockChainError(StopAutoStakingRequestHashError, err)
 	}
 	// Instruction merkle root
 	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
@@ -230,6 +235,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	newShardBlock.Header.CommitteeRoot = committeeRoot
 	newShardBlock.Header.PendingValidatorRoot = pendingValidatorRoot
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
+	newShardBlock.Header.StopAutoStakingRequestRoot = stopAutoStakingRequestRoot
 	newShardBlock.Header.Timestamp = time.Now().Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	return newShardBlock, nil
