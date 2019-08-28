@@ -1023,13 +1023,13 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 		}
 	}
 
-	remotePeer := &peer.Peer{}
-	remotePeer.SetListeningAddress(msg.LocalAddress)
-	remotePeer.SetPublicKey(pbk, pbkType)
-	remotePeer.SetPeerID(msg.LocalPeerId)
-	remotePeer.SetRawAddress(msg.RawLocalAddress)
 	peerConn.GetRemotePeer().SetPublicKey(pbk, pbkType)
 
+	remotePeer := &peer.Peer{}
+	remotePeer.SetListeningAddress(msg.LocalAddress)
+	remotePeer.SetPeerID(msg.LocalPeerId)
+	remotePeer.SetRawAddress(msg.RawLocalAddress)
+	remotePeer.SetPublicKey(pbk, pbkType)
 	serverObj.cNewPeers <- remotePeer
 	valid := false
 	if msg.ProtocolVersion == serverObj.protocolVersion {
@@ -1416,6 +1416,7 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 
 	// ValidateTransaction Public Key from ProducerPrvKey
 	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
+	time.Sleep(5 * time.Second)
 	signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode

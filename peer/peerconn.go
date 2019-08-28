@@ -101,7 +101,7 @@ func (p *PeerConn) setConnState(connState ConnState) {
 }
 
 func (p PeerConn) GetRemoteRawAddress() string {
-	return p.remoteRawAddress
+	return p.remotePeer.rawAddress
 }
 
 func (p PeerConn) GetRemotePeer() *Peer {

@@ -150,10 +150,10 @@ func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock, beaconb
 func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks []*BeaconBlock,
 	shardID byte) error {
 
-	shardCommittee := make(map[byte][]string)
-	isInit := false
-	epoch := uint64(0)
-	db := blockchain.config.DataBase
+	//shardCommittee := make(map[byte][]string)
+	//isInit := false
+	//epoch := uint64(0)
+	//db := blockchain.config.DataBase
 	// listShardCommittee := blockchain.config.DataBase.FetchCommitteeByEpoch
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
@@ -168,65 +168,65 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks [
 				continue
 			}
 			if shardToProcess == int(shardID) {
-				metaType, err := strconv.Atoi(l[0])
-				if err != nil {
-					return err
-				}
-				switch metaType {
-				case metadata.BeaconRewardRequestMeta:
-					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
-					if err != nil {
-						return err
-					}
-					publicKeyCommittee, _, err := base58.Base58Check{}.Decode(beaconBlkRewardInfo.PayToPublicKey)
-					if err != nil {
-						return err
-					}
-					for key := range beaconBlkRewardInfo.BeaconReward {
-						err = db.BackupCommitteeReward(publicKeyCommittee, key)
-						if err != nil {
-							return err
-						}
-					}
-					continue
-
-				case metadata.DevRewardRequestMeta:
-					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
-					if err != nil {
-						return err
-					}
-					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
-					if err != nil {
-						return err
-					}
-					for key := range devRewardInfo.DevReward {
-						err = db.BackupCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, key)
-						if err != nil {
-							return err
-						}
-					}
-					continue
-
-				case metadata.ShardBlockRewardRequestMeta:
-					shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
-					if err != nil {
-						return err
-					}
-					if (!isInit) || (epoch != shardRewardInfo.Epoch) {
-						isInit = true
-						epoch = shardRewardInfo.Epoch
-						temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
-						if err != nil {
-							return err
-						}
-						json.Unmarshal(temp, &shardCommittee)
-					}
-					err = blockchain.backupShareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
-					if err != nil {
-						return err
-					}
-					continue
-				}
+				//metaType, err := strconv.Atoi(l[0])
+				//if err != nil {
+				//	return err
+				//}
+				//switch metaType {
+				//case metadata.BeaconRewardRequestMeta:
+				//	beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
+				//	if err != nil {
+				//		return err
+				//	}
+				//	publicKeyCommittee, _, err := base58.Base58Check{}.Decode(beaconBlkRewardInfo.PayToPublicKey)
+				//	if err != nil {
+				//		return err
+				//	}
+				//	for key := range beaconBlkRewardInfo.BeaconReward {
+				//		err = db.BackupCommitteeReward(publicKeyCommittee, key)
+				//		if err != nil {
+				//			return err
+				//		}
+				//	}
+				//	continue
+				//
+				//case metadata.DevRewardRequestMeta:
+				//	devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
+				//	if err != nil {
+				//		return err
+				//	}
+				//	keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
+				//	if err != nil {
+				//		return err
+				//	}
+				//	for key := range devRewardInfo.DevReward {
+				//		err = db.BackupCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, key)
+				//		if err != nil {
+				//			return err
+				//		}
+				//	}
+				//	continue
+				//
+				//case metadata.ShardBlockRewardRequestMeta:
+				//	shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
+				//	if err != nil {
+				//		return err
+				//	}
+				//	if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+				//		isInit = true
+				//		epoch = shardRewardInfo.Epoch
+				//		temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
+				//		if err != nil {
+				//			return err
+				//		}
+				//		json.Unmarshal(temp, &shardCommittee)
+				//	}
+				//	err = blockchain.backupShareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
+				//	if err != nil {
+				//		return err
+				//	}
+				//	continue
+				//}
 			}
 		}
 	}
