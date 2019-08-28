@@ -237,7 +237,7 @@ func (rpcServer HttpServer) buildCustomTokenParam(tokenParamsRaw map[string]inte
 	case transaction.CustomTokenInit:
 		{
 			if tokenParams.Receiver[0].Value != tokenParams.Amount { // Init with wrong max amount of custom token
-				return nil, nil, NewRPCError(UnexpectedError, errors.New("Init with wrong max amount of property"))
+				return nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Init with wrong max amount of property"))
 			}
 		}
 	}

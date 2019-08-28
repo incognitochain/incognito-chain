@@ -104,10 +104,10 @@ func (e RPCError) GetErr() error {
 
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
 // for use in a JSON-RPC JsonResponse object.
-func NewRPCError(key int, err error) *RPCError {
+func NewRPCError(key int, err error, param ...interface{}) *RPCError {
 	return &RPCError{
 		Code:    ErrCodeMessage[key].Code,
-		Message: ErrCodeMessage[key].Message,
+		Message: fmt.Sprintf(ErrCodeMessage[key].Message, param),
 		err:     errors.Wrap(err, ErrCodeMessage[key].Message),
 	}
 }
