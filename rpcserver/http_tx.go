@@ -6,13 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"time"
-
-	"github.com/incognitochain/incognito-chain/mempool"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -59,7 +57,10 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 
 	//#4: optional token type - default prv coin
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.PRVCoinID[:])
+	err := tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
 	if len(paramsArray) > 3 {
 		var err1 error
 		tokenID, err1 = common.Hash{}.NewHashFromStr(paramsArray[3].(string))
@@ -217,123 +218,6 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	return result, nil
 }
 
-/*
-handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
-*/
-func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleGetMempoolInfo params: %+v", params)
-	result := jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool)
-	Logger.log.Debugf("handleGetMempoolInfo result: %+v", result)
-	return result, nil
-}
-
-func (httpServer *HttpServer) revertTxToResponseObject(tx metadata.Transaction, blockHash *common.Hash, blockHeight uint64, index int, shardID byte) (*jsonresult.TransactionDetail, *RPCError) {
-	var result *jsonresult.TransactionDetail
-	blockHashStr := ""
-	if blockHash != nil {
-		blockHashStr = blockHash.String()
-	}
-	switch tx.GetType() {
-	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-		{
-			tempTx := tx.(*transaction.Tx)
-			result = &jsonresult.TransactionDetail{
-				BlockHash:   blockHashStr,
-				BlockHeight: blockHeight,
-				Index:       uint64(index),
-				ShardID:     shardID,
-				Hash:        tx.Hash().String(),
-				Version:     tempTx.Version,
-				Type:        tempTx.Type,
-				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:         tempTx.Fee,
-				IsPrivacy:   tempTx.IsPrivacy(),
-				Proof:       tempTx.Proof,
-				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:        string(tempTx.Info),
-			}
-			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
-			}
-			if tempTx.Metadata != nil {
-				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-				result.Metadata = string(metaData)
-			}
-			if result.Proof != nil {
-				result.ProofDetail.ConvertFromProof(result.Proof)
-			}
-		}
-	case common.TxCustomTokenType:
-		{
-			tempTx := tx.(*transaction.TxNormalToken)
-			result = &jsonresult.TransactionDetail{
-				BlockHash:   blockHashStr,
-				BlockHeight: blockHeight,
-				Index:       uint64(index),
-				ShardID:     shardID,
-				Hash:        tx.Hash().String(),
-				Version:     tempTx.Version,
-				Type:        tempTx.Type,
-				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:         tempTx.Fee,
-				Proof:       tempTx.Proof,
-				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:        string(tempTx.Info),
-			}
-			txCustomData, _ := json.MarshalIndent(tempTx.TxTokenData, "", "\t")
-			result.CustomTokenData = string(txCustomData)
-			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
-			}
-			if tempTx.Metadata != nil {
-				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-				result.Metadata = string(metaData)
-			}
-			if result.Proof != nil {
-				result.ProofDetail.ConvertFromProof(result.Proof)
-			}
-		}
-	case common.TxCustomTokenPrivacyType:
-		{
-			tempTx := tx.(*transaction.TxCustomTokenPrivacy)
-			result = &jsonresult.TransactionDetail{
-				BlockHash:   blockHashStr,
-				BlockHeight: blockHeight,
-				Index:       uint64(index),
-				ShardID:     shardID,
-				Hash:        tx.Hash().String(),
-				Version:     tempTx.Version,
-				Type:        tempTx.Type,
-				LockTime:    time.Unix(tempTx.LockTime, 0).Format(common.DateOutputFormat),
-				Fee:         tempTx.Fee,
-				Proof:       tempTx.Proof,
-				SigPubKey:   base58.Base58Check{}.Encode(tempTx.SigPubKey, 0x0),
-				Sig:         base58.Base58Check{}.Encode(tempTx.Sig, 0x0),
-				Info:        string(tempTx.Info),
-			}
-			if result.Proof != nil && len(result.Proof.GetInputCoins()) > 0 && result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(result.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress(), common.ZeroByte)
-			}
-			tokenData, _ := json.MarshalIndent(tempTx.TxPrivacyTokenData, "", "\t")
-			result.PrivacyCustomTokenData = string(tokenData)
-			if tempTx.Metadata != nil {
-				metaData, _ := json.MarshalIndent(tempTx.Metadata, "", "\t")
-				result.Metadata = string(metaData)
-			}
-			if result.Proof != nil {
-				result.ProofDetail.ConvertFromProof(result.Proof)
-			}
-		}
-	default:
-		{
-			return nil, NewRPCError(ErrTxTypeInvalid, errors.New("Tx type is invalid"))
-		}
-	}
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -387,9 +271,9 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 			return nil, NewRPCError(ErrTxNotExistedInMemAndBLock, errors.New("Tx is not existed in block or mempool"))
 		}
 		shardIDTemp := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		result, errM := httpServer.revertTxToResponseObject(tx, nil, 0, 0, shardIDTemp)
-		if errM.(*RPCError) != nil {
-			return nil, errM.(*RPCError)
+		result, errM := jsonresult.NewTransactionDetail(tx, nil, 0, 0, shardIDTemp)
+		if errM != nil {
+			return nil, NewRPCError(ErrUnexpected, errM)
 		}
 		result.IsInMempool = true
 		return result, nil
@@ -399,9 +283,9 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 	if err != nil {
 		return nil, NewRPCError(ErrUnexpected, err)
 	}
-	result, err := httpServer.revertTxToResponseObject(tx, &blockHash, blockHeight, index, shardID)
-	if err.(*RPCError) != nil {
-		return nil, err.(*RPCError)
+	result, err := jsonresult.NewTransactionDetail(tx, &blockHash, blockHeight, index, shardID)
+	if err != nil {
+		return nil, NewRPCError(ErrUnexpected, err)
 	}
 	result.IsInBlock = true
 	Logger.log.Debugf("handleGetTransactionByHash result: %+v", result)
@@ -500,10 +384,6 @@ func (httpServer *HttpServer) handleCreateAndSendCustomTokenTransaction(params i
 	}
 	tx := data.(jsonresult.CreateTransactionTokenResult)
 	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		Logger.log.Debugf("handleCreateAndSendCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, err
-	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	txID, err := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
@@ -622,7 +502,10 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		prvCoinID := &common.Hash{}
-		prvCoinID.SetBytes(common.PRVCoinID[:])
+		err := prvCoinID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return nil, NewRPCError(ErrTokenIsInvalid, err)
+		}
 		outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
 			Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
@@ -656,7 +539,10 @@ func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params inte
 		lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		prvCoinID := &common.Hash{}
-		prvCoinID.SetBytes(common.PRVCoinID[:])
+		err := prvCoinID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return nil, NewRPCError(ErrTokenIsInvalid, err)
+		}
 		outcoints, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&account.KeySet, shardIDSender, &tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
@@ -995,7 +881,10 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 
 	//#3 - tokenID - default PRV
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.PRVCoinID[:])
+	err = tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[2].(string)
 		if !ok {
@@ -1136,9 +1025,6 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	//#2: list serialnumbers in base58check encode string
 	serialNumbersStr, ok := arrayParams[1].([]interface{})
 	if !ok {
@@ -1148,7 +1034,10 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 
 	// #3: optional - token ID - default is prv coin
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[2].(string)
 		if !ok {
@@ -1166,7 +1055,7 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 		serialNumber, _, _ := base58.Base58Check{}.Decode(item.(string))
 		db := *(httpServer.config.Database)
 		ok, _ := db.HasSerialNumber(*tokenID, serialNumber, shardIDSender)
-		if ok || err != nil {
+		if ok {
 			// serial number in db
 			result = append(result, true)
 		} else {
@@ -1196,10 +1085,6 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 	}
 	lastByte := key.KeySet.PaymentAddress.Pk[len(key.KeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
-	if err != nil {
-		Logger.log.Debugf("handleHasSnDerivators result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
 	//#2: list serialnumbers in base58check encode string
 	snDerivatorStr, ok := arrayParams[1].([]interface{})
 	if !ok {
@@ -1209,7 +1094,10 @@ func (httpServer *HttpServer) handleHasSnDerivators(params interface{}, closeCha
 
 	// #3: optional - token ID - default is prv coin
 	tokenID := &common.Hash{}
-	tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	err = tokenID.SetBytes(common.PRVCoinID[:]) // default is PRV coin
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
 	if len(arrayParams) > 2 {
 		tokenIDTemp, ok := arrayParams[1].(string)
 		if !ok {
@@ -1333,10 +1221,6 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 	}
 	tx := data.(jsonresult.CreateTransactionTokenResult)
 	base58CheckData := tx.Base58CheckData
-	if err != nil {
-		Logger.log.Debugf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return nil, err
-	}
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	txId, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
