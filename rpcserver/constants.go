@@ -80,6 +80,7 @@ const (
 	randomCommitments                          = "randomcommitments"
 	hasSerialNumbers                           = "hasserialnumbers"
 	hasSnDerivators                            = "hassnderivators"
+	listSnDerivators                           = "listsnderivators"
 	listSerialNumbers                          = "listserialnumbers"
 	listCommitments                            = "listcommitments"
 	listCommitmentIndices                      = "listcommitmentindices"
