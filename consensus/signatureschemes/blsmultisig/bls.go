@@ -11,11 +11,7 @@ import (
 // Sign return BLS signature
 func Sign(data, skBytes []byte, selfIdx int, committee []PublicKey) ([]byte, error) {
 	sk := B2I(skBytes)
-	commonPKs, err := ListPKBytes2ListPKPoints(committee)
-	if err != nil {
-		return nil, err
-	}
-	if selfIdx >= len(commonPKs) {
+	if selfIdx >= len(committee) {
 		return []byte{0}, errors.New(CErr + CErrInps)
 	}
 	dataPn := B2G1P(data)

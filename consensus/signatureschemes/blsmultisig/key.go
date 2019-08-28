@@ -2,6 +2,7 @@ package blsmultisig
 
 import (
 	"math/big"
+	"sync"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
 	"github.com/incognitochain/incognito-chain/common"
@@ -39,8 +40,9 @@ func AKGen(listPKBytes []PublicKey, id int) (*bn256.G2, *big.Int) {
 	akByte := []byte{}
 	akByte = append(akByte, listPKBytes[id]...)
 	for i := 0; i < len(listPKBytes); i++ {
-		akByte = Hash4Bls(append(akByte, listPKBytes[i]...))
+		akByte = append(akByte, listPKBytes[i]...)
 	}
+	akByte = Hash4Bls(akByte)
 	akBInt := B2I(akByte)
 	res := new(bn256.G2)
 	PKPn, _ := DecmprG2(listPKBytes[id])
@@ -49,23 +51,52 @@ func AKGen(listPKBytes []PublicKey, id int) (*bn256.G2, *big.Int) {
 }
 
 // ListAKGen take a seed and return BLS secret key
+// func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
+// 	// apk := new(bn256.G2)
+// 	apk, _ := AKGen(committee, idx[0])
+// 	// apk.ScalarMult(CommonAPs[signerIdx[0]], big.NewInt(1))
+// 	wg := sync.WaitGroup{}
+// 	apkTmpList := make([]*bn256.G2, len(idx)-1)
+// 	for i := 1; i < len(idx); i++ {
+// 		wg.Add(1)
+// 		go func(index int) {
+// 			apkTmp, _ := AKGen(committee, idx[index])
+// 			apkTmpList[index-1] = apkTmp
+// 			wg.Done()
+// 		}(i)
+// 	}
+// 	wg.Wait()
+// 	for _, apkTmp := range apkTmpList {
+// 		apk.Add(apk, apkTmp)
+// 	}
+
+// 	return apk
+// }
+
 func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
-	// apk := new(bn256.G2)
-	apk, _ := AKGen(committee, idx[0])
-	// apk.ScalarMult(CommonAPs[signerIdx[0]], big.NewInt(1))
-	for i := 1; i < len(idx); i++ {
-		apkTmp, _ := AKGen(committee, idx[i])
-		apk.Add(apk, apkTmp)
+	wg := sync.WaitGroup{}
+	apkTmpList := make([]*bn256.G2, len(idx))
+	for i := 0; i < len(idx); i++ {
+		wg.Add(1)
+		go func(index int) {
+			apkTmpList[index], _ = AKGen(committee, idx[index])
+			wg.Done()
+		}(i)
 	}
-	return apk
+	wg.Wait()
+	for i := 1; i < len(idx); i++ {
+		apkTmpList[0].Add(apkTmpList[0], apkTmpList[i])
+	}
+	return apkTmpList[0]
 }
 
 func AiGen(listPKBytes []PublicKey, id int) *big.Int {
 	akByte := []byte{}
 	akByte = append(akByte, listPKBytes[id]...)
 	for i := 0; i < len(listPKBytes); i++ {
-		akByte = Hash4Bls(append(akByte, listPKBytes[i]...))
+		akByte = append(akByte, listPKBytes[i]...)
 	}
+	akByte = Hash4Bls(akByte)
 	akBInt := B2I(akByte)
 	return akBInt
 }

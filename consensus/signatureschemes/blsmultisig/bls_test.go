@@ -49,7 +49,8 @@ func genKey(seed []byte, size int) error {
 		listPKsBytes[i] = PKBytes(pk)
 		internalseed = common.HashB(append(seed, append(listSKsBytes[i], listPKsBytes[i]...)...))
 	}
-	return CacheCommonPKs(listPKsBytes)
+	return nil
+	// return CacheCommonPKs(listPKsBytes)
 }
 
 func sign(data []byte, subset []int) ([][]byte, error) {
@@ -115,6 +116,36 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 		return 0, 0, 0, true, err
 	}
 	return t1.Seconds(), t2.Seconds(), t3.Seconds(), result, nil
+}
+
+func Test_Verify(t *testing.T) {
+	committeeSign := genSubset4Test(100, 100)
+	max := 0
+	for i := 1; i < len(committeeSign); i++ {
+		if committeeSign[i] > committeeSign[max] {
+			max = i
+		}
+	}
+	committeeSize := committeeSign[max] + 1
+	err := genKey([]byte{0, 1, 2, 3, 4}, committeeSize)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	data := []byte{0, 1, 2, 3, 4}
+	start := time.Now()
+	sigs, err := sign(data, committeeSign)
+	t2 := time.Now().Sub(start)
+	fmt.Println(t2.Seconds())
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	cSig, err := combine(sigs)
+	start = time.Now()
+	res, _ := verify(data, cSig, committeeSign)
+	t3 := time.Now().Sub(start)
+	fmt.Println(res, t3.Seconds())
 }
 
 func Test_fullBLSSignFlow(t *testing.T) {
