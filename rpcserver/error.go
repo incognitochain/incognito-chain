@@ -41,6 +41,8 @@ const (
 	GetShardBlockByHashError
 	GetBeaconBlockByHashError
 	GetBeaconBlockByHeightError
+	GeTxFromPoolError
+	TxPoolRejectTxError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -92,6 +94,10 @@ var ErrCodeMessage = map[int]struct {
 	// socket/subcribe -5xxx
 	SubcribeError:   {-5000, "Failed to subcribe"},
 	UnsubcribeError: {-5001, "Failed to unsubcribe"},
+
+	// tx pool -6xxx
+	GeTxFromPoolError:   {-6000, "Get tx from mempool error"},
+	TxPoolRejectTxError: {-6001, "Can not insert tx into tx mempool"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

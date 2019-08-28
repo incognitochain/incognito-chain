@@ -27,7 +27,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 
 	_, errParseKey := httpServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
 	if err := common.CheckError(errCons, errParseKey); err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	tx, err := httpServer.buildRawTransaction(params, meta)
@@ -38,7 +38,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
 		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error %+v \n\n\n\n\n\n", errMarshal)
-		return nil, NewRPCError(UnexpectedError, errMarshal)
+		return nil, NewRPCError(JsonError, errMarshal)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -54,7 +54,7 @@ func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interfac
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	meta, errCons := metaConstructorType(metaRaw)
 	if errCons != nil {
-		return nil, NewRPCError(UnexpectedError, errCons)
+		return nil, NewRPCError(RPCInvalidParamsError, errCons)
 	}
 	tx, err := httpServer.buildRawCustomTokenTransaction(params, meta)
 	if err != nil {
@@ -64,7 +64,7 @@ func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interfac
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
 		// return hex for a new tx
-		return nil, NewRPCError(UnexpectedError, errMarshal)
+		return nil, NewRPCError(JsonError, errMarshal)
 	}
 	fmt.Printf("Created raw tx: %+v\n", tx)
 	result := jsonresult.CreateTransactionResult{
@@ -80,18 +80,18 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 	base58CheckDate := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(JsonError, err)
 	}
 
 	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(TxPoolRejectTxError, err)
 	}
 
 	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
@@ -120,19 +120,19 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 	base58CheckDate := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	tx := transaction.TxNormalToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	fmt.Printf("%+v\n", tx)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(JsonError, err)
 	}
 
 	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(TxPoolRejectTxError, err)
 	}
 
 	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
