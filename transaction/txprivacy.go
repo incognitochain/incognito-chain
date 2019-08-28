@@ -231,7 +231,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			sndOut = privacy.RandScalar()
 			for {
 
-				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, shardID, params.db)
+				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, params.db)
 				if err != nil {
 					Logger.log.Error(err)
 				}
