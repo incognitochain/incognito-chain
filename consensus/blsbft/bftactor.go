@@ -3,6 +3,7 @@ package blsbft
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -33,7 +34,12 @@ type BLSBFT struct {
 		NextHeight        uint64
 		State             string
 		NotYetSendVote    bool
-		Committee         []string
+		Committee         []incognitokey.CommitteePublicKey
+		CommitteeBLS      struct {
+			StringList []string
+			ByteList   []blsmultisig.PublicKey
+		}
+		LastProposerIndex int
 	}
 	Blocks     map[string]common.BlockInterface
 	EarlyVotes map[string]map[string]vote
@@ -109,12 +115,8 @@ func (e *BLSBFT) Start() {
 					//validate single sig
 					e.logger.Warn("vote received in timeframe...")
 					if e.RoundData.Block != nil {
-						validatorIdx := e.Chain.GetPubKeyCommitteeIndex(voteMsg.Validator)
-						committeeBLSKeys := []blsmultisig.PublicKey{}
-						for _, member := range e.Chain.GetCommittee() {
-							committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[CONSENSUSNAME])
-						}
-						if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, committeeBLSKeys); err != nil {
+						validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
+						if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
 							e.logger.Error(err)
 							continue
 						}
@@ -130,7 +132,7 @@ func (e *BLSBFT) Start() {
 
 			case <-ticker:
 				pubKey := e.UserKeySet.GetPublicKey()
-				if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == -1 {
+				if common.IndexOfStr(pubKey.GetMiningKeyBase58(CONSENSUSNAME), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.isOngoing = false
 					continue
 				}
@@ -149,7 +151,7 @@ func (e *BLSBFT) Start() {
 					// timeout or vote nil?
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
-						if err := e.validatePreSignBlock(e.Blocks[roundKey], e.Chain.GetCommittee()); err != nil {
+						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							e.logger.Error(err)
 							time.Sleep(1 * time.Second)
 							continue
@@ -175,7 +177,7 @@ func (e *BLSBFT) Start() {
 						}
 					}
 					if e.RoundData.Block != nil && e.isHasMajorityVotes() {
-						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.Committee)
+						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.CommitteeBLS.StringList)
 						if err != nil {
 							e.logger.Error(err)
 							time.Sleep(1 * time.Second)
@@ -189,13 +191,13 @@ func (e *BLSBFT) Start() {
 						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
-						err = e.ValidateCommitteeSig(e.RoundData.Block, e.Chain.GetCommittee())
+						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							fmt.Println(e.RoundData.Block.GetValidationField())
 							fmt.Print("\n")
 							fmt.Println(e.RoundData.Committee)
 							fmt.Print("\n")
-							for _, member := range e.Chain.GetCommittee() {
+							for _, member := range e.RoundData.Committee {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
 							}
 							e.logger.Critical(err)
@@ -276,21 +278,29 @@ func (e *BLSBFT) enterNewRound() {
 	e.setState(NEWROUND)
 	e.waitForNextRound()
 
-	committee, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.Chain.GetCommittee(), CONSENSUSNAME)
-	if err != nil {
-		e.logger.Error(err)
-		return
-	}
 	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
 	e.RoundData.Round = e.getCurrentRound()
 	e.RoundData.Votes = make(map[string]vote)
 	e.RoundData.Block = nil
 	e.RoundData.NotYetSendVote = true
-	e.RoundData.Committee = committee
+	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
+	committee := e.Chain.GetCommittee()
+	if !reflect.DeepEqual(e.RoundData.Committee, committee) {
+		e.RoundData.Committee = committee
+		for _, member := range e.RoundData.Committee {
+			e.RoundData.CommitteeBLS.ByteList = append(e.RoundData.CommitteeBLS.ByteList, member.MiningPubKey[CONSENSUSNAME])
+		}
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.RoundData.Committee, CONSENSUSNAME)
+		if err != nil {
+			e.logger.Error(err)
+			return
+		}
+		e.RoundData.CommitteeBLS.StringList = committeeBLSString
+	}
 
 	e.logger.Info("BFT: new round")
 	pubKey := e.UserKeySet.GetPublicKey()
-	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
+	if common.IndexOfStr(pubKey.GetMiningKeyBase58(CONSENSUSNAME), e.RoundData.CommitteeBLS.StringList) == (e.RoundData.LastProposerIndex+e.RoundData.Round)%len(e.RoundData.Committee) {
 		e.logger.Info("BFT: new round propose")
 		e.enterProposePhase()
 	} else {
