@@ -25,6 +25,7 @@ const (
 	getRawMempool                 = "getrawmempool"
 	getNumberOfTxsInMempool       = "getnumberoftxsinmempool"
 	getMempoolEntry               = "getmempoolentry"
+	removeTxInMempool             = "removetxinmempool"
 	getBeaconPoolState            = "getbeaconpoolstate"
 	getShardPoolState             = "getshardpoolstate"
 	getShardPoolLatestValidHeight = "getshardpoollatestvalidheight"
@@ -124,7 +125,6 @@ const (
 	createAndSendContractingRequest  = "createandsendcontractingrequest"
 	createAndSendBurningRequest      = "createandsendburningrequest"
 	createAndSendTxWithIssuingETHReq = "createandsendtxwithissuingethreq"
-	getRelayedETHHeader              = "getrelayedethheader"
 	checkETHHashIssued               = "checkethhashissued"
 	getAllBridgeTokens               = "getallbridgetokens"
 	getETHHeaderByHash               = "getethheaderbyhash"
@@ -140,9 +140,8 @@ const (
 	getRewardAmount              = "getrewardamount"
 	listRewardAmount             = "listrewardamount"
 
-	revertbeaconchain                  = "revertbeaconchain"
-	revertshardchain                   = "revertshardchain"
-	getRecentTransactionsByBlockNumber = "getrecenttransactionsbyblocknumber"
+	revertbeaconchain = "revertbeaconchain"
+	revertshardchain  = "revertshardchain"
 
 	enableMining         = "enablemining"
 	getChainMiningStatus = "getchainminingstatus"
