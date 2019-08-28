@@ -304,6 +304,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
 				for _, v := range strings.Split(l[2], ",") {
+					//TODO: check for restaking
 					tx, err := blockGenerator.buildReturnStakingAmountTx(v, producerPrivateKey)
 					if err != nil {
 						Logger.log.Error(err)
@@ -353,8 +354,8 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	- Assign Instruction: get more pending validator from beacon and return new list of pending validator
 	+ ["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]
 	- stake instruction
-	+ ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
-	+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
+	+ ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
+	+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
 */
 func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) ([]string, map[string]string) {
 	shardPendingValidator := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)
