@@ -121,11 +121,11 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 			return nil, NewRPCError(ErrUnexpected, err)
 		}
 		shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
 		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.PRVCoinID[:])
+		err = tokenID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return nil, NewRPCError(ErrTokenIsInvalid, err)
+		}
 		outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
 		if err != nil {
 			return nil, NewRPCError(ErrUnexpected, err)
@@ -235,49 +235,6 @@ func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, close
 }
 
 /*
-handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
-Hint: use getmempoolentry to fetch a specific transaction from the mempool.
-*/
-func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
-	result := jsonresult.NewGetRawMempoolResult(*httpServer.config.TxMemPool)
-	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleGetNumberOfTxsInMempool params: %+v", params)
-	result := len(httpServer.config.TxMemPool.ListTxs())
-	Logger.log.Debugf("handleGetNumberOfTxsInMempool result: %+v", result)
-	return result, nil
-}
-
-/*
-handleMempoolEntry - RPC fetch a specific transaction from the mempool
-*/
-func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleMempoolEntry params: %+v", params)
-	// Param #1: hash string of tx(tx id)
-	if params == nil {
-		params = ""
-	}
-	txID, err := common.Hash{}.NewHashFromStr(params.(string))
-	if err != nil {
-		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	result, err := jsonresult.NewGetMempoolEntryResult(*httpServer.config.TxMemPool, txID)
-	if err != nil {
-		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	Logger.log.Debugf("handleMempoolEntry result: %+v", result)
-	return result, nil
-}
-
-/*
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -315,7 +272,10 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err = prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, NewRPCError(ErrTokenIsInvalid, err)
+	}
 	outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
 	if err != nil {
 		return nil, NewRPCError(ErrGetOutputCoin, err)
@@ -353,8 +313,8 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		if len(arrayParams) > 4 {
 			// param #5: token params
 			tokenParamsRaw := arrayParams[4].(map[string]interface{})
-			privacy := tokenParamsRaw["Privacy"].(bool)
-			if !privacy {
+			isPrivacy := tokenParamsRaw["Privacy"].(bool)
+			if !isPrivacy {
 				// Check normal custom token param
 				customTokenParams, _, err = httpServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
 				if err.(*RPCError) != nil {
