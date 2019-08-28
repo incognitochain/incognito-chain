@@ -2,6 +2,8 @@ package blsbft
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"reflect"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -74,4 +76,30 @@ func (e *BLSBFT) ExtractBridgeValidationData(block common.BlockInterface) ([][]b
 		return nil, nil, err
 	}
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
+}
+
+func (e *BLSBFT) UpdateCommitteeBLSList() {
+	committee := e.Chain.GetCommittee()
+	if !reflect.DeepEqual(e.RoundData.Committee, committee) {
+		e.RoundData.Committee = committee
+		for _, member := range e.RoundData.Committee {
+			e.RoundData.CommitteeBLS.ByteList = append(e.RoundData.CommitteeBLS.ByteList, member.MiningPubKey[CONSENSUSNAME])
+		}
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.RoundData.Committee, CONSENSUSNAME)
+		if err != nil {
+			e.logger.Error(err)
+			return
+		}
+		e.RoundData.CommitteeBLS.StringList = committeeBLSString
+	}
+}
+
+func (e *BLSBFT) InitRoundData() {
+	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
+	e.RoundData.Round = e.getCurrentRound()
+	e.RoundData.Votes = make(map[string]vote)
+	e.RoundData.Block = nil
+	e.RoundData.NotYetSendVote = true
+	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
+	e.UpdateCommitteeBLSList()
 }

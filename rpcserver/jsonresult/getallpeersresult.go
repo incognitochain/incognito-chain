@@ -20,7 +20,7 @@ func NewGetAllPeersResult(addrMgr addrmanager.AddrManager) *GetAllPeersResult {
 	peers := addrMgr.AddressCache()
 	for _, peer := range peers {
 		for _, peerConn := range peer.GetPeerConns() {
-			peersMap = append(peersMap, peerConn.GetRemoteRawAddress())
+			peersMap = append(peersMap, peerConn.GetRemotePeer().GetRawAddress())
 		}
 	}
 	result.Peers = peersMap
@@ -44,7 +44,7 @@ func NewGetAllConnectedPeersResult(connMgr connmanager.ConnManager) *GetAllConne
 	for _, peerConn := range listeningPeer.GetPeerConns() {
 		pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
 		peerItem := map[string]string{
-			"RawAddress":    peerConn.GetRemoteRawAddress(),
+			"RawAddress":    peerConn.GetRemotePeer().GetRawAddress(),
 			"PublicKey":     pk,
 			"PublicKeyType": pkT,
 			"NodeType":      "",
