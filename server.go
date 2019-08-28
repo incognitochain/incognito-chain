@@ -1025,10 +1025,10 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 
 	remotePeer := &peer.Peer{}
 	remotePeer.SetListeningAddress(msg.LocalAddress)
-	remotePeer.SetPublicKey(pbk, pbkType)
 	remotePeer.SetPeerID(msg.LocalPeerId)
 	remotePeer.SetRawAddress(msg.RawLocalAddress)
-	peerConn.GetRemotePeer().SetPublicKey(pbk, pbkType)
+	remotePeer.SetPublicKey(pbk, pbkType)
+	peerConn.SetRemotePeer(remotePeer)
 
 	serverObj.cNewPeers <- remotePeer
 	valid := false
