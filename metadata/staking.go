@@ -13,10 +13,9 @@ import (
 type StakingMetadata struct {
 	MetadataBase
 	RewardReceiverPaymentAddress string
-	// CandidatePaymentAddress      string
-	StakingAmountShard uint64
-	AutoReStaking      bool
-	CommitteePublicKey string
+	StakingAmountShard           uint64
+	AutoReStaking                bool
+	CommitteePublicKey           string
 	// CommitteePublicKey PublicKeys of a candidate who join consensus, base58CheckEncode
 	// CommitteePublicKey string <= encode byte <= mashal struct
 }
@@ -39,22 +38,15 @@ func NewStakingMetadata(
 	return &StakingMetadata{
 		MetadataBase:                 *metadataBase,
 		RewardReceiverPaymentAddress: rewardReceiverPaymentAddress,
-		// CandidatePaymentAddress:      candidatePaymentAddress,
-		StakingAmountShard: stakingAmountShard,
-		CommitteePublicKey: committeePublicKey,
-		AutoReStaking:      autoReStaking,
+		StakingAmountShard:           stakingAmountShard,
+		CommitteePublicKey:           committeePublicKey,
+		AutoReStaking:                autoReStaking,
 	}, nil
 }
 
 /*
  */
 func (sm *StakingMetadata) ValidateMetadataByItself() bool {
-	// candidatePaymentAddress := sm.CandidatePaymentAddress
-	// candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	// if err != nil || candidateWallet == nil {
-	// 	return false
-	// }
-
 	rewardReceiverPaymentAddress := sm.RewardReceiverPaymentAddress
 	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
 	if err != nil || rewardReceiverWallet == nil {
@@ -63,8 +55,10 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 
 	// pk := candidateWallet.KeySet.PaymentAddress.Pk
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
-	CommitteePublicKey.FromString(sm.CommitteePublicKey)
-	if !CommitteePublicKey.CheckSanityData() { //|| (!bytes.Equal(CommitteePublicKey.IncPubKey, pk)) {
+	if err := CommitteePublicKey.FromString(sm.CommitteePublicKey); err != nil {
+		return false
+	}
+	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
 	return (sm.Type == ShardStakingMeta || sm.Type == BeaconStakingMeta)
@@ -79,7 +73,10 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(
 	bool,
 	error,
 ) {
-	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR := bcr.GetAllCommitteeValidatorCandidate()
+	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := bcr.GetAllCommitteeValidatorCandidate()
+	if err != nil {
+		return false, err
+	}
 	tempStaker := []string{stakingMetadata.CommitteePublicKey}
 	for _, committees := range SC {
 		tempStaker = common.GetValidStaker(committees, tempStaker)
@@ -131,15 +128,6 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	if stakingMetadata.Type == BeaconStakingMeta && amount != bcr.GetStakingAmountShard()*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
-	// candidatePaymentAddress := stakingMetadata.CandidatePaymentAddress
-	// candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
-	// if err != nil || candidateWallet == nil {
-	// 	return false, false, errors.New("Invalid Candidate Payment Address, Failed to Deserialized Into Key Wallet")
-	// }
-	// pk := candidateWallet.KeySet.PaymentAddress.Pk
-	// if len(pk) != 33 {
-	// 	return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
-	// }
 
 	rewardReceiverPaymentAddress := stakingMetadata.RewardReceiverPaymentAddress
 	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
@@ -151,8 +139,11 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 	}
 
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
-	CommitteePublicKey.FromString(stakingMetadata.CommitteePublicKey)
-	if (!CommitteePublicKey.CheckSanityData()) || (!bytes.Equal(CommitteePublicKey.IncPubKey, pubkey)) {
+	err = CommitteePublicKey.FromString(stakingMetadata.CommitteePublicKey)
+	if err != nil {
+		return false, false, err
+	}
+	if !CommitteePublicKey.CheckSanityData() {
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
 	}
 	return true, true, nil
