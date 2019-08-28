@@ -526,7 +526,7 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 	}
 	//Logger.log.Info("handleRandPeersOfShard", *shard)
 	countPeerShard := connManager.countPeerConnOfShard(shard)
-	// fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
+	fmt.Println("CONN: shard ", *shard, "has", countPeerShard, "peers")
 	if countPeerShard >= maxPeers {
 		// close if over max conn
 		if countPeerShard > maxPeers {
@@ -547,14 +547,15 @@ func (connManager *ConnManager) handleRandPeersOfShard(shard *byte, maxPeers int
 			cPbk := connManager.config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
-				go connManager.Connect(peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, nil)
+				fmt.Println("CONN: try to connect", peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, pbk)
+				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil)
 				countPeerShard++
 			}
 			if countPeerShard >= maxPeers {
 				return countPeerShard
 			}
 		} else {
-			// fmt.Println("CONN: cannot find", pbk)
+			fmt.Println("CONN: cannot find", pbk)
 		}
 	}
 	return countPeerShard
@@ -594,7 +595,7 @@ func (connManager *ConnManager) handleRandPeersOfBeacon(maxBeaconPeers int, mPee
 			cPbk := connManager.config.ConsensusState.userPublicKey
 			// if existed conn then not append to array
 			if cPbk != pbk && !connManager.checkPeerConnOfPublicKey(pbk) {
-				go connManager.Connect(peerI.RawAddress, peerI.PublicKeyType, peerI.PublicKey, nil)
+				go connManager.Connect(peerI.RawAddress, peerI.PublicKey, peerI.PublicKeyType, nil)
 			}
 			countPeerShard++
 			if countPeerShard >= maxBeaconPeers {
@@ -619,7 +620,7 @@ func (connManager *ConnManager) handleRandPeersOfNoShard(maxPeers int, mPeers ma
 			if ok {
 				continue
 			}
-			go connManager.Connect(peer.RawAddress, peer.PublicKeyType, peer.PublicKey, nil)
+			go connManager.Connect(peer.RawAddress, peer.PublicKey, peer.PublicKeyType, nil)
 			countPeers++
 			if countPeers >= maxPeers {
 				return countPeers
@@ -777,6 +778,6 @@ func (connManager *ConnManager) handleRelayNode(mPeers map[string]*wire.RawPeer)
 			continue
 		}
 
-		go connManager.Connect(p.RawAddress, p.PublicKeyType, p.PublicKey, nil)
+		go connManager.Connect(p.RawAddress, p.PublicKey, p.PublicKeyType, nil)
 	}
 }

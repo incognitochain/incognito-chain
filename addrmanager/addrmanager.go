@@ -262,5 +262,5 @@ func (addrManager *AddrManager) AddressCache() []*peer.Peer {
 	for _, index := range addrManager.addrIndex {
 		allAddr = append(allAddr, index)
 	}
-	return allAddr
+	return []*peer.Peer{}
 }
