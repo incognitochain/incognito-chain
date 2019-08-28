@@ -504,7 +504,8 @@ func (beaconBestState *BeaconBestState) GetBeaconCandidate() []incognitokey.Comm
 func (beaconBestState *BeaconBestState) GetBeaconCommittee() []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()
 	defer beaconBestState.lock.RUnlock()
-	return beaconBestState.BeaconCommittee
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, beaconBestState.BeaconCommittee...)
 }
 func (beaconBestState *BeaconBestState) GetBeaconPendingValidator() []incognitokey.CommitteePublicKey {
 	beaconBestState.lock.RLock()

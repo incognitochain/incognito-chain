@@ -81,7 +81,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 			if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
 				pubkey := base58.Base58Check{}.Encode(tx.GetSigPubKey(), common.ZeroByte)
 				tp.tokenIDMtx.Lock()
-				found := common.IndexOfStrInHashMap(pubkey, tp.PoolCandidate)
+				found := common.IndexOfStrInHashMap(pubkey, tp.poolCandidate)
 				tp.tokenIDMtx.Unlock()
 				if found > 0 {
 					return NewMempoolTxError(RejectDuplicateStakePubkey, fmt.Errorf("This public key already stake and still in pool %+v", pubkey))

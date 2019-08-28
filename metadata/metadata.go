@@ -54,7 +54,10 @@ type BlockchainRetriever interface {
 	GetCustomTokenTxs(*common.Hash) (map[common.Hash]Transaction, error)
 	GetTransactionByHash(common.Hash) (byte, common.Hash, int, Transaction, error)
 	GetCurrentBeaconBlockHeight(byte) uint64
-	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string)
+	GetAllCommitteeValidatorCandidate() (map[byte][]string, map[byte][]string, []string, []string, []string, []string, []string, []string, error)
+	GetAllCommitteeValidatorCandidateFlattenList() ([]string, error)
+	GetStakingTx(byte) map[string]string
+	GetStopAutoStakingRequest(byte) map[string]string
 	GetDatabase() database.DatabaseInterface
 	GetTxValue(txid string) (uint64, error)
 	GetShardIDFromTx(txid string) (byte, error)
