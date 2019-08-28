@@ -25,6 +25,7 @@ const (
 
 	//statking
 	ShardStakingMeta  = 63
+	StopStakingMeta   = 127
 	BeaconStakingMeta = 64
 
 	// Incognito -> Ethereum bridge
