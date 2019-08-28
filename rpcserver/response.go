@@ -33,7 +33,7 @@ func newResponse(request *JsonRequest, marshalledResult []byte, rpcErr *RPCError
 	id := request.Id
 	if !IsValidIDType(id) {
 		str := fmt.Sprintf("The id of type '%T' is invalid", id)
-		return nil, NewRPCError(ErrInvalidType, errors.New(str))
+		return nil, NewRPCError(InvalidTypeError, errors.New(str))
 	}
 	pid := &id
 	resp := &JsonResponse{

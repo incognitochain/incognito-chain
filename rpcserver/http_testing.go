@@ -68,7 +68,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 	case "cstokenprivacy":
 		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-cstokenprivacy-5000.json"
 	default:
-		return CountResult{}, NewRPCError(ErrUnexpected, errors.New("Can't find file"))
+		return CountResult{}, NewRPCError(UnexpectedError, errors.New("Can't find file"))
 	}
 
 	Logger.log.Critical("Getting Transactions from file: ", datadir+filename)
@@ -241,7 +241,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 			filenames = append(filenames, filename)
 		}
 	default:
-		return CountResult{}, NewRPCError(ErrUnexpected, errors.New("Can't find file"))
+		return CountResult{}, NewRPCError(UnexpectedError, errors.New("Can't find file"))
 	}
 	for _, filename := range filenames {
 		Logger.log.Critical("Getting Transactions from file: ", datadir+filename)

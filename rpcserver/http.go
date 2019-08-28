@@ -49,7 +49,7 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 // Start is used by rpcserver.go to start the rpc listener.
 func (httpServer *HttpServer) Start() error {
 	if atomic.LoadInt32(&httpServer.started) == 1 {
-		return NewRPCError(ErrAlreadyStarted, nil)
+		return NewRPCError(AlreadyStartedError, nil)
 	}
 	httpServeMux := http.NewServeMux()
 	httpServer.server = &http.Server{
@@ -195,7 +195,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		if !isLimitedUser {
 			if function, ok := LimitedHttpHandler[request.Method]; ok {
 				_ = function
-				jsonErr = NewRPCError(ErrRPCInvalidMethodPermission, errors.New(""))
+				jsonErr = NewRPCError(RPCInvalidMethodPermissionError, errors.New(""))
 			}
 		}
 		if jsonErr == nil {
@@ -207,13 +207,13 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 					command = LimitedHttpHandler[request.Method]
 				} else {
 					result = nil
-					jsonErr = NewRPCError(ErrRPCMethodNotFound, nil)
+					jsonErr = NewRPCError(RPCMethodNotFoundError, nil)
 				}
 			}
 			if command != nil {
 				result, jsonErr = command(httpServer, request.Params, closeChan)
 			} else {
-				jsonErr = NewRPCError(ErrRPCMethodNotFound, nil)
+				jsonErr = NewRPCError(RPCMethodNotFoundError, nil)
 			}
 		}
 	}
@@ -272,7 +272,7 @@ func (httpServer *HttpServer) checkAuth(r *http.Request, require bool) (bool, bo
 		if require {
 			Logger.log.Warnf("RPC authentication failure from %s",
 				r.RemoteAddr)
-			return false, false, NewRPCError(ErrAuthFail, nil)
+			return false, false, NewRPCError(AuthFailError, nil)
 		}
 
 		return false, false, nil
@@ -295,7 +295,7 @@ func (httpServer *HttpServer) checkAuth(r *http.Request, require bool) (bool, bo
 
 	// JsonRequest's auth doesn't match either user
 	Logger.log.Warnf("RPC authentication failure from %s", r.RemoteAddr)
-	return false, false, NewRPCError(ErrAuthFail, nil)
+	return false, false, NewRPCError(AuthFailError, nil)
 }
 
 // AuthFail sends a Message back to the client if the http auth is rejected.
