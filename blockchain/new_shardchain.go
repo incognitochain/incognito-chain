@@ -51,7 +51,8 @@ func (chain *ShardChain) CurrentHeight() uint64 {
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	chain.BestState.lock.RLock()
 	defer chain.BestState.lock.RUnlock()
-	return chain.BestState.ShardCommittee
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, chain.BestState.ShardCommittee...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
