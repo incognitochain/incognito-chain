@@ -1384,6 +1384,52 @@ func (_m *DatabaseInterface) IsETHTxHashIssued(uniqETHTx []byte) (bool, error) {
 	return r0, r1
 }
 
+// ListCommitment provides a mock function with given fields: tokenID, shardID
+func (_m *DatabaseInterface) ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
+	ret := _m.Called(tokenID, shardID)
+
+	var r0 map[string]uint64
+	if rf, ok := ret.Get(0).(func(common.Hash, byte) map[string]uint64); ok {
+		r0 = rf(tokenID, shardID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]uint64)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash, byte) error); ok {
+		r1 = rf(tokenID, shardID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListCommitmentIndices provides a mock function with given fields: tokenID, shardID
+func (_m *DatabaseInterface) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
+	ret := _m.Called(tokenID, shardID)
+
+	var r0 map[uint64]string
+	if rf, ok := ret.Get(0).(func(common.Hash, byte) map[uint64]string); ok {
+		r0 = rf(tokenID, shardID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[uint64]string)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash, byte) error); ok {
+		r1 = rf(tokenID, shardID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ListCommitteeReward provides a mock function with given fields:
 func (_m *DatabaseInterface) ListCommitteeReward() map[string]map[common.Hash]uint64 {
 	ret := _m.Called()
