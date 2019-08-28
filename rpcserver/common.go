@@ -255,8 +255,9 @@ func (rpcServer HttpServer) buildRawCustomTokenTransaction(
 
 	// param #1: private key of sender
 	senderKeyParam := arrayParams[0]
+	var err error
 	senderKeySet, err := rpcServer.GetKeySetFromPrivateKeyParams(senderKeyParam.(string))
-	if err != nil {
+	if err.(*RPCError) != nil {
 		return nil, err.(*RPCError)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
