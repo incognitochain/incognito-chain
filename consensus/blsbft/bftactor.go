@@ -90,7 +90,7 @@ func (e *BLSBFT) Start() {
 					continue
 				}
 				blockRoundKey := getRoundKey(block.GetHeight(), block.GetRound())
-
+				e.logger.Info("receive block", blockRoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 				if block.GetHeight() >= e.RoundData.NextHeight {
 					if e.RoundData.NextHeight == block.GetHeight() && e.RoundData.Round > block.GetRound() {
 						e.logger.Error("wrong round")
@@ -105,9 +105,9 @@ func (e *BLSBFT) Start() {
 					e.Blocks[blockRoundKey] = block
 				}
 			case voteMsg := <-e.VoteMessageCh:
+				e.logger.Info("receive vote", voteMsg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 				if getRoundKey(e.RoundData.NextHeight, e.RoundData.Round) == voteMsg.RoundKey {
 					//validate single sig
-					e.logger.Warn("vote received in timeframe...")
 					if e.RoundData.Block != nil {
 						validatorIdx := e.Chain.GetPubKeyCommitteeIndex(voteMsg.Validator)
 						committeeBLSKeys := []blsmultisig.PublicKey{}
@@ -208,7 +208,8 @@ func (e *BLSBFT) Start() {
 							time.Sleep(1 * time.Second)
 							continue
 						}
-						fmt.Println("\n\n\n\n\nYAYAYAYAYAY\n\n\n\n\n")
+						e.logger.Warn("Commit block! Wait for next round")
+
 						e.enterNewRound()
 					}
 				}
@@ -222,8 +223,10 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	e.setState(PROPOSE)
-
+	time1 := time.Now()
 	block, err := e.Chain.CreateNewBlock(int(e.RoundData.Round))
+	e.logger.Info("create block", time.Since(time1).Seconds())
+
 	if err != nil {
 		e.logger.Error("can't create block", err)
 		return
@@ -237,7 +240,7 @@ func (e *BLSBFT) enterProposePhase() {
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
 	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-	e.logger.Info("propose block", string(blockData))
+	e.logger.Info("push block", time.Since(time1).Seconds())
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.enterVotePhase()
 }
@@ -288,13 +291,16 @@ func (e *BLSBFT) enterNewRound() {
 	e.RoundData.NotYetSendVote = true
 	e.RoundData.Committee = committee
 
-	e.logger.Info("BFT: new round")
+	e.logger.Info("")
+	e.logger.Info("============================================")
+	e.logger.Info("")
+
 	pubKey := e.UserKeySet.GetPublicKey()
 	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
-		e.logger.Info("BFT: new round propose")
+		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterProposePhase()
 	} else {
-		e.logger.Info("BFT: new round listen")
+		e.logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterListenPhase()
 	}
 
