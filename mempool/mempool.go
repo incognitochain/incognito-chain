@@ -722,11 +722,8 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 				tp.removeTx(txToBeReplaced)
 				tp.removeCandidateByTxHash(*txToBeReplaced.Hash())
 				tp.removeTokenIDByTxHash(*txToBeReplaced.Hash())
-				if tp.IsBlockGenStarted {
-					go func(tx metadata.Transaction) {
-						tp.CRemoveTxs <- tx
-					}(tx)
-				}
+				// send tx into channel of CRmoveTxs
+				tp.TriggerCRemoveTxs(tx)
 				return nil, true
 			} else {
 				return NewMempoolTxError(RejectReplacementTxError, fmt.Errorf("Unexpected error occur")), true
@@ -738,6 +735,15 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 	} else {
 		// no match serial number list to be replaced
 		return nil, false
+	}
+}
+
+// TriggerCRemoveTxs - send a tx channel into CRemoveTxs of tx mempool
+func (tp *TxPool) TriggerCRemoveTxs(tx metadata.Transaction) {
+	if tp.IsBlockGenStarted {
+		go func(tx metadata.Transaction) {
+			tp.CRemoveTxs <- tx
+		}(tx)
 	}
 }
 

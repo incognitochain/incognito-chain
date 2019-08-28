@@ -28,8 +28,8 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 	if err == nil {
 		shardBlock, _, err := wsServer.config.BlockChain.GetShardBlockByHash(blockHash)
 		if err == nil {
-			res, err := (&HttpServer{}).revertTxToResponseObject(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
-			cResult <- RpcSubResult{Result: res, Error: err}
+			res, err := jsonresult.NewTransactionDetail(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
+			cResult <- RpcSubResult{Result: res, Error: NewRPCError(ErrUnexpected, err)}
 			return
 		}
 	}
@@ -56,8 +56,8 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 				}
 				for index, tx := range shardBlock.Body.Transactions {
 					if tx.Hash().IsEqual(txHash) {
-						res, err := (&HttpServer{}).revertTxToResponseObject(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
-						cResult <- RpcSubResult{Result: res, Error: err}
+						res, err := jsonresult.NewTransactionDetail(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
+						cResult <- RpcSubResult{Result: res, Error: NewRPCError(ErrUnexpected, err)}
 						return
 					}
 				}
