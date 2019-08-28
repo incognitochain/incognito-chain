@@ -54,9 +54,13 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 // handleGetCandidateList - return list candidate of committee
 func (httpServer *HttpServer) handleGetCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetCandidateList params: %+v", params)
+	if httpServer.config.BlockChain.BestState.Beacon == nil {
+		Logger.log.Debugf("handleGetCandidateList result: %+v", nil)
+		return nil, NewRPCError(UnexpectedError, errors.New("Best State beacon not existed"))
+	}
 	beacon, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(GetClonedBeaconBestStateError, err)
 	}
 	CSWFCR := beacon.CandidateShardWaitingForCurrentRandom
 	CSWFNR := beacon.CandidateShardWaitingForNextRandom

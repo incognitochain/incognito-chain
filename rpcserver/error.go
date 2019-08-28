@@ -9,6 +9,8 @@ import (
 const (
 	UnexpectedError = iota
 	AlreadyStartedError
+	JsonError
+
 	RPCInvalidRequestError
 	RPCMethodNotFoundError
 	RPCInvalidParamsError
@@ -34,6 +36,11 @@ const (
 	TokenIsInvalidError
 	GetClonedBeaconBestStateError
 	GetClonedShardBestStateError
+	GetShardBlockByHeightError
+	GetShardBestBlockError
+	GetShardBlockByHashError
+	GetBeaconBlockByHashError
+	GetBeaconBlockByHeightError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -45,6 +52,7 @@ var ErrCodeMessage = map[int]struct {
 	UnexpectedError:     {-1, "Unexpected error"},
 	AlreadyStartedError: {-2, "RPC server is already started"},
 	NetworkError:        {-3, "Network Error, failed to send request to RPC server"},
+	JsonError:           {-4, "Json error"},
 
 	// validate component -1xxx
 	RPCInvalidRequestError:             {-1001, "Invalid request"},
@@ -65,15 +73,25 @@ var ErrCodeMessage = map[int]struct {
 	RejectInvalidFeeError:              {-1016, "Reject invalid fee"},
 	TxNotExistedInMemAndBLockError:     {-1017, "Tx is not existed in mem and block"},
 	TokenIsInvalidError:                {-1018, "Token is invalid"},
-	GetClonedBeaconBestStateError:      {-1019, "Get Cloned Beacon Best State Error"},
-	GetClonedShardBestStateError:       {-1020, "Get Cloned Shard Best State Error"},
 
-	// processing -2xxx
-	CreateTxDataError: {-2001, "Can not create tx"},
-	SendTxDataError:   {-2002, "Can not send tx"},
-	// socket/subcribe -3xxx
-	SubcribeError:   {-3001, "Failed to subcribe"},
-	UnsubcribeError: {-2002, "Failed to unsubcribe"},
+	// for block -2xxx
+	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
+	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},
+	GetShardBestBlockError:      {-2002, "Get shard best block error"},
+	GetBeaconBlockByHashError:   {-2003, "Get beacon block by hash error"},
+	GetBeaconBlockByHeightError: {-2004, "Get beacon block by height error"},
+
+	// best state -3xxx
+	GetClonedBeaconBestStateError: {-3000, "Get Cloned Beacon Best State Error"},
+	GetClonedShardBestStateError:  {-3001, "Get Cloned Shard Best State Error"},
+
+	// processing -4xxx
+	CreateTxDataError: {-4001, "Can not create tx"},
+	SendTxDataError:   {-4002, "Can not send tx"},
+
+	// socket/subcribe -5xxx
+	SubcribeError:   {-5000, "Failed to subcribe"},
+	UnsubcribeError: {-5001, "Failed to unsubcribe"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
