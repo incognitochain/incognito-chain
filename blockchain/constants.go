@@ -115,8 +115,8 @@ func init() {
 	}
 
 	type AccountKey struct {
-		PrivateKey string
-		PaymentAdd string
+		PrivateKey     string
+		PaymentAddress string
 		// PubKey     string
 		CommitteePublicKey string
 	}
@@ -134,13 +134,13 @@ func init() {
 	}
 	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
 		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
-		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAdd)
+		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
 	}
 
 	for i := 0; i < TestNetActiveShards; i++ {
 		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
 			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
-			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAdd)
+			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
 		}
 	}
 }

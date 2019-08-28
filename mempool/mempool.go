@@ -659,7 +659,7 @@ func (tp *TxPool) validateTransaction(tx metadata.Transaction) error {
 	if foundPubkey > 0 {
 		return NewMempoolTxError(RejectDuplicateStakePubkey, fmt.Errorf("This public key already stake and still in pool %+v", pubkey))
 	}
-	// Condition 9: check duplicate stake public key ONLY with staking transaction
+	// Condition 10: check duplicate request stop auto staking
 	now = time.Now()
 	requestedPublicKey := ""
 	foundRequestStopAutoStaking := -1
