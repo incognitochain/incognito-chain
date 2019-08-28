@@ -48,11 +48,16 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 	earlyVote, ok := e.EarlyVotes[getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)]
 	if ok {
 		for validator, vote := range earlyVote {
+			validatorIdx := common.IndexOfStr(validator, e.RoundData.CommitteeBLS.StringList)
+			if err := validateSingleBLSSig(e.RoundData.Block.Hash(), vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
+				e.logger.Error(err)
+				continue
+			}
 			e.RoundData.Votes[validator] = vote
 		}
 		delete(e.EarlyVotes, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 	}
-	size := e.Chain.GetCommitteeSize()
+	size := len(e.RoundData.Committee)
 	if len(e.RoundData.Votes) > 2*size/3 {
 		return true
 	}
