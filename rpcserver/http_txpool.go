@@ -46,13 +46,13 @@ func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <
 	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
 		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	txInPool, err := httpServer.config.TxMemPool.GetTx(txID)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, NewRPCError(GeTxFromPoolError, err)
 	}
 	shardIDTemp := common.GetShardIDFromLastByte(txInPool.GetSenderAddrLastByte())
 	tx, errM := jsonresult.NewTransactionDetail(txInPool, nil, 0, 0, shardIDTemp)
@@ -73,12 +73,12 @@ func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeC
 	txID, err := common.Hash{}.NewHashFromStr(params.(string))
 	if err != nil {
 		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
-		return false, NewRPCError(UnexpectedError, err)
+		return false, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	tempTx, err := httpServer.config.TxMemPool.GetTx(txID)
 	if err != nil {
-		return false, NewRPCError(UnexpectedError, err)
+		return false, NewRPCError(GeTxFromPoolError, err)
 	}
 	httpServer.config.TxMemPool.RemoveTx([]metadata.Transaction{tempTx}, false)
 	httpServer.config.TxMemPool.TriggerCRemoveTxs(tempTx)
