@@ -1240,10 +1240,6 @@ func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privac
 	return transaction.RandomCommitmentsProcess(param)
 }
 
-func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte) (bool, error) {
-	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, blockchain.config.DataBase)
-}
-
 // func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {
 // 	// fmt.Println("SetReadyState", shard, shardID, ready)
 // 	blockchain.syncStatus.IsReady.Lock()
