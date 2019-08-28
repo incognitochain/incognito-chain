@@ -12,6 +12,7 @@ const (
 	RejectSansityTx
 	RejectSalaryTx
 	RejectDuplicateStakePubkey
+	RejectDuplicateRequestStopAutoStaking
 	RejectDuplicateInitTokenTx
 	RejectVersion
 	RejectInvalidTxType
@@ -77,6 +78,7 @@ var ErrCodeMessage = map[int]struct {
 	UnmarshalBeaconBlockError:                   {-1027, "Unmarshal Beacon Block Error"},
 	FindBeaconHeightForCrossShardBlockError:     {-1028, "Find Beacon Height For Cross Shard Block Error"},
 	ValidateAggSignatureForCrossShardBlockError: {-1029, "Validate Agg Signature For Cross Shard Block Error"},
+	RejectDuplicateRequestStopAutoStaking:       {-1030, "Reject Duplicate Request Stop Auto Staking"},
 }
 
 type MempoolTxError struct {
