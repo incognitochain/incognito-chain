@@ -26,10 +26,10 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getMiningInfo:           (*HttpServer).handleGetMiningInfo,
 	getRawMempool:           (*HttpServer).handleGetRawMempool,
 	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
 	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
 
 	// block pool ver.2
 	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
@@ -135,11 +135,12 @@ var HttpHandler = map[string]httpHandler{
 	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
 	listRewardAmount:             (*HttpServer).handleListRewardAmount,
 
-	//revert
+	// revert
 	revertbeaconchain: (*HttpServer).handleRevertBeacon,
 	revertshardchain:  (*HttpServer).handleRevertShard,
 
-	//GetNodeStatus
+	// mining info
+	getMiningInfo:        (*HttpServer).handleGetMiningInfo,
 	enableMining:         (*HttpServer).handleEnableMining,
 	getChainMiningStatus: (*HttpServer).handleGetChainMiningStatus,
 }
