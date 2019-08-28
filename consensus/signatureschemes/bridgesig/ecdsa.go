@@ -20,7 +20,8 @@ func Sign(keyBytes []byte, data []byte) ([]byte, error) {
 }
 
 func Verify(pubkeyBytes []byte, data []byte, sig []byte) (bool, error) {
-	pk, err := ethcrypto.SigToPub(data, sig)
+	hash := ethcrypto.Keccak256Hash(data)
+	pk, err := ethcrypto.SigToPub(hash.Bytes(), sig)
 	if err != nil {
 		return false, err
 	}

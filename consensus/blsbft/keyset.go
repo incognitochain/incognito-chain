@@ -95,7 +95,7 @@ func (e *BLSBFT) LoadUserKeyFromIncPrivateKey(privateKey string) (string, error)
 	if err != nil {
 		return "", consensus.NewConsensusError(consensus.LoadKeyError, err)
 	}
-	privateSeedBytes := common.HashB(wl.KeySet.PrivateKey)
+	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
 	if err != nil {
 		return "", consensus.NewConsensusError(consensus.LoadKeyError, err)
 	}
