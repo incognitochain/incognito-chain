@@ -66,6 +66,7 @@ var HttpHandler = map[string]httpHandler{
 	randomCommitments:               (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
 	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
+	listSnDerivators:                (*HttpServer).handleListSNDerivator,
 	listSerialNumbers:               (*HttpServer).handleListSerialNumbers,
 	listCommitments:                 (*HttpServer).handleListCommitments,
 	listCommitmentIndices:           (*HttpServer).handleListCommitmentIndices,
