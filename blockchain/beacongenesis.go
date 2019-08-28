@@ -16,10 +16,10 @@ func CreateBeaconGenesisBlock(
 	inst := [][]string{}
 	shardAutoStaking := []string{}
 	beaconAutoStaking := []string{}
-	for i := 0; i < TestNetMinShardCommitteeSize; i++ {
+	for i := 0; i < TestNetShardCommitteeSize; i++ {
 		shardAutoStaking = append(shardAutoStaking, "false")
 	}
-	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
+	for i := 0; i < TestNetBeaconCommitteeSize; i++ {
 		beaconAutoStaking = append(beaconAutoStaking, "false")
 	}
 	// build validator beacon
