@@ -14,14 +14,14 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain 1 params"))
+		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -44,7 +44,7 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 				}
 				blockBytes, err := json.Marshal(shardBlock)
 				if err != nil {
-					cResult <- RpcSubResult{Error: NewRPCError(ErrUnexpected, err)}
+					cResult <- RpcSubResult{Error: NewRPCError(UnexpectedError, err)}
 					return
 				}
 				blockResult := jsonresult.NewGetBlockResult(shardBlock, uint64(len(blockBytes)), common.EmptyString)
@@ -63,13 +63,13 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 0 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain NO params"))
+		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain NO params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -89,7 +89,7 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 				}
 				blockBytes, err := json.Marshal(beaconBlock)
 				if err != nil {
-					cResult <- RpcSubResult{Error: NewRPCError(ErrUnexpected, err)}
+					cResult <- RpcSubResult{Error: NewRPCError(UnexpectedError, err)}
 					return
 				}
 				blockBeaconResult := jsonresult.NewGetBlocksBeaconResult(beaconBlock, uint64(len(blockBytes)), common.EmptyString)

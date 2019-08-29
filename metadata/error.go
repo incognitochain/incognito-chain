@@ -30,8 +30,9 @@ const (
 	StopAutoStakingRequestNotInCommitteeListError
 	StopAutoStakingRequestStakingTransactionNotFoundError
 	StopAutoStakingRequestInvalidTransactionSenderError
-	StopAutoStakingRequestExistError
-	StopAutoStakingTypeAssertionError
+	StopAutoStakingRequestNoAutoStakingAvaiableError
+	StopAutoStakingRequestTypeAssertionError
+	StopAutoStakingRequestAlreadyStopError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -66,8 +67,9 @@ var ErrCodeMessage = map[int]struct {
 	StopAutoStakingRequestNotInCommitteeListError:         {-4000, "Stop Auto-Staking Request Not In Committee List Error"},
 	StopAutoStakingRequestStakingTransactionNotFoundError: {-4001, "Stop Auto-Staking Request Staking Transaction Not Found Error"},
 	StopAutoStakingRequestInvalidTransactionSenderError:   {-4002, "Stop Auto-Staking Request Invalid Transaction Sender Error"},
-	StopAutoStakingRequestExistError:                      {-4003, "Stop Auto-Staking Request Exist Error"},
-	StopAutoStakingTypeAssertionError:                     {-4004, "Stop Auto-Staking Type Assertion Error"},
+	StopAutoStakingRequestNoAutoStakingAvaiableError:      {-4003, "Stop Auto-Staking Request No Auto Staking Avaliable Error"},
+	StopAutoStakingRequestTypeAssertionError:              {-4004, "Stop Auto-Staking Request Type Assertion Error"},
+	StopAutoStakingRequestAlreadyStopError:                {-4005, "Stop Auto Staking Request Already Stop Error"},
 }
 
 type MetadataTxError struct {

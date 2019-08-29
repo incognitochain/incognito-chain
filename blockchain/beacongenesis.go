@@ -14,6 +14,14 @@ func CreateBeaconGenesisBlock(
 	genesisParams GenesisParams,
 ) *BeaconBlock {
 	inst := [][]string{}
+	shardAutoStaking := []string{}
+	beaconAutoStaking := []string{}
+	for i := 0; i < TestNetShardCommitteeSize; i++ {
+		shardAutoStaking = append(shardAutoStaking, "false")
+	}
+	for i := 0; i < TestNetBeaconCommitteeSize; i++ {
+		beaconAutoStaking = append(beaconAutoStaking, "false")
+	}
 	// build validator beacon
 	// test generate public key in utility/generateKeys
 	beaconAssingInstruction := []string{StakeAction}
@@ -21,12 +29,14 @@ func CreateBeaconGenesisBlock(
 	beaconAssingInstruction = append(beaconAssingInstruction, "beacon")
 	beaconAssingInstruction = append(beaconAssingInstruction, []string{""}...)
 	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(genesisParams.PreSelectBeaconNodeSerializedPaymentAddress[:], ","))
+	beaconAssingInstruction = append(beaconAssingInstruction, strings.Join(beaconAutoStaking[:], ","))
 
 	shardAssingInstruction := []string{StakeAction}
 	shardAssingInstruction = append(shardAssingInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPubkey[:], ","))
 	shardAssingInstruction = append(shardAssingInstruction, "shard")
 	shardAssingInstruction = append(shardAssingInstruction, []string{""}...)
 	shardAssingInstruction = append(shardAssingInstruction, strings.Join(genesisParams.PreSelectShardNodeSerializedPaymentAddress[:], ","))
+	shardAssingInstruction = append(shardAssingInstruction, strings.Join(shardAutoStaking[:], ","))
 
 	inst = append(inst, beaconAssingInstruction)
 	inst = append(inst, shardAssingInstruction)
