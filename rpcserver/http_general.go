@@ -22,7 +22,7 @@ func (httpServer *HttpServer) handleGetInOutMessageCount(params interface{}, clo
 	paramsArray := common.InterfaceSlice(params)
 	result, err := jsonresult.NewGetInOutMessageCountResult(paramsArray)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	// Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
@@ -37,7 +37,7 @@ func (httpServer *HttpServer) handleGetInOutMessages(params interface{}, closeCh
 	paramsArray := common.InterfaceSlice(params)
 	result, err := jsonresult.NewGetInOutMessageResult(paramsArray)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	//Logger.log.Debugf("handleGetInOutPeerMessages result: %+v", result)
 	return result, nil
@@ -70,7 +70,7 @@ func (httpServer *HttpServer) handleGetNodeRole(params interface{}, closeChan <-
 func (httpServer *HttpServer) handleGetNetWorkInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	result, err := jsonresult.NewGetNetworkInfoResult(httpServer.config.ProtocolVersion, *httpServer.config.ConnMgr, httpServer.config.Wallet)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	return result, nil
 }
@@ -118,17 +118,17 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 
 		err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		shardID := common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1])
-		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
-		}
 		tokenID := &common.Hash{}
-		tokenID.SetBytes(common.PRVCoinID[:])
+		err = tokenID.SetBytes(common.PRVCoinID[:])
+		if err != nil {
+			return nil, NewRPCError(TokenIsInvalidError, err)
+		}
 		outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
@@ -160,18 +160,18 @@ func (httpServer *HttpServer) handleCheckHashValue(params interface{}, closeChan
 	)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) == 0 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected array component"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Expected array component"))
 	}
 	hashParams, ok := arrayParams[0].(string)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected hash string value"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Expected hash string value"))
 	}
 	// param #1: transaction Hash
 	Logger.log.Debugf("Check hash value  input Param %+v", arrayParams[0].(string))
 	log.Printf("Check hash value  input Param %+v", hashParams)
 	hash, err2 := common.Hash{}.NewHashFromStr(hashParams)
 	if err2 != nil {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Expected hash string value"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Expected hash string value"))
 	}
 	// Check block
 	_, _, err := httpServer.config.BlockChain.GetShardBlockByHash(*hash)
@@ -235,49 +235,6 @@ func (httpServer *HttpServer) handleGetConnectionCount(params interface{}, close
 }
 
 /*
-handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
-Hint: use getmempoolentry to fetch a specific transaction from the mempool.
-*/
-func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleGetRawMempool params: %+v", params)
-	result := jsonresult.NewGetRawMempoolResult(*httpServer.config.TxMemPool)
-	Logger.log.Debugf("handleGetRawMempool result: %+v", result)
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleGetNumberOfTxsInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleGetNumberOfTxsInMempool params: %+v", params)
-	result := len(httpServer.config.TxMemPool.ListTxs())
-	Logger.log.Debugf("handleGetNumberOfTxsInMempool result: %+v", result)
-	return result, nil
-}
-
-/*
-handleMempoolEntry - RPC fetch a specific transaction from the mempool
-*/
-func (httpServer *HttpServer) handleMempoolEntry(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
-	Logger.log.Debugf("handleMempoolEntry params: %+v", params)
-	// Param #1: hash string of tx(tx id)
-	if params == nil {
-		params = ""
-	}
-	txID, err := common.Hash{}.NewHashFromStr(params.(string))
-	if err != nil {
-		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	result, err := jsonresult.NewGetMempoolEntryResult(*httpServer.config.TxMemPool, txID)
-	if err != nil {
-		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
-		return nil, NewRPCError(ErrUnexpected, err)
-	}
-
-	Logger.log.Debugf("handleMempoolEntry result: %+v", result)
-	return result, nil
-}
-
-/*
 handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
 */
 func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
@@ -286,44 +243,47 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 	// all component
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 5 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Not enough params"))
 	}
 	// param #1: private key of sender
 	senderKeyParam, ok := arrayParams[0].(string)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Sender private key is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Sender private key is invalid"))
 	}
 	// param #3: estimation fee coin per kb
 	defaultFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Default FeeCoinPerKbtemp is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Default FeeCoinPerKbtemp is invalid"))
 	}
 	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbtemp)
 	// param #4: hasPrivacy flag for PRV
 	hashPrivacyTemp, ok := arrayParams[3].(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("hasPrivacy is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("hasPrivacy is invalid"))
 	}
 	hasPrivacy := int(hashPrivacyTemp) > 0
 
 	senderKeySet, err := httpServer.GetKeySetFromPrivateKeyParams(senderKeyParam)
 	if err != nil {
-		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+		return nil, NewRPCError(InvalidSenderPrivateKeyError, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	//fmt.Printf("Done param #1: keyset: %+v\n", senderKeySet)
 
 	prvCoinID := &common.Hash{}
-	prvCoinID.SetBytes(common.PRVCoinID[:])
+	err = prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, NewRPCError(TokenIsInvalidError, err)
+	}
 	outCoins, err := httpServer.config.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
 	if err != nil {
-		return nil, NewRPCError(ErrGetOutputCoin, err)
+		return nil, NewRPCError(GetOutputCoinError, err)
 	}
 	// remove out coin in mem pool
 	outCoins, err = httpServer.filterMemPoolOutCoinsToSpent(outCoins)
 	if err != nil {
-		return nil, NewRPCError(ErrGetOutputCoin, err)
+		return nil, NewRPCError(GetOutputCoinError, err)
 	}
 
 	estimateFeeCoinPerKb := uint64(0)
@@ -338,7 +298,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		for paymentAddressStr, amount := range receiversPaymentAddressStrParam {
 			keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
 			if err != nil {
-				return nil, NewRPCError(ErrInvalidReceiverPaymentAddress, err)
+				return nil, NewRPCError(InvalidReceiverPaymentAddressError, err)
 			}
 			paymentInfo := &privacy.PaymentInfo{
 				Amount:         uint64(amount.(float64)),
@@ -353,8 +313,8 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		if len(arrayParams) > 4 {
 			// param #5: token params
 			tokenParamsRaw := arrayParams[4].(map[string]interface{})
-			privacy := tokenParamsRaw["Privacy"].(bool)
-			if !privacy {
+			isPrivacy := tokenParamsRaw["Privacy"].(bool)
+			if !isPrivacy {
 				// Check normal custom token param
 				customTokenParams, _, err = httpServer.buildCustomTokenParam(tokenParamsRaw, senderKeySet)
 				if err.(*RPCError) != nil {
@@ -383,12 +343,12 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	// all params
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 2 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Not enough params"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Not enough params"))
 	}
 	// param #1: estimation fee coin per kb from client
 	defaultFeeCoinPerKbTemp, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("defaultFeeCoinPerKbTemp is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("defaultFeeCoinPerKbTemp is invalid"))
 	}
 	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbTemp)
 
@@ -396,7 +356,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 	senderKeyParam := arrayParams[1]
 	senderKeySet, err := httpServer.GetKeySetFromKeyParams(senderKeyParam.(string))
 	if err != nil {
-		return nil, NewRPCError(ErrInvalidSenderPrivateKey, err)
+		return nil, NewRPCError(InvalidSenderPrivateKeyError, err)
 	}
 	lastByte := senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
 	shardIDSender := common.GetShardIDFromLastByte(lastByte)
@@ -413,7 +373,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 		tokenId, err = common.Hash{}.NewHashFromStr(arrayParams[3].(string))
 	}
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	estimateFeeCoinPerKb := httpServer.estimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId)
 
@@ -445,7 +405,7 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 	Logger.log.Debugf("handleGetStakingAmount params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) <= 0 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("ErrRPCInvalidParams"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("ErrRPCInvalidParams"))
 	}
 	stackingType := int(arrayParams[0].(float64))
 	amount := uint64(0)
@@ -466,9 +426,26 @@ func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeCha
 	for _, hash := range arrayParams {
 		temp, err := common.Hash{}.NewHashFromStr(hash.(string))
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, errors.New("Hash string is invalid"))
+			return nil, NewRPCError(UnexpectedError, errors.New("Hash string is invalid"))
 		}
 		result = append(result, common.Render(temp.GetBytes()))
 	}
 	return result, nil
+}
+
+// handleGetPublicKeyMining - return publickey mining which be used to verify block
+func (httpServer *HttpServer) handleGetPublicKeyMining(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	publicKey, keyType := httpServer.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	if publicKey != "" {
+		key := struct {
+			PublicKey string
+			KeyType   string
+		}{
+			PublicKey: publicKey,
+			KeyType:   keyType,
+		}
+		return key, nil
+	} else {
+		return nil, NewRPCError(UnexpectedError, errors.New("Can not find key"))
+	}
 }
