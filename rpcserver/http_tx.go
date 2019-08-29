@@ -1276,7 +1276,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
 	paramsArray := common.InterfaceSlice(params)
 	//var err error
-	if len(paramsArray) != 7 {
+	if len(paramsArray) != 9 {
 		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
 	}
 	//Get sender keyset
@@ -1304,25 +1304,25 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
 	}
 
+	// Get private seed, a.k.a mining key
+	privateSeed := paramsArray[6].(string)
+	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
+	if (err != nil) || (ver != common.ZeroByte) {
+		return nil, NewRPCError(UnexpectedError, errors.New("Decode privateseed failed!"))
+	}
+
 	//Get RewardReceiver Payment Address
-	rewardReceiverPaymentAddress, ok := paramsArray[6].(string)
+	rewardReceiverPaymentAddress, ok := paramsArray[7].(string)
 	if !ok {
 		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
 	}
 
 	//Get auto staking flag
-	autoReStaking, ok := paramsArray[7].(bool)
+	autoReStaking, ok := paramsArray[8].(bool)
 	if !ok {
 		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", paramsArray[7]))
 	}
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
-
-	// Get private seed, a.k.a mining key
-	privateSeed := paramsArray[8].(string)
-	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
-	if (err != nil) || (ver != common.ZeroByte) {
-		return nil, NewRPCError(UnexpectedError, errors.New("Decode privateseed failed!"))
-	}
 
 	// Get candidate publickey
 	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
