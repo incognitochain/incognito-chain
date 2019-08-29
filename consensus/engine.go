@@ -145,7 +145,13 @@ func (engine *Engine) Start() error {
 						}
 					}
 				}
-				engine.config.Node.UpdateConsensusState(userLayer, publicKey, nil, beaconCommittee, shardCommittee)
+				if userLayer == common.SHARD_ROLE {
+					shardID := getShardFromChainName(engine.CurrentMiningChain)
+					engine.config.Node.UpdateConsensusState(userLayer, publicKey, &shardID, beaconCommittee, shardCommittee)
+				} else {
+					engine.config.Node.UpdateConsensusState(userLayer, publicKey, nil, beaconCommittee, shardCommittee)
+				}
+
 			}
 		}
 	}()

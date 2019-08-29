@@ -535,7 +535,11 @@ func (synker *Synker) UpdateState() {
 		shardCommittee[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, beaconStateClone.ShardConsensusAlgorithm[shardID])
 	}
 
-	synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, nil, beaconCommittee, shardCommittee)
+	if userRole == common.SHARD_ROLE {
+		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, &userShardID, beaconCommittee, shardCommittee)
+	} else {
+		synker.blockchain.config.Server.UpdateConsensusState(userLayer, userMiningKey, nil, beaconCommittee, shardCommittee)
+	}
 
 	if userLayer == common.SHARD_ROLE {
 		for shardID, shard := range synker.blockchain.BestState.Beacon.LastCrossShardState {
