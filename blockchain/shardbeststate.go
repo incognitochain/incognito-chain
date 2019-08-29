@@ -38,7 +38,6 @@ type ShardBestState struct {
 	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
 	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
 	StakingTx              map[string]string                 `json:"StakingTx"`
-	StopAutoStakingRequest map[string]string                 `json:"StopAutoStakingRequest"`
 	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
 	TotalTxns              uint64                            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
@@ -78,7 +77,6 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState
 	bestStateShard.ActiveShards = netparam.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 	bestStateShard.StakingTx = make(map[string]string)
-	bestStateShard.StopAutoStakingRequest = make(map[string]string)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
 	bestStateShard.BlockInterval = netparam.MinBeaconBlockInterval
@@ -157,16 +155,6 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 	sort.Strings(keystr)
 	for _, key := range keystr {
 		value := shardBestState.StakingTx[key]
-		res = append(res, []byte(key)...)
-		res = append(res, []byte(value)...)
-	}
-	keystr2 := []string{}
-	for _, k := range shardBestState.StopAutoStakingRequest {
-		keystr2 = append(keystr2, k)
-	}
-	sort.Strings(keystr2)
-	for _, key := range keystr2 {
-		value := shardBestState.StopAutoStakingRequest[key]
 		res = append(res, []byte(key)...)
 		res = append(res, []byte(value)...)
 	}
@@ -279,15 +267,6 @@ func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
 	defer shardBestState.lock.RUnlock()
 	m := make(map[string]string)
 	for k, v := range shardBestState.StakingTx {
-		m[k] = v
-	}
-	return m
-}
-func (shardBestState *ShardBestState) GetStopStakingRequest() map[string]string {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
-	m := make(map[string]string)
-	for k, v := range shardBestState.StopAutoStakingRequest {
 		m[k] = v
 	}
 	return m

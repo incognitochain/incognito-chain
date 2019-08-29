@@ -210,10 +210,6 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(StakingTxHashError, err)
 	}
-	stopAutoStakingRequestRoot, err := generateHashFromMapStringString(shardBestState.StopAutoStakingRequest)
-	if err != nil {
-		return nil, NewBlockChainError(StopAutoStakingRequestHashError, err)
-	}
 	// Instruction merkle root
 	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
 	if err != nil {
@@ -235,7 +231,6 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	newShardBlock.Header.CommitteeRoot = committeeRoot
 	newShardBlock.Header.PendingValidatorRoot = pendingValidatorRoot
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
-	newShardBlock.Header.StopAutoStakingRequestRoot = stopAutoStakingRequestRoot
 	newShardBlock.Header.Timestamp = time.Now().Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	return newShardBlock, nil
