@@ -63,22 +63,22 @@ func makeRPCRequest(client *Client, method string, params ...interface{}) (*rpcs
 	}
 	requestBytes, err := json.Marshal(&request)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	resp, err := http.Post(client.host+":"+client.port, "application/json", bytes.NewBuffer(requestBytes))
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	body := resp.Body
 	defer body.Close()
 	responseBytes, err := ioutil.ReadAll(body)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	response := rpcserver.JsonResponse{}
 	err = json.Unmarshal(responseBytes, &response)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	return &response, nil
 }
@@ -92,26 +92,26 @@ func makeRPCRequestJson(client *Client, method string, params ...interface{}) (i
 	}
 	requestBytes, err := json.Marshal(&request)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	resp, err := http.Post("http://"+client.host+":"+client.port, "application/json", bytes.NewBuffer(requestBytes))
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	body := resp.Body
 	defer body.Close()
 	responseBytes, err := ioutil.ReadAll(body)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	response := rpcserver.JsonResponse{}
 	err = json.Unmarshal(responseBytes, &response)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	result := parseResult(response.Result)
 	if result == nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ParseFailedError)
+		return result, rpcserver.NewRPCError(rpcserver.NetworkError, ParseFailedError)
 	}
 	return result, response.Error
 }
@@ -132,7 +132,7 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	}
 	subcriptionBytes, err := json.Marshal(&subcription)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	var addr string
 	if flag.Lookup("address:"+client.host+client.ws) != nil {
@@ -144,12 +144,12 @@ func makeWsRequest(client *Client, method string, timeout time.Duration, params 
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dial:", err)
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	defer conn.Close()
 	err = conn.WriteMessage(websocket.BinaryMessage, subcriptionBytes)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	responseBytes := []byte{}
 	go func() {
@@ -181,21 +181,21 @@ loop:
 		}
 	}
 	if wsError != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, wsError)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, wsError)
 	}
 	response := rpcserver.JsonResponse{}
 	err = json.Unmarshal(responseBytes, &response)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	subResult := rpcserver.SubcriptionResult{}
 	err = json.Unmarshal(response.Result, &subResult)
 	if err != nil {
-		return nil, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return nil, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	result := parseResult(subResult.Result)
 	if result == nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, ParseFailedError)
+		return result, rpcserver.NewRPCError(rpcserver.NetworkError, ParseFailedError)
 	}
 	return result, response.Error
 }
