@@ -43,6 +43,7 @@ type BeaconBestState struct {
 	CandidateBeaconWaitingForNextRandom    []incognitokey.CommitteePublicKey          `json:"CandidateBeaconWaitingForNextRandom"`
 	ShardCommittee                         map[byte][]incognitokey.CommitteePublicKey `json:"ShardCommittee"`        // current committee and validator of all shard
 	ShardPendingValidator                  map[byte][]incognitokey.CommitteePublicKey `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
+	AutoStaking                            map[string]bool                            `json:"AutoStaking"`
 	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                                      `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                                       `json:"IsGetRandomNumber"`
@@ -90,6 +91,7 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 	beaconBestState.RewardReceiver = make(map[string]string)
 	beaconBestState.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	beaconBestState.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
+	beaconBestState.AutoStaking = make(map[string]bool)
 	beaconBestState.Params = make(map[string]string)
 	beaconBestState.CurrentRandomNumber = -1
 	beaconBestState.MaxBeaconCommitteeSize = netparam.MaxBeaconCommitteeSize
@@ -385,7 +387,18 @@ func (beaconBestState *BeaconBestState) GetBytes() []byte {
 			res = append(res, valueBytes...)
 		}
 	}
-
+	keysStrs2 := []string{}
+	for k := range beaconBestState.AutoStaking {
+		keysStrs2 = append(keysStrs2, k)
+	}
+	sort.Strings(keysStrs2)
+	for _, key := range keysStrs2 {
+		if beaconBestState.AutoStaking[key] {
+			res = append(res, []byte("true")...)
+		} else {
+			res = append(res, []byte("false")...)
+		}
+	}
 	randomNumBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(randomNumBytes, uint64(beaconBestState.CurrentRandomNumber))
 	res = append(res, randomNumBytes...)
@@ -549,4 +562,14 @@ func (beaconBestState *BeaconBestState) UpdateLastCrossShardState(shardStates ma
 	beaconBestState.lock.Lock()
 	defer beaconBestState.lock.Unlock()
 	beaconBestState.updateLastCrossShardState(shardStates)
+}
+
+func (beaconBestState *BeaconBestState) GetAutoStakingList() map[string]bool {
+	beaconBestState.lock.RLock()
+	defer beaconBestState.lock.RUnlock()
+	m := make(map[string]bool)
+	for k, v := range beaconBestState.AutoStaking {
+		m[k] = v
+	}
+	return m
 }

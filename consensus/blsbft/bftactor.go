@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -56,21 +57,22 @@ func (e *BLSBFT) GetConsensusName() string {
 	return CONSENSUSNAME
 }
 
-func (e *BLSBFT) Stop() {
+func (e *BLSBFT) Stop() error {
 	if e.isStarted {
 		select {
 		case <-e.StopCh:
-			return
+			return nil
 		default:
 			close(e.StopCh)
 		}
 		e.isStarted = false
 	}
+	return consensus.NewConsensusError(consensus.ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
 }
 
-func (e *BLSBFT) Start() {
+func (e *BLSBFT) Start() error {
 	if e.isStarted {
-		return
+		return consensus.NewConsensusError(consensus.ConsensusAlreadyStartedError, errors.New(e.ChainKey))
 	}
 	e.isStarted = true
 	e.isOngoing = false
@@ -192,9 +194,10 @@ func (e *BLSBFT) Start() {
 
 						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
-							fmt.Println(e.RoundData.Block.GetValidationField())
 							fmt.Print("\n")
-							fmt.Println(e.RoundData.Committee)
+							e.logger.Critical(e.RoundData.Block.GetValidationField())
+							fmt.Print("\n")
+							e.logger.Critical(e.RoundData.Committee)
 							fmt.Print("\n")
 							for _, member := range e.RoundData.Committee {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
@@ -216,6 +219,7 @@ func (e *BLSBFT) Start() {
 			}
 		}
 	}()
+	return nil
 }
 
 func (e *BLSBFT) enterProposePhase() {
@@ -267,7 +271,6 @@ func (e *BLSBFT) enterVotePhase() {
 func (e *BLSBFT) enterNewRound() {
 	//if chain is not ready,  return
 	if !e.Chain.IsReady() {
-		fmt.Println("BLSBFT", "not ready", e.ChainKey)
 		e.RoundData.State = ""
 		return
 	}

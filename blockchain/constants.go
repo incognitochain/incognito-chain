@@ -153,11 +153,12 @@ func init() {
 // -------------- FOR INSTRUCTION --------------
 // Action for instruction
 const (
-	SetAction    = "set"
-	SwapAction   = "swap"
-	RandomAction = "random"
-	StakeAction  = "stake"
-	AssignAction = "assign"
+	SetAction     = "set"
+	SwapAction    = "swap"
+	RandomAction  = "random"
+	StakeAction   = "stake"
+	AssignAction  = "assign"
+	StopAutoStake = "stopautostake"
 )
 
 // ---------------------------------------------
