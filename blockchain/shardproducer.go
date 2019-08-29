@@ -210,10 +210,6 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(StakingTxHashError, err)
 	}
-	stopAutoStakingRequestRoot, err := generateHashFromMapStringString(shardBestState.StopAutoStakingRequest)
-	if err != nil {
-		return nil, NewBlockChainError(StopAutoStakingRequestHashError, err)
-	}
 	// Instruction merkle root
 	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
 	if err != nil {
@@ -235,7 +231,6 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	newShardBlock.Header.CommitteeRoot = committeeRoot
 	newShardBlock.Header.PendingValidatorRoot = pendingValidatorRoot
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
-	newShardBlock.Header.StopAutoStakingRequestRoot = stopAutoStakingRequestRoot
 	newShardBlock.Header.Timestamp = time.Now().Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	return newShardBlock, nil
@@ -300,12 +295,19 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
 func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
 	responsedTxs := []metadata.Transaction{}
+	allCommitteeValidatorCandidateFlattenList, err := blockGenerator.chain.GetAllCommitteeValidatorCandidateFlattenList()
+	if err != nil {
+		return []metadata.Transaction{}, NewBlockChainError(FetchAllCommitteeValidatorCandidateError, err)
+	}
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
-				for _, v := range strings.Split(l[2], ",") {
-					//TODO: check for restaking
-					tx, err := blockGenerator.buildReturnStakingAmountTx(v, producerPrivateKey)
+				for _, outPublicKeys := range strings.Split(l[2], ",") {
+					// If out public key has auto staking then ignore this public key
+					if common.IndexOfStr(outPublicKeys, allCommitteeValidatorCandidateFlattenList) > -1 {
+						continue
+					}
+					tx, err := blockGenerator.buildReturnStakingAmountTx(outPublicKeys, producerPrivateKey)
 					if err != nil {
 						Logger.log.Error(err)
 						continue
