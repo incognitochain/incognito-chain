@@ -17,7 +17,7 @@ type StopAutoStakingMetadata struct {
 	CommitteePublicKey string
 }
 
-func NewStopStakingMetadata(stopStakingType int, committeePublicKey string) (*StopAutoStakingMetadata, error) {
+func NewStopAutoStakingMetadata(stopStakingType int, committeePublicKey string) (*StopAutoStakingMetadata, error) {
 	if stopStakingType != StopAutoStakingMeta {
 		return nil, errors.New("invalid stop staking type")
 	}

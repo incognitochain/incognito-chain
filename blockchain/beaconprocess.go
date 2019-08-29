@@ -829,7 +829,6 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 			return NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect Beacon Candidate (length %+v) and Beacon Reward Receiver (length %+v) and Shard Auto ReStaking (length %+v) have equal length", len(shardCandidates), len(shardRewardReceivers), len(shardAutoReStaking))), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 		}
 		for index, candidate := range shardCandidatesStructs {
-			//TODO: check key
 			beaconBestState.RewardReceiver[candidate.GetIncKeyBase58()] = shardRewardReceivers[index]
 			if shardAutoReStaking[index] == "true" {
 				beaconBestState.AutoStaking[shardCandidates[index]] = true
