@@ -1265,20 +1265,20 @@ func (_m *DatabaseInterface) HasIncomingCrossShard(shardID byte, crossShardID by
 	return r0
 }
 
-// HasSNDerivator provides a mock function with given fields: tokenID, data, shardID
-func (_m *DatabaseInterface) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error) {
-	ret := _m.Called(tokenID, data, shardID)
+// HasSNDerivator provides a mock function with given fields: tokenID, data
+func (_m *DatabaseInterface) HasSNDerivator(tokenID common.Hash, data []byte) (bool, error) {
+	ret := _m.Called(tokenID, data)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(common.Hash, []byte, byte) bool); ok {
-		r0 = rf(tokenID, data, shardID)
+	if rf, ok := ret.Get(0).(func(common.Hash, []byte) bool); ok {
+		r0 = rf(tokenID, data)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Hash, []byte, byte) error); ok {
-		r1 = rf(tokenID, data, shardID)
+	if rf, ok := ret.Get(1).(func(common.Hash, []byte) error); ok {
+		r1 = rf(tokenID, data)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1508,6 +1508,29 @@ func (_m *DatabaseInterface) ListPrivacyTokenCrossShard() ([][]byte, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ListSNDerivator provides a mock function with given fields: tokenID
+func (_m *DatabaseInterface) ListSNDerivator(tokenID common.Hash) ([][]byte, error) {
+	ret := _m.Called(tokenID)
+
+	var r0 [][]byte
+	if rf, ok := ret.Get(0).(func(common.Hash) [][]byte); ok {
+		r0 = rf(tokenID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([][]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
+		r1 = rf(tokenID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -2004,13 +2027,13 @@ func (_m *DatabaseInterface) StoreRewardReceiverByHeight(_a0 uint64, _a1 interfa
 	return r0
 }
 
-// StoreSNDerivators provides a mock function with given fields: tokenID, sndArray, shardID
-func (_m *DatabaseInterface) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID byte) error {
-	ret := _m.Called(tokenID, sndArray, shardID)
+// StoreSNDerivators provides a mock function with given fields: tokenID, sndArray
+func (_m *DatabaseInterface) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte) error {
+	ret := _m.Called(tokenID, sndArray)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(common.Hash, [][]byte, byte) error); ok {
-		r0 = rf(tokenID, sndArray, shardID)
+	if rf, ok := ret.Get(0).(func(common.Hash, [][]byte) error); ok {
+		r0 = rf(tokenID, sndArray)
 	} else {
 		r0 = ret.Error(0)
 	}
