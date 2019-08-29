@@ -79,6 +79,7 @@ func (engine *Engine) watchConsensusCommittee() {
 			if engine.config.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) != -1 {
 				if engine.CurrentMiningChain != chainName {
 					engine.CurrentMiningChain = chainName
+					panic("Yoesssss")
 				}
 			}
 		}
