@@ -70,12 +70,13 @@ func (engine *Engine) watchConsensusCommittee() {
 		select {
 		case <-engine.cQuit:
 		case chainName := <-engine.chainCommitteeChange:
+			Logger.log.Critical("chain committee change", chainName)
 			consensusType := engine.config.Blockchain.Chains[chainName].GetConsensusType()
 			userPublicKey, ok := engine.userMiningPublicKeys[consensusType]
 			if !ok {
 				continue
 			}
-			if engine.config.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) > 0 {
+			if engine.config.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) != -1 {
 				if engine.CurrentMiningChain != chainName {
 					engine.CurrentMiningChain = chainName
 				}
@@ -102,10 +103,17 @@ func (engine *Engine) Start() error {
 				time.Sleep(time.Millisecond * 1000)
 
 				for chainName, consensus := range engine.ChainConsensusList {
+					Logger.log.Critical("current mining chain", chainName)
 					if chainName == engine.CurrentMiningChain {
-						consensus.Start()
+						err := consensus.Start()
+						if err != nil {
+							Logger.log.Critical(err)
+						}
 					} else {
-						consensus.Stop()
+						err := consensus.Stop()
+						if err != nil {
+							Logger.log.Critical(err)
+						}
 					}
 				}
 				userLayer := ""
