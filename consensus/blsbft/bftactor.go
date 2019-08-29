@@ -116,19 +116,21 @@ func (e *BLSBFT) Start() error {
 					//validate single sig
 					if e.RoundData.Block != nil {
 						validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
-						if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
-							e.logger.Error(err)
-							continue
-						}
-						if len(voteMsg.Vote.BRI) != 0 {
-							if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BRI_CONSENSUS]); err != nil {
+						if validatorIdx != -1 {
+							if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
 								e.logger.Error(err)
 								continue
 							}
+							if len(voteMsg.Vote.BRI) != 0 {
+								if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BRI_CONSENSUS]); err != nil {
+									e.logger.Error(err)
+									continue
+								}
+							}
+							e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
+							e.logger.Warn("vote added...")
+							continue
 						}
-						e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
-						e.logger.Warn("vote added...")
-						continue
 					}
 				}
 				if _, ok := e.EarlyVotes[voteMsg.RoundKey]; !ok {
@@ -209,6 +211,7 @@ func (e *BLSBFT) Start() error {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
 							}
 							e.logger.Critical(err)
+							panic(err)
 							time.Sleep(1 * time.Second)
 							return
 						}
