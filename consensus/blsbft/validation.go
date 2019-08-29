@@ -144,7 +144,7 @@ func validateSingleBLSSig(
 		return err
 	}
 	if !result {
-		return errors.New("invalid Signature")
+		return errors.New("invalid BLS Signature")
 	}
 	return nil
 }
@@ -159,7 +159,7 @@ func validateSingleBriSig(
 		return err
 	}
 	if !result {
-		return errors.New("invalid Signature")
+		return errors.New("invali BRI Signature")
 	}
 	return nil
 }
