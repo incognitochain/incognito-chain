@@ -92,15 +92,17 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 	if len(inst) < 8 {
 		return nil, errors.New("invalid length of BurningConfirm inst")
 	}
-	metaType := []byte(inst[0])
-	shardID := []byte(inst[1])
+	m, errMeta := strconv.Atoi(inst[0])
+	s, errShard := strconv.Atoi(inst[1])
+	metaType := byte(m)
+	shardID := byte(s)
 	tokenID, _, errToken := base58.Base58Check{}.Decode(inst[2])
 	remoteAddr, errAddr := decodeRemoteAddr(inst[3])
 	amount, _, errAmount := base58.Base58Check{}.Decode(inst[4])
 	txID, errTx := common.Hash{}.NewHashFromStr(inst[5])
 	incTokenID, _, errIncToken := base58.Base58Check{}.Decode(inst[6])
 	height, _, errHeight := base58.Base58Check{}.Decode(inst[7])
-	if err := common.CheckError(errToken, errAddr, errAmount, errTx, errIncToken, errHeight); err != nil {
+	if err := common.CheckError(errMeta, errShard, errToken, errAddr, errAmount, errTx, errIncToken, errHeight); err != nil {
 		err = errors.Wrapf(err, "inst: %+v", inst)
 		BLogger.log.Error(err)
 		return nil, err
@@ -108,8 +110,8 @@ func decodeBurningConfirmInst(inst []string) ([]byte, error) {
 
 	BLogger.log.Infof("Decoded BurningConfirm inst, amount: %d, remoteAddr: %x, tokenID: %x", big.NewInt(0).SetBytes(amount), remoteAddr, tokenID)
 	flatten := []byte{}
-	flatten = append(flatten, metaType...)
-	flatten = append(flatten, shardID...)
+	flatten = append(flatten, metaType)
+	flatten = append(flatten, shardID)
 	flatten = append(flatten, toBytes32BigEndian(tokenID)...)
 	flatten = append(flatten, remoteAddr...)
 	flatten = append(flatten, toBytes32BigEndian(amount)...)
