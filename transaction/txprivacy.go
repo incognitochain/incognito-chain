@@ -231,7 +231,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			sndOut = privacy.RandScalar()
 			for {
 
-				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, shardID, params.db)
+				ok1, err := CheckSNDerivatorExistence(params.tokenID, sndOut, params.db)
 				if err != nil {
 					Logger.log.Error(err)
 				}
@@ -487,7 +487,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
 			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), shardID, db); ok || err != nil {
+			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
 				if err != nil {
 					Logger.log.Error(err)
 				}
@@ -659,6 +659,12 @@ func (tx Tx) IsSalaryTx() bool {
 
 func (tx Tx) GetSender() []byte {
 	if tx.Proof == nil || len(tx.Proof.GetInputCoins()) == 0 {
+		return nil
+	}
+	if tx.IsPrivacy() {
+		return nil
+	}
+	if len(tx.Proof.GetInputCoins()) == 0 || tx.Proof.GetInputCoins()[0].CoinDetails == nil {
 		return nil
 	}
 	return tx.Proof.GetInputCoins()[0].CoinDetails.GetPublicKey().Compress()
@@ -1154,14 +1160,12 @@ func (tx *Tx) InitTxSalary(
 
 	sndOut := privacy.RandScalar()
 	for {
-		lastByte := receiverAddr.Pk[len(receiverAddr.Pk)-1]
-		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 		tokenID := &common.Hash{}
 		err := tokenID.SetBytes(common.PRVCoinID[:])
 		if err != nil {
 			return NewTransactionErr(TokenIDInvalidError, err)
 		}
-		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, shardIDSender, db)
+		ok, err := CheckSNDerivatorExistence(tokenID, sndOut, db)
 		if err != nil {
 			return NewTransactionErr(SndExistedError, err)
 		}
@@ -1213,14 +1217,12 @@ func (tx Tx) ValidateTxSalary(
 	}
 
 	// check whether output coin's input exists in input list or not
-	lastByte := tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey().Compress()[len(tx.Proof.GetOutputCoins()[0].CoinDetails.GetPublicKey().Compress())-1]
-	shardIDSender := common.GetShardIDFromLastByte(lastByte)
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, NewTransactionErr(TokenIDInvalidError, err)
 	}
-	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), shardIDSender, db); ok || err != nil {
+	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), db); ok || err != nil {
 		return false, err
 	}
 

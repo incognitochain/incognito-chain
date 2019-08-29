@@ -377,9 +377,8 @@ func (db *db) CleanCommitments() error {
 }
 
 // StoreSNDerivators - store list serialNumbers by shardID
-func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID byte) error {
+func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte) error {
 	key := addPrefixToKeyHash(string(snderivatorsPrefix), tokenID)
-	key = append(key, shardID)
 
 	// "snderivator-data:nil"
 	batchData := []database.BatchData{}
@@ -402,16 +401,30 @@ func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID 
 }
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by shardID
-func (db *db) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error) {
+func (db *db) HasSNDerivator(tokenID common.Hash, data []byte) (bool, error) {
 	key := addPrefixToKeyHash(string(snderivatorsPrefix), tokenID)
-	key = append(key, shardID)
 	keySpec := append(key, data...)
 	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, database.NewDatabaseError(database.HasSNDerivatorError, err, data, shardID, tokenID)
+		return false, database.NewDatabaseError(database.HasSNDerivatorError, err, data, -1, tokenID)
 	} else {
 		return hasValue, nil
 	}
+}
+
+func (db *db) ListSNDerivator(tokenID common.Hash) ([][]byte, error) {
+	result := make([][]byte, 0)
+	key := addPrefixToKeyHash(string(snderivatorsPrefix), tokenID)
+
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iterator.Next() {
+		key1 := make([]byte, len(iterator.Key()))
+		copy(key1, iterator.Key())
+
+		sndInByte := key1[len(key)-1:]
+		result = append(result, sndInByte)
+	}
+	return result, nil
 }
 
 // CleanCommitments - clear all list commitments in DB
