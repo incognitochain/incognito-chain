@@ -1023,13 +1023,13 @@ func (serverObj *Server) OnVersion(peerConn *peer.PeerConn, msg *wire.MessageVer
 		}
 	}
 
+	peerConn.GetRemotePeer().SetPublicKey(pbk, pbkType)
+
 	remotePeer := &peer.Peer{}
 	remotePeer.SetListeningAddress(msg.LocalAddress)
 	remotePeer.SetPeerID(msg.LocalPeerId)
 	remotePeer.SetRawAddress(msg.RawLocalAddress)
 	remotePeer.SetPublicKey(pbk, pbkType)
-	peerConn.SetRemotePeer(remotePeer)
-
 	serverObj.cNewPeers <- remotePeer
 	valid := false
 	if msg.ProtocolVersion == serverObj.protocolVersion {

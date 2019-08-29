@@ -444,13 +444,13 @@ func (peerObj *Peer) setPeerConn(peerConn *PeerConn) {
 	peerObj.peerConnsMtx.Lock()
 	defer peerObj.peerConnsMtx.Unlock()
 	peerIDStr := peerConn.remotePeer.peerID.Pretty()
-	internalConnPeer, ok := peerObj.peerConns[peerIDStr]
-	if ok {
-		if internalConnPeer.getIsConnected() {
-			internalConnPeer.close()
-		}
-		Logger.log.Debugf("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.remotePeer.rawAddress)
-	}
+	//internalConnPeer, ok := peerObj.peerConns[peerIDStr]
+	//if ok {
+	//	//if internalConnPeer.getIsConnected() {
+	//	//	internalConnPeer.close()
+	//	//}
+	//	Logger.log.Debugf("SetPeerConn and Remove %s %s", peerIDStr, internalConnPeer.remotePeer.rawAddress)
+	//}
 	peerObj.peerConns[peerIDStr] = peerConn
 }
 
@@ -620,7 +620,8 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		isOutbound:   false, // we are connected from remote peer -> this is an inbound peer
 		listenerPeer: peerObj,
 		remotePeer: &Peer{
-			peerID: remotePeerID,
+			peerID:     remotePeerID,
+			rawAddress: stream.Conn().RemoteMultiaddr().String(),
 		},
 		config:             peerConfig,
 		remotePeerID:       remotePeerID,
