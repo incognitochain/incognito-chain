@@ -42,7 +42,7 @@ func (stopAutoStakingMetadata *StopAutoStakingMetadata) ValidateMetadataByItself
 }
 
 /*
-	Validate Condition to Request Stop AutoRestaking With Blockchain
+	Validate Condition to Request Stop AutoStaking With Blockchain
 	- Requested Committee Publickey is in candidate, pending validator,
 	- Requested Committee Publickey is in staking tx list,
 	- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
@@ -51,7 +51,7 @@ func (stopAutoStakingMetadata *StopAutoStakingMetadata) ValidateMetadataByItself
 func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(txr Transaction, bcr BlockchainRetriever, shardID byte, db database.DatabaseInterface) (bool, error) {
 	stopStakingMetadata, ok := txr.GetMetadata().(*StopAutoStakingMetadata)
 	if !ok {
-		return false, NewMetadataTxError(StopAutoStakingTypeAssertionError, fmt.Errorf("Expect *StopAutoStakingMetadata type but get %+v", reflect.TypeOf(txr.GetMetadata())))
+		return false, NewMetadataTxError(StopAutoStakingRequestTypeAssertionError, fmt.Errorf("Expect *StopAutoStakingMetadata type but get %+v", reflect.TypeOf(txr.GetMetadata())))
 	}
 	requestedPublicKey := stopStakingMetadata.CommitteePublicKey
 	committees, err := bcr.GetAllCommitteeValidatorCandidateFlattenList()
@@ -78,9 +78,13 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 			return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSender(), txr.GetSender()))
 		}
 	}
-	stopStakingRequest := bcr.GetStopAutoStakingRequest(shardID)
-	if _, ok := stopStakingRequest[stopStakingMetadata.CommitteePublicKey]; ok {
-		return false, NewMetadataTxError(StopAutoStakingRequestExistError, fmt.Errorf("Committe Publickey %+v already request stop auto re-staking", stopStakingMetadata.CommitteePublicKey))
+	autoStakingList := bcr.GetAutoStakingList()
+	if isAutoStaking, ok := autoStakingList[stopStakingMetadata.CommitteePublicKey]; !ok {
+		return false, NewMetadataTxError(StopAutoStakingRequestNoAutoStakingAvaiableError, fmt.Errorf("Committe Publickey %+v already request stop auto re-staking", stopStakingMetadata.CommitteePublicKey))
+	} else {
+		if !isAutoStaking {
+			return false, NewMetadataTxError(StopAutoStakingRequestAlreadyStopError, fmt.Errorf("Auto Staking for Committee Public Key %+v already stop", stopAutoStakingMetadata.CommitteePublicKey))
+		}
 	}
 	return true, nil
 }

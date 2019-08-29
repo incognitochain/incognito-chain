@@ -44,7 +44,8 @@ func NewGetAllConnectedPeersResult(connMgr connmanager.ConnManager) *GetAllConne
 	for _, peerConn := range listeningPeer.GetPeerConns() {
 		pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
 		peerItem := map[string]string{
-			"RawAddress":    peerConn.GetRemotePeer().GetRawAddress(),
+			"PeerID":        peerConn.GetRemotePeer().GetPeerID().Pretty(),
+			"RawAddress1":   peerConn.GetRemotePeer().GetRawAddress(),
 			"PublicKey":     pk,
 			"PublicKeyType": pkT,
 			"NodeType":      "",
