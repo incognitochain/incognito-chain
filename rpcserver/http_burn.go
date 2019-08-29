@@ -17,7 +17,7 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	listParams := params.([]interface{})
 	txID, err := common.Hash{}.NewHashFromStr(listParams[0].(string))
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
 
 	bc := httpServer.config.BlockChain
@@ -26,25 +26,25 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	// Get block height from txID
 	height, err := db.GetBurningConfirm(*txID)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, fmt.Errorf("proof of tx not found"))
+		return nil, NewRPCError(UnexpectedError, fmt.Errorf("proof of tx not found"))
 	}
 
 	// Get bridge block and corresponding beacon blocks
 	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, bc, db)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	// Get proof of instruction on bridge
 	bridgeInstProof, err := getBurnProofOnBridge(txID, bridgeBlock, db, httpServer.config.ConsensusEngine)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	// Get proof of instruction on beacon
 	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db, httpServer.config.ConsensusEngine)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client

@@ -166,6 +166,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		TotalTxsFee:       totalTxsFee,
 		ConsensusType:     blockGenerator.chain.BestState.Shard[shardID].ConsensusAlgorithm,
 	}
+	//============Update Shard BestState=============
 	if err := shardBestState.updateShardBestState(blockGenerator.chain, newShardBlock, beaconBlocks); err != nil {
 		return nil, err
 	}
@@ -198,7 +199,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	tempShardCommitteePubKeys := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
 	committeeRoot, err := generateHashFromStringArray(tempShardCommitteePubKeys)
 	if err != nil {
-		return nil, NewBlockChainError(CommitteeRootError, err)
+		return nil, NewBlockChainError(CommitteeHashError, err)
 	}
 	tempShardPendintValidator := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
 	pendingValidatorRoot, err := generateHashFromStringArray(tempShardPendintValidator)
@@ -207,7 +208,11 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	}
 	stakingTxRoot, err := generateHashFromMapStringString(shardBestState.StakingTx)
 	if err != nil {
-		return nil, NewBlockChainError(StakingTxRootError, err)
+		return nil, NewBlockChainError(StakingTxHashError, err)
+	}
+	stopAutoStakingRequestRoot, err := generateHashFromMapStringString(shardBestState.StopAutoStakingRequest)
+	if err != nil {
+		return nil, NewBlockChainError(StopAutoStakingRequestHashError, err)
 	}
 	// Instruction merkle root
 	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
@@ -230,6 +235,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	newShardBlock.Header.CommitteeRoot = committeeRoot
 	newShardBlock.Header.PendingValidatorRoot = pendingValidatorRoot
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
+	newShardBlock.Header.StopAutoStakingRequestRoot = stopAutoStakingRequestRoot
 	newShardBlock.Header.Timestamp = time.Now().Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 	return newShardBlock, nil
@@ -298,6 +304,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == SwapAction {
 				for _, v := range strings.Split(l[2], ",") {
+					//TODO: check for restaking
 					tx, err := blockGenerator.buildReturnStakingAmountTx(v, producerPrivateKey)
 					if err != nil {
 						Logger.log.Error(err)
@@ -347,8 +354,8 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	- Assign Instruction: get more pending validator from beacon and return new list of pending validator
 	+ ["assign" "shardCandidate1,shardCandidate2,..." "shard" "{shardID}"]
 	- stake instruction
-	+ ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
-	+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..."]
+	+ ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
+	+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
 */
 func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) ([]string, map[string]string) {
 	shardPendingValidator := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)

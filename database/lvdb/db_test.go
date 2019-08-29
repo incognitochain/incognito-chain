@@ -546,10 +546,10 @@ func TestDb_StoreSNDerivators(t *testing.T) {
 		snd = append(snd, snd2)
 		tokenID := common.Hash{}
 
-		err := db.StoreSNDerivators(tokenID, snd, 1)
+		err := db.StoreSNDerivators(tokenID, snd)
 		assert.Equal(t, err, nil)
 
-		has, err := db.HasSNDerivator(tokenID, snd1, 1)
+		has, err := db.HasSNDerivator(tokenID, snd1)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, true, has)
 
