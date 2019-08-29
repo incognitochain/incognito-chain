@@ -391,6 +391,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 						if txShardID != shardID {
 							continue
 						}
+						// if transaction belong to this shard then add to shard beststate
 						stakingTx[newBeaconCandidates[i]] = v
 					}
 				}
@@ -412,6 +413,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 						if txShardID != shardID {
 							continue
 						}
+						// if transaction belong to this shard then add to shard beststate
 						stakingTx[newShardCandidates[i]] = v
 					}
 				}
