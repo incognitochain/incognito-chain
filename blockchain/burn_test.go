@@ -196,7 +196,7 @@ func TestDecodeInstruction(t *testing.T) {
 			desc: "Valid BurningConfirm inst",
 			inst: setupBurningConfirmInst(123, incToken[:]),
 			err:  false,
-			leng: 195,
+			leng: 194,
 		},
 	}
 
@@ -249,8 +249,8 @@ func TestDecodeBurningConfirmInst(t *testing.T) {
 			inst: setupBurningConfirmInst(123, incToken[:]),
 			err:  false,
 			out: &confirm{
-				meta:   []byte{byte('7'), byte('2')},
-				shard:  byte('1'),
+				meta:   72,
+				shard:  1,
 				token:  token,
 				addr:   addr,
 				amount: 2000,
@@ -278,7 +278,7 @@ func TestDecodeBurningConfirmInst(t *testing.T) {
 }
 
 type confirm struct {
-	meta   []byte
+	meta   byte
 	shard  byte
 	token  []byte
 	addr   []byte
@@ -289,7 +289,7 @@ type confirm struct {
 }
 
 func checkDecodedBurningConfirmInst(t *testing.T, a, e *confirm) {
-	if !bytes.Equal(a.meta, e.meta) {
+	if a.meta != e.meta {
 		t.Errorf("%+v", errors.Errorf("expect meta = %v, got %v", e.meta, a.meta))
 	}
 	if a.shard != e.shard {
@@ -317,14 +317,14 @@ func checkDecodedBurningConfirmInst(t *testing.T, a, e *confirm) {
 
 func parseBurningConfirmInst(inst []byte) *confirm {
 	return &confirm{
-		meta:   inst[0:2],
-		shard:  inst[2],
-		token:  inst[3:35],
-		addr:   inst[35:67],
-		amount: big.NewInt(0).SetBytes(inst[67:99]).Uint64(),
-		txid:   inst[99:131],
-		inc:    inst[131:163],
-		height: big.NewInt(0).SetBytes(inst[163:195]).Uint64(),
+		meta:   inst[0],
+		shard:  inst[1],
+		token:  inst[2:34],
+		addr:   inst[34:66],
+		amount: big.NewInt(0).SetBytes(inst[66:98]).Uint64(),
+		txid:   inst[98:130],
+		inc:    inst[130:162],
+		height: big.NewInt(0).SetBytes(inst[162:194]).Uint64(),
 	}
 }
 
