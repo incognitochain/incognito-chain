@@ -1416,7 +1416,6 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 
 	// ValidateTransaction Public Key from ProducerPrvKey
 	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
-	time.Sleep(5 * time.Second)
 	signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
