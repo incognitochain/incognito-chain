@@ -26,10 +26,11 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getMiningInfo:           (*HttpServer).handleGetMiningInfo,
 	getRawMempool:           (*HttpServer).handleGetRawMempool,
 	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
 	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
 
 	// block pool ver.2
 	getShardToBeaconPoolStateV2: (*HttpServer).handleGetShardToBeaconPoolStateV2,
@@ -59,13 +60,13 @@ var HttpHandler = map[string]httpHandler{
 	createRawTransaction:            (*HttpServer).handleCreateRawTransaction,
 	sendRawTransaction:              (*HttpServer).handleSendRawTransaction,
 	createAndSendTransaction:        (*HttpServer).handleCreateAndSendTx,
-	getMempoolInfo:                  (*HttpServer).handleGetMempoolInfo,
 	getTransactionByHash:            (*HttpServer).handleGetTransactionByHash,
 	gettransactionhashbyreceiver:    (*HttpServer).handleGetTransactionHashByReceiver,
 	createAndSendStakingTransaction: (*HttpServer).handleCreateAndSendStakingTx,
 	randomCommitments:               (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                (*HttpServer).handleHasSerialNumbers,
 	hasSnDerivators:                 (*HttpServer).handleHasSnDerivators,
+	listSnDerivators:                (*HttpServer).handleListSNDerivator,
 	listSerialNumbers:               (*HttpServer).handleListSerialNumbers,
 	listCommitments:                 (*HttpServer).handleListCommitments,
 	listCommitmentIndices:           (*HttpServer).handleListCommitmentIndices,
@@ -135,13 +136,15 @@ var HttpHandler = map[string]httpHandler{
 	getRewardAmount:              (*HttpServer).handleGetRewardAmount,
 	listRewardAmount:             (*HttpServer).handleListRewardAmount,
 
-	//revert
+	// revert
 	revertbeaconchain: (*HttpServer).handleRevertBeacon,
 	revertshardchain:  (*HttpServer).handleRevertShard,
 
-	//GetNodeStatus
+	// mining info
+	getMiningInfo:        (*HttpServer).handleGetMiningInfo,
 	enableMining:         (*HttpServer).handleEnableMining,
 	getChainMiningStatus: (*HttpServer).handleGetChainMiningStatus,
+	getPublickeyMining:   (*HttpServer).handleGetPublicKeyMining,
 }
 
 // Commands that are available to a limited user
