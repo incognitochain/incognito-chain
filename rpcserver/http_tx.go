@@ -1421,7 +1421,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, NewRPCError(ErrRPCInvalidParams, err)
 	}
 
-	fmt.Println("SA: staking from", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
+	Logger.log.Info("Staking Public Key", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
 	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), rewardReceiverPaymentAddress, httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	// metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(blsPKBytes, common.ZeroByte))
@@ -1455,6 +1455,105 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	Logger.log.Debugf("handleCreateAndSendStakingTx params: %+v", params)
 	var err error
 	data, err := httpServer.handleCreateRawStakingTransaction(params, closeChan)
+	if err.(*RPCError) != nil {
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err.(*RPCError) != nil {
+		Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrSendTxData, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
+	Logger.log.Debugf("handleCreateAndSendStakingTx result: %+v", result)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	// get component
+	Logger.log.Debugf("handleCreateRawStakingTransaction params: %+v", params)
+	paramsArray := common.InterfaceSlice(params)
+	//var err error
+	if len(paramsArray) != 7 {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Empty Params For Staking Transaction %+v", paramsArray))
+	}
+	//Get sender keyset
+	senderKeyParam := paramsArray[0]
+	senderKey, err := wallet.Base58CheckDeserialize(senderKeyParam.(string))
+	if err != nil {
+		Logger.log.Critical(err)
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
+	}
+	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
+	}
+	//Get staking type
+	stopAutoStakingType, ok := paramsArray[4].(float64)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", paramsArray[4]))
+	}
+	//Get Candidate Payment Address
+	candidatePaymentAddress, ok := paramsArray[5].(string)
+	if !ok {
+		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", paramsArray[5]))
+	}
+	// Get private seed, a.k.a mining key
+	privateSeed := paramsArray[6].(string)
+	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
+	if (err != nil) || (ver != common.ZeroByte) {
+		return nil, NewRPCError(ErrUnexpected, errors.New("Decode privateseed failed!"))
+	}
+	// Get candidate publickey
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Base58CheckDeserialize candidate Payment Address failed"))
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+
+	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, err)
+	}
+
+	committeePKBytes, err := committeePK.Bytes()
+	if err != nil {
+		return nil, NewRPCError(ErrRPCInvalidParams, err)
+	}
+
+	stakingMetadata, err := metadata.NewStopAutoStakingMetadata(int(stopAutoStakingType), base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte))
+
+	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
+	if err.(*RPCError) != nil {
+		Logger.log.Critical(err)
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
+		return nil, NewRPCError(ErrCreateTxData, err)
+	}
+	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, common.ZeroByte),
+		ShardID:         txShardID,
+	}
+	Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v", result)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	Logger.log.Debugf("handleCreateAndSendStopAutoStakingTransaction params: %+v", params)
+	var err error
+	data, err := httpServer.handleCreateRawStopAutoStakingTransaction(params, closeChan)
 	if err.(*RPCError) != nil {
 		return nil, NewRPCError(ErrCreateTxData, err)
 	}
