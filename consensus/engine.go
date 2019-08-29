@@ -104,17 +104,14 @@ func (engine *Engine) Start() error {
 				time.Sleep(time.Millisecond * 1000)
 
 				for chainName, consensus := range engine.ChainConsensusList {
-					Logger.log.Critical("current mining chain", chainName)
 					if chainName == engine.CurrentMiningChain {
+						Logger.log.Critical("current mining chain", chainName)
 						err := consensus.Start()
 						if err != nil {
 							Logger.log.Critical(err)
 						}
 					} else {
-						err := consensus.Stop()
-						if err != nil {
-							Logger.log.Critical(err)
-						}
+						consensus.Stop()
 					}
 				}
 				userLayer := ""
