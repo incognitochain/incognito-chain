@@ -120,9 +120,11 @@ func (e *BLSBFT) Start() error {
 							e.logger.Error(err)
 							continue
 						}
-						if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BRI_CONSENSUS]); err != nil {
-							e.logger.Error(err)
-							continue
+						if len(voteMsg.Vote.BRI) != 0 {
+							if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BRI_CONSENSUS]); err != nil {
+								e.logger.Error(err)
+								continue
+							}
 						}
 						e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
 						e.logger.Warn("vote added...")
