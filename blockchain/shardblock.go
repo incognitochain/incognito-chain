@@ -166,9 +166,6 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if len(shardBlock.Header.StakingTxRoot[:]) != common.HashSize {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Staking Tx Root in the right format"))
 	}
-	if len(shardBlock.Header.StopAutoStakingRequestRoot[:]) != common.HashSize {
-		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Stop Auto Staking Request Root in the right format"))
-	}
 	if len(shardBlock.Header.CrossShardBitMap) > 254 {
 		return false, NewBlockChainError(ShardBlockSanityError, fmt.Errorf("Expect Shard Block Cross Shard Length Less Than 255"))
 	}
