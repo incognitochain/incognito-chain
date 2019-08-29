@@ -147,8 +147,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return err
 	}
 	newCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
-	isChanged := !common.CompareStringArray(oldCommittee, newCommittee)
-	if isChanged {
+	if !common.CompareStringArray(oldCommittee, newCommittee) {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 	}
 
