@@ -60,7 +60,6 @@ var HttpHandler = map[string]httpHandler{
 	createRawTransaction:                    (*HttpServer).handleCreateRawTransaction,
 	sendRawTransaction:                      (*HttpServer).handleSendRawTransaction,
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
-	getMempoolInfo:                          (*HttpServer).handleGetMempoolInfo,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
