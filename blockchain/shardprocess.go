@@ -30,7 +30,12 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
 	// fetch beacon blocks
+	
 	previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
+	if shardBlock.Header.BeaconHeight > blockchain.BestState.Beacon.BeaconHeight {
+		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.BestState.Beacon.BeaconHeight))
+	}
+	
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return err
