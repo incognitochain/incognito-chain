@@ -84,8 +84,8 @@ const (
 	listSerialNumbers                          = "listserialnumbers"
 	listCommitments                            = "listcommitments"
 	listCommitmentIndices                      = "listcommitmentindices"
-
-	createAndSendStakingTransaction = "createandsendstakingtransaction"
+	createAndSendStakingTransaction            = "createandsendstakingtransaction"
+	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile   = "getandsendtxsfromfile"
