@@ -1437,7 +1437,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 			if amount != amountRes {
 				//fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amountRes)
-				return errors.New("Wrong amount")
+				return errors.Errorf("Wrong amount %v %v", amount, amountRes)
 			}
 
 			if res, err := txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()); err == nil && res != 0 {

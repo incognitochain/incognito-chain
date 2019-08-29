@@ -121,20 +121,20 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	// updateShardBestState best state with new block
 	// Backup beststate
 	// TODO: fix this later
-	//userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	//if userPubKey != "" {
-	//	userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(userPubKey, 0)
-	//	if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-	//		err = blockchain.config.DataBase.CleanBackup(true, shardBlock.Header.ShardID)
-	//		if err != nil {
-	//			return NewBlockChainError(CleanBackUpError, err)
-	//		}
-	//		err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
-	//		if err != nil {
-	//			return NewBlockChainError(BackUpBestStateError, err)
-	//		}
-	//	}
-	//}
+	userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	if userPubKey != "" {
+		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(userPubKey, 0)
+		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			err = blockchain.config.DataBase.CleanBackup(true, shardBlock.Header.ShardID)
+			if err != nil {
+				return NewBlockChainError(CleanBackUpError, err)
+			}
+			err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
+			if err != nil {
+				return NewBlockChainError(BackUpBestStateError, err)
+			}
+		}
+	}
 
 	oldCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 
