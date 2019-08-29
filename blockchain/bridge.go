@@ -51,6 +51,7 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 // decodeSwapConfirmInst flattens all parts of a swap confirm instruction, decodes and concats it
 func decodeSwapConfirmInst(inst []string) []byte {
 	// TODO(@0xbunyip): handle error
+	// TODO(@0xbunyip): meta + shardID: string => int => byte => fixed length
 	metaType := []byte(inst[0])
 	shardID := []byte(inst[1])
 	height, _, _ := base58.Base58Check{}.Decode(inst[2])
