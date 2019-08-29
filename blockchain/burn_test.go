@@ -82,8 +82,8 @@ func buildDecodedSwapConfirmInst(meta, shard, height int, addrs []string) []byte
 		d, _ := hex.DecodeString(addr)
 		a = append(a, toBytes32BigEndian(d)...)
 	}
-	decoded := []byte(strconv.Itoa(meta))
-	decoded = append(decoded, []byte(strconv.Itoa(shard))...)
+	decoded := []byte{byte(meta)}
+	decoded = append(decoded, byte(shard))
 	decoded = append(decoded, toBytes32BigEndian(big.NewInt(int64(height)).Bytes())...)
 	decoded = append(decoded, toBytes32BigEndian(big.NewInt(int64(len(addrs))).Bytes())...)
 	decoded = append(decoded, a...)
