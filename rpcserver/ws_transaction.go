@@ -57,11 +57,14 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 				for index, tx := range shardBlock.Body.Transactions {
 					if tx.Hash().IsEqual(txHash) {
 						res, err := jsonresult.NewTransactionDetail(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
-						cResult <- RpcSubResult{Result: res, Error: NewRPCError(UnexpectedError, err)}
+						if err != nil {
+							cResult <- RpcSubResult{Result: res, Error: NewRPCError(UnexpectedError, err)}
+						} else {
+							cResult <- RpcSubResult{Result: res, Error: nil}
+						}
 						return
 					}
 				}
-
 			}
 		case <-closeChan:
 			{
