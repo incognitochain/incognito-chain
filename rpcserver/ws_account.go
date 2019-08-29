@@ -21,26 +21,26 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain ONE params"))
+		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	privateKey := arrayParams[0].(string)
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -97,26 +97,26 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain ONE params"))
+		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	privateKey := arrayParams[0].(string)
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -139,7 +139,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 					if tx.GetType() == common.TxCustomTokenType {
 						txCustomToken, ok := tx.(*transaction.TxNormalToken)
 						if !ok {
-							err := NewRPCError(ErrSubcribe, fmt.Errorf("%+v, expect type %+v", ErrParseTransaction, common.TxCustomTokenType))
+							err := NewRPCError(SubcribeError, fmt.Errorf("%+v, expect type %+v", ErrParseTransaction, common.TxCustomTokenType))
 							cResult <- RpcSubResult{Error: err}
 							return
 						}
@@ -183,26 +183,26 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain ONE params"))
+		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	privateKey := arrayParams[0].(string)
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := NewRPCError(SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}

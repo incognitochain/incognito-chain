@@ -13,7 +13,7 @@ func (httpServer *HttpServer) handleGetBeaconBestState(params interface{}, close
 	Logger.log.Debugf("handleGetBeaconBestState params: %+v", params)
 	if httpServer.config.BlockChain.BestState.Beacon == nil {
 		Logger.log.Debugf("handleGetBeaconBestState result: %+v", nil)
-		return nil, NewRPCError(ErrUnexpected, errors.New("Best State beacon not existed"))
+		return nil, NewRPCError(UnexpectedError, errors.New("Best State beacon not existed"))
 	}
 
 	clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
@@ -32,15 +32,15 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 	Logger.log.Debugf("handleGetShardBestState params: %+v", params)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID empty"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Shard ID empty"))
 	}
 	shardIdParam, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID component invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Shard ID component invalid"))
 	}
 	shardID := byte(shardIdParam)
 	if httpServer.config.BlockChain.BestState.Shard == nil || len(httpServer.config.BlockChain.BestState.Shard) <= 0 {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Best State shard not existed"))
+		return nil, NewRPCError(UnexpectedError, errors.New("Best State shard not existed"))
 	}
 	clonedShardBestState, err := httpServer.config.BlockChain.BestState.GetClonedAShardBestState(shardID)
 	if err != nil {
@@ -54,9 +54,13 @@ func (httpServer *HttpServer) handleGetShardBestState(params interface{}, closeC
 // handleGetCandidateList - return list candidate of committee
 func (httpServer *HttpServer) handleGetCandidateList(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	Logger.log.Debugf("handleGetCandidateList params: %+v", params)
+	if httpServer.config.BlockChain.BestState.Beacon == nil {
+		Logger.log.Debugf("handleGetCandidateList result: %+v", nil)
+		return nil, NewRPCError(UnexpectedError, errors.New("Best State beacon not existed"))
+	}
 	beacon, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(GetClonedBeaconBestStateError, err)
 	}
 	CSWFCR := beacon.CandidateShardWaitingForCurrentRandom
 	CSWFNR := beacon.CandidateShardWaitingForNextRandom
@@ -104,7 +108,7 @@ func (httpServer *HttpServer) handleCanPubkeyStake(params interface{}, closeChan
 	publicKey, ok := arrayParams[0].(string)
 	if !ok {
 		Logger.log.Debugf("handleCanPubkeyStake result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Pub key is invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Pub key is invalid"))
 	}
 	clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
 	if err != nil {
@@ -132,12 +136,12 @@ func (httpServer *HttpServer) handleGetTotalTransaction(params interface{}, clos
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
 		Logger.log.Debugf("handleGetTotalTransaction result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID empty"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Shard ID empty"))
 	}
 	shardIdParam, ok := arrayParams[0].(float64)
 	if !ok {
 		Logger.log.Debugf("handleGetTotalTransaction result: %+v", nil)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Shard ID invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Shard ID invalid"))
 	}
 	shardID := byte(shardIdParam)
 	clonedShardBestState, err := httpServer.config.BlockChain.BestState.GetClonedAShardBestState(shardID)
