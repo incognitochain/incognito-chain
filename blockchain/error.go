@@ -151,6 +151,7 @@ const (
 	StopAutoStakingRequestHashError
 	StopAutoStakingMetadataError
 	AutoStakingRootHashError
+	FetchAllCommitteeValidatorCandidateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -286,6 +287,7 @@ var ErrCodeMessage = map[int]struct {
 	StopAutoStakingRequestHashError:                   {-1125, "Stop Auto Staking Request Root Hash Error"},
 	StopAutoStakingMetadataError:                      {-1126, "StopAutoStaking Metadata Error"},
 	AutoStakingRootHashError:                          {-1127, "Auto Re Staking Root Hash Error"},
+	FetchAllCommitteeValidatorCandidateError:          {-1128, "Fetch All Committee Validator Candidate Error"},
 }
 
 type BlockChainError struct {
