@@ -39,7 +39,7 @@ go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12wP2tDBK8dY
 fi
 
 if [ "$1" == "b1" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12wP2tDBK8dYq8UcKzwxZtS19JhyjUQZS1eE5uFbtckeSQbZBfg" --nodemode "auto" --datadir "data/b1" --listen "0.0.0.0:8434" --externaladdress "0.0.0.0:8434" --norpcauth --rpclisten "0.0.0.0:9434"
+go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1Gmyq2e1nYqkAjkyFcjwmgPHSPTBBuh7PUEQsgEbwdiD1J2Rwp" --nodemode "auto" --datadir "data/b1" --listen "0.0.0.0:8434" --externaladdress "0.0.0.0:8434" --norpcauth --rpclisten "0.0.0.0:9434"
 fi
 if [ "$1" == "b2" ]; then
 go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1g2N8sSA1S4yJRca8nhaqjnxmjziRuF1oXaDPBAqHMQfZLfrNf" --nodemode "auto" --datadir "data/b2" --listen "0.0.0.0:8435" --externaladdress "0.0.0.0:8435" --rpclisten "0.0.0.0:9435" --norpc
