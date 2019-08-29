@@ -2,9 +2,11 @@ package blsbft
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -82,6 +84,8 @@ func (e *BLSBFT) UpdateCommitteeBLSList() {
 	committee := e.Chain.GetCommittee()
 	if !reflect.DeepEqual(e.RoundData.Committee, committee) {
 		e.RoundData.Committee = committee
+		e.RoundData.CommitteeBLS.ByteList = []blsmultisig.PublicKey{}
+		e.RoundData.CommitteeBLS.StringList = []string{}
 		for _, member := range e.RoundData.Committee {
 			e.RoundData.CommitteeBLS.ByteList = append(e.RoundData.CommitteeBLS.ByteList, member.MiningPubKey[CONSENSUSNAME])
 		}
