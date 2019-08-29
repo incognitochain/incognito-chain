@@ -219,7 +219,11 @@ func (e *BLSBFT) Start() error {
 						}
 
 						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
-							e.logger.Error(err)
+							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
+								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
+									e.logger.Error(err)
+								}
+							}
 							time.Sleep(1 * time.Second)
 							continue
 						}
