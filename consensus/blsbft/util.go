@@ -39,9 +39,9 @@ func (e *BLSBFT) getCurrentRound() int {
 }
 
 func (e *BLSBFT) isInTimeFrame() bool {
-	if e.Chain.CurrentHeight()+1 != e.RoundData.NextHeight {
-		return false
-	}
+	// if e.Chain.CurrentHeight()+1 != e.RoundData.NextHeight {
+	// 	return false
+	// }
 	if e.getTimeSinceLastBlock() > TIMEOUT && e.getCurrentRound() != e.RoundData.Round {
 		return false
 	}
