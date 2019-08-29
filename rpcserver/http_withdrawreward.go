@@ -49,7 +49,6 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
 	}
 	paymentAddress := arrayParams[0]
-
 	var publicKey []byte
 
 	if paymentAddress != "" {
@@ -60,7 +59,6 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 
 		publicKey = senderKey.KeySet.PaymentAddress.Pk
 	}
-
 	if publicKey == nil {
 		return rewardAmountResult, nil
 	}
