@@ -40,7 +40,7 @@ func parseJsonRequest(rawMessage []byte) (*JsonRequest, error) {
 	var request JsonRequest
 	err := json.Unmarshal(rawMessage, &request)
 	if err != nil {
-		return &request, NewRPCError(ErrRPCParse, err)
+		return &request, NewRPCError(RPCParseError, err)
 	} else {
 		return &request, nil
 	}
@@ -59,7 +59,7 @@ func parseSubcriptionRequest(rawMessage []byte) (*SubcriptionRequest, error) {
 	var request SubcriptionRequest
 	err := json.Unmarshal(rawMessage, &request)
 	if err != nil {
-		return &request, NewRPCError(ErrRPCParse, err)
+		return &request, NewRPCError(RPCParseError, err)
 	} else {
 		return &request, nil
 	}
