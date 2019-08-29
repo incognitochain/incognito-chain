@@ -7,73 +7,97 @@ import (
 )
 
 const (
-	ErrUnexpected = iota
-	ErrAlreadyStarted
-	ErrRPCInvalidRequest
-	ErrRPCMethodNotFound
-	ErrRPCInvalidParams
-	ErrRPCInvalidMethodPermission
-	ErrRPCInternal
-	ErrRPCParse
-	ErrInvalidType
-	ErrAuthFail
-	ErrInvalidSenderPrivateKey
-	ErrInvalidSenderViewingKey
-	ErrInvalidReceiverPaymentAddress
-	ErrListCustomTokenNotFound
-	ErrCanNotSign
-	ErrGetOutputCoin
-	ErrCreateTxData
-	ErrSendTxData
-	ErrTxTypeInvalid
-	ErrRejectInvalidFee
-	ErrTxNotExistedInMemAndBLock
-	ErrUnsubcribe
-	ErrSubcribe
-	ErrNetwork
-	ErrTokenIsInvalid
+	UnexpectedError = iota
+	AlreadyStartedError
+	JsonError
+
+	RPCInvalidRequestError
+	RPCMethodNotFoundError
+	RPCInvalidParamsError
+	RPCInvalidMethodPermissionError
+	RPCInternalError
+	RPCParseError
+	InvalidTypeError
+	AuthFailError
+	InvalidSenderPrivateKeyError
+	InvalidSenderViewingKeyError
+	InvalidReceiverPaymentAddressError
+	ListCustomTokenNotFoundError
+	CanNotSignError
+	GetOutputCoinError
+	CreateTxDataError
+	SendTxDataError
+	TxTypeInvalidError
+	RejectInvalidFeeError
+	TxNotExistedInMemAndBLockError
+	UnsubcribeError
+	SubcribeError
+	NetworkError
+	TokenIsInvalidError
 	GetClonedBeaconBestStateError
 	GetClonedShardBestStateError
+	GetShardBlockByHeightError
+	GetShardBestBlockError
+	GetShardBlockByHashError
+	GetBeaconBlockByHashError
+	GetBeaconBlockByHeightError
+	GeTxFromPoolError
+	TxPoolRejectTxError
 )
 
 // Standard JSON-RPC 2.0 errors.
 var ErrCodeMessage = map[int]struct {
-	code    int
-	message string
+	Code    int
+	Message string
 }{
 	// general
-	ErrUnexpected:     {-1, "Unexpected error"},
-	ErrAlreadyStarted: {-2, "RPC server is already started"},
-	ErrNetwork:        {-3, "Network Error, failed to send request to RPC server"},
+	UnexpectedError:     {-1, "Unexpected error"},
+	AlreadyStartedError: {-2, "RPC server is already started"},
+	NetworkError:        {-3, "Network Error, failed to send request to RPC server"},
+	JsonError:           {-4, "Json error"},
 
 	// validate component -1xxx
-	ErrRPCInvalidRequest:             {-1001, "Invalid request"},
-	ErrRPCMethodNotFound:             {-1002, "Method not found"},
-	ErrRPCInvalidParams:              {-1003, "Invalid parameters"},
-	ErrRPCInternal:                   {-1004, "Internal error"},
-	ErrRPCParse:                      {-1005, "Parse error"},
-	ErrInvalidType:                   {-1006, "Invalid type"},
-	ErrAuthFail:                      {-1007, "Auth failure"},
-	ErrRPCInvalidMethodPermission:    {-1008, "Invalid method permission"},
-	ErrInvalidReceiverPaymentAddress: {-1009, "Invalid receiver paymentaddress"},
-	ErrListCustomTokenNotFound:       {-1010, "Can not find any custom token"},
-	ErrCanNotSign:                    {-1011, "Can not sign with key"},
-	ErrInvalidSenderPrivateKey:       {-1012, "Invalid sender's key"},
-	ErrGetOutputCoin:                 {-1013, "Can not get output coin"},
-	ErrTxTypeInvalid:                 {-1014, "Invalid tx type"},
-	ErrInvalidSenderViewingKey:       {-1015, "Invalid viewing key"},
-	ErrRejectInvalidFee:              {-1016, "Reject invalid fee"},
-	ErrTxNotExistedInMemAndBLock:     {-1017, "Tx is not existed in mem and block"},
-	ErrTokenIsInvalid:                {-1018, "Token is invalid"},
-	GetClonedBeaconBestStateError:    {-1019, "Get Cloned Beacon Best State Error"},
-	GetClonedShardBestStateError:     {-1020, "Get Cloned Shard Best State Error"},
+	RPCInvalidRequestError:             {-1001, "Invalid request"},
+	RPCMethodNotFoundError:             {-1002, "Method not found"},
+	RPCInvalidParamsError:              {-1003, "Invalid parameters"},
+	RPCInternalError:                   {-1004, "Internal error"},
+	RPCParseError:                      {-1005, "Parse error"},
+	InvalidTypeError:                   {-1006, "Invalid type"},
+	AuthFailError:                      {-1007, "Auth failure"},
+	RPCInvalidMethodPermissionError:    {-1008, "Invalid method permission"},
+	InvalidReceiverPaymentAddressError: {-1009, "Invalid receiver paymentaddress"},
+	ListCustomTokenNotFoundError:       {-1010, "Can not find any custom token"},
+	CanNotSignError:                    {-1011, "Can not sign with key"},
+	InvalidSenderPrivateKeyError:       {-1012, "Invalid sender's key"},
+	GetOutputCoinError:                 {-1013, "Can not get output coin"},
+	TxTypeInvalidError:                 {-1014, "Invalid tx type"},
+	InvalidSenderViewingKeyError:       {-1015, "Invalid viewing key"},
+	RejectInvalidFeeError:              {-1016, "Reject invalid fee"},
+	TxNotExistedInMemAndBLockError:     {-1017, "Tx is not existed in mem and block"},
+	TokenIsInvalidError:                {-1018, "Token is invalid"},
 
-	// processing -2xxx
-	ErrCreateTxData: {-2001, "Can not create tx"},
-	ErrSendTxData:   {-2002, "Can not send tx"},
-	// socket/subcribe -3xxx
-	ErrSubcribe:   {-3001, "Failed to subcribe"},
-	ErrUnsubcribe: {-2002, "Failed to unsubcribe"},
+	// for block -2xxx
+	GetShardBlockByHeightError:  {-2000, "Get shard block by height error"},
+	GetShardBlockByHashError:    {-2001, "Get shard block by hash error"},
+	GetShardBestBlockError:      {-2002, "Get shard best block error"},
+	GetBeaconBlockByHashError:   {-2003, "Get beacon block by hash error"},
+	GetBeaconBlockByHeightError: {-2004, "Get beacon block by height error"},
+
+	// best state -3xxx
+	GetClonedBeaconBestStateError: {-3000, "Get Cloned Beacon Best State Error"},
+	GetClonedShardBestStateError:  {-3001, "Get Cloned Shard Best State Error"},
+
+	// processing -4xxx
+	CreateTxDataError: {-4001, "Can not create tx"},
+	SendTxDataError:   {-4002, "Can not send tx"},
+
+	// socket/subcribe -5xxx
+	SubcribeError:   {-5000, "Failed to subcribe"},
+	UnsubcribeError: {-5001, "Failed to unsubcribe"},
+
+	// tx pool -6xxx
+	GeTxFromPoolError:   {-6000, "Get tx from mempool error"},
+	TxPoolRejectTxError: {-6001, "Can not insert tx into tx mempool"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
@@ -86,7 +110,7 @@ type RPCError struct {
 }
 
 func GetErrorCode(err int) int {
-	return ErrCodeMessage[err].code
+	return ErrCodeMessage[err].Code
 }
 
 // Guarantee RPCError satisifies the builtin error interface.
@@ -104,11 +128,11 @@ func (e RPCError) GetErr() error {
 
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
 // for use in a JSON-RPC JsonResponse object.
-func NewRPCError(key int, err error) *RPCError {
+func NewRPCError(key int, err error, param ...interface{}) *RPCError {
 	return &RPCError{
-		Code:    ErrCodeMessage[key].code,
-		Message: ErrCodeMessage[key].message,
-		err:     errors.Wrap(err, ErrCodeMessage[key].message),
+		Code:    ErrCodeMessage[key].Code,
+		Message: fmt.Sprintf(ErrCodeMessage[key].Message, param),
+		err:     errors.Wrap(err, ErrCodeMessage[key].Message),
 	}
 }
 
@@ -123,5 +147,5 @@ func internalRPCError(errStr, context string) *RPCError {
 		logStr = context + ": " + errStr
 	}
 	Logger.log.Info(logStr)
-	return NewRPCError(ErrRPCInternal, errors.New(errStr))
+	return NewRPCError(RPCInternalError, errors.New(errStr))
 }

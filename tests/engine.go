@@ -46,7 +46,7 @@ func executeTest(filename string) (interface{}, error) {
 			rpcResult, rpcError = makeRPCRequestJson(step.client, step.input.name, params...)
 		}
 		//data, err := command(step.client, step.input.params)
-		if rpcError != nil && rpcError.Code == rpcserver.GetErrorCode(rpcserver.ErrNetwork) {
+		if rpcError != nil && rpcError.Code == rpcserver.GetErrorCode(rpcserver.NetworkError) {
 			return rpcResult, rpcError
 		}
 		// check error
