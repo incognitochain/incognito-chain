@@ -192,6 +192,7 @@ func (e *BLSBFT) Start() error {
 						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
+						//TODO: check issue invalid sig when swap
 						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							fmt.Print("\n")
@@ -275,7 +276,6 @@ func (e *BLSBFT) enterNewRound() {
 		e.RoundData.State = ""
 		return
 	}
-
 	//if already running a round for current timeframe
 	if e.isInTimeFrame() && e.RoundData.State != NEWROUND {
 		return
@@ -283,11 +283,9 @@ func (e *BLSBFT) enterNewRound() {
 	e.setState(NEWROUND)
 	e.waitForNextRound()
 	e.InitRoundData()
-
 	e.logger.Info("")
 	e.logger.Info("============================================")
 	e.logger.Info("")
-
 	pubKey := e.UserKeySet.GetPublicKey()
 	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
 		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
