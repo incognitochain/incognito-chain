@@ -620,7 +620,8 @@ func (peerObj *Peer) handleNewStreamIn(stream net.Stream, cDone chan *PeerConn) 
 		isOutbound:   false, // we are connected from remote peer -> this is an inbound peer
 		listenerPeer: peerObj,
 		remotePeer: &Peer{
-			peerID: remotePeerID,
+			peerID:     remotePeerID,
+			rawAddress: stream.Conn().RemoteMultiaddr().String(),
 		},
 		config:             peerConfig,
 		remotePeerID:       remotePeerID,
