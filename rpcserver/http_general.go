@@ -440,6 +440,6 @@ func (httpServer *HttpServer) handleGetPublicKeyMining(params interface{}, close
 		publicKeyInBase58Check := base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, common.ZeroByte)
 		return publicKeyInBase58Check, nil
 	} else {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Can not find key"))
+		return nil, NewRPCError(UnexpectedError, errors.New("Can not find key"))
 	}
 }
