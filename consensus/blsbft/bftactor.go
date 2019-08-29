@@ -212,6 +212,7 @@ func (e *BLSBFT) Start() error {
 							time.Sleep(1 * time.Second)
 							continue
 						}
+						// e.Node.PushMessageToAll()
 						e.logger.Warn("Commit block! Wait for next round")
 						e.enterNewRound()
 					}
