@@ -61,7 +61,7 @@ func (miningKey *MiningKey) BriSignData(
 	[]byte,
 	error,
 ) {
-	sig, err := bridgesig.Sign(data, miningKey.PriKey[BRI])
+	sig, err := bridgesig.Sign(miningKey.PriKey[BRI], data)
 	if err != nil {
 		return nil, consensus.NewConsensusError(consensus.SignDataError, err)
 	}
