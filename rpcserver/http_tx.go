@@ -1285,11 +1285,11 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	if err != nil {
 		Logger.log.Critical(err)
 		Logger.log.Debugf("handleCreateRawStakingTransaction result: %+v, err: %+v", nil, err)
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot get payment address"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Cannot get payment address"))
 	}
 	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
 	if err != nil {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Cannot import key set"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Cannot import key set"))
 	}
 
 	//Get staking type
@@ -1313,7 +1313,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	//Get auto staking flag
 	autoReStaking, ok := paramsArray[7].(bool)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, fmt.Errorf("Invalid auto restaking flag %+v", paramsArray[7]))
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", paramsArray[7]))
 	}
 	paymentAddress, _ := senderKey.Serialize(wallet.PaymentAddressType)
 
@@ -1321,13 +1321,13 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	privateSeed := paramsArray[8].(string)
 	privateSeedBytes, ver, err := base58.Base58Check{}.Decode(privateSeed)
 	if (err != nil) || (ver != common.ZeroByte) {
-		return nil, NewRPCError(ErrUnexpected, errors.New("Decode privateseed failed!"))
+		return nil, NewRPCError(UnexpectedError, errors.New("Decode privateseed failed!"))
 	}
 
 	// Get candidate publickey
 	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
 	if err != nil || candidateWallet == nil {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Base58CheckDeserialize candidate Payment Address failed"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Base58CheckDeserialize candidate Payment Address failed"))
 	}
 	pk := candidateWallet.KeySet.PaymentAddress.Pk
 
