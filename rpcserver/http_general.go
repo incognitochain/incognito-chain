@@ -432,3 +432,14 @@ func (httpServer *HttpServer) handleHashToIdenticon(params interface{}, closeCha
 	}
 	return result, nil
 }
+
+// handleGetPublicKeyMining - return publickey mining which be used to verify block
+func (httpServer *HttpServer) handleGetPublicKeyMining(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+	keySet := httpServer.config.Server.GetUserKeySet()
+	if keySet != nil {
+		publicKeyInBase58Check := base58.Base58Check{}.Encode(keySet.PaymentAddress.Pk, common.ZeroByte)
+		return publicKeyInBase58Check, nil
+	} else {
+		return nil, NewRPCError(ErrUnexpected, errors.New("Can not find key"))
+	}
+}
