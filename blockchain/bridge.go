@@ -51,17 +51,18 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 // decodeSwapConfirmInst flattens all parts of a swap confirm instruction, decodes and concats it
 func decodeSwapConfirmInst(inst []string) []byte {
 	// TODO(@0xbunyip): handle error
-	// TODO(@0xbunyip): meta + shardID: string => int => byte => fixed length
-	metaType := []byte(inst[0])
-	shardID := []byte(inst[1])
+	m, _ := strconv.Atoi(inst[0])
+	s, _ := strconv.Atoi(inst[1])
+	metaType := byte(m)
+	shardID := byte(s)
 	height, _, _ := base58.Base58Check{}.Decode(inst[2])
 	numVals, _, _ := base58.Base58Check{}.Decode(inst[3])
 	// Special case: instruction storing beacon/bridge's committee => decode and sign on that instead
 	// We need to decode and then submit the pubkeys to Ethereum because we can't decode it on smart contract
 	addrs, _ := parseAndPadAddress(inst[4])
 	flatten := []byte{}
-	flatten = append(flatten, metaType...)
-	flatten = append(flatten, shardID...)
+	flatten = append(flatten, metaType)
+	flatten = append(flatten, shardID)
 	flatten = append(flatten, toBytes32BigEndian(height)...)
 	flatten = append(flatten, toBytes32BigEndian(numVals)...)
 	flatten = append(flatten, addrs...)
