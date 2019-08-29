@@ -142,6 +142,7 @@ func (e *BLSBFT) Start() error {
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(CONSENSUSNAME), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.isOngoing = false
+					e.enterNewRound()
 					continue
 				}
 
