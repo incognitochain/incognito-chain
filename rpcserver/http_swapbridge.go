@@ -21,19 +21,19 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	// Get proof of instruction on beacon
 	beaconInstProof, beaconBlock, err := getBridgeSwapProofOnBeacon(height, db)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	// Get proof of instruction on bridge
 	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, bc, db)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
 	decodedInst, err := blockchain.DecodeInstruction(beaconInstProof.inst)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 	inst := hex.EncodeToString(decodedInst)
 
