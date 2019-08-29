@@ -125,8 +125,8 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 }
 
 // CheckSNDerivatorExistence return true if snd exists in snDerivators list
-func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte, db database.DatabaseInterface) (bool, error) {
-	ok, err := db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snd, common.BigIntSize), shardID)
+func CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snd, common.BigIntSize))
 	if err != nil {
 		return false, err
 	}
