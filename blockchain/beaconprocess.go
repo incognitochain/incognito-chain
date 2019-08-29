@@ -119,7 +119,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime); err != nil {
 		return err
 	}
-	isChanged := reflect.DeepEqual(snapshotBeaconCommittee, blockchain.BestState.Beacon.BeaconCommittee)
+	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, blockchain.BestState.Beacon.BeaconCommittee)
 	if isChanged {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.BEACON_CHAINKEY)
 	}
