@@ -24,11 +24,11 @@ func (httpServer *HttpServer) handleGetMiningInfo(params interface{}, closeChan 
 func (httpServer *HttpServer) handleEnableMining(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("EnableParam empty"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("EnableParam empty"))
 	}
 	enableParam, ok := arrayParams[0].(bool)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("EnableParam component invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("EnableParam component invalid"))
 	}
 	return httpServer.config.Server.EnableMining(enableParam), nil
 }
@@ -36,11 +36,11 @@ func (httpServer *HttpServer) handleEnableMining(params interface{}, closeChan <
 func (httpServer *HttpServer) handleGetChainMiningStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) < 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Chain ID empty"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Chain ID empty"))
 	}
 	chainIDParam, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("Chain ID component invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Chain ID component invalid"))
 	}
 	return httpServer.config.Server.GetChainMiningStatus(int(chainIDParam)), nil
 }
