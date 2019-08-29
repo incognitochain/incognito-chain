@@ -17,7 +17,7 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 	param := map[string]interface{}{}
 	keyWallet, err := wallet.Base58CheckDeserialize(arrayParams[0].(string))
 	if err != nil {
-		return []byte{}, NewRPCError(ErrRPCInvalidParams, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
+		return []byte{}, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
 	}
 	keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
@@ -46,7 +46,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	rewardAmounts := make(map[common.Hash]uint64)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		return nil, NewRPCError(ErrRPCInvalidParams, errors.New("key component invalid"))
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("key component invalid"))
 	}
 	paymentAddress := arrayParams[0]
 
@@ -55,7 +55,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if paymentAddress != "" {
 		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress.(string))
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 
 		publicKey = senderKey.KeySet.PaymentAddress.Pk
@@ -67,13 +67,13 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 
 	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	for _, coinID := range allCoinIDs {
 		amount, err := (*httpServer.config.Database).GetCommitteeReward(publicKey, coinID)
 		if err != nil {
-			return nil, NewRPCError(ErrUnexpected, err)
+			return nil, NewRPCError(UnexpectedError, err)
 		}
 		if coinID == common.PRVCoinID {
 			rewardAmountResult["PRV"] = amount
@@ -85,7 +85,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	cusPrivTok, crossPrivToken, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
 
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, NewRPCError(UnexpectedError, err)
 	}
 
 	for _, token := range cusPrivTok {

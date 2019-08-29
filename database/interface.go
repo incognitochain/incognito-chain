@@ -115,9 +115,10 @@ type DatabaseInterface interface {
 	CleanCommitments() error
 
 	// SNDerivator
-	StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID byte) error
-	HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error)
+	StoreSNDerivators(tokenID common.Hash, sndArray [][]byte) error
+	HasSNDerivator(tokenID common.Hash, data []byte) (bool, error)
 	CleanSNDerivator() error
+	ListSNDerivator(tokenID common.Hash) ([][]byte, error)
 
 	// Tx for Public key
 	StoreTxByPublicKey(publicKey []byte, txID common.Hash, shardID byte) error

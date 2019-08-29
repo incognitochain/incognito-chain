@@ -14,19 +14,23 @@ const (
 	CombineSignatureError
 	SignDataError
 	LoadKeyError
+	ConsensusAlreadyStartedError
+	ConsensusAlreadyStoppedError
 )
 
 var ErrCodeMessage = map[int]struct {
 	Code    int
 	message string
 }{
-	UnExpectedError:            {-1000, "Unexpected error"},
-	ConsensusTypeNotExistError: {-1001, "Consensus type isn't exist"},
-	ProducerSignatureError:     {-1002, "Producer signature error"},
-	CommitteeSignatureError:    {-1003, "Committee signature error"},
-	CombineSignatureError:      {-1004, "Combine signature error"},
-	SignDataError:              {-1005, "Sign data error"},
-	LoadKeyError:               {-1006, "Load key error"},
+	UnExpectedError:              {-1000, "Unexpected error"},
+	ConsensusTypeNotExistError:   {-1001, "Consensus type isn't exist"},
+	ProducerSignatureError:       {-1002, "Producer signature error"},
+	CommitteeSignatureError:      {-1003, "Committee signature error"},
+	CombineSignatureError:        {-1004, "Combine signature error"},
+	SignDataError:                {-1005, "Sign data error"},
+	LoadKeyError:                 {-1006, "Load key error"},
+	ConsensusAlreadyStartedError: {-1007, "consensus already started error"},
+	ConsensusAlreadyStoppedError: {-1008, "consensus already stopped error"},
 }
 
 type ConsensusError struct {

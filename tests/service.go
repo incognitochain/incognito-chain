@@ -15,7 +15,7 @@ func (client *Client) getBlockChainInfo() (*jsonresult.GetBlockChainInfoResult, 
 	}
 	err := json.Unmarshal(res.Result, &result)
 	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return result, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	return result, res.Error
 }
@@ -27,7 +27,7 @@ func (client *Client) createAndSendTransaction(params []interface{}) (*jsonresul
 	}
 	err := json.Unmarshal(res.Result, &result)
 	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return result, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	return result, nil
 }
@@ -39,7 +39,7 @@ func (client *Client) getBalanceByPrivatekey(params string) (uint64, *rpcserver.
 	}
 	err := json.Unmarshal(res.Result, &result)
 	if err != nil {
-		return 0, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return 0, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	return uint64(result.(float64)), nil
 }
@@ -51,7 +51,7 @@ func (client *Client) getTransactionByHash(params string) (interface{}, *rpcserv
 	}
 	err := json.Unmarshal(res.Result, &result)
 	if err != nil {
-		return result, rpcserver.NewRPCError(rpcserver.ErrNetwork, err)
+		return result, rpcserver.NewRPCError(rpcserver.NetworkError, err)
 	}
 	return result, nil
 }
