@@ -119,9 +119,23 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime); err != nil {
 		return err
 	}
-	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, blockchain.BestState.Beacon.BeaconCommittee)
+	newBeaconCommittee, newAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
+	if err != nil {
+		return NewBlockChainError(SnapshotCommitteeError, err)
+	}
+	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, newBeaconCommittee)
 	if isChanged {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.BEACON_CHAINKEY)
+	}
+	for shardID, committee := range newAllShardCommittee {
+		if _, ok := snapshotAllShardCommittee[shardID]; ok {
+			isChanged := !reflect.DeepEqual(snapshotAllShardCommittee[shardID], committee)
+			if isChanged {
+				go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+			}
+		} else {
+			go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+		}
 	}
 	if !isValidated {
 		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
