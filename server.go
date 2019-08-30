@@ -1774,3 +1774,7 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.C
 	}
 	return nil
 }
+
+func (serverObj *Server) DropAllConnections() {
+	serverObj.connManager.DropAllConnections()
+}
