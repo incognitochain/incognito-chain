@@ -14,6 +14,7 @@ type NodeInterface interface {
 	IsEnableMining() bool
 	GetMiningKeys() string
 	GetPrivateKey() string
+	DropAllConnections()
 }
 
 type ConsensusInterface interface {
