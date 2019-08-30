@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -91,7 +90,7 @@ func (httpServer *HttpServer) handleRetrieveBlock(params interface{}, closeChan 
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("verbosity is invalid"))
 		}
 
-		result, err := httpServer.blockService.RetrieveBlock(hashString, verbosity)
+		result, err := httpServer.blockService.RetrieveShardBlock(hashString, verbosity)
 		if err != nil {
 			return nil, err
 		}
@@ -113,36 +112,11 @@ func (httpServer *HttpServer) handleRetrieveBeaconBlock(params interface{}, clos
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hashString is invalid"))
 		}
-		hash, errH := common.Hash{}.NewHashFromStr(hashString)
-		if errH != nil {
-			Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errH)
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errH)
+		result, err := httpServer.blockService.RetrieveBeaconBlock(hashString)
+		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, err)
+		if err != nil {
+			return result, err
 		}
-		block, _, errD := httpServer.config.BlockChain.GetBeaconBlockByHash(*hash)
-		if errD != nil {
-			Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errD)
-			return nil, rpcservice.NewRPCError(rpcservice.GetBeaconBlockByHashError, errD)
-		}
-
-		best := httpServer.config.BlockChain.BestState.Beacon.BestBlock
-		blockHeight := block.Header.Height
-		// Get next block hash unless there are none.
-		var nextHashString string
-		// if blockHeight < best.Header.GetHeight() {
-		if blockHeight < best.Header.Height {
-			nextHash, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
-			if err != nil {
-				Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, err)
-				return nil, rpcservice.NewRPCError(rpcservice.GetBeaconBlockByHeightError, err)
-			}
-			nextHashString = nextHash.Hash().String()
-		}
-		blockBytes, errS := json.Marshal(block)
-		if errS != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errS)
-		}
-		result := jsonresult.NewGetBlocksBeaconResult(block, uint64(len(blockBytes)), nextHashString)
-		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", result, errD)
 		return result, nil
 	}
 	Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, nil)
@@ -166,57 +140,11 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("shardIDParam is invalid"))
 	}
 	shardIDParam := int(shardIDParamTemp)
-	if shardIDParam != -1 {
-		result := make([]jsonresult.GetBlockResult, 0)
-		shardID := byte(shardIDParam)
-		clonedShardBestState, err := httpServer.config.BlockChain.BestState.GetClonedAShardBestState(shardID)
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
-		}
-		bestBlock := clonedShardBestState.BestBlock
-		previousHash := bestBlock.Hash()
-		for numBlock > 0 {
-			numBlock--
-			// block, errD := httpServer.config.BlockChain.GetBlockByHash(previousHash)
-			block, size, errD := httpServer.config.BlockChain.GetShardBlockByHash(*previousHash)
-			if errD != nil {
-				Logger.log.Debugf("handleGetBlocks result: %+v, err: %+v", nil, errD)
-				return nil, rpcservice.NewRPCError(rpcservice.GetShardBlockByHashError, errD)
-			}
-			blockResult := jsonresult.NewGetBlockResult(block, size, common.EmptyString)
-			result = append(result, *blockResult)
-			previousHash = &block.Header.PreviousBlockHash
-			if previousHash.String() == (common.Hash{}).String() {
-				break
-			}
-		}
-		Logger.log.Debugf("handleGetBlocks result: %+v", result)
-		return result, nil
-	} else {
-		result := make([]jsonresult.GetBlocksBeaconResult, 0)
-		clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
-		}
-		bestBlock := clonedBeaconBestState.BestBlock
-		previousHash := bestBlock.Hash()
-		for numBlock > 0 {
-			numBlock--
-			// block, errD := httpServer.config.BlockChain.GetBlockByHash(previousHash)
-			block, size, errD := httpServer.config.BlockChain.GetBeaconBlockByHash(*previousHash)
-			if errD != nil {
-				return nil, rpcservice.NewRPCError(rpcservice.GetBeaconBlockByHashError, errD)
-			}
-			blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, common.EmptyString)
-			result = append(result, *blockResult)
-			previousHash = &block.Header.PreviousBlockHash
-			if previousHash.String() == (common.Hash{}).String() {
-				break
-			}
-		}
-		Logger.log.Debugf("handleGetBlocks result: %+v", result)
-		return result, nil
+	result, err := httpServer.blockService.GetBlocks(shardIDParam, numBlock)
+	if err != nil {
+		return nil, err
 	}
+	return result, nil
 }
 
 /*
