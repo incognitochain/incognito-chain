@@ -735,7 +735,6 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 			shardID := byte(temp)
 			// delete in public key out of sharding pending validator list
 			if len(instruction[1]) > 0 {
-
 				tempShardPendingValidator, err := RemoveValidator(incognitokey.CommitteeKeyListToString(beaconBestState.ShardPendingValidator[shardID]), inPublickeys)
 				if err != nil {
 					return NewBlockChainError(ProcessSwapInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}

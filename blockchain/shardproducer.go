@@ -378,7 +378,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 				beacon := strings.Split(l[1], ",")
 				newBeaconCandidates := []string{}
 				newBeaconCandidates = append(newBeaconCandidates, beacon...)
-				if len(l) == 4 {
+				if len(l) == 6 {
 					for i, v := range strings.Split(l[3], ",") {
 						txHash, err := common.Hash{}.NewHashFromStr(v)
 						if err != nil {
@@ -391,6 +391,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 						if txShardID != shardID {
 							continue
 						}
+						// if transaction belong to this shard then add to shard beststate
 						stakingTx[newBeaconCandidates[i]] = v
 					}
 				}
@@ -399,7 +400,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 				shard := strings.Split(l[1], ",")
 				newShardCandidates := []string{}
 				newShardCandidates = append(newShardCandidates, shard...)
-				if len(l) == 4 {
+				if len(l) == 6 {
 					for i, v := range strings.Split(l[3], ",") {
 						txHash, err := common.Hash{}.NewHashFromStr(v)
 						if err != nil {
@@ -412,6 +413,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 						if txShardID != shardID {
 							continue
 						}
+						// if transaction belong to this shard then add to shard beststate
 						stakingTx[newShardCandidates[i]] = v
 					}
 				}
