@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -117,7 +118,6 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 			return nil, err
 		}
 		mapPlusMap(rewardForBeacon, &totalRewardForBeacon)
-
 		if forDev {
 			mapPlusMap(rewardForDev, &totalRewardForDev)
 		}
@@ -142,47 +142,33 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(epoch uint64) ([][]s
 			}
 		}
 	}
+	// for _, str := range instRewardForBeacons {
+	// 	fmt.Println("RewardLog", str)
+	// }
+
+	// for _, str := range instRewardForDev {
+	// 	fmt.Println("RewardLog", str)
+	// }
+
+	// for _, str := range instRewardForShards {
+	// 	fmt.Println("RewardLog", str)
+	// }
 
 	resInst = common.AppendSliceString(instRewardForBeacons, instRewardForDev, instRewardForShards)
-
+	// for _, inst := range resInst {
+	// 	fmt.Println(inst)
+	// }
 	return resInst, nil
 }
 
-// [committeeString][key][value]
-func (blockchain *BlockChain) shareRewardForShardCommittee(epoch uint64, totalReward map[common.Hash]uint64, listCommitee []incognitokey.CommitteePublicKey) error {
-	reward := map[common.Hash]uint64{}
-	for key, value := range totalReward {
-		reward[key] = value / uint64(len(listCommitee))
-	}
-	for key := range totalReward {
-		for i, committee := range listCommitee {
-			committeeBytes := committee.GetNormalKey()
-			// if err != nil {
-			// 	for j := i - 1; j >= 0; j-- {
-			// 		committeeBytes, _, _ := DecodeCommitteeKey(listCommitee[j])
-			// 		_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward[key], key)
-			// 	}
-			// 	return err
-			// }
-			err := blockchain.config.DataBase.AddCommitteeReward(committeeBytes, reward[key], key)
-			if err != nil {
-				for j := i - 1; j >= 0; j-- {
-					committeeBytes := listCommitee[j].GetNormalKey()
-					_ = blockchain.config.DataBase.RemoveCommitteeReward(committeeBytes, reward[key], key)
-				}
-				return err
-			}
-		}
-	}
-	return nil
-}
-
 func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks []*BeaconBlock, shardID byte) error {
-	// shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-	// isInit := false
-	// epoch := uint64(0)
+	rewardReceivers := make(map[string]string)
+	committee := make(map[byte][]incognitokey.CommitteePublicKey)
+	isInit := false
+	epoch := uint64(0)
 	db := blockchain.config.DataBase
 	for _, beaconBlock := range beaconBlocks {
+		fmt.Printf("RewardLog Process BeaconBlock %v\n", beaconBlock.GetHeight())
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == StakeAction || l[0] == RandomAction {
 				continue
@@ -201,6 +187,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 			if shardToProcess == int(shardID) {
 				switch metaType {
 				case metadata.BeaconRewardRequestMeta:
+					// fmt.Printf("RewardLog Process Beacon %v\n", l)
 					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
 					if err != nil {
 						return err
@@ -218,6 +205,7 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 					continue
 
 				case metadata.DevRewardRequestMeta:
+					fmt.Printf("RewardLog Process Dev %v\n", l)
 					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
 					if err != nil {
 						return err
@@ -235,27 +223,33 @@ func (blockchain *BlockChain) updateDatabaseFromBeaconInstructions(beaconBlocks 
 					continue
 				}
 			}
-			// switch metaType {
-			// case metadata.ShardBlockRewardRequestMeta:
-			// 	shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
-			// 	if err != nil {
-			// 		return err
-			// 	}
-			// 	if (!isInit) || (epoch != shardRewardInfo.Epoch) {
-			// 		isInit = true
-			// 		epoch = shardRewardInfo.Epoch
-			// 		temp, err := blockchain.config.DataBase.FetchRewardReceiverByHeight(epoch * blockchain.config.ChainParams.Epoch)
-			// 		if err != nil {
-			// 			return err
-			// 		}
-			// 		json.Unmarshal(temp, &shardCommittee)
-			// 	}
-			// 	err = blockchain.shareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
-			// 	if err != nil {
-			// 		return err
-			// 	}
-			// 	continue
-			// }
+			switch metaType {
+			case metadata.ShardBlockRewardRequestMeta:
+				fmt.Printf("RewardLog Process Shard %v\n", l)
+				shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
+				if err != nil {
+					return err
+				}
+				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+					isInit = true
+					epoch = shardRewardInfo.Epoch
+					rewardReceiverBytes, err := blockchain.config.DataBase.FetchRewardReceiverByHeight(epoch * blockchain.config.ChainParams.Epoch)
+					if err != nil {
+						return err
+					}
+					json.Unmarshal(rewardReceiverBytes, &rewardReceivers)
+					committeeBytes, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
+					if err != nil {
+						return err
+					}
+					json.Unmarshal(committeeBytes, &committee)
+				}
+				err = blockchain.getRewardAmountForUserOfShard(shardID, shardRewardInfo, committee[byte(shardToProcess)], &rewardReceivers, false)
+				if err != nil {
+					return err
+				}
+				continue
+			}
 
 		}
 	}
@@ -290,9 +284,11 @@ func (blockchain *BlockChain) updateDatabaseWithBlockRewardInfo(beaconBlock *Bea
 				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
 			}
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
-				err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key)
-				if err != nil {
-					return err
+				if value != 0 {
+					err = db.AddShardRewardRequest(beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, value, key)
+					if err != nil {
+						return err
+					}
 				}
 			}
 			continue
@@ -357,7 +353,6 @@ func splitReward(
 			rewardForBeacon[key] = uint64(18*value) / ((uint64(numberOfActiveShards) + 2) * 10)
 			rewardForDev[key] = value / uint64(10)
 			(*totalReward)[key] = value - (rewardForBeacon[key] + rewardForDev[key])
-			//fmt.Printf("[ndh] TokenID %+v - - Beacon: %+v; Dev: %+v; Shard: %+v;\n", key, rewardForBeacon[key], rewardForDev[key], (*totalReward)[key])
 			if !hasValue {
 				hasValue = true
 			}
@@ -369,8 +364,11 @@ func splitReward(
 		return &rewardForBeacon, &rewardForDev, nil
 	} else {
 		for key, value := range *totalReward {
-			rewardForBeacon[key] = uint64(2*value) / (uint64(numberOfActiveShards) + 2)
-			(*totalReward)[key] = value - (rewardForBeacon[key])
+			amount := uint64(2*value) / (uint64(numberOfActiveShards) + 2)
+			if amount != 0 {
+				rewardForBeacon[key] = amount
+			}
+			(*totalReward)[key] = value - amount
 			//fmt.Printf("[ndh] TokenID %+v - - Beacon: %+v; noDev; Shard: %+v;\n", key, rewardForBeacon[key], (*totalReward)[key])
 			if !hasValue {
 				hasValue = true
@@ -384,15 +382,53 @@ func splitReward(
 	}
 }
 
-// func getRewardAmountForUserOfShard()
+func (blockchain *BlockChain) getRewardAmountForUserOfShard(
+	selfShardID byte,
+	rewardInfoShardToProcess *metadata.ShardBlockRewardInfo,
+	committeeOfShardToProcess []incognitokey.CommitteePublicKey,
+	rewardReceiver *map[string]string,
+	forBackup bool,
+) (
+	err error,
+) {
+	committeeSize := len(committeeOfShardToProcess)
+	// wg := sync.WaitGroup{}
+	// done := make(chan bool, 1)
+	// errChan := make(chan error, 1)
+	for _, candidate := range committeeOfShardToProcess {
+		// wg.Add(1)
+		// go func() {
+		// 	defer wg.Done()
+		wl, err := wallet.Base58CheckDeserialize((*rewardReceiver)[candidate.GetIncKeyBase58()])
+		if err != nil {
+			// errChan <- err
+			return err
+		}
+		if common.GetShardIDFromLastByte(wl.KeySet.PaymentAddress.Pk[common.PublicKeySize-1]) == selfShardID {
+			for key, value := range rewardInfoShardToProcess.ShardReward {
+				if forBackup {
+					err = blockchain.GetDatabase().BackupCommitteeReward(wl.KeySet.PaymentAddress.Pk, key)
+				} else {
+					err = blockchain.GetDatabase().AddCommitteeReward(wl.KeySet.PaymentAddress.Pk, value/uint64(committeeSize), key)
+				}
+				if err != nil {
+					// errChan <- err
+					return err
+				}
+			}
+		}
+		// }()
 
-// func getRewardAmountOfShardCandidate(
-// 	shardReward uint64,
-// 	numberOfCandidates int,
-// ) (
-// 	reward uint64,
-// 	err error,
-// ) {
-// 	reward :=
-// 	return
-// }
+	}
+	// go func() {
+	// 	wg.Wait()
+	// 	close(done)
+	// }()
+	// select {
+	// case <-done:
+	// case err = <-errChan:
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	return nil
+}

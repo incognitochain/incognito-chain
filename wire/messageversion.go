@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MaxVersionPayload = 1000 // 1 1Kb
+	MaxVersionPayload = 2000 // 1 1Kb
 )
 
 type MessageVersion struct {

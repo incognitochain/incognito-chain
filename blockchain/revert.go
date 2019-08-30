@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -147,14 +148,15 @@ func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock, beaconb
 	return nil
 }
 
-func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks []*BeaconBlock,
-	shardID byte) error {
-
-	//shardCommittee := make(map[byte][]string)
-	//isInit := false
-	//epoch := uint64(0)
-	//db := blockchain.config.DataBase
-	// listShardCommittee := blockchain.config.DataBase.FetchCommitteeByEpoch
+func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(
+	beaconBlocks []*BeaconBlock,
+	shardID byte,
+) error {
+	rewardReceivers := make(map[string]string)
+	committee := make(map[byte][]incognitokey.CommitteePublicKey)
+	isInit := false
+	epoch := uint64(0)
+	db := blockchain.config.DataBase
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == StakeAction || l[0] == RandomAction {
@@ -167,88 +169,74 @@ func (blockchain *BlockChain) backupDatabaseFromBeaconInstruction(beaconBlocks [
 			if err != nil {
 				continue
 			}
+			metaType, err := strconv.Atoi(l[0])
+			if err != nil {
+				return err
+			}
 			if shardToProcess == int(shardID) {
-				//metaType, err := strconv.Atoi(l[0])
-				//if err != nil {
-				//	return err
-				//}
-				//switch metaType {
-				//case metadata.BeaconRewardRequestMeta:
-				//	beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
-				//	if err != nil {
-				//		return err
-				//	}
-				//	publicKeyCommittee, _, err := base58.Base58Check{}.Decode(beaconBlkRewardInfo.PayToPublicKey)
-				//	if err != nil {
-				//		return err
-				//	}
-				//	for key := range beaconBlkRewardInfo.BeaconReward {
-				//		err = db.BackupCommitteeReward(publicKeyCommittee, key)
-				//		if err != nil {
-				//			return err
-				//		}
-				//	}
-				//	continue
-				//
-				//case metadata.DevRewardRequestMeta:
-				//	devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
-				//	if err != nil {
-				//		return err
-				//	}
-				//	keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
-				//	if err != nil {
-				//		return err
-				//	}
-				//	for key := range devRewardInfo.DevReward {
-				//		err = db.BackupCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, key)
-				//		if err != nil {
-				//			return err
-				//		}
-				//	}
-				//	continue
-				//
-				//case metadata.ShardBlockRewardRequestMeta:
-				//	shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
-				//	if err != nil {
-				//		return err
-				//	}
-				//	if (!isInit) || (epoch != shardRewardInfo.Epoch) {
-				//		isInit = true
-				//		epoch = shardRewardInfo.Epoch
-				//		temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
-				//		if err != nil {
-				//			return err
-				//		}
-				//		json.Unmarshal(temp, &shardCommittee)
-				//	}
-				//	err = blockchain.backupShareRewardForShardCommittee(shardRewardInfo.Epoch, shardRewardInfo.ShardReward, shardCommittee[shardID])
-				//	if err != nil {
-				//		return err
-				//	}
-				//	continue
-				//}
-			}
-		}
-	}
-	return nil
-}
+				switch metaType {
+				case metadata.BeaconRewardRequestMeta:
+					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
+					if err != nil {
+						return err
+					}
+					publicKeyCommittee, _, err := base58.Base58Check{}.Decode(beaconBlkRewardInfo.PayToPublicKey)
+					if err != nil {
+						return err
+					}
+					for key := range beaconBlkRewardInfo.BeaconReward {
+						err = db.BackupCommitteeReward(publicKeyCommittee, key)
+						if err != nil {
+							return err
+						}
+					}
+					continue
 
-func (blockchain *BlockChain) backupShareRewardForShardCommittee(epoch uint64, totalReward map[common.Hash]uint64, listCommitee []string) error {
-	// reward := totalReward / uint64(len(listCommitee))
-	reward := map[common.Hash]uint64{}
-	for key, value := range totalReward {
-		reward[key] = value / uint64(len(listCommitee))
-	}
-	for key := range totalReward {
-		for _, committee := range listCommitee {
-			committeeBytes, _, err := base58.Base58Check{}.Decode(committee)
-			if err != nil {
-				return err
+				case metadata.DevRewardRequestMeta:
+					devRewardInfo, err := metadata.NewDevRewardInfoFromStr(l[3])
+					if err != nil {
+						return err
+					}
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(common.DevAddress)
+					if err != nil {
+						return err
+					}
+					for key := range devRewardInfo.DevReward {
+						err = db.BackupCommitteeReward(keyWalletDevAccount.KeySet.PaymentAddress.Pk, key)
+						if err != nil {
+							return err
+						}
+					}
+					continue
+				}
 			}
-			err = blockchain.config.DataBase.BackupCommitteeReward(committeeBytes, key)
-			if err != nil {
-				return err
+			switch metaType {
+			case metadata.ShardBlockRewardRequestMeta:
+				shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
+				if err != nil {
+					return err
+				}
+				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+					isInit = true
+					epoch = shardRewardInfo.Epoch
+					rewardReceiverBytes, err := blockchain.config.DataBase.FetchRewardReceiverByHeight(epoch * blockchain.config.ChainParams.Epoch)
+					if err != nil {
+						return err
+					}
+					json.Unmarshal(rewardReceiverBytes, &rewardReceivers)
+					committeeBytes, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(epoch * blockchain.config.ChainParams.Epoch)
+					if err != nil {
+						return err
+					}
+					json.Unmarshal(committeeBytes, &committee)
+				}
+				err = blockchain.getRewardAmountForUserOfShard(shardID, shardRewardInfo, committee[byte(shardToProcess)], &rewardReceivers, true)
+				if err != nil {
+					return err
+				}
+				continue
 			}
+
 		}
 	}
 	return nil

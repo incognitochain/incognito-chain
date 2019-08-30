@@ -56,7 +56,7 @@ type BeaconBestState struct {
 	ConsensusAlgorithm                     string                                     `json:"ConsensusAlgorithm"`
 	ShardConsensusAlgorithm                map[byte]string                            `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
-	RewardReceiver map[string]string `json:"RewardReceiver"` // map candidate/committee -> reward receiver
+	RewardReceiver map[string]string `json:"RewardReceiver"` // map incognito public key -> reward receiver (payment address)
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2

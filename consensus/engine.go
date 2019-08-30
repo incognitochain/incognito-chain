@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -60,6 +61,19 @@ func (engine *Engine) watchConsensusCommittee() {
 			}
 		}
 	}
+	for consensusType, publickey := range engine.userMiningPublicKeys {
+		if engine.CurrentMiningChain == "" {
+			role, shardID := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
+			test, _ := json.Marshal(publickey)
+			Logger.log.Critical(string(test))
+			if role == common.SHARD_ROLE {
+				engine.CurrentMiningChain = common.GetShardChainKey(shardID)
+				break
+			}
+		}
+
+	}
+
 	for chainName, chain := range engine.config.Blockchain.Chains {
 		if _, ok := AvailableConsensus[chain.GetConsensusType()]; ok {
 			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetConsensusType()].NewInstance(chain, chainName, engine.config.Node, Logger.log)
@@ -76,9 +90,17 @@ func (engine *Engine) watchConsensusCommittee() {
 			if !ok {
 				continue
 			}
+			if chainName != common.BEACON_CHAINKEY {
+				role, shardID := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].GetPubkeyRole(userPublicKey.GetMiningKeyBase58(consensusType), 0)
+				if role == common.SHARD_ROLE && chainName == common.GetShardChainKey(shardID) {
+					engine.CurrentMiningChain = chainName
+					engine.config.Node.DropAllConnections()
+				}
+			}
 			if engine.config.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) != -1 {
 				if engine.CurrentMiningChain != chainName {
 					engine.CurrentMiningChain = chainName
+					engine.config.Node.DropAllConnections()
 					panic("Yoesssss")
 				}
 			}
@@ -106,10 +128,7 @@ func (engine *Engine) Start() error {
 				for chainName, consensus := range engine.ChainConsensusList {
 					if chainName == engine.CurrentMiningChain {
 						Logger.log.Critical("current mining chain", chainName)
-						err := consensus.Start()
-						if err != nil {
-							Logger.log.Critical(err)
-						}
+						consensus.Start()
 					} else {
 						consensus.Stop()
 					}
@@ -142,7 +161,13 @@ func (engine *Engine) Start() error {
 						}
 					}
 				}
-				engine.config.Node.UpdateConsensusState(userLayer, publicKey, nil, beaconCommittee, shardCommittee)
+				if userLayer == common.SHARD_ROLE {
+					shardID := getShardFromChainName(engine.CurrentMiningChain)
+					engine.config.Node.UpdateConsensusState(userLayer, publicKey, &shardID, beaconCommittee, shardCommittee)
+				} else {
+					engine.config.Node.UpdateConsensusState(userLayer, publicKey, nil, beaconCommittee, shardCommittee)
+				}
+
 			}
 		}
 	}()
