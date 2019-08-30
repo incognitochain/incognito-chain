@@ -573,3 +573,24 @@ func (beaconBestState *BeaconBestState) GetAutoStakingList() map[string]bool {
 	}
 	return m
 }
+func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenList() []string {
+	beaconBestState.lock.RLock()
+	defer beaconBestState.lock.RUnlock()
+	return beaconBestState.getAllCommitteeValidatorCandidateFlattenList()
+}
+func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlattenList() []string {
+	res := []string{}
+	for _, committee := range beaconBestState.GetShardCommittee() {
+		res = append(res, incognitokey.CommitteeKeyListToString(committee)...)
+	}
+	for _, pendingValidator := range beaconBestState.GetShardPendingValidator() {
+		res = append(res, incognitokey.CommitteeKeyListToString(pendingValidator)...)
+	}
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForCurrentRandom)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateBeaconWaitingForNextRandom)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForCurrentRandom)...)
+	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.CandidateShardWaitingForNextRandom)...)
+	return res
+}
