@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
@@ -143,15 +144,23 @@ func validateSingleBLSSig(
 		return err
 	}
 	if !result {
-		return errors.New("invalid Signature")
+		return errors.New("invalid BLS Signature")
 	}
 	return nil
 }
 
 func validateSingleBriSig(
 	dataHash *common.Hash,
-	aggSig []byte,
+	briSig []byte,
+	candidate []byte,
 ) error {
+	result, err := bridgesig.Verify(candidate, dataHash.GetBytes(), briSig)
+	if err != nil {
+		return err
+	}
+	if !result {
+		return errors.New("invali BRI Signature")
+	}
 	return nil
 }
 

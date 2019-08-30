@@ -119,9 +119,23 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if err := blockchain.BestState.Beacon.updateBeaconBestState(beaconBlock, blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime); err != nil {
 		return err
 	}
-	isChanged := reflect.DeepEqual(snapshotBeaconCommittee, blockchain.BestState.Beacon.BeaconCommittee)
+	newBeaconCommittee, newAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
+	if err != nil {
+		return NewBlockChainError(SnapshotCommitteeError, err)
+	}
+	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, newBeaconCommittee)
 	if isChanged {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.BEACON_CHAINKEY)
+	}
+	for shardID, committee := range newAllShardCommittee {
+		if _, ok := snapshotAllShardCommittee[shardID]; ok {
+			isChanged := !reflect.DeepEqual(snapshotAllShardCommittee[shardID], committee)
+			if isChanged {
+				go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+			}
+		} else {
+			go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+		}
 	}
 	if !isValidated {
 		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -721,7 +735,6 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 			shardID := byte(temp)
 			// delete in public key out of sharding pending validator list
 			if len(instruction[1]) > 0 {
-
 				tempShardPendingValidator, err := RemoveValidator(incognitokey.CommitteeKeyListToString(beaconBestState.ShardPendingValidator[shardID]), inPublickeys)
 				if err != nil {
 					return NewBlockChainError(ProcessSwapInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
@@ -829,7 +842,6 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string)
 			return NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect Beacon Candidate (length %+v) and Beacon Reward Receiver (length %+v) and Shard Auto ReStaking (length %+v) have equal length", len(shardCandidates), len(shardRewardReceivers), len(shardAutoReStaking))), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 		}
 		for index, candidate := range shardCandidatesStructs {
-			//TODO: check key
 			beaconBestState.RewardReceiver[candidate.GetIncKeyBase58()] = shardRewardReceivers[index]
 			if shardAutoReStaking[index] == "true" {
 				beaconBestState.AutoStaking[shardCandidates[index]] = true
