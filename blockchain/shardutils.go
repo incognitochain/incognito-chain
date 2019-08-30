@@ -129,8 +129,8 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	stakeBeaconTxID := []string{}
 	stakeShardRewardReceiver := []string{}
 	stakeBeaconRewardReceiver := []string{}
-	stakeShardAutoReStaking := []string{}
-	stakeBeaconAutoReStaking := []string{}
+	stakeShardAutoStaking := []string{}
+	stakeBeaconAutoStaking := []string{}
 	stopAutoStaking := []string{}
 	instructions, err = buildActionsFromMetadata(transactions, bc, shardID)
 	if err != nil {
@@ -139,34 +139,30 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	for _, tx := range transactions {
 		switch tx.GetMetadataType() {
 		case metadata.ShardStakingMeta:
-			var rewardReceiverPaymentAddress string
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
-			rewardReceiverPaymentAddress = stakingMetadata.RewardReceiverPaymentAddress
 			stakeShardPublicKey = append(stakeShardPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeShardTxID = append(stakeShardTxID, tx.Hash().String())
-			stakeShardRewardReceiver = append(stakeShardRewardReceiver, rewardReceiverPaymentAddress)
+			stakeShardRewardReceiver = append(stakeShardRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
 			if stakingMetadata.AutoReStaking {
-				stakeShardAutoReStaking = append(stakeShardAutoReStaking, "true")
+				stakeShardAutoStaking = append(stakeShardAutoStaking, "true")
 			} else {
-				stakeShardAutoReStaking = append(stakeShardAutoReStaking, "false")
+				stakeShardAutoStaking = append(stakeShardAutoStaking, "false")
 			}
 		case metadata.BeaconStakingMeta:
-			var rewardReceiverPaymentAddress string
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
 			}
-			rewardReceiverPaymentAddress = stakingMetadata.RewardReceiverPaymentAddress
 			stakeBeaconPublicKey = append(stakeBeaconPublicKey, stakingMetadata.CommitteePublicKey)
 			stakeBeaconTxID = append(stakeBeaconTxID, tx.Hash().String())
-			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, rewardReceiverPaymentAddress)
+			stakeBeaconRewardReceiver = append(stakeBeaconRewardReceiver, stakingMetadata.RewardReceiverPaymentAddress)
 			if stakingMetadata.AutoReStaking {
-				stakeBeaconAutoReStaking = append(stakeBeaconAutoReStaking, "true")
+				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "true")
 			} else {
-				stakeBeaconAutoReStaking = append(stakeBeaconAutoReStaking, "false")
+				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "false")
 			}
 		case metadata.StopAutoStakingMeta:
 			{
@@ -179,19 +175,19 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 		}
 	}
 	if !reflect.DeepEqual(stakeShardPublicKey, []string{}) {
-		if len(stakeShardPublicKey) != len(stakeShardTxID) && len(stakeShardTxID) != len(stakeShardRewardReceiver) && len(stakeShardRewardReceiver) != len(stakeShardAutoReStaking) {
-			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver), len(stakeShardAutoReStaking)))
+		if len(stakeShardPublicKey) != len(stakeShardTxID) && len(stakeShardTxID) != len(stakeShardRewardReceiver) && len(stakeShardRewardReceiver) != len(stakeShardAutoStaking) {
+			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeShardPublicKey), len(stakeShardRewardReceiver), len(stakeShardAutoStaking)))
 		}
 		// ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		instruction := []string{StakeAction, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoReStaking, ",")}
+		instruction := []string{StakeAction, strings.Join(stakeShardPublicKey, ","), "shard", strings.Join(stakeShardTxID, ","), strings.Join(stakeShardRewardReceiver, ","), strings.Join(stakeShardAutoStaking, ",")}
 		instructions = append(instructions, instruction)
 	}
 	if !reflect.DeepEqual(stakeBeaconPublicKey, []string{}) {
-		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) && len(stakeBeaconRewardReceiver) != len(stakeBeaconAutoReStaking) {
-			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver), len(stakeBeaconAutoReStaking)))
+		if len(stakeBeaconPublicKey) != len(stakeBeaconTxID) && len(stakeBeaconTxID) != len(stakeBeaconRewardReceiver) && len(stakeBeaconRewardReceiver) != len(stakeBeaconAutoStaking) {
+			return nil, NewBlockChainError(StakeInstructionError, fmt.Errorf("Expect public key list (length %+v) and reward receiver list (length %+v), auto restaking (length %+v) to be equal", len(stakeBeaconPublicKey), len(stakeBeaconRewardReceiver), len(stakeBeaconAutoStaking)))
 		}
 		// ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "flag1,flag2,..."]
-		instruction := []string{StakeAction, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoReStaking, ",")}
+		instruction := []string{StakeAction, strings.Join(stakeBeaconPublicKey, ","), "beacon", strings.Join(stakeBeaconTxID, ","), strings.Join(stakeBeaconRewardReceiver, ","), strings.Join(stakeBeaconAutoStaking, ",")}
 		instructions = append(instructions, instruction)
 	}
 	if !reflect.DeepEqual(stopAutoStaking, []string{}) {
