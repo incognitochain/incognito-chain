@@ -1047,9 +1047,6 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 			results = append(results, out)
 		}
 	}
-	if err != nil {
-		return nil, err
-	}
 
 	return results, nil
 }
