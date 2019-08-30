@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
@@ -21,26 +22,26 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	privateKey := arrayParams[0].(string)
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -97,26 +98,26 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	privateKey := arrayParams[0].(string)
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -139,7 +140,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenByPrivateKey(params inte
 					if tx.GetType() == common.TxCustomTokenType {
 						txCustomToken, ok := tx.(*transaction.TxNormalToken)
 						if !ok {
-							err := NewRPCError(SubcribeError, fmt.Errorf("%+v, expect type %+v", ErrParseTransaction, common.TxCustomTokenType))
+							err := rpcservice.NewRPCError(rpcservice.SubcribeError, fmt.Errorf("%+v, expect type %+v", ErrParseTransaction, common.TxCustomTokenType))
 							cResult <- RpcSubResult{Error: err}
 							return
 						}
@@ -183,26 +184,26 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 	Logger.log.Info("Handle Subscribe New Block", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain ONE params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	privateKey := arrayParams[0].(string)
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
