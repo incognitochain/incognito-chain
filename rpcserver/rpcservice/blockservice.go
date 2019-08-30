@@ -73,7 +73,7 @@ func (blockService BlockService) GetBeaconBestBlockHash() (*common.Hash, error) 
 	return &clonedBeaconBestState.BestBlockHash, nil
 }
 
-func (blockService BlockService) RetrieveBlock(hashString string, verbosity string) (*jsonresult.GetBlockResult, *RPCError) {
+func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity string) (*jsonresult.GetBlockResult, *RPCError) {
 	hash, errH := common.Hash{}.NewHashFromStr(hashString)
 	if errH != nil {
 		Logger.log.Debugf("handleRetrieveBlock result: %+v, err: %+v", nil, errH)
@@ -200,4 +200,91 @@ func (blockService BlockService) RetrieveBlock(hashString string, verbosity stri
 		}
 	}
 	return &result, nil
+}
+
+func (blockService *BlockService) RetrieveBeaconBlock(hashString string) (*jsonresult.GetBlocksBeaconResult, *RPCError) {
+	hash, errH := common.Hash{}.NewHashFromStr(hashString)
+	if errH != nil {
+		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errH)
+		return nil, NewRPCError(RPCInvalidParamsError, errH)
+	}
+	block, _, errD := blockService.BlockChain.GetBeaconBlockByHash(*hash)
+	if errD != nil {
+		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, errD)
+		return nil, NewRPCError(GetBeaconBlockByHashError, errD)
+	}
+
+	best := blockService.BlockChain.BestState.Beacon.BestBlock
+	blockHeight := block.Header.Height
+	// Get next block hash unless there are none.
+	var nextHashString string
+	// if blockHeight < best.Header.GetHeight() {
+	if blockHeight < best.Header.Height {
+		nextHash, err := blockService.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
+		if err != nil {
+			Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, err)
+			return nil, NewRPCError(GetBeaconBlockByHeightError, err)
+		}
+		nextHashString = nextHash.Hash().String()
+	}
+	blockBytes, errS := json.Marshal(block)
+	if errS != nil {
+		return nil, NewRPCError(UnexpectedError, errS)
+	}
+	result := jsonresult.NewGetBlocksBeaconResult(block, uint64(len(blockBytes)), nextHashString)
+	return result, nil
+}
+
+func (blockService *BlockService) GetBlocks(shardIDParam int, numBlock int) (interface{}, *RPCError) {
+	if shardIDParam != -1 {
+		result := make([]jsonresult.GetBlockResult, 0)
+		shardID := byte(shardIDParam)
+		clonedShardBestState, err := blockService.BlockChain.BestState.GetClonedAShardBestState(shardID)
+		if err != nil {
+			return nil, NewRPCError(GetClonedShardBestStateError, err)
+		}
+		bestBlock := clonedShardBestState.BestBlock
+		previousHash := bestBlock.Hash()
+		for numBlock > 0 {
+			numBlock--
+			// block, errD := blockService.BlockChain.GetBlockByHash(previousHash)
+			block, size, errD := blockService.BlockChain.GetShardBlockByHash(*previousHash)
+			if errD != nil {
+				Logger.log.Debugf("handleGetBlocks result: %+v, err: %+v", nil, errD)
+				return nil, NewRPCError(GetShardBlockByHashError, errD)
+			}
+			blockResult := jsonresult.NewGetBlockResult(block, size, common.EmptyString)
+			result = append(result, *blockResult)
+			previousHash = &block.Header.PreviousBlockHash
+			if previousHash.String() == (common.Hash{}).String() {
+				break
+			}
+		}
+		Logger.log.Debugf("handleGetBlocks result: %+v", result)
+		return result, nil
+	} else {
+		result := make([]jsonresult.GetBlocksBeaconResult, 0)
+		clonedBeaconBestState, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
+		if err != nil {
+			return nil, NewRPCError(GetClonedBeaconBestStateError, err)
+		}
+		bestBlock := clonedBeaconBestState.BestBlock
+		previousHash := bestBlock.Hash()
+		for numBlock > 0 {
+			numBlock--
+			// block, errD := blockService.BlockChain.GetBlockByHash(previousHash)
+			block, size, errD := blockService.BlockChain.GetBeaconBlockByHash(*previousHash)
+			if errD != nil {
+				return nil, NewRPCError(GetBeaconBlockByHashError, errD)
+			}
+			blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, common.EmptyString)
+			result = append(result, *blockResult)
+			previousHash = &block.Header.PreviousBlockHash
+			if previousHash.String() == (common.Hash{}).String() {
+				break
+			}
+		}
+		Logger.log.Debugf("handleGetBlocks result: %+v", result)
+		return result, nil
+	}
 }
