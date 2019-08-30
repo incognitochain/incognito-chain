@@ -1416,7 +1416,6 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 
 	// ValidateTransaction Public Key from ProducerPrvKey
 	publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
-	time.Sleep(5 * time.Second)
 	signDataInBase58CheckEncode := common.EmptyString
 	if publicKeyInBase58CheckEncode != "" {
 		msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
@@ -1773,5 +1772,31 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.C
 	} else {
 		serverObj.PushMessageToShard(msg, byte(chainID), map[libp2p.ID]bool{})
 	}
+	return nil
+}
+
+func (serverObj *Server) DropAllConnections() {
+	serverObj.connManager.DropAllConnections()
+}
+
+func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bool) error {
+	var msg wire.Message
+	var err error
+	if isBeacon {
+		msg, err = wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		msg.(*wire.MessageBlockBeacon).Block = block.(*blockchain.BeaconBlock)
+	} else {
+		msg, err = wire.MakeEmptyMessage(wire.CmdBlockShard)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		msg.(*wire.MessageBlockShard).Block = block.(*blockchain.ShardBlock)
+	}
+	serverObj.PushMessageToAll(msg)
 	return nil
 }

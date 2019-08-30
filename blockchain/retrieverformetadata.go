@@ -131,9 +131,6 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenList() ([]
 func (blockchain *BlockChain) GetStakingTx(shardID byte) map[string]string {
 	return blockchain.BestState.Shard[shardID].GetStakingTx()
 }
-func (blockchain *BlockChain) GetStopAutoStakingRequest(shardID byte) map[string]string {
-	return blockchain.BestState.Shard[shardID].GetStopStakingRequest()
-}
 func (blockchain *BlockChain) GetAutoStakingList() map[string]bool {
 	return blockchain.BestState.Beacon.GetAutoStakingList()
 }

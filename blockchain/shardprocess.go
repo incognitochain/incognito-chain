@@ -30,12 +30,12 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
 	// fetch beacon blocks
-	
+
 	previousBeaconHeight := blockchain.BestState.Shard[shardID].BeaconHeight
 	if shardBlock.Header.BeaconHeight > blockchain.BestState.Beacon.BeaconHeight {
 		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.BestState.Beacon.BeaconHeight))
 	}
-	
+
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
 		return err
@@ -120,20 +120,20 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	// updateShardBestState best state with new block
 	// Backup beststate
 	// TODO: fix this later
-	//userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	//if userPubKey != "" {
-	//	userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(userPubKey, 0)
-	//	if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
-	//		err = blockchain.config.DataBase.CleanBackup(true, shardBlock.Header.ShardID)
-	//		if err != nil {
-	//			return NewBlockChainError(CleanBackUpError, err)
-	//		}
-	//		err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
-	//		if err != nil {
-	//			return NewBlockChainError(BackUpBestStateError, err)
-	//		}
-	//	}
-	//}
+	userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
+	if userPubKey != "" {
+		userRole := blockchain.BestState.Shard[shardID].GetPubkeyRole(userPubKey, 0)
+		if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+			err = blockchain.config.DataBase.CleanBackup(true, shardBlock.Header.ShardID)
+			if err != nil {
+				return NewBlockChainError(CleanBackUpError, err)
+			}
+			err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
+			if err != nil {
+				return NewBlockChainError(BackUpBestStateError, err)
+			}
+		}
+	}
 
 	oldCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
 
@@ -141,8 +141,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 		return err
 	}
 	newCommittee := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardCommittee)
-	isChanged := common.CompareStringArray(oldCommittee, newCommittee)
-	if isChanged {
+	if !common.CompareStringArray(oldCommittee, newCommittee) {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
 	}
 
@@ -589,7 +588,7 @@ func (shardBestState *ShardBestState) updateShardBestState(blockchain *BlockChai
 	}
 	//shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
 	shardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(beaconBlocks, shardBlock.Header.ShardID)
-	shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)...)
+	shardBestState.ShardPendingValidator = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
 	for stakePublicKey, txHash := range stakingTx {
 		shardBestState.StakingTx[stakePublicKey] = txHash
 	}
@@ -636,40 +635,6 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	}
 	shardBestState.ConsensusAlgorithm = common.BLS_CONSENSUS
 	return nil
-}
-func (shardBestState *ShardBestState) processBeaconBlocks(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock) {
-	newBeaconCandidate := []string{}
-	newShardCandidate := []string{}
-	// Add pending validator
-	for _, beaconBlock := range beaconBlocks {
-		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == StakeAction && l[2] == "beacon" {
-				beacon := strings.Split(l[1], ",")
-				newBeaconCandidate = append(newBeaconCandidate, beacon...)
-				if len(l) == 4 {
-					for i, v := range strings.Split(l[3], ",") {
-						GetBestStateShard(shardBestState.ShardID).StakingTx[newBeaconCandidate[i]] = v
-					}
-				}
-			}
-			if l[0] == StakeAction && l[2] == "shard" {
-				shard := strings.Split(l[1], ",")
-				newShardCandidate = append(newShardCandidate, shard...)
-				if len(l) == 4 {
-					for i, v := range strings.Split(l[3], ",") {
-						GetBestStateShard(shardBestState.ShardID).StakingTx[newShardCandidate[i]] = v
-					}
-				}
-			}
-			if l[0] == AssignAction && l[2] == "shard" {
-				if l[3] == strconv.Itoa(int(shardBlock.Header.ShardID)) {
-					Logger.log.Infof("SHARD %+v | Old ShardPendingValidatorList %+v", shardBlock.Header.ShardID, shardBestState.ShardPendingValidator)
-					shardBestState.ShardPendingValidator = append(shardBestState.ShardPendingValidator, incognitokey.CommitteeBase58KeyListToStruct(strings.Split(l[1], ","))...)
-					Logger.log.Infof("SHARD %+v | New ShardPendingValidatorList %+v", shardBlock.Header.ShardID, shardBestState.ShardPendingValidator)
-				}
-			}
-		}
-	}
 }
 func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *ShardBlock) error {
 	var err error

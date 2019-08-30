@@ -781,3 +781,13 @@ func (connManager *ConnManager) handleRelayNode(mPeers map[string]*wire.RawPeer)
 		go connManager.Connect(p.RawAddress, p.PublicKey, p.PublicKeyType, nil)
 	}
 }
+
+func (connManager *ConnManager) DropAllConnections() {
+	listener := connManager.config.ListenerPeer
+	if listener != nil {
+		allPeers := listener.GetPeerConnOfAll()
+		for _, peerConn := range allPeers {
+			peerConn.ForceClose()
+		}
+	}
+}
