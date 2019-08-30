@@ -1040,11 +1040,11 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	// loop on all outputcoin to decrypt data
 	results := make([]*privacy.OutputCoin, 0)
 	for _, out := range outCoints {
-		out = blockchain.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
-		if out == nil {
+		decryptedOut := blockchain.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
+		if decryptedOut == nil {
 			continue
 		} else {
-			results = append(results, out)
+			results = append(results, decryptedOut)
 		}
 	}
 
