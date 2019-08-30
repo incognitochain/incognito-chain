@@ -1260,9 +1260,9 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	txId, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
-	if err == nil {
-		Logger.log.Debugf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
-		return tx, nil
+	if err != nil {
+		Logger.log.Errorf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
+		return nil, err
 	}
 	Logger.log.Debugf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v", txId)
 	return tx, nil
