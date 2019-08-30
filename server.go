@@ -1778,3 +1778,25 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.C
 func (serverObj *Server) DropAllConnections() {
 	serverObj.connManager.DropAllConnections()
 }
+
+func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bool) error {
+	var msg wire.Message
+	var err error
+	if isBeacon {
+		msg, err = wire.MakeEmptyMessage(wire.CmdBlockBeacon)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		msg.(*wire.MessageBlockBeacon).Block = block.(*blockchain.BeaconBlock)
+	} else {
+		msg, err = wire.MakeEmptyMessage(wire.CmdBlockShard)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
+		msg.(*wire.MessageBlockShard).Block = block.(*blockchain.ShardBlock)
+	}
+	serverObj.PushMessageToAll(msg)
+	return nil
+}
