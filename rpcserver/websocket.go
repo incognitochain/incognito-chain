@@ -2,13 +2,15 @@ package rpcserver
 
 import (
 	"errors"
-	"github.com/gorilla/websocket"
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"net"
 	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type WsServer struct {
@@ -25,7 +27,7 @@ type WsServer struct {
 }
 type RpcSubResult struct {
 	Result interface{}
-	Error  *RPCError
+	Error  *rpcservice.RPCError
 }
 
 // Manage All Subcription from one socket connection
@@ -55,7 +57,7 @@ func NewSubscriptionManager(ws *websocket.Conn) *SubcriptionManager {
 // Start is used by rpcserver.go to start the rpc listener.
 func (wsServer *WsServer) Start() error {
 	if atomic.AddInt32(&wsServer.started, 1) != 1 {
-		return NewRPCError(AlreadyStartedError, nil)
+		return rpcservice.NewRPCError(rpcservice.AlreadyStartedError, nil)
 	}
 	wsServeMux := http.NewServeMux()
 	wsServer.server = &http.Server{
@@ -187,7 +189,7 @@ func (wsServer *WsServer) subscribe(subManager *SubcriptionManager, subRequest *
 	// Attempt to parse the JSON-RPC request into a known concrete command.
 	command := WsHandler[request.Method]
 	if command == nil {
-		jsonErr = NewRPCError(RPCMethodNotFoundError, errors.New("Method"+request.Method+"Not found"))
+		jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method"+request.Method+"Not found"))
 		Logger.log.Errorf("RPC from client %+v error %+v", subManager.ws.RemoteAddr(), jsonErr)
 		//Notify user, method not found
 		res, err := createMarshalledSubResponse(subRequest, nil, jsonErr)
@@ -257,9 +259,9 @@ func (wsServer *WsServer) unsubscribe(subManager *SubcriptionManager, subRequest
 	}
 	if !done {
 		if err != nil {
-			jsonErr = NewRPCError(UnsubcribeError, err)
+			jsonErr = rpcservice.NewRPCError(rpcservice.UnsubcribeError, err)
 		} else {
-			jsonErr = NewRPCError(UnsubcribeError, errors.New("No Subcription Found"))
+			jsonErr = rpcservice.NewRPCError(rpcservice.UnsubcribeError, errors.New("No Subcription Found"))
 		}
 		res, err := createMarshalledSubResponse(subRequest, nil, jsonErr)
 		if err != nil {
