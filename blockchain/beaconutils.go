@@ -68,7 +68,6 @@ func VerifyValidator(candidate string, rand int64, shardID byte, activeShards in
 // Formula ShardID: LSB[hash(candidatePubKey+randomNumber)]
 // Last byte of hash(candidatePubKey+randomNumber)
 func calculateCandidateShardID(candidate string, rand int64, activeShards int) (shardID byte) {
-
 	seed := candidate + strconv.Itoa(int(rand))
 	hash := common.HashB([]byte(seed))
 	// fmt.Println("Candidate public key", candidate)

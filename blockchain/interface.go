@@ -106,6 +106,7 @@ type ChainInterface interface {
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
 	CreateNewBlock(round int) (common.BlockInterface, error)
 	InsertBlk(block common.BlockInterface) error
+	InsertAndBroadcastBlock(block common.BlockInterface) error
 	ValidateAndInsertBlock(block common.BlockInterface) error
 	ValidateBlockWithBlockChain(block common.BlockInterface) error
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error

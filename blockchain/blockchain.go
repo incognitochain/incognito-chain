@@ -85,6 +85,7 @@ type Config struct {
 		PushMessageGetBlockCrossShardByHash(fromShard byte, toShard byte, blksHash []common.Hash, getFromPool bool, peerID libp2p.ID) error
 		PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 		UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
+		PushBlockToAll(block common.BlockInterface, isBeacon bool) error
 	}
 	// UserKeySet *incognitokey.KeySet
 
@@ -1433,7 +1434,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(blk
 			}
 			if amount != amountRes {
 				//fmt.Printf("[ndh] - - [error] Wrong amount %+v %+v\n", amount, amountRes)
-				return errors.New("Wrong amount")
+				return errors.Errorf("Wrong amount %v %v", amount, amountRes)
 			}
 
 			if res, err := txRequestTable[requester].Hash().Cmp(tx.GetMetadata().Hash()); err == nil && res != 0 {

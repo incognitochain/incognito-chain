@@ -317,8 +317,8 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 
 	if newBeaconHeight%uint64(chainParamEpoch) == 0 {
 		swapBeaconInstructions := []string{}
-		_, currentValidators, swappedValidator, beaconNextCommittee, _ := SwapValidator(incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator), incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee), beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
-		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 {
+		_, currentValidators, swappedValidator, beaconNextCommittee, err := SwapValidator(incognitokey.CommitteeKeyListToString(beaconBestState.BeaconPendingValidator), incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee), beaconBestState.MaxBeaconCommitteeSize, common.OFFSET)
+		if len(swappedValidator) > 0 || len(beaconNextCommittee) > 0 && err == nil {
 			swapBeaconInstructions = append(swapBeaconInstructions, "swap")
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(beaconNextCommittee, ","))
 			swapBeaconInstructions = append(swapBeaconInstructions, strings.Join(swappedValidator, ","))
@@ -432,9 +432,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	shardStates[shardID] = shardState
 	instructions := shardBlock.Instructions
 	Logger.log.Info(instructions)
-	if len(instructions) != 0 {
-		Logger.log.Infof("Instruction in shardBlock %+v, %+v \n", shardBlock.Header.Height, instructions)
-	}
 	// extract instructions
 	for _, instruction := range instructions {
 		if len(instruction) > 0 {
@@ -458,6 +455,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 				if len(instruction) != 2 {
 					continue
 				}
+				// TODO: check wether committee public key is still in candidate, pending validator or committee
 				stopAutoStakingInstructions = append(stopAutoStakingInstructions, instruction)
 			}
 		}

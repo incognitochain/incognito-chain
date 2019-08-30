@@ -116,13 +116,21 @@ func (e *BLSBFT) Start() error {
 					//validate single sig
 					if e.RoundData.Block != nil {
 						validatorIdx := common.IndexOfStr(voteMsg.Validator, e.RoundData.CommitteeBLS.StringList)
-						if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
-							e.logger.Error(err)
+						if validatorIdx != -1 {
+							if err := validateSingleBLSSig(e.RoundData.Block.Hash(), voteMsg.Vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
+								e.logger.Error(err)
+								continue
+							}
+							if len(voteMsg.Vote.BRI) != 0 {
+								if err := validateSingleBriSig(e.RoundData.Block.Hash(), voteMsg.Vote.BRI, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BRI_CONSENSUS]); err != nil {
+									e.logger.Error(err)
+									continue
+								}
+							}
+							e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
+							e.logger.Warn("vote added...")
 							continue
 						}
-						e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
-						e.logger.Warn("vote added...")
-						continue
 					}
 				}
 				if _, ok := e.EarlyVotes[voteMsg.RoundKey]; !ok {
@@ -134,6 +142,7 @@ func (e *BLSBFT) Start() error {
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(CONSENSUSNAME), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.isOngoing = false
+					e.enterNewRound()
 					continue
 				}
 
@@ -192,6 +201,7 @@ func (e *BLSBFT) Start() error {
 						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
+						//TODO: check issue invalid sig when swap
 						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							fmt.Print("\n")
@@ -204,14 +214,19 @@ func (e *BLSBFT) Start() error {
 							}
 							e.logger.Critical(err)
 							time.Sleep(1 * time.Second)
-							return
+							continue
 						}
 
-						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
-							e.logger.Error(err)
+						if err := e.Chain.InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
+							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
+								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
+									e.logger.Error(err)
+								}
+							}
 							time.Sleep(1 * time.Second)
 							continue
 						}
+						// e.Node.PushMessageToAll()
 						e.logger.Warn("Commit block! Wait for next round")
 						e.enterNewRound()
 					}
@@ -274,7 +289,6 @@ func (e *BLSBFT) enterNewRound() {
 		e.RoundData.State = ""
 		return
 	}
-
 	//if already running a round for current timeframe
 	if e.isInTimeFrame() && e.RoundData.State != NEWROUND {
 		return
@@ -282,11 +296,9 @@ func (e *BLSBFT) enterNewRound() {
 	e.setState(NEWROUND)
 	e.waitForNextRound()
 	e.InitRoundData()
-
 	e.logger.Info("")
 	e.logger.Info("============================================")
 	e.logger.Info("")
-
 	pubKey := e.UserKeySet.GetPublicKey()
 	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(CONSENSUSNAME)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
 		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
