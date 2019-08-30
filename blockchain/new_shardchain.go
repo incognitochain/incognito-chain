@@ -132,6 +132,17 @@ func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
 	return chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
 }
 
+func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	err := chain.Blockchain.InsertShardBlock(block.(*ShardBlock), true)
+	if err != nil {
+		return err
+	}
+	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
+	return nil
+}
+
 func (chain *ShardChain) GetActiveShardNumber() int {
 	return 0
 }

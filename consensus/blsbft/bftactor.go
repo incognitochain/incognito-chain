@@ -213,12 +213,11 @@ func (e *BLSBFT) Start() error {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[CONSENSUSNAME], common.Base58Version))
 							}
 							e.logger.Critical(err)
-							panic(err)
 							time.Sleep(1 * time.Second)
-							return
+							continue
 						}
 
-						if err := e.Chain.InsertBlk(e.RoundData.Block); err != nil {
+						if err := e.Chain.InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
 									e.logger.Error(err)

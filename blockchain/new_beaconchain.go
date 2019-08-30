@@ -90,6 +90,17 @@ func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
 	return chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
 }
 
+func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	err := chain.Blockchain.InsertBeaconBlock(block.(*BeaconBlock), true)
+	if err != nil {
+		return err
+	}
+	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
+	return nil
+}
+
 func (chain *BeaconChain) GetActiveShardNumber() int {
 	chain.BestState.lock.RLock()
 	defer chain.BestState.lock.RUnlock()
