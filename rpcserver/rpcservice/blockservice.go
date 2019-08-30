@@ -3,6 +3,7 @@ package rpcservice
 import (
 	"encoding/hex"
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
