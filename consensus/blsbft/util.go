@@ -31,20 +31,23 @@ func (e *BLSBFT) setState(state string) {
 }
 
 func (e *BLSBFT) getCurrentRound() int {
-	round := int(e.getTimeSinceLastBlock().Seconds() / TIMEOUT.Seconds())
-	if round == 0 {
+	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / TIMEOUT.Seconds())
+	if round < 0 {
 		return 1
 	}
-	return round
+	
+	return round+1
 }
 
 func (e *BLSBFT) isInTimeFrame() bool {
 	if e.Chain.CurrentHeight()+1 != e.RoundData.NextHeight {
 		return false
 	}
-	if e.getTimeSinceLastBlock() > TIMEOUT && e.getCurrentRound() != e.RoundData.Round {
+	
+	if e.getCurrentRound() != e.RoundData.Round {
 		return false
 	}
+	
 	return true
 }
 
