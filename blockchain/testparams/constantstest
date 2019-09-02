@@ -80,7 +80,7 @@ const (
 	TestnetEpoch       = 10
 	TestnetRandomTime  = 5
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 4
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
