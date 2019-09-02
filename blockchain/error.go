@@ -152,6 +152,9 @@ const (
 	StopAutoStakingMetadataError
 	AutoStakingRootHashError
 	FetchAllCommitteeValidatorCandidateError
+	BackupFromTxViewPointError
+	BackupFromCrossTxViewPointError
+	BackupDatabaseFromBeaconInstructionError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -288,6 +291,9 @@ var ErrCodeMessage = map[int]struct {
 	StopAutoStakingMetadataError:                      {-1126, "StopAutoStaking Metadata Error"},
 	AutoStakingRootHashError:                          {-1127, "Auto Re Staking Root Hash Error"},
 	FetchAllCommitteeValidatorCandidateError:          {-1128, "Fetch All Committee Validator Candidate Error"},
+	BackupFromTxViewPointError:                        {-1129, "Create Backup From TxViewPoint Error"},
+	BackupFromCrossTxViewPointError:                   {-1130, "Create Backup From CrossTxViewPoint Error"},
+	BackupDatabaseFromBeaconInstructionError:          {-1131, "Backup Database From BeaconInstruction Error"},
 }
 
 type BlockChainError struct {

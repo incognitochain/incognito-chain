@@ -134,15 +134,15 @@ func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock, beaconb
 	}
 
 	if err := blockchain.createBackupFromTxViewPoint(block); err != nil {
-		return err
+		return NewBlockChainError(BackupFromTxViewPointError, err)
 	}
 
 	if err := blockchain.createBackupFromCrossTxViewPoint(block); err != nil {
-		return err
+		return NewBlockChainError(BackupFromCrossTxViewPointError, err)
 	}
 
 	if err := blockchain.backupDatabaseFromBeaconInstruction(beaconblks, block.Header.ShardID); err != nil {
-		return err
+		return NewBlockChainError(BackupDatabaseFromBeaconInstructionError, err)
 	}
 
 	return nil
