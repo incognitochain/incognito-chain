@@ -35,19 +35,38 @@ func PKGen(sk *big.Int) *bn256.G2 {
 	return pk
 }
 
+var memCache *MemoryCache
+
 // AKGen take a seed and return BLS secret key
-func AKGen(listPKBytes []PublicKey, id int) (*bn256.G2, *big.Int) {
+func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
+	// cal akByte
 	akByte := []byte{}
-	akByte = append(akByte, listPKBytes[id]...)
-	for i := 0; i < len(listPKBytes); i++ {
-		akByte = append(akByte, listPKBytes[i]...)
-	}
+	akByte = append(akByte, idxPKByte...)
+	akByte = append(akByte, combinedPKBytes...)
 	akByte = Hash4Bls(akByte)
+
+	// cal akBInt
 	akBInt := B2I(akByte)
-	res := new(bn256.G2)
-	PKPn, _ := DecmprG2(listPKBytes[id])
-	res = res.ScalarMult(PKPn, akBInt)
-	return res, akBInt
+
+	// cache pkPn
+	if memCache == nil {
+		memCache = New()
+	}
+	cachedData, err := memCache.Get(akByte)
+	if err == nil {
+		res := &cachedData
+		return res, akBInt
+	} else {
+		// cal pkPn
+		pkPn, _ := DecmprG2(idxPKByte)
+
+		res := new(bn256.G2)
+		res.ScalarMult(pkPn, akBInt)
+
+		// cal result
+		memCache.Put(akByte, *res)
+		return res, akBInt
+	}
 }
 
 // ListAKGen take a seed and return BLS secret key
@@ -74,20 +93,33 @@ func AKGen(listPKBytes []PublicKey, id int) (*bn256.G2, *big.Int) {
 // }
 
 func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
-	wg := sync.WaitGroup{}
 	apkTmpList := make([]*bn256.G2, len(idx))
+
+	// pre-calculate for combined committee
+	combinedCommittee := []byte{}
+	for i := 0; i < len(committee); i++ {
+		combinedCommittee = append(combinedCommittee, committee[i]...)
+	}
+
+	// async to process
+	wg := sync.WaitGroup{}
+	wg.Add(len(idx))
 	for i := 0; i < len(idx); i++ {
-		wg.Add(1)
-		go func(index int) {
-			apkTmpList[index], _ = AKGen(committee, idx[index])
-			wg.Done()
-		}(i)
+		committeeByte := committee[idx[i]]
+		go func(index int, committeeByte []byte, combinedCommittee []byte, wg *sync.WaitGroup) {
+			defer wg.Done()
+			apkTmpList[index], _ = AKGen(committeeByte, combinedCommittee)
+		}(i, committeeByte, combinedCommittee, &wg)
 	}
 	wg.Wait()
+
+	// get final result
+	res := new(bn256.G2)
+	res.Unmarshal(apkTmpList[0].Marshal())
 	for i := 1; i < len(idx); i++ {
-		apkTmpList[0].Add(apkTmpList[0], apkTmpList[i])
+		res.Add(res, apkTmpList[i])
 	}
-	return apkTmpList[0]
+	return res
 }
 
 func AiGen(listPKBytes []PublicKey, id int) *big.Int {
