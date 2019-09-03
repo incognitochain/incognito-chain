@@ -2,13 +2,13 @@ package incognitokey
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
+	"github.com/pkg/errors"
 )
 
 type CommitteePublicKey struct {
