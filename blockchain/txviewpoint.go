@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 
 	"math/big"
@@ -127,7 +128,7 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 
 		// get data for Snderivators
 		snD := item.CoinDetails.GetSNDerivator()
-		ok, err = db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snD, common.BigIntSize), shardID)
+		ok, err = db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snD, common.BigIntSize))
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
@@ -174,12 +175,13 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				for pubkey, data := range snDs {
-					if snDs[pubkey] == nil {
-						snDs[pubkey] = make([]big.Int, 0)
+					if acceptedSnD[pubkey] == nil {
+						acceptedSnD[pubkey] = make([][]byte, 0)
 					}
-					snDs[pubkey] = append(snDs[pubkey], data...)
+					for _, snd := range data {
+						acceptedSnD[pubkey] = append(acceptedSnD[pubkey], snd.Bytes())
+					}
 				}
-				// acceptedSnD = append(acceptedSnD, snDs...)
 			}
 		case common.TxCustomTokenType:
 			{
@@ -241,9 +243,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					snDs[pubkey] = append(snDs[pubkey], data...)
 				}
 				// acceptedSnD = append(acceptedSnD, snDs...)
-				if err != nil {
+				/*if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
-				}
+				}*/
 
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
@@ -276,9 +278,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					}
 				}
 				// subView.listSnD = append(subView.listSnD, snDsP...)
-				if err != nil {
+				/*if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
-				}
+				}*/
 
 				view.privacyCustomTokenViewPoint[int32(indexTx)] = subView
 				view.privacyCustomTokenTxs[int32(indexTx)] = tx
@@ -301,7 +303,6 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	}
 	if len(acceptedSnD) > 0 {
 		view.mapSnD = acceptedSnD
-		// view.listSnD = acceptedSnD
 	}
 	return nil
 }
@@ -378,7 +379,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 
 		// get data for Snderivators
 		snD := item.CoinDetails.GetSNDerivator()
-		ok, err = db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snD, common.BigIntSize), shardID)
+		ok, err = db.HasSNDerivator(*tokenID, common.AddPaddingBigInt(snD, common.BigIntSize))
 		if !ok && err == nil {
 			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
 		}
@@ -395,7 +396,16 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	//@NOTICE: this function just work for Normal Transaction
-	for _, crossTransactions := range allShardCrossTransactions {
+
+	// sort by shard ID
+	shardIDs := []int{}
+	for k := range allShardCrossTransactions {
+		shardIDs = append(shardIDs, int(k))
+	}
+	sort.Ints(shardIDs)
+
+	for _, shardID := range shardIDs {
+		crossTransactions := allShardCrossTransactions[byte(shardID)]
 		for _, crossTransaction := range crossTransactions {
 			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, prvCoinID)
 			if err != nil {
@@ -414,10 +424,12 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 				acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 			}
 			for pubkey, data := range snDs {
-				if snDs[pubkey] == nil {
-					snDs[pubkey] = make([]big.Int, 0)
+				if acceptedSnD[pubkey] == nil {
+					acceptedSnD[pubkey] = make([][]byte, 0)
 				}
-				snDs[pubkey] = append(snDs[pubkey], data...)
+				for _, snd := range data {
+					acceptedSnD[pubkey] = append(acceptedSnD[pubkey], snd.Bytes())
+				}
 			}
 			if crossTransaction.TokenPrivacyData != nil && len(crossTransaction.TokenPrivacyData) > 0 {
 				for index, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
@@ -467,7 +479,6 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	}
 	if len(acceptedSnD) > 0 {
 		view.mapSnD = acceptedSnD
-		// view.listSnD = acceptedSnD
 	}
 	return nil
 }

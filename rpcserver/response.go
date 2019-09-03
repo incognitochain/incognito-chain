@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
 
@@ -11,12 +12,12 @@ import (
 // interface.  The Id field has to be a pointer for Go to put a null in it when
 // empty.
 type JsonResponse struct {
-	Id      *interface{}    `json:"Id"`
-	Result  json.RawMessage `json:"Result"`
-	Error   *RPCError       `json:"Error"`
-	Params  interface{}     `json:"Params"`
-	Method  string          `json:"Method"`
-	Jsonrpc string          `json:"Jsonrpc"`
+	Id      *interface{}         `json:"Id"`
+	Result  json.RawMessage      `json:"Result"`
+	Error   *rpcservice.RPCError `json:"Error"`
+	Params  interface{}          `json:"Params"`
+	Method  string               `json:"Method"`
+	Jsonrpc string               `json:"Jsonrpc"`
 }
 type SubcriptionResult struct {
 	Subscription string          `json:"Subscription"`
@@ -29,11 +30,11 @@ type SubcriptionResult struct {
 //
 // Typically callers will instead want to create the fully marshalled JSON-RPC
 // response to send over the wire with the MarshalResponse function.
-func newResponse(request *JsonRequest, marshalledResult []byte, rpcErr *RPCError) (*JsonResponse, error) {
+func newResponse(request *JsonRequest, marshalledResult []byte, rpcErr *rpcservice.RPCError) (*JsonResponse, error) {
 	id := request.Id
 	if !IsValidIDType(id) {
 		str := fmt.Sprintf("The id of type '%T' is invalid", id)
-		return nil, NewRPCError(ErrInvalidType, errors.New(str))
+		return nil, rpcservice.NewRPCError(rpcservice.InvalidTypeError, errors.New(str))
 	}
 	pid := &id
 	resp := &JsonResponse{
@@ -74,12 +75,12 @@ func IsValidIDType(id interface{}) bool {
 // passed parameters.  It will automatically convert errors that are not of
 // the type *btcjson.RPCError to the appropriate type as needed.
 func createMarshalledResponse(request *JsonRequest, result interface{}, replyErr error) ([]byte, error) {
-	var jsonErr *RPCError
+	var jsonErr *rpcservice.RPCError
 	if replyErr != nil {
-		if jErr, ok := replyErr.(*RPCError); ok {
+		if jErr, ok := replyErr.(*rpcservice.RPCError); ok {
 			jsonErr = jErr
 		} else {
-			jsonErr = internalRPCError(replyErr.Error(), "")
+			jsonErr = rpcservice.InternalRPCError(replyErr.Error(), "")
 		}
 	}
 	// MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC
@@ -103,12 +104,12 @@ func createMarshalledResponse(request *JsonRequest, result interface{}, replyErr
 // passed parameters.  It will automatically convert errors that are not of
 // the type *btcjson.RPCError to the appropriate type as needed.
 func createMarshalledSubResponse(subRequest *SubcriptionRequest, result interface{}, replyErr error) ([]byte, error) {
-	var jsonErr *RPCError
+	var jsonErr *rpcservice.RPCError
 	if replyErr != nil {
-		if jErr, ok := replyErr.(*RPCError); ok {
+		if jErr, ok := replyErr.(*rpcservice.RPCError); ok {
 			jsonErr = jErr
 		} else {
-			jsonErr = internalRPCError(replyErr.Error(), "")
+			jsonErr = rpcservice.InternalRPCError(replyErr.Error(), "")
 		}
 	}
 	// MarshalResponse marshals the passed id, result, and RPCError to a JSON-RPC

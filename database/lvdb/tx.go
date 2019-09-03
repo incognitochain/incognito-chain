@@ -68,12 +68,12 @@ func (db *db) ListSerialNumber(tokenID common.Hash, shardID byte) (map[string]ui
 
 	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
 	for iterator.Next() {
-		key := make([]byte, len(iterator.Key()))
-		copy(key, iterator.Key())
-		if string(key[len(key)-3:]) == "len" {
+		key1 := make([]byte, len(iterator.Key()))
+		copy(key1, iterator.Key())
+		if string(key1[len(key1)-3:]) == "len" {
 			continue
 		}
-		serialNumberInByte := key[len(key)-33:]
+		serialNumberInByte := key1[len(key1)-33:]
 		value := make([]byte, len(iterator.Value()))
 		copy(value, iterator.Value())
 		index := big.Int{}
@@ -212,6 +212,61 @@ func (db *db) HasCommitment(tokenID common.Hash, commitment []byte, shardID byte
 	}
 }
 
+// ListCommitment -  return all commitment and its index
+func (db *db) ListCommitment(tokenID common.Hash, shardID byte) (map[string]uint64, error) {
+	result := make(map[string]uint64)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
+	key = append(key, shardID)
+
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iterator.Next() {
+		key1 := make([]byte, len(iterator.Key()))
+		copy(key1, iterator.Key())
+		if string(key1[len(key1)-3:]) == "len" {
+			continue
+		}
+		if len(key1) < len(key)+33 {
+			continue
+		}
+		commitmentInByte := key1[len(key1)-33:]
+		value := make([]byte, len(iterator.Value()))
+		copy(value, iterator.Value())
+		index := big.Int{}
+		index.SetBytes(value)
+		commitment := base58.Base58Check{}.Encode(commitmentInByte, 0x0)
+		result[commitment] = index.Uint64()
+	}
+	return result, nil
+}
+
+// ListCommitmentIndices -  return all commitment index and its value
+func (db *db) ListCommitmentIndices(tokenID common.Hash, shardID byte) (map[uint64]string, error) {
+	result := make(map[uint64]string)
+	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
+	key = append(key, shardID)
+
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iterator.Next() {
+		key1 := make([]byte, len(iterator.Key()))
+		copy(key1, iterator.Key())
+		if string(key1[len(key1)-3:]) == "len" {
+			continue
+		}
+
+		commitmentInByte := make([]byte, len(iterator.Value()))
+		copy(commitmentInByte, iterator.Value())
+		if len(commitmentInByte) != 33 {
+			continue
+		}
+		indexInByte := key1[45:]
+		index := big.Int{}
+		index.SetBytes(indexInByte)
+		commitment := base58.Base58Check{}.Encode(commitmentInByte, 0x0)
+		result[index.Uint64()] = commitment
+	}
+	return result, nil
+}
+
 func (db *db) HasCommitmentIndex(tokenID common.Hash, commitmentIndex uint64, shardID byte) (bool, error) {
 	key := addPrefixToKeyHash(string(commitmentsPrefix), tokenID)
 	key = append(key, shardID)
@@ -322,9 +377,8 @@ func (db *db) CleanCommitments() error {
 }
 
 // StoreSNDerivators - store list serialNumbers by shardID
-func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID byte) error {
+func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte) error {
 	key := addPrefixToKeyHash(string(snderivatorsPrefix), tokenID)
-	key = append(key, shardID)
 
 	// "snderivator-data:nil"
 	batchData := []database.BatchData{}
@@ -347,16 +401,30 @@ func (db *db) StoreSNDerivators(tokenID common.Hash, sndArray [][]byte, shardID 
 }
 
 // HasSNDerivator - Check SnDerivator in list SnDerivators by shardID
-func (db *db) HasSNDerivator(tokenID common.Hash, data []byte, shardID byte) (bool, error) {
+func (db *db) HasSNDerivator(tokenID common.Hash, data []byte) (bool, error) {
 	key := addPrefixToKeyHash(string(snderivatorsPrefix), tokenID)
-	key = append(key, shardID)
 	keySpec := append(key, data...)
 	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, database.NewDatabaseError(database.HasSNDerivatorError, err, data, shardID, tokenID)
+		return false, database.NewDatabaseError(database.HasSNDerivatorError, err, data, -1, tokenID)
 	} else {
 		return hasValue, nil
 	}
+}
+
+func (db *db) ListSNDerivator(tokenID common.Hash) ([][]byte, error) {
+	result := make([][]byte, 0)
+	key := addPrefixToKeyHash(string(snderivatorsPrefix), tokenID)
+
+	iterator := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	for iterator.Next() {
+		key1 := make([]byte, len(iterator.Key()))
+		copy(key1, iterator.Key())
+
+		sndInByte := key1[len(key)-1:]
+		result = append(result, sndInByte)
+	}
+	return result, nil
 }
 
 // CleanCommitments - clear all list commitments in DB
