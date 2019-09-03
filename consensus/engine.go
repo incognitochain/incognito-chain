@@ -101,7 +101,10 @@ func (engine *Engine) watchConsensusCommittee() {
 				if engine.CurrentMiningChain != chainName {
 					engine.CurrentMiningChain = chainName
 					engine.config.Node.DropAllConnections()
-					panic("Yoesssss")
+				}
+			} else {
+				if engine.CurrentMiningChain != common.EmptyString && engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) == -1 {
+					engine.CurrentMiningChain = common.EmptyString
 				}
 			}
 		}

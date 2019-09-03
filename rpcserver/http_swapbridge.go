@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -11,7 +12,7 @@ import (
 )
 
 // handleGetBridgeSwapProof returns a proof of a new bridge committee (for a given beacon block height)
-func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBridgeSwapProof params: %+v", params)
 	listParams := params.([]interface{})
 	height := uint64(listParams[0].(float64))
@@ -21,19 +22,19 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	// Get proof of instruction on beacon
 	beaconInstProof, beaconBlock, err := getBridgeSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Get proof of instruction on bridge
 	bridgeInstProof, err := getBridgeSwapProofOnBridge(beaconBlock, bc, db, httpServer.config.ConsensusEngine)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
 	decodedInst, err := blockchain.DecodeInstruction(beaconInstProof.inst)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	inst := hex.EncodeToString(decodedInst)
 
