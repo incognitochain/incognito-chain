@@ -55,7 +55,6 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
 	cachedData, err := memCache.Get(akByte)
 	if err == nil {
 		res := &cachedData
-		//fmt.Printf("cached %v \n %v\n %v \n", idxPKByte, akByte, res.String())
 		return res, akBInt
 	} else {
 		// cal pkPn
@@ -66,7 +65,6 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
 
 		// cal result
 		memCache.Put(akByte, *res)
-		//fmt.Printf("no cached %v \n %v\n %v \n", idxPKByte, akByte, res.String())
 		return res, akBInt
 	}
 }
