@@ -59,12 +59,12 @@ func TestBuildSwapConfirmInstruction(t *testing.T) {
 	}{
 		{
 			desc: "Valid swap confirm instruction",
-			in:   getSwapConfirmInput(),
+			in:   getSwapBeaconConfirmInput(),
 		},
 		{
 			desc: "Invalid committee",
 			in: func() *swapInput {
-				s := getSwapConfirmInput()
+				s := getSwapBeaconConfirmInput()
 				s.vals[0] = s.vals[0] + "A"
 				return s
 			}(),
@@ -111,9 +111,17 @@ func checkSwapConfirmInst(t *testing.T, inst []string, input *swapInput) {
 	}
 }
 
-func getSwapConfirmInput() *swapInput {
+func getSwapBeaconConfirmInput() *swapInput {
 	return &swapInput{
 		meta:        70,
+		vals:        getCommitteeKeys(),
+		startHeight: 123,
+	}
+}
+
+func getSwapBridgeConfirmInput() *swapInput {
+	return &swapInput{
+		meta:        71,
 		vals:        getCommitteeKeys(),
 		startHeight: 123,
 	}
@@ -148,9 +156,59 @@ func getCommitteeKeys() []string {
 }
 
 func TestBuildBeaconSwapConfirmInstruction(t *testing.T) {
+	testCases := []struct {
+		desc string
+		in   *swapInput
+		err  bool
+	}{
+		{
+			desc: "Valid swap confirm instruction",
+			in:   getSwapBeaconConfirmInput(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			inst, err := buildBeaconSwapConfirmInstruction(tc.in.vals, tc.in.startHeight)
+			isErr := err != nil
+			if isErr != tc.err {
+				t.Error(errors.Errorf("expect error = %t, got %v", tc.err, err))
+			}
+			if tc.err {
+				return
+			}
+			tc.in.startHeight += 1 // new committee starts signing next block
+			checkSwapConfirmInst(t, inst, tc.in)
+		})
+	}
 }
 
 func TestBuildBridgeSwapConfirmInstruction(t *testing.T) {
+	testCases := []struct {
+		desc string
+		in   *swapInput
+		err  bool
+	}{
+		{
+			desc: "Valid swap confirm instruction",
+			in:   getSwapBridgeConfirmInput(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			inst, err := buildBridgeSwapConfirmInstruction(tc.in.vals, tc.in.startHeight)
+			isErr := err != nil
+			if isErr != tc.err {
+				t.Error(errors.Errorf("expect error = %t, got %v", tc.err, err))
+			}
+			if tc.err {
+				return
+			}
+			tc.in.startHeight += 1 // new committee starts signing next block
+			checkSwapConfirmInst(t, inst, tc.in)
+		})
+	}
 }
 
 func TestPickBridgeSwapConfirmInst(t *testing.T) {
