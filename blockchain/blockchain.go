@@ -525,7 +525,7 @@ func (blockchain *BlockChain) StoreSerialNumbersFromTxViewPoint(view TxViewPoint
 Uses an existing database to update the set of used tx by saving list SNDerivator of privacy,
 this is a list tx-out which are used by a new tx
 */
-func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint, shardID byte) error {
+func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint) error {
 	// commitment
 	keys := make([]string, 0, len(view.mapCommitments))
 	for k := range view.mapCommitments {
@@ -545,7 +545,7 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint,
 		// if pubkeyShardID == shardID {
 		snDsArray := view.mapSnD[k]
 		//for _, snd := range snDsArray {
-		err := blockchain.config.DataBase.StoreSNDerivators(*view.tokenID, snDsArray, view.shardID)
+		err := blockchain.config.DataBase.StoreSNDerivators(*view.tokenID, snDsArray)
 		if err != nil {
 			return err
 		}
@@ -752,7 +752,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			return err
 		}
 
-		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
+		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView)
 		if err != nil {
 			return err
 		}
@@ -771,7 +771,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		return err
 	}
 
-	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view)
 	if err != nil {
 		return err
 	}
@@ -839,7 +839,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 			return err
 		}
 		// store snd
-		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
+		err = blockchain.StoreSNDerivatorsFromTxViewPoint(*privacyCustomTokenSubView)
 		if err != nil {
 			return err
 		}
@@ -853,7 +853,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 		return err
 	}
 
-	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view, block.Header.ShardID)
+	err = blockchain.StoreSNDerivatorsFromTxViewPoint(*view)
 	if err != nil {
 		return err
 	}
@@ -966,8 +966,8 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 			if len(keySet.PrivateKey) > 0 || len(keySet.ReadonlyKey.Rk) > 0 {
 				// try to decrypt to get more data
 				err := result.Decrypt(keySet.ReadonlyKey)
-				if err == nil {
-					result.CoinDetails = outCoinTemp.CoinDetails
+				if err != nil {
+					return nil
 				}
 			}
 		}
@@ -1040,15 +1040,12 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 	// loop on all outputcoin to decrypt data
 	results := make([]*privacy.OutputCoin, 0)
 	for _, out := range outCoints {
-		out = blockchain.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
-		if out == nil {
+		decryptedOut := blockchain.DecryptOutputCoinByKey(out, keyset, shardID, tokenID)
+		if decryptedOut == nil {
 			continue
 		} else {
-			results = append(results, out)
+			results = append(results, decryptedOut)
 		}
-	}
-	if err != nil {
-		return nil, err
 	}
 
 	return results, nil
@@ -1238,10 +1235,6 @@ func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
 	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.config.DataBase, shardID, tokenID)
 	return transaction.RandomCommitmentsProcess(param)
-}
-
-func (blockchain BlockChain) CheckSNDerivatorExistence(tokenID *common.Hash, snd *big.Int, shardID byte) (bool, error) {
-	return transaction.CheckSNDerivatorExistence(tokenID, snd, shardID, blockchain.config.DataBase)
 }
 
 // func (blockchain *BlockChain) SetReadyState(shard bool, shardID byte, ready bool) {

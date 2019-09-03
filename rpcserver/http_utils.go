@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -19,7 +20,7 @@ var metaConstructors = map[string]metaConstructorType{
 	// createAndSendContractingRequest: metadata.NewContractingRequestFromMap,
 }
 
-func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
+func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
@@ -27,7 +28,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 
 	_, errParseKey := httpServer.GetKeySetFromPrivateKeyParams(arrayParams[0].(string))
 	if err := common.CheckError(errCons, errParseKey); err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	tx, err := httpServer.buildRawTransaction(params, meta)
@@ -38,7 +39,7 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
 		Logger.log.Errorf("\n\n\n\n\n\n\n createRawTxWithMetadata Error %+v \n\n\n\n\n\n", errMarshal)
-		return nil, NewRPCError(ErrUnexpected, errMarshal)
+		return nil, rpcservice.NewRPCError(rpcservice.JsonError, errMarshal)
 	}
 	result := jsonresult.CreateTransactionResult{
 		TxID:            tx.Hash().String(),
@@ -48,23 +49,23 @@ func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeC
 	return result, nil
 }
 
-func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *RPCError) {
+func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	metaRaw := arrayParams[len(arrayParams)-1].(map[string]interface{})
 	meta, errCons := metaConstructorType(metaRaw)
 	if errCons != nil {
-		return nil, NewRPCError(ErrUnexpected, errCons)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errCons)
 	}
 	tx, err := httpServer.buildRawCustomTokenTransaction(params, meta)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	fmt.Printf("sigPubKey after build: %v\n", tx.SigPubKey)
 	byteArrays, errMarshal := json.Marshal(tx)
 	if errMarshal != nil {
 		// return hex for a new tx
-		return nil, NewRPCError(ErrUnexpected, errMarshal)
+		return nil, rpcservice.NewRPCError(rpcservice.JsonError, errMarshal)
 	}
 	fmt.Printf("Created raw tx: %+v\n", tx)
 	result := jsonresult.CreateTransactionResult{
@@ -74,24 +75,24 @@ func (httpServer *HttpServer) createRawCustomTokenTxWithMetadata(params interfac
 	return result, nil
 }
 
-func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	tx := transaction.Tx{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.JsonError, err)
 	}
 
 	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.TxPoolRejectTxError, err)
 	}
 
 	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
@@ -99,7 +100,7 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	txMsg.(*wire.MessageTx).Transaction = &tx
@@ -114,25 +115,25 @@ func (httpServer *HttpServer) sendRawTxWithMetadata(params interface{}, closeCha
 	return result, nil
 }
 
-func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Info(params)
 	arrayParams := common.InterfaceSlice(params)
 	base58CheckDate := arrayParams[0].(string)
 	rawTxBytes, _, err := base58.Base58Check{}.Decode(base58CheckDate)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	tx := transaction.TxNormalToken{}
 	err = json.Unmarshal(rawTxBytes, &tx)
 	fmt.Printf("%+v\n", tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.JsonError, err)
 	}
 
 	hash, _, err := httpServer.config.TxMemPool.MaybeAcceptTransaction(&tx)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.TxPoolRejectTxError, err)
 	}
 
 	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
@@ -140,7 +141,7 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 	// broadcast message
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
 	if err != nil {
-		return nil, NewRPCError(ErrUnexpected, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	txMsg.(*wire.MessageTxToken).Transaction = &tx
@@ -155,7 +156,7 @@ func (httpServer *HttpServer) sendRawCustomTokenTxWithMetadata(params interface{
 	return result, nil
 }
 
-func (httpServer *HttpServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler httpHandler) (interface{}, *RPCError) {
+func (httpServer *HttpServer) createAndSendTxWithMetadata(params interface{}, closeChan <-chan struct{}, createHandler, sendHandler httpHandler) (interface{}, *rpcservice.RPCError) {
 	data, err := createHandler(httpServer, params, closeChan)
 	fmt.Printf("err create handler: %v\n", err)
 	if err != nil {
