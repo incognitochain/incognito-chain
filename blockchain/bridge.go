@@ -29,9 +29,13 @@ func FlattenAndConvertStringInst(insts [][]string) ([][]byte, error) {
 // decodeInstruction appends all part of an instruction and decode them if necessary (for special instruction that needed to be decoded before submitting to Ethereum)
 func DecodeInstruction(inst []string) ([]byte, error) {
 	flatten := []byte{}
+	var err error
 	switch inst[0] {
 	case strconv.Itoa(metadata.BeaconSwapConfirmMeta), strconv.Itoa(metadata.BridgeSwapConfirmMeta):
-		flatten = decodeSwapConfirmInst(inst)
+		flatten, err = decodeSwapConfirmInst(inst)
+		if err != nil {
+			return nil, err
+		}
 
 	case strconv.Itoa(metadata.BurningConfirmMeta):
 		var err error
@@ -49,24 +53,29 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 }
 
 // decodeSwapConfirmInst flattens all parts of a swap confirm instruction, decodes and concats it
-func decodeSwapConfirmInst(inst []string) []byte {
-	// TODO(@0xbunyip): handle error
-	m, _ := strconv.Atoi(inst[0])
-	s, _ := strconv.Atoi(inst[1])
+func decodeSwapConfirmInst(inst []string) ([]byte, error) {
+	m, errMeta := strconv.Atoi(inst[0])
+	s, errShard := strconv.Atoi(inst[1])
 	metaType := byte(m)
 	shardID := byte(s)
-	height, _, _ := base58.Base58Check{}.Decode(inst[2])
-	numVals, _, _ := base58.Base58Check{}.Decode(inst[3])
+	height, _, errHeight := base58.Base58Check{}.Decode(inst[2])
+	numVals, _, errNumVals := base58.Base58Check{}.Decode(inst[3])
 	// Special case: instruction storing beacon/bridge's committee => decode and sign on that instead
 	// We need to decode and then submit the pubkeys to Ethereum because we can't decode it on smart contract
-	addrs, _ := parseAndPadAddress(inst[4])
+	addrs, errAddrs := parseAndPadAddress(inst[4])
+	if err := common.CheckError(errMeta, errShard, errHeight, errNumVals, errAddrs); err != nil {
+		err = errors.Wrapf(err, "inst: %+v", inst)
+		BLogger.log.Error(err)
+		return nil, err
+	}
+
 	flatten := []byte{}
 	flatten = append(flatten, metaType)
 	flatten = append(flatten, shardID)
 	flatten = append(flatten, toBytes32BigEndian(height)...)
 	flatten = append(flatten, toBytes32BigEndian(numVals)...)
 	flatten = append(flatten, addrs...)
-	return flatten
+	return flatten, nil
 }
 
 // parseAndPadAddress decodes a list of address of a committee, pads each of them
