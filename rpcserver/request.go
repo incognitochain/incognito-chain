@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
 // JsonRequest is a type for raw JSON-RPC 1.0 requests.  The Method field identifies
@@ -40,7 +41,7 @@ func parseJsonRequest(rawMessage []byte) (*JsonRequest, error) {
 	var request JsonRequest
 	err := json.Unmarshal(rawMessage, &request)
 	if err != nil {
-		return &request, NewRPCError(RPCParseError, err)
+		return &request, rpcservice.NewRPCError(rpcservice.RPCParseError, err)
 	} else {
 		return &request, nil
 	}
@@ -59,7 +60,7 @@ func parseSubcriptionRequest(rawMessage []byte) (*SubcriptionRequest, error) {
 	var request SubcriptionRequest
 	err := json.Unmarshal(rawMessage, &request)
 	if err != nil {
-		return &request, NewRPCError(RPCParseError, err)
+		return &request, rpcservice.NewRPCError(rpcservice.RPCParseError, err)
 	} else {
 		return &request, nil
 	}

@@ -295,7 +295,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(privatekey *priv
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
 func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
 	responsedTxs := []metadata.Transaction{}
-	allCommitteeValidatorCandidateFlattenList, err := blockGenerator.chain.GetAllCommitteeValidatorCandidateFlattenList()
+	allCommitteeValidatorCandidateFlattenList, err := blockGenerator.chain.GetAllCommitteeValidatorCandidateFlattenListFromDatabase()
 	if err != nil {
 		return []metadata.Transaction{}, NewBlockChainError(FetchAllCommitteeValidatorCandidateError, err)
 	}
