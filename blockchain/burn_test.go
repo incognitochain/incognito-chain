@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strconv"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -25,70 +24,6 @@ const (
 )
 
 var incToken, _ = common.Hash{}.NewHashFromStr("1234ac4a9b9e0707957e21725381e39866ae247000000000000000000000000")
-
-func TestDecodeSwapConfirm(t *testing.T) {
-	addrs := []string{
-		"834f98e1b7324450b798359c9febba74fb1fd888",
-		"1250ba2c592ac5d883a0b20112022f541898e65b",
-		"2464c00eab37be5a679d6e5f7c8f87864b03bfce",
-		"6d4850ab610be9849566c09da24b37c5cfa93e50",
-	}
-	testCases := []struct {
-		desc string
-		inst []string
-		out  []byte
-	}{
-		{
-			desc: "Swap beacon instruction",
-			inst: buildEncodedSwapConfirmInst(70, 1, 123, addrs),
-			out:  buildDecodedSwapConfirmInst(70, 1, 123, addrs),
-		},
-		{
-			desc: "Swap bridge instruction",
-			inst: buildEncodedSwapConfirmInst(71, 1, 19827312, []string{}),
-			out:  buildDecodedSwapConfirmInst(71, 1, 19827312, []string{}),
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.desc, func(t *testing.T) {
-			decoded := decodeSwapConfirmInst(tc.inst)
-			if !bytes.Equal(decoded, tc.out) {
-				t.Errorf("invalid decoded swap inst, expect\n%v, got\n%v", tc.out, decoded)
-			}
-		})
-	}
-}
-
-func buildEncodedSwapConfirmInst(meta, shard, height int, addrs []string) []string {
-	a := []byte{}
-	for _, addr := range addrs {
-		d, _ := hex.DecodeString(addr)
-		a = append(a, d...)
-	}
-	inst := []string{
-		strconv.Itoa(meta),
-		strconv.Itoa(shard),
-		base58.Base58Check{}.Encode(big.NewInt(int64(height)).Bytes(), 0x00),
-		base58.Base58Check{}.Encode(big.NewInt(int64(len(addrs))).Bytes(), 0x00),
-		base58.Base58Check{}.Encode(a, 0x00),
-	}
-	return inst
-}
-
-func buildDecodedSwapConfirmInst(meta, shard, height int, addrs []string) []byte {
-	a := []byte{}
-	for _, addr := range addrs {
-		d, _ := hex.DecodeString(addr)
-		a = append(a, toBytes32BigEndian(d)...)
-	}
-	decoded := []byte{byte(meta)}
-	decoded = append(decoded, byte(shard))
-	decoded = append(decoded, toBytes32BigEndian(big.NewInt(int64(height)).Bytes())...)
-	decoded = append(decoded, toBytes32BigEndian(big.NewInt(int64(len(addrs))).Bytes())...)
-	decoded = append(decoded, a...)
-	return decoded
-}
 
 func TestPickBurningConfirm(t *testing.T) {
 	testCases := []struct {

@@ -192,26 +192,30 @@ func pickBridgeSwapConfirmInst(
 	return pickInstructionWithType(block.Instructions, shardType)
 }
 
-// parseAndConcatPubkeys parse pubkeys of a commmittee stored as string and concat them
-func parseAndConcatPubkeys(vals []string) []byte {
-	pks := []byte{}
+// parseAndConcatPubkeys parses pubkeys of a commmittee (stored as string), converts them to addresses and concat them together
+func parseAndConcatPubkeys(vals []string) ([]byte, error) {
+	addrs := []byte{}
 	for _, val := range vals {
 		cKey := &incognitokey.CommitteePublicKey{}
-		// TODO(@0xbunyip): handle err
-		cKey.FromBase58(val)
+		if err := cKey.FromBase58(val); err != nil {
+			return nil, err
+		}
 		miningKey := cKey.MiningPubKey[common.BRI_CONSENSUS]
-		pk, _ := crypto.DecompressPubkey(miningKey)
-		address := crypto.PubkeyToAddress(*pk)
+		pk, err := crypto.DecompressPubkey(miningKey)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot decompress miningKey %v", miningKey)
+		}
+		addr := crypto.PubkeyToAddress(*pk)
 
-		pks = append(pks, address[:]...)
+		addrs = append(addrs, addr[:]...)
 	}
-	return pks
+	return addrs, nil
 }
 
 // buildSwapConfirmInstruction builds a confirm instruction for either beacon
 // or bridge committee swap
 func buildSwapConfirmInstruction(meta int, currentValidators []string, startHeight uint64) []string {
-	comm := parseAndConcatPubkeys(currentValidators)
+	comm, _ := parseAndConcatPubkeys(currentValidators)
 
 	// Convert startHeight to big.Int to get bytes later
 	height := big.NewInt(0).SetUint64(startHeight)
