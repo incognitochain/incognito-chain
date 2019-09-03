@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"reflect"
 )
 
@@ -13,14 +14,14 @@ func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subc
 	Logger.log.Info("Handle Subscribe Shard Beststate", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	shardID := byte(arrayParams[0].(float64))
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardBeststateTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -56,13 +57,13 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 	Logger.log.Info("Handle Subscribe Beacon Beststate", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 0 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain NO params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain NO params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.BeaconBeststateTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}

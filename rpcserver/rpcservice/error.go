@@ -1,4 +1,4 @@
-package rpcserver
+package rpcservice
 
 import (
 	"fmt"
@@ -35,6 +35,8 @@ const (
 	NetworkError
 	TokenIsInvalidError
 	GetClonedBeaconBestStateError
+	GetBeaconBestBlockHashError
+	GetBeaconBestBlockError
 	GetClonedShardBestStateError
 	GetShardBlockByHeightError
 	GetShardBestBlockError
@@ -82,6 +84,8 @@ var ErrCodeMessage = map[int]struct {
 	GetShardBestBlockError:      {-2002, "Get shard best block error"},
 	GetBeaconBlockByHashError:   {-2003, "Get beacon block by hash error"},
 	GetBeaconBlockByHeightError: {-2004, "Get beacon block by height error"},
+	GetBeaconBestBlockHashError: {-2004, "Get beacon best block hash error"},
+	GetBeaconBestBlockError:     {-2005, "Get beacon best block error"},
 
 	// best state -3xxx
 	GetClonedBeaconBestStateError: {-3000, "Get Cloned Beacon Best State Error"},
@@ -105,8 +109,9 @@ var ErrCodeMessage = map[int]struct {
 type RPCError struct {
 	Code       int    `json:"Code,omitempty"`
 	Message    string `json:"Message,omitempty"`
-	err        error  `json:"Err"`
 	StackTrace string `json:"StackTrace"`
+
+	err error `json:"Err"`
 }
 
 func GetErrorCode(err int) int {
@@ -129,11 +134,16 @@ func (e RPCError) GetErr() error {
 // NewRPCError constructs and returns a new JSON-RPC error that is suitable
 // for use in a JSON-RPC JsonResponse object.
 func NewRPCError(key int, err error, param ...interface{}) *RPCError {
-	return &RPCError{
-		Code:    ErrCodeMessage[key].Code,
-		Message: fmt.Sprintf(ErrCodeMessage[key].Message, param),
-		err:     errors.Wrap(err, ErrCodeMessage[key].Message),
+	e := &RPCError{
+		Code: ErrCodeMessage[key].Code,
+		err:  errors.Wrap(err, ErrCodeMessage[key].Message),
 	}
+	if len(param) > 0 {
+		e.Message = fmt.Sprintf(ErrCodeMessage[key].Message, param)
+	} else {
+		e.Message = ErrCodeMessage[key].Message
+	}
+	return e
 }
 
 // internalRPCError is a convenience function to convert an internal error to
@@ -141,7 +151,7 @@ func NewRPCError(key int, err error, param ...interface{}) *RPCError {
 // RPC server subsystem since internal errors really should not occur.  The
 // context parameter is only used in the log Message and may be empty if it's
 // not needed.
-func internalRPCError(errStr, context string) *RPCError {
+func InternalRPCError(errStr, context string) *RPCError {
 	logStr := errStr
 	if context != "" {
 		logStr = context + ": " + errStr
