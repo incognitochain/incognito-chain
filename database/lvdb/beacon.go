@@ -388,3 +388,39 @@ func (db *db) HasCommitteeByHeight(height uint64) (bool, error) {
 	}
 	return exist, nil
 }
+
+func (db *db) StoreAutoStakingByHeight(height uint64, v interface{}) error {
+	//key: bea-aust-ep-{height}
+	//value: auto staking: map[string]bool
+	key := append(beaconPrefix, autoStakingPrefix...)
+	key = append(key, heightPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, height)
+	key = append(key, buf[:]...)
+
+	val, err := json.Marshal(v)
+	if err != nil {
+		return database.NewDatabaseError(database.StoreAutoStakingByHeightError, err)
+	}
+
+	if err := db.Put(key, val); err != nil {
+		return database.NewDatabaseError(database.StoreAutoStakingByHeightError, err)
+	}
+	return nil
+}
+
+func (db *db) FetchAutoStakingByHeight(height uint64) ([]byte, error) {
+	//key: bea-aust-ep-{height}
+	//value: auto staking: map[string]bool
+	key := append(beaconPrefix, autoStakingPrefix...)
+	key = append(key, heightPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, height)
+	key = append(key, buf[:]...)
+
+	b, err := db.Get(key)
+	if err != nil {
+		return nil, database.NewDatabaseError(database.FetchAutoStakingByHeightError, err)
+	}
+	return b, nil
+}

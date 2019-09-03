@@ -18,6 +18,7 @@ var (
 	crossShardKeyPrefix      = []byte("csh-")
 	nextCrossShardKeyPrefix  = []byte("ncsh-")
 	shardPrefix              = []byte("shd-")
+	autoStakingPrefix        = []byte("aust-")
 
 	shardToBeaconKeyPrefix       = []byte("stb-")
 	transactionKeyPrefix         = []byte("tx-")

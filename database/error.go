@@ -72,6 +72,8 @@ const (
 	FetchShardCommitteeByHeightError
 	FetchBeaconCommitteeByHeightError
 	HasShardCommitteeByHeightError
+	StoreAutoStakingByHeightError
+	FetchAutoStakingByHeightError
 
 	// Bridge
 	BridgeUnexpectedError
@@ -153,6 +155,8 @@ var ErrCodeMessage = map[int]struct {
 	FetchShardCommitteeByHeightError:  {-9017, "Fetch committee by height=%+v error"},
 	FetchBeaconCommitteeByHeightError: {-9018, "Fetch beacon committee by height=%+v error"},
 	HasShardCommitteeByHeightError:    {-9019, "Has committee shard by height error"},
+	StoreAutoStakingByHeightError:     {-9020, "Store Auto Staking By Height Error"},
+	FetchAutoStakingByHeightError:     {-9021, "Fetch Auto Staking By Height Error"},
 
 	// -10xxx bridge
 	BridgeUnexpectedError:      {-10000, "Insert ETH tx hash issued error"},

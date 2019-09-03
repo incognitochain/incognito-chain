@@ -141,6 +141,12 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(
 		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
 	}
 
+	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
+	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
+	if err != nil || funderWallet == nil {
+		return false, false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+	}
+
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
 	err = CommitteePublicKey.FromString(stakingMetadata.CommitteePublicKey)
 	if err != nil {
