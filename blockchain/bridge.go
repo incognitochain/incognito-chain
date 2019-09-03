@@ -184,14 +184,6 @@ func pickBurningConfirmInstruction(
 	return insts
 }
 
-// pickBeaconSwapConfirmInst finds all BeaconSwapConfirmMeta instructions in some beacon blocks
-func pickBeaconSwapConfirmInst(
-	beaconBlocks []*BeaconBlock,
-) [][]string {
-	instType := strconv.Itoa(metadata.BeaconSwapConfirmMeta)
-	return pickInstructionFromBeaconBlocks(beaconBlocks, instType)
-}
-
 // pickBridgeSwapConfirmInst finds all BridgeSwapConfirmMeta instructions in a shard to beacon block
 func pickBridgeSwapConfirmInst(
 	block *ShardToBeaconBlock,
@@ -240,9 +232,9 @@ func buildSwapConfirmInstruction(meta int, currentValidators []string, startHeig
 
 // buildBeaconSwapConfirmInstruction stores in an instruction the list of
 // new beacon validators and the block that they start signing on
-func buildBeaconSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
-	BLogger.log.Infof("New beaconComm - startHeight: %d comm: %x", startHeight, currentValidators)
-	return buildSwapConfirmInstruction(metadata.BeaconSwapConfirmMeta, currentValidators, startHeight)
+func buildBeaconSwapConfirmInstruction(currentValidators []string, blockHeight uint64) []string {
+	BLogger.log.Infof("New beaconComm - startHeight: %d comm: %x", blockHeight+1, currentValidators)
+	return buildSwapConfirmInstruction(metadata.BeaconSwapConfirmMeta, currentValidators, blockHeight+1)
 }
 
 // buildBridgeSwapConfirmInstruction stores in an instruction the list of
