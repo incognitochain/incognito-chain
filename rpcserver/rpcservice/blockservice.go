@@ -52,7 +52,7 @@ func (blockService BlockService) GetShardBestBlockHashByShardID(shardID byte) co
 	return shards[shardID].BestBlockHash
 }
 
-func (blockService BlockService) GetBeaconBestStates() (*blockchain.BeaconBestState, error) {
+func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconBestState, error) {
 	beacon, err := blockService.BlockChain.BestState.GetClonedBeaconBestState()
 	return beacon, err
 }
