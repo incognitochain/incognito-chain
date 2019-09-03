@@ -19,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
@@ -29,24 +30,26 @@ var (
 	// application shutdown.
 	logRotator *rotator.Rotator
 
-	backendLog        = common.NewBackend(logWriter{})
-	addrManagerLoger  = backendLog.Logger("Address Log", true)
-	connManagerLogger = backendLog.Logger("Connection Manager Log", true)
-	mainLogger        = backendLog.Logger("Server Log", false)
-	rpcLogger         = backendLog.Logger("RPC Log", false)
-	netsyncLogger     = backendLog.Logger("Netsync Log", true)
-	peerLogger        = backendLog.Logger("Peer Log", true)
-	dbLogger          = backendLog.Logger("Database Log", false)
-	dbmpLogger        = backendLog.Logger("Mempool Persistence DB Log", false)
-	walletLogger      = backendLog.Logger("Wallet log", false)
-	blockchainLogger  = backendLog.Logger("BlockChain log", false)
-	consensusLogger   = backendLog.Logger("Consensus log", false)
-	mempoolLogger     = backendLog.Logger("Mempool log", false)
-	transactionLogger = backendLog.Logger("Transaction log", false)
-	privacyLogger     = backendLog.Logger("Privacy log", false)
-	randomLogger      = backendLog.Logger("RandomAPI log", false)
-	bridgeLogger      = backendLog.Logger("DeBridge log", false)
-	metadataLogger    = backendLog.Logger("Metadata log", false)
+	backendLog             = common.NewBackend(logWriter{})
+	addrManagerLoger       = backendLog.Logger("Address Log", true)
+	connManagerLogger      = backendLog.Logger("Connection Manager Log", true)
+	mainLogger             = backendLog.Logger("Server Log", false)
+	rpcLogger              = backendLog.Logger("RPC Log", false)
+	rpcServiceLogger       = backendLog.Logger("RPC service Log", false)
+	rpcServiceBridgeLogger = backendLog.Logger("RPC service DeBridge Log", false)
+	netsyncLogger          = backendLog.Logger("Netsync Log", true)
+	peerLogger             = backendLog.Logger("Peer Log", true)
+	dbLogger               = backendLog.Logger("Database Log", false)
+	dbmpLogger             = backendLog.Logger("Mempool Persistence DB Log", false)
+	walletLogger           = backendLog.Logger("Wallet log", false)
+	blockchainLogger       = backendLog.Logger("BlockChain log", false)
+	consensusLogger        = backendLog.Logger("Consensus log", false)
+	mempoolLogger          = backendLog.Logger("Mempool log", false)
+	transactionLogger      = backendLog.Logger("Transaction log", false)
+	privacyLogger          = backendLog.Logger("Privacy log", false)
+	randomLogger           = backendLog.Logger("RandomAPI log", false)
+	bridgeLogger           = backendLog.Logger("DeBridge log", false)
+	metadataLogger         = backendLog.Logger("Metadata log", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -67,6 +70,8 @@ func init() {
 	connmanager.Logger.Init(connManagerLogger)
 	addrmanager.Logger.Init(addrManagerLoger)
 	rpcserver.Logger.Init(rpcLogger)
+	rpcservice.Logger.Init(rpcServiceLogger)
+	rpcservice.BLogger.Init(rpcServiceBridgeLogger)
 	netsync.Logger.Init(netsyncLogger)
 	peer.Logger.Init(peerLogger)
 	database.Logger.Init(dbLogger)
@@ -88,22 +93,24 @@ func init() {
 var subsystemLoggers = map[string]common.Logger{
 	"MAIN": mainLogger,
 
-	"AMGR": addrManagerLoger,
-	"CMGR": connManagerLogger,
-	"RPCS": rpcLogger,
-	"NSYN": netsyncLogger,
-	"PEER": peerLogger,
-	"DABA": dbLogger,
-	"WALL": walletLogger,
-	"BLOC": blockchainLogger,
-	"CONS": consensusLogger,
-	"MEMP": mempoolLogger,
-	"RAND": randomLogger,
-	"TRAN": transactionLogger,
-	"PRIV": privacyLogger,
-	"DBMP": dbmpLogger,
-	"DEBR": bridgeLogger,
-	"META": metadataLogger,
+	"AMGR":              addrManagerLoger,
+	"CMGR":              connManagerLogger,
+	"RPCS":              rpcLogger,
+	"RPCSservice":       rpcServiceLogger,
+	"RPCSbridgeservice": rpcServiceBridgeLogger,
+	"NSYN":              netsyncLogger,
+	"PEER":              peerLogger,
+	"DABA":              dbLogger,
+	"WALL":              walletLogger,
+	"BLOC":              blockchainLogger,
+	"CONS":              consensusLogger,
+	"MEMP":              mempoolLogger,
+	"RAND":              randomLogger,
+	"TRAN":              transactionLogger,
+	"PRIV":              privacyLogger,
+	"DBMP":              dbmpLogger,
+	"DEBR":              bridgeLogger,
+	"META":              metadataLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
