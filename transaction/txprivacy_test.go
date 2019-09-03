@@ -3,15 +3,16 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/constant-money/constant-chain/mempool"
+	"math/big"
+	"testing"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
-	"time"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -47,7 +48,7 @@ func TestInitTx(t *testing.T) {
 	senderPaymentAddress := senderKey.KeySet.PaymentAddress
 	senderPublicKey := senderPaymentAddress.Pk
 
-	shardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk) - 1])
+	shardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1])
 
 	// coin base tx to mint PRV
 	mintedAmount := 1000
@@ -84,14 +85,14 @@ func TestInitTx(t *testing.T) {
 			&senderKey.KeySet.PrivateKey,
 			[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress.KeySet.PaymentAddress, Amount: uint64(transferAmount)}},
 			coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil,
-			),
-		)
+		),
+	)
 	if err != nil {
 		t.Error(err)
 	}
 
 	senderPubKeyLastByte := tx1.GetSenderAddrLastByte()
-	assert.Equal(t, senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk) - 1], senderPubKeyLastByte)
+	assert.Equal(t, senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1], senderPubKeyLastByte)
 
 	actualFee := tx1.GetTxFee()
 	assert.Equal(t, uint64(fee), actualFee)
@@ -122,11 +123,9 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, 1, len(listInputSerialNumber))
 	assert.Equal(t, common.HashH(coinBaseOutput[0].CoinDetails.GetSerialNumber().Compress()), listInputSerialNumber[0])
 
-
 	isValidSanity, err = tx1.ValidateSanityData(nil)
 	assert.Equal(t, true, isValidSanity)
 	assert.Equal(t, nil, err)
-
 
 	isValid, err := tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
 	assert.Equal(t, true, isValid)
@@ -154,7 +153,6 @@ func TestInitTx(t *testing.T) {
 
 	err = tx1.ValidateTxWithBlockChain(nil, shardID, db)
 	assert.Equal(t, nil, err)
-
 
 	isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, shardID)
 	assert.Equal(t, nil, err)
@@ -222,8 +220,7 @@ func TestInitTx(t *testing.T) {
 	assert.Equal(t, true, isValidTx)
 }
 
-
-func TestInitSalaryTx(t *testing.T){
+func TestInitSalaryTx(t *testing.T) {
 	salary := uint64(1000)
 
 	senderKey, _ := wallet.Base58CheckDeserialize("112t8rnXCqbbNYBquntyd6EvDT4WiDDQw84ZSRDKmazkqrzi6w8rWyCVt7QEZgAiYAV4vhJiX7V9MCfuj4hGLoDN7wdU1LoWGEFpLs59X7K3")
@@ -231,7 +228,7 @@ func TestInitSalaryTx(t *testing.T){
 	senderPaymentAddress := senderKey.KeySet.PaymentAddress
 	receiverAddr := senderPaymentAddress
 
-	tx := new (Tx)
+	tx := new(Tx)
 	err := tx.InitTxSalary(salary, &receiverAddr, &senderKey.KeySet.PrivateKey, db, nil)
 	assert.Equal(t, nil, err)
 
