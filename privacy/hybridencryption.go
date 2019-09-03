@@ -26,7 +26,7 @@ func (ciphertext hybridCipherText) GetSymKeyEncrypted() []byte {
 }
 
 // isNil check whether ciphertext is nil or not
-func (ciphertext hybridCipherText) isNil() bool {
+func (ciphertext hybridCipherText) IsNil() bool {
 	if len(ciphertext.msgEncrypted) == 0 {
 		return true
 	}
@@ -54,7 +54,7 @@ func (hybridCipherText *hybridCipherText) UnmarshalJSON(data []byte) error {
 // Bytes converts ciphertext to bytes array
 // if ciphertext is nil, return empty byte array
 func (ciphertext hybridCipherText) Bytes() []byte {
-	if ciphertext.isNil() {
+	if ciphertext.IsNil() {
 		return []byte{}
 	}
 
@@ -112,7 +112,7 @@ func hybridEncrypt(msg []byte, publicKey *EllipticPoint) (ciphertext *hybridCiph
 // Using X-coordinate of aesKeyPoint to decrypts message
 func hybridDecrypt(ciphertext *hybridCipherText, privateKey *big.Int) (msg []byte, err error) {
 	// Validate ciphertext
-	if ciphertext.isNil() {
+	if ciphertext.IsNil() {
 		return []byte{}, errors.New("ciphertext must not be nil")
 	}
 
