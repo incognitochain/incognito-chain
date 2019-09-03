@@ -72,7 +72,7 @@ func decodeSwapConfirmInst(inst []string) []byte {
 // parseAndPadAddress decodes a list of address of a committee, pads each of them
 // to 32 bytes and concat them together
 func parseAndPadAddress(instContent string) ([]byte, error) {
-	addrPacked, _, err := (base58.Base58Check{}).Decode(instContent)
+	addrPacked, _, err := base58.DecodeCheck(instContent)
 	if err != nil {
 		return nil, errors.Wrapf(err, "instContent: %v", instContent)
 	}
