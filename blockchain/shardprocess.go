@@ -26,8 +26,8 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, shardID byte) error {
-	blockchain.BestState.Shard[shardID].lock.Lock()
-	defer blockchain.BestState.Shard[shardID].lock.Unlock()
+	blockchain.chainLock.Lock()
+	defer blockchain.chainLock.Unlock()
 	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
 	// fetch beacon blocks
 
@@ -590,7 +590,7 @@ func (shardBestState *ShardBestState) updateShardBestState(blockchain *BlockChai
 	if shardBlock.Header.Height == 1 {
 		shardBestState.ShardProposerIdx = 0
 	} else {
-		shardBestState.ShardProposerIdx += shardBlock.Header.Round
+		shardBestState.ShardProposerIdx = (shardBestState.ShardProposerIdx + shardBlock.Header.Round) % len(shardBestState.ShardCommittee)
 	}
 	//shardBestState.processBeaconBlocks(shardBlock, beaconBlocks)
 	shardPendingValidator, stakingTx := blockchain.processInstructionFromBeacon(beaconBlocks, shardBlock.Header.ShardID)
@@ -666,7 +666,11 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 			}
 			newCommittees := strings.Split(l[1], ",")
 			for _, v := range swapedCommittees {
-				delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
+				if txId, ok := shardBestState.StakingTx[v]; ok {
+					if checkReturnStakingTxExistence(txId, shardBlock) {
+						delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
+					}
+				}
 			}
 			if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
 				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees))
@@ -873,16 +877,16 @@ func (blockchain *BlockChain) updateDatabaseWithTransactionMetadata(shardBlock *
 */
 func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock *ShardBlock, shardID byte) {
 	//remove staking txid in beststate shard
-	go func() {
-		for _, l := range shardBlock.Body.Instructions {
-			if l[0] == SwapAction {
-				swapedCommittees := strings.Split(l[2], ",")
-				for _, v := range swapedCommittees {
-					delete(GetBestStateShard(shardID).StakingTx, v)
-				}
-			}
-		}
-	}()
+	//go func() {
+	//	for _, l := range shardBlock.Body.Instructions {
+	//		if l[0] == SwapAction {
+	//			swapedCommittees := strings.Split(l[2], ",")
+	//			for _, v := range swapedCommittees {
+	//				delete(GetBestStateShard(shardID).StakingTx, v)
+	//			}
+	//		}
+	//	}
+	//}()
 	//=========Remove invalid shard block in pool
 	go blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 	//updateShardBestState Cross shard pool: remove invalid block
