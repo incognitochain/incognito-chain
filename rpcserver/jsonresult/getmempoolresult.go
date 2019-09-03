@@ -1,7 +1,8 @@
 package jsonresult
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -22,6 +23,7 @@ func NewGetMempoolInfo(txMempool *mempool.TxPool) *GetMempoolInfo {
 		Bytes:         txMempool.Size(),
 		MempoolMaxFee: txMempool.MaxFee(),
 	}
+	// get list data from mempool
 	listTxsDetail := txMempool.ListTxsDetail()
 	if len(listTxsDetail) > 0 {
 		result.ListTxs = make([]GetMempoolInfoTx, 0)
@@ -29,6 +31,12 @@ func NewGetMempoolInfo(txMempool *mempool.TxPool) *GetMempoolInfo {
 			item := NewGetMempoolInfoTx(tx)
 			result.ListTxs = append(result.ListTxs, *item)
 		}
+	}
+	// sort for time
+	if len(result.ListTxs) > 0 {
+		sort.Slice(result.ListTxs, func(i, j int) bool {
+			return result.ListTxs[i].LockTime >= result.ListTxs[j].LockTime
+		})
 	}
 	return result
 }
@@ -55,18 +63,4 @@ func NewGetRawMempoolResult(txMemPool mempool.TxPool) *GetRawMempoolResult {
 		TxHashes: txMemPool.ListTxs(),
 	}
 	return result
-}
-
-type GetMempoolEntryResult struct {
-	Tx metadata.Transaction
-}
-
-func NewGetMempoolEntryResult(txMemPool mempool.TxPool, txID *common.Hash) (*GetMempoolEntryResult, error) {
-	result := &GetMempoolEntryResult{}
-	var err error
-	result.Tx, err = txMemPool.GetTx(txID)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
 }

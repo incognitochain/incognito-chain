@@ -2,15 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"log"
 	"reflect"
 	"time"
-
-	"github.com/incognitochain/incognito-chain/rpcserver"
 )
 
 func executeTest(filename string) (interface{}, error) {
-	var rpcError *rpcserver.RPCError
+	var rpcError *rpcservice.RPCError
 	//var result = make(map[string]interface{})
 	var rpcResult interface{}
 	scenarios, err := readfile(filename)
@@ -46,7 +45,7 @@ func executeTest(filename string) (interface{}, error) {
 			rpcResult, rpcError = makeRPCRequestJson(step.client, step.input.name, params...)
 		}
 		//data, err := command(step.client, step.input.params)
-		if rpcError != nil && rpcError.Code == rpcserver.GetErrorCode(rpcserver.ErrNetwork) {
+		if rpcError != nil && rpcError.Code == rpcservice.GetErrorCode(rpcservice.NetworkError) {
 			return rpcResult, rpcError
 		}
 		// check error

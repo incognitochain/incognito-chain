@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/pkg/errors"
@@ -16,7 +17,7 @@ type txs struct {
 	Txs []string `json:"Txs"`
 }
 
-func (httpServer *HttpServer) handleTestHttpServer(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleTestHttpServer(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return nil, nil
 }
 
@@ -28,11 +29,11 @@ type CountResult struct {
 	Fail    int
 }
 
-func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	httpServer.config.TxMemPool.SendTransactionToBlockGen()
 	return nil, nil
 }
-func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	Logger.log.Critical(arrayParams)
 	shardIDParam := int(arrayParams[0].(float64))
@@ -68,7 +69,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 	case "cstokenprivacy":
 		filename = "txs-shard" + fmt.Sprintf("%d", shardIDParam) + "-cstokenprivacy-5000.json"
 	default:
-		return CountResult{}, NewRPCError(ErrUnexpected, errors.New("Can't find file"))
+		return CountResult{}, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Can't find file"))
 	}
 
 	Logger.log.Critical("Getting Transactions from file: ", datadir+filename)
@@ -217,7 +218,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFile(params interface{}, cl
 	return CountResult{Success: success, Fail: fail}, nil
 }
 
-func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	Logger.log.Critical(arrayParams)
 	shardIDParam := int(arrayParams[0].(float64))
@@ -241,7 +242,7 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 			filenames = append(filenames, filename)
 		}
 	default:
-		return CountResult{}, NewRPCError(ErrUnexpected, errors.New("Can't find file"))
+		return CountResult{}, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Can't find file"))
 	}
 	for _, filename := range filenames {
 		Logger.log.Critical("Getting Transactions from file: ", datadir+filename)
