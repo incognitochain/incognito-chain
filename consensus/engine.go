@@ -93,12 +93,12 @@ func (engine *Engine) watchConsensusCommittee() {
 			role, shardID := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].GetPubkeyRole(userPublicKey.GetMiningKeyBase58(consensusType), 0)
 			if role != common.EmptyString {
 				if role == common.SHARD_ROLE {
-					if engine.CurrentMiningChain != chainName {
+					if engine.CurrentMiningChain == common.EmptyString {
 						engine.CurrentMiningChain = common.GetShardChainKey(shardID)
 						engine.config.Node.DropAllConnections()
 					}
 				} else {
-					if engine.CurrentMiningChain != chainName {
+					if engine.CurrentMiningChain == common.EmptyString {
 						engine.CurrentMiningChain = chainName
 						engine.config.Node.DropAllConnections()
 					}
