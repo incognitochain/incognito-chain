@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/stretchr/testify/assert"
 )
 
 var listPKsBytes []PublicKey
@@ -119,7 +120,7 @@ func fullBLSSignFlow(wantErr, rewriteKey bool, committeeSign []int) (float64, fl
 }
 
 func Test_Verify(t *testing.T) {
-	committeeSign := genSubset4Test(100, 100)
+	committeeSign := genSubset4Test(200, 200)
 	max := 0
 	for i := 1; i < len(committeeSign); i++ {
 		if committeeSign[i] > committeeSign[max] {
@@ -133,19 +134,26 @@ func Test_Verify(t *testing.T) {
 		return
 	}
 	data := []byte{0, 1, 2, 3, 4}
-	start := time.Now()
+	//start := time.Now()
 	sigs, err := sign(data, committeeSign)
-	t2 := time.Now().Sub(start)
-	fmt.Println(t2.Seconds())
+	//t2 := time.Now().Sub(start)
+	//fmt.Println(t2.Seconds())
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	cSig, err := combine(sigs)
-	start = time.Now()
+	start := time.Now()
 	res, _ := verify(data, cSig, committeeSign)
 	t3 := time.Now().Sub(start)
-	fmt.Println(res, t3.Seconds())
+	fmt.Println(res, t3.Seconds()*1000)
+	assert.Equal(t, true, res)
+
+	start = time.Now()
+	res, _ = verify(data, cSig, committeeSign)
+	t3 = time.Now().Sub(start)
+	fmt.Println(res, t3.Seconds()*1000)
+	assert.Equal(t, true, res)
 }
 
 func Test_fullBLSSignFlow(t *testing.T) {
