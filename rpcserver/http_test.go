@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"io/ioutil"
 	"log"
 	"net"
@@ -149,8 +150,8 @@ func TestHttpServerStart(t *testing.T) {
 	if errHttp == nil {
 		t.Fatalf("Expect error %+v but get no error", errHttp)
 	} else {
-		if errHttp.(*RPCError).Code != ErrCodeMessage[AlreadyStartedError].Code {
-			t.Fatalf("Expect %+v but get %+v", AlreadyStartedError, errHttp)
+		if errHttp.(*rpcservice.RPCError).Code != rpcservice.ErrCodeMessage[rpcservice.AlreadyStartedError].Code {
+			t.Fatalf("Expect %+v but get %+v", rpcservice.AlreadyStartedError, errHttp)
 		}
 	}
 	value := atomic.LoadInt32(&httpServer.started)
@@ -227,8 +228,8 @@ func TestHttpServerCheckAuth(t *testing.T) {
 	if ok, isLimitUser, err := httpServer.checkAuth(r, true); !(err != nil && !ok && !isLimitUser) {
 		t.Fatal("Expect no error, pass auth and limited user", err, ok, isLimitUser)
 	} else {
-		if err.(*RPCError).Code != ErrCodeMessage[AuthFailError].Code {
-			t.Fatalf("Expect %+v but get %+v", AuthFailError, err)
+		if err.(*rpcservice.RPCError).Code != rpcservice.ErrCodeMessage[rpcservice.AuthFailError].Code {
+			t.Fatalf("Expect %+v but get %+v", rpcservice.AuthFailError, err)
 		}
 	}
 	if ok, isLimitUser, err := httpServer.checkAuth(r, false); !(err == nil && !ok && !isLimitUser) {
@@ -238,8 +239,8 @@ func TestHttpServerCheckAuth(t *testing.T) {
 	if ok, isLimitUser, err := httpServer.checkAuth(r, true); !(err != nil && !ok && !isLimitUser) {
 		t.Fatal("Expect no error, pass auth and limited user", err, ok, isLimitUser)
 	} else {
-		if err.(*RPCError).Code != ErrCodeMessage[AuthFailError].Code {
-			t.Fatalf("Expect %+v but get %+v", AuthFailError, err)
+		if err.(*rpcservice.RPCError).Code != rpcservice.ErrCodeMessage[rpcservice.AuthFailError].Code {
+			t.Fatalf("Expect %+v but get %+v", rpcservice.AuthFailError, err)
 		}
 	}
 }
