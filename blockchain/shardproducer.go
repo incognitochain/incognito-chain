@@ -457,7 +457,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 				blockHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
 				bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
 				if err != nil {
-					Logger.log.Error(err)
+					BLogger.log.Error(err)
 					return instructions, shardPendingValidator, shardCommittee, err
 				}
 				BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
