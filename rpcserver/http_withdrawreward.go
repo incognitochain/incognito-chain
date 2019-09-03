@@ -5,11 +5,12 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 )
 
-func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	//VoteProposal - Step 2: Create Raw vote proposal transaction
 	// params = setBuildRawBurnTransactionParams(params, FeeVote)
 	arrayParams := common.InterfaceSlice(params)
@@ -17,7 +18,7 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 	param := map[string]interface{}{}
 	keyWallet, err := wallet.Base58CheckDeserialize(arrayParams[0].(string))
 	if err != nil {
-		return []byte{}, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
+		return []byte{}, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("Wrong privatekey %+v", err)))
 	}
 	keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
@@ -30,7 +31,7 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 	)
 }
 
-func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	//VoteProposal - Step 1: Client call rpc function to create vote proposal transaction
 	return httpServer.createAndSendTxWithMetadata(
 		params,
@@ -41,12 +42,12 @@ func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params inte
 }
 
 // handleGetRewardAmount - Get the reward amount of a payment address with all existed token
-func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	rewardAmountResult := make(map[string]uint64)
 	rewardAmounts := make(map[common.Hash]uint64)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		return nil, NewRPCError(RPCInvalidParamsError, errors.New("key component invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key component invalid"))
 	}
 	paymentAddress := arrayParams[0]
 
@@ -55,7 +56,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	if paymentAddress != "" {
 		senderKey, err := wallet.Base58CheckDeserialize(paymentAddress.(string))
 		if err != nil {
-			return nil, NewRPCError(UnexpectedError, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
 
 		keySet = &senderKey.KeySet
@@ -69,13 +70,13 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 
 	allCoinIDs, err := httpServer.config.BlockChain.GetAllCoinID()
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	for _, coinID := range allCoinIDs {
 		amount, err := (*httpServer.config.Database).GetCommitteeReward(keySet.PaymentAddress.Pk, coinID)
 		if err != nil {
-			return nil, NewRPCError(UnexpectedError, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
 		if coinID == common.PRVCoinID {
 			rewardAmountResult["PRV"] = amount
@@ -87,7 +88,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 	cusPrivTok, crossPrivToken, err := httpServer.config.BlockChain.ListPrivacyCustomToken()
 
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	for _, token := range cusPrivTok {
@@ -106,7 +107,7 @@ func (httpServer *HttpServer) handleGetRewardAmount(params interface{}, closeCha
 }
 
 // handleListRewardAmount - Get the reward amount of all committee with all existed token
-func (httpServer *HttpServer) handleListRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleListRewardAmount(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result := (*httpServer.config.Database).ListCommitteeReward()
 	return result, nil
 }

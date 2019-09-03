@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"reflect"
 )
 
@@ -13,13 +14,13 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	txHashTemp, ok := arrayParams[0].(string)
 	if !ok {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Invalid Tx Hash"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Tx Hash"))
 		cResult <- RpcSubResult{Error: err}
 	}
 	txHash, _ := common.Hash{}.NewHashFromStr(txHashTemp)
@@ -29,14 +30,14 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 		shardBlock, _, err := wsServer.config.BlockChain.GetShardBlockByHash(blockHash)
 		if err == nil {
 			res, err := jsonresult.NewTransactionDetail(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
-			cResult <- RpcSubResult{Result: res, Error: NewRPCError(UnexpectedError, err)}
+			cResult <- RpcSubResult{Result: res, Error: rpcservice.NewRPCError(rpcservice.UnexpectedError, err)}
 			return
 		}
 	}
 	// transaction not in database yet then subscribe new shard event block and watch
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewShardblockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -57,7 +58,7 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 				for index, tx := range shardBlock.Body.Transactions {
 					if tx.Hash().IsEqual(txHash) {
 						res, err := jsonresult.NewTransactionDetail(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
-						cResult <- RpcSubResult{Result: res, Error: NewRPCError(UnexpectedError, err)}
+						cResult <- RpcSubResult{Result: res, Error: rpcservice.NewRPCError(rpcservice.UnexpectedError, err)}
 						return
 					}
 				}
