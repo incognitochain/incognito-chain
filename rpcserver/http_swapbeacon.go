@@ -3,8 +3,9 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,35 +35,51 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	Logger.log.Infof("handleGetBeaconSwapProof params: %+v", params)
 	listParams := params.([]interface{})
 	height := uint64(listParams[0].(float64))
-	bc := httpServer.config.BlockChain
 	db := *httpServer.config.Database
 
-	// Get bridge block and corresponding beacon blocks
-	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height-1, bc, db)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	// Get proof of instruction on bridge
-	bridgeInstProof, err := getBeaconSwapProofOnBridge(bridgeBlock, db, httpServer.config.ConsensusEngine)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
 	// Get proof of instruction on beacon
-	beaconInstProof, err := getBeaconSwapProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db, httpServer.config.ConsensusEngine)
+	beaconInstProof, _, err := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
-	decodedInst, err := blockchain.DecodeInstruction(bridgeInstProof.inst)
+	decodedInst, err := blockchain.DecodeInstruction(beaconInstProof.inst)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	inst := hex.EncodeToString(decodedInst)
 
+	bridgeInstProof := &swapProof{}
 	return buildProofResult(inst, beaconInstProof, bridgeInstProof, "", ""), nil
+}
+
+// getSwapProofOnBeacon finds in a given beacon block a committee swap instruction and returns its proof
+func getSwapProofOnBeacon(
+	height uint64,
+	db database.DatabaseInterface,
+	ce ConsensusEngine,
+	meta int,
+) (*swapProof, *blockchain.BeaconBlock, error) {
+	// Get beacon block
+	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(db, height, height)
+	if len(beaconBlocks) == 0 {
+		return nil, nil, fmt.Errorf("cannot find beacon block with height %d", height)
+	}
+	b := beaconBlocks[0]
+
+	// Find bridge swap instruction in beacon block
+	insts := b.Body.Instructions
+	_, instID := findCommSwapInst(insts, meta)
+	if instID < 0 {
+		return nil, nil, fmt.Errorf("cannot find bridge swap instruction in beacon block")
+	}
+	block := &beaconBlock{BeaconBlock: b}
+	proof, err := buildProofForBlock(block, insts, instID, db, ce)
+	if err != nil {
+		return nil, nil, err
+	}
+	return proof, b, nil
 }
 
 // getShardAndBeaconBlocks returns a shard block (with all of its instructions) and the included beacon blocks
@@ -92,22 +109,6 @@ func getShardAndBeaconBlocks(
 	}
 	bridgeBlock.Body.Instructions = bridgeInsts
 	return bridgeBlock, beaconBlocks, nil
-}
-
-// getBeaconSwapProofOnBridge finds a beacon committee swap instruction in a given bridge block and returns its proof
-func getBeaconSwapProofOnBridge(
-	bridgeBlock *blockchain.ShardBlock,
-	db database.DatabaseInterface,
-	ce ConsensusEngine,
-) (*swapProof, error) {
-	insts := bridgeBlock.Body.Instructions
-	_, instID := findCommSwapInst(insts, metadata.BeaconSwapConfirmMeta)
-	if instID < 0 {
-		return nil, fmt.Errorf("cannot find beacon swap instruction in bridge block")
-	}
-
-	block := &shardBlock{ShardBlock: bridgeBlock}
-	return buildProofForBlock(block, insts, instID, db, ce)
 }
 
 type block interface {
@@ -301,18 +302,6 @@ func (sb *shardBlock) MetaHash() []byte {
 func (sb *shardBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 	return ce.ExtractBridgeValidationData(sb)
 }
-
-// buildSignersProof builds the merkle proofs for some elements in a list of pubkeys
-/*func buildSignersProof(pubkeys [][]byte, idxs []int) []*keccak256MerkleProof {
-	merkles := blockchain.BuildKeccak256MerkleTree(pubkeys)
-	BLogger.log.Debugf("pubkeys: %x", pubkeys)
-	BLogger.log.Debugf("merkles: %x", merkles)
-	proofs := make([]*keccak256MerkleProof, len(pubkeys))
-	for i, pid := range idxs {
-		proofs[i] = buildProofFromTree(merkles, pid)
-	}
-	return proofs
-}*/
 
 // findBeaconBlockWithInst finds a beacon block with a specific instruction and the instruction's index; nil if not found
 func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) (*blockchain.BeaconBlock, int) {

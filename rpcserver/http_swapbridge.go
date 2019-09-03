@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -20,7 +21,7 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	db := *httpServer.config.Database
 
 	// Get proof of instruction on beacon
-	beaconInstProof, beaconBlock, err := getBridgeSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine)
+	beaconInstProof, beaconBlock, err := getSwapProofOnBeacon(height, db, httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -56,33 +57,6 @@ func getBridgeSwapProofOnBridge(
 	insts := b.Body.Instructions
 	block := &shardBlock{ShardBlock: b}
 	return buildProofForBlock(block, insts, instID, db, ce)
-}
-
-// getBridgeSwapProofOnBeacon finds in a given beacon block a bridge committee swap instruction and returns its proof
-func getBridgeSwapProofOnBeacon(
-	height uint64,
-	db database.DatabaseInterface,
-	ce ConsensusEngine,
-) (*swapProof, *blockchain.BeaconBlock, error) {
-	// Get beacon block
-	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(db, height, height)
-	if len(beaconBlocks) == 0 {
-		return nil, nil, fmt.Errorf("cannot find beacon block with height %d", height)
-	}
-	b := beaconBlocks[0]
-
-	// Find bridge swap instruction in beacon block
-	insts := b.Body.Instructions
-	_, instID := findCommSwapInst(insts, metadata.BridgeSwapConfirmMeta)
-	if instID < 0 {
-		return nil, nil, fmt.Errorf("cannot find bridge swap instruction in beacon block")
-	}
-	block := &beaconBlock{BeaconBlock: b}
-	proof, err := buildProofForBlock(block, insts, instID, db, ce)
-	if err != nil {
-		return nil, nil, err
-	}
-	return proof, b, nil
 }
 
 // findBridgeBlockWithInst traverses all shard blocks included in a beacon block and returns the one containing a bridge swap instruction
