@@ -238,18 +238,14 @@ func buildSwapConfirmInstruction(meta int, currentValidators []string, startHeig
 
 // buildBeaconSwapConfirmInstruction stores in an instruction the list of
 // new beacon validators and the block that they start signing on
-func buildBeaconSwapConfirmInstruction(currentValidators []string, blockHeight uint64) []string {
+func buildBeaconSwapConfirmInstruction(currentValidators []string, blockHeight uint64) ([]string, error) {
 	BLogger.log.Infof("New beaconComm - startHeight: %d comm: %x", blockHeight+1, currentValidators)
-	inst, _ := buildSwapConfirmInstruction(metadata.BeaconSwapConfirmMeta, currentValidators, blockHeight+1)
-	return inst
-	// return buildSwapConfirmInstruction(metadata.BeaconSwapConfirmMeta, currentValidators, blockHeight+1)
+	return buildSwapConfirmInstruction(metadata.BeaconSwapConfirmMeta, currentValidators, blockHeight+1)
 }
 
 // buildBridgeSwapConfirmInstruction stores in an instruction the list of
 // new bridge validators and the block that they start signing on
-func buildBridgeSwapConfirmInstruction(currentValidators []string, startHeight uint64) []string {
-	BLogger.log.Infof("New bridgeComm - startHeight: %d comm: %x", startHeight, currentValidators)
-	inst, _ := buildSwapConfirmInstruction(metadata.BridgeSwapConfirmMeta, currentValidators, startHeight)
-	return inst
-	// return buildSwapConfirmInstruction(metadata.BridgeSwapConfirmMeta, currentValidators, startHeight)
+func buildBridgeSwapConfirmInstruction(currentValidators []string, blockHeight uint64) ([]string, error) {
+	BLogger.log.Infof("New bridgeComm - startHeight: %d comm: %x", blockHeight+1, currentValidators)
+	return buildSwapConfirmInstruction(metadata.BridgeSwapConfirmMeta, currentValidators, blockHeight+1)
 }
