@@ -51,6 +51,80 @@ func TestParseAndConcatPubkeys(t *testing.T) {
 	}
 }
 
+func TestBuildSwapConfirmInstruction(t *testing.T) {
+	testCases := []struct {
+		desc string
+		in   *swapInput
+		err  bool
+	}{
+		{
+			desc: "Valid swap confirm instruction",
+			in:   getSwapConfirmInput(),
+		},
+		{
+			desc: "Invalid committee",
+			in: func() *swapInput {
+				s := getSwapConfirmInput()
+				s.vals[0] = s.vals[0] + "A"
+				return s
+			}(),
+			err: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			inst, err := buildSwapConfirmInstruction(tc.in.meta, tc.in.vals, tc.in.startHeight)
+			isErr := err != nil
+			if isErr != tc.err {
+				t.Error(errors.Errorf("expect error = %t, got %v", tc.err, err))
+			}
+			if tc.err {
+				return
+			}
+			checkSwapConfirmInst(t, inst, tc.in)
+		})
+	}
+}
+
+func checkSwapConfirmInst(t *testing.T, inst []string, input *swapInput) {
+	if meta, err := strconv.Atoi(inst[0]); err != nil || meta != input.meta {
+		t.Errorf("invalid meta, expect %d, got %d, err = %v", input.meta, meta, err)
+	}
+	if bridgeID, err := strconv.Atoi(inst[1]); err != nil || bridgeID != 1 {
+		t.Errorf("invalid bridgeID, expect %d, got %d, err = %v", 1, bridgeID, err)
+	}
+	if b, ok := checkDecodeB58(t, inst[2]); ok {
+		if h := big.NewInt(0).SetBytes(b); h.Uint64() != input.startHeight {
+			t.Errorf("invalid height, expect %d, got %d", input.startHeight, h)
+		}
+	}
+	if b, ok := checkDecodeB58(t, inst[3]); ok {
+		if numVals := big.NewInt(0).SetBytes(b); numVals.Uint64() != uint64(len(input.vals)) {
+			t.Errorf("invalid #vals, expect %d, got %d", len(input.vals), numVals)
+		}
+	}
+	if b, ok := checkDecodeB58(t, inst[4]); ok {
+		if !bytes.Equal(b, getCommitteeAddresses()) {
+			t.Errorf("invalid committee addresses, expect %x, got %x", input.vals, b)
+		}
+	}
+}
+
+func getSwapConfirmInput() *swapInput {
+	return &swapInput{
+		meta:        70,
+		vals:        getCommitteeKeys(),
+		startHeight: 123,
+	}
+}
+
+type swapInput struct {
+	meta        int
+	vals        []string
+	startHeight uint64
+}
+
 func getCommitteeAddresses() []byte {
 	comm := []string{
 		"9BC0faE7BB432828759B6e391e0cC99995057791",
@@ -71,9 +145,6 @@ func getCommitteeKeys() []string {
 		"121VhftSAygpEJZ6i9jGk9dvuAMKafpQ1EiTVzFiUVLDYBAfmjkidFCjAJD7UpJQkeakutbs4MfGx1AizjdQ49WY2TWDw2q5sMNsoeHSPSE3Qaqxd45HRAdHH2A7cWseo4sMAVWchFuRaoUJrTB36cqjXVKet1aK8sQJQbPwmnrmHnztsaEw6Soi6vg7TkoG96HJwxQVZaUtWfPpWBZQje5SnLyB15VYqs7KBSK2Fqz4jk2L18idrxXojQQYRfigfdNrLsjwT7FMJhNkN31YWiCs47yZX9hzixqwj4DpsmHQqM1S7FmNApWGePXT86woSTL9yUqAYaA9xXkYDPsajjbxag7vqDyGtbanG7rzZSP3L93oiR4bFxmstYyghsezoXVUoJs9wy98JGH3MmDgZ8gK64sAAsgAu6Lk4AjvkreEyK4K",
 		"121VhftSAygpEJZ6i9jGk9dPdVubogXXJe23BYZ1uBiJq4x6aLuEar5iRzsk1TfR995g4C18bPV8yi8frkoeJdPfK2a9CAfaroJdgmBHSUi1yVVAWttSDDAT5PEbr1XhnTGmP1Z82dPwKucctwLwRzDTkBXPfWXwMpYCLs21umN8zpuoR47xZhMqDEN2ZAuWcjZhnBDoxpnmhDgoRBe7QwL2KGGGyBVhXJHc4P15V8msCLxArxKX9U2TT2bQMpw18p25vkfDX7XB2ZyozZox46cKj8PTVf2BjAhMzk5dghb3ipX4kp4p8cpVSnSpsGB8UJwer4LxHhN2sRDm88M8PH3xxtAgs1RZBmPH6EojnbxxU5XZgGtouRda1tjEp5jFDgp2h87gY5VzEME9u5FEKyiAjR1Ye7429PGTmiSf48mtm1xW",
 	}
-}
-
-func TestBuildSwapConfirmInstruction(t *testing.T) {
 }
 
 func TestBuildBeaconSwapConfirmInstruction(t *testing.T) {
@@ -131,9 +202,9 @@ func buildEncodedSwapConfirmInst(meta, shard, height int, addrs []string) []stri
 	inst := []string{
 		strconv.Itoa(meta),
 		strconv.Itoa(shard),
-		base58.Base58Check{}.Encode(big.NewInt(int64(height)).Bytes(), 0x00),
-		base58.Base58Check{}.Encode(big.NewInt(int64(len(addrs))).Bytes(), 0x00),
-		base58.Base58Check{}.Encode(a, 0x00),
+		base58.EncodeCheck(big.NewInt(int64(height)).Bytes()),
+		base58.EncodeCheck(big.NewInt(int64(len(addrs))).Bytes()),
+		base58.EncodeCheck(a),
 	}
 	return inst
 }
@@ -150,4 +221,13 @@ func buildDecodedSwapConfirmInst(meta, shard, height int, addrs []string) []byte
 	decoded = append(decoded, toBytes32BigEndian(big.NewInt(int64(len(addrs))).Bytes())...)
 	decoded = append(decoded, a...)
 	return decoded
+}
+
+func checkDecodeB58(t *testing.T, e string) ([]byte, bool) {
+	b, _, err := base58.DecodeCheck(e)
+	if err != nil {
+		t.Error(errors.WithStack(err))
+		return nil, false
+	}
+	return b, true
 }
