@@ -2,12 +2,13 @@ package rpcserver
 
 import (
 	"errors"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"reflect"
 )
 
 func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -59,7 +60,7 @@ func (wsServer *WsServer) handleSubscribePendingTransaction(params interface{}, 
 					if tx.Hash().IsEqual(txHash) {
 						res, err := jsonresult.NewTransactionDetail(tx, shardBlock.Hash(), shardBlock.Header.Height, index, shardBlock.Header.ShardID)
 						if err != nil {
-							cResult <- RpcSubResult{Result: res, Error: NewRPCError(UnexpectedError, err)}
+							cResult <- RpcSubResult{Result: res, Error: rpcservice.NewRPCError(rpcservice.UnexpectedError, err)}
 						} else {
 							cResult <- RpcSubResult{Result: res, Error: nil}
 						}
