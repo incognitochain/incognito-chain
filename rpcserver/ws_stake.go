@@ -9,19 +9,21 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"reflect"
 )
 
 func (wsServer *WsServer) handleSubcribeShardCandidateByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
 	Logger.log.Info("Handle Subcribe Shard Candidate By Pubkey", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	candidate, ok := arrayParams[0].(string)
 	if !ok {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Invalid Public Key"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Public Key"))
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get candidate from beacon beststate
@@ -32,7 +34,7 @@ func (wsServer *WsServer) handleSubcribeShardCandidateByPublickey(params interfa
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -72,13 +74,13 @@ func (wsServer *WsServer) handleSubcribeShardPendingValidatorByPublickey(params 
 	Logger.log.Info("Handle Subcribe Shard Validator By Pubkey", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	validator, ok := arrayParams[0].(string)
 	if !ok {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Invalid Public Key"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Public Key"))
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get validator from beacon beststate
@@ -94,7 +96,7 @@ func (wsServer *WsServer) handleSubcribeShardPendingValidatorByPublickey(params 
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -137,13 +139,13 @@ func (wsServer *WsServer) handleSubcribeShardCommitteeByPublickey(params interfa
 	Logger.log.Info("Handle Subcribe Shard Committee By Pubkey", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	committee, ok := arrayParams[0].(string)
 	if !ok {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Invalid Public Key"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Public Key"))
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get committee from beacon beststate
@@ -159,7 +161,7 @@ func (wsServer *WsServer) handleSubcribeShardCommitteeByPublickey(params interfa
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -202,13 +204,13 @@ func (wsServer *WsServer) handleSubcribeBeaconCandidateByPublickey(params interf
 	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	candidate, ok := arrayParams[0].(string)
 	if !ok {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Invalid Public Key"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Public Key"))
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get candidate from beacon beststate
@@ -219,7 +221,7 @@ func (wsServer *WsServer) handleSubcribeBeaconCandidateByPublickey(params interf
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -257,13 +259,13 @@ func (wsServer *WsServer) handleSubcribeBeaconPendingValidatorByPublickey(params
 	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	validator, ok := arrayParams[0].(string)
 	if !ok {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Invalid Public Key"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Public Key"))
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get validator from beacon beststate
@@ -274,7 +276,7 @@ func (wsServer *WsServer) handleSubcribeBeaconPendingValidatorByPublickey(params
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -312,13 +314,13 @@ func (wsServer *WsServer) handleSubcribeBeaconCommitteeByPublickey(params interf
 	Logger.log.Info("Handle Subcribe Pending Transaction", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	committee, ok := arrayParams[0].(string)
 	if !ok {
-		err := NewRPCError(RPCInvalidParamsError, errors.New("Invalid Public Key"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Invalid Public Key"))
 		cResult <- RpcSubResult{Error: err}
 	}
 	// try to get candidate from beacon beststate
@@ -329,7 +331,7 @@ func (wsServer *WsServer) handleSubcribeBeaconCommitteeByPublickey(params interf
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
-		err := NewRPCError(SubcribeError, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}

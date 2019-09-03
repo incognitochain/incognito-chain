@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ func TestCreateAndSendCrossNormalTransaction(t *testing.T) {
 	}
 	_, err = executeTest("./testsdata/transaction/cross_normal_transaction.json")
 	if err != nil {
-		if rpcError, ok := err.(*rpcserver.RPCError); ok {
+		if rpcError, ok := err.(*rpcservice.RPCError); ok {
 			if rpcError != nil {
 				t.Fatal(err)
 			}
@@ -30,7 +30,7 @@ func TestCreateAndSendCrossCustomTokenTransaction(t *testing.T) {
 	}
 	_, err = executeTest("./testsdata/transaction/cross_custom_token_transaction.json")
 	if err != nil {
-		if rpcError, ok := err.(*rpcserver.RPCError); ok {
+		if rpcError, ok := err.(*rpcservice.RPCError); ok {
 			if rpcError != nil {
 				t.Fatal(err)
 			}
@@ -47,7 +47,7 @@ func TestCreateAndSendCrossCustomTokenPrivacyTransaction(t *testing.T) {
 	}
 	_, err = executeTest("./testsdata/transaction/cross_custom_token_privacy_transaction.json")
 	if err != nil {
-		if rpcError, ok := err.(*rpcserver.RPCError); ok {
+		if rpcError, ok := err.(*rpcservice.RPCError); ok {
 			if rpcError != nil {
 				t.Fatal(err)
 			}
