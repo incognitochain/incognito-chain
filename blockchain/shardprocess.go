@@ -666,7 +666,11 @@ func (shardBestState *ShardBestState) processShardBlockInstruction(shardBlock *S
 			}
 			newCommittees := strings.Split(l[1], ",")
 			for _, v := range swapedCommittees {
-				delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
+				if txId, ok := shardBestState.StakingTx[v]; ok {
+					if checkReturnStakingTxExistence(txId, shardBlock) {
+						delete(GetBestStateShard(shardBestState.ShardID).StakingTx, v)
+					}
+				}
 			}
 			if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
 				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees))
@@ -873,16 +877,16 @@ func (blockchain *BlockChain) updateDatabaseWithTransactionMetadata(shardBlock *
 */
 func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock *ShardBlock, shardID byte) {
 	//remove staking txid in beststate shard
-	go func() {
-		for _, l := range shardBlock.Body.Instructions {
-			if l[0] == SwapAction {
-				swapedCommittees := strings.Split(l[2], ",")
-				for _, v := range swapedCommittees {
-					delete(GetBestStateShard(shardID).StakingTx, v)
-				}
-			}
-		}
-	}()
+	//go func() {
+	//	for _, l := range shardBlock.Body.Instructions {
+	//		if l[0] == SwapAction {
+	//			swapedCommittees := strings.Split(l[2], ",")
+	//			for _, v := range swapedCommittees {
+	//				delete(GetBestStateShard(shardID).StakingTx, v)
+	//			}
+	//		}
+	//	}
+	//}()
 	//=========Remove invalid shard block in pool
 	go blockchain.config.ShardPool[shardID].SetShardState(blockchain.BestState.Shard[shardID].ShardHeight)
 	//updateShardBestState Cross shard pool: remove invalid block

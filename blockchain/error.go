@@ -155,6 +155,9 @@ const (
 	BackupFromTxViewPointError
 	BackupFromCrossTxViewPointError
 	BackupDatabaseFromBeaconInstructionError
+	SnapshotRewardReceiverError
+	StoreAutoStakingByHeightError
+	FetchAutoStakingByHeightError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -294,6 +297,9 @@ var ErrCodeMessage = map[int]struct {
 	BackupFromTxViewPointError:                        {-1129, "Create Backup From TxViewPoint Error"},
 	BackupFromCrossTxViewPointError:                   {-1130, "Create Backup From CrossTxViewPoint Error"},
 	BackupDatabaseFromBeaconInstructionError:          {-1131, "Backup Database From BeaconInstruction Error"},
+	SnapshotRewardReceiverError:                       {-1132, "Snapshot Reward Receiver Error"},
+	StoreAutoStakingByHeightError:                     {-1133, "Store Auto Staking By Height Error"},
+	FetchAutoStakingByHeightError:                     {-1134, "Fetch Auto Staking By Height Error"},
 }
 
 type BlockChainError struct {
