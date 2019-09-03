@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"reflect"
 	"time"
 )
@@ -14,13 +15,13 @@ func (wsServer *WsServer) handleSubcribeMempoolInfo(params interface{}, subcript
 	Logger.log.Info("Handle Subcribe Mempool Informantion", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 0 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain NO params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain NO params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
 	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.MempoolInfoTopic)
 	if err != nil {
-		err := NewRPCError(ErrSubcribe, err)
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -53,7 +54,7 @@ func (wsServer *WsServer) handleSubscribeBeaconPoolBestState(params interface{},
 	Logger.log.Info("Handle Subscribe Beacon Pool Beststate", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 0 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain NO params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain NO params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
@@ -87,7 +88,7 @@ func (wsServer *WsServer) handleSubscribeShardPoolBeststate(params interface{}, 
 	Logger.log.Info("Handle Subscribe Shard Pool Beststate", params, subcription)
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
-		err := NewRPCError(ErrRPCInvalidParams, errors.New("Methods should only contain 1 params"))
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain 1 params"))
 		cResult <- RpcSubResult{Error: err}
 		return
 	}
