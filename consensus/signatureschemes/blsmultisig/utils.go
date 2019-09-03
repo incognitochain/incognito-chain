@@ -30,7 +30,7 @@ func I2Bytes(bn *big.Int, length int) []byte {
 // }
 
 // CacheCommonPKs convert list publickey in current epoch from byte-type to point-type
-func CacheCommonPKs(ListPK []PublicKey) error {
+/*func CacheCommonPKs(ListPK []PublicKey) error {
 	commonPKs := make([]*bn256.G2, len(ListPK))
 	commonAPs := make([]*bn256.G2, len(ListPK))
 	commonAis := make([]*big.Int, len(ListPK))
@@ -42,14 +42,18 @@ func CacheCommonPKs(ListPK []PublicKey) error {
 		}
 	}
 
+	combinedPKByte := []byte{}
+	for i := 0; i < len(ListPK); i++ {
+		combinedPKByte = append(combinedPKByte, ListPK[i]...)
+	}
 	for i := 0; i < len(commonPKs); i++ {
-		commonAPs[i], commonAis[i] = AKGen(ListPK, i)
+		commonAPs[i], commonAis[i] = AKGen(ListPK[i], combinedPKByte)
 	}
 	CommonPKs = commonPKs
 	CommonAPs = commonAPs
 	CommonAis = commonAis
 	return nil
-}
+}*/
 
 // CalcAPK calculate apk = pki^ai * ... * pkj^aj
 func CalcAPK(signerIdx []int) *bn256.G2 {
