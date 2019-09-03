@@ -247,6 +247,70 @@ func TestPickBridgeSwapConfirmInst(t *testing.T) {
 }
 
 func TestParseAndPadAddress(t *testing.T) {
+	testCases := []struct {
+		desc string
+		inst string
+		err  bool
+	}{
+		{
+			desc: "Valid instruction",
+			inst: base58.EncodeCheck(getCommitteeAddresses()),
+		},
+		{
+			desc: "Decode fail",
+			inst: func() string {
+				inst := base58.EncodeCheck(getCommitteeAddresses())
+				inst = inst + "a"
+				return inst
+			}(),
+			err: true,
+		},
+		{
+			desc: "Invalid address length",
+			inst: func() string {
+				addrs := getCommitteeAddresses()
+				addrs = append(addrs, byte(123))
+				return base58.EncodeCheck(addrs)
+			}(),
+			err: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			addrs, err := parseAndPadAddress(tc.inst)
+			isErr := err != nil
+			if isErr != tc.err {
+				t.Error(errors.Errorf("expect error = %t, got %v", tc.err, err))
+			}
+			if tc.err {
+				return
+			}
+
+			checkPaddedAddresses(t, addrs, tc.inst)
+		})
+	}
+}
+
+func checkPaddedAddresses(t *testing.T, addrs []byte, inst string) {
+	b, _, _ := base58.DecodeCheck(inst)
+	numAddrs := len(b) / 20
+	if len(addrs) != numAddrs*32 {
+		t.Fatalf("incorrect padded length, expect %d, got %d", numAddrs*32, len(addrs))
+	}
+	zero := make([]byte, 12)
+	for i := 0; i < numAddrs; i++ {
+		prefix := addrs[i*32 : i*32+12]
+		if !bytes.Equal(zero, prefix) {
+			t.Errorf("address must start with 12 bytes of 0, expect %x, got %x", zero, prefix)
+		}
+
+		addr := addrs[i*32+12 : (i+1)*32]
+		exp := b[i*20 : (i+1)*20]
+		if !bytes.Equal(exp, addr) {
+			t.Errorf("wrong address of committee member, expect %x, got %x", exp, addr)
+		}
+	}
 }
 
 func TestDecodeSwapConfirm(t *testing.T) {
