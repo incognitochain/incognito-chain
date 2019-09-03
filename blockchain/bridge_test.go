@@ -324,6 +324,7 @@ func TestDecodeSwapConfirm(t *testing.T) {
 		desc string
 		inst []string
 		out  []byte
+		err  bool
 	}{
 		{
 			desc: "Swap beacon instruction",
@@ -339,7 +340,15 @@ func TestDecodeSwapConfirm(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			decoded := decodeSwapConfirmInst(tc.inst)
+			decoded, err := decodeSwapConfirmInst(tc.inst)
+			isErr := err != nil
+			if isErr != tc.err {
+				t.Error(errors.Errorf("expect error = %t, got %v", tc.err, err))
+			}
+			if tc.err {
+				return
+			}
+
 			if !bytes.Equal(decoded, tc.out) {
 				t.Errorf("invalid decoded swap inst, expect\n%v, got\n%v", tc.out, decoded)
 			}
