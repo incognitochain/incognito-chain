@@ -54,7 +54,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 		return false, NewMetadataTxError(StopAutoStakingRequestTypeAssertionError, fmt.Errorf("Expect *StopAutoStakingMetadata type but get %+v", reflect.TypeOf(txr.GetMetadata())))
 	}
 	requestedPublicKey := stopStakingMetadata.CommitteePublicKey
-	committees, err := bcr.GetAllCommitteeValidatorCandidateFlattenList()
+	committees, err := bcr.GetAllCommitteeValidatorCandidateFlattenListFromDatabase()
 	if err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
 	}

@@ -102,7 +102,7 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]st
 	return SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, nil
 }
 
-func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenList() ([]string, error) {
+func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error) {
 	beaconBestState := BeaconBestState{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err != nil {

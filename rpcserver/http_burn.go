@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -12,12 +13,12 @@ import (
 )
 
 // handleGetBurnProof returns a proof of a tx burning pETH
-func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <-chan struct{}) (interface{}, *RPCError) {
+func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Infof("handleGetBurnProof params: %+v", params)
 	listParams := params.([]interface{})
 	txID, err := common.Hash{}.NewHashFromStr(listParams[0].(string))
 	if err != nil {
-		return nil, NewRPCError(RPCInvalidParamsError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
 	bc := httpServer.config.BlockChain
@@ -26,25 +27,25 @@ func (httpServer *HttpServer) handleGetBurnProof(params interface{}, closeChan <
 	// Get block height from txID
 	height, err := db.GetBurningConfirm(*txID)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, fmt.Errorf("proof of tx not found"))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, fmt.Errorf("proof of tx not found"))
 	}
 
 	// Get bridge block and corresponding beacon blocks
 	bridgeBlock, beaconBlocks, err := getShardAndBeaconBlocks(height, bc, db)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Get proof of instruction on bridge
 	bridgeInstProof, err := getBurnProofOnBridge(txID, bridgeBlock, db, httpServer.config.ConsensusEngine)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Get proof of instruction on beacon
 	beaconInstProof, err := getBurnProofOnBeacon(bridgeInstProof.inst, beaconBlocks, db, httpServer.config.ConsensusEngine)
 	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
 	// Decode instruction to send to Ethereum without having to decode on client
