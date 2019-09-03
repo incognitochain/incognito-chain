@@ -99,13 +99,17 @@ func (engine *Engine) watchConsensusCommittee() {
 					}
 				} else {
 					if engine.CurrentMiningChain == common.EmptyString {
-						engine.CurrentMiningChain = chainName
+						engine.CurrentMiningChain = common.BEACON_CHAINKEY
 						engine.config.Node.DropAllConnections()
 					}
 				}
 			} else {
-				engine.CurrentMiningChain = common.EmptyString
-				engine.config.Node.DropAllConnections()
+				//Beacon said validator not belong to committee anymore but Chain itself isn't update yet
+				if engine.CurrentMiningChain != common.EmptyString && engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) == -1 {
+					engine.CurrentMiningChain = common.EmptyString
+					engine.config.Node.DropAllConnections()
+				}
+
 			}
 		}
 	}
