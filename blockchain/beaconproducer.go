@@ -557,7 +557,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	confirmInsts := pickBridgeSwapConfirmInst(shardBlock)
 	if len(confirmInsts) > 0 {
 		bridgeInstructionForBlock = append(bridgeInstructionForBlock, confirmInsts...)
-		BLogger.log.Infof("Found bridge swap confirm inst in shard block %d: %s", shardBlock.Header.Height, confirmInsts)
+		BLogger.log.Infof("Beacon block %d found bridge swap confirm inst in shard block %d: %s", newBeaconHeight, shardBlock.Header.Height, confirmInsts)
 	}
 	bridgeInstructions = append(bridgeInstructions, bridgeInstructionForBlock...)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
