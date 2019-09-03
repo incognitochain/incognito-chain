@@ -1293,7 +1293,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Cannot import key set"))
 	}
-
+	funderPaymentAddress := senderKey.Base58CheckSerialize(wallet.PaymentAddressType)
 	//Get staking type
 	stakingType, ok := paramsArray[4].(float64)
 	if !ok {
@@ -1347,7 +1347,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 
 	Logger.log.Info("Staking Public Key", base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte))
 
-	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), rewardReceiverPaymentAddress, httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
+	stakingMetadata, err := metadata.NewStakingMetadata(int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress, httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	// metadata, err := metadata.NewStakingMetadata(int(stakingType), base58.Base58Check{}.Encode(paymentAddress, common.ZeroByte), httpServer.config.ChainParams.StakingAmountShard, base58.Base58Check{}.Encode(blsPKBytes, common.ZeroByte))
 
 	tx, err := httpServer.buildRawTransaction(params, stakingMetadata)
