@@ -454,10 +454,13 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			// Generate instruction storing merkle root of validators pubkey and send to beacon
 			bridgeID := byte(common.BridgeShardID)
 			if shardID == bridgeID {
-				startHeight := blockchain.BestState.Shard[shardID].ShardHeight + 2
-				bridgeSwapConfirmInst = buildBridgeSwapConfirmInstruction(shardCommittee, startHeight)
-				prevBlock := blockchain.BestState.Shard[shardID].BestBlock
-				BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, prevBlock.Header.Height+1)
+				blockHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
+				bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
+				if err != nil {
+					Logger.log.Error(err)
+					return instructions, shardPendingValidator, shardCommittee, err
+				}
+				BLogger.log.Infof("Add Bridge swap inst in ShardID %+v block %d", shardID, blockHeight)
 			}
 		}
 	}

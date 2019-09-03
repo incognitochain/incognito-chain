@@ -325,7 +325,7 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 			swapBeaconInstructions = append(swapBeaconInstructions, "beacon")
 			instructions = append(instructions, swapBeaconInstructions)
 			// Generate instruction storing validators pubkey and send to bridge
-			beaconRootInst := buildBeaconSwapConfirmInstruction(currentValidators, newBeaconHeight)
+			beaconRootInst, _ := buildBeaconSwapConfirmInstruction(currentValidators, newBeaconHeight)
 			instructions = append(instructions, beaconRootInst)
 		}
 	}
