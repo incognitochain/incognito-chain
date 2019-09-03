@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"math/big"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -212,6 +213,37 @@ func TestBuildBridgeSwapConfirmInstruction(t *testing.T) {
 }
 
 func TestPickBridgeSwapConfirmInst(t *testing.T) {
+	testCases := []struct {
+		desc  string
+		insts [][]string
+		out   [][]string
+	}{
+		{
+			desc:  "No swap inst",
+			insts: [][]string{[]string{"1", "2"}, []string{"3", "4"}},
+		},
+		{
+			desc:  "Check metaType",
+			insts: [][]string{[]string{"70", "2"}, []string{"71", "1", "2", "3", "4"}},
+			out:   [][]string{[]string{"71", "1", "2", "3", "4"}},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			b := &ShardToBeaconBlock{Instructions: tc.insts}
+			insts := pickBridgeSwapConfirmInst(b)
+
+			if len(tc.out) != len(insts) {
+				t.Errorf("incorrect number of insts, expect %d, got %d", len(tc.out), len(insts))
+			}
+			for i, inst := range insts {
+				if strings.Join(inst, "") != strings.Join(tc.out[i], "") {
+					t.Errorf("incorrect bridge swap inst, expect %s, got %s", tc.out[i], inst)
+				}
+			}
+		})
+	}
 }
 
 func TestParseAndPadAddress(t *testing.T) {
