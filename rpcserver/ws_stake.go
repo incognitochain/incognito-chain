@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -10,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"reflect"
 )
 
 func (wsServer *WsServer) handleSubcribeShardCandidateByPublickey(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
