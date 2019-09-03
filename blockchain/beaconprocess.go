@@ -113,6 +113,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if err != nil {
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
+	_, snapshotAllShardPending, err := snapshotCommittee([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.ShardPendingValidator)
+	if err != nil {
+		return NewBlockChainError(SnapshotCommitteeError, err)
+	}
 	Logger.log.Infof("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
 
@@ -123,10 +127,26 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	if err != nil {
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
+	_, newAllShardPending, err := snapshotCommittee([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.ShardPendingValidator)
+	if err != nil {
+		return NewBlockChainError(SnapshotCommitteeError, err)
+	}
 	isChanged := !reflect.DeepEqual(snapshotBeaconCommittee, newBeaconCommittee)
 	if isChanged {
 		go blockchain.config.ConsensusEngine.CommitteeChange(common.BEACON_CHAINKEY)
 	}
+	//Check shard-pending
+	for shardID, committee := range newAllShardPending {
+		if _, ok := snapshotAllShardPending[shardID]; ok {
+			isChanged := !reflect.DeepEqual(snapshotAllShardPending[shardID], committee)
+			if isChanged {
+				go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+			}
+		} else {
+			go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+		}
+	}
+	//Check shard-committee
 	for shardID, committee := range newAllShardCommittee {
 		if _, ok := snapshotAllShardCommittee[shardID]; ok {
 			isChanged := !reflect.DeepEqual(snapshotAllShardCommittee[shardID], committee)
