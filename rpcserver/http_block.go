@@ -34,7 +34,7 @@ func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <
 	}
 
 	// for beacon
-	beaconBestState, err := httpServer.blockService.GetBeaconBestStates()
+	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetBeaconBestBlockError, err)
 	}
@@ -148,7 +148,7 @@ func (httpServer *HttpServer) handleGetBlocks(params interface{}, closeChan <-ch
 }
 
 /*
-getblockchaininfo RPC return information fo blockchain node
+getblockchaininfo RPC return information for blockchain node
 */
 func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("handleGetBlockChainInfo params: %+v", params)
@@ -157,29 +157,15 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
 		ActiveShards: httpServer.config.ChainParams.ActiveShards,
 	}
-	shards := httpServer.config.BlockChain.BestState.GetClonedAllShardBestState()
+	shards := httpServer.blockService.GetShardBestStates()
 	for shardID, bestState := range shards {
-		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
-			Height:           bestState.BestBlock.Header.Height,
-			Hash:             bestState.BestBlockHash.String(),
-			TotalTxs:         bestState.TotalTxns,
-			BlockProducer:    bestState.BestBlock.Header.ProducerAddress.String(),
-			BlockProducerSig: bestState.BestBlock.ProducerSig,
-			Time:             bestState.BestBlock.Header.Timestamp,
-		}
+		result.BestBlocks[int(shardID)] = *(jsonresult.NewGetBestBlockItemFromShard(bestState))
 	}
-	clonedBeaconBestState, err := httpServer.config.BlockChain.BestState.GetClonedBeaconBestState()
+	beaconBestState, err := httpServer.blockService.GetBeaconBestState()
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
 	}
-	result.BestBlocks[-1] = jsonresult.GetBestBlockItem{
-		Height:           clonedBeaconBestState.BestBlock.Header.Height,
-		Hash:             clonedBeaconBestState.BestBlock.Hash().String(),
-		BlockProducer:    clonedBeaconBestState.BestBlock.Header.ProducerAddress.String(),
-		BlockProducerSig: clonedBeaconBestState.BestBlock.ProducerSig,
-		Epoch:            clonedBeaconBestState.Epoch,
-		Time:             clonedBeaconBestState.BestBlock.Header.Timestamp,
-	}
+	result.BestBlocks[-1] = *(jsonresult.NewGetBestBlockItemFromBeacon(beaconBestState))
 	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
 }
