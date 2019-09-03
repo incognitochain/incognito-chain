@@ -60,3 +60,6 @@ const (
 	EthereumLightNodeProtocol = "http"
 	EthereumLightNodePort     = "8545"
 )
+const (
+	StopAutoStakingAmount = 0
+)
