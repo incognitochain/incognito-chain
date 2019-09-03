@@ -12,6 +12,7 @@ import (
 
 type StakingMetadata struct {
 	MetadataBase
+	FunderPaymentAddress         string
 	RewardReceiverPaymentAddress string
 	StakingAmountShard           uint64
 	AutoReStaking                bool
@@ -22,6 +23,7 @@ type StakingMetadata struct {
 
 func NewStakingMetadata(
 	stakingType int,
+	funderPaymentAddress string,
 	rewardReceiverPaymentAddress string,
 	// candidatePaymentAddress string,
 	stakingAmountShard uint64,
@@ -37,6 +39,7 @@ func NewStakingMetadata(
 	metadataBase := NewMetadataBase(stakingType)
 	return &StakingMetadata{
 		MetadataBase:                 *metadataBase,
+		FunderPaymentAddress:         funderPaymentAddress,
 		RewardReceiverPaymentAddress: rewardReceiverPaymentAddress,
 		StakingAmountShard:           stakingAmountShard,
 		CommitteePublicKey:           committeePublicKey,
