@@ -23,7 +23,7 @@ const (
 	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
 	DefaultCacheCleanupTime      = 30 * time.Second // in second
 	WorkerNumber                 = 5
-	MAX_S2B_BLOCK                = 10
+	MAX_S2B_BLOCK                = 50
 	DurationHalfLifeRewardForDev = uint64(31536000) // 5 years, after 5 year, reward for devs = 0
 	GetValidBlock                = 10
 	CheckForce                   = true
@@ -80,11 +80,11 @@ const (
 	TestnetEpoch       = 10
 	TestnetRandomTime  = 5
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 4
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second

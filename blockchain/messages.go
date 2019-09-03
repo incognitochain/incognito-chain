@@ -90,25 +90,30 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			userPubKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 			if userPubKey != "" {
-				// Revert beststate
-				// @NOTICE: Choose block with highest round, because we assume that most of node state is at the highest round
-				if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
-					fmt.Println("FORK SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
-					if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
-						Logger.log.Error(err)
-						return
-					}
-					if err := blockchain.RevertShardState(newBlk.Header.ShardID); err != nil {
-						Logger.log.Error(err)
-						return
-					}
-					fmt.Println("REVERTED SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
-				}
 
 				userRole := currentShardBestState.GetPubkeyRole(userPubKey, 0)
 				fmt.Println("Shard block received 1", userRole)
-
 				if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+					// Revert beststate
+					// @NOTICE: Choose block with highest round, because we assume that most of node state is at the highest round
+					if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
+						fmt.Println("FORK SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
+						if err := blockchain.ValidateBlockWithPrevShardBestState(newBlk); err != nil {
+							Logger.log.Error(err)
+							return
+						}
+						if err := blockchain.RevertShardState(newBlk.Header.ShardID); err != nil {
+							Logger.log.Error(err)
+							return
+						}
+						fmt.Println("REVERTED SHARD", newBlk.Header.ShardID, newBlk.Header.Height)
+						err := blockchain.InsertShardBlock(newBlk, true)
+						if err != nil {
+							Logger.log.Error(err)
+						}
+						return
+					}
+
 					isConsensusOngoing := blockchain.config.ConsensusEngine.IsOngoing(common.GetShardChainKey(newBlk.Header.ShardID))
 					fmt.Println("Shard block received 2", currentShardBestState.ShardHeight, newBlk.Header.Height)
 					if currentShardBestState.ShardHeight == newBlk.Header.Height-1 {
@@ -158,22 +163,27 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 				if publicKey != "" {
 					// Revert beststate
 
-					currentBeaconBestState := blockchain.BestState.Beacon
-					if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
-						fmt.Println("FORK BEACON", newBlk.Header.Height)
-						if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						if err := blockchain.RevertBeaconState(); err != nil {
-							Logger.log.Error(err)
-							return
-						}
-						fmt.Println("REVERTED BEACON", newBlk.Header.Height)
-					}
-
 					userRole, _ := blockchain.BestState.Beacon.GetPubkeyRole(publicKey, 0)
 					if userRole == common.PROPOSER_ROLE || userRole == common.VALIDATOR_ROLE {
+						currentBeaconBestState := blockchain.BestState.Beacon
+						if currentBeaconBestState.BeaconHeight == newBlk.Header.Height && currentBeaconBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestState.BestBlock.Header.Round < newBlk.Header.Round {
+							fmt.Println("FORK BEACON", newBlk.Header.Height)
+							if err := blockchain.ValidateBlockWithPrevBeaconBestState(newBlk); err != nil {
+								Logger.log.Error(err)
+								return
+							}
+							if err := blockchain.RevertBeaconState(); err != nil {
+								Logger.log.Error(err)
+								return
+							}
+							fmt.Println("REVERTED BEACON", newBlk.Header.Height)
+							err = blockchain.InsertBeaconBlock(newBlk, false)
+							if err != nil {
+								Logger.log.Error(err)
+							}
+							return
+						}
+
 						if blockchain.BestState.Beacon.BeaconHeight == newBlk.Header.Height-1 {
 							if !blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
 								fmt.Println("Beacon block insert", newBlk.Header.Height)
