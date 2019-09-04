@@ -90,22 +90,26 @@ func (engine *Engine) watchConsensusCommittee() {
 			if !ok {
 				continue
 			}
-			if chainName != common.BEACON_CHAINKEY {
-				role, shardID := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].GetPubkeyRole(userPublicKey.GetMiningKeyBase58(consensusType), 0)
-				if role == common.SHARD_ROLE && chainName == common.GetShardChainKey(shardID) {
-					engine.CurrentMiningChain = chainName
-					engine.config.Node.DropAllConnections()
-				}
-			}
-			if engine.config.Blockchain.Chains[chainName].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) != -1 {
-				if engine.CurrentMiningChain != chainName {
-					engine.CurrentMiningChain = chainName
-					engine.config.Node.DropAllConnections()
+			role, shardID := engine.config.Blockchain.Chains[common.BEACON_CHAINKEY].GetPubkeyRole(userPublicKey.GetMiningKeyBase58(consensusType), 0)
+			if role != common.EmptyString {
+				if role == common.SHARD_ROLE {
+					if engine.CurrentMiningChain == common.EmptyString {
+						engine.CurrentMiningChain = common.GetShardChainKey(shardID)
+						engine.config.Node.DropAllConnections()
+					}
+				} else {
+					if engine.CurrentMiningChain == common.EmptyString {
+						engine.CurrentMiningChain = common.BEACON_CHAINKEY
+						engine.config.Node.DropAllConnections()
+					}
 				}
 			} else {
+				//Beacon said validator not belong to committee anymore but Chain itself isn't update yet
 				if engine.CurrentMiningChain != common.EmptyString && engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetPubKeyCommitteeIndex(userPublicKey.GetMiningKeyBase58(consensusType)) == -1 {
 					engine.CurrentMiningChain = common.EmptyString
+					engine.config.Node.DropAllConnections()
 				}
+
 			}
 		}
 	}
