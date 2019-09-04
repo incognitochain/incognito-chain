@@ -116,10 +116,8 @@ func TestConnManager_GetPeerConnOfBeacon(t *testing.T) {
 	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
-	connManager.GetConfig().ConsensusState = consensusState
+	connManager.UpdateConsensusState("", "", nil, consensusState.beaconCommittee, nil)
 	result := make([]*peer.PeerConn, 0)
-	bestState := blockchain.GetBeaconBestState()
-	bestState.BeaconCommittee = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BLS_CONSENSUS: []byte("abc2")}}, {MiningPubKey: map[string][]byte{common.BLS_CONSENSUS: []byte("abc1")}}}
 	result = connManager.GetPeerConnOfBeacon()
 	if len(result) != 2 {
 		assert.Equal(t, 2, len(result))
@@ -164,16 +162,16 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 	connManager := New(&Config{
 		ListenerPeer: &peer1,
 	})
-	connManager.GetConfig().ConsensusState = consensusState
+	connManager.UpdateConsensusState("", "", nil, nil, consensusState.committeeByShard)
 	result := make([]*peer.PeerConn, 0)
 	blockchain.NewBeaconBestStateWithConfig(&blockchain.Params{})
 	bestState := blockchain.GetBeaconBestState()
 	bestState.ShardCommittee[0] = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BLS_CONSENSUS: []byte("abc1")}}}
 	result = connManager.GetPeerConnOfShard(0)
-	assert.Equal(t, 1, result)
+	assert.Equal(t, 1, len(result))
 	bestState.ShardCommittee[2] = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BLS_CONSENSUS: []byte("abc2")}}}
 	result = connManager.GetPeerConnOfShard(2)
-	assert.Equal(t, 1, result)
+	assert.Equal(t, 1, len(result))
 }
 
 func TestConnManager_Start(t *testing.T) {
