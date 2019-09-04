@@ -3,7 +3,6 @@ package incognitokey
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -28,10 +27,13 @@ func (pubKey *CommitteePublicKey) CheckSanityData() bool {
 func (pubKey *CommitteePublicKey) FromString(keyString string) error {
 	keyBytes, ver, err := base58.Base58Check{}.Decode(keyString)
 	if (ver != common.ZeroByte) || (err != nil) {
-		return errors.New("Wrong input")
+		return NewCashecError(B58DecodePubKeyErr, errors.New(ErrCodeMessage[B58DecodePubKeyErr].Message))
 	}
-	fmt.Println(keyBytes)
-	return json.Unmarshal(keyBytes, pubKey)
+	err = json.Unmarshal(keyBytes, pubKey)
+	if err != nil {
+		return NewCashecError(JSONError, errors.New(ErrCodeMessage[JSONError].Message))
+	}
+	return nil
 }
 
 func NewCommitteeKeyFromSeed(seed, incPubKey []byte) (CommitteePublicKey, error) {
@@ -48,12 +50,19 @@ func NewCommitteeKeyFromSeed(seed, incPubKey []byte) (CommitteePublicKey, error)
 }
 
 func (pubKey *CommitteePublicKey) FromBytes(keyBytes []byte) error {
-	return json.Unmarshal(keyBytes, pubKey)
+	err := json.Unmarshal(keyBytes, pubKey)
+	if err != nil {
+		return NewCashecError(JSONError, err)
+	}
+	return nil
 }
 
 func (pubKey *CommitteePublicKey) Bytes() ([]byte, error) {
-
-	return json.Marshal(pubKey)
+	res, err := json.Marshal(pubKey)
+	if err != nil {
+		return []byte{0}, NewCashecError(JSONError, err)
+	}
+	return res, nil
 }
 
 func (pubKey *CommitteePublicKey) GetNormalKey() []byte {

@@ -1,7 +1,6 @@
 package bridgesig
 
 import (
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -18,7 +17,7 @@ func DecodeECDSASig(sigStr string) (
 ) {
 	sig, ver, errDecode := base58.Base58Check{}.Decode(sigStr)
 	if (len(sig) != CBridgeSigSz) || (ver != common.ZeroByte) || (errDecode != nil) {
-		err = errors.New("Wrong input")
+		err = NewBriSignatureError(InvalidInputParamsSizeErr, nil)
 		return
 	}
 	v = byte(sig[64] + 27)

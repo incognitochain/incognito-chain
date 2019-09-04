@@ -163,16 +163,3 @@ func IncSK2BLSPKBytes(sk []byte) []byte {
 	_, pk := KeyGen(sk)
 	return CmprG2(pk)
 }
-
-func ListPKBytes2ListPKPoints(listPKBytes []PublicKey) ([]*bn256.G2, error) {
-	listPKs := make([]*bn256.G2, len(listPKBytes))
-	var err error
-	for i, pk := range listPKBytes {
-		// fmt.Println(pk, len(pk))
-		listPKs[i], err = DecmprG2(pk)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return listPKs, nil
-}
