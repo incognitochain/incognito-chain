@@ -926,7 +926,6 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 		}
 	}
 
-	fmt.Println("WithinEpoch", len(sameCommitteeBlock))
 	for _, v := range sameCommitteeBlock {
 		chain.InsertBlk(v)
 	}
