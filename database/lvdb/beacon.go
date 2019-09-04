@@ -374,21 +374,6 @@ func (db *db) FetchRewardReceiverByHeight(height uint64) ([]byte, error) {
 	return b, nil
 }
 
-func (db *db) HasCommitteeByHeight(height uint64) (bool, error) {
-	key := append(beaconPrefix, shardIDPrefix...)
-	key = append(key, committeePrefix...)
-	key = append(key, heightPrefix...)
-	buf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(buf, height)
-	key = append(key, buf[:]...)
-
-	exist, err := db.HasValue(key)
-	if err != nil {
-		return false, database.NewDatabaseError(database.HasShardCommitteeByHeightError, err)
-	}
-	return exist, nil
-}
-
 func (db *db) StoreAutoStakingByHeight(height uint64, v interface{}) error {
 	//key: bea-aust-ep-{height}
 	//value: auto staking: map[string]bool

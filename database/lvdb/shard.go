@@ -274,3 +274,18 @@ func (db *db) FetchCommitteeFromShardBestState(shardID byte, shardHeight uint64)
 	}
 	return b, nil
 }
+
+func (db *db) HasShardCommitteeByHeight(height uint64) (bool, error) {
+	key := append(beaconPrefix, shardIDPrefix...)
+	key = append(key, committeePrefix...)
+	key = append(key, heightPrefix...)
+	buf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(buf, height)
+	key = append(key, buf[:]...)
+
+	exist, err := db.HasValue(key)
+	if err != nil {
+		return false, database.NewDatabaseError(database.HasShardCommitteeByHeightError, err)
+	}
+	return exist, nil
+}

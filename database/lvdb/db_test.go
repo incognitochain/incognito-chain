@@ -401,14 +401,14 @@ func TestDb_StoreCommitteeByHeight(t *testing.T) {
 		assert.Equal(t, shardCommittee[0][0], "committee1")
 		assert.Equal(t, shardCommittee[0][1], "committee2")
 
-		has, err := db.HasCommitteeByHeight(block.Header.Height)
+		has, err := db.HasShardCommitteeByHeight(block.Header.Height)
 		assert.Equal(t, has, true)
 		assert.Equal(t, err, nil)
 
 		err = db.DeleteCommitteeByHeight(block.Header.Height)
 		assert.Equal(t, err, nil)
 
-		has, err = db.HasCommitteeByHeight(block.Header.Height)
+		has, err = db.HasShardCommitteeByHeight(block.Header.Height)
 		assert.Equal(t, has, false)
 		assert.Equal(t, err, nil)
 	} else {
