@@ -5,12 +5,27 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/database"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
+
+// handleGetLatestBridgeSwapProof returns the latest proof of a change in bridge's committee
+func (httpServer *HttpServer) handleGetLatestBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	latestBlock := httpServer.config.BlockChain.BestState.Beacon.BeaconHeight
+	for i := latestBlock; i >= 1; i-- {
+		params := []interface{}{float64(i)}
+		proof, err := httpServer.handleGetBridgeSwapProof(params, closeChan)
+		if err != nil {
+			continue
+		}
+		return proof, nil
+	}
+	return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.Errorf("no swap proof found before block %d", latestBlock))
+}
 
 // handleGetBridgeSwapProof returns a proof of a new bridge committee (for a given beacon block height)
 func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

@@ -129,9 +129,11 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithIssuingETHReq: (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
 
 	// Incognito -> Ethereum bridge
-	getBeaconSwapProof: (*HttpServer).handleGetBeaconSwapProof,
-	getBridgeSwapProof: (*HttpServer).handleGetBridgeSwapProof,
-	getBurnProof:       (*HttpServer).handleGetBurnProof,
+	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
+	getLatestBeaconSwapProof: (*HttpServer).handleGetLatestBeaconSwapProof,
+	getBridgeSwapProof:       (*HttpServer).handleGetBridgeSwapProof,
+	getLatestBridgeSwapProof: (*HttpServer).handleGetLatestBridgeSwapProof,
+	getBurnProof:             (*HttpServer).handleGetBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,
