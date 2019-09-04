@@ -467,7 +467,8 @@ func (txCustomToken *TxNormalToken) Init(params *NormalTokenInitParam) error {
 		params.hasPrivacyCoin,
 		params.db,
 		nil,
-		params.metaData))
+		params.metaData,
+		nil))
 	if err != nil {
 		return NewTransactionErr(UnexpectedError, err)
 	}
