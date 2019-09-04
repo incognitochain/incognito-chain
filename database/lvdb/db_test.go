@@ -278,7 +278,7 @@ func TestDb_StoreTxIndex(t *testing.T) {
 		assert.Equal(t, err, nil)
 
 		blockHash, index, err := db.GetTransactionIndexById(*block.Body.Transactions[1].Hash())
-		if err.(*database.DatabaseError) != nil {
+		if err != nil && err.(*database.DatabaseError) != nil {
 			t.Error(err)
 		}
 		assert.Equal(t, blockHash, *block.Hash())
@@ -393,13 +393,13 @@ func TestDb_StoreCommitteeByHeight(t *testing.T) {
 		err := db.StoreShardCommitteeByHeight(block.Header.Height, bestState.Beacon.GetShardCommittee())
 		assert.Equal(t, err, nil)
 
-		shardCommittee := make(map[byte][]string)
+		shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 		data, err := db.FetchShardCommitteeByHeight(block.Header.Height)
 		assert.Equal(t, err, nil)
 		err = json.Unmarshal(data, &shardCommittee)
 		assert.Equal(t, err, nil)
-		assert.Equal(t, shardCommittee[0][0], "committee1")
-		assert.Equal(t, shardCommittee[0][1], "committee2")
+		assert.Equal(t, shardCommittee[0][0].MiningPubKey[common.BLS_CONSENSUS], []byte("committee1"))
+		assert.Equal(t, shardCommittee[0][1].MiningPubKey[common.BLS_CONSENSUS], []byte("committee2"))
 
 		has, err := db.HasShardCommitteeByHeight(block.Header.Height)
 		assert.Equal(t, has, true)
