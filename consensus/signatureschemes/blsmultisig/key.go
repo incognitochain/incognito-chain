@@ -6,7 +6,6 @@ import (
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/google"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
 // KeyGen take an input seed and return BLS Key
@@ -146,26 +145,5 @@ func SKBytes(sk *big.Int) SecretKey {
 
 // PKBytes take input publickey point and return publickey bytes
 func PKBytes(pk *bn256.G2) PublicKey {
-	return CmprG2(pk)
-}
-
-// ChkPKSt Check input string is BLS PublicKey string-type
-func ChkPKSt(pkSt string) bool {
-	pkBytes, ver, err := base58.Base58Check{}.Decode(pkSt)
-	if err != nil {
-		return false
-	}
-	pkPn := new(bn256.G2)
-	if _, err := pkPn.Unmarshal(pkBytes); err != nil {
-		return false
-	}
-	if ver != common.ZeroByte {
-		return false
-	}
-	return true
-}
-
-func IncSK2BLSPKBytes(sk []byte) []byte {
-	_, pk := KeyGen(sk)
 	return CmprG2(pk)
 }
