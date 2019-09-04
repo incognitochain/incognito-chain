@@ -172,6 +172,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 	}
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err := blockchain.processStoreBeaconBlock(beaconBlock, snapshotBeaconCommittee, snapshotAllShardCommittee, snapshotRewardReceiver); err != nil {
+		revertErr := blockchain.revertBeaconState()
+		if revertErr != nil {
+			return errors.WithStack(revertErr)
+		}
 		return err
 	}
 	go blockchain.removeOldDataAfterProcessingBeaconBlock()
