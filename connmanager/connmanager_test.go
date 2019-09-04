@@ -170,18 +170,10 @@ func TestConnManager_GetPeerConnOfShard(t *testing.T) {
 	bestState := blockchain.GetBeaconBestState()
 	bestState.ShardCommittee[0] = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BLS_CONSENSUS: []byte("abc1")}}}
 	result = connManager.GetPeerConnOfShard(0)
-	if len(result) != 1 {
-		t.Error("Error GetPeerConnOfPbk")
-	} else {
-		assert.Equal(t, 1, 1)
-	}
+	assert.Equal(t, 1, result)
 	bestState.ShardCommittee[2] = []incognitokey.CommitteePublicKey{{MiningPubKey: map[string][]byte{common.BLS_CONSENSUS: []byte("abc2")}}}
 	result = connManager.GetPeerConnOfShard(2)
-	if len(result) != 1 {
-		t.Error("Error GetPeerConnOfPbk")
-	} else {
-		assert.Equal(t, 1, 1)
-	}
+	assert.Equal(t, 1, result)
 }
 
 func TestConnManager_Start(t *testing.T) {
