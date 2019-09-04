@@ -92,7 +92,7 @@
                 "burnRequestTxID"
             ],
             "type": "http",
-            "wait": 20
+            "wait": 30
         },
         "node": "shard1-0",
         "output": {
