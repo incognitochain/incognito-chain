@@ -89,9 +89,18 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 	shardBlock.Body.CrossTransactions = crossTransaction
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
 }
+
+func (crossShardBlock CrossShardBlock) GetCurrentEpoch() uint64 {
+	return crossShardBlock.Header.Epoch
+}
+
 func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
 	hash := crossShardBlock.Header.Hash()
 	return &hash
+}
+
+func (shardToBeaconBlock ShardToBeaconBlock) GetCurrentEpoch() uint64 {
+	return shardToBeaconBlock.Header.Epoch
 }
 
 func (shardToBeaconBlock *ShardToBeaconBlock) Hash() *common.Hash {
@@ -395,6 +404,10 @@ func (shardBlock *ShardBlock) CreateCrossShardBlock(shardID byte) (*CrossShardBl
 func (block *ShardBlock) AddValidationField(validationData string) error {
 	block.ValidationData = validationData
 	return nil
+}
+
+func (block ShardBlock) GetCurrentEpoch() uint64 {
+	return block.Header.Epoch
 }
 
 func (block ShardBlock) GetProducer() string {
