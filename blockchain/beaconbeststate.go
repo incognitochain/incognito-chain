@@ -580,10 +580,10 @@ func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlatten
 }
 func (beaconBestState *BeaconBestState) getAllCommitteeValidatorCandidateFlattenList() []string {
 	res := []string{}
-	for _, committee := range beaconBestState.GetShardCommittee() {
+	for _, committee := range beaconBestState.ShardCommittee {
 		res = append(res, incognitokey.CommitteeKeyListToString(committee)...)
 	}
-	for _, pendingValidator := range beaconBestState.GetShardPendingValidator() {
+	for _, pendingValidator := range beaconBestState.ShardPendingValidator {
 		res = append(res, incognitokey.CommitteeKeyListToString(pendingValidator)...)
 	}
 	res = append(res, incognitokey.CommitteeKeyListToString(beaconBestState.BeaconCommittee)...)
