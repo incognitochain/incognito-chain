@@ -237,9 +237,11 @@ func (synker *Synker) stopSyncUnnecessaryShard() {
 func (synker *Synker) stopSyncShard(shardID byte) error {
 	if synker.blockchain.config.NodeMode == common.NODEMODE_AUTO || synker.blockchain.config.NodeMode == common.NODEMODE_SHARD {
 		userMiningKey, _ := synker.blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-		userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(userMiningKey, 0)
-		if userRole == common.SHARD_ROLE && shardID == userShardID {
-			return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
+		if userMiningKey != "" {
+			userRole, userShardID := synker.blockchain.BestState.Beacon.GetPubkeyRole(userMiningKey, 0)
+			if userRole == common.SHARD_ROLE && shardID == userShardID {
+				return errors.New("Shard " + fmt.Sprintf("%d", shardID) + " synchronzation can't be stopped")
+			}
 		}
 	}
 	if _, ok := synker.Status.Shards[shardID]; ok {
@@ -277,9 +279,9 @@ func (synker *Synker) UpdateState() {
 	if userMiningKey != "" {
 		userRole, userShardID = beaconStateClone.GetPubkeyRole(userMiningKey, beaconStateClone.BestBlock.Header.Round)
 		synker.syncShard(userShardID)
-		synker.stopSyncUnnecessaryShard()
 		userShardRole = synker.blockchain.BestState.Shard[userShardID].GetPubkeyRole(userMiningKey, synker.blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
 	}
+	synker.stopSyncUnnecessaryShard()
 
 	synker.States.ClosestState.ClosestBeaconState = beaconStateClone.BeaconHeight
 	for shardID, beststate := range synker.blockchain.BestState.Shard {
@@ -851,10 +853,11 @@ var currentInsert = struct {
 }
 
 func (synker *Synker) InsertBlockFromPool() {
-
-	if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
-		synker.InsertBeaconBlockFromPool()
-	}
+	go func() {
+		if !synker.blockchain.config.ConsensusEngine.IsOngoing(common.BEACON_CHAINKEY) {
+			synker.InsertBeaconBlockFromPool()
+		}
+	}()
 
 	synker.Status.Lock()
 	for shardID := range synker.Status.Shards {
