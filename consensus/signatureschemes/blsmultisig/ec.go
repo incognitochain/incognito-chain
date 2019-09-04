@@ -35,7 +35,7 @@ func DecmprG1(bytes []byte) (*bn256.G1, error) {
 	bytesTemp := []byte{}
 	bytesTemp = append(bytesTemp, bytes...)
 	if len(bytesTemp) != CCmprPnSz {
-		return nil, errors.New(CErr + CErrInps)
+		return nil, NewBLSSignatureError(InvalidInputParamsSizeErr, nil)
 	}
 	oddPoint := ((bytesTemp[0] & CMaskByte) != 0x00)
 	if oddPoint {
@@ -45,7 +45,7 @@ func DecmprG1(bytes []byte) (*bn256.G1, error) {
 	xCoor.SetBytes(bytesTemp)
 	pn, err := xCoor2G1P(xCoor, oddPoint)
 	if err != nil {
-		return nil, errors.New(CErr + CErrCmpr + err.Error())
+		return nil, NewBLSSignatureError(DecompressFromByteErr, nil)
 	}
 	return pn, nil
 }
@@ -72,7 +72,7 @@ func DecmprG2(bytes []byte) (*bn256.G2, error) {
 	pn := new(bn256.G2)
 	_, err := pn.Unmarshal(bytes)
 	if err != nil {
-		return nil, errors.New(CErr + CErrCmpr + err.Error())
+		return nil, NewBLSSignatureError(DecompressFromByteErr, nil)
 	}
 	return pn, nil
 }
@@ -97,7 +97,7 @@ func xCoor2G1P(xCoor *big.Int, oddPoint bool) (*bn256.G1, error) {
 	pnBytesArr = append(pnBytesArr, yCoorByte...)
 	_, err := pn.Unmarshal(pnBytesArr)
 	if err != nil {
-		return nil, err
+		return nil, NewBLSSignatureError(JSONError, errors.New(ErrCodeMessage[JSONError].Message))
 	}
 	if ((yCoorByte[CBigIntSz-1]&1 == 0) && oddPoint) || ((yCoorByte[CBigIntSz-1]&1 == 1) && !oddPoint) {
 		pn = pn.Neg(pn)
