@@ -14,6 +14,7 @@ const (
 	InvalidInputParamsSizeErr
 	InvalidCommitteeInfoErr
 	DecompressFromByteErr
+	MemCacheErr
 	JSONError
 )
 
@@ -29,6 +30,7 @@ var ErrCodeMessage = map[int]struct {
 	InvalidInputParamsSizeErr: {-1105, "Len of Input Params is invalid"},
 	DecompressFromByteErr:     {-1106, "Decompress bytes array to Elliptic point error"},
 	JSONError:                 {-1107, "JSON Marshal, Unmarshal error"},
+	MemCacheErr:               {-1108, "Memcache error"},
 }
 
 type BLSSignatureError struct {
